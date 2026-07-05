@@ -1,0 +1,53 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	Reusable stop-motion / claymation text. Renders each character as its own <span> so they can jitter
+	independently (the wobble + per-letter stagger live in WobbleText.razor.scss). Drop it into any header:
+
+		<WobbleText Text="Host Game" class="menu-title" />
+
+	Font size / colour / casing are INHERITED from whatever you put it in, so the same component works for the
+	big landing title and small page headers — just style the class you pass it.
+*@
+
+@foreach ( var ch in Text ?? "" )
+{
+	@if ( ch == ' ' )
+	{
+		<span class="space"></span>
+	}
+	else
+	{
+		<span class="letter">@ch</span>
+	}
+}
+
+@code
+{
+	/// <summary>How hard the per-letter jitter swings. <see cref="Full"/> suits big headers; <see cref="Soft"/> and
+	/// <see cref="Subtle"/> cut the POSITION travel (the part that hurts readability) for smaller text — rotation/
+	/// scale are kept. Only takes effect when the jitter is active (the "auto" class, or a parent :hover).</summary>
+	public enum JitterStrength { Full, Soft, Subtle }
+
+	[Parameter] public string Text { get; set; } = "";
+	[Parameter] public JitterStrength Strength { get; set; } = JitterStrength.Full;
+
+	public WobbleText()
+	{
+		AddClass( "wobble-text" );
+	}
+
+	// Map the strength to its modifier class; the SCSS swaps the keyframe by class. Full = no extra class.
+	protected override void OnParametersSet()
+	{
+		base.OnParametersSet();
+		SetClass( "soft", Strength == JitterStrength.Soft );
+		SetClass( "subtle", Strength == JitterStrength.Subtle );
+	}
+
+	protected override int BuildHash() => HashCode.Combine( Text, Strength );
+}

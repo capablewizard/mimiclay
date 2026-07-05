@@ -1,0 +1,186 @@
+@import "/UI/_menu.scss";
+
+// Server browser, styled to match the Host page: opaque cream "paper" cards with dark ink text and craft-blue
+// icons. Clickable column headers re-sort the list. State text (empty/loading) is dark ink over the light scene.
+.sessions-page
+{
+	// (The empty/loading states use the shared dark-ink default from _menu now — no per-page override needed.)
+
+	// Tighten the gap between the column headers and the list (default menu-content gap is $space-lg). Kept small;
+	// the list also has a little padding-top, so the two together give the header↔list distance.
+	.menu-content { gap: $space-xs; }
+
+	// --- Shared column widths --------------------------------------------------
+	// The header row and every lobby row use these SAME widths so the columns line up. The name column flexes;
+	// the rest are fixed. min-width:0 on the name lets long names clip instead of shoving the other columns.
+	.col-name    { flex-grow: 1; min-width: 0; }
+	.col-mode    { width: 130px; flex-shrink: 0; }
+	.col-players { width: 96px; flex-shrink: 0; }
+	.col-ping    { width: 60px; flex-shrink: 0; } // just enough for "999 ms" + the header's sort arrow, no more
+
+	// --- Clickable column headers (replaced the old "N games available" line) ---
+	.list-head
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: $space-md;
+		flex-shrink: 0;
+		// Inset to match .lobby-row's content box: 20px padding + its 2px border, so headers sit over their columns.
+		// Extra bottom padding gives the underline room below the labels.
+		padding: 0 20px 8px;
+		border: 2px solid transparent;
+		border-bottom: 2px solid $card-edge; // underline separating the headers from the list
+
+		.head
+		{
+			flex-direction: row;
+			align-items: center;
+			gap: 4px;
+			font-family: $header-font;
+			font-size: 15px;
+			font-weight: 800;
+			letter-spacing: 1px;
+			text-transform: uppercase;
+			color: $paper-ink-soft;
+			cursor: pointer;
+			pointer-events: all;
+			transition: color 0.1s ease-out;
+
+			&:hover { color: $paper-ink; sound-in: $sound-hover; }
+			&:active { sound-in: $sound-click; } // :active = pressed (click sound); .active below = the sorted column
+			&.active { color: $paper-ink; } // the sorted column reads as fully opaque (like hover), not a colour
+
+			.sort-arrow { font-size: 16px; } // .mi keeps text-transform:none so the ligature resolves to a glyph
+		}
+	}
+
+	.lobby-list
+	{
+		flex-direction: column;
+		gap: $space-sm;
+		flex-grow: 1;
+		min-height: 0;      // bound to menu-content's height so the rows scroll here instead of growing the page
+		overflow-y: scroll;
+		pointer-events: all; // the scroll container must take pointer events itself, else the gaps between the
+		                     // (clickable) rows don't catch the wheel/drag and the list can't be scrolled there
+		padding-top: 4px;    // headroom so the first row's hover-lift isn't clipped by the top overflow edge
+		padding-bottom: 8px; // room for the last row's drop shadow
+	}
+
+	// Each session = a chunky cream paper card (matches the Host setting rows / mode cards). The whole row is
+	// selectable; the selected one fills orange (orange = selected, like the Host mode cards). Joining is then
+	// done from the footer's Join button.
+	.lobby-row
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: $space-md;
+		padding: 21px 20px; // taller rows (~50% more vertical padding than 14px) — bump this to change row height
+		border-radius: $radius-lg; // surface (fill/outline/shadow) comes from .paper-card
+		cursor: pointer;
+		pointer-events: all; // whole row is clickable to select
+		transition: transform 0.1s ease-out, background-color 0.1s ease-out;
+
+		&:hover { transform: translateY( -2px ); sound-in: $sound-hover; } // lift on hover (no recolour; orange = selected)
+		&:active { sound-in: $sound-click; } // click = select
+
+		// Server name — first column, single line, clips if too long for its (flexing) column.
+		.lobby-name { font-size: 18px; font-weight: 700; color: $paper-ink; white-space: nowrap; overflow: hidden; }
+
+		// Game mode — spelled out (icon + label) so new players aren't left guessing what a lone icon means.
+		// IMPORTANT: lock the icon to an explicit width and keep both children non-growing/non-shrinking so they
+		// pack tight at the left (otherwise they each grab half the fixed-width col-mode → a big gap after the
+		// icon). Do NOT put overflow:hidden on the label: on a flex item it forces min-width:0, letting the label
+		// collapse to nothing under any space pressure (symptom: mode text vanished entirely).
+		.lobby-mode
+		{
+			flex-direction: row;
+			align-items: center;
+			gap: 4px;
+			color: $paper-ink;
+
+			.mode-icon
+			{
+				flex-grow: 0;
+				flex-shrink: 0;
+				width: 18px;
+				justify-content: center;
+				font-size: 18px;
+				color: $craft-blue;
+			}
+
+			.mode-label
+			{
+				flex-grow: 0;
+				flex-shrink: 0;
+				font-size: 14px;
+				font-weight: 700;
+				letter-spacing: 1px;
+				text-transform: uppercase;
+				white-space: nowrap;
+			}
+		}
+
+		.lobby-players
+		{
+			flex-direction: row;
+			align-items: center;
+			gap: 6px;
+			font-size: 16px;
+			font-weight: 700;
+			color: $paper-ink;
+
+			.mi { font-size: 18px; color: $craft-blue; }
+		}
+
+		// Ping value — colour-coded by latency band (see PingClass): green good / red bad / muted unknown.
+		.lobby-ping
+		{
+			font-size: 15px;
+			font-weight: 700;
+			color: $paper-ink;
+			white-space: nowrap; // keep "999 ms" on one line in the narrow column
+
+			&.good { color: $craft-green; }
+			&.bad { color: $craft-red; }
+			&.unknown { color: $paper-ink-soft; }
+		}
+
+		// Selected = orange fill with dark ink throughout (matches an EditHud / Host mode-card selected row). The
+		// per-latency ping colours are overridden to ink so they stay legible on orange.
+		&.selected
+		{
+			background-color: $craft-orange;
+
+			.lobby-name,
+			.lobby-mode,
+			.lobby-players,
+			.lobby-ping { color: $paper-ink; }
+
+			.mode-icon,
+			.lobby-players .mi { color: $paper-ink; }
+
+			.lobby-ping.good,
+			.lobby-ping.bad,
+			.lobby-ping.unknown { color: $paper-ink; }
+		}
+	}
+
+	// Empty state — dark ink copy + a smaller copy of the clay "Host Game" action button. (Refresh is in the footer.)
+	.menu-empty
+	{
+		.btn { margin-top: $space-md; pointer-events: all; }
+
+		// .empty-host = the shared .btn-action (orange clay, 3D emboss, hover jitter) scaled down from the big
+		// Host/Start size. Just shrink the font/padding/radius and the 3D offsets to match.
+		.empty-host
+		{
+			font-size: 28px;
+			padding: 8px 22px;
+			border-radius: 18px;
+			box-shadow:
+				8px 10px 12px $emboss-glow-box,
+				3px 4px 0px $emboss-depth-primary;
+		}
+	}
+}

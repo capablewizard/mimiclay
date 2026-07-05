@@ -1,0 +1,19 @@
+// =============================================================================
+//  Mimiclay UI base — shared front-end defaults (organised like MiniMotors).
+//
+//  One place for the menu's root typography/cursor so individual panels don't
+//  redeclare it. Applied from the menu root (MainMenu) rather than RootPanel:
+//  an s&box .razor.scss only reaches its own component + descendants, so this is
+//  the highest point in the menu tree we can style from a component sheet.
+// =============================================================================
+
+@import "/UI/_theme.scss";
+
+.main-menu-root
+{
+	width: 100%;
+	height: 100%;
+	font-family: $body-font;
+	font-weight: $body-weight;
+	color: $scene-text;
+}

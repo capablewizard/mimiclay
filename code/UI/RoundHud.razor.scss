@@ -1,0 +1,166 @@
+@import "/UI/_theme.scss";
+
+// The main player HUD. Clay-craft tokens from _theme.scss so it retunes from one place. Pure readout — never
+// steals the cursor.
+.round-hud {
+	position: absolute;
+	top: 0; left: 0;
+	width: 100%; height: 100%;
+	pointer-events: none;
+
+	// ── Top-centre: phase name + big timer + role chip ──────────────────────────────────────────────────────
+	.top-centre {
+		position: absolute;
+		top: $panel-inset;
+		left: 0; right: 0;
+		flex-direction: column;
+		align-items: center;
+
+		// The phase header is a WobbleText with the layered clay emboss per letter — STATIC (no jitter; that's on the
+		// line beneath). Same cream-over-scene clay look as the menu/setup headers.
+		.phase-name {
+			font-family: $header-font;
+			font-size: 64px;
+			color: $scene-text;
+			text-transform: uppercase;   // house rule: all headers are uppercase
+
+			.letter {
+				// Glow first so it paints UNDER the depth (s&box draws stacked text-shadows last-on-top).
+				text-shadow:
+					4px 5px 2px $emboss-glow,
+					1.5px 2.5px 0px $emboss-depth;
+			}
+		}
+
+		.timer {
+			font-family: $header-font;
+			font-size: 72px;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
+			margin-top: -8px;
+		}
+
+		// Context line under the clock during a round (e.g. "Time Left") — smaller than the timer.
+		.clock-caption {
+			font-family: $header-font;
+			font-size: 26px;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
+			text-transform: uppercase;   // house rule: all headers are uppercase
+			margin-top: -6px;
+		}
+
+		// The jittering line beneath the header (WobbleText "auto"), scaled up. It's a row of letters, so centre them
+		// and let it wrap if a long message needs two lines; per-letter shadow keeps it legible over the scene.
+		.lobby-status {
+			max-width: 640px;
+			margin-top: $space-sm;
+			justify-content: center;
+			flex-wrap: wrap;
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 34px;
+			color: $scene-text;
+
+			.letter { text-shadow: $scene-shadow; }
+		}
+
+		.role-chip {
+			margin-top: $space-sm;
+			padding: $space-xs $space-md;
+			font-family: $header-font;
+			font-size: 20px;
+			color: $scene-text;
+			border-radius: $radius-pill;
+			box-shadow: $shadow-edge;
+
+			&.role-hunter { background-color: $craft-red; }
+			&.role-prop   { background-color: $craft-green; }
+		}
+	}
+
+	// ── Right edge: placeholder hotkey hints ────────────────────────────────────────────────────────────────
+	.hotkeys {
+		position: absolute;
+		right: $panel-inset;
+		top: 0; bottom: 0;
+		flex-direction: column;
+		justify-content: center;
+		align-items: flex-end;
+
+		.hotkeys-title {
+			font-family: $header-font;
+			font-size: 18px;
+			color: $scene-text-dim;
+			text-shadow: $scene-shadow;
+			text-transform: uppercase;   // house rule: all headers are uppercase
+			margin-bottom: $space-sm;
+			margin-right: 2px;
+		}
+
+		.hotkey {
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-end;
+			margin-bottom: $space-xs;
+
+			.key {
+				min-width: 44px;
+				justify-content: center;
+				padding: 2px $space-sm;
+				font-family: $body-font;
+				font-weight: $body-weight;
+				font-size: 16px;
+				color: $paper-ink;
+				background-color: $paper-top;
+				border: 2px solid $paper-edge;
+				border-radius: $radius-sm;
+				box-shadow: $shadow-edge;
+			}
+
+			.label {
+				margin-left: $space-sm;
+				font-family: $body-font;
+				font-weight: $body-weight;
+				font-size: 16px;
+				color: $scene-text;
+				text-shadow: $scene-shadow;
+			}
+		}
+	}
+
+	// ── Bottom-right: active game mode + blurb (from Start through the whole round) ──────────────────────────
+	.mode-card {
+		position: absolute;
+		right: $panel-inset;
+		bottom: $panel-inset;
+		flex-direction: column;
+		align-items: flex-end;
+
+		// Header at roughly the lobby-header size, same cream + per-letter clay emboss (static — no jitter).
+		.mode-title {
+			font-family: $header-font;
+			font-size: 56px;
+			color: $scene-text;
+			text-transform: uppercase;
+
+			.letter {
+				text-shadow:
+					4px 5px 2px $emboss-glow,
+					1.5px 2.5px 0px $emboss-depth;
+			}
+		}
+
+		// Description underneath, smaller + muted, right-aligned to the corner.
+		.mode-blurb {
+			max-width: 360px;
+			margin-top: -2px;
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 18px;
+			color: $scene-text-dim;
+			text-shadow: $scene-shadow;
+			text-align: right;
+		}
+	}
+}

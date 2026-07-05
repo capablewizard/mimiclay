@@ -1,0 +1,19 @@
+// THIS FILE IS AUTO-GENERATED
+
+Layer0
+{
+	shader "shaders/sdf_mesh.shader"
+
+	//---- Fog ----
+	g_bFogEnabled "1"
+
+	//---- Surface ----
+	g_flMetalness "0.000"
+	g_flRoughness "0.950"
+	g_flTriBlend "6.000"
+	g_flTriTile "0.500"
+	g_vTintColor "[1.000000 1.000000 1.000000 0.000000]"
+	TextureColor "materials/plasticine/plasticine_basecolor.png"
+	TextureNormal "materials/plasticine/plasticine_normal_4.png"
+	TextureRoughness "materials/default/default_rough.tga"
+}

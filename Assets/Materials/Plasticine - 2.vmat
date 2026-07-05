@@ -1,0 +1,19 @@
+// THIS FILE IS AUTO-GENERATED
+
+Layer0
+{
+	shader "shaders/sdf_raymarch.shader"
+
+	//---- Fog ----
+	g_bFogEnabled "1"
+
+	//---- Surface ----
+	g_flMetalness "0.000"
+	g_flRoughness "1.090"
+	g_flTriBlend "11.126"
+	g_flTriTile "0.500"
+	g_vTintColor "[1.000000 1.000000 1.000000 0.000000]"
+	TextureColor "materials/default/default_color.tga"
+	TextureNormal "materials/plasticine_imperfections_17.png"
+	TextureRoughness "materials/default/default_rough.tga"
+}

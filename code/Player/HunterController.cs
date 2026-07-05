@@ -1,0 +1,336 @@
+using System;
+
+namespace Mimiclay;
+
+/// <summary>
+/// Hunter: a plain first-person seeker. Movement/look/crouch/jump/camera all come from the stock s&amp;box
+/// <see cref="PlayerController"/> (capsule, ground/step handling, footsteps, eye transform) — this component
+/// adds a hitscan shot on attack1 and an edit mode for sculpting its own face.
+///
+/// <b>Edit mode</b> (Q): suspends first-person control (look + movement frozen) and hands the shared camera to
+/// an <see cref="OrbitCameraController"/> framed on the hunter's <see cref="Face"/> sculpture, so you orbit and
+/// edit your own head with the same Maya nav + sculpt gizmo the hider uses. The whole flow is the shared
+/// <see cref="SculptEditSession"/> — this controller only supplies the target + camera and gates play input.
+///
+/// Tuning lives on the <c>hunter.prefab</c>'s <see cref="PlayerController"/> (speeds, body height, camera) —
+/// edit it there. When this component is dropped on a bare GameObject instead (no prefab), it falls back to
+/// creating a sensible first-person controller so it still works.
+/// </summary>
+[Title( "Hunter Controller" )]
+[Category( "Mimiclay" )]
+[Icon( "sports_esports" )]
+public sealed class HunterController : Component
+{
+	[Property, Group( "Weapon" )] public float Range { get; set; } = 4096f;
+
+	/// <summary>Seconds between shots — the hunt's "shoot on a cooldown".</summary>
+	[Property, Group( "Weapon" )] public float ShootCooldown { get; set; } = 1f;
+
+	// Owner-side gate: the next moment a shot is allowed.
+	TimeUntil _nextShot;
+
+	/// <summary>The SDF sculpture edited in face-edit mode (the "Head"). Auto-resolved in <see cref="OnStart"/>
+	/// when left unset: a child named "Head" with a sculpture, else the first sculpture in the hierarchy.</summary>
+	[Property, Group( "Edit" )] public SdfSculpture Face { get; set; }
+
+	/// <summary>How tightly the edit camera frames the face on open. The distance is derived from the head's
+	/// bounding sphere + the camera FOV so any size of head opens at the same apparent size; this is the breathing
+	/// room around it — 1 = head exactly fills the frame, 1.2 = ~20% margin. (You can still dolly from there.)</summary>
+	[Property, Group( "Edit" ), Range( 1f, 3f )] public float EditFramingMargin { get; set; } = 1.4f;
+
+	/// <summary>Pitch the edit camera opens at (degrees; positive looks slightly down at the face).</summary>
+	[Property, Group( "Edit" )] public float EditCameraPitch { get; set; } = 10f;
+
+	/// <summary>Debug "eyes" marker (a child pivot) parked at the eye and aimed where we're looking each frame, so
+	/// the look direction is visible on remote clients (the capsule body parts are static children of the root).
+	/// Optional — leave unset to skip.</summary>
+	[Property, Group( "Debug" )] public GameObject Eyes { get; set; }
+
+	PlayerController _controller;
+	ModelRenderer[] _bodyRenderers;
+	SdfRaymarchRenderer[] _sdfRenderers;
+	SculptEditSession _session;
+	OrbitCameraController _orbit;
+
+	bool EditMode => _session?.IsEditing ?? false;
+
+	protected override void OnAwake()
+	{
+		// Prefer the prefab's authored controller; only build one if this was dropped on a bare GameObject. Either
+		// way ensure a walk move-mode exists.
+		_controller = Components.Get<PlayerController>();
+		if ( !_controller.IsValid() )
+			_controller = Components.Create<PlayerController>();
+
+		// We own the shared scene camera ourselves and set ONLY its transform (see DriveCamera). The stock
+		// controller's camera mode mutates that shared camera — FieldOfView, RenderExcludeTags, mode hooks — and
+		// never restores it, which left it dirty for whatever drove it next (the prop's HiderController), breaking
+		// the prop's raymarched SDF. Turning it off keeps the one camera clean across pawn switches. EyePosition /
+		// EyeAngles still update from the input path, so we can read them to position the camera.
+		_controller.UseCameraControls = false;
+
+		Components.GetOrCreate<Sandbox.Movement.MoveModeWalk>();
+	}
+
+	protected override void OnStart()
+	{
+		// Cache what we hide in first person (see HideOwnBody). SDF visuals manage their own sibling mesh
+		// ModelRenderer per-frame (raymarch vs. shadow-only by LOD band), so we must NOT sweep those into
+		// _bodyRenderers — forcing their RenderType from here would fight that and double-draw on proxies.
+		// We hide them through RenderHidden instead. Plain body renderers (the capsule parts) we own directly.
+		_sdfRenderers = Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants ).ToArray();
+		_bodyRenderers = Components.GetAll<ModelRenderer>( FindMode.EnabledInSelfAndDescendants )
+			.Where( r => !r.GameObject.Components.Get<SdfRaymarchRenderer>().IsValid() )
+			.ToArray();
+
+		// Face-edit mode. Resolve the editable sculpture (the head), then stand up the shared edit machinery:
+		// an orbit camera (idle until edit mode hands it the view) and a SculptEditSession pointed at the face.
+		// Wiring OrbitCamera onto the session is what makes SetActive enable/disable the camera for us.
+		Face ??= ResolveFace();
+
+		_orbit = Components.GetOrCreate<OrbitCameraController>();
+		_orbit.Enabled = false;       // only live while editing; the session toggles it
+		_orbit.MinDistance = 8f;      // let the player get right up to the face
+
+		_session = Components.Create<SculptEditSession>();
+		_session.Target = Face;
+		_session.OrbitCamera = _orbit;
+
+		// Networking: point the prefab's SdfNetworkSync at the face so other players see your sculpted head. Same
+		// reusable component the prop uses — it just needs a Target. The owner publishes on commit; proxies apply.
+		var sync = Components.GetOrCreate<SdfNetworkSync>();
+		sync.Target = Face;
+	}
+
+	// The sculpture face-edit mode targets: the authored Face, else a child named "Head" carrying a sculpture,
+	// else the first sculpture anywhere under the pawn (so a bare/renamed setup still finds something to edit).
+	SdfSculpture ResolveFace()
+	{
+		var head = GameObject.Children.FirstOrDefault( c => c.Name == "Head" );
+		var onHead = head.IsValid() ? head.Components.Get<SdfSculpture>( FindMode.EnabledInSelfAndDescendants ) : null;
+		return onHead.IsValid() ? onHead : Components.Get<SdfSculpture>( FindMode.EnabledInSelfAndDescendants );
+	}
+
+	protected override void OnUpdate()
+	{
+		// Owner-only: toggle face-edit mode (Q, the same "Edit" action the hider uses). Done before the input
+		// gates below so entering/leaving takes effect this same frame (no one-frame camera gap on exit).
+		if ( !IsProxy && Input.Pressed( "Edit" ) )
+			ToggleEdit();
+
+		// Tab toggles the brush wireframe overlay, same as the hider's props. The session no-ops this unless it's
+		// actually editing, so it's only meaningful in face-edit mode.
+		if ( !IsProxy && Input.Pressed( "ToggleWireframes" ) )
+			_session?.ToggleWireframes();
+
+		// Only the owning client reads look/movement + drives the shared camera; on every other machine the pawn is
+		// a proxy and gets the networked eye transform. Editing also suspends look + movement (the body holds still
+		// while you sculpt your face) and releases the camera to the orbit controller. Gate LIVE each frame, not
+		// once in OnStart: a host-spawned pawn runs OnStart on the owning client BEFORE ownership replicates, so a
+		// one-shot IsProxy read is stale. (IsProxy is false in non-networked play, so solo still works.)
+		// Round freeze: during the Starting countdown locomotion is locked (you can still LOOK around to scope out
+		// your team + surroundings) — same "stop input, clear momentum" treatment as edit mode.
+		bool locked = RoundManager.ControlsLocked;
+
+		if ( _controller.IsValid() )
+		{
+			bool play = !IsProxy && !EditMode;
+			_controller.UseLookControls = play;
+			_controller.UseInputControls = play && !locked;
+
+			// UseInputControls=false stops the controller READING input, but the last WishVelocity stays latched
+			// and the walk move-mode keeps applying it — so a key held when you entered edit/freeze would coast the
+			// hunter away. Clear the wish + any HORIZONTAL momentum every such frame so the body holds still — but keep
+			// the vertical component so gravity still settles a freshly-spawned pawn onto the floor (zeroing all of it
+			// every frame wipes the fall velocity, leaving it to drift down in slow motion).
+			if ( EditMode || locked )
+			{
+				_controller.WishVelocity = Vector3.Zero;
+				if ( _controller.Body.IsValid() )
+					_controller.Body.Velocity = _controller.Body.Velocity.WithX( 0f ).WithY( 0f );
+			}
+		}
+
+		HideOwnBody();
+
+		if ( !IsProxy && !EditMode && _controller.IsValid() )
+		{
+			// Re-lock the cursor for first-person look. Edit mode (the orbit camera) frees it for the gizmo and
+			// never re-hides it on exit, so assert it here every play frame — otherwise look can't capture the
+			// mouse after leaving edit mode.
+			Mouse.Visibility = MouseVisibility.Hidden;
+
+			DriveCamera();
+
+			// Owner-only: otherwise every machine would shoot when ITS local player clicked, from a remote pawn's
+			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
+			// No shooting while controls are locked (the Starting countdown).
+			if ( !locked && Input.Pressed( "attack1" ) && _nextShot <= 0f )
+				Shoot();
+		}
+
+		// Park the debug eye marker at the eye, aimed where we're looking — on ALL machines (the eye transform is
+		// networked), so remote hunters' aim is visible too.
+		if ( Eyes.IsValid() && _controller.IsValid() )
+		{
+			Eyes.WorldPosition = _controller.EyePosition;
+			Eyes.WorldRotation = _controller.EyeAngles.ToRotation();
+		}
+	}
+
+	// Position the shared scene camera at the eye — FIRST PERSON, position + rotation ONLY. No FieldOfView /
+	// render-setting changes, so the camera is left exactly as clean as we found it for the next pawn that drives
+	// it. This is the whole point: one camera, every controller sets only its transform.
+	void DriveCamera()
+	{
+		var cam = Scene.Camera;
+		if ( !cam.IsValid() )
+			return;
+
+		cam.WorldPosition = _controller.EyePosition;
+		cam.WorldRotation = _controller.EyeAngles.ToRotation();
+	}
+
+	// First person: hide our OWN body so we don't see it but it still casts a shadow, while proxies (other
+	// players' hunters) stay fully visible. Plain body parts switch to ShadowsOnly; SDF visuals do the same
+	// via RenderHidden (they own their sibling mesh, so we can't just set its RenderType). Done by renderer
+	// state, NOT by excluding a tag on the shared camera (tag-excluding mutates the shared camera — the bug
+	// we just fixed — and would affect every pawn). Live each frame because ownership resolves after OnStart;
+	// setting a value to its current value is a no-op.
+	void HideOwnBody()
+	{
+		// Only manages our OWN body's first-person hide; a proxy pawn (another player's) isn't ours to touch — bail.
+		if ( IsProxy )
+			return;
+
+		// Hidden in first person — but while editing your own face you need to SEE yourself, so show it then.
+		var hideOwn = !IsProxy && !EditMode;
+
+		if ( _bodyRenderers is not null )
+		{
+			var type = hideOwn ? ModelRenderer.ShadowRenderType.ShadowsOnly : ModelRenderer.ShadowRenderType.On;
+			foreach ( var r in _bodyRenderers )
+			{
+				if ( r.IsValid() )
+					r.RenderType = type;
+			}
+		}
+
+		if ( _sdfRenderers is not null )
+		{
+			foreach ( var r in _sdfRenderers )
+			{
+				if ( r.IsValid() )
+					r.RenderHidden = hideOwn;
+			}
+		}
+	}
+
+	// Enter/leave face-edit mode. On enter, the session enables the orbit camera (seeding it from the current
+	// first-person view); we immediately reframe it onto the face so you're looking AT your head, not out of it.
+	// On leave, the session disables the orbit camera and DriveCamera resumes this same frame (see OnUpdate order).
+	void ToggleEdit()
+	{
+		if ( !_session.IsValid() )
+			return;
+
+		_session.Toggle();
+
+		if ( _session.IsEditing )
+			FrameFace();
+	}
+
+	// Park the orbit camera in FRONT of the face looking back at it: position it along the head's facing
+	// direction (where the front of the face points) and aim back the opposite way. Must run AFTER the session
+	// enables the camera, since OrbitCameraController.OnEnabled seeds pivot/angles from the (first-person) view.
+	void FrameFace()
+	{
+		if ( !_orbit.IsValid() )
+			return;
+
+		float faceYaw = _controller.IsValid() ? _controller.EyeAngles.yaw : WorldRotation.Angles().yaw;
+
+		_orbit.Pivot = FaceCenterWorld();
+		_orbit.Distance = FramingDistance();
+		_orbit.Angles = new Angles( EditCameraPitch, faceYaw + 180f, 0f ); // +180: stand in front, look back at the face
+	}
+
+	// Distance that fits the head's bounding sphere in the frame with EditFramingMargin breathing room, derived
+	// from the camera's FOV — so any size of head opens at the same apparent size instead of a hardcoded guess.
+	// Standard fit-sphere math: a sphere of radius r is tangent to the view cone at distance r / sin(halfFov).
+	// CameraComponent.FieldOfView is the VERTICAL fov (the tighter axis on a wide screen), so fitting against it
+	// guarantees the head fits horizontally too. Falls back to a fixed distance if bounds/camera aren't ready.
+	float FramingDistance()
+	{
+		const float fallback = 60f;
+
+		if ( !Face.IsValid() || !Sdf.TryGetBounds( Face.Brushes, out var bounds ) )
+			return fallback;
+
+		// Bounding-sphere radius = half the box diagonal, in world units.
+		float radius = bounds.Size.Length * 0.5f * Face.WorldScale.x;
+		if ( radius <= 0.01f )
+			return fallback;
+
+		float halfFov = (Scene.Camera.IsValid() ? Scene.Camera.FieldOfView : 60f).DegreeToRadian() * 0.5f;
+		float sin = MathF.Sin( halfFov );
+		if ( sin <= 0.001f )
+			return fallback;
+
+		return radius * EditFramingMargin / sin;
+	}
+
+	// World-space centre of the face's sculpted shape (its brush bounds), so the camera frames the head itself
+	// rather than its pivot at the neck. Falls back to the object/eye position if bounds aren't available yet.
+	Vector3 FaceCenterWorld()
+	{
+		if ( Face.IsValid() && Sdf.TryGetBounds( Face.Brushes, out var bounds ) )
+			return Face.WorldTransform.PointToWorld( bounds.Center );
+
+		if ( Face.IsValid() )
+			return Face.WorldPosition;
+
+		return _controller.IsValid() ? _controller.EyePosition : WorldPosition;
+	}
+
+	void Shoot()
+	{
+		if ( !_controller.IsValid() )
+			return;
+
+		var from = _controller.EyePosition;
+		var dir = _controller.EyeAngles.ToRotation().Forward;
+
+		_nextShot = ShootCooldown;
+
+		var tr = Scene.Trace
+			.Ray( from, from + dir * Range )
+			.IgnoreGameObjectHierarchy( GameObject )
+			.Run();
+
+		if ( !tr.Hit )
+			return;
+
+		// A hit on a prop pawn (its disguise collider belongs to a HiderController up the hierarchy) is reported to
+		// the host, which validates the phase + that it's a live prop, then pops it and converts that player to a
+		// hunter. Anything else is just map geometry. The call is [Rpc.Host] so it routes to the host from here.
+		var hider = FindHider( tr.GameObject );
+		if ( hider.IsValid() && RoundManager.Current.IsValid() )
+			RoundManager.Current.ReportPropHit( hider.GameObject );
+	}
+
+	// Walk up from the traced object to the pawn root that carries the HiderController (the collider we hit is the
+	// disguise, a child). Null when we hit the world or a hunter.
+	static HiderController FindHider( GameObject go )
+	{
+		while ( go.IsValid() )
+		{
+			var hider = go.Components.Get<HiderController>();
+			if ( hider.IsValid() )
+				return hider;
+			go = go.Parent;
+		}
+
+		return null;
+	}
+}

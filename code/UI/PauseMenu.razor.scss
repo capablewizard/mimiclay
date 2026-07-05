@@ -1,0 +1,45 @@
+@import "/UI/_menu.scss";
+
+// In-game pause overlay: a full-screen blur with the menu's big text buttons centred on top. The root is
+// click-through when closed (nothing rendered); when open, the backdrop captures input so the game can't be
+// clicked through it.
+.pause-menu
+{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	flex-direction: column;
+	align-items: center;     // centre the options column horizontally
+	justify-content: center; // ...and vertically
+	pointer-events: none;    // closed = pass everything through; the backdrop opts back in when open
+	font-family: $body-font;
+}
+
+// Full-screen blur + slight darken behind the options. Captures input so the paused game is uninteractable.
+.pause-backdrop
+{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	backdrop-filter: blur( 24px );
+	background-color: rgba( 18, 12, 4, 0.45 );
+	pointer-events: all;
+}
+
+// Centred column of big text buttons, above the backdrop.
+.pause-options
+{
+	z-index: 1;
+	flex-direction: column;
+	align-items: center;
+	gap: $space-md;
+	pointer-events: none; // each .menu-button opts in itself
+
+	// Same big text buttons as the landing menu (.menu-button in _menu.scss) — but grow from the CENTRE on hover
+	// instead of the left edge.
+	.menu-button { transform-origin: center center; }
+}

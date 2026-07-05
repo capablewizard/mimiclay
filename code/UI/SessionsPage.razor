@@ -1,0 +1,287 @@
+@using System
+@using System.Threading
+@using System.Threading.Tasks
+@using Sandbox
+@using Sandbox.Network
+@using Sandbox.UI
+@using Sandbox.UI.Navigation
+@using Microsoft.AspNetCore.Components
+@namespace Mimiclay
+@inherits Panel
+@attribute [Route( "/sessions" )]
+
+@*
+	Server browser. Queries public lobbies for this game (MenuNetworking.QueryGames) and lists them; a row's Join
+	connects to that lobby. Clickable column headers re-sort the list (click again to flip direction). Refreshes on
+	open and on demand. This is the "Sessions" entry from the main menu.
+*@
+
+<root class="sessions-page menu-page">
+
+	<WobbleText Text="Sessions" class="menu-title auto" />
+
+	<div class="menu-content">
+		@if ( _loading )
+		{
+			<div class="menu-busy">
+				<div class="spinner">progress_activity</div>
+				<span>Finding games…</span>
+			</div>
+		}
+		else
+		{
+			@* Clickable column headers — always shown (even with no results) so the list's shape stays clear. Sort
+			   the list; clicking the active column flips direction. Aligned with the rows below via shared col-* widths. *@
+			<div class="list-head">
+				<div class="col-name head @(IsSort( SortKey.Name ) ? "active" : "")" @onclick=@(() => SortBy( SortKey.Name ))>
+					<span>Name</span>
+					@if ( IsSort( SortKey.Name ) ) { <span class="mi sort-arrow">@Arrow</span> }
+				</div>
+				<div class="col-mode head @(IsSort( SortKey.Mode ) ? "active" : "")" @onclick=@(() => SortBy( SortKey.Mode ))>
+					<span>Mode</span>
+					@if ( IsSort( SortKey.Mode ) ) { <span class="mi sort-arrow">@Arrow</span> }
+				</div>
+				<div class="col-players head @(IsSort( SortKey.Players ) ? "active" : "")" @onclick=@(() => SortBy( SortKey.Players ))>
+					<span>Players</span>
+					@if ( IsSort( SortKey.Players ) ) { <span class="mi sort-arrow">@Arrow</span> }
+				</div>
+				<div class="col-ping head @(IsSort( SortKey.Ping ) ? "active" : "")" @onclick=@(() => SortBy( SortKey.Ping ))>
+					<span>Ping</span>
+					@if ( IsSort( SortKey.Ping ) ) { <span class="mi sort-arrow">@Arrow</span> }
+				</div>
+			</div>
+
+			@if ( _lobbies.Count == 0 )
+			{
+				<div class="menu-empty">
+					<span>No public games right now.</span>
+					<div class="btn btn-action empty-host" @onclick=@HostInstead>Host Game</div>
+					@if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) )
+					{
+						<div class="menu-error" @key=@MenuNetworking.ErrorStamp>@MenuNetworking.LastError</div>
+					}
+				</div>
+			}
+			else
+			{
+				<div class="lobby-list">
+					@foreach ( var lobby in _lobbies )
+					{
+						var l = lobby;
+						var info = GameModes.Get( MenuNetworking.ModeOf( l ) );
+						<div class="paper-card lobby-row @(_selectedId == l.LobbyId ? "selected" : "")" @onclick=@(() => Select( l ))>
+							<div class="col-name lobby-name">@NameOf( l )</div>
+							<div class="col-mode lobby-mode">
+								<div class="mi mode-icon">@info.Icon</div>
+								<div class="mode-label">@info.Label</div>
+							</div>
+							<div class="col-players lobby-players">
+								<div class="mi">group</div>
+								<span>@l.Members / @l.MaxMembers</span>
+							</div>
+							<div class="col-ping lobby-ping @PingClass( l.Ping )">
+								@(l.Ping < 0 ? "—" : $"{l.Ping} ms")
+							</div>
+						</div>
+					}
+				</div>
+			}
+		}
+	</div>
+</root>
+
+@code
+{
+	/// <summary>Live page instance, so the persistent footer (MainMenuNav) can drive Refresh while on this route.</summary>
+	public static SessionsPage Current { get; private set; }
+
+	readonly List<LobbyInformation> _lobbies = new();
+	bool _loading;
+	CancellationTokenSource _cts;
+
+	// The currently selected row (by lobby id, so it survives a re-sort). The footer shows Join while one is selected.
+	ulong? _selectedId;
+
+	/// <summary>True when a still-present session is selected — the footer's Join button keys off this.</summary>
+	public bool HasSelection => _selectedId.HasValue && _lobbies.Any( l => l.LobbyId == _selectedId.Value );
+
+	void Select( LobbyInformation lobby )
+	{
+		_selectedId = lobby.LobbyId;
+		StateHasChanged();
+	}
+
+	/// <summary>Join the selected session. Public so the footer's Join button (in MainMenuNav) can call it.</summary>
+	public void JoinSelected()
+	{
+		if ( !_selectedId.HasValue )
+			return;
+
+		foreach ( var l in _lobbies )
+		{
+			if ( l.LobbyId == _selectedId.Value )
+			{
+				Join( l );
+				return;
+			}
+		}
+	}
+
+	// DEBUG: show fabricated sessions instead of querying Steam, so the list styling/scrolling can be worked on
+	// without live lobbies. Set false (or delete this flag + Load's fake branch + MakeFakeLobbies) for the real browser.
+	static readonly bool FakeData = false;
+
+	// --- Sorting ---
+	enum SortKey { Name, Mode, Players, Ping }
+	SortKey _sortKey = SortKey.Players; // default: fullest sessions first
+	bool _sortAsc;                       // false = descending
+
+	bool IsSort( SortKey key ) => _sortKey == key;
+	string Arrow => _sortAsc ? "arrow_upward" : "arrow_downward";
+
+	static string NameOf( LobbyInformation l ) => string.IsNullOrWhiteSpace( l.Name ) ? "Mimiclay Game" : l.Name;
+	static string ModeLabelOf( LobbyInformation l ) => GameModes.Get( MenuNetworking.ModeOf( l ) ).Label;
+
+	// Latency band → colour class (green good / red bad / muted unknown). Empty string = neutral ink.
+	static string PingClass( int ping ) => ping < 0 ? "unknown" : ping < 60 ? "good" : ping < 140 ? "" : "bad";
+
+	void SortBy( SortKey key )
+	{
+		if ( _sortKey == key )
+		{
+			_sortAsc = !_sortAsc; // re-click the active column to flip direction
+		}
+		else
+		{
+			_sortKey = key;
+			// Sensible default direction per column: text A→Z, ping lowest-first, players fullest-first.
+			_sortAsc = key switch { SortKey.Name => true, SortKey.Mode => true, SortKey.Ping => true, _ => false };
+		}
+
+		ApplySort();
+		StateHasChanged();
+	}
+
+	void ApplySort()
+	{
+		var dir = _sortAsc ? 1 : -1;
+		_lobbies.Sort( ( a, b ) =>
+		{
+			var c = _sortKey switch
+			{
+				SortKey.Name => string.Compare( NameOf( a ), NameOf( b ), StringComparison.OrdinalIgnoreCase ),
+				SortKey.Mode => string.Compare( ModeLabelOf( a ), ModeLabelOf( b ), StringComparison.OrdinalIgnoreCase ),
+				SortKey.Players => a.Members.CompareTo( b.Members ),
+				SortKey.Ping => PingSortValue( a.Ping ).CompareTo( PingSortValue( b.Ping ) ),
+				_ => 0,
+			};
+			return c * dir;
+		} );
+	}
+
+	// Unknown ping (-1) should rank as worst, not best — treat it as the largest value.
+	static int PingSortValue( int ping ) => ping < 0 ? int.MaxValue : ping;
+
+	protected override void OnAfterTreeRender( bool firstTime )
+	{
+		base.OnAfterTreeRender( firstTime );
+		if ( firstTime )
+		{
+			Current = this;
+			_ = Load();
+		}
+	}
+
+	public override void OnDeleted()
+	{
+		base.OnDeleted();
+		_cts?.Cancel();
+		if ( Current == this )
+			Current = null;
+	}
+
+	/// <summary>Re-query the session list. Public so the footer's Refresh button (in MainMenuNav) can call it.</summary>
+	public void Refresh()
+	{
+		if ( !_loading )
+			_ = Load();
+	}
+
+	async Task Load()
+	{
+		_cts?.Cancel();
+		_cts = new CancellationTokenSource();
+		var token = _cts.Token;
+
+		_loading = true;
+		StateHasChanged();
+
+		List<LobbyInformation> results;
+		if ( FakeData )
+		{
+			await Task.Delay( 400 );                 // pretend we hit the network so the spinner flashes
+			results = MakeFakeLobbies( 100 );
+		}
+		else
+		{
+			results = await MenuNetworking.QueryGames( token );
+		}
+
+		if ( token.IsCancellationRequested )
+			return;
+
+		_lobbies.Clear();
+		_lobbies.AddRange( results );
+		ApplySort();
+		_loading = false;
+		StateHasChanged();
+	}
+
+	async void Join( LobbyInformation lobby )
+	{
+		if ( MenuNetworking.Busy )
+			return;
+
+		await MenuNetworking.Join( lobby );
+		StateHasChanged(); // surface any error if the join didn't take
+	}
+
+	void HostInstead() => this.Navigate( "/host" );
+
+	// DEBUG helper — fabricate a list of varied fake sessions (real mode names so icons/labels populate) for
+	// styling + scroll testing. Remove together with FakeData. Joining one will just fail ("Couldn't join").
+	static List<LobbyInformation> MakeFakeLobbies( int count )
+	{
+		string[] adjectives = { "Cozy", "Wobbly", "Sticky", "Squished", "Lumpy", "Crafty", "Gooey", "Pinched", "Doughy", "Bouncy", "Soft", "Mushy" };
+		string[] nouns = { "Clay Pit", "Workshop", "Studio", "Sculpt Room", "Kiln", "Atelier", "Mudroom", "Sandbox", "Den", "Hideout" };
+		int[] caps = { 6, 8, 12, 16 };
+
+		var list = new List<LobbyInformation>( count );
+		for ( int i = 0; i < count; i++ )
+		{
+			var kind = GameModes.All[i % GameModes.All.Length].Kind;
+			var name = $"{adjectives[i % adjectives.Length]} {nouns[(i / adjectives.Length) % nouns.Length]}";
+			var max = caps[i % caps.Length];
+			var members = 1 + (i * 3) % max;          // 1..max
+			if ( members >= max ) members = max - 1;  // keep it joinable (never shown as full)
+
+			list.Add( new LobbyInformation
+			{
+				LobbyId = (ulong)(1000 + i),
+				Members = members,
+				MaxMembers = max,
+				Name = name,
+				Ping = (i % 11 == 0) ? -1 : 18 + (i * 17) % 220, // mostly real latencies, a few "unknown"
+				Data = new Dictionary<string, string>
+				{
+					[MenuNetworking.Keys.Mode] = kind.ToString(),
+					[MenuNetworking.Keys.Name] = name,
+				},
+			} );
+		}
+		return list;
+	}
+
+	protected override int BuildHash()
+		=> HashCode.Combine( _loading, _lobbies.Count, _sortKey, _sortAsc, _selectedId, MenuNetworking.Busy, MenuNetworking.LastError, MenuNetworking.ErrorStamp );
+}

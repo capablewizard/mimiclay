@@ -1,0 +1,9 @@
+{
+  "Title": "Default",
+  "Description": "default map, doesn't do anything.",
+  "Preview": null,
+  "Scene": "scenes/maps/defaultmap.scene",
+  "Hidden": false,
+  "__references": [],
+  "__version": 0
+}

@@ -1,0 +1,227 @@
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The main player HUD — ONE shared panel for the whole game: lobby + every round phase, hunters + props. It binds
+	to RoundContext.Active (whichever of LobbyController / RoundManager is live), so it follows the scene change
+	between lobby and map for free and shows nothing it can't resolve.
+
+	Layout:
+	  • top-centre — the phase name + the big timer (the hide/hunt countdowns AND the lobby launch countdown). When
+	    nothing is timing (idle lobby, pre-start) it just reads 0, as asked.
+	  • below the timer — the local player's role chip.
+	  • right edge — the hotkey hints (PLACEHOLDER: hard-coded keys/labels, context-switched lobby vs in-round; wire
+	    these to real input actions when the controls firm up).
+
+	Class name kept as RoundHud so the scenes that already reference it don't break — think of it as the player HUD.
+*@
+
+<root class="round-hud">
+	@* TEMP DEBUG — concealment state. Remove once infection prep is working. *@
+	<div style="position: absolute; top: 90px; left: 24px; flex-direction: column; color: #ffcc00; font-family: Consolas; font-size: 18px; text-shadow: 0px 1px 2px black;">
+		<div>host=@DbgHost  isActive=@Networking.IsActive</div>
+		<div>phase=@Phase</div>
+		<div>mode=@DbgMode</div>
+		<div>pawns(self/proxy)=@DbgSelfPawns/@DbgProxyPawns</div>
+	</div>
+
+	<div class="top-centre">
+		@* Header above the clock ONLY in the lobby (LOBBY / STARTING GAME). In a round there's no header — the
+		   caption under the clock carries the context instead. Static WobbleText for the per-letter clay emboss. *@
+		@if ( Phase == RoundPhase.Lobby )
+		{
+			<WobbleText Text=@PhaseLabel class="phase-name" @key=@PhaseLabel />
+		}
+
+		@if ( ShowLobbyStatus )
+		{
+			@* Idle lobby (before the host starts): the jittering status line stands in for the timer entirely. *@
+			<WobbleText Text=@LobbyStatus class="lobby-status auto" Strength=@WobbleText.JitterStrength.Soft @key=@LobbyStatus />
+		}
+		else
+		{
+			<div class="timer">@TimerText</div>
+
+			@if ( Phase != RoundPhase.Lobby )
+			{
+				@* Round context, under the clock (replaces the phase header). *@
+				<div class="clock-caption">@ClockCaption</div>
+
+				@if ( LocalRole is PlayerRole.Hunter or PlayerRole.Prop )
+				{
+					<div class="role-chip role-@(LocalRole.ToString().ToLower())">@LocalRole.ToString().ToUpper()</div>
+				}
+			}
+		}
+	</div>
+
+	<div class="hotkeys">
+		<div class="hotkeys-title">Controls</div>
+		@foreach ( var hint in Hotkeys )
+		{
+			<div class="hotkey">
+				<div class="key">@hint.Key</div>
+				<div class="label">@hint.Label</div>
+			</div>
+		}
+	</div>
+
+	@if ( ShowModeCard )
+	{
+		@* Bottom-right: the active game mode + its blurb. Appears once Start is pressed and persists for the whole
+		   round. Title is a static WobbleText (per-letter clay emboss, like the phase header). *@
+		<div class="mode-card">
+			<WobbleText Text=@ModeLabel class="mode-title" @key=@ModeLabel />
+			<div class="mode-blurb">@ModeDescription</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	readonly record struct HotkeyHint( string Key, string Label );
+
+	RoundPhase Phase => RoundContext.Active?.Phase ?? RoundPhase.Lobby;
+
+	string PhaseLabel => Phase switch
+	{
+		// In the lobby the header reads "Lobby" while idle, but flips to "Starting Game" once the launch countdown
+		// is running (HasTimer) — the same moment the timer replaces the status line.
+		RoundPhase.Lobby => (RoundContext.Active?.HasTimer ?? false) ? "Starting Game" : "Lobby",
+		RoundPhase.Starting => "Get Ready",
+		RoundPhase.Hide => "Hide",
+		RoundPhase.Hunt => "Hunt",
+		RoundPhase.Reveal => "Reveal",
+		RoundPhase.Consolidation => "Results",
+		_ => "",
+	};
+
+	// The caption shown UNDER the clock during a round (the phase header is gone there). Tells you what the timer is
+	// counting toward.
+	string ClockCaption => Phase switch
+	{
+		RoundPhase.Starting => "Get Ready",
+		RoundPhase.Hide => "Until Hunt Begins",
+		RoundPhase.Hunt => "Time Left",
+		RoundPhase.Reveal => "Revealing",       // not specified — sensible default
+		RoundPhase.Consolidation => "Results",  // not specified — sensible default
+		_ => "",
+	};
+
+	// The big top-centre timer. mm:ss while a phase is counting down (hide / hunt / lobby launch); a plain "0" when
+	// nothing is timing — i.e. the idle lobby before the host hits start.
+	string TimerText
+	{
+		get
+		{
+			if ( RoundContext.Active is null || !RoundContext.Active.HasTimer )
+				return "0";
+
+			var t = MathF.Ceiling( RoundContext.Active.TimeRemaining );
+			var m = (int)(t / 60f);
+			var s = (int)(t % 60f);
+			return $"{m}:{s:00}";
+		}
+	}
+
+	// Idle lobby — no phase timer running. The status line replaces the timer here; the moment the host starts, the
+	// launch countdown sets HasTimer and the timer takes back over.
+	bool ShowLobbyStatus => Phase == RoundPhase.Lobby && !(RoundContext.Active?.HasTimer ?? false);
+
+	// True for the host (and for the non-networked editor session, which is effectively the host).
+	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
+
+	// What the idle lobby tells the local player to do — the host sets the game up + starts it; everyone else waits.
+	string LobbyStatus => LocalIsHost ? "Press G to set up game" : "Waiting for host to start the game";
+
+	// The active game mode, from a source that actually reaches clients: the round reads Settings from session data
+	// (so RoundManager.Settings is valid everywhere); the lobby card only shows during the launch countdown, whose
+	// mode rode in on the broadcast (LobbyController.LaunchMode).
+	RoundMode CurrentMode
+	{
+		get
+		{
+			if ( RoundManager.Current.IsValid() ) return RoundManager.Current.Settings.Mode;
+			if ( LobbyController.Current.IsValid() ) return LobbyController.Current.LaunchMode;
+			return RoundMode.Infection;
+		}
+	}
+
+	string ModeLabel => RoundModes.Get( CurrentMode ).Label;
+	string ModeDescription => RoundModes.Get( CurrentMode ).Description;
+
+	// The mode card shows from Start onward — the lobby launch countdown and every in-map phase — but not in the
+	// idle lobby (before the host starts).
+	bool ShowModeCard
+	{
+		get
+		{
+			if ( RoundContext.Active is null ) return false;
+			if ( Phase == RoundPhase.Lobby ) return RoundContext.Active.HasTimer; // launching countdown only
+			return true; // any in-map phase
+		}
+	}
+
+	// The local player's role, read from the pawn they're actually controlling — not the host-side roster, which
+	// doesn't reach clients here. Everyone owns exactly one live pawn (IsProxy == false), and a found prop that
+	// respawned as a hunter shows Hunter automatically because its pawn type changed.
+	PlayerRole LocalRole
+	{
+		get
+		{
+			if ( Scene.GetAllComponents<HunterController>().Any( c => c.IsValid() && !c.IsProxy ) )
+				return PlayerRole.Hunter;
+			if ( Scene.GetAllComponents<HiderController>().Any( c => c.IsValid() && !c.IsProxy ) )
+				return PlayerRole.Prop;
+
+			return PlayerRole.Unassigned;
+		}
+	}
+
+	// PLACEHOLDER hotkey hints, context-switched by phase. In the lobby these mirror the temporary debug keys on
+	// LobbyController; in a round they're the pawn controls. Replace with real input-action bindings later.
+	IEnumerable<HotkeyHint> Hotkeys
+	{
+		get
+		{
+			if ( Phase == RoundPhase.Lobby )
+			{
+				yield return new( "O", "Edit as Hunter" );
+				yield return new( "P", "Edit as Prop" );
+				yield return new( "N", "Nominate to Hunt" );
+				yield return new( "G", "Set Up Game (Host)" );
+				yield return new( "Q", "Edit Appearance" );
+				yield break;
+			}
+
+			// In a round: shared movement + role-specific actions.
+			yield return new( "WASD", "Move" );
+			yield return new( "Alt", "Orbit Camera" );
+
+			if ( LocalRole == PlayerRole.Hunter )
+				yield return new( "LMB", "Shoot" );
+
+			yield return new( "Q", LocalRole == PlayerRole.Prop ? "Edit Disguise" : "Edit Face" );
+			yield return new( "Tab", "Toggle Wireframes" );
+			yield return new( "Esc", "Pause" );
+		}
+	}
+
+	// TEMP DEBUG helpers — concealment ground-truth readout.
+	bool DbgHost => Networking.IsHost;
+	string DbgMode => RoundManager.Current.IsValid() ? RoundManager.Current.Settings.Mode.ToString() : "(no manager)";
+	int DbgSelfPawns => Scene.GetAllComponents<HiderController>().Count( c => c.IsValid() && !c.IsProxy )
+		+ Scene.GetAllComponents<HunterController>().Count( c => c.IsValid() && !c.IsProxy );
+	int DbgProxyPawns => Scene.GetAllComponents<HiderController>().Count( c => c.IsValid() && c.IsProxy )
+		+ Scene.GetAllComponents<HunterController>().Count( c => c.IsValid() && c.IsProxy );
+
+	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole, so they're covered.
+	protected override int BuildHash()
+		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
+			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns ) );
+}

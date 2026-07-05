@@ -1,0 +1,7 @@
+@import "/UI/_base.scss";
+
+// .main-menu-root sizing + base typography live in _base.scss (the menu's shared base).
+//
+// The navigator-canvas / navigator-body / menu shell / footer layout lives in _menu.scss and is applied via
+// MainMenuNav.razor.scss — an s&box .razor.scss only reaches its own component + descendants, and those panels
+// sit above the pages, so they must be styled from the navigator's own sheet, not here.

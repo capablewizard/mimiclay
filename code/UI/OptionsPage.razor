@@ -1,0 +1,22 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@using Sandbox.UI.Navigation
+@using Microsoft.AspNetCore.Components
+@namespace Mimiclay
+@inherits Panel
+@attribute [Route( "/options" )]
+
+@*
+	Options screen — header only for now; the real audio/video/controls UI drops into the menu-content below later.
+*@
+
+<root class="options-page menu-page">
+
+	<WobbleText Text="Options" class="menu-title auto" />
+</root>
+
+@code
+{
+	protected override int BuildHash() => 0;
+}

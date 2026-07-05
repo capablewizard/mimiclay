@@ -1,0 +1,33 @@
+@import "/UI/_menu.scss";
+
+// Minimalist landing page (inspired by punt_reboot): plain text buttons in a left-aligned column, each growing
+// from its left edge on hover. The frame (left inset, title, content band) is the shared .menu-page (_menu.scss);
+// here we only style the home-specific button column. The hero title size lives in .menu-title.hero.
+.home-page
+{
+	// Buttons hug the left edge; the .menu-content wrapper handles the vertical centring. position: relative so
+	// the error can anchor to it (below).
+	.menu-options
+	{
+		position: relative;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: $space-xs;
+
+		// Error floats just beneath the buttons, OUT of flow — so showing/hiding it never resizes this block and
+		// the centred buttons stay put. (Base look + fade come from .menu-error in _menu.scss.)
+		.menu-error
+		{
+			position: absolute;
+			top: 100%;
+			left: 0;
+			margin-top: $space-md;
+		}
+	}
+
+	.menu-error
+	{
+		margin-top: $space-md;
+	}
+}
+

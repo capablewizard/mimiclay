@@ -1,0 +1,324 @@
+@using System
+@using System.Globalization
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	A clay-craft colour wheel: an outer hue ring around an inner shaded ball (saturation runs left→right,
+	brightness top→bottom — the ball reads like a lit lump of clay), each with a white-ringed drag handle.
+	Edits go out through OnInput as a plain RGB colour; when Value changes underneath us (a palette click,
+	a different brush selected) the handles re-seat themselves. Hue is kept as internal state so it survives
+	the ball sitting on a grey/black, where RGB alone couldn't recover it.
+
+	The ring and the ball's shading are two lazily-built shared textures: the ring is a hue wheel with the
+	usual ink outline baked in; the ball overlay is hue-independent (white/black alphas over the pure-hue
+	background-color set inline), so neither ever rebuilds. The ball's square↔disc mapping is the standard
+	elliptical one, so every sat/val pair has a spot INSIDE the circle and the handle can never leave it.
+*@
+
+<div class="ring" @ref="Ring"></div>
+<div class="ring-outline" style=@RingOutlineStyle( RingOuter, 0f )></div>
+<div class="ring-outline" style=@RingOutlineStyle( RingInner, 4f )></div>
+<div class="ball" @ref="Ball" style=@BallStyle()></div>
+<div class="handle" style=@RingHandleStyle()></div>
+<div class="handle" style=@BallHandleStyle()></div>
+
+@code
+{
+	/// <summary>The colour the picker shows. Set this from the owner every render; the picker resyncs its
+	/// handles whenever it differs from the last colour the picker itself emitted.</summary>
+	[Parameter] public Color Value { get; set; } = Color.White;
+
+	/// <summary>Fires with the new colour as the user presses / drags either handle.</summary>
+	[Parameter] public Action<Color> OnInput { get; set; }
+
+	/// <summary>Wheel diameter in design px (the panel is square).</summary>
+	[Parameter] public float Size { get; set; } = 190f;
+
+	Panel Ring { get; set; }
+	Panel Ball { get; set; }
+
+	// Wheel geometry as fractions of the half-size: the hue band spans RingInner..RingOuter, the ball's
+	// radius is BallFrac. HitSplit divides a press between ball and ring (the gap between them splits evenly).
+	const float RingOuter = 0.99f;
+	const float RingInner = 0.78f;
+	const float BallFrac = 0.62f;
+	const float HitSplit = 0.70f;
+
+	const float RingHandlePx = 24f;
+	const float BallHandlePx = 20f;
+
+	// The picker's own HSV state — the source of truth while interacting. Kept (not derived per frame from
+	// Value) so hue survives sat/val hitting 0, and sat survives val hitting 0.
+	float _hue;
+	float _sat = 1f;
+	float _val = 1f;
+
+	// Last colour we emitted, to tell our own edits (Value == _emitted, no resync) from external changes.
+	Color _emitted;
+	bool _hasEmitted;
+
+	enum Zone { None, Ring, Ball }
+	Zone _zone;
+
+	/// <summary>True from press to release on ANY picker — same world-pick suppression contract as
+	/// <see cref="ClaySlider.Pressed"/>.</summary>
+	public static bool Pressed { get; private set; }
+
+	/// <summary>True only while actually dragging — drives the HUD's full-screen capture overlay, same as
+	/// <see cref="ClaySlider.Dragging"/>.</summary>
+	public static bool Dragging { get; private set; }
+
+	public ClayColorPicker()
+	{
+		AddClass( "color-wheel" );
+	}
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		// The component's own panel is the root; size it from the parameter (markup can't style the root).
+		Style.Width = Size;
+		Style.Height = Size;
+
+		// External colour change (palette click / selection change) → re-seat the handles. Degenerate
+		// components keep their previous values so the wheel doesn't snap to red on grey/black.
+		if ( !_hasEmitted || !NearlyEqual( Value, _emitted ) )
+		{
+			var (h, s, v) = ClayLook.RgbToHsv( Value );
+			if ( s > 0.001f && v > 0.001f ) _hue = h;
+			if ( v > 0.001f ) _sat = s;
+			_val = v;
+			_emitted = Value;
+			_hasEmitted = true;
+		}
+	}
+
+	static bool NearlyEqual( Color a, Color b )
+		=> MathF.Abs( a.r - b.r ) < 0.002f && MathF.Abs( a.g - b.g ) < 0.002f && MathF.Abs( a.b - b.b ) < 0.002f;
+
+	// Textures can't be set from razor markup, so bind them after each render (cheap — same instance).
+	protected override void OnAfterTreeRender( bool firstTime )
+	{
+		base.OnAfterTreeRender( firstTime );
+		if ( Ring is not null ) Ring.Style.BackgroundImage = RingTexture();
+		if ( Ball is not null ) Ball.Style.BackgroundImage = BallTexture();
+	}
+
+	// --- Interaction: same native-drag pattern as ClaySlider (Input.Down doesn't read cleanly from UI). ---
+
+	public override bool WantsDrag => true;
+
+	protected override void OnMouseDown( MousePanelEvent e )
+	{
+		base.OnMouseDown( e );
+		var n = Normalized();
+		_zone = n.Length < HitSplit ? Zone.Ball : Zone.Ring; // zone locks for the whole gesture
+		Pressed = true;
+		Apply( n );
+	}
+
+	protected override void OnDragStart( DragEvent e ) => Dragging = true;
+
+	protected override void OnDrag( DragEvent e ) => Apply( Normalized() );
+
+	protected override void OnDragEnd( DragEvent e )
+	{
+		Pressed = Dragging = false;
+		_zone = Zone.None;
+	}
+
+	// Press-release without a drag: no OnDragEnd fires, so clear the press here (mirrors ClaySlider).
+	protected override void OnClick( MousePanelEvent e )
+	{
+		Pressed = false;
+		_zone = Zone.None;
+	}
+
+	// Cursor in wheel space: centre (0,0), edge radius 1. MousePosition and Box.Rect are BOTH real screen px
+	// (see ClaySlider.ApplyFromCursor) — the ratio is unitless, so no ScaleFromScreen anywhere.
+	Vector2 Normalized()
+	{
+		var rect = Box.Rect;
+		return new Vector2(
+			MousePosition.x / MathF.Max( 1f, rect.Width ) * 2f - 1f,
+			MousePosition.y / MathF.Max( 1f, rect.Height ) * 2f - 1f );
+	}
+
+	void Apply( Vector2 n )
+	{
+		if ( _zone == Zone.Ring )
+		{
+			// 0° at the top, increasing clockwise — matches the baked ring texture.
+			_hue = (MathF.Atan2( n.x, -n.y ) * (180f / MathF.PI) + 360f) % 360f;
+		}
+		else if ( _zone == Zone.Ball )
+		{
+			var b = n / BallFrac;              // ball space: its own edge at radius 1
+			if ( b.Length > 1f ) b = b.Normal; // clamp to the rim, direction preserved
+			var (sx, sy) = DiscToSquare( b.x, b.y );
+			_sat = Math.Clamp( (sx + 1f) * 0.5f, 0f, 1f );
+			_val = Math.Clamp( 1f - (sy + 1f) * 0.5f, 0f, 1f );
+		}
+		else
+		{
+			return;
+		}
+
+		var c = ClayLook.HsvToRgb( _hue, _sat, _val );
+		_emitted = c;
+		_hasEmitted = true;
+		OnInput?.Invoke( c );
+	}
+
+	// --- Inline styles (all design px, derived from Size + the HSV state) ---
+
+	static string Px( float v ) => v.ToString( "0.#", CultureInfo.InvariantCulture ) + "px";
+
+	// One edge of the hue band, drawn as a CSS border circle rather than baked into the texture — a baked
+	// colour goes through the texture colour pipeline and comes out darker than the same hex in CSS, so the
+	// outlines are real borders sharing $paper-ink with the ball's. `grow` fattens the circle so the inner
+	// edge's border lands ON the band's inner rim (a border draws inside its own bounds).
+	string RingOutlineStyle( float frac, float grow )
+	{
+		float d = Size * frac + grow;
+		float off = (Size - d) * 0.5f;
+		return $"left: {Px( off )}; top: {Px( off )}; width: {Px( d )}; height: {Px( d )};";
+	}
+
+	string BallStyle()
+	{
+		float d = Size * BallFrac;
+		float off = (Size - d) * 0.5f;
+		var hue = ClayLook.HsvToRgb( _hue, 1f, 1f ); // shading comes from the overlay texture; border in the scss
+		return $"left: {Px( off )}; top: {Px( off )}; width: {Px( d )}; height: {Px( d )}; background-color: {ClayLook.Hex( hue )};";
+	}
+
+	string RingHandleStyle()
+	{
+		float rad = _hue * (MathF.PI / 180f);
+		float midR = Size * 0.5f * (RingInner + RingOuter) * 0.5f;
+		float cx = Size * 0.5f + MathF.Sin( rad ) * midR;
+		float cy = Size * 0.5f - MathF.Cos( rad ) * midR;
+		return $"left: {Px( cx - RingHandlePx * 0.5f )}; top: {Px( cy - RingHandlePx * 0.5f )}; width: {Px( RingHandlePx )}; height: {Px( RingHandlePx )};";
+	}
+
+	string BallHandleStyle()
+	{
+		var (dx, dy) = SquareToDisc( _sat * 2f - 1f, (1f - _val) * 2f - 1f );
+		float ballR = Size * BallFrac * 0.5f;
+		float cx = Size * 0.5f + dx * ballR;
+		float cy = Size * 0.5f + dy * ballR;
+		return $"left: {Px( cx - BallHandlePx * 0.5f )}; top: {Px( cy - BallHandlePx * 0.5f )}; width: {Px( BallHandlePx )}; height: {Px( BallHandlePx )};";
+	}
+
+	// --- Square ↔ disc: the standard elliptical mapping. Bijective, so every sat/val position lands inside
+	// the ball and dragging anywhere in the ball reads back a valid sat/val. ---
+
+	static (float X, float Y) SquareToDisc( float sx, float sy )
+		=> (sx * MathF.Sqrt( MathF.Max( 0f, 1f - sy * sy * 0.5f ) ),
+			sy * MathF.Sqrt( MathF.Max( 0f, 1f - sx * sx * 0.5f ) ));
+
+	static (float X, float Y) DiscToSquare( float x, float y )
+	{
+		float x2 = x * x, y2 = y * y;
+		float r2 = 2f * MathF.Sqrt( 2f );
+		float sx = 0.5f * MathF.Sqrt( MathF.Max( 0f, 2f + x2 - y2 + r2 * x ) )
+				 - 0.5f * MathF.Sqrt( MathF.Max( 0f, 2f + x2 - y2 - r2 * x ) );
+		float sy = 0.5f * MathF.Sqrt( MathF.Max( 0f, 2f - x2 + y2 + r2 * y ) )
+				 - 0.5f * MathF.Sqrt( MathF.Max( 0f, 2f - x2 + y2 - r2 * y ) );
+		return (sx, sy);
+	}
+
+	// --- Shared textures (built once, kept for the session) ---
+
+	const int TexRes = 256;
+	static Texture _ringTex;
+	static Texture _ballTex;
+
+	// Anti-aliasing width in normalized units (1 normalized unit = half the texture).
+	const float TexAa = 1.5f * 2f / TexRes;
+
+	// The hue wheel band, fully saturated/bright. No outline in here — the two .ring-outline circles draw
+	// the edges in CSS so they're pixel-identical to the ball's border colour.
+	static Texture RingTexture()
+	{
+		if ( _ringTex is not null )
+			return _ringTex;
+
+		var data = new byte[TexRes * TexRes * 4];
+		for ( int y = 0; y < TexRes; y++ )
+		{
+			for ( int x = 0; x < TexRes; x++ )
+			{
+				float nx = (x + 0.5f) / TexRes * 2f - 1f;
+				float ny = (y + 0.5f) / TexRes * 2f - 1f;
+				float r = MathF.Sqrt( nx * nx + ny * ny );
+
+				float m = MathF.Min( RingOuter - r, r - RingInner ); // signed distance into the band
+				float alpha = Math.Clamp( m / TexAa + 0.5f, 0f, 1f );
+				if ( alpha <= 0f )
+					continue; // transparent (array is zero-initialised)
+
+				float hue = (MathF.Atan2( nx, -ny ) * (180f / MathF.PI) + 360f) % 360f;
+				var c = ClayLook.HsvToRgb( hue, 1f, 1f );
+
+				int i = (y * TexRes + x) * 4;
+				data[i + 0] = (byte)(c.r * 255f);
+				data[i + 1] = (byte)(c.g * 255f);
+				data[i + 2] = (byte)(c.b * 255f);
+				data[i + 3] = (byte)(alpha * 255f);
+			}
+		}
+
+		_ringTex = Texture.Create( TexRes, TexRes ).WithData( data ).WithName( "clay_hue_ring" ).Finish();
+		return _ringTex;
+	}
+
+	// The ball's hue-independent shading: for the sat/val at each disc point, the white and black overlay a
+	// straight HSV evaluation needs over a pure-hue background, pre-composited into one white↔black texel.
+	static Texture BallTexture()
+	{
+		if ( _ballTex is not null )
+			return _ballTex;
+
+		var data = new byte[TexRes * TexRes * 4];
+		for ( int y = 0; y < TexRes; y++ )
+		{
+			for ( int x = 0; x < TexRes; x++ )
+			{
+				float nx = (x + 0.5f) / TexRes * 2f - 1f;
+				float ny = (y + 0.5f) / TexRes * 2f - 1f;
+				float r = MathF.Sqrt( nx * nx + ny * ny );
+				float coverage = Math.Clamp( (0.99f - r) / TexAa + 0.5f, 0f, 1f );
+				if ( coverage <= 0f )
+					continue;
+
+				var (sx, sy) = DiscToSquare( nx, ny );
+				float sat = Math.Clamp( (sx + 1f) * 0.5f, 0f, 1f );
+				float val = Math.Clamp( 1f - (sy + 1f) * 0.5f, 0f, 1f );
+
+				// hsv(h, sat, val) over a pure-hue bg = white at (1-sat), then black at (1-val), composited.
+				float aw = 1f - sat;
+				float ab = 1f - val;
+				float alpha = 1f - (1f - aw) * (1f - ab);
+				float white = alpha > 1e-5f ? aw * (1f - ab) / alpha : 0f;
+
+				int i = (y * TexRes + x) * 4;
+				byte g = (byte)(white * 255f);
+				data[i + 0] = g;
+				data[i + 1] = g;
+				data[i + 2] = g;
+				data[i + 3] = (byte)(alpha * coverage * 255f);
+			}
+		}
+
+		_ballTex = Texture.Create( TexRes, TexRes ).WithData( data ).WithName( "clay_sv_ball" ).Finish();
+		return _ballTex;
+	}
+
+	protected override int BuildHash() => HashCode.Combine( Value, Size, _hue, _sat, _val );
+}

@@ -1,0 +1,66 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@using Sandbox.UI.Navigation
+@using Microsoft.AspNetCore.Components
+@namespace Mimiclay
+@inherits Panel
+@attribute [Route( "/" )]
+
+@*
+	Main menu landing screen — minimalist: a big title and plain text buttons that grow from the left on hover
+	(no cards/icons). Quick Play runs an async join (its label swaps to a searching state); the rest navigate.
+*@
+
+<root class="home-page menu-page">
+
+	<WobbleText Text="Mimiclay" class="menu-title hero auto" />
+
+	<div class="menu-content">
+		@* Labels are <WobbleText> so each letter can do the claymation jitter on hover (driven by .menu-button:hover
+		   in the scss — the WobbleText itself stays static / no "auto" class). The button div owns the click. *@
+		<div class="menu-options">
+			@* Quick Play stays full-colour while searching — it just relabels to "Finding game…" (no disabled grey).
+			   Re-clicking is harmless: MenuNetworking.QuickPlay() early-returns while Busy. *@
+			<div class="menu-button primary" @onclick=@QuickPlay>
+				<WobbleText Text=@(MenuNetworking.Busy ? "Finding game…" : "Quick Play") />
+			</div>
+			<div class="menu-button @(MenuNetworking.Busy ? "disabled" : "")" @onclick=@HostGame>
+				<WobbleText Text="Host Game" />
+			</div>
+			<div class="menu-button @(MenuNetworking.Busy ? "disabled" : "")" @onclick=@Sessions>
+				<WobbleText Text="Sessions" />
+			</div>
+			<div class="menu-button" @onclick=@Options>
+				<WobbleText Text="Options" />
+			</div>
+
+			@* Absolutely positioned (see scss) so showing/hiding it never resizes the centred button block. *@
+			@if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) )
+			{
+				<div class="menu-error" @key=@MenuNetworking.ErrorStamp>@MenuNetworking.LastError</div>
+			}
+		</div>
+	</div>
+
+</root>
+
+@code
+{
+	async void QuickPlay()
+	{
+		if ( MenuNetworking.Busy )
+			return;
+
+		await MenuNetworking.QuickPlay();
+		// On success the connect changes scene for us; on failure LastError is shown (BuildHash picks it up).
+	}
+
+	void HostGame() => this.Navigate( "/host" );
+	void Sessions() => this.Navigate( "/sessions" );
+	void Options() => this.Navigate( "/options" );
+
+	// Re-render while a network action is in flight (label / disabled state) and when an error appears/clears.
+	// ErrorStamp is included so a repeat of the same message still re-renders → re-keys → replays the fade.
+	protected override int BuildHash() => HashCode.Combine( MenuNetworking.Busy, MenuNetworking.LastError, MenuNetworking.ErrorStamp );
+}

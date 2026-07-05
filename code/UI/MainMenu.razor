@@ -1,0 +1,30 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	Front-end root. A thin PanelComponent (so it can be dropped on a HUD GameObject via ScreenPanel, exactly like
+	EditHud) that just hosts the navigator. All the actual screens are routed [Route] pages under MainMenuNav.
+*@
+
+<root class="main-menu-root">
+	<MainMenuNav />
+</root>
+
+@code
+{
+	protected override void OnUpdate()
+	{
+		base.OnUpdate();
+
+		// The menu is entirely cursor-driven, so force the OS cursor visible. The scene otherwise defaults to
+		// MouseVisibility.Auto, which only shows the cursor in a UI input-state the fresh menu scene isn't reliably
+		// in — leaving the menu looking mouseless. Set every frame so it also wins back the cursor when we return
+		// here from a gameplay scene whose controllers had set it Hidden.
+		Mouse.Visibility = MouseVisibility.Visible;
+	}
+
+	protected override int BuildHash() => 0;
+}

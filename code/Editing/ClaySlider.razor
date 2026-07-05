@@ -1,0 +1,119 @@
+@using System
+@using System.Globalization
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	A flat clay-craft slider: a cream paper pill with the label inked on the left, a thick blue fill track,
+	and a round draggable knob. Press anywhere on the track to jump there; drag the knob to scrub. Reports
+	the new value through OnInput as the raw value (already mapped from Min..Max), so callers stay unit-aware.
+*@
+
+<div class="label">@Label</div>
+
+@* An enlarged invisible hit area is the pointer-events leaf (easy to grab); the thin visual .track inside it is
+   what the value mapping measures, so the fill + knob stay aligned with the groove. *@
+<div class="track-hit">
+	<div @ref="Track" class="track">
+		<div class="fill" style="width: @(Pct.ToString( "0.##", CultureInfo.InvariantCulture ))%;"></div>
+		<div class="knob" style="left: @(Pct.ToString( "0.##", CultureInfo.InvariantCulture ))%;"></div>
+	</div>
+</div>
+
+@code
+{
+	[Parameter] public string Label { get; set; } = "";
+	[Parameter] public float Value { get; set; }
+	[Parameter] public float Min { get; set; } = 0f;
+	[Parameter] public float Max { get; set; } = 1f;
+	/// <summary>Response curve applied along the track: value = Min + range · frac^Curve. 1 = linear; &gt;1
+	/// stretches the low end across more of the track (finer control over small values) and compresses the top.</summary>
+	[Parameter] public float Curve { get; set; } = 1f;
+	/// <summary>Fires with the new value (in Min..Max) as the user presses / drags.</summary>
+	[Parameter] public Action<float> OnInput { get; set; }
+
+	Panel Track { get; set; }
+
+	// Guarded exponent — never 0/negative (would divide-by-zero / invert the curve).
+	float CurveExp => MathF.Max( 1e-4f, Curve );
+
+	public ClaySlider()
+	{
+		// The component's own panel is the root; tag it so the .clay-slider styles apply. paper-card supplies the
+		// shared cream-card surface (fill / outline / float shadow).
+		AddClass( "paper-card" );
+		AddClass( "clay-slider" );
+	}
+
+	// Current value as a 0..100 percentage along the track (drives both the fill width and the knob position).
+	// Inverse of the response curve (frac = norm^(1/Curve)) so the knob sits where the value actually is.
+	float Pct
+	{
+		get
+		{
+			float range = MathF.Max( 1e-4f, Max - Min );
+			float norm = Math.Clamp( (Value - Min) / range, 0f, 1f );
+			return MathF.Pow( norm, 1f / CurveExp ) * 100f;
+		}
+	}
+
+	// Read the live cursor and map it to a value. Track.MousePosition is the cursor relative to the track's
+	// top-left, and Box.Rect is the track's rendered rect — BOTH in real screen pixels (this is exactly how the
+	// engine's own SliderControl maps Mouse.Position against TrackPanel.Box, with no scaling). So the fraction is
+	// just localX / width; do NOT multiply by ScaleFromScreen — that factor is 1/ScreenScale (∝ window height),
+	// which desyncs the knob from the cursor and gets worse as the window shrinks. No knob inset either: frac is
+	// the raw fraction, so the knob centre (positioned at frac × width by the CSS) sits exactly on the cursor —
+	// 1:1 the whole way. The knob just overhangs the track ends by its radius at 0% / 100%.
+	void ApplyFromCursor()
+	{
+		if ( Track is null )
+			return;
+
+		float localX = Track.MousePosition.x; // relative to the track, in screen px (same space as Box.Rect)
+		float frac = Math.Clamp( localX / MathF.Max( 1e-4f, Track.Box.Rect.Width ), 0f, 1f );
+		float curved = MathF.Pow( frac, CurveExp ); // bend the track fraction → value (Curve>1 favours small values)
+		OnInput?.Invoke( Min + curved * (Max - Min) );
+	}
+
+	// Opt this panel into the engine's native drag system so we get OnDragStart/OnDrag/OnDragEnd — far more
+	// reliable than polling Input.Down, which the codebase notes doesn't read cleanly from UI panel code.
+	public override bool WantsDrag => true;
+
+	/// <summary>True from press to release on ANY ClaySlider (OnMouseDown → OnDragEnd/OnClick). The edit session
+	/// reads this to suppress world hover/picks for the whole gesture — including the frame between leaving the
+	/// track and the drag actually starting, which would otherwise flash a highlight. Cleared on the gesture's
+	/// real end events, NOT OnMouseUp (the engine fires that when a press becomes a drag) or Input.Down (reads
+	/// false while a UI drag captures the mouse).</summary>
+	public static bool Pressed { get; private set; }
+
+	/// <summary>True only while actually dragging (OnDragStart → OnDragEnd). Drives the HUD's full-screen capture
+	/// overlay, which keeps the native drag alive once the cursor leaves the thin track.</summary>
+	public static bool Dragging { get; private set; }
+
+	// Press jumps the value to the cursor straight away (and seeds the drag if it becomes one). Mark Pressed now
+	// so picks are suppressed from this very frame — before any drag threshold is crossed.
+	protected override void OnMouseDown( MousePanelEvent e )
+	{
+		base.OnMouseDown( e );
+		Pressed = true;
+		ApplyFromCursor();
+	}
+
+	// Drag begins: raise the capture overlay (keeps the native drag alive off the track) for the gesture.
+	protected override void OnDragStart( DragEvent e ) => Dragging = true;
+
+	// Continuous scrub while dragging (fires every move between OnDragStart and OnDragEnd).
+	protected override void OnDrag( DragEvent e ) => ApplyFromCursor();
+
+	// Drag release ends the scrub. The capture overlay keeps the cursor over an interactive surface, so this
+	// fires reliably even when you let go out over the 3D scene.
+	protected override void OnDragEnd( DragEvent e ) => Pressed = Dragging = false;
+
+	// Press-release without a drag (a plain click on the track): no OnDragEnd fires, so clear the press here.
+	protected override void OnClick( MousePanelEvent e ) => Pressed = false;
+
+	// Re-render when the inbound value or range changes (the gizmo / another control can move blend/round too).
+	protected override int BuildHash() => HashCode.Combine( Label, Value, Min, Max, Curve );
+}

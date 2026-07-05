@@ -1,0 +1,12 @@
+{
+	"sounds":
+	[
+		"sounds/music/Be This Elevator Music.wav"
+	],
+	"UI": true,
+	"Volume": 1,
+	"VolumeRandom": 0,
+	"Pitch": 1,
+	"PitchRandom": 0,
+	"DistanceMax": 1000
+}

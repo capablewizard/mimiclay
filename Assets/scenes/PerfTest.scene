@@ -1,0 +1,2595 @@
+{
+  "__guid": "325a4042-0696-43dd-a79d-dcc314299ba3",
+  "GameObjects": [
+    {
+      "__guid": "7999ac44-2a14-47b4-8ad7-57e69799eaab",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Scene Information",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SceneInformation",
+          "__guid": "c6e7f4ca-8cd1-40c2-96a5-47d9cd7eaf94",
+          "__enabled": true,
+          "Flags": 0,
+          "Author": null,
+          "Changes": null,
+          "Description": "",
+          "Group": null,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "SceneTags": "",
+          "Title": "minimal",
+          "Version": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "bfc59c12-1ed2-4f91-8956-a95a315eac3c",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Sun",
+      "Position": "0,0,0",
+      "Rotation": "-0.688729584,0.160160467,0.356659502,0.610568404",
+      "Scale": "1,1,1",
+      "Tags": "light_directional,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "d3659344-a90d-48fa-927a-095f70fe041f",
+          "__enabled": true,
+          "Flags": 0,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.94419,0.97767,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "ShadowBias": 0.0005,
+          "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91,
+          "ShadowHardness": 0.75,
+          "Shadows": true,
+          "SkyColor": "0.2532,0.32006,0.35349,1",
+          "Visualizer": {}
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "00344a8c-fa5e-45ae-b12a-10bb781a1dc3",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "2D Skybox",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "skybox",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkyBox2D",
+          "__guid": "de79e9e0-5c37-4c54-ac67-bfcdb1d5483b",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "SkyIndirectLighting": true,
+          "SkyMaterial": "materials/skybox/skybox_overcast_01.vmat",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.EnvmapProbe",
+          "__guid": "f3e304db-baab-4c1a-a4ec-8442585c2d62",
+          "__enabled": false,
+          "Flags": 0,
+          "__version": 1,
+          "BakedTexture": null,
+          "Bounds": {
+            "Mins": "-512,-512,-512",
+            "Maxs": "1465.56128,1864.24036,512"
+          },
+          "DelayBetweenUpdates": 0.1,
+          "Feathering": 0.02,
+          "FrameInterval": 5,
+          "MaxDistance": 512,
+          "Mode": "Realtime",
+          "MultiBounce": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Priority": 0,
+          "Projection": "Sphere",
+          "RenderExcludeTags": "",
+          "Resolution": "Small",
+          "Texture": "textures/cubemaps/default2.vtex",
+          "TintColor": "1,1,1,1",
+          "UpdateStrategy": "OnEnabled",
+          "ZFar": 4096,
+          "ZNear": 16
+        },
+        {
+          "__type": "Sandbox.CubemapFog",
+          "__guid": "907bc83b-0da1-4d17-9716-65d0d161c6e4",
+          "__enabled": true,
+          "Flags": 0,
+          "Blur": 0.5,
+          "EndDistance": 4096.5,
+          "FalloffExponent": 1.7266634,
+          "HeightExponent": 2,
+          "HeightStart": 2000,
+          "HeightWidth": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Sky": "materials/skybox/skybox_overcast_01.vmat",
+          "StartDistance": 87.52665,
+          "Tint": "1,1,1,1"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "6ad70641-3c6c-4402-9c85-9a4969af4764",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Plane",
+      "Position": "524.355164,621.786316,-32.329319",
+      "Rotation": "0,0,0,1",
+      "Scale": "30,30,5",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "0b6a18bf-fdb8-4661-970e-ef635bfa9baa",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": "materials/plasticine_floor.vmat",
+          "Materials": null,
+          "Model": "models/dev/plane.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "0.79535,0.79535,0.79535,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "0715cb55-1733-4f5e-8560-c288b8695631",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "0,0,-5",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "100,100,10",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Camera",
+      "Position": "-200,0,0",
+      "Rotation": "3.75149156E-08,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.CameraComponent",
+          "__guid": "cf3cbf96-22b6-4be4-a5d0-672a96c17f9f",
+          "__enabled": true,
+          "Flags": 0,
+          "BackgroundColor": "0.40744,0.59419,0.67907,1",
+          "ClearFlags": "All",
+          "EnablePostProcessing": true,
+          "FieldOfView": 60,
+          "FovAxis": "Horizontal",
+          "IsMainCamera": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Orthographic": false,
+          "OrthographicHeight": 1204,
+          "PostProcessAnchor": null,
+          "Priority": 1,
+          "RenderExcludeTags": "",
+          "RenderTags": "",
+          "RenderTexture": null,
+          "TargetEye": "None",
+          "Viewport": "0,0,1,1",
+          "ZFar": 10000,
+          "ZNear": 10
+        },
+        {
+          "__type": "Sandbox.Bloom",
+          "__guid": "d73ef723-c888-41d4-802e-f797c79318be",
+          "__enabled": false,
+          "Flags": 0,
+          "__version": 1,
+          "Filter": "Bilinear",
+          "Gamma": 2.2,
+          "Mode": "Additive",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Strength": 0.4819277,
+          "Threshold": 1.4297189,
+          "Tint": "0.3814,0.3814,0.3814,1"
+        },
+        {
+          "__type": "Sandbox.Tonemapping",
+          "__guid": "9d76f362-7227-40eb-a189-69353c780c46",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 3,
+          "AutoExposureEnabled": false,
+          "ExposureCompensation": 0,
+          "ExposureMethod": "RGB",
+          "MaximumExposure": 2,
+          "MinimumExposure": 1,
+          "Mode": "AgX",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Rate": 1
+        },
+        {
+          "__type": "Sandbox.Sharpen",
+          "__guid": "0bffee5e-19f2-41c4-88f9-faefbcce6bf4",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Scale": 0.4,
+          "TexelSize": 1
+        },
+        {
+          "__type": "Sandbox.Highlight",
+          "__guid": "31b8ac90-0d7f-472e-8285-bd5ab6f1f806",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
+          "__type": "Sandbox.ChromaticAberration",
+          "__guid": "9056b9b1-e13b-4446-8b3b-a1bfa36b3922",
+          "__enabled": true,
+          "Flags": 0,
+          "Offset": "6,2,4",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Scale": 0.08294931
+        },
+        {
+          "__type": "Sandbox.ColorAdjustments",
+          "__guid": "98ae7904-8920-49c6-a712-7832342cad6f",
+          "__enabled": true,
+          "Flags": 0,
+          "Blend": 1,
+          "Brightness": 1.5,
+          "Contrast": 1,
+          "HueRotate": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Saturation": 1.1
+        },
+        {
+          "__type": "Mimiclay.FlyCamera",
+          "__guid": "9aa2cd75-e92c-4798-b5ba-0ce0866e6236",
+          "__enabled": true,
+          "Flags": 0,
+          "FastMultiplier": 3,
+          "LookSensitivity": 0.1,
+          "MoveSpeed": 400,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "ScrollSpeedStep": 1.15
+        },
+        {
+          "__type": "Sandbox.AmbientOcclusion",
+          "__guid": "e0d6bea7-d835-415a-86cd-0d2a68436e01",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 1,
+          "FalloffRange": 0.3,
+          "Intensity": 0.62447256,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 100,
+          "ThinCompensation": 1
+        },
+        {
+          "__type": "Sandbox.DepthOfField",
+          "__guid": "30da5074-073e-4be5-9ce7-adc264496667",
+          "__enabled": true,
+          "Flags": 0,
+          "BackBlur": true,
+          "BlurSize": 6.329114,
+          "FocalDistance": 704.9367,
+          "FocusRange": 616.03375,
+          "FrontBlur": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "91f3a972-35e4-4ed9-a73c-22aa662af65c",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Snowman (28)",
+      "Position": "124.888657,-109.211548,108.650864",
+      "Rotation": "0,0,-0.500001132,-0.866024911",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": false,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.SdfSculpture",
+          "__guid": "fc9518db-eec1-4c42-b42e-d487eabbc4f5",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoRebuild": false,
+          "BakedMesh": null,
+          "Brushes": [
+            {
+              "Shape": "Box",
+              "Operation": "Add",
+              "Position": "0,0,60.4915199",
+              "Rotation": "0,0,0,1",
+              "Size": "6.90618515,53.7758446,60.1646881",
+              "Blend": 6,
+              "Rounding": 9.353847,
+              "Color": "1,1,1,1",
+              "Metallic": 0,
+              "Roughness": 1,
+              "BoundingRadius": 82.48967
+            },
+            {
+              "Shape": "Sphere",
+              "Operation": "Add",
+              "Position": "0,0,144.287445",
+              "Rotation": "0,0,0,1",
+              "Size": "24,24,24",
+              "Blend": 6,
+              "Rounding": 0,
+              "Color": "1,1,1,1",
+              "Metallic": 0,
+              "Roughness": 1,
+              "BoundingRadius": 25.5
+            },
+            {
+              "Shape": "Cylinder",
+              "Operation": "Add",
+              "Position": "0,0,174.7108",
+              "Rotation": "0,0,0,1",
+              "Size": "20.6334648,2.68249702,22.86376",
+              "Blend": 6,
+              "Rounding": 12.8,
+              "Color": "0.23256,0.23256,0.23256,1",
+              "Metallic": 0,
+              "Roughness": 1,
+              "BoundingRadius": 32.29759
+            },
+            {
+              "Shape": "Cylinder",
+              "Operation": "Add",
+              "Position": "0,0,160.810471",
+              "Rotation": "0,0,0,1",
+              "Size": "33.9168243,2.68249702,6.1190052",
+              "Blend": 6,
+              "Rounding": 12.8,
+              "Color": "0.28837,0.26557,0.26557,1",
+              "Metallic": 0,
+              "Roughness": 1,
+              "BoundingRadius": 35.964375
+            }
+          ],
+          "FlipFaces": false,
+          "Material": "materials/plasticine_vertex.vmat",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Resolution": 32
+        },
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "ef8ebdf5-42ba-4229-8cdb-627cde63bdfe",
+          "__enabled": false,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "sbox_procedural_model.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "ShadowsOnly",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Mimiclay.SdfRaymarchRenderer",
+          "__guid": "57404eef-9cd7-4338-ac36-dec22dc84dcb",
+          "__enabled": true,
+          "Flags": 0,
+          "AdaptiveQuality": false,
+          "CullRadii": 220,
+          "DebugBounds": false,
+          "DebugLod": false,
+          "DebugSwitchState": false,
+          "DepthClamp": false,
+          "Displace": false,
+          "DisplaceAmount": 0.35,
+          "DisplaceFrequency": 0.25,
+          "DistanceSwitching": true,
+          "Epsilon": 0.15,
+          "FarEpsilon": 3.5881817,
+          "FullQualityRadii": 2,
+          "LodHysteresis": 0.06,
+          "Material": "materials/plasticine.vmat",
+          "MaxSteps": 50,
+          "MeshLod1Radii": 90,
+          "MeshLod2Radii": 140,
+          "MeshMode": "DepthProxy",
+          "MinQualityRadii": 16,
+          "MinSteps": 6,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OverdrawOptimization": true,
+          "TightBounds": true
+        },
+        {
+          "__type": "Mimiclay.SdfPerfGrid",
+          "__guid": "af89b551-ac37-4d6b-9782-ce2f38b7afd9",
+          "__enabled": true,
+          "Flags": 0,
+          "Arrangement": "Grid",
+          "Count": 100,
+          "CountX": 5,
+          "CountY": 5,
+          "CountZ": 2,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "ShowFps": false,
+          "Spacing": "64,64,-64",
+          "SpawnOnStart": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "38afb554-804d-4e55-97b3-f6cc941abdeb",
+      "__version": 2,
+      "__Prefab": "prefabs/snowman.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "e8f6a942-9e94-4fb2-8698-c044e1db98e4"
+            },
+            "Property": "Position",
+            "Value": "116.041969,-134.160629,-9.80081654"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "e8f6a942-9e94-4fb2-8698-c044e1db98e4"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.707107961,-0.707105935"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e2b20dca-1bbb-475f-99bb-88b4161174df"
+            },
+            "Property": "BakedMesh",
+            "Value": "models/sdf/snowman.sdfmesh"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e2b20dca-1bbb-475f-99bb-88b4161174df"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "3.79949594,0.00999677181,52.0655212",
+                "Rotation": "0.0161371566,0.151033193,-0.163964123,0.974702597",
+                "Size": "17.2007732,24.146265,18.4015751",
+                "Blend": 11.818684,
+                "Rounding": 0,
+                "Color": "1,1,1,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 27.100937
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "0,0,0",
+                "Rotation": "0,0,0,1",
+                "Size": "24,24,24",
+                "Blend": 7.5093436,
+                "Rounding": 0,
+                "Color": "1,1,1,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 25.877337
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "0,0,23.9695282",
+                "Rotation": "0,0,0,1",
+                "Size": "20.8217201,20.8217201,20.8217201",
+                "Blend": 2.9538462,
+                "Rounding": 0,
+                "Color": "1,1,1,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 21.560183
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-13.1888485,-9.09040546,59.1492538",
+                "Rotation": "0.0843661129,0.164448634,0.16892755,0.968144059",
+                "Size": "3.99833202,3.97397137,3.66678143",
+                "Blend": 1.4769231,
+                "Rounding": 0,
+                "Color": "0,0,0,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 4.367563
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-6.12752199,13.6981659,58.49366",
+                "Rotation": "-0.0710722432,-0.114683181,0.391798615,-0.910104632",
+                "Size": "3.20892048,4.83899021,4.43846703",
+                "Blend": 1.4769231,
+                "Rounding": 0,
+                "Color": "0,0,0,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.208221
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-12.1837873,-27.4224052,33.4639282",
+                "Rotation": "0.577850938,-0.0552312136,-0.297838151,0.757846355",
+                "Size": "4.2167244,19.4516029,14.793087",
+                "Blend": 1.4769231,
+                "Rounding": 1.9692308,
+                "Color": "0.62326,0.43483,0.2464,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 15.751565
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-12.9588108,28.7241402,33.3428535",
+                "Rotation": "0.763615727,0.344602406,0.121928006,0.532235742",
+                "Size": "3.43130493,18.1074409,19.1337852",
+                "Blend": 1.4769231,
+                "Rounding": 1.9692308,
+                "Color": "0.62326,0.43483,0.2464,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 19.808252
+              },
+              {
+                "Shape": "Cone",
+                "Operation": "Add",
+                "Position": "-20.2402382,8.19362068,51.5679588",
+                "Rotation": "0.131370783,0.689210296,0.143109605,-0.698033392",
+                "Size": "8.19438934,26.6933022,13.0510826",
+                "Blend": 0.4923077,
+                "Rounding": 2.9538462,
+                "Color": "1,0.5,0,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 15.533424
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "7.57903147,1.12056732E-05,65.5691071",
+                "Rotation": "7.4505806E-09,0.177657738,0,0.984092355",
+                "Size": "19.6272545,10.7638588,2.96982956",
+                "Blend": 1.9692308,
+                "Rounding": 1.9692308,
+                "Color": "0.13023,0.13023,0.13023,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 20.342976
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "0,0,38.4303017",
+                "Rotation": "0,0,0,1",
+                "Size": "20.1540871,17.3483658,3.02189636",
+                "Blend": 0.4923077,
+                "Rounding": 1.4769231,
+                "Color": "0.73488,0.16407,0.16407,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 20.502457
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "Position": "-21.3566532,3.42531729,28.0590553",
+                "Rotation": "3.7252903E-09,0.132242218,0,0.991217494",
+                "Size": "3.36760902,7.60459518,13.5489349",
+                "Blend": 1.9692308,
+                "Rounding": 1.4769231,
+                "Color": "0.66047,0.24268,0.24268,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 16.390242
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "10.5943947,6.67572021E-06,73.6483459",
+                "Rotation": "7.4505806E-09,0.177657738,0,0.984092355",
+                "Size": "14.6044083,4.57850647,8.56042099",
+                "Blend": 0.9846154,
+                "Rounding": 1.9692308,
+                "Color": "0.13023,0.13023,0.13023,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 17.17452
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e2b20dca-1bbb-475f-99bb-88b4161174df"
+            },
+            "Property": "Resolution",
+            "Value": 64
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "CullRadii",
+            "Value": 80
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "DepthClamp",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "DisplaceAmount",
+            "Value": 0.96202534
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "DisplaceFrequency",
+            "Value": 0.12755275
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "Epsilon",
+            "Value": 0.18
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "FarEpsilon",
+            "Value": 0.5
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 30
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 40
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 12
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "cd132b0f-8f8a-4808-b05b-9b5b848bdda3"
+            },
+            "Property": "CountX",
+            "Value": 15
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "cd132b0f-8f8a-4808-b05b-9b5b848bdda3"
+            },
+            "Property": "CountY",
+            "Value": 15
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "cd132b0f-8f8a-4808-b05b-9b5b848bdda3"
+            },
+            "Property": "Spacing",
+            "Value": "128,128,-32"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "e8f6a942-9e94-4fb2-8698-c044e1db98e4": "38afb554-804d-4e55-97b3-f6cc941abdeb",
+        "e2b20dca-1bbb-475f-99bb-88b4161174df": "b9cdab2d-0169-4f0f-a6e6-0980c6e80493",
+        "7f316a4c-266b-4656-bc25-bd807b9408aa": "568b14ae-2d83-40cf-bbee-aafb79d500cb",
+        "9640bcd2-e459-40df-8dcc-ec80e8f210fa": "fa12d633-c074-463c-89f3-28f49e84a6c9",
+        "cd132b0f-8f8a-4808-b05b-9b5b848bdda3": "6b40eb2f-1cf0-4d06-b7b8-7bfbea3f7086"
+      }
+    },
+    {
+      "__guid": "40bdd072-c51c-4118-a616-adedbd569436",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Cube",
+      "Position": "87.095726,143.744904,136.54686",
+      "Rotation": "0,0,-0.500001132,-0.866024911",
+      "Scale": "1,26.7613373,18.7046852",
+      "Tags": "",
+      "Enabled": false,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "c89657ce-d5c8-48d9-8ace-89f23e462ee6",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/dev/box.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "6d342d44-5f9b-4aa7-b825-1dedaf95ad8f",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Wall",
+      "Position": "-130.075195,-81.9200592,0",
+      "Rotation": "0,0,-0.500001132,-0.866024911",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": false,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.SdfSculpture",
+          "__guid": "0396bdb0-1cdf-4c57-9c06-7e7fa540987c",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoRebuild": false,
+          "BakedMesh": null,
+          "Brushes": [
+            {
+              "Shape": "Box",
+              "Operation": "Add",
+              "Position": "0,0,0",
+              "Rotation": "0,0,0,1",
+              "Size": "24,632.850037,427.290375",
+              "Blend": 6,
+              "Rounding": 30.523077,
+              "Color": "1,1,1,1",
+              "Metallic": 0,
+              "Roughness": 1,
+              "BoundingRadius": 765.4714
+            }
+          ],
+          "FlipFaces": false,
+          "Material": "materials/plasticine_vertex.vmat",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Resolution": 32
+        },
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "9780ac82-858c-42b1-9096-c6bebec043d9",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "sbox_procedural_model.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "ShadowsOnly",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Mimiclay.SdfRaymarchRenderer",
+          "__guid": "f9110143-3480-490f-9f16-b16499501bdd",
+          "__enabled": true,
+          "Flags": 0,
+          "AdaptiveQuality": true,
+          "CullRadii": 80,
+          "DebugBounds": false,
+          "DebugLod": false,
+          "DebugSwitchState": true,
+          "DepthClamp": false,
+          "Displace": false,
+          "DisplaceAmount": 0.35,
+          "DisplaceFrequency": 0.25,
+          "DistanceSwitching": true,
+          "Epsilon": 0.18,
+          "FarEpsilon": 0.5,
+          "FullQualityRadii": 2,
+          "LodHysteresis": 0.06,
+          "Material": "materials/plasticine.vmat",
+          "MaxSteps": 50,
+          "MeshLod1Radii": 30,
+          "MeshLod2Radii": 40,
+          "MeshMode": "DepthProxy",
+          "MinQualityRadii": 12,
+          "MinSteps": 6,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OverdrawOptimization": true,
+          "TightBounds": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "8e32dea3-eec5-4d0b-bca4-0c625925a5b4",
+      "__version": 2,
+      "__Prefab": "prefabs/giraffe.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "2000000d-0000-4000-8000-000000000001"
+            },
+            "Property": "Position",
+            "Value": "251.14827,-115.681412,-32.1158142"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000002"
+            },
+            "Property": "AutoRebuild",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000002"
+            },
+            "Property": "BakedMesh",
+            "Value": "models/sdf/giraffe.sdfmesh"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000002"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "3.03396606,0,42",
+                "Rotation": "0,0,0,1",
+                "Size": "20,15,16",
+                "Blend": 5,
+                "Rounding": 0,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 21.25
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "14,9,18",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,18",
+                "Blend": 4,
+                "Rounding": 2,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 19.681541
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "14,-9,18",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,18",
+                "Blend": 4,
+                "Rounding": 2,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 19.681541
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-10,9,18",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,18",
+                "Blend": 4,
+                "Rounding": 2,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 19.681541
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-10,-9,18",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,18",
+                "Blend": 4,
+                "Rounding": 2,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 19.681541
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "14,9,2",
+                "Rotation": "0,0,0,1",
+                "Size": "5.5,5.5,2.5",
+                "Blend": 1,
+                "Rounding": 1,
+                "Color": "0.35,0.22,0.12,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.291523
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "14,-9,2",
+                "Rotation": "0,0,0,1",
+                "Size": "5.5,5.5,2.5",
+                "Blend": 1,
+                "Rounding": 1,
+                "Color": "0.35,0.22,0.12,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.291523
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-10,9,2",
+                "Rotation": "0,0,0,1",
+                "Size": "5.5,5.5,2.5",
+                "Blend": 1,
+                "Rounding": 1,
+                "Color": "0.35,0.22,0.12,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.291523
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-10,-9,2",
+                "Rotation": "0,0,0,1",
+                "Size": "5.5,5.5,2.5",
+                "Blend": 1,
+                "Rounding": 1,
+                "Color": "0.35,0.22,0.12,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.291523
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-6.98547363,0.0138702393,54.1727982",
+                "Rotation": "0,-0.0632385686,0,0.997998476",
+                "Size": "7,7,16",
+                "Blend": 4,
+                "Rounding": 2,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 18.464249
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-12,-0.246292114,82",
+                "Rotation": "0,-0.116903983,0,0.993143201",
+                "Size": "6.5,6.5,15",
+                "Blend": 4,
+                "Rounding": 2,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 17.347782
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-21.0572357,0,100",
+                "Rotation": "0,0,0,1",
+                "Size": "11,9,10",
+                "Blend": 2.4016364,
+                "Rounding": 0.5,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 11.6004095
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-31,0,96",
+                "Rotation": "0,0,0,1",
+                "Size": "6,5.5,5",
+                "Blend": 3,
+                "Rounding": 0,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.75
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-19,5,112",
+                "Rotation": "0,0,0,1",
+                "Size": "1.5,1.5,6",
+                "Blend": 1,
+                "Rounding": 0,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.4346585
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-19,-5,112",
+                "Rotation": "0,0,0,1",
+                "Size": "1.5,1.5,6",
+                "Blend": 1,
+                "Rounding": 0,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.4346585
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-19,5,118",
+                "Rotation": "0,0,0,1",
+                "Size": "3,3,3",
+                "Blend": 0.5,
+                "Rounding": 0,
+                "Color": "0.4,0.26,0.15,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 3.125
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-19,-5,118",
+                "Rotation": "0,0,0,1",
+                "Size": "3,3,3",
+                "Blend": 0.5,
+                "Rounding": 0,
+                "Color": "0.4,0.26,0.15,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 3.125
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-14,8.93365479,103",
+                "Rotation": "0.707106769,0,0,0.707106769",
+                "Size": "5,3,2",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.375
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-14,-8.42301178,103",
+                "Rotation": "0.707106769,0,0,0.707106769",
+                "Size": "5,3,2",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.375
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "24.4584503,0.00696563721,32.5209427",
+                "Rotation": "-0.00190463895,-0.192842081,-0.000112247522,0.981227994",
+                "Size": "1.29999995,1.29999995,12.7108974",
+                "Blend": 1,
+                "Rounding": 0,
+                "Color": "0.95,0.78,0.4,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 13.027203
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "29,0,21",
+                "Rotation": "0,0,0,1",
+                "Size": "2.5,2.5,2.5",
+                "Blend": 1,
+                "Rounding": 0,
+                "Color": "0.4,0.26,0.15,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 2.75
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "0,8,46",
+                "Rotation": "0,0,0,1",
+                "Size": "6,1,5",
+                "Blend": 2,
+                "Rounding": 0,
+                "Color": "0.7,0.45,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.5
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "10,-7,44",
+                "Rotation": "0,0,0,1",
+                "Size": "5,1,5",
+                "Blend": 2,
+                "Rounding": 0,
+                "Color": "0.7,0.45,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.5
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-6,9,38",
+                "Rotation": "0,0,0,1",
+                "Size": "5,1,4",
+                "Blend": 2,
+                "Rounding": 0,
+                "Color": "0.7,0.45,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.5
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-5.01264954,-14.7259521,45.9502792",
+                "Rotation": "-0.12733978,-0.0110174436,-0.126655981,0.983677447",
+                "Size": "5.17686844,1.80865955,5",
+                "Blend": 2,
+                "Rounding": 0,
+                "Color": "0.7,0.45,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.6768684
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-7.57919312,8.20752716,62",
+                "Rotation": "0,0,0.00224070996,0.999997437",
+                "Size": "4,1,4",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.7,0.45,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 4.375
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-11.0326843,-7.17086029,79.9991608",
+                "Rotation": "-0.000329965813,-0.0128005026,0.0257668924,0.999585986",
+                "Size": "4,1,4",
+                "Blend": 0.8094544,
+                "Rounding": 0.5,
+                "Color": "0.7,0.45,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 4.2023635
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-30,6,102",
+                "Rotation": "0,0,0,1",
+                "Size": "1.60000002,1.60000002,1.60000002",
+                "Blend": 0.4,
+                "Rounding": 0,
+                "Color": "0.12,0.08,0.06,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 1.7
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-30,-6,102",
+                "Rotation": "0,0,0,1",
+                "Size": "1.60000002,1.60000002,1.60000002",
+                "Blend": 0.4,
+                "Rounding": 0,
+                "Color": "0.12,0.08,0.06,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 1.7
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-31,7,103",
+                "Rotation": "0,0,0,1",
+                "Size": "0.600000024,0.600000024,0.600000024",
+                "Blend": 0.2,
+                "Rounding": 0,
+                "Color": "1,1,1,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 0.65000004
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-31,-5,103",
+                "Rotation": "0,0,0,1",
+                "Size": "0.600000024,0.600000024,0.600000024",
+                "Blend": 0.2,
+                "Rounding": 0,
+                "Color": "1,1,1,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 0.65000004
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000002"
+            },
+            "Property": "Resolution",
+            "Value": 64
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000003"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000003"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "CullRadii",
+            "Value": 80
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "DepthClamp",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceAmount",
+            "Value": 0.96202534
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceFrequency",
+            "Value": 0.12755275
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "Epsilon",
+            "Value": 0.18
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "FarEpsilon",
+            "Value": 0.5
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 30
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 40
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 12
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2000000d-0000-4000-8000-000000000004"
+            },
+            "Property": "MinSteps",
+            "Value": 12
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "2000000d-0000-4000-8000-000000000001": "8e32dea3-eec5-4d0b-bca4-0c625925a5b4",
+        "2000000d-0000-4000-8000-000000000002": "ade86cba-0d3f-4cc1-981f-157915eb0fdd",
+        "2000000d-0000-4000-8000-000000000003": "01f5a5ab-860e-4144-b6ac-8528d7f7d132",
+        "2000000d-0000-4000-8000-000000000004": "236aab6a-2fc3-4455-b9ac-8fe0a8a9a534"
+      }
+    },
+    {
+      "__guid": "d276d390-ba35-4e22-9273-8d750830e071",
+      "__version": 2,
+      "__Prefab": "prefabs/dinosaur.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1000000a-0000-4000-8000-000000000001"
+            },
+            "Property": "Position",
+            "Value": "13.3064575,-176.616669,-31.4318027"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "AutoRebuild",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "18,15,14",
+                "Blend": 5,
+                "Rounding": 0,
+                "Color": "0.34959,0.74419,0.6089,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 19.25
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "0,0,11.2475052",
+                "Rotation": "0,0,0,1",
+                "Size": "15,12,8.46206093",
+                "Blend": 5,
+                "Rounding": 0,
+                "Color": "0.7,0.85,0.6,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 16.25
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-14,0,24",
+                "Rotation": "0,0,0,1",
+                "Size": "9,9,9",
+                "Blend": 4,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 10
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-22,0,32",
+                "Rotation": "0,0,0,1",
+                "Size": "7.5,7.5,7.5",
+                "Blend": 4,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 8.5
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-28,0,40",
+                "Rotation": "0,0,0,1",
+                "Size": "6,6,6",
+                "Blend": 3.5,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.875
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-33,0,46",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,5",
+                "Blend": 3,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.75
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-38,0,48",
+                "Rotation": "0,0,0,1",
+                "Size": "5.5,5,5",
+                "Blend": 3,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.25
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-43,0,46",
+                "Rotation": "0,0,0,1",
+                "Size": "4,3.20000005,3",
+                "Blend": 2,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 4.5
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "14,0,18",
+                "Rotation": "0,0,0,1",
+                "Size": "8,8,8",
+                "Blend": 4,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 9
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "24,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "6.5,6.5,6.5",
+                "Blend": 3.5,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 7.375
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "32,0,13",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,5",
+                "Blend": 3,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.75
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "39,0,11",
+                "Rotation": "0,0,0,1",
+                "Size": "3.5,3.5,3.5",
+                "Blend": 2.5,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 4.125
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "45,0,10",
+                "Rotation": "0,0,0,1",
+                "Size": "2.20000005,2.20000005,2.20000005",
+                "Blend": 2,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 2.7
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-9,9,7",
+                "Rotation": "0,0,0,1",
+                "Size": "4,4,7",
+                "Blend": 2.5,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 8.687258
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "-9,-9,7",
+                "Rotation": "0,0,0,1",
+                "Size": "4,4,7",
+                "Blend": 2.5,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 8.687258
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "10,10,7",
+                "Rotation": "0,0,0,1",
+                "Size": "4.5,4.5,7",
+                "Blend": 2.5,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 8.946658
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "10,-10,7",
+                "Rotation": "0,0,0,1",
+                "Size": "4.5,4.5,7",
+                "Blend": 2.5,
+                "Rounding": 0,
+                "Color": "0.27,0.62,0.5,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 8.946658
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-9,9,1",
+                "Rotation": "0,0,0,1",
+                "Size": "4.5,4.5,3",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.78,0.88,0.7,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 4.875
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-9,-9,1",
+                "Rotation": "0,0,0,1",
+                "Size": "4.5,4.5,3",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.78,0.88,0.7,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 4.875
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "10,10,1",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,3",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.78,0.88,0.7,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.375
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "10,-10,1",
+                "Rotation": "0,0,0,1",
+                "Size": "5,5,3",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.78,0.88,0.7,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 5.375
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-6,0,31",
+                "Rotation": "0,0,0,1",
+                "Size": "3,3,5.99703407",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.95,0.7,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.372034
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "3,0,31",
+                "Rotation": "0,0.0998123586,0,0.995006263",
+                "Size": "3,3,5.93870354",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.95,0.7,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.3137035
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "12,0,28",
+                "Rotation": "0,0.198107168,0,0.980180383",
+                "Size": "2.5,2.5,6.37353897",
+                "Blend": 1.5,
+                "Rounding": 0,
+                "Color": "0.95,0.7,0.2,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 6.748539
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-41,4,49",
+                "Rotation": "0,0,0,1",
+                "Size": "1.29999995,1.29999995,1.29999995",
+                "Blend": 0.4,
+                "Rounding": 0,
+                "Color": "0.05,0.05,0.07,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 1.4
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "Position": "-41,-4,49",
+                "Rotation": "0,0,0,1",
+                "Size": "1.29999995,1.29999995,1.29999995",
+                "Blend": 0.4,
+                "Rounding": 0,
+                "Color": "0.05,0.05,0.07,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 1.4
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "Resolution",
+            "Value": 64
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "CullRadii",
+            "Value": 80
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DepthClamp",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceAmount",
+            "Value": 0.96202534
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceFrequency",
+            "Value": 0.12755275
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "Epsilon",
+            "Value": 0.18
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "FarEpsilon",
+            "Value": 0.5
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 30
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 40
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 12
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "1000000a-0000-4000-8000-000000000001": "d276d390-ba35-4e22-9273-8d750830e071",
+        "1000000a-0000-4000-8000-000000000002": "734775a6-bc42-4cdb-bc71-8a4605c2b439",
+        "1000000a-0000-4000-8000-000000000003": "f5c91472-b333-4ecc-a39a-22edbabaa8f3",
+        "1000000a-0000-4000-8000-000000000004": "f9457ece-7b33-4b28-bba7-1d585cba5be9"
+      }
+    },
+    {
+      "__guid": "e19e42c1-ebfb-440a-962e-5c6768afbf49",
+      "__version": 2,
+      "__Prefab": "prefabs/dinosaur.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1000000a-0000-4000-8000-000000000001"
+            },
+            "Property": "Name",
+            "Value": "MetalTest"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1000000a-0000-4000-8000-000000000001"
+            },
+            "Property": "Position",
+            "Value": "305.062103,-179.301254,-7.58811426"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "AutoRebuild",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "0,0,0",
+                "Rotation": "0,0,0,1",
+                "Size": "24,24,24",
+                "Blend": 1.6517074,
+                "Rounding": 2.419507,
+                "Color": "0.65581,0.65581,0.65581,1",
+                "Metallic": 1,
+                "Roughness": 0.8769231,
+                "BoundingRadius": 34.35405
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "Resolution",
+            "Value": 64
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000003"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000003"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "CullRadii",
+            "Value": 80
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DepthClamp",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceAmount",
+            "Value": 0.96202534
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceFrequency",
+            "Value": 0.12755275
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "Epsilon",
+            "Value": 0.18
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "FarEpsilon",
+            "Value": 0.5
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 30
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 40
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 12
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "1000000a-0000-4000-8000-000000000001": "e19e42c1-ebfb-440a-962e-5c6768afbf49",
+        "1000000a-0000-4000-8000-000000000002": "ac3534a5-db24-47b0-b927-273ae84e81c3",
+        "1000000a-0000-4000-8000-000000000003": "679cfa19-5b8d-4c86-9ec0-241d43a593db",
+        "1000000a-0000-4000-8000-000000000004": "207ae964-af5b-4ad0-b091-8839be4a65a3"
+      }
+    },
+    {
+      "__guid": "22aa2383-0008-4cb0-8c07-d672e7b30f9d",
+      "__version": 2,
+      "__Prefab": "prefabs/dinosaur.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1000000a-0000-4000-8000-000000000001"
+            },
+            "Property": "Name",
+            "Value": "MetalTest (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1000000a-0000-4000-8000-000000000001"
+            },
+            "Property": "Position",
+            "Value": "-24.7904663,127.299805,-2.33379793"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "AutoRebuild",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "Position": "2.86750603,-0.408828735,-1.12703705",
+                "Rotation": "0,0,-0.00895309448,0.999959946",
+                "Size": "25.0805378,62.6712036,24.1711578",
+                "Blend": 10.443943,
+                "Rounding": 4.369768,
+                "Color": "0.37499,0.61471,0.75349,1",
+                "Metallic": 1,
+                "Roughness": 0.8769231,
+                "BoundingRadius": 37.44313
+              },
+              {
+                "Shape": "Cone",
+                "Operation": "Add",
+                "Position": "50.3041306,-7.51454163,31.7048759",
+                "Rotation": "-0.42658335,-0.340769768,-0.437737405,-0.7143448",
+                "Size": "18.8526077,26.3414459,29.8640404",
+                "Blend": 13.760527,
+                "Rounding": 5.563731,
+                "Color": "0.96744,0.67721,0.58047,1",
+                "Metallic": 0.18461539,
+                "Roughness": 1,
+                "BoundingRadius": 38.757008
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "Position": "27.8329067,9.97956848,41.4540062",
+                "Rotation": "0.077929765,-0.178010508,0.431082815,0.881139517",
+                "Size": "19.8421116,16.2291718,14.602623",
+                "Blend": 3.267294,
+                "Rounding": 2.686776,
+                "Color": "1,0.31628,0.7607,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 30.318214
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "Position": "-5.04525757,-18.3169785,27.1618767",
+                "Rotation": "0.0450754501,0.0337519385,0.263119221,0.963118553",
+                "Size": "8.82500458,10.5687246,6.03002119",
+                "Blend": 2.5547574,
+                "Rounding": 1.9104818,
+                "Color": "1,1,1,1",
+                "Metallic": 0,
+                "Roughness": 1,
+                "BoundingRadius": 15.669983
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000002"
+            },
+            "Property": "Resolution",
+            "Value": 64
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "CullRadii",
+            "Value": 80
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DepthClamp",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceAmount",
+            "Value": 0.96202534
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "DisplaceFrequency",
+            "Value": 0.12755275
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "Epsilon",
+            "Value": 0.18
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "FarEpsilon",
+            "Value": 0.5
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 30
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 40
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1000000a-0000-4000-8000-000000000004"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 12
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "1000000a-0000-4000-8000-000000000001": "22aa2383-0008-4cb0-8c07-d672e7b30f9d",
+        "1000000a-0000-4000-8000-000000000002": "0f9e47e8-eb03-42c6-84d4-73e20e3686ae",
+        "1000000a-0000-4000-8000-000000000003": "c7bc3073-0a2f-43f8-83c3-30dec8d1481a",
+        "1000000a-0000-4000-8000-000000000004": "79dd2389-717b-47d5-b326-5200b5199918"
+      }
+    },
+    {
+      "__guid": "116326ff-b8d7-443e-b57a-a33c26531cb0",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "GizmoController",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.GizmoSettings",
+          "__guid": "fe60c549-ee93-4a04-99fa-15dbfbb7ffda",
+          "__enabled": true,
+          "Flags": 0,
+          "DotRadius": 10.406712,
+          "DragOpacity": 0.2,
+          "GizmoDepthBias": 10,
+          "GizmoScale": 1,
+          "HitboxPadding": 3,
+          "HotScale": 1.3,
+          "LineCapScale": 0.835443,
+          "MoveWidth": 6,
+          "OccludeRingBackHalf": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OutlineWidth": 1,
+          "PlaneOffsetFrac": 1.0566658,
+          "PlaneRounding": 0.44725737,
+          "PlaneScale": 0.12,
+          "RingSegments": 64,
+          "RingWidth": 3,
+          "RotationRadius": 130,
+          "ScaleDotOffset": 28,
+          "ScreenMoveRounding": 0.35,
+          "ScreenMoveScale": 0.07924457,
+          "ScreenRingScale": 1.2,
+          "ShowPlaneSquares": true,
+          "ShowRotation": true,
+          "ShowScale": true,
+          "ShowScreenMove": true,
+          "ShowScreenRotation": true,
+          "ShowSliders": true,
+          "ShowTranslation": true,
+          "ShowUniformScale": true,
+          "SliderBlendMax": 15,
+          "SliderBuffer": 8,
+          "SliderOffset": 204.72023,
+          "SliderRoundingMin": 0.5,
+          "SliderSpacing": 36.36675,
+          "SliderThickness": 6,
+          "Thickness": 2.2660944,
+          "TranslationMax": 204.98135,
+          "TranslationMin": 61.940144,
+          "TranslationOffset": 0,
+          "UniformScaleOffset": 150,
+          "UniformScaleRadius": 12,
+          "UniformScaleSensitivity": 150
+        }
+      ],
+      "Children": []
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": true,
+    "Metadata": {
+      "Title": "minimal"
+    },
+    "NavMesh": {
+      "Enabled": false,
+      "IncludeStaticBodies": true,
+      "IncludeKeyframedBodies": true,
+      "EditorAutoUpdate": true,
+      "AgentHeight": 64,
+      "AgentRadius": 16,
+      "AgentStepSize": 18,
+      "AgentMaxSlope": 40,
+      "ExcludedBodies": "",
+      "IncludedBodies": "",
+      "DeferGeneration": false,
+      "CustomBounds": false
+    },
+    "GameObjectSystems": {
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "207c7e46-c4ba-4d6c-93c7-dc701ae61560"
+        }
+      }
+    }
+  },
+  "ResourceVersion": 3,
+  "Title": "minimal",
+  "Description": null,
+  "__references": [],
+  "__version": 3
+}

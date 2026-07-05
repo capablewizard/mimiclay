@@ -1,0 +1,12 @@
+// THIS FILE IS AUTO-GENERATED
+
+Layer0
+{
+	shader "shaders/shadow_catcher.shader"
+
+	//---- Shadow ----
+	g_flMaxOpacity "1.000"
+	g_flShadowPower "1.000"
+	g_flShadowStrength "0.350"
+	g_vShadowColor "[0.047059 0.070588 0.160784 0.000000]"
+}

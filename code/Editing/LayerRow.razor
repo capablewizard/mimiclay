@@ -1,0 +1,159 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	One layer in the edit HUD's stack: a compact icon toolbar for a single brush. A real Panel subclass
+	(not an inline <div>) so it can opt into s&box's native drag system — WantsDrag marks it as a drag
+	source and the engine calls the OnDrag* virtuals; the reorder itself lives in the HUD.
+
+	Icons left→right: visibility · shape · colour · add/subtract · symmetry · delete. The glyphs all come
+	from SdfIcons (one place to retune them). The eye/symmetry/bin cells are buttons; the shape/colour/op
+	cells are display-only (pointer-events:none) so dragging works from them.
+*@
+
+<div class="cell icon grip">@SdfIcons.DragHandle</div>
+
+<div class="cell iconbtn eye @(Enabled ? "" : "off")" onclick=@OnToggleEnabled>
+	<div class="icon">@(Enabled ? SdfIcons.Visible : SdfIcons.Hidden)</div>
+</div>
+
+<div class="cell shapeswatch" style=@ShapeSwatchStyle()></div>
+
+<div class="cell icon iconbtn op @(Operation == SdfOperation.Subtract ? "sub" : "add")" onclick=@OnToggleOperation>
+	@(Operation == SdfOperation.Subtract ? SdfIcons.Subtract : SdfIcons.Add)
+</div>
+
+<div class="cell iconbtn sym @(SymmetryOn ? "on" : "")" onclick=@OnToggleSymmetry>
+	<div class="icon">@SdfIcons.Symmetry</div>
+</div>
+
+<div class="cell iconbtn bin" onclick=@OnDelete>
+	<div class="icon">@SdfIcons.Delete</div>
+</div>
+
+@code
+{
+	/// <summary>This row's index into the brush list.</summary>
+	[Parameter] public int Index { get; set; }
+	[Parameter] public SdfShape Shape { get; set; }
+	[Parameter] public SdfOperation Operation { get; set; }
+	[Parameter] public Color Color { get; set; }
+	/// <summary>Brush visibility — drives the eye glyph.</summary>
+	[Parameter] public bool Enabled { get; set; }
+	/// <summary>Whether any mirror axis is on — drives the symmetry button highlight.</summary>
+	[Parameter] public bool SymmetryOn { get; set; }
+
+	/// <summary>A press began on this row (OnMouseDown) — lets the HUD reset its click-vs-drag flag.</summary>
+	[Parameter] public Action PressStart { get; set; }
+	/// <summary>Plain click on the row body — select this row (the HUD ignores it if the gesture dragged).</summary>
+	[Parameter] public Action<int> Pick { get; set; }
+	/// <summary>A drag started on this row (engine OnDragStart). Args: index, this row's height in px
+	/// (so the HUD knows the slot stride for the shuffle + which slot the cursor is over).</summary>
+	[Parameter] public Action<int, float> DragBegin { get; set; }
+	/// <summary>The dragged row moved (engine OnDrag). Arg: cursor offset from where it was grabbed, in px.</summary>
+	[Parameter] public Action<float> DragMove { get; set; }
+	/// <summary>The drag finished — commit whatever reorder is pending.</summary>
+	[Parameter] public Action DragEnd { get; set; }
+
+	/// <summary>Eye button — toggle visibility.</summary>
+	[Parameter] public Action<int> ToggleEnabled { get; set; }
+	/// <summary>+/- button — flip add/subtract.</summary>
+	[Parameter] public Action<int> ToggleOperation { get; set; }
+	/// <summary>Symmetry button — toggle symmetry.</summary>
+	[Parameter] public Action<int> ToggleSymmetry { get; set; }
+	/// <summary>Bin button — delete this row.</summary>
+	[Parameter] public Action<int> DeleteRow { get; set; }
+	/// <summary>Cursor entered this row — highlight its shape in the scene.</summary>
+	[Parameter] public Action<int> RowHover { get; set; }
+	/// <summary>Cursor left this row — clear the highlight.</summary>
+	[Parameter] public Action<int> RowUnhover { get; set; }
+
+	void OnToggleEnabled() => ToggleEnabled?.Invoke( Index );
+	void OnToggleOperation() => ToggleOperation?.Invoke( Index );
+	void OnToggleSymmetry() => ToggleSymmetry?.Invoke( Index );
+	void OnDelete() => DeleteRow?.Invoke( Index );
+
+	// The combined shape + colour cell: the small white shape icon, tinted by the brush colour via
+	// background-tint (a multiply), so the single image conveys both which shape it is and its colour.
+	string ShapeSwatchStyle()
+	{
+		int C( float v ) => (int)(Math.Clamp( v, 0f, 1f ) * 255f);
+		var c = Color;
+		return $"background-image: url( {SdfIcons.ShapeImageSmall( Shape )} ); " +
+			$"background-tint: rgba({C( c.r )}, {C( c.g )}, {C( c.b )}, 1);";
+	}
+
+	// Opt this panel into the engine's drag system. FindDragTarget walks up to the first WantsDrag panel,
+	// so a press-and-drag on a row reorders rather than drag-scrolling the list.
+	public override bool WantsDrag => true;
+
+	// Start of every press. The HUD owns the click-vs-drag flag (a reorder can swap THIS panel out before
+	// the trailing click fires, so the flag can't live here) — just tell it a fresh gesture began.
+	protected override void OnMouseDown( MousePanelEvent e )
+	{
+		PressStart?.Invoke();
+		base.OnMouseDown( e );
+	}
+
+	protected override void OnDragStart( DragEvent e )
+		=> DragBegin?.Invoke( Index, SlotStride() );
+
+	// Hovering a row highlights its shape in the scene; leaving clears it. We drive this from HasHovered
+	// (the :hover pseudo-class, which stays true for the whole row subtree) rather than OnMouseOver/Out —
+	// those fire per-panel, so moving the cursor onto a child icon button would otherwise read as "left the
+	// row" and kill the highlight. Tracked here and edge-reported so we don't spam the callback every frame.
+	bool _wasHovered;
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		bool hovered = HasHovered;
+		if ( hovered == _wasHovered )
+			return;
+
+		_wasHovered = hovered;
+		if ( hovered )
+			RowHover?.Invoke( Index );
+		else
+			RowUnhover?.Invoke( Index );
+	}
+
+	// The exact distance between adjacent rows (top edge to top edge), in screen px — the slot stride the
+	// shuffle/drop maths need. Measured from a real sibling so it includes the border + flex gap precisely;
+	// computing height+gap by hand was a touch off, and that error accumulated toward the ends, making the
+	// very top/bottom slots finicky to land on. Falls back to this row's height if it's the only one.
+	float SlotStride()
+	{
+		if ( Parent is not null )
+		{
+			Panel prev = null, next = null;
+			bool passedSelf = false;
+			foreach ( var child in Parent.Children )
+			{
+				if ( ReferenceEquals( child, this ) ) { passedSelf = true; continue; }
+				if ( passedSelf ) { next = child; break; }
+				prev = child;
+			}
+
+			var other = next ?? prev;
+			if ( other is not null )
+				return MathF.Abs( other.Box.Rect.Top - Box.Rect.Top );
+		}
+
+		return Box.Rect.Height;
+	}
+
+	// Fires continuously as the cursor moves while dragging. Forward the raw offset from where we grabbed so
+	// the HUD can float this row under the cursor (the drop slot is derived from this, not from OnDragEnter,
+	// so you can return to the slot you started in).
+	protected override void OnDrag( DragEvent e )
+		=> DragMove?.Invoke( e.ScreenPosition.y - e.ScreenGrabPosition.y );
+
+	protected override void OnDragEnd( DragEvent e ) => DragEnd?.Invoke();
+
+	protected override void OnClick( MousePanelEvent e ) => Pick?.Invoke( Index );
+}

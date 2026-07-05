@@ -1,0 +1,1015 @@
+@using System
+@using System.Globalization
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	In-game sculpt editor HUD. Binds to SculptEditSession.Current, so it's identical in prop-hunt or
+	creative mode — drop this PanelComponent on a HUD GameObject and it shows two panels whenever a
+	session is editing: left = add shapes + layer stack, right = selected-brush properties.
+*@
+
+<root class=@RootClass>
+
+	@* While dragging a layer OR scrubbing a slider, a full-screen transparent surface keeps a pointer-events:all
+	   region under the cursor so the native drag keeps firing OnDrag/OnDragEnd. Otherwise the thin slider track /
+	   the gaps between floating cards click through to the world, stalling the drag and swallowing the mouse-up. *@
+	@if ( _dragIndex >= 0 || ClaySlider.Dragging || ClayColorPicker.Dragging )
+	{
+		<div class="drag-capture"></div>
+	}
+
+	@if ( Session is not null && Session.IsEditing )
+	{
+		@if ( ShowTools || ShowLayers )
+		{
+		<div class="panel left">
+			@if ( ShowTools )
+			{
+			<div class="section-title"><div class="icon">auto_awesome</div><span>Add Shape</span></div>
+
+			<div class="shape-grid">
+				@foreach ( var entry in AddShapes )
+				{
+					var shape = entry.Shape;
+					<div class="paper-card shape-tile" @onclick=@(() => Session.Add( shape ))>
+						<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
+						<span class="label">@entry.Label</span>
+					</div>
+				}
+			</div>
+			}
+
+			@if ( ShowLayers )
+			{
+			<div class="section-title"><div class="icon">layers</div><span>Shapes</span></div>
+
+			<div class="layers">
+				@{
+					var brushes = Session.Target?.Brushes;
+				}
+				@if ( brushes is not null )
+				{
+					@* Top of the list = last brush (drawn on top of the field). *@
+					@for ( int i = brushes.Count - 1; i >= 0; i-- )
+					{
+						var idx = i;
+						var b = brushes[idx];
+						<LayerRow @key=@b class=@(LayerClass( idx )) style=@(LayerStyle( idx ))
+							Index=@idx Shape=@b.Shape Operation=@b.Operation Color=@b.Color
+							Enabled=@b.Enabled SymmetryOn=@(b.MirrorX || b.MirrorY || b.MirrorZ)
+							PressStart=@HandlePressStart Pick=@HandlePick DragBegin=@HandleDragBegin DragMove=@HandleDragMove DragEnd=@HandleDragEnd
+							ToggleEnabled=@HandleToggleEnabled ToggleOperation=@HandleToggleOperation
+							ToggleSymmetry=@HandleToggleSymmetry DeleteRow=@HandleDelete
+							RowHover=@HandleRowHover RowUnhover=@HandleRowUnhover />
+					}
+				}
+			</div>
+			}
+
+		</div>
+		}
+
+		@* Per-axis symmetry for the selected brush. The row's symmetry button is a quick on/off (X);
+		   this section picks which axes when you want quadrant/octant mirroring. Lives in its own right-hand
+		   panel so the left column's full height is free for the layer stack. *@
+		@if ( ShowTools && Brush is not null )
+		{
+			<div class="panel right">
+				<div class="section-title"><span>Tools</span><div class="icon">auto_awesome</div></div>
+				<div class="shape-grid">
+					<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
+						<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
+					</div>
+					<div class="chip @(ShowBounds ? "on" : "")" @onclick=@(() => ShowBounds = !ShowBounds)>
+						<div class="icon">radio_button_unchecked</div><span>Bounds</span>
+					</div>
+				</div>
+				<div class="shape-grid">
+					<div class="chip @(Brush.MirrorX ? "on" : "")" @onclick=@(() => ToggleMirror( 0 ))>X</div>
+					<div class="chip @(Brush.MirrorY ? "on" : "")" @onclick=@(() => ToggleMirror( 1 ))>Y</div>
+					<div class="chip @(Brush.MirrorZ ? "on" : "")" @onclick=@(() => ToggleMirror( 2 ))>Z</div>
+				</div>
+			</div>
+		}
+
+		@* Palette + sliders fade in/out with the selection. They stay mounted while editing (a mount/unmount can't
+		   animate) — content comes from _fadeBrush so they hold their last state while fading out after a deselect —
+		   and opacity is driven by whether a brush is selected, so the CSS opacity transition animates both ways. *@
+		if ( Brush is not null )
+			_fadeBrush = Brush;
+
+		var palettePos = PalettePos();
+		if ( palettePos.HasValue )
+			_palettePos = palettePos.Value;
+
+		if ( ShowPalette )
+		{
+			var paletteShown = Brush is not null && palettePos.HasValue;
+			var paletteOpacity = !paletteShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f);
+			var mats = ClayPalette.Default.Materials;
+			<div @ref="PalettePanel" class="palette-float" style="left: @((int)_palettePos.x)px; top: @((int)_palettePos.y)px; width: @(PaletteWidth)px; opacity: @(paletteOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(paletteOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+				@for ( int i = 0; i < mats.Count; i++ )
+				{
+					var idx = i;
+					var m = mats[idx];
+					var sel = _fadeBrush is not null && m.Matches( _fadeBrush );
+					var sc = (idx == _hoverIndex) ? HoverScale : 1f;
+					@* Cell = gap-free hit target; the swatch inside is the visual. Hover scale is driven in C#
+					   (s&box CSS :hover doesn't reliably apply transform here) and baked into the inline style,
+					   so it survives the per-frame re-renders that track the gizmo instead of being wiped. *@
+					<div class="swatch-cell" style="width: @(CellPx)px; height: @(CellPx)px;"
+						@onclick=@(() => ApplyMaterial( m ))
+						@onmouseover=@(() => _hoverIndex = idx)
+						@onmouseout=@(() => { if ( _hoverIndex == idx ) _hoverIndex = -1; })>
+						<div class="swatch" style="width: @((int)SwatchSize)px; height: @((int)SwatchSize)px; border-radius: @((int)SwatchRoundness)px; @SwatchBorder( m, sel ) @SwatchBg( m ) transform: scale(@(sc.ToString( "0.##", CultureInfo.InvariantCulture )));"></div>
+					</div>
+				}
+			</div>
+		}
+
+		@* Colour wheel + metal/rough sliders, floating to the RIGHT of the palette — same fade/tracking as the
+		   palette. The wheel edits the selected brush's colour directly; a palette click re-seats it (the wheel
+		   resyncs whenever the brush colour changes underneath it), and dragging it just deselects every swatch. *@
+		var pickerPos = PickerPos();
+		if ( pickerPos.HasValue )
+			_pickerPos = pickerPos.Value;
+
+		if ( ShowPicker )
+		{
+			var pickerShown = Brush is not null && pickerPos.HasValue;
+			var pickerOpacity = !pickerShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f);
+			var pfb = _fadeBrush;
+			<div @ref="PickerPanel" class="picker-float" style="left: @((int)_pickerPos.x)px; top: @((int)_pickerPos.y)px; width: @((int)PickerSize)px; opacity: @(pickerOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(pickerOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+				<ClayColorPicker Size=@PickerSize Value=@(pfb?.Color ?? Color.White) OnInput=@((Color c) => SetColor( c )) />
+				<ClaySlider Label="Metal" Value=@(pfb?.Metallic ?? 0f) Min=@(0f) Max=@(1f)
+					OnInput=@((float v) => SetMetallic( v )) />
+				<ClaySlider Label="Rough" Value=@(pfb?.Roughness ?? 1f) Min=@(0f) Max=@(1f)
+					OnInput=@((float v) => SetRoughness( v )) />
+			</div>
+		}
+
+		@* Blend / roundness sliders, floating under the gizmo (replacing the old 3D slider handles). They track the
+		   gizmo's screen position like the palette, fade out while a handle is manipulated, and fade in/out with the
+		   selection the same way. *@
+		var sliderPos = SliderPos();
+		if ( sliderPos.HasValue )
+			_sliderPos = sliderPos.Value;
+
+		if ( ShowSliders )
+		{
+			var slidersShown = Brush is not null && sliderPos.HasValue;
+			var sliderOpacity = !slidersShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f);
+			var fb = _fadeBrush;
+			var blendVal = fb?.Blend ?? 0f;
+			var roundVal = fb?.Rounding ?? GizmoSettingsRoundingMin;
+			var roundMax = fb is not null ? fb.MaxRounding() : 1f;
+			var isSpline = fb?.Shape == SdfShape.Spline;
+			var isExtruded = fb?.Shape == SdfShape.Extruded;
+			var isSphere = fb?.Shape == SdfShape.Sphere;
+			var isCone = fb?.Shape == SdfShape.Cone;
+			var isText = fb?.Shape == SdfShape.Text;
+			var xsVal = fb?.CrossSection ?? SdfCrossSection.Triangle;
+			var curveVal = fb?.Curvature ?? 0f;
+			var sliceVal = fb?.Slice ?? 0f;
+			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @(SliderWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
+					OnInput=@((float v) => SetBlend( v )) />
+				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
+				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
+				   cone) add Slice as a third slider. *@
+				@if ( isSpline )
+				{
+					<ClaySlider Label="Curve" Value=@curveVal Min=@(0f) Max=@(1f)
+						OnInput=@((float v) => SetCurvature( v )) />
+				}
+				else
+				{
+					<ClaySlider Label="Round" Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
+						OnInput=@((float v) => SetRounding( v )) />
+					@if ( isSphere || isCone )
+					{
+						<ClaySlider Label="Slice" Value=@sliceVal Min=@(0f) Max=@SdfBrush.MaxSlice
+							OnInput=@((float v) => SetSlice( v )) />
+					}
+				}
+				@* Extruded "Shape" brush: pick the 2D profile it sweeps — a row of icon chips in the same
+				   paper style, riding along under the sliders (same fade/tracking, it's inside the stack). *@
+				@if ( isExtruded )
+				{
+					<div class="xsection-row">
+						@foreach ( var xs in CrossSections )
+						{
+							var cs = xs;
+							<div class="chip mini @(xsVal == cs ? "on" : "")" @onclick=@(() => SetCrossSection( cs ))>
+								<div class="icon">@SdfIcons.CrossSection( cs )</div>
+							</div>
+						}
+					</div>
+				}
+				@* Text brush: edit the string in place, riding under the sliders like the profile chips. *@
+				@if ( isText )
+				{
+					<div class="text-row paper-card">
+						<div class="icon">@SdfIcons.Shape( SdfShape.Text )</div>
+						<TextEntry class="text-input" Value:bind=@SelectedText />
+					</div>
+				}
+			</div>
+		}
+	}
+
+	@* Bounding-sphere silhouette of the selected shape (Bounds toggle in Tools). A flat circle is the sphere's
+	   exact on-screen silhouette; it sits at the same anchor the palette/sliders use. *@
+	@{
+		// Call unconditionally so the out vars are always assigned (a && short-circuit would leave them unset).
+		bool hasBounds = BrushScreenSphere( out var boundsC, out var boundsR );
+		bool boundsShown = ShowBounds && hasBounds;
+	}
+	@if ( boundsShown )
+	{
+		<div class="bounds-circle" style="left: @((int)(boundsC.x - boundsR))px; top: @((int)(boundsC.y - boundsR))px; width: @((int)(boundsR * 2f))px; height: @((int)(boundsR * 2f))px;"></div>
+	}
+
+	@* Spline add-point cursor. Mouse.CursorType doesn't reliably paint the WORLD cursor here (the engine only
+	   shows it when the mouse is in UI state, and the orbit "cursor" is actually a drawn div) — but the UI DOES
+	   paint a hovered panel's CSS `cursor`. So while hovering a spline line we put up a full-screen pointer-events
+	   zone whose `cursor` the UI shows over the scene. It's only present while hovering, and the gizmo's hover/
+	   click are ray + raw-input (not UI events), so this doesn't block selecting the line or inserting a point. *@
+	@if ( Session?.HoveringSplineLine ?? false )
+	{
+		<div class="add-point-cursor" @onmousedown=@(() => Session?.InsertHoveredSplinePoint())></div>
+	}
+
+	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during a drag). *@
+	@if ( AltNav.Dragging && Session is not null && Session.IsEditing )
+	{
+		<div class="alt-cursor" style=@AltCursorStyle()></div>
+	}
+
+</root>
+
+@code
+{
+	static SculptEditSession Session => SculptEditSession.Current;
+	SdfBrush Brush => Session?.SelectedBrush;
+
+	// True while alt is held in edit mode (Maya camera nav). Read from the camera controller (a regular component
+	// where Input.Down reads reliably — it doesn't from UI panel code). While set, the HUD goes pointer-events:none
+	// (via the root's "alt-nav" class) so the camera-driven cursor drift can't grab the layer rows / palette, AND
+	// the alt+mouse buttons fall straight through to the scene so the camera actually gets them.
+	static bool AltNavActive => AltNav.Held && (Session?.IsEditing ?? false);
+
+	// The HUD goes click-through (its interactive cards drop pointer-events, via the "alt-nav" class) both during
+	// alt camera-nav AND while the pause menu is open — so its buttons don't hover/click behind the pause overlay
+	// (separate ScreenPanels don't block each other's hover, so a higher z-index alone isn't enough).
+	static bool Inert => AltNavActive || PauseMenu.IsOpen;
+	string RootClass => Inert ? "edit-hud alt-nav" : "edit-hud";
+
+	// --- Which parts of the HUD show. All default on, so the in-game editor is unchanged; turn pieces off for a
+	// trimmed HUD (e.g. the main-menu sculpt toy wants colours only — no add-shape/layer/symmetry panels). The
+	// gizmo itself is owned by SculptEditSession (ShowGizmo there), since it renders in-world, not in this panel. ---
+	/// <summary>Show the "Add Shape" grid and the right-hand Duplicate/Symmetry tools.</summary>
+	[Property, Group( "Panels" )] public bool ShowTools { get; set; } = true;
+	/// <summary>Show the layer/shape stack (the reorderable brush list).</summary>
+	[Property, Group( "Panels" )] public bool ShowLayers { get; set; } = true;
+	/// <summary>Show the floating colour palette anchored to the gizmo.</summary>
+	[Property, Group( "Panels" )] public bool ShowPalette { get; set; } = true;
+	/// <summary>Show the floating colour wheel + metal/rough sliders to the right of the palette.</summary>
+	[Property, Group( "Panels" )] public bool ShowPicker { get; set; } = true;
+	/// <summary>Show the floating blend/round sliders under the gizmo.</summary>
+	[Property, Group( "Panels" )] public bool ShowSliders { get; set; } = true;
+	/// <summary>Draw the selected shape's bounding-sphere silhouette (toggled by the Bounds chip in Tools).</summary>
+	[Property, Group( "Panels" )] public bool ShowBounds { get; set; }
+
+	// The shapes the "Add Shape" grid offers, with their button labels. Centralised here; the glyphs come
+	// from SdfIcons.Shape().
+	static readonly (SdfShape Shape, string Label)[] AddShapes =
+	{
+		(SdfShape.Sphere, "Sphere"),
+		(SdfShape.Box, "Box"),
+		(SdfShape.Cylinder, "Cylinder"),
+		(SdfShape.Cone, "Cone"),
+		(SdfShape.Extruded, "Shape"),
+		(SdfShape.Spline, "Spline"),
+		(SdfShape.Text, "Text"),
+	};
+
+	// The cross-section profiles the extruded "Shape" brush offers, with their button glyphs — the picker
+	// row under the blend/round sliders. Glyphs come from SdfIcons.CrossSection().
+	static readonly SdfCrossSection[] CrossSections =
+	{
+		SdfCrossSection.Triangle,
+		SdfCrossSection.Star,
+		SdfCrossSection.Pentagon,
+		SdfCrossSection.Hexagon,
+	};
+
+	Panel PalettePanel { get; set; }
+	Panel SliderStackPanel { get; set; }
+	Panel PickerPanel { get; set; }
+
+	// Retained state so the palette + sliders can fade OUT after a deselect (a mount/unmount can't animate, so the
+	// panels stay rendered and just drop opacity). _fadeBrush is the last selected brush — its colour/values fill
+	// the panels while they fade; _palettePos/_sliderPos hold their last on-screen spot so they fade in place.
+	SdfBrush _fadeBrush;
+	Vector2 _palettePos;
+	Vector2 _sliderPos;
+	Vector2 _pickerPos;
+
+	/// <summary>True while the cursor is over the palette. The edit session reads this to stop world
+	/// clicks/picks/gizmo-grabs from falling through the UI.</summary>
+	public static bool PointerOverPalette { get; private set; }
+
+	/// <summary>True while the cursor is over the blend/round slider stack — same gate as the palette.</summary>
+	public static bool PointerOverSliders { get; private set; }
+
+	/// <summary>True while the cursor is over the colour wheel / metal / rough picker column — same gate.</summary>
+	public static bool PointerOverPicker { get; private set; }
+
+	/// <summary>Cursor is over any interactive HUD card that should swallow world clicks/picks/gizmo-grabs — or a
+	/// slider is pressed/scrubbing, so a drag that drifts off the thin track still can't highlight world shapes.</summary>
+	public static bool PointerOverUi => PointerOverPalette || PointerOverSliders || PointerOverPicker
+		|| ClaySlider.Pressed || ClayColorPicker.Pressed;
+
+	// Hovered swatch index, set from the cells' mouse-over/out. Drives the inline hover scale (see markup).
+	int _hoverIndex = -1;
+
+	// Layer drag-reorder state, fed by the LayerRow panels' native drag events. _dragIndex = the brush
+	// being dragged (-1 = none); _dropIndex = the row currently under it (where it'll land). Both index
+	// into Target.Brushes. _dragOffsetY = how far (style px) the floating row has moved from its slot;
+	// _stride = one row's height + gap, so the others can shift by exactly one slot. All feed BuildHash.
+	int _dragIndex = -1;
+	int _dropIndex = -1;
+	float _dragOffsetY;
+	float _stride;
+
+	// Build a layer row's class list as one expression (component attributes can't mix literal + markup).
+	string LayerClass( int idx )
+	{
+		string c = "paper-card layer";
+		if ( idx == Session.Selected ) c += " selected";
+
+		if ( _dragIndex >= 0 )
+			c += idx == _dragIndex ? " dragging" : " shuffle"; // dragged row tracks instantly; others ease
+
+		return c;
+	}
+
+	// Per-row inline transform that produces the sortable shuffle. The list renders top = last brush, so
+	// "visual slot" runs opposite to brush index; we work in visual slots and convert once.
+	// Always returns an explicit transform — an empty style won't reliably CLEAR a prior inline transform,
+	// which leaves rows stuck/overlapping after a drop. The lifted look + transition:none for the dragged
+	// row live in the .dragging CSS class (reliable), not inline.
+	string LayerStyle( int idx )
+	{
+		int n = Session?.Target?.Brushes?.Count ?? 0;
+
+		if ( _dragIndex < 0 || n <= 0 )
+			return "transform: translateY( 0px );";
+
+		// translateY is a CSS length = logical (style) px, but _dragOffsetY (raw drag delta) and _stride
+		// (Box.Rect) are both physical screen px. Convert with ScaleFromScreen (physical → logical) so the float
+		// tracks the cursor 1:1 at ANY window size — feeding raw screen px moves the row by offset × ScaleToScreen
+		// on screen, so it desyncs off unity scale and gets worse the shorter the window. (The drop-slot maths in
+		// HandleDragMove stays in screen px: offset / stride is a unitless ratio, so it needs no scaling.)
+		float scale = Panel?.ScaleFromScreen ?? 1f;
+
+		// The dragged row floats under the cursor (z-index / no-transition come from the .dragging class).
+		if ( idx == _dragIndex )
+			return $"transform: translateY( {Px( _dragOffsetY * scale )} ) scale( 1.03 );";
+
+		// Everyone between the pickup slot and the drop slot slides one row over to open the gap.
+		int vs = (n - 1) - _dragIndex;   // pickup visual slot
+		int vt = (n - 1) - _dropIndex;   // drop visual slot
+		int vj = (n - 1) - idx;          // this row's visual slot
+
+		int shift = 0;
+		if ( vt > vs && vj > vs && vj <= vt ) shift = -1;       // dragging down: rows below slide up
+		else if ( vt < vs && vj >= vt && vj < vs ) shift = 1;    // dragging up: rows above slide down
+
+		return $"transform: translateY( {Px( shift * _stride * scale )} );";
+	}
+
+	static string Px( float v ) => v.ToString( "0.#", CultureInfo.InvariantCulture ) + "px";
+
+	// Inline position for the drawn alt-drag dot: a 64px cursor image (its hotspot is the centre) placed at the
+	// frozen anchor. Everything is converted from screen px to panel px (the same scale the palette uses).
+	string AltCursorStyle()
+	{
+		float scale = Panel?.ScaleFromScreen ?? 1f;
+		var a = AltNav.Anchor;
+		float size = 64f * scale;
+		float x = a.x * scale - size * 0.5f;
+		float y = a.y * scale - size * 0.5f;
+		return $"left: {Px( x )}; top: {Px( y )}; width: {Px( size )}; height: {Px( size )};";
+	}
+
+	// Did the current gesture become a drag? Set on drag-begin, reset on each press. A click selects only
+	// when it didn't drag. Lives here (not on LayerRow) because the drop reorder can recreate/move the row
+	// panel before its trailing click fires, which would reset a per-row flag.
+	bool _gestureDragged;
+
+	// OnMouseDown on a row: a fresh gesture — assume it's a click until a drag actually starts.
+	void HandlePressStart() => _gestureDragged = false;
+
+	// Click on a row: select it, unless this gesture was a drag (drag only reorders).
+	void HandlePick( int idx )
+	{
+		if ( !_gestureDragged )
+			Session?.Select( idx );
+	}
+
+	// Per-row icon buttons.
+	void HandleToggleEnabled( int idx ) => Session?.ToggleEnabled( idx );
+	void HandleToggleOperation( int idx ) => Session?.ToggleOperation( idx );
+	void HandleToggleSymmetry( int idx ) => Session?.ToggleSymmetry( idx );
+	void HandleDelete( int idx ) => Session?.Remove( idx );
+
+	// Hovering a layer row highlights its shape in the scene (the session feeds it the same hover path a
+	// 3D pick uses). Unhover clears it, but only if this row is still the one we set — guards against a
+	// stale unhover from a row that was swapped out by a reorder landing after another row's hover.
+	void HandleRowHover( int idx ) => SculptEditSession.UiHoverBrush = idx;
+	void HandleRowUnhover( int idx )
+	{
+		if ( SculptEditSession.UiHoverBrush == idx )
+			SculptEditSession.UiHoverBrush = -1;
+	}
+
+	// Engine OnDragStart on a row: mark it dragged and record the slot stride (measured row-to-row by the
+	// LayerRow, in screen px — matches the drag offset's units). Deliberately does NOT select — dragging
+	// only reorders; selection is a plain click (the trailing click after a drag is swallowed in LayerRow).
+	void HandleDragBegin( int idx, float stride )
+	{
+		_dragIndex = idx;
+		_dropIndex = idx;
+		_dragOffsetY = 0f;
+		_stride = stride;
+		_gestureDragged = true; // this gesture is a drag → the trailing click won't select
+	}
+
+	// Engine OnDrag: the floating row's offset from where it was grabbed. The drop slot is whichever slot
+	// the row has been dragged over — offset rounded to whole rows — so it includes the original slot
+	// (offset ≈ 0 → drop back where you started) and always matches the previewed gap.
+	void HandleDragMove( float offsetY )
+	{
+		int n = Session?.Target?.Brushes?.Count ?? 0;
+		if ( n <= 0 || _stride <= 0f )
+		{
+			_dragOffsetY = offsetY;
+			return;
+		}
+
+		// Visual slots run opposite to brush index (top = last brush); a downward (positive) offset moves
+		// the row to a higher visual slot. Clamp the float so the row stays inside the list: it can slide
+		// from the top slot (0) down to the bottom slot (n-1), but no further.
+		int vs = (n - 1) - _dragIndex;
+		_dragOffsetY = Math.Clamp( offsetY, -vs * _stride, (n - 1 - vs) * _stride );
+
+		int vDrop = Math.Clamp( vs + (int)MathF.Round( _dragOffsetY / _stride ), 0, n - 1 );
+		_dropIndex = (n - 1) - vDrop;
+	}
+
+	// Engine OnDragEnd on the dragged row: reorder if it'll land somewhere new, then clear the drag.
+	void HandleDragEnd()
+	{
+		if ( _dragIndex < 0 )
+			return;
+
+		int from = _dragIndex, to = _dropIndex;
+		_dragIndex = -1;
+		_dropIndex = -1;
+		_dragOffsetY = 0f;
+
+		if ( to >= 0 && to != from )
+			Session?.MoveBrush( from, to );
+	}
+
+	protected override void OnUpdate()
+	{
+		base.OnUpdate();
+		// The session reads these to stop world clicks/picks falling through the palette or slider stack. (During
+		// alt-nav both panels go pointer-events:none, so HasHovered reads false and can't spuriously block picks.)
+		PointerOverPalette = PalettePanel?.HasHovered ?? false;
+		PointerOverSliders = SliderStackPanel?.HasHovered ?? false;
+		PointerOverPicker = PickerPanel?.HasHovered ?? false;
+
+		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
+		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.
+		if ( !(Session?.IsEditing ?? false) )
+			SculptEditSession.UiHoverBrush = -1;
+
+		// While an alt-nav drag is in progress, capture the mouse on the HUD root. This hands the nav clean
+		// relative-mode Mouse.Delta and hides the real cursor (we draw the dot) WITHOUT switching to game
+		// mouse-state — so the UI still gets the button release and won't stay stuck "mouse-down" (which would
+		// start a phantom layer drag the moment you hover a row after orbiting). See AltNav.
+		bool wantCapture = AltNav.Dragging && (Session?.IsEditing ?? false);
+		bool hasCapture = Panel?.HasMouseCapture ?? false;
+		if ( wantCapture != hasCapture )
+			Panel?.SetMouseCapture( wantCapture );
+
+		// Over a selected spline's line → request the add-point cursor (a click inserts a control point there).
+		// Routed through AltNav (the single writer of Mouse.CursorType each frame) — setting Mouse.CursorType
+		// directly here just gets clobbered by AltNav.Tick's per-frame reset. null = back to the default arrow.
+		AltNav.HoverCursor = (Session?.HoveringSplineLine ?? false) ? AddPointCursor : null;
+	}
+
+	/// <summary>Cursor for the AltNav backup path while hovering a spline's line. The VISIBLE cursor is the
+	/// add-point panel's CSS <c>cursor</c> (in the .scss — currently "pointer"/hand); this only feeds the
+	/// fallback <c>Mouse.CursorType</c> route. Keep them in sync if you change the cursor.</summary>
+	[Property, Group( "Cursors" )] public string AddPointCursor { get; set; } = "pointer";
+
+	// --- Palette tuning (live-editable: select the runtime "Edit HUD" object in play mode) ---
+	[Property, Group( "Palette" )] public float SwatchSize { get; set; } = 30f;
+	[Property, Group( "Palette" )] public float SwatchSpacing { get; set; } = 5f;
+	[Property, Group( "Palette" )] public float SwatchRoundness { get; set; } = 14f;
+	[Property, Group( "Palette" )] public int Columns { get; set; } = 6;
+
+	/// <summary>Gap between the shape's bounding circle and the palette to its right (design px — scales with
+	/// the screen). It's added BEYOND the projected radius, so it's a small margin, not the full offset.</summary>
+	[Property, Group( "Palette" )] public float DistanceFromGizmo { get; set; } = 40f;
+
+	/// <summary>Anchor the palette / colour wheel / sliders to the SELECTED SHAPE's bounding circle (the
+	/// default). Off = anchor to the WHOLE sculpt's bounds instead, so the floats frame the finished shape.
+	/// Either way the circle is grown to cover the gizmo's handles, so the floats never sit on them.</summary>
+	[Property, Group( "Palette" )] public bool UseShapeBounds { get; set; } = true;
+
+	// --- Colour wheel picker (floats right of the palette, with the metal/rough sliders underneath) ---
+	/// <summary>Diameter of the colour wheel (design px). The metal/rough sliders underneath match its width.</summary>
+	[Property, Group( "Picker" )] public float PickerSize { get; set; } = 190f;
+	/// <summary>Gap between the palette's right edge and the colour wheel (design px).</summary>
+	[Property, Group( "Picker" )] public float PickerGap { get; set; } = 18f;
+
+	// Wheel + the two slider rows (each ≈ a 46px pill + the 10px column gap), for centring + clamping.
+	float PickerStackHeight => PickerSize + 112f;
+
+	// --- Blend / roundness sliders (float under the gizmo) ---
+	[Property, Group( "Sliders" )] public float SliderWidth { get; set; } = 400f;
+	/// <summary>Blend slider response curve: 1 = linear, &gt;1 gives finer control over small blends (most-used
+	/// range) by stretching the low end across more of the track. Roundness stays linear.</summary>
+	[Property, Group( "Sliders" ), Range( 1f, 4f )] public float BlendCurve { get; set; } = 2.5f;
+	/// <summary>Gap between the bottom of the shape's bounding circle and the slider stack (design px — scales
+	/// with the screen). Added BEYOND the projected radius, so it's a small margin, not the full drop.</summary>
+	[Property, Group( "Sliders" )] public float SliderDropFromGizmo { get; set; } = 40f;
+	/// <summary>Roughly the slider stack's height, for centring + on-screen clamping (device px).</summary>
+	[Property, Group( "Sliders" )] public float SliderStackHeight { get; set; } = 92f;
+
+	// The rounding slider's minimum mirrors the gizmo's old SliderRoundingMin so the 2D slider and the brush
+	// inspector agree on the floor (SDF shapes look odd perfectly sharp).
+	float GizmoSettingsRoundingMin => 0.75f;
+
+	// Top-left of the slider stack (panel px): centred horizontally on the gizmo, dropped below it, clamped
+	// on-screen. Mirrors the palette's tracking so both follow the gizmo as the view orbits.
+	// Apply slider edits to the selected brush and rebuild the field (same path the gizmo sliders used).
+	void SetBlend( float v )
+	{
+		if ( Brush is null )
+			return;
+		Brush.Blend = Math.Clamp( v, 0f, SdfBrush.MaxBlend );
+		Session?.NotifyChanged();
+	}
+
+	void SetRounding( float v )
+	{
+		if ( Brush is null )
+			return;
+		Brush.Rounding = Math.Clamp( v, GizmoSettingsRoundingMin, Brush.MaxRounding() );
+		Session?.NotifyChanged();
+	}
+
+	void SetCurvature( float v )
+	{
+		if ( Brush is null )
+			return;
+		Brush.Curvature = Math.Clamp( v, 0f, 1f );
+		Session?.NotifyChanged();
+	}
+
+	void SetSlice( float v )
+	{
+		if ( Brush is null )
+			return;
+		Brush.Slice = Math.Clamp( v, 0f, SdfBrush.MaxSlice );
+		Session?.NotifyChanged();
+	}
+
+	/// <summary>The selected text brush's string, two-way bound to the HUD's TextEntry. Setting it re-bakes
+	/// the glyph field and resizes the quad so the LETTERS keep a constant world height — the quad grows
+	/// with the string. The quad stays locked to the glyph slot's 2:1 aspect: the slot→world mapping must be
+	/// uniform (matching the quad to the STRING's aspect is what squished the glyphs as you typed).</summary>
+	string SelectedText
+	{
+		get => Brush?.Text ?? "";
+		set
+		{
+			if ( Brush is null || Brush.Text == value )
+				return;
+
+			// Letter height before the change: the quad maps the full slot; letters fill ContentHeightFrac of it.
+			float letterH = Brush.Size.y * (Brush.TextData?.ContentHeightFrac ?? 0.5f);
+
+			Brush.Text = value;
+			var baked = SdfTextSdf.Get( Brush.Text, Brush.Font ); // main thread — safe to bake here
+			Brush.TextData = baked;
+
+			float newY = MathF.Max( letterH / baked.ContentHeightFrac, 1f );
+			Brush.Size = new Vector3( newY * (SdfTextData.Width / (float)SdfTextData.Height), newY, Brush.Size.z );
+			Session?.NotifyChanged();
+		}
+	}
+
+	// Swap the extruded brush's 2D profile. Rounding is re-clamped because the profiles have different
+	// caps (a star's erosion limit is far smaller than a hexagon's apothem), so the slider stays honest.
+	void SetCrossSection( SdfCrossSection cs )
+	{
+		if ( Brush is null || Brush.CrossSection == cs )
+			return;
+		Brush.CrossSection = cs;
+		Brush.Rounding = Math.Clamp( Brush.Rounding, GizmoSettingsRoundingMin, Brush.MaxRounding() );
+		Session?.NotifyChanged();
+	}
+
+	/// <summary>Palette opacity while a gizmo handle is being dragged (0 = hidden, 1 = unchanged), so it
+	/// gets out of the way while you're shaping.</summary>
+	[Property, Group( "Palette" ), Range( 0f, 1f )] public float EditTransparency { get; set; } = 0f;
+
+	/// <summary>How long the palette takes to fade in/out as you start/stop dragging (seconds).</summary>
+	[Property, Group( "Palette" ), Range( 0f, 1f )] public float FadeTime { get; set; } = 0.12f;
+
+	/// <summary>How much a swatch grows when hovered (1 = no change).</summary>
+	[Property, Group( "Palette" ), Range( 1f, 2f )] public float HoverScale { get; set; } = 1.25f;
+
+	// --- Metallic sheen (swatches whose material metalness is above the threshold get a diagonal gradient) ---
+	[Property, Group( "Metallic Sheen" ), Range( 0f, 1f )] public float MetalThreshold { get; set; } = 0.5f;
+	/// <summary>How much darker the gradient's dark stops are than the base colour.</summary>
+	[Property, Group( "Metallic Sheen" ), Range( 0f, 1f )] public float MetalDarken { get; set; } = 0.35f;
+	/// <summary>How much more saturated the dark stops are.</summary>
+	[Property, Group( "Metallic Sheen" ), Range( 0f, 2f )] public float MetalSaturate { get; set; } = 0.4f;
+	/// <summary>How much lighter the central sheen stop is.</summary>
+	[Property, Group( "Metallic Sheen" ), Range( 0f, 1f )] public float MetalSheen { get; set; } = 0.3f;
+	/// <summary>Diagonal angle of the sheen, in degrees.</summary>
+	[Property, Group( "Metallic Sheen" ), Range( 0f, 360f )] public float MetalAngle { get; set; } = 135f;
+
+	// --- Swatch outline (derived from each swatch's own colour; selected swatches get a white outline) ---
+	[Property, Group( "Outline" )] public float OutlineThickness { get; set; } = 2f;
+	/// <summary>How much darker the outline is than the swatch colour.</summary>
+	[Property, Group( "Outline" ), Range( 0f, 1f )] public float OutlineDarken { get; set; } = 0.3f;
+	/// <summary>How much more saturated the outline is.</summary>
+	[Property, Group( "Outline" ), Range( 0f, 2f )] public float OutlineSaturate { get; set; } = 0.3f;
+	/// <summary>Outline opacity.</summary>
+	[Property, Group( "Outline" ), Range( 0f, 1f )] public float OutlineOpacity { get; set; } = 0.5f;
+
+	// Hit-cell size = swatch + spacing, so cells tile edge-to-edge (no dead gaps); the visual swatch is
+	// centred inside with the spacing as the surrounding margin. CellPx is the single integer logical-px value
+	// used for BOTH the cells and the container width, so they can never disagree (a fractional Cell would make
+	// (int)(Columns*Cell) ≠ Columns*(int)Cell and silently drop a column).
+	float Cell => SwatchSize + SwatchSpacing;
+	int CellPx => (int)Cell;
+
+	// Container width = the columns of cells PLUS a hair of slack so flex-wrap never drops a column. At an exact
+	// fit (width == Columns*cell) the renderer rounds each cell to whole PHYSICAL px and the rounded sum can land
+	// a fraction over the rounded container → the last cell wraps, intermittently, depending on resolution. The
+	// overflow is ~½ physical px per cell, which is MORE logical px the smaller the window, so the slack scales
+	// with ScaleFromScreen (physical→logical). It stays well under one cell, so it never fits an extra column.
+	int PaletteWidth => CellPx * Columns + (int)MathF.Ceiling( (Columns + 1) * (Panel?.ScaleFromScreen ?? 1f) );
+
+	int PaletteRows
+	{
+		get
+		{
+			int n = ClayPalette.Default?.Materials?.Count ?? 0;
+			return Math.Max( 1, (int)Math.Ceiling( n / (float)Math.Max( 1, Columns ) ) );
+		}
+	}
+
+	float PaletteHeight => PaletteRows * CellPx;
+
+	// Toggle a mirror-symmetry axis (0=X, 1=Y, 2=Z) on the selected brush and rebuild.
+	void ToggleMirror( int axis )
+	{
+		if ( Brush is null )
+			return;
+
+		switch ( axis )
+		{
+			case 0: Brush.MirrorX = !Brush.MirrorX; break;
+			case 1: Brush.MirrorY = !Brush.MirrorY; break;
+			default: Brush.MirrorZ = !Brush.MirrorZ; break;
+		}
+
+		Session?.NotifyChanged();
+	}
+
+	// Apply a palette preset (colour + metalness + roughness) to the selected brush.
+	void ApplyMaterial( ClayMaterial m )
+	{
+		if ( Brush is null )
+			return;
+
+		m.ApplyTo( Brush );
+		Session?.NotifyChanged();
+	}
+
+	// Apply colour-wheel / metal / rough edits from the picker column straight onto the selected brush —
+	// the same path a palette click takes, just one property at a time.
+	void SetColor( Color c )
+	{
+		if ( Brush is null )
+			return;
+		Brush.Color = c.WithAlpha( 1f );
+		Session?.NotifyChanged();
+	}
+
+	void SetMetallic( float v )
+	{
+		if ( Brush is null )
+			return;
+		Brush.Metallic = Math.Clamp( v, 0f, 1f );
+		Session?.NotifyChanged();
+	}
+
+	void SetRoughness( float v )
+	{
+		if ( Brush is null )
+			return;
+		Brush.Roughness = Math.Clamp( v, 0f, 1f );
+		Session?.NotifyChanged();
+	}
+
+	// Swatch background: a flat colour, or a diagonal dark→light→dark sheen for metallic materials. The
+	// sheen maths live in ClayLook so the layer-row icons render the same metal; the palette's inspector
+	// tunables are passed through as overrides.
+	string SwatchBg( ClayMaterial m )
+	{
+		var baseHex = ClayLook.Hex( m.Color );
+		if ( m.Metalness <= MetalThreshold )
+			return $"background-color: {baseHex};";
+
+		var grad = ClayLook.MetalGradient( m.Color, MetalDarken, MetalSaturate, MetalSheen, MetalAngle );
+		return $"background-color: {baseHex}; background-image: {grad};";
+	}
+
+	// Swatch outline: white when selected, otherwise a darker/more-saturated version of its own colour.
+	string SwatchBorder( ClayMaterial m, bool selected )
+	{
+		int t = (int)OutlineThickness;
+		if ( selected )
+			return $"border: {t}px solid rgba(255, 255, 255, 1);";
+
+		var c = ClayLook.Saturate( ClayLook.Darken( m.Color, OutlineDarken ), OutlineSaturate );
+		string a = OutlineOpacity.ToString( "0.##", CultureInfo.InvariantCulture );
+		return $"border: {t}px solid rgba({(int)(c.r * 255)}, {(int)(c.g * 255)}, {(int)(c.b * 255)}, {a});";
+	}
+
+	// The selected brush's world bounding SPHERE projected to screen (logical panel px = screen px × scale):
+	// its centre + radius. Drives the Bounds silhouette (a per-shape debug view). Returns false when there's
+	// no selection or the centre is behind the camera.
+	bool BrushScreenSphere( out Vector2 centrePx, out float radiusPx )
+	{
+		centrePx = default;
+		radiusPx = 0f;
+
+		var brush = Brush;
+		if ( brush is null )
+			return false;
+
+		brush.LocalBounds( out var mn, out var mx, includeBlend: false ); // the visible primitive extent, not the blend-padded mesher bounds
+		return ScreenSphere( mn, mx, out centrePx, out radiusPx );
+	}
+
+	// The WHOLE sculpt's bounding sphere on screen. Falls back to the selected brush's sphere when the union
+	// has no additive brushes to bound (e.g. everything is subtract).
+	bool ModelScreenSphere( out Vector2 centrePx, out float radiusPx )
+	{
+		centrePx = default;
+		radiusPx = 0f;
+
+		var brushes = Session?.Target?.Brushes;
+		if ( brushes is not null && Sdf.TryGetBounds( brushes, out var bb ) )
+			return ScreenSphere( bb.Mins, bb.Maxs, out centrePx, out radiusPx );
+
+		return BrushScreenSphere( out centrePx, out radiusPx );
+	}
+
+	// The circle the palette / picker / sliders float around: the shape's (or, with UseShapeBounds off, the
+	// whole sculpt's) bounding circle, grown to cover the gizmo's on-screen footprint — whichever is larger
+	// wins, so a small shape's floats still clear the handles instead of sitting on top of them. Anchoring
+	// to a projected sphere (rather than a gizmo handle) keeps the floats roughly put as you orbit.
+	bool AnchorScreenSphere( out Vector2 centrePx, out float radiusPx )
+	{
+		bool ok = UseShapeBounds
+			? BrushScreenSphere( out centrePx, out radiusPx )
+			: ModelScreenSphere( out centrePx, out radiusPx );
+		if ( !ok )
+			return false;
+
+		if ( Session?.TryGetGizmoScreenCircle( out var gizmoCentre, out var gizmoRadius ) ?? false )
+		{
+			// Screen px → panel px, then grow to the gizmo circle's FAR edge — it's usually concentric with
+			// the shape, but the whole-sculpt bounds centre can sit elsewhere.
+			float scale = Panel?.ScaleFromScreen ?? 1f;
+			var gc = new Vector2( gizmoCentre.x * scale, gizmoCentre.y * scale );
+			radiusPx = MathF.Max( radiusPx, (gc - centrePx).Length + gizmoRadius * scale );
+		}
+
+		return true;
+	}
+
+	// Project a local-space AABB's bounding sphere to screen (shared by the brush + whole-model anchors).
+	bool ScreenSphere( Vector3 mn, Vector3 mx, out Vector2 centrePx, out float radiusPx )
+	{
+		centrePx = default;
+		radiusPx = 0f;
+
+		var s = Session;
+		var cam = Scene?.Camera;
+		if ( s is null || cam is null || !s.Target.IsValid() )
+			return false;
+
+		var tx = s.Target.WorldTransform;
+		var worldCentre = tx.PointToWorld( (mn + mx) * 0.5f );
+		float worldRadius = MathF.Max( (mx - mn).Length * 0.5f, 1f );
+
+		if ( Vector3.Dot( worldCentre - cam.WorldPosition, cam.WorldRotation.Forward ) <= 0f )
+			return false; // behind the camera
+
+		float scale = Panel?.ScaleFromScreen ?? 1f;
+		var c = cam.PointToScreenPixels( worldCentre );
+		var e = cam.PointToScreenPixels( worldCentre + cam.WorldRotation.Right * worldRadius );
+		centrePx = new Vector2( c.x * scale, c.y * scale );
+		radiusPx = new Vector2( e.x - c.x, e.y - c.y ).Length * scale; // sphere radius in panel px
+		return true;
+	}
+
+	// Palette: just off the RIGHT of the anchor circle, vertically centred on it. DistanceFromGizmo is the
+	// gap beyond the silhouette. Clamped so the palette AND the picker column to its right both stay on
+	// screen — the palette gives ground early so the wheel never has to choose between the screen edge and
+	// overlapping the swatches.
+	Vector2? PalettePos()
+	{
+		if ( !AnchorScreenSphere( out var centre, out var radius ) )
+			return null;
+
+		float scale = Panel?.ScaleFromScreen ?? 1f;
+		float x = centre.x + radius + DistanceFromGizmo;
+		float y = centre.y - PaletteHeight * 0.5f;
+
+		const float margin = 8f;
+		float reserve = ShowPicker ? PickerSize + PickerGap : 0f;
+		float screenW = Screen.Width * scale;
+		float screenH = Screen.Height * scale;
+		x = Math.Clamp( x, margin, MathF.Max( margin, screenW - PaletteWidth - reserve - margin ) );
+		y = Math.Clamp( y, margin, MathF.Max( margin, screenH - PaletteHeight - margin ) );
+		return new Vector2( x, y );
+	}
+
+	// Picker column (colour wheel + metal/rough sliders): just off the RIGHT of the palette, top-aligned
+	// with it. Takes the palette's slot (and centres on the bounding circle) when the palette is hidden.
+	Vector2? PickerPos()
+	{
+		if ( !AnchorScreenSphere( out var centre, out var radius ) )
+			return null;
+
+		float scale = Panel?.ScaleFromScreen ?? 1f;
+		float x = centre.x + radius + DistanceFromGizmo;
+		float y = centre.y - PickerStackHeight * 0.5f;
+		float minX = 8f;
+		if ( ShowPalette && PalettePos() is { } pal )
+		{
+			// Overlapping the swatches is worse than running off the screen edge, so the palette's right
+			// edge (plus the gap) is a hard floor the screen clamp below can't pull the wheel back over.
+			x = minX = pal.x + PaletteWidth + PickerGap;
+			y = pal.y;
+		}
+
+		const float margin = 8f;
+		float screenW = Screen.Width * scale;
+		float screenH = Screen.Height * scale;
+		x = Math.Clamp( x, minX, MathF.Max( minX, screenW - PickerSize - margin ) );
+		y = Math.Clamp( y, margin, MathF.Max( margin, screenH - PickerStackHeight - margin ) );
+		return new Vector2( x, y );
+	}
+
+	// Sliders: under the BOTTOM of the anchor circle, horizontally centred on it. Clamped to the screen, so
+	// on a big/zoomed-in shape they ride up against the bottom edge instead of falling off it.
+	Vector2? SliderPos()
+	{
+		if ( !AnchorScreenSphere( out var centre, out var radius ) )
+			return null;
+
+		float scale = Panel?.ScaleFromScreen ?? 1f;
+		float x = centre.x - SliderWidth * 0.5f;
+		float y = centre.y + radius + SliderDropFromGizmo;
+
+		// The stack's real height varies (two or three sliders, plus the extruded profile row), so measure
+		// the rendered panel for the bottom-of-screen clamp — the fixed SliderStackHeight would let a taller
+		// stack clip off the bottom. Box.Rect is physical screen px (×scale → logical, like everything here);
+		// the property stays as the pre-first-layout fallback.
+		float stackH = SliderStackHeight;
+		if ( SliderStackPanel is { } sp && sp.Box.Rect.Height > 0f )
+			stackH = sp.Box.Rect.Height * scale;
+
+		const float margin = 8f;
+		float screenW = Screen.Width * scale;
+		float screenH = Screen.Height * scale;
+		x = Math.Clamp( x, margin, MathF.Max( margin, screenW - SliderWidth - margin ) );
+		y = Math.Clamp( y, margin, MathF.Max( margin, screenH - stackH - margin ) );
+		return new Vector2( x, y );
+	}
+
+	// Re-render when the session/selection/brush state or the gizmo's screen position changes (so the palette
+	// follows the gizmo). While dragging a handle the palette is fading out, so freeze the tracked position
+	// out of the hash — else the brush moving each frame would re-render and restart the fade transition.
+	protected override int BuildHash()
+	{
+		var s = Session;
+		var b = Brush;
+		bool manip = s?.IsManipulating ?? false;
+		var pos = PalettePos();
+		int px = (pos.HasValue && !manip) ? (int)pos.Value.x : int.MinValue;
+		int py = (pos.HasValue && !manip) ? (int)pos.Value.y : int.MinValue;
+		var ppos = PickerPos();
+		int ppx = (ppos.HasValue && !manip) ? (int)ppos.Value.x : int.MinValue;
+		int ppy = (ppos.HasValue && !manip) ? (int)ppos.Value.y : int.MinValue;
+
+		var hc = new HashCode();
+		hc.Add( s );
+		hc.Add( s?.IsEditing ?? false );
+		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
+		hc.Add( ShowPicker );
+		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
+		hc.Add( s?.Selected ?? -1 );
+		hc.Add( s?.Target?.Brushes?.Count ?? 0 );
+
+		// Each row shows per-brush state (shape / op / colour / visibility / symmetry), so fold all of it in
+		// — otherwise toggling a NON-selected row wouldn't re-render its icons.
+		if ( s?.Target?.Brushes is { } rows )
+			foreach ( var br in rows )
+			{
+				hc.Add( (int)br.Shape );
+				hc.Add( (int)br.Operation );
+				hc.Add( br.Enabled );
+				hc.Add( br.Color );
+				hc.Add( br.MirrorX ); hc.Add( br.MirrorY ); hc.Add( br.MirrorZ );
+			}
+
+		hc.Add( _dragIndex );
+		hc.Add( _dropIndex );
+		hc.Add( _dragOffsetY );
+		hc.Add( _stride );
+		hc.Add( AltNav.Dragging );
+		hc.Add( AltNav.Anchor );
+		hc.Add( AltNav.Held );
+		hc.Add( PauseMenu.IsOpen ); // re-render so the HUD goes inert (alt-nav class) while paused
+		hc.Add( b?.Color );
+		hc.Add( b?.Metallic ?? 0f );
+		hc.Add( b?.Roughness ?? 0f );
+		hc.Add( b?.Blend ?? 0f );      // drives the 2D blend slider's fill
+		hc.Add( b?.Rounding ?? 0f );   // drives the 2D roundness slider's fill
+		hc.Add( b?.Slice ?? 0f );      // drives the slice slider's fill (sphere/cone)
+		hc.Add( b?.Curvature ?? 0f );  // drives the spline curvature slider's fill
+		hc.Add( (int)(b?.Shape ?? SdfShape.Sphere) ); // show/hide the curvature slider (spline only)
+		hc.Add( (int)(b?.CrossSection ?? SdfCrossSection.Triangle) ); // highlight the picked profile chip
+		hc.Add( b?.Text ); // show/refresh the text-entry row
+		hc.Add( b?.Font );
+		hc.Add( b?.MirrorX ?? false );
+		hc.Add( b?.MirrorY ?? false );
+		hc.Add( b?.MirrorZ ?? false );
+		hc.Add( ClayPalette.Default?.Materials?.Count ?? 0 );
+		hc.Add( px );
+		hc.Add( py );
+		hc.Add( ppx );
+		hc.Add( ppy );
+		hc.Add( PickerSize );
+		hc.Add( PickerGap );
+		hc.Add( UseShapeBounds );
+		hc.Add( ClayColorPicker.Dragging ); // raise/drop the drag-capture overlay for wheel scrubs too
+		hc.Add( manip );
+		hc.Add( SwatchSize );
+		hc.Add( SwatchSpacing );
+		hc.Add( SwatchRoundness );
+		hc.Add( Columns );
+		hc.Add( DistanceFromGizmo );
+		hc.Add( SliderWidth );           // so inspector tweaks to the slider tunables re-render live
+		hc.Add( BlendCurve );
+		hc.Add( ClaySlider.Dragging );   // raise/drop the drag-capture overlay as a scrub starts/ends
+		hc.Add( SliderDropFromGizmo );
+		hc.Add( SliderStackHeight );
+		hc.Add( EditTransparency );
+		hc.Add( FadeTime );
+		hc.Add( HoverScale );
+		hc.Add( _hoverIndex );
+		hc.Add( MetalThreshold );
+		hc.Add( MetalDarken );
+		hc.Add( MetalSaturate );
+		hc.Add( MetalSheen );
+		hc.Add( MetalAngle );
+		hc.Add( OutlineThickness );
+		hc.Add( OutlineDarken );
+		hc.Add( OutlineSaturate );
+		hc.Add( OutlineOpacity );
+		return hc.ToHashCode();
+	}
+}

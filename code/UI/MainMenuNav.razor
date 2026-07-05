@@ -1,0 +1,135 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@using Sandbox.UI.Navigation
+@namespace Mimiclay
+@inherits NavigationHost
+
+@*
+	The menu's navigator. The routed pages (HomePage, HostPage, SessionsPage, OptionsPage) render into the
+	navigator-canvas slot; the dark "fired clay" backdrop sits behind them all. Mirrors MiniMotors' MainMenuPanel.
+
+	A single persistent footer button lives here (rather than one per page): "Back" on any sub-page (GoBack /
+	Escape), "Quit" on the landing page. Copied from punt_reboot's footer pattern.
+*@
+
+<root class="@RootClass">
+	<div class="navigator-canvas" slot="navigator-canvas"></div>
+
+	<div class="menu-footer">
+		<div class="footer-button" @onclick=@OnFooter>
+			<WobbleText Text=@(IsHome ? "Quit" : "Back") />
+		</div>
+
+		@* Page-specific footer actions on the server browser: Refresh, then a Join button (same style as the Host
+		   "Start Game") once a session is selected. *@
+		@if ( IsSessions )
+		{
+			<div class="footer-button" @onclick=@OnRefresh>
+				<WobbleText Text="Refresh" />
+			</div>
+
+			@if ( SessionsPage.Current?.HasSelection ?? false )
+			{
+				<div class="btn btn-action footer-join" @onclick=@OnJoin>
+					<span>Join Game</span>
+				</div>
+			}
+		}
+	</div>
+
+	@* Persistent control hints (top-right) for the sculpt toy's alt-nav — shown on every page, like the version tag. *@
+	<div class="menu-controls">
+		<div>Alt + Left-drag · Rotate</div>
+		<div>Alt + Right-drag · Zoom</div>
+		<div>Alt + Middle-drag · Pan</div>
+	</div>
+
+	@* Persistent build tag — lives here (not on a page) so it stays bottom-right through every navigation. *@
+	<div class="menu-version">Version 0.0</div>
+</root>
+
+@code
+{
+	/// <summary>Live navigator instance, so any page can read/drive the current route via the static.</summary>
+	public static MainMenuNav Instance { get; private set; }
+
+	// While Alt is held the sculpt toy is being navigated (orbit/zoom/pan): the cursor is hidden + driven by the
+	// nav, so the whole menu goes inert (its buttons drop pointer-events, see _menu.scss / _button.scss) — exactly
+	// as EditHud does — so the drifting cursor can't hover/click them and the drag falls through to the scene.
+	string RootClass => AltNav.Held ? "menu-bg nav-inert" : "menu-bg";
+
+	// The landing page is the root route; there's nowhere to go "back" to, so the footer offers Quit instead.
+	bool IsHome => string.IsNullOrEmpty( CurrentUrl ) || CurrentUrl == "/";
+
+	// The server browser gets an extra footer action (Refresh), driven through the page's static instance.
+	bool IsSessions => CurrentUrl == "/sessions";
+
+	public MainMenuNav()
+	{
+		Instance = this;
+		DefaultUrl = "/";
+	}
+
+	protected override void OnParametersSet()
+	{
+		// If we somehow arrive already in a session (e.g. a Steam invite launched us straight in), there's no
+		// lobby screen yet — just sit on home. Once a lobby flow exists this is where we'd deep-link to it.
+		if ( CurrentUrl == null )
+			DefaultUrl = "/";
+
+		base.OnParametersSet();
+	}
+
+	// Footer click: quit from the landing page, otherwise step back through the navigation history (falling back
+	// to home if there's nothing to go back to — e.g. a deep-link).
+	void OnFooter()
+	{
+		if ( IsHome )
+		{
+			Game.Close();
+			return;
+		}
+
+		GoBackOrHome();
+	}
+
+	void GoBackOrHome()
+	{
+		if ( !GoBack() )
+			Navigate( "/" );
+	}
+
+	// Footer Refresh (server browser only) — re-query through the live page instance.
+	void OnRefresh() => SessionsPage.Current?.Refresh();
+
+	// Footer Join (server browser only) — connect to the selected session through the live page instance.
+	void OnJoin() => SessionsPage.Current?.JoinSelected();
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		// Escape still works as Back on any sub-page (no on-screen hint anymore, but it's standard). Deliberately
+		// NOT wired to Quit on the landing page, so you can't accidentally close the game by tapping Escape.
+		if ( !IsHome && Input.EscapePressed )
+			GoBackOrHome();
+
+		// Auto-clear a surfaced error once it's lived its lifetime — the page's .menu-error fades it out across
+		// this window, then this removes it (so it doesn't reappear stale on a later visit).
+		if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) && MenuNetworking.ErrorAge > MenuNetworking.ErrorLifetime )
+			MenuNetworking.ClearError();
+	}
+
+	// Re-render when the route changes (footer swaps Back/Quit + shows the server-browser actions) and when the
+	// Sessions selection changes (so the Join button appears/disappears).
+	protected override int BuildHash()
+		=> System.HashCode.Combine( base.BuildHash(), CurrentUrl, IsSessions && (SessionsPage.Current?.HasSelection ?? false), AltNav.Held );
+
+	public override void OnDeleted()
+	{
+		base.OnDeleted();
+		if ( Instance == this )
+			Instance = null;
+	}
+}

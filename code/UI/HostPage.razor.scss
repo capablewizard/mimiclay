@@ -1,0 +1,191 @@
+@import "/UI/_menu.scss";
+
+// Host controls styled to the reference: opaque cream "paper" cards/rows with dark ink text, craft-blue icons,
+// orange for the active/selected state. Body text (subtitle + section labels) is dark brown to read on the light
+// menu scene; the cream clay title is left as-is. Content sits up near the top, under the title.
+.host-page
+{
+	// Top-align the content under the title (rather than vertically centring it like the landing menu), with a
+	// clear gap below the title. Bump this margin-top to push the content further down.
+	.menu-content { justify-content: flex-start; margin-top: 40px; }
+
+	// Subtitle reads as dark body text on the light scene (no light-text shadow).
+	.menu-subtitle { color: $paper-ink; text-shadow: none; }
+
+	.section { flex-direction: column; gap: $space-sm; }
+
+	// Dark brown section label
+	.section-label
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		font-family: $header-font;
+		font-size: 24px;
+		font-weight: 800;
+		letter-spacing: 2px;
+		text-transform: uppercase;
+		color: $paper-ink;
+
+
+	}
+
+	// --- Mode cards (cream paper tiles) ---
+	.mode-grid
+	{
+		flex-direction: row;
+		gap: $space-md;
+		flex-wrap: wrap;
+	}
+
+	.mode-card
+	{
+		flex-direction: column;
+		gap: $space-sm;
+		width: 300px;
+		padding: 18px 20px;
+		border-radius: $radius-lg; // surface (fill/outline/shadow) comes from .paper-card
+		cursor: pointer;
+		pointer-events: all; // s&box default is pointer-events:none; opt in to be clickable
+		transition: all 0.12s ease-out;
+
+		// Icon + name share the top row; blurb sits below.
+		.mode-head
+		{
+			flex-direction: row;
+			align-items: center;
+			gap: $space-sm;
+		}
+
+		.mode-icon { font-size: 24px; color: $craft-blue; }
+		.mode-name { font-size: 24px; font-weight: 700;letter-spacing: 1px; text-transform: uppercase; color: $paper-ink; }
+		.mode-blurb { font-size: 16px; color: $paper-ink-soft; } // a sentence — left in normal case
+
+		// Hover never recolours — it just enlarges. Orange is reserved for the selected state.
+		&:hover { transform: scale( 1.03 ); sound-in: $sound-hover; }
+		&:active { sound-in: $sound-click; }
+
+		// Selected = orange fill with dark ink (matches an EditHud selected row).
+		&.selected
+		{
+			background-color: $craft-orange;
+			.mode-icon { color: $paper-ink; }
+		}
+	}
+
+	// --- Setting rows (chunky cream paper pills) ---
+	.setting-row
+	{
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		padding: 14px 24px;
+		border-radius: $radius-lg; // surface comes from .paper-card
+	}
+
+	.setting-name
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: $space-sm;
+		font-size: 24px;
+		letter-spacing: 1px;
+		font-weight: 700;
+		text-transform: uppercase;
+		color: $paper-ink;
+
+		.mi { font-size: 22px; color: $craft-blue; }
+	}
+
+	// Stepper (max players) — paper pills that enlarge on hover (no colour change; they're never "selected").
+	.stepper
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: $space-sm;
+
+		.step-btn
+		{
+			font-family: "Material Icons";
+			font-size: 20px;
+			width: 38px;
+			height: 38px;
+			align-items: center;
+			justify-content: center;
+			border-radius: $radius-md;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
+			color: $paper-ink;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+
+			&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }   // enlarge only
+			// Flash orange + press in while actually held down (momentary click feedback).
+			&:active { transform: scale( 0.96 ); background-color: $craft-orange; sound-in: $sound-click; }
+		}
+
+		.step-value
+		{
+			min-width: 40px;
+			justify-content: center;
+			font-size: 20px;
+			font-weight: 700;
+			color: $paper-ink;
+		}
+	}
+
+	// Segmented control (privacy) — individual cream pills; the active one is orange.
+	.seg
+	{
+		flex-direction: row;
+		gap: $space-sm;
+
+		.seg-item
+		{
+			padding: 8px 18px;
+			border-radius: $radius-pill;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
+			font-size: 14px;
+			font-weight: 700;
+			text-transform: uppercase;
+			color: $paper-ink;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+
+			&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; }   // enlarge only — no recolour
+			&:active { sound-in: $sound-click; }
+			&.on { background-color: $craft-orange; } // orange = selected
+		}
+	}
+
+	// Session name entry — a recessed "gap" field, like the EditHud slider groove (darkened inset rather than a
+	// raised pill), so it reads as something you drop text into.
+	.name-entry
+	{
+		width: 320px;
+		// NB: keep the radius well under half the field height. The base .textentry sets overflow:hidden, so a
+		// full pill radius rounds the end-caps right over the text — the leading characters get clipped into a
+		// triangular taper. A moderate radius (+ padding that clears it) keeps the whole glyph visible.
+		padding: 9px 18px;
+		border-radius: $radius-md;
+		background-color: rgba( 44, 36, 24, 0.12 );   // recessed groove (matches .clay-slider .track)
+		border: 1.5px solid rgba( 44, 36, 24, 0.35 ); // darker inset outline
+		color: $paper-ink;
+		font-size: 15px;
+		font-family: $body-font;
+		pointer-events: all; // needed to focus + type into the entry
+	}
+
+	// --- Footer (Start sits to the right, under the settings) ---
+	.host-footer
+	{
+		flex-direction: row;
+		justify-content: flex-end;
+		margin-top: $space-lg;
+	}
+
+	// Start Game uses the shared clay action button — see .btn-action in _button.scss (same style as Sessions' Join).
+}

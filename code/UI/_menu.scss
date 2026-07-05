@@ -1,0 +1,351 @@
+// =============================================================================
+//  Mimiclay front-end (main menu) shared layout kit.
+//
+//  The menu floats over the 3D menu scene (no opaque backdrop), so it reads like
+//  the in-game HUD: light cream text + craft accents sitting on the scene, with
+//  any solid controls drawn as cream paper cards (see _button.scss). Per-control
+//  look comes from _theme.scss + _button.scss; this is the arrangement glue.
+// =============================================================================
+
+@import "/UI/_theme.scss";
+@import "/UI/_button.scss";
+
+// --- Menu shell --------------------------------------------------------------
+// Transparent: the 3D menu scene shows through. Just the layout column + base
+// type for everything floating on top.
+.menu-bg
+{
+	width: 100%;
+	height: 100%;
+	flex-direction: column; // page canvas grows; the persistent footer sits beneath it
+	font-family: $body-font;
+	color: $scene-text;
+}
+
+// --- NavigationHost plumbing -------------------------------------------------
+// The host parents each routed page into ".navigator-canvas" wrapped in a
+// ".navigator-body" panel, tagging the inactive ones ".hidden". Canvas grows to
+// fill the space above the footer; pages overlay each other inside it so
+// navigating REPLACES the view instead of stacking pages as flex siblings.
+.navigator-canvas
+{
+	position: relative;
+	flex: 1 1 auto;
+	width: 100%;
+	overflow: hidden;
+}
+
+.navigator-body
+{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+
+	&.hidden { display: none; }
+}
+
+// --- Shared page frame -------------------------------------------------------
+// ONE consistent left-aligned frame every menu page sits in: WobbleText title at the top, content in the band
+// below — the same spot the landing-page menu occupies. Bump $menu-left to move everything in from the left.
+$menu-left: 64px;
+
+.menu-page
+{
+	width: 100%;
+	height: 100%;
+	flex-direction: column;
+	padding: $panel-inset 48px; // 48 = 2 × $panel-inset (s&box scss has no arithmetic, so it's spelled out)
+	padding-left: $menu-left;
+}
+
+// Page title — a <WobbleText> wordmark. Add the "hero" class for the bigger landing title.
+.menu-title
+{
+	font-family: $header-font;
+	font-size: 140px;
+	color: $scene-text;
+	text-transform: uppercase;
+	margin-top: 10px;
+	flex-shrink: 0; // pinned at the top — a tall page body (e.g. the Sessions list) must never displace the title
+
+	&.hero { font-size: 200px; }
+}
+
+// Layered clay shadow on EVERY page title (overrides WobbleText's default sticker shadow). Scoped via .menu-page
+// so it out-specifies that default. Glow listed first so it paints UNDER the depth (s&box draws stacked
+// text-shadows last-on-top). Offsets scale with the title size: sub-page titles 140px; the hero (landing) 200px.
+.menu-page .menu-title .letter
+{
+	text-shadow:
+		12.6px 14px 3.5px $emboss-glow,
+		4.2px 5.6px 0px $emboss-depth;
+}
+
+.menu-page .menu-title.hero .letter
+{
+	text-shadow:
+		18px 20px 5px $emboss-glow,
+		6px 8px 0px $emboss-depth;
+}
+
+.menu-subtitle
+{
+	font-size: 18px;
+	color: $scene-text-dim;
+	text-shadow: $scene-shadow;
+	margin-bottom: $space-lg;
+}
+
+// The page body — sits in the band below the title (the same place the landing menu sits). Capped so wide
+// content (settings rows, lists) stays a readable left-aligned column rather than stretching the whole screen.
+.menu-content
+{
+	flex-direction: column;
+	justify-content: center;
+	flex-grow: 1;
+	min-height: 0;   // allow this to be bounded by the page column so a scrollable child (lists) scrolls INSIDE it
+	max-width: 760px;
+	gap: $space-lg;
+}
+
+// --- Big text button --------------------------------------------------------
+// The large header-font menu item used on the landing page AND the in-game pause menu: cream-over-scene text with
+// the layered clay emboss, growing + jittering per-letter on hover. The label is a <WobbleText> (static until
+// hovered; the jitter is the combined .menu-button/.footer-button rule below). transform-origin defaults to the
+// LEFT edge (landing menu grows rightward); the pause menu overrides it to centre.
+.menu-button
+{
+	font-family: $header-font;
+	font-size: 84px;
+	text-transform: uppercase;
+	color: $scene-text;
+	cursor: pointer;
+	pointer-events: all;
+	transform-origin: left center;
+	transition: all 0.1s ease-out;
+	// NOTE: no filter:drop-shadow — it clips the letters' right overhang and re-casts a jittering shadow on hover.
+	// The emboss text-shadow below provides the depth instead.
+
+	.letter
+	{
+		// Glow listed FIRST so it paints UNDER the depth — s&box draws stacked text-shadows last-on-top.
+		text-shadow:
+			12px 14px 5px $emboss-glow,
+			3px 6px 0px $emboss-depth;
+	}
+
+	// Whole-label enlarge on hover (per-letter jitter is the combined rule below). No colour change on hover.
+	&:hover { transform: scale( 1.06 ); sound-in: $sound-hover; }
+	&:active { sound-in: $sound-click; }
+
+	// Headline action — warm terracotta (e.g. Quick Play). Only the DEPTH colour changes; glow stays shared.
+	&.primary
+	{
+		color: $craft-orange;
+		&:hover { color: $craft-orange-hi; }
+
+		.letter
+		{
+			text-shadow:
+				12px 14px 5px $emboss-glow,
+				3px 6px 0px $emboss-depth-primary;
+		}
+	}
+
+	// Greyed + inert (e.g. while a network action is in flight).
+	&.disabled
+	{
+		color: $scene-text-dim;
+		cursor: default;
+		pointer-events: none;
+		transform: none;
+	}
+}
+
+// While the sculpt toy is alt-navigated (orbit/zoom/pan) the menu goes inert (nav-inert on .menu-bg, set from
+// AltNav.Held): the interactive labels — which opt into pointer-events:all above — drop back to
+// none so the hidden, drifting cursor can't hover/click them and the drag falls through to the scene. Mirrors the
+// EditHud .alt-nav treatment. (.btn / .btn-action are handled the same way in _button.scss.)
+.nav-inert
+{
+	.menu-button,
+	.footer-button { pointer-events: none; }
+}
+
+// --- Persistent footer -------------------------------------------------------
+// One footer for the whole menu (lives in MainMenuNav): text buttons — "Back" on any
+// sub-page ("Quit" on the landing page), plus optional page-specific actions to its
+// right (e.g. Refresh on the server browser). Container is click-through; only the
+// buttons opt in.
+.menu-footer
+{
+	flex: 0 0 auto;
+	flex-direction: row;
+	align-items: center;
+	gap: 48px; // space between footer buttons (Back ↔ Refresh); no effect when there's only one
+	padding: $panel-inset 48px; // 48 = 2 × $panel-inset (s&box scss has no arithmetic, so it's spelled out)
+	padding-left: $menu-left; // line the Back/Quit button up with the page content
+	pointer-events: none;
+}
+
+// Same behaviour as the landing-page menu buttons: solid cream text that enlarges and does the per-letter
+// claymation jitter on hover. Label is a <WobbleText> (static until hovered).
+.footer-button
+{
+	font-family: $header-font;
+	font-size: 64px;
+	text-transform: uppercase;
+	color: $scene-text;
+	cursor: pointer;
+	pointer-events: all;
+	transform-origin: left center;
+	transition: all 0.1s ease-out;
+	// No filter:drop-shadow — it clips the right overhang + re-casts a jittering shadow on hover (see .menu-button).
+	// The emboss text-shadow (.menu-footer .footer-button .letter, below) provides the depth.
+
+	&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }
+	&:active { sound-in: $sound-click; }
+	// Per-letter jitter on hover is shared with the landing buttons — see the combined rule below.
+}
+
+// Same layered clay shadow as the title, scaled to this size (~0.32× of the 200px hero). Scoped via .menu-footer
+// so it out-specifies WobbleText's default .letter shadow.
+.menu-footer .footer-button .letter
+{
+	// Glow first so it paints UNDER the depth (s&box draws stacked text-shadows last-on-top).
+	text-shadow:
+		10px 12px 4px $emboss-glow,
+		4px 6px 0px $emboss-depth;
+}
+
+// Per-letter claymation jitter on hover — shared by the landing buttons (.menu-button) and the footer buttons
+// (.footer-button). The letters (from <WobbleText>) all start together (0s delay) but each runs a slightly
+// different DURATION, so they drift out of sync within the first cycle → every letter does its own thing. Covers
+// up to 14 letters; shorter labels just use fewer. ONE definition for both so they can't drift apart. (The
+// clay-jitter keyframe lives in WobbleText.razor.scss; both buttons have WobbleText children, so it resolves.)
+.menu-button:hover .letter,
+.footer-button:hover .letter { animation: clay-jitter $wobble-duration linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  1 ), .footer-button:hover .letter:nth-child(  1 ) { animation: clay-jitter 0.90s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  2 ), .footer-button:hover .letter:nth-child(  2 ) { animation: clay-jitter 1.10s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  3 ), .footer-button:hover .letter:nth-child(  3 ) { animation: clay-jitter 0.80s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  4 ), .footer-button:hover .letter:nth-child(  4 ) { animation: clay-jitter 1.05s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  5 ), .footer-button:hover .letter:nth-child(  5 ) { animation: clay-jitter 0.95s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  6 ), .footer-button:hover .letter:nth-child(  6 ) { animation: clay-jitter 1.15s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  7 ), .footer-button:hover .letter:nth-child(  7 ) { animation: clay-jitter 0.85s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  8 ), .footer-button:hover .letter:nth-child(  8 ) { animation: clay-jitter 1.00s linear 0s infinite; }
+.menu-button:hover .letter:nth-child(  9 ), .footer-button:hover .letter:nth-child(  9 ) { animation: clay-jitter 1.08s linear 0s infinite; }
+.menu-button:hover .letter:nth-child( 10 ), .footer-button:hover .letter:nth-child( 10 ) { animation: clay-jitter 0.88s linear 0s infinite; }
+.menu-button:hover .letter:nth-child( 11 ), .footer-button:hover .letter:nth-child( 11 ) { animation: clay-jitter 1.12s linear 0s infinite; }
+.menu-button:hover .letter:nth-child( 12 ), .footer-button:hover .letter:nth-child( 12 ) { animation: clay-jitter 0.92s linear 0s infinite; }
+.menu-button:hover .letter:nth-child( 13 ), .footer-button:hover .letter:nth-child( 13 ) { animation: clay-jitter 1.02s linear 0s infinite; }
+.menu-button:hover .letter:nth-child( 14 ), .footer-button:hover .letter:nth-child( 14 ) { animation: clay-jitter 0.82s linear 0s infinite; }
+
+// The footer "Join Game" clay action button (.btn-action). Nudge it up a touch: its hard 3D depth extrude is
+// cast downward, which otherwise makes it read as sitting lower than the flat text buttons beside it. Using `top`
+// (not transform) so it doesn't clash with the button's hover jitter, which animates `transform`.
+.footer-join
+{
+	position: relative;
+	top: -5px;
+}
+
+// Persistent build tag, bottom-right, on top of everything (lives in MainMenuNav so it survives navigation).
+// Dark brown + uppercase; click-through so it never blocks a control near the corner.
+.menu-version
+{
+	position: absolute;
+	bottom: $space-sm;
+	right: $space-sm;
+	z-index: 20;
+	font-family: Tahoma; //, sans-serif // plain system sans, not the craft body font
+	font-size: 12px;
+	font-weight: 700;
+	color: $paper-ink;
+	opacity: 0.7;
+	pointer-events: none;
+	text-transform: uppercase;
+
+}
+
+// Control hints — top-right counterpart to the version tag. Same plain, dim, uppercase look; stacked + right-aligned.
+.menu-controls
+{
+	position: absolute;
+	top: $space-sm;
+	right: $space-sm;
+	z-index: 20;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 2px;
+	font-family: Tahoma;
+	font-size: 12px;
+	font-weight: 700;
+	color: $paper-ink;
+	opacity: 0.7;
+	pointer-events: none;
+	text-transform: uppercase;
+	text-align: right;
+}
+
+// --- Shared transient states -------------------------------------------------
+// Dark ink — these states (loading / empty) sit in the content band over the light menu scene, same as the page
+// body text. (Was cream $scene-text-dim, which only suited a dark backdrop and had to be overridden per page.)
+.menu-busy,
+.menu-empty
+{
+	flex-grow: 1;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	gap: $space-sm;
+	color: $paper-ink;
+	font-size: 16px;
+}
+
+// Surfaced error (e.g. "No open games found"). Holds, then fades out — the C# side (MenuNetworking.ErrorLifetime,
+// cleared in MainMenuNav.Tick) removes it once the fade finishes. Re-keyed per error so the fade replays (see the
+// @key on the .menu-error elements). "1 forwards" = play once and hold the final (faded-out) frame.
+.menu-error
+{
+	color: $craft-red;
+	font-size: 14px;
+	font-weight: 700;
+	margin-top: $space-sm;
+	animation: menu-error-fade 4s ease 1 forwards;
+}
+
+@keyframes menu-error-fade
+{
+	0%   { opacity: 1; }
+	55%  { opacity: 1; }
+	100% { opacity: 0; }
+}
+
+// A spinner glyph for in-flight network actions.
+.spinner
+{
+	font-family: "Material Icons";
+	font-size: 40px;
+	color: $craft-orange;
+	animation: menu-spin 0.9s linear infinite;
+}
+
+@keyframes menu-spin
+{
+	from { transform: rotate( 0deg ); }
+	to { transform: rotate( 360deg ); }
+}
+
+// Material Icons helper — drop on any element whose text is a glyph name. Both resets matter because the glyph is
+// a ligature of the lowercase name (e.g. "visibility"):
+//   • text-transform: none  — an inherited uppercase breaks the ligature lookup → renders the literal word.
+//   • letter-spacing: 0      — inherited tracking is applied across the NAME's letters, inflating the glyph's
+//                              advance (≈ +1px per letter), which shows up as a big gap after the icon.
+.mi
+{
+	font-family: "Material Icons";
+	text-transform: none;
+	letter-spacing: 0;
+}

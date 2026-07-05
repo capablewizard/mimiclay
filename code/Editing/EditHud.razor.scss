@@ -1,0 +1,535 @@
+@import "/UI/_theme.scss";
+@import "/UI/_button.scss";
+
+.edit-hud {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none; // the empty root passes clicks through; panels opt back in
+	font-family: $body-font, sans-serif;
+	font-weight: $body-weight;
+	color: $paper-ink;
+
+	// Material-icon glyph (ligature name → glyph); size + colour are set per context below.
+	.icon { font-family: Material Icons; }
+
+	// While alt is held (camera nav) the whole HUD goes inert: every interactive card drops pointer-events so the
+	// camera-driven cursor drift can't hover/drag the layer rows or grab a swatch — AND, crucially, the alt+mouse
+	// buttons fall straight through to the scene so the camera actually receives them (a pointer-events:all surface
+	// under the cursor would steal the click and the orbit would never start). The palette's own inline
+	// pointer-events is gated in the markup (inline beats a class). Selectors are kept specific enough to win.
+	&.alt-nav {
+		.shape-tile,
+		.layer,
+		.layer .iconbtn,
+		.chip,
+		.palette-float,
+		.palette-float .swatch-cell,
+		.slider-stack,
+		.slider-stack .track-hit,   // the hit zone sets pointer-events:all, so force it off explicitly here
+		.slider-stack .text-row,
+		.picker-float,
+		.picker-float .color-wheel,
+		.picker-float .track-hit {
+			pointer-events: none;
+		}
+	}
+
+	// Drawn dot cursor shown at the alt-drag anchor while the real cursor is hidden for relative-mode input.
+	.alt-cursor {
+		position: absolute;
+		pointer-events: none;
+		background-image: url( "/pointers/dot_large.png" );
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+	}
+
+	// Transparent full-screen capture surface, present only while a layer is being dragged (see markup).
+	// The floating cards leave pointer-events:none gaps that the native drag would stall over; this keeps a
+	// pointer-events:all surface under the cursor for the whole gesture so OnDrag/OnDragEnd keep firing.
+	.drag-capture {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: all;
+	}
+
+	// The left "panel" is now just an invisible layout column — the controls float over the scene as
+	// individual paper cards. pointer-events:none so the gaps between cards click through to the world;
+	// each interactive card opts back in below.
+	.panel {
+		position: absolute;
+		top: $panel-inset;
+		bottom: $panel-inset;
+		width: 330px;
+		flex-direction: column;
+		gap: 14px;
+		pointer-events: none;
+
+		&.left {
+			left: $panel-inset;
+			animation: edit-hud-slide-left 0.18s ease-out;
+		}
+
+		&.right {
+			right: $panel-inset;
+			animation: edit-hud-slide-right 0.18s ease-out;
+
+			// Right-aligned section header (label sits against the right edge, icon trails it).
+			// Only the header is pushed right; the chip rows below still stretch to full width.
+			.section-title { justify-content: flex-end; }
+		}
+	}
+
+	// Section header: a small icon + bold label (e.g. "✦ ADD SHAPE").
+	.section-title {
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+		margin-top: $space-sm;
+		margin-bottom: 2px;
+
+		span {
+			font-family: $header-font;
+			font-size: 24px;
+			font-weight: 800;
+			letter-spacing: 1px;
+			text-transform: uppercase;
+			color: $paper-ink;
+		}
+
+		.icon { font-size: 20px; color: $paper-ink; }
+	}
+
+	.shape-grid {
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	// "Add a shape" tile: a chunky floating cream paper card with a blue shape icon + label.
+	.shape-tile {
+		pointer-events: all;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		width: 92px;
+		height: 104px; // slightly taller than wide, matching the reference
+		padding: 14px 10px; // even padding on all sides
+		border-radius: 22px; // surface (fill/outline/shadow) comes from .paper-card
+		cursor: pointer;
+		transition: transform 0.1s ease, background-color 0.1s ease;
+
+		.shape-img {
+			width: 48px;
+			height: 48px;
+			// background-image is set inline per shape (SdfIcons.ShapeImage) in the markup.
+			background-size: contain;
+			background-repeat: no-repeat;
+			background-position: center;
+		}
+		.label { font-size: 16px; font-weight: 700; color: $paper-ink; text-transform: uppercase; }
+
+		&:hover { transform: translateY( -2px ); background-color: #fff; sound-in: $sound-hover; }
+		&:active { transform: translateY( 1px ); sound-in: $sound-click; }
+	}
+
+	.layers {
+		flex-direction: column;
+		gap: 10px;
+		flex-grow: 1;
+		// Not scroll/hidden — those would clip the dragged row's scale(1.03) "lift" at the left/right edges
+		// (a transformed child can't escape an ancestor's overflow clip). These sculpts have few shapes, so
+		// the list doesn't need to scroll; if it ever gets long we'd add a scroll wrapper instead.
+		overflow: visible;
+	}
+
+	// A layer row: a chunky floating paper card toolbar — eye · shape · colour · op · symmetry · bin.
+	.layer {
+		pointer-events: all;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between; // spread the cells evenly across the row, in order
+		padding: 8px 12px;
+		border-radius: 22px; // surface (fill/outline/shadow) comes from .paper-card
+		cursor: pointer;
+		// NO transform transition on the base — so the dragged row follows the cursor with zero easing.
+		// Only the shuffling siblings animate their transform (see &.shuffle below).
+		transition: background-color 0.1s ease;
+
+		&:hover { background-color: #fff; sound-in: $sound-hover; }
+		&:active { sound-in: $sound-click; } // click = select (also fires on grab-to-drag)
+
+		// Non-dragged rows during a drag: ease into the gap as it opens/moves.
+		&.shuffle { transition: transform 0.14s ease, background-color 0.1s ease; }
+
+		// The dragged row floats under the cursor; never gets .shuffle so it tracks exactly.
+		// pointer-events:none lets the cursor see the rows underneath.
+		&.dragging {
+			z-index: 20;
+			pointer-events: none;
+			box-shadow: 0px 16px 30px rgba( 30, 20, 8, 0.5 );
+		}
+
+		// One slot in the toolbar.
+		.cell {
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+		}
+
+		.icon { font-size: 21px; color: $paper-ink; }
+
+		// Display-only cells don't take the cursor, so dragging works when grabbed from them.
+		// (.op is an interactive button — it flips add/subtract — so it's not in this list.)
+		.shapeswatch, .grip { pointer-events: none; }
+
+		// Drag grip — the ":::" handle at the far left, hinting the row is draggable. Muted so it reads
+		// as an affordance rather than a control.
+		.grip { color: $paper-ink-soft; }
+
+		.op.add { color: $craft-green; }
+		.op.sub { color: $craft-red; }
+
+		// Combined shape + colour cell: the small white shape icon (background-image set inline), tinted by
+		// the brush colour (background-tint, a multiply) so it reads as both shape and swatch.
+		.shapeswatch {
+			width: 30px;
+			height: 30px;
+			background-size: contain;
+			background-repeat: no-repeat;
+			background-position: center;
+
+			// Fake silhouette outline: four zero-blur drop-shadows (up/down/left/right) stamp solid-ink
+			// copies of the icon's alpha edge, building a continuous ring around the shape — there's no CSS
+			// to stroke a transparent image's edge directly. Uses filter-drop-shadow (not the `filter`
+			// shorthand, which only keeps the last drop-shadow). $paper-edge to match the HUD ink outlines.
+			filter-drop-shadow:
+				 2px 0px 0px rgba( 44, 36, 24, 0.75 ),
+				-2px 0px 0px rgba( 44, 36, 24, 0.75 ),
+				 0px  2px 0px rgba( 44, 36, 24, 0.75 ),
+				 0px -2px 0px rgba( 44, 36, 24, 0.75 );
+		}
+
+		// Interactive icon buttons (eye / op / symmetry / bin).
+		.iconbtn {
+			pointer-events: all;
+			cursor: pointer;
+			width: 33px;
+			height: 33px;
+			border-radius: 10px;
+			transition: background-color 0.1s ease;
+
+			.icon { color: $paper-ink; }
+
+			&:hover {
+				background-color: rgba( 44, 36, 24, 0.1 );
+				sound-in: $sound-hover;
+			}
+			&:active { sound-in: $sound-click; }
+		}
+
+		// Hidden brush: dim the eye.
+		.eye.off .icon { color: rgba( 58, 44, 26, 0.3 ); }
+
+		// Symmetry active: orange.
+		.sym.on .icon { color: $craft-orange; }
+
+		// Bin hover: red.
+		.bin:hover {
+			background-color: rgba( $craft-red, 0.16 );
+			.icon { color: $craft-red; }
+		}
+
+		// Selected row = bright orange; keep the dark ink icons (good contrast on orange).
+		&.selected {
+			background-color: $craft-orange;
+
+			.iconbtn:hover { background-color: rgba( 44, 36, 24, 0.15 ); }
+			.sym.on .icon { color: $paper-ink; }
+		}
+	}
+
+	// Symmetry toggles — chunky floating paper chips that fill the row; orange when on.
+	.chip {
+		pointer-events: all;
+		flex-grow: 1;
+		justify-content: center;
+		padding: 13px 0;
+		background-color: $paper-tile;
+		border: 2px solid $card-edge;
+		border-radius: 16px;
+		color: $paper-ink;
+		font-size: 16px;
+		font-weight: 800;
+		box-shadow: $shadow-float;
+		cursor: pointer;
+		transition: transform 0.1s ease, background-color 0.1s ease;
+
+		&:hover { transform: translateY( -2px ); background-color: #fff; }
+		&:active { transform: translateY( 1px ); }
+
+		&.on {
+			background-color: $craft-orange;
+			color: $paper-ink;
+
+			&:hover { background-color: $craft-orange-hi; }
+		}
+
+		// Icon + label action chip (e.g. Duplicate) — same paper look, laid out as a row.
+		&.action {
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
+
+			.icon { font-size: 20px; color: $craft-blue; }
+			span { font-size: 15px; }
+		}
+	}
+
+	// Colour palette floating to the right of the gizmo (positioned in code, centred vertically on it).
+	// Size / gap / swatch dims / distance are set inline from the component's tunables. No background.
+	.palette-float {
+		position: absolute;
+		flex-direction: row;
+		flex-wrap: wrap;
+		pointer-events: all;
+		// left / top (tracking the gizmo) + width / opacity / transition are set inline from code.
+	}
+
+	.swatch-cell {
+		justify-content: center;
+		align-items: center;
+		cursor: pointer;
+
+		&:hover { sound-in: $sound-hover; }  // hover a colour
+		&:active { sound-in: $sound-click; } // click to pick
+	}
+
+	.palette-float .swatch {
+		pointer-events: none; // the cell is the hit target; this is just the visual
+		// border + background + hover scale (transform) are set inline from C#; this just smooths them.
+		transition: transform 0.08s ease, border-color 0.1s ease;
+	}
+
+	// Colour wheel + metal/rough sliders floating to the right of the palette (left/top/width/opacity set
+	// inline from code, same fade/tracking as the palette).
+	.picker-float {
+		position: absolute;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		pointer-events: all;
+
+		// The pill sliders stretch to the wheel's width; the labels are shorter than the blend/round stack's.
+		.clay-slider {
+			width: 100%;
+			.label { width: 58px; }
+		}
+	}
+
+	// The wheel itself (ClayColorPicker): a hue ring texture around the shaded sat/brightness ball, plus the
+	// two white drag handles. Width/height come from code (Size); children are sized/positioned inline.
+	.color-wheel {
+		position: relative;
+		pointer-events: all;
+		cursor: pointer;
+
+		&:hover { sound-in: $sound-hover; }
+		&:active { sound-in: $sound-click; }
+
+		.ring {
+			position: absolute;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background-size: 100% 100%;
+			background-repeat: no-repeat;
+			pointer-events: none;
+		}
+
+		// Outer + inner edge of the hue band, as CSS circles (left/top/size inline) — same ink as the ball's
+		// border, and unlike a colour baked into the ring texture it renders identically to it.
+		.ring-outline {
+			position: absolute;
+			border-radius: 50%;
+			border: 2px solid $paper-ink;
+			pointer-events: none;
+		}
+
+		.ball {
+			position: absolute; // left/top/size + the pure-hue background-color are set inline
+			border-radius: 50%;
+			border: 2px solid $paper-ink;
+			background-size: 100% 100%;
+			background-repeat: no-repeat;
+			box-shadow: $shadow-float;
+			pointer-events: none;
+		}
+
+		.handle {
+			position: absolute; // left/top/size set inline (one rides the ring, one rides the ball)
+			border-radius: 50%;
+			border: 3px solid #fff;
+			box-shadow: $shadow-edge;
+			pointer-events: none;
+		}
+	}
+
+	// Full-screen cursor zone shown only while hovering a spline line. The engine paints a HOVERED panel's
+	// `cursor` over the scene (Mouse.CursorType is unreliable for the world cursor here), so this transparent
+	// pointer-events:all surface lets us show a cursor on the spline. cursor: pointer = the standard hand.
+	.add-point-cursor {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: all;
+		cursor: pointer; // the hand cursor (cursor_add didn't render right yet — swap back to it once its image is fixed)
+	}
+
+	// Bounding-sphere silhouette of the selected shape (Bounds toggle in the Tools panel). A flat circle is
+	// the exact silhouette of the bound sphere; left/top/width/height are set inline from code. Outline only.
+	.bounds-circle {
+		position: absolute;
+		pointer-events: none;
+		border: 2px solid $craft-orange;
+		border-radius: 50%;
+		opacity: 0.55;
+	}
+
+	// Blend / roundness sliders floating under the gizmo (left/top/width/opacity set inline from code).
+	.slider-stack {
+		position: absolute;
+		flex-direction: column;
+		gap: 8px;
+		pointer-events: all;
+
+		// Cross-section picker for the extruded "Shape" brush: a row of small icon chips under the sliders,
+		// reusing the paper chip look (orange = the active profile).
+		.xsection-row {
+			flex-direction: row;
+			gap: 8px;
+
+			.chip.mini {
+				padding: 8px 0;
+
+				.icon { font-size: 22px; color: $paper-ink; }
+			}
+		}
+
+		// Text brush: the in-place string editor, a paper pill matching the sliders.
+		.text-row {
+			flex-direction: row;
+			align-items: center;
+			gap: 10px;
+			padding: 8px 14px;
+			border-radius: $radius-pill; // surface comes from .paper-card
+			pointer-events: all;
+
+			.icon { font-size: 20px; color: $paper-ink; }
+
+			.text-input {
+				flex-grow: 1;
+				font-size: 16px;
+				font-weight: 700;
+				color: $paper-ink;
+				background-color: rgba( 44, 36, 24, 0.08 ); // recessed like the slider groove
+				border-radius: 10px;
+				padding: 4px 10px;
+			}
+		}
+	}
+
+	// One clay-craft slider: a cream paper pill, inked label on the left, a recessed track with a thick blue
+	// fill and a round blue knob. Matches the SIZE/STRENGTH reference.
+	.clay-slider {
+		flex-direction: row;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 14px;
+		border-radius: $radius-pill; // surface (fill/outline/shadow) comes from .paper-card
+
+		.label {
+			flex-shrink: 0;
+			width: 72px;
+			font-size: 16px;          // matches the Add Shape tile labels
+			font-weight: 700;
+			letter-spacing: 1px;
+			text-transform: uppercase;
+			color: $paper-ink;
+		}
+
+		// Enlarged invisible hit area around the thin groove — this is the hover/hit leaf so the slider is easy
+		// to grab even though the visual track + knob are small. :hover fires HERE (not the whole pill / label);
+		// press + drag bubble to the component's OnMouseDown/OnDrag. Same WIDTH as the groove (flex-grow fills the
+		// row identically), so the value mapping — which measures the visual .track — stays aligned; only taller.
+		.track-hit {
+			flex-grow: 1;
+			flex-direction: row;
+			align-items: center;      // centre the thin groove vertically in the tall hit zone
+			height: 24px;             // generous vertical target (the visual groove is only 7px)
+			cursor: pointer;
+			pointer-events: all;
+
+			&:hover { sound-in: $sound-hover; }  // hover the groove zone — not the label
+			&:active { sound-in: $sound-click; } // click/grab to scrub
+		}
+
+		// The visual groove: a thin recessed line. Purely visual now (the .track-hit above catches the cursor).
+		.track {
+			position: relative;
+			flex-grow: 1;
+			height: 7px;              // half the previous thickness
+			border-radius: $radius-pill;
+			background-color: rgba( 44, 36, 24, 0.12 );  // recessed empty groove
+			border: 1.5px solid rgba( 44, 36, 24, 0.35 ); // slight outline on the un-full part of the line
+			pointer-events: none;     // the .track-hit is the hit leaf; this just draws
+			align-items: center;
+
+			// Filled portion — blue bar from the left up to the value (width set inline). Nudged out over the
+			// groove's border so the fill's own edge sits flush with the track ends.
+			.fill {
+				position: absolute;
+				left: -1.5px;
+				top: -1.5px;
+				bottom: -1.5px;
+				border-radius: $radius-pill;
+				background-color: $craft-blue;
+				pointer-events: none;
+			}
+
+			// Round draggable knob, centred on the value (left set inline; -50% pulls its centre onto the point).
+			.knob {
+				position: absolute;
+				top: 50%;
+				width: 20px;
+				height: 20px;
+				margin-left: -10px;   // centre horizontally on the inline left:%
+				margin-top: -10px;    // centre vertically on top:50%
+				border-radius: 100px;
+				background-color: $craft-blue;
+				border: 2px solid $paper-edge;
+				box-shadow: $shadow-edge;
+				pointer-events: none;
+			}
+		}
+	}
+}
+
+@keyframes edit-hud-slide-left {
+	from { transform: translateX( -100% ); }
+	to { transform: translateX( 0 ); }
+}
+
+@keyframes edit-hud-slide-right {
+	from { transform: translateX( 100% ); }
+	to { transform: translateX( 0 ); }
+}

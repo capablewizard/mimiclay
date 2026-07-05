@@ -1,0 +1,79 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	In-game pause menu. Mirrors the landing menu's big text buttons, but centred (and growing from the centre on
+	hover), over a full-screen blur. Toggled with Escape — we CONSUME Input.EscapePressed in OnUpdate (which runs in
+	the scene tick, before the s&box menu DLL's LateTick reads it), so OUR menu opens instead of the platform pause
+	menu. Spawned per gameplay scene by PauseMenuSystem.
+*@
+
+<root class="pause-menu @(_open ? "open" : "")">
+	@if ( _open )
+	{
+		@* Captures input so the game behind can't be clicked, and blurs the scene. *@
+		<div class="pause-backdrop"></div>
+
+		<div class="pause-options">
+			<div class="menu-button" @onclick=@Resume><WobbleText Text="Resume" /></div>
+			<div class="menu-button" @onclick=@OpenSettings><WobbleText Text="Options" /></div>
+			<div class="menu-button" @onclick=@ExitToMenu><WobbleText Text="Main Menu" /></div>
+			<div class="menu-button" @onclick=@Quit><WobbleText Text="Quit" /></div>
+		</div>
+	}
+</root>
+
+@code
+{
+	bool _open;
+
+	/// <summary>True while the pause overlay is up. The game's systems read this to go inert and hand the cursor to
+	/// the menu while paused — the edit HUD drops pointer-events (so its buttons don't hover behind the overlay),
+	/// the orbit camera stops reading nav, and PauseMenuSystem forces the cursor visible.</summary>
+	public static bool IsOpen { get; private set; }
+
+	protected override void OnUpdate()
+	{
+		// Consume Escape before the menu DLL's LateTick sees it (otherwise BOTH our menu and the s&box pause menu
+		// would open on one press). Toggling here means Escape opens AND closes our menu, never the platform one.
+		if ( Input.EscapePressed )
+		{
+			Input.EscapePressed = false;
+			SetOpen( !_open );
+		}
+	}
+
+	void SetOpen( bool open )
+	{
+		_open = open;
+		IsOpen = open;   // drives the cursor force (PauseMenuSystem) + the edit HUD / camera going inert
+		StateHasChanged();
+	}
+
+	void Resume() => SetOpen( false );
+
+	// Reuse s&box's own settings overlay (graphics/audio/controls) until we build our own Options screen.
+	void OpenSettings() => Game.Overlay.ShowSettingsModal();
+
+	// Leave the session and return to our front-end menu scene.
+	void ExitToMenu()
+	{
+		SetOpen( false );
+		MenuNetworking.ExitToMenu();
+	}
+
+	// Leave the game entirely (back to the s&box main menu).
+	void Quit() => Game.Close();
+
+	// If we're torn down while open (ExitToMenu / scene change), clear the static so it never sticks "paused".
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		IsOpen = false;
+	}
+
+	protected override int BuildHash() => HashCode.Combine( _open );
+}

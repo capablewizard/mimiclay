@@ -1,0 +1,108 @@
+@using System
+@using Sandbox
+@using Sandbox.Network
+@using Sandbox.UI
+@using Sandbox.UI.Navigation
+@using Microsoft.AspNetCore.Components
+@namespace Mimiclay
+@inherits Panel
+@attribute [Route( "/host" )]
+
+@*
+	Host Game screen — pick a mode, set max players + privacy + a session name, then Start. Start hands off to
+	MenuNetworking.Host which creates the lobby, stamps its data, and (as host) loads the mode's gameplay scene.
+	This is the front-end side of the lobby/network handoff; the in-game round flow picks up from the loaded scene.
+*@
+
+<root class="host-page menu-page">
+
+	<WobbleText Text="Host Game" class="menu-title auto" />
+
+	<div class="menu-content">
+
+		@* --- Mode picker --- *@
+		<div class="section">
+			<div class="section-label"><span>Game Mode</span></div>
+			<div class="mode-grid">
+				@foreach ( var m in GameModes.All )
+				{
+					var mode = m;
+					<div class="paper-card mode-card @(mode.Kind == _mode ? "selected" : "")" @onclick=@(() => _mode = mode.Kind)>
+						<div class="mode-head">
+							<div class="mi mode-icon">@mode.Icon</div>
+							<div class="mode-name">@mode.Label</div>
+						</div>
+						<div class="mode-blurb">@mode.Blurb</div>
+					</div>
+				}
+			</div>
+		</div>
+
+		@* --- Settings --- *@
+		<div class="section">
+			<div class="section-label"><span>Settings</span></div>
+
+			<div class="paper-card setting-row">
+				<div class="setting-name">
+					<div class="mi">group</div><span>Max Players</span>
+				</div>
+				<div class="stepper">
+					<div class="step-btn" @onclick=@(() => Step( -1 ))>remove</div>
+					<div class="step-value">@_maxPlayers</div>
+					<div class="step-btn" @onclick=@(() => Step( +1 ))>add</div>
+				</div>
+			</div>
+
+			<div class="paper-card setting-row">
+				<div class="setting-name">
+					<div class="mi">lock</div><span>Privacy</span>
+				</div>
+				<div class="seg">
+					<div class="seg-item @(_privacy == LobbyPrivacy.Public ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Public)>Public</div>
+					<div class="seg-item @(_privacy == LobbyPrivacy.FriendsOnly ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.FriendsOnly)>Friends</div>
+					<div class="seg-item @(_privacy == LobbyPrivacy.Private ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Private)>Private</div>
+				</div>
+			</div>
+
+			<div class="paper-card setting-row">
+				<div class="setting-name">
+					<div class="mi">badge</div><span>Session Name</span>
+				</div>
+				<TextEntry class="name-entry" Value:bind=@_sessionName Placeholder=@DefaultName />
+			</div>
+		</div>
+
+		<div class="host-footer">
+			<div class="btn btn-action @(MenuNetworking.Busy ? "disabled" : "")" @onclick=@StartGame>
+				<span>Start Game</span>
+			</div>
+		</div>
+
+	</div>
+</root>
+
+@code
+{
+	GameModeKind _mode = GameModeKind.PropHunt;
+	int _maxPlayers = MenuNetworking.DefaultMaxPlayers;
+	LobbyPrivacy _privacy = LobbyPrivacy.Public;
+	string _sessionName = "";
+
+	// Placeholder shown when the host leaves the name blank — mirrors what MenuNetworking will name it.
+	string DefaultName => $"{GameModes.Get( _mode ).Label} Game";
+
+	void Step( int dir )
+		=> _maxPlayers = Math.Clamp( _maxPlayers + dir, MenuNetworking.MinMaxPlayers, MenuNetworking.MaxMaxPlayers );
+
+	void StartGame()
+	{
+		if ( MenuNetworking.Busy )
+			return;
+
+		MenuNetworking.Host( _mode, _maxPlayers, _privacy, _sessionName );
+		// Host() changes the scene synchronously on success; nothing more to do here.
+	}
+
+	protected override int BuildHash()
+		=> HashCode.Combine( _mode, _maxPlayers, _privacy, _sessionName, MenuNetworking.Busy );
+}

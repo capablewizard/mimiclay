@@ -1,0 +1,86 @@
+// =============================================================================
+//  Mimiclay UI theme — "clay craft"
+//
+//  ONE palette for the whole UI (front-end menu + in-game HUD): warm cream
+//  "paper" cards with thick inked outlines, dark-brown ink text, and bright
+//  craft accents (gold / orange / blue / green / red).
+//
+//  The UI floats over the 3D scene, so there are two TEXT contexts:
+//    • ink  — dark text on a cream paper card        (use $paper-ink)
+//    • scene — light cream text sitting directly on   (use $scene-text + the
+//              the 3D scene: titles, the menu          $scene-shadow for legibility)
+//
+//  Every panel/control should `@import "/UI/_theme.scss"` and reference these
+//  tokens instead of raw literals, so the whole look retunes from one place.
+//  (Single source of truth — organised like MiniMotors.)
+// =============================================================================
+
+// --- Fonts -------------------------------------------------------------------
+$header-font: Super Joyful;   // hand-drawn display font — titles, button labels
+$body-font:   Winky Sans;     // UI body text
+$body-weight: 700;            // Winky Sans is thin at regular; default to bold
+
+// --- Paper (the cream card surfaces) -----------------------------------------
+$paper-top:  #f9efd4;   // lighter cream (bright fill — raised pills/controls)
+$paper-tile: #eae0d6;   // near-white tile / row / card fill
+$paper-edge: #2c2418;   // thick dark "ink" outline
+$card-edge:  rgba(44, 36, 24, 0.384);   // softer card outline
+
+// --- Ink (text + icons on the cream cards) -----------------------------------
+$paper-ink:      #6e5c42;                 // dark brown text / icons on paper
+$paper-ink-soft: rgba( 58, 44, 26, 0.5 ); // muted ink (grips, hints)
+
+// --- Craft accents -----------------------------------------------------------
+$craft-orange:    #f0a836;   // primary action + selection
+$craft-orange-hi: #f8bf5c;   // its hover
+$craft-blue:      #3f72c8;   // shape / info icons
+$craft-green:     #46a23e;   // additive / positive
+$craft-red:       #cc4530;   // destructive / error
+
+// --- Text over the 3D scene (no card behind it: titles, the menu) ------------
+$scene-text:     #f9efd4;                     // warm cream, legible over the scene
+$scene-text-dim: rgba( 249, 239, 212, 0.6 );  // muted cream
+$scene-shadow:   0px 2px 6px rgba( 18, 12, 4, 0.75 ); // drop shadow for legibility
+
+// --- Elevation (soft + tactile — clay has no hard edges) ---------------------
+$shadow-float: 0px 6px 16px rgba( 30, 20, 8, 0.32 );  // card lifted off the scene
+$shadow-edge:  0px 4px 8px rgba( 40, 28, 12, 0.16 );   // soft lift under a card (slider knob)
+$shadow-press: 0px 2px 6px rgba( 0, 0, 0, 0.30 );      // pressed-in (.btn:active)
+
+// --- Emboss (layered "clay" text shadow on the big menu type) ----------------
+// Two stacked text-shadows: a tight dark-brown offset for depth + a soft warm glow behind it. Offsets/blur are
+// per-element (scaled to the font size); these are just the colours.
+$emboss-depth:         rgb(165, 155, 158);         // The depth effect of the text (cream menu text)
+$emboss-depth-primary: rgb(180, 123, 84);           // The depth effect for the orange Quick Play text
+$emboss-glow:          rgba(0, 0, 0, 0.637);  // the shadow cast by our text, same for all text
+
+// Same idea for SOLID elements (buttons/cards): a box-shadow glow looks much darker + harder than the text glow
+// because a solid silhouette paints its whole footprint at full alpha (where letter strokes only paint thin
+// lines). So box glows use a LOWER-alpha colour — and a wide blur per-element — to read as soft as the text glow.
+$emboss-glow-box:      rgba(0, 0, 0, 0.4);   // the shadow cast by solid clay buttons/cards
+
+// --- Shape (rounded, chunky — pinched clay) ----------------------------------
+$radius-sm:   8px;
+$radius-md:   12px;
+$radius-lg:   18px;
+$radius-pill: 100px;
+
+// --- Spacing -----------------------------------------------------------------
+$space-xs: 4px;
+$space-sm: 8px;
+$space-md: 12px;
+$space-lg: 20px;
+$panel-inset: 24px;   // inset from the screen edge so cards float off the corner
+
+// --- Motion ------------------------------------------------------------------
+// One speed for the claymation wobble everywhere (the title's continuous jitter AND the menu-button hover
+// jitter), so they always match. Lower = faster/jitterier.
+$wobble-duration: 1s;
+
+// --- UI sounds ---------------------------------------------------------------
+// Two built-in s&box menu sound events, played via CSS `sound-in` on a button's :hover / :active. `sound-in`
+// fires when the selector STARTS matching, so on :hover it triggers on hover-enter and on :active on press —
+// giving us hover + click cues with no asset files. Centralised so every button uses the same two sounds.
+//   .thing { &:hover { sound-in: $sound-hover; } &:active { sound-in: $sound-click; } }
+$sound-hover: "ui.button.over";
+$sound-click: "ui.button.press";

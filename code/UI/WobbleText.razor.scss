@@ -1,0 +1,138 @@
+@import "/UI/_theme.scss";
+
+// Speed ($wobble-duration) lives in _theme.scss so the title jitter and the menu-button hover jitter share it.
+
+// Reusable claymation text (see WobbleText.razor). The row of letters; font-family/size/colour/text-transform
+// are inherited from the consumer so one component fits any header size.
+.wobble-text
+{
+	flex-direction: row;
+	align-items: flex-end;
+
+	// One letter. Static by default — the jitter is opt-in (add the "auto" class to jitter always, e.g. titles;
+	// or drive it from a parent :hover, e.g. the menu buttons). The stop-motion feel is the keyframes themselves:
+	// each pose is HELD then snapped over a 1% sliver to the next, so plain `linear` reads as choppy claymation.
+	.letter
+	{
+		text-shadow: 0px 5px 0px rgba( 0, 0, 0, 0.22 ); // doesn't inherit, so it's per-letter
+		transform-origin: center;
+	}
+
+	// Word gap (spaces don't wobble). Sized in em so it scales with the header's font-size.
+	.space { width: 0.28em; }
+
+	// "auto" = jitter continuously (titles, HUD lines). The animation name + timing live on the base rule; only the
+	// per-letter DELAY is staggered below — so a strength variant just swaps the keyframe NAME without touching the
+	// stagger. (s&box supports the animation-* longhands, so name and delay are set independently.)
+	&.auto .letter
+	{
+		animation-name: clay-jitter;
+		animation-duration: $wobble-duration;
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+	}
+
+	// Jitter STRENGTH (WobbleText.Strength → these classes). The full swing is great on big headers, but its
+	// position travel hurts readability on smaller text; .soft halves the travel and .subtle drops it to ~zero
+	// (rotation/scale only). They only change the keyframe name — the stagger/timing above is shared.
+	&.auto.soft   .letter { animation-name: clay-jitter-soft; }
+	&.auto.subtle .letter { animation-name: clay-jitter-subtle; }
+
+	// Per-letter stagger — DELAY only, so the wobble ripples across the word instead of snapping in unison. Delays
+	// MUST be positive (s&box's time parser rejects a leading '-', which silently kills the animation). The 0.0–0.7s
+	// offsets cycle every 8 letters, so even long strings (HUD status lines) ripple; covers up to 32 letters.
+	&.auto .letter:nth-child(  1 ) { animation-delay: 0.00s; }
+	&.auto .letter:nth-child(  2 ) { animation-delay: 0.10s; }
+	&.auto .letter:nth-child(  3 ) { animation-delay: 0.20s; }
+	&.auto .letter:nth-child(  4 ) { animation-delay: 0.30s; }
+	&.auto .letter:nth-child(  5 ) { animation-delay: 0.40s; }
+	&.auto .letter:nth-child(  6 ) { animation-delay: 0.50s; }
+	&.auto .letter:nth-child(  7 ) { animation-delay: 0.60s; }
+	&.auto .letter:nth-child(  8 ) { animation-delay: 0.70s; }
+	&.auto .letter:nth-child(  9 ) { animation-delay: 0.00s; }
+	&.auto .letter:nth-child( 10 ) { animation-delay: 0.10s; }
+	&.auto .letter:nth-child( 11 ) { animation-delay: 0.20s; }
+	&.auto .letter:nth-child( 12 ) { animation-delay: 0.30s; }
+	&.auto .letter:nth-child( 13 ) { animation-delay: 0.40s; }
+	&.auto .letter:nth-child( 14 ) { animation-delay: 0.50s; }
+	&.auto .letter:nth-child( 15 ) { animation-delay: 0.60s; }
+	&.auto .letter:nth-child( 16 ) { animation-delay: 0.70s; }
+	&.auto .letter:nth-child( 17 ) { animation-delay: 0.00s; }
+	&.auto .letter:nth-child( 18 ) { animation-delay: 0.10s; }
+	&.auto .letter:nth-child( 19 ) { animation-delay: 0.20s; }
+	&.auto .letter:nth-child( 20 ) { animation-delay: 0.30s; }
+	&.auto .letter:nth-child( 21 ) { animation-delay: 0.40s; }
+	&.auto .letter:nth-child( 22 ) { animation-delay: 0.50s; }
+	&.auto .letter:nth-child( 23 ) { animation-delay: 0.60s; }
+	&.auto .letter:nth-child( 24 ) { animation-delay: 0.70s; }
+	&.auto .letter:nth-child( 25 ) { animation-delay: 0.00s; }
+	&.auto .letter:nth-child( 26 ) { animation-delay: 0.10s; }
+	&.auto .letter:nth-child( 27 ) { animation-delay: 0.20s; }
+	&.auto .letter:nth-child( 28 ) { animation-delay: 0.30s; }
+	&.auto .letter:nth-child( 29 ) { animation-delay: 0.40s; }
+	&.auto .letter:nth-child( 30 ) { animation-delay: 0.50s; }
+	&.auto .letter:nth-child( 31 ) { animation-delay: 0.60s; }
+	&.auto .letter:nth-child( 32 ) { animation-delay: 0.70s; }
+}
+
+// Stop-motion wobble. MUST be top-level — s&box doesn't register @keyframes nested inside a selector. Each pose
+// is its own single-% block (held by repeating it at the start AND end of its slice; the 1% gaps read as snaps).
+// Single-% blocks keep both s&box's parser and the IDE's CSS linter happy (one rejects commas, the other spaces).
+//
+// The position travel is in vh (viewport-height %) so it scales with the screen/resolution rather than being a
+// fixed pixel count — ~0.1vh ≈ 1px at a 1080-tall viewport. Rotation (deg) + scale are resolution-independent
+// already, so they stay as-is. Per-text damping is separate (the Soft/Subtle variants below).
+@keyframes clay-jitter
+{
+	0%   { transform: rotate( -2deg )   translate( 0vh,    0vh ) scale( 1 ); }
+	15%  { transform: rotate( -2deg )   translate( 0vh,    0vh ) scale( 1 ); }
+	16%  { transform: rotate(  1.5deg ) translate( 0.1vh, -0.2vh ) scale( 1 ); }
+	31%  { transform: rotate(  1.5deg ) translate( 0.1vh, -0.2vh ) scale( 1 ); }
+	32%  { transform: rotate( -1deg )   translate( -0.2vh, 0.1vh ) scale( 1 ); }
+	47%  { transform: rotate( -1deg )   translate( -0.2vh, 0.1vh ) scale( 1 ); }
+	48%  { transform: rotate(  2.5deg ) translate( 0.2vh,  0.1vh ) scale( 1.03 ); }
+	64%  { transform: rotate(  2.5deg ) translate( 0.2vh,  0.1vh ) scale( 1.03 ); }
+	65%  { transform: rotate( -2.5deg ) translate( -0.1vh, -0.1vh ) scale( 1 ); }
+	81%  { transform: rotate( -2.5deg ) translate( -0.1vh, -0.1vh ) scale( 1 ); }
+	82%  { transform: rotate(  1deg )   translate( 0.1vh,  0.2vh ) scale( 1 ); }
+	99%  { transform: rotate(  1deg )   translate( 0.1vh,  0.2vh ) scale( 1 ); }
+	100% { transform: rotate( -2deg )   translate( 0vh,    0vh ) scale( 1 ); }
+}
+
+// SOFT — same poses as clay-jitter with the position travel ~halved (rotation/scale kept), so smaller text stays
+// readable while still wobbling. Selected by WobbleText Strength=Soft (.soft class).
+@keyframes clay-jitter-soft
+{
+	0%   { transform: rotate( -2deg )   translate( 0vh,     0vh ) scale( 1 ); }
+	15%  { transform: rotate( -2deg )   translate( 0vh,     0vh ) scale( 1 ); }
+	16%  { transform: rotate(  1.5deg ) translate( 0.05vh, -0.1vh ) scale( 1 ); }
+	31%  { transform: rotate(  1.5deg ) translate( 0.05vh, -0.1vh ) scale( 1 ); }
+	32%  { transform: rotate( -1deg )   translate( -0.1vh,  0.05vh ) scale( 1 ); }
+	47%  { transform: rotate( -1deg )   translate( -0.1vh,  0.05vh ) scale( 1 ); }
+	48%  { transform: rotate(  2.5deg ) translate( 0.1vh,   0.05vh ) scale( 1.015 ); }
+	64%  { transform: rotate(  2.5deg ) translate( 0.1vh,   0.05vh ) scale( 1.015 ); }
+	65%  { transform: rotate( -2.5deg ) translate( -0.05vh, -0.05vh ) scale( 1 ); }
+	81%  { transform: rotate( -2.5deg ) translate( -0.05vh, -0.05vh ) scale( 1 ); }
+	82%  { transform: rotate(  1deg )   translate( 0.05vh,  0.1vh ) scale( 1 ); }
+	99%  { transform: rotate(  1deg )   translate( 0.05vh,  0.1vh ) scale( 1 ); }
+	100% { transform: rotate( -2deg )   translate( 0vh,     0vh ) scale( 1 ); }
+}
+
+// SUBTLE — rotation/scale only, no position travel, with the rotation eased back too. For the smallest text where
+// any positional jitter blurs the glyphs. Selected by WobbleText Strength=Subtle (.subtle class).
+@keyframes clay-jitter-subtle
+{
+	0%   { transform: rotate( -1.2deg ) translate( 0px, 0px ) scale( 1 ); }
+	15%  { transform: rotate( -1.2deg ) translate( 0px, 0px ) scale( 1 ); }
+	16%  { transform: rotate(  1deg )   translate( 0px, 0px ) scale( 1 ); }
+	31%  { transform: rotate(  1deg )   translate( 0px, 0px ) scale( 1 ); }
+	32%  { transform: rotate( -0.6deg ) translate( 0px, 0px ) scale( 1 ); }
+	47%  { transform: rotate( -0.6deg ) translate( 0px, 0px ) scale( 1 ); }
+	48%  { transform: rotate(  1.5deg ) translate( 0px, 0px ) scale( 1.01 ); }
+	64%  { transform: rotate(  1.5deg ) translate( 0px, 0px ) scale( 1.01 ); }
+	65%  { transform: rotate( -1.5deg ) translate( 0px, 0px ) scale( 1 ); }
+	81%  { transform: rotate( -1.5deg ) translate( 0px, 0px ) scale( 1 ); }
+	82%  { transform: rotate(  0.6deg ) translate( 0px, 0px ) scale( 1 ); }
+	99%  { transform: rotate(  0.6deg ) translate( 0px, 0px ) scale( 1 ); }
+	100% { transform: rotate( -1.2deg ) translate( 0px, 0px ) scale( 1 ); }
+}

@@ -1,0 +1,6 @@
+// MainMenuNav owns the menu's layout styles. An s&box .razor.scss only reaches its own component + its
+// descendants, so the navigator root / canvas / footer (which live HERE, above the pages) must be styled from
+// this sheet — the page sheets are descendants and can't reach up to them. Pulls in the shared kit so
+// .menu-bg, .navigator-canvas, .navigator-body and the footer all apply to this subtree. (Mirrors punt_reboot,
+// whose MainMenuRoot imports its styles inline.)
+@import "/UI/_menu.scss";

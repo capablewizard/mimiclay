@@ -1,0 +1,217 @@
+@import "/UI/_menu.scss";   // tokens + shared kit: .paper-card, .btn, .btn-action (+ hover jitter), .mi, keyframes
+
+// Host round-setup modal. Styled to the Host Game page: WobbleText clay header, cream paper-card panels, craft-blue
+// setting icons, orange selection, and the shared clay Start Game button. Floats over a lightly blurred lobby (no
+// solid backdrop).
+.round-setup {
+	position: absolute;
+	top: 0; left: 0;
+	width: 100%; height: 100%;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	font-family: $body-font;   // same base font as the menu (.menu-bg), so settings match Host Game
+
+	&.open { pointer-events: all; }
+
+	// Light blur to lift the card off the lobby (no solid dim — you can see what's going on behind), and
+	// pointer-events so the lobby isn't clickable through the modal.
+	.backdrop {
+		position: absolute;
+		top: 0; left: 0;
+		width: 100%; height: 100%;
+		backdrop-filter: blur( 6px );
+		pointer-events: all;
+	}
+
+	// ── Layout container (no outer box — the panels carry the boxes) ────────────────────────────────────────
+	.dialog {
+		z-index: 1;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	// Big claymation header, same recipe as the menu titles: cream-over-scene with the layered clay emboss; the
+	// per-letter jitter is the WobbleText "auto" class. Scaled to the footer-title size so it suits a modal.
+	.dialog-title {
+		font-family: $header-font;
+		font-size: 84px;
+		color: $scene-text;
+		text-transform: uppercase;
+		margin-bottom: 48px;   // generous gap between the header and the panels below
+
+		.letter {
+			// Glow first so it paints UNDER the depth (s&box draws stacked text-shadows last-on-top).
+			text-shadow:
+				10px 12px 4px $emboss-glow,
+				4px 6px 0px $emboss-depth;
+		}
+	}
+
+	.columns {
+		flex-direction: row;
+		gap: $space-lg;
+	}
+
+	// The two cream paper-card panels (surface comes from .paper-card; this is layout + size).
+	.panel {
+		flex-direction: column;
+		gap: $space-sm;
+		padding: $space-md $space-lg;
+		border-radius: $radius-lg;
+	}
+
+	.settings-panel { width: 460px; } // wide enough that "Game Mode" + the < name > stepper sit on one line
+	.maps-panel { width: 400px; }
+
+	// Dark-brown section header (matches Host Game's .section-label).
+	.section-label {
+		font-family: $header-font;
+		font-size: 32px;
+		font-weight: 800;
+		letter-spacing: 2px;
+		text-transform: uppercase;
+		color: $paper-ink;
+		margin-bottom: $space-xs;
+	}
+
+	// ── Settings rows (matches Host Game) ───────────────────────────────────────────────────────────────────
+	.setting-row {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		padding: $space-sm 0;
+
+		// Same as Host Game's "Max Players" label: body font, 24px, uppercase, craft-blue icon.
+		.setting-name {
+			flex-direction: row;
+			align-items: center;
+			gap: $space-sm;
+			font-size: 24px;
+			letter-spacing: 1px;
+			font-weight: 700;
+			text-transform: uppercase;
+			color: $paper-ink;
+
+			.mi { font-size: 22px; color: $craft-blue; }
+		}
+	}
+
+	// Stepper — Material-icon (remove/add) cream pills that enlarge on hover, flash orange while held (Host recipe).
+	.stepper {
+		flex-direction: row;
+		align-items: center;
+		gap: $space-sm;
+
+		.step-btn {
+			font-family: "Material Icons";
+			font-size: 20px;
+			width: 38px;
+			height: 38px;
+			align-items: center;
+			justify-content: center;
+			border-radius: $radius-md;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
+			color: $paper-ink;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+
+			&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }
+			&:active { transform: scale( 0.96 ); background-color: $craft-orange; sound-in: $sound-click; }
+		}
+
+		// Match Host Game's stepper value: body font, 20px (min-width kept wider for the "180s" durations).
+		.step-value {
+			min-width: 56px;
+			justify-content: center;
+			font-size: 20px;
+			font-weight: 700;
+			color: $paper-ink;
+		}
+
+		// A game-mode name needs more room than a number.
+		.mode-value { min-width: 120px; }
+	}
+
+	// ── Map picker ──────────────────────────────────────────────────────────────────────────────────────────
+	.map-preview {
+		position: relative;
+		height: 150px;
+		justify-content: center;
+		align-items: center;
+		margin-bottom: $space-xs;
+		background-color: $paper-tile;
+		border: 2px dashed $card-edge;     // dashed = "placeholder art" (covered once a map image is shown)
+		border-radius: $radius-md;
+		overflow: hidden;
+
+		// The map image fills the frame (shown only when the picked map has a Preview assigned).
+		.map-preview-img {
+			position: absolute;
+			top: 0; left: 0;
+			width: 100%;
+			height: 100%;
+			border-radius: $radius-md;
+		}
+
+		.map-preview-label {
+			font-family: $header-font;
+			font-size: 28px;
+			text-transform: uppercase;
+			color: $paper-ink-soft;
+		}
+	}
+
+	// Map rows — cream pills, orange when selected (same selection language as Host Game's segmented control).
+	.map-list {
+		flex-direction: column;
+		gap: $space-xs;
+
+		.map-row {
+			padding: 8px 16px;
+			border-radius: $radius-pill;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
+			font-family: $body-font;
+			font-weight: 700;
+			font-size: 16px;
+			text-transform: uppercase;
+			color: $paper-ink;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+
+			&:hover { transform: scale( 1.03 ); sound-in: $sound-hover; }   // enlarge only — no recolour
+			&:active { sound-in: $sound-click; }
+			&.selected { background-color: $craft-orange; } // orange = selected
+		}
+	}
+
+	// ── Actions (inside the menu) ───────────────────────────────────────────────────────────────────────────
+	// .body shrink-wraps the columns; the actions row then stretches to exactly that width so Start right-aligns to
+	// the maps panel's edge (rather than centring under the wider title). Start is the shared clay .btn-action.
+	.body {
+		flex-direction: column;
+		gap: $space-lg;
+	}
+
+	.dialog-actions {
+		align-self: stretch;
+		flex-direction: row;
+		justify-content: flex-end;
+	}
+
+	// ── Footer ──────────────────────────────────────────────────────────────────────────────────────────────
+	// Just the front-end menu's "Back" text button (.menu-footer / .footer-button from _menu.scss), pinned
+	// bottom-left, out of the centred dialog's flow.
+	.menu-footer {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		width: 100%;
+		z-index: 1;   // above the backdrop so the button takes clicks
+	}
+}

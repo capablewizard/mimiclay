@@ -1,0 +1,231 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The host's round-setup modal, opened with G in the lobby (host only — spawned by LobbyController.EnsureSetupHud,
+	which never makes one on a client). Styled to match the front-end Host Game page: a jittering WobbleText header,
+	cream paper-card panels, craft-blue setting icons, orange selection, and the shared clay "Start Game" action
+	button. Left panel = round settings (hunters + phase times), right panel = map picker (placeholder preview + the
+	catalogue list, Random on top).
+
+	While open it sets the static IsOpen, which PauseMenuSystem reads to force the cursor visible (the same hook the
+	pause menu uses) — that also stops the lobby pawn capturing look, since the controllers only read look while the
+	cursor is hidden.
+
+	PLACEHOLDER: the map preview is a flat tile, and every map button currently selects perftestdebug regardless of
+	which you click (we just highlight the clicked one). Wire real previews + per-map selection when maps land.
+*@
+
+<root class="round-setup @(_open ? "open" : "")">
+	@if ( _open )
+	{
+		<div class="backdrop"></div>
+
+		<div class="dialog">
+			<WobbleText Text="Set Up Game" class="dialog-title auto" />
+
+			@* .body shrink-wraps the columns so the actions row beneath stretches to exactly the panels' width,
+			   right-aligning Start to the maps panel's edge (independent of the wider title). *@
+			<div class="body">
+			<div class="columns">
+				@* ── Left: settings ─────────────────────────────────────────── *@
+				<div class="paper-card panel settings-panel">
+					<div class="section-label"><span>Settings</span></div>
+
+					@* Game mode at the top — cycle the rules variant with the < > buttons. (Description dropped for now.) *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">category</div><span>Game Mode</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => CycleMode( -1 ))>chevron_left</div>
+							<div class="step-value mode-value">@RoundModes.Get( S.Mode ).Label</div>
+							<div class="step-btn" @onclick=@(() => CycleMode( 1 ))>chevron_right</div>
+						</div>
+					</div>
+
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">group</div><span>Hunters</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddHunters( -1 ))>remove</div>
+							@* x / y — hunters out of the number of people currently in the lobby. *@
+							<div class="step-value">@((int)S.HunterCount)/@LobbyPlayerCount</div>
+							<div class="step-btn" @onclick=@(() => AddHunters( 1 ))>add</div>
+						</div>
+					</div>
+
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">schedule</div><span>Hide Time</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddHide( -15f ))>remove</div>
+							<div class="step-value">@Secs( S.HideSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddHide( 15f ))>add</div>
+						</div>
+					</div>
+
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">timer</div><span>Hunt Time</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddHunt( -15f ))>remove</div>
+							<div class="step-value">@Secs( S.HuntSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddHunt( 15f ))>add</div>
+						</div>
+					</div>
+
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">visibility</div><span>Reveal Time</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddReveal( -5f ))>remove</div>
+							<div class="step-value">@Secs( S.RevealSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddReveal( 5f ))>add</div>
+						</div>
+					</div>
+				</div>
+
+				@* ── Right: maps (from the Prop Hunt Map assets) ─────────────── *@
+				<div class="paper-card panel maps-panel">
+					<div class="section-label"><span>Maps</span></div>
+
+					<div class="map-preview">
+						@* The picked map's preview image (set in code via @ref, like MiniMotors' MapCard). Falls back
+						   to a label when Random is picked or the map has no image yet. *@
+						<image @ref="PreviewImage" class="map-preview-img" />
+						@if ( SelectedMap?.Preview is null )
+						{
+							<div class="map-preview-label">@SelectedLabel</div>
+						}
+					</div>
+
+					<div class="map-list">
+						<div class="map-row @(IsPicked( MapCatalog.RandomIdent ) ? "selected" : "")"
+							 @onclick=@(() => PickMap( MapCatalog.RandomIdent ))>Random</div>
+
+						@foreach ( var m in MapCatalog.All )
+						{
+							<div class="map-row @(IsPicked( m.ResourcePath ) ? "selected" : "")"
+								 @onclick=@(() => PickMap( m.ResourcePath ))>@m.Title</div>
+						}
+					</div>
+				</div>
+			</div>
+
+			@* Start sits inside the menu (not the footer), right-aligned to the panels' edge. *@
+			<div class="dialog-actions">
+				<div class="btn btn-action" @onclick=@StartGame><span>Start Game</span></div>
+			</div>
+			</div>
+		</div>
+
+		@* Back reuses the front-end menu footer (text button, claymation jitter), bottom-left; closes the modal. *@
+		<div class="menu-footer">
+			<div class="footer-button" @onclick=@(() => SetOpen( false ))>
+				<WobbleText Text="Back" />
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	/// <summary>True while the setup modal is up. PauseMenuSystem reads this to force the cursor visible (so the
+	/// host can click), the same way it does for the pause menu.</summary>
+	public static bool IsOpen { get; private set; }
+
+	bool _open;
+
+	// The picked map's ResourcePath (or RandomIdent). Mirrors LobbyController.Settings.MapIdent, kept here so the
+	// row highlight + preview update instantly on click.
+	string _picked = MapCatalog.RandomIdent;
+
+	// The preview <image> (set in code, like MiniMotors' MapCard ThumbImage).
+	public Sandbox.UI.Image PreviewImage { get; set; }
+
+	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
+
+	// The live settings to display (host owns LobbyController, so its setters mutate the synced struct directly).
+	RoundSettings S => LobbyController.Current.IsValid() ? LobbyController.Current.Settings : RoundSettings.Default;
+
+	// People currently in the lobby — the "y" in the hunters "x/y" readout.
+	int LobbyPlayerCount => Connection.All.Count;
+
+	// The picked map resource, or null for Random (or an unresolved path).
+	MapResource SelectedMap => MapCatalog.TryGet( _picked, out var m ) ? m : null;
+
+	string SelectedLabel => SelectedMap?.Title ?? "Random";
+
+	protected override void OnUpdate()
+	{
+		// Keep the preview image in sync with the picked map (the <image> Texture is driven from code).
+		if ( _open && PreviewImage is not null )
+			PreviewImage.Texture = SelectedMap?.Preview;
+
+		// Only the host configures. If a non-host somehow has this panel, keep it shut.
+		if ( !LocalIsHost )
+		{
+			if ( _open ) SetOpen( false );
+			return;
+		}
+
+		// G toggles the panel — but don't reopen once the launch countdown is already running.
+		if ( Input.Keyboard.Pressed( "G" ) )
+		{
+			if ( !_open && (LobbyController.Current?.Launching ?? false) )
+				return;
+			SetOpen( !_open );
+		}
+	}
+
+	void SetOpen( bool open )
+	{
+		_open = open;
+		IsOpen = open;
+		StateHasChanged();
+	}
+
+	void StartGame()
+	{
+		LobbyController.Current?.RequestStart();
+		SetOpen( false );
+	}
+
+	// ── Game mode ───────────────────────────────────────────────────────────────────────────────────────────
+	// Step forward/back through the catalogue, wrapping around at the ends.
+	void CycleMode( int dir )
+	{
+		var modes = RoundModes.All;
+		if ( modes.Length == 0 )
+			return;
+
+		var i = System.Array.FindIndex( modes, m => m.Kind == S.Mode );
+		if ( i < 0 ) i = 0;
+		i = ((i + dir) % modes.Length + modes.Length) % modes.Length; // wrap both directions
+		LobbyController.Current?.SetRoundMode( modes[i].Kind );
+	}
+
+	// ── Settings steppers (clamped by the LobbyController setters) ───────────────────────────────────────────
+	void AddHunters( int d ) => LobbyController.Current?.SetHunterCount( (int)S.HunterCount + d );
+	void AddHide( float d ) => LobbyController.Current?.SetHideSeconds( S.HideSeconds + d );
+	void AddHunt( float d ) => LobbyController.Current?.SetHuntSeconds( S.HuntSeconds + d );
+	void AddReveal( float d ) => LobbyController.Current?.SetRevealSeconds( S.RevealSeconds + d );
+
+	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
+	void PickMap( string ident )
+	{
+		_picked = ident;
+		LobbyController.Current?.SetMap( ident );
+	}
+
+	bool IsPicked( string ident ) => string.Equals( _picked, ident, StringComparison.OrdinalIgnoreCase );
+
+	static string Secs( float seconds ) => $"{(int)MathF.Round( seconds )}s";
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		IsOpen = false; // never leave the static stuck "open" if we're torn down (scene change)
+	}
+
+	protected override int BuildHash()
+		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount, S.HideSeconds, S.HuntSeconds, S.RevealSeconds, _picked, LobbyPlayerCount );
+}

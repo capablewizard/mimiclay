@@ -1,0 +1,135 @@
+// =============================================================================
+//  Mimiclay button + card kit — the shared "clay paper" surface and the
+//  clickable tiles built on it. Lives here (not _theme, which is tokens-only)
+//  because both the menu (via _menu) and the in-game HUD import this sheet.
+//
+//  .paper-card  the cream card surface recipe (fill + ink outline + float shadow)
+//  .btn         full-weight action tile (a paper card; lifts on hover)
+//  .btn-action  the big raised-orange "clay" headline button (Start / Join)
+//  .chip        compact toggle / grid item
+//
+//  Reuse these instead of re-deriving the look per panel.
+// =============================================================================
+
+@import "/UI/_theme.scss";
+
+// --- Paper card surface ------------------------------------------------------
+// The cream "clay paper" recipe shared by every solid card/control: cream fill,
+// soft ink outline, and a float shadow lifting it off the scene. Drop it
+// alongside a component class in markup — e.g. class="paper-card mode-card" — and
+// let the component class own its layout / radius / hover / selected state.
+.paper-card
+{
+	background-color: $paper-tile;
+	border: 2px solid $card-edge;
+	box-shadow: $shadow-float;
+}
+
+// --- Action tile -------------------------------------------------------------
+// A chunky cream paper card, so it reads clearly floating over the 3D scene.
+.btn
+{
+	font-family: $header-font;
+	font-weight: 700;
+	font-size: 16px;
+	padding: 12px 18px;
+	border-radius: $radius-md;
+	background-color: $paper-tile;
+	border: 2px solid $card-edge;
+	color: $paper-ink;
+	cursor: pointer;
+	pointer-events: all;
+	align-items: center;
+	justify-content: center;
+	box-shadow: $shadow-float;
+	transition: transform 0.12s ease-out, background-color 0.12s ease-out;
+
+	&:hover { background-color: #fff; transform: translateY( -2px ); sound-in: $sound-hover; }
+	&:active { transform: translateY( 1px ); box-shadow: $shadow-press; sound-in: $sound-click; }
+
+	&.disabled { opacity: 0.4; pointer-events: none; transform: none; }
+}
+
+// Inert while the sculpt toy is alt-navigated (see _menu.scss .nav-inert): action buttons drop pointer-events so
+// the drifting cursor can't hover/click them. .nav-inert .btn also covers .btn.btn-action (they share .btn).
+.nav-inert .btn { pointer-events: none; }
+
+// --- Clay action button ------------------------------------------------------
+// The big raised orange "clay" button for a screen's headline action — the Host "Start Game" and the Sessions
+// "Join". Self-contained (sets its own size/colour/shadow); pair with the base .btn for flex/cursor/pointer-events/
+// disabled: class="btn btn-action". Kept here (not per-page) so every instance is byte-for-byte identical AND so
+// the hover keyframe below is reachable from any sheet that pulls in the kit (e.g. the footer in MainMenuNav).
+.btn-action
+{
+	flex-direction: row;
+	align-items: center;
+	gap: $space-sm;
+	text-transform: uppercase;
+	background-color: $craft-orange;
+	color: $scene-text;            // light cream label, to read on the orange clay
+	pointer-events: all;
+	border-radius: 28px;           // extra-large soft corners (not a full pill)
+	font-size: 48px;
+	padding: 10px 24px;
+
+	// 3D clay look (box equivalent of the text emboss): soft cast glow first, then a hard 0-blur dark-orange depth
+	// extrude on top — reads as raised orange clay. $emboss-glow-box is the lower-alpha solid-element glow.
+	box-shadow:
+		14px 16px 20px $emboss-glow-box,
+		5px 7px 0px $emboss-depth-primary;
+
+	.mi { font-size: 40px; } // an optional leading icon, scaled to the big label
+
+	// Whole-button claymation jitter on hover.
+	&:hover { background-color: $craft-orange-hi; animation: action-jitter $wobble-duration linear 0s infinite; }
+}
+
+// Stop-motion wobble for the whole clay action button on hover — stepped (held pose + 1% snap) poses, linear.
+// Top-level so s&box registers it.
+@keyframes action-jitter
+{
+	0%   { transform: rotate( -2deg )   translate( 0px,  0px ) scale( 1 ); }
+	15%  { transform: rotate( -2deg )   translate( 0px,  0px ) scale( 1 ); }
+	16%  { transform: rotate(  1.5deg ) translate( 1px, -2px ) scale( 1 ); }
+	31%  { transform: rotate(  1.5deg ) translate( 1px, -2px ) scale( 1 ); }
+	32%  { transform: rotate( -1deg )   translate( -2px, 1px ) scale( 1 ); }
+	47%  { transform: rotate( -1deg )   translate( -2px, 1px ) scale( 1 ); }
+	48%  { transform: rotate(  2.5deg ) translate( 2px,  1px ) scale( 1.03 ); }
+	64%  { transform: rotate(  2.5deg ) translate( 2px,  1px ) scale( 1.03 ); }
+	65%  { transform: rotate( -2.5deg ) translate( -1px, -1px ) scale( 1 ); }
+	81%  { transform: rotate( -2.5deg ) translate( -1px, -1px ) scale( 1 ); }
+	82%  { transform: rotate(  1deg )   translate( 1px,  2px ) scale( 1 ); }
+	99%  { transform: rotate(  1deg )   translate( 1px,  2px ) scale( 1 ); }
+	100% { transform: rotate( -2deg )   translate( 0px,  0px ) scale( 1 ); }
+}
+
+// --- Compact chip (grid pickers + toggles) -----------------------------------
+.chip
+{
+	font-family: $body-font;
+	font-weight: 700;
+	font-size: 14px;
+	padding: 8px 14px;
+	border-radius: $radius-sm;
+	background-color: $paper-tile;
+	border: 2px solid $card-edge;
+	color: $paper-ink;
+	cursor: pointer;
+	pointer-events: all;
+	align-items: center;
+	justify-content: center;
+	box-shadow: $shadow-float;
+	transition: transform 0.1s ease-out, background-color 0.1s ease-out;
+
+	&:hover { background-color: #fff; transform: translateY( -1px ); sound-in: $sound-hover; }
+	&:active { sound-in: $sound-click; }
+
+	// Active toggle (selected tool / enabled option).
+	&.on
+	{
+		background-color: $craft-orange;
+		color: $paper-ink;
+
+		&:hover { background-color: $craft-orange-hi; }
+	}
+}
