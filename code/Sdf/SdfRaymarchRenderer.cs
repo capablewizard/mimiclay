@@ -206,9 +206,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	SdfMeshMode _lastMeshMode = (SdfMeshMode)(-1);
 	Vector3 _curMins, _curMaxs;       // world AABB (shader march bracket + frustum bounds)
 	Vector3 _curLocalMins, _curLocalMaxs; // local AABB (the oriented proxy box, for debug draw)
+	Vector3 _curProxyMins, _curProxyMaxs; // padded local proxy bounds actually built (highlight proxy rebuilds from these)
 	Vector3 _curCenter;
 	float _curRadius;
 	int _curCount;
+	bool _fieldReady; // this frame's field-cache readiness (the highlight marches the baked field only)
 	bool _forceRepack;
 	bool _released; // set when we've torn down _so; stops OnUpdate/Refresh from resurrecting it
 
@@ -381,6 +383,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// Last word on visibility, after the distance switch / Refresh have set their band state.
 		ApplyRenderHidden();
 		ApplyFieldOnlyHide();
+
+		// Sync the sibling highlight LAST, from this frame's refreshed state. Driven from here (not
+		// the highlight's own OnUpdate) so component update order can never leave the outline
+		// mirroring a frame-old bracket/field — during sculpt edits everything changes per frame,
+		// and a one-frame-stale mirror reads as outline jitter against the live surface.
+		if ( Highlight.IsValid() )
+			Highlight.SyncFromRenderer( this );
 	}
 
 	// Invisible-but-shadow-casting override (see RenderHidden). Runs after the per-frame band logic so it
@@ -586,6 +595,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 					}
 				}
 
+				_curProxyMins = pmins;
+				_curProxyMaxs = pmaxs;
+
 				Mesh proxy;
 			BBox worldBb;
 			if ( TightBounds )
@@ -679,7 +691,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// which the march samples. Re-dispatched only when brushes change, so a static prop pays a single dispatch
 		// and an edited one updates instantly. The shared CPU bake (SdfFieldBaker) is retired for now (see the note
 		// in that file); it can return later to share one texture across many identical clones if that's worth it.
-		bool fieldReady = false;
+		_fieldReady = false;
 		if ( UseFieldCache && _curCount > 0 && _curRadius > 0.01f )
 		{
 			_fieldGpu ??= new SdfFieldGpu();
@@ -714,10 +726,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				}
 				_so.Attributes.Set( "SdfSparse", SparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 
-				fieldReady = true;
+				_fieldReady = true;
 			}
 		}
-		_so.Attributes.SetCombo( "D_FIELD_TEX", fieldReady ? 1 : 0 );
+		_so.Attributes.SetCombo( "D_FIELD_TEX", _fieldReady ? 1 : 0 );
 
 		if ( DebugLiveField && _fieldGpu is { IsValid: true } )
 			DrawLiveFieldDebug( tx );
@@ -725,7 +737,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// FieldCacheOnly: suppress the analytic march entirely. When the field path is active but nothing's
 		// ready yet (first build in flight), hide the surface this frame rather than revealing the brush loop —
 		// applied as the last word on visibility in OnUpdate/UpdateDistanceSwitch.
-		_fieldOnlyHidden = FieldCacheOnly && UseFieldCache && _curCount > 0 && _curRadius > 0.01f && !fieldReady;
+		_fieldOnlyHidden = FieldCacheOnly && UseFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
 
 		if ( DebugLiveField )
 		{
@@ -733,7 +745,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			var fsz = valid ? (_fieldGpu.Maxs - _fieldGpu.Mins) : Vector3.Zero;
 			var psz = _curMaxs - _curMins;
 			bool ren = _so.IsValid() && _so.RenderingEnabled;
-			string st = $"[SDF live] suppress={SuppressFieldCache} valid={valid} ready={fieldReady} hidden={_fieldOnlyHidden} render={ren} field={fsz} proxy={psz}";
+			string st = $"[SDF live] suppress={SuppressFieldCache} valid={valid} ready={_fieldReady} hidden={_fieldOnlyHidden} render={ren} field={fsz} proxy={psz}";
 			if ( st != _lastLiveDebug ) { _lastLiveDebug = st; Log.Info( st ); }
 		}
 
@@ -950,6 +962,89 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				MathF.Min( mn.z + (k + 1) * blk * cz, mx.z ) );
 			DebugOverlay.Box( new BBox( blo, bhi ), bcol, duration: 0, transform: tx, overlay: true );
 		}
+	}
+
+	// ── Highlight-outline support (SdfHighlightOutline) ──────────────────────────────────────────
+	// The outline is a SECOND translucent scene object over the same proxy geometry, whose shader
+	// re-marches the BAKED FIELD ONLY (shaders/sdf_highlight.shader). Field-only keeps that shader
+	// free of the analytic brush evaluator (no third copy of the brush list to keep in sync with
+	// sdf_raymarch/sdf_eval); the trade is no highlight while UseFieldCache is off or the first
+	// bake is still in flight. These members hand the highlight the proxy model, the march bracket
+	// and the field bindings, mirrored from this renderer's per-frame state.
+
+	/// <summary>The highlight this renderer is grouped under (registered by SdfHighlightOutline's
+	/// target scan — self OR an ancestor). Pinged at the end of OnUpdate so the highlight's mirror
+	/// is rebuilt from refreshed state; the LAST group member to update each frame leaves it fully
+	/// same-frame coherent.</summary>
+	internal SdfHighlightOutline Highlight;
+
+	/// <summary>Changes whenever the proxy geometry is rebuilt (brushes / transform / bounds mode).</summary>
+	internal int ProxyVersion => _lastHash;
+
+	/// <summary>Whether the highlight can include this renderer this frame: a live proxy and a valid baked field.</summary>
+	internal bool HighlightReady => !_released && _so.IsValid() && _fieldReady && _fieldGpu is { IsValid: true };
+
+	/// <summary>The highlight follows the surface's own hide flags (a concealed pawn body must not glow).</summary>
+	internal bool HighlightVisible => !ForceHidden;
+
+	/// <summary>Padded local proxy bounds — the highlight unions these (through each member's
+	/// transform) into its single group proxy box.</summary>
+	internal Vector3 ProxyLocalMins => _curProxyMins;
+	internal Vector3 ProxyLocalMaxs => _curProxyMaxs;
+
+	/// <summary>Build the highlight group's single proxy box: lmins/lmaxs in tx-local space,
+	/// oriented by tx (one CONVEX box for the whole group — overlapping per-member proxies would
+	/// double-blend the translucent outline).</summary>
+	internal static Model BuildHighlightProxyBox( Vector3 lmins, Vector3 lmaxs, Transform tx, Material mat, out BBox worldBb )
+	{
+		var mesh = BuildOrientedBox( lmins, lmaxs, tx, mat, out worldBb );
+		return new ModelBuilder().AddMesh( mesh ).Create();
+	}
+
+	/// <summary>Mirror this renderer's field bindings + model fold into ONE SLOT of the highlight
+	/// scene object (the highlight shader unions up to 4 slots). Must track what Refresh binds on
+	/// the main scene object — the highlight samples the same field in the same local frame. The
+	/// shared attributes (union bracket, march budget, colours) are set by the highlight itself.</summary>
+	internal void ApplyHighlightAttributes( SceneObject so, int slot, bool matchDisplacement )
+	{
+		if ( _fieldGpu is not { IsValid: true } )
+			return; // shouldn't happen — the highlight only assigns slots to HighlightReady members
+
+		var tx = WorldTransform;
+		var a = so.Attributes;
+
+		a.Set( $"ModelOrigin{slot}", tx.Position );
+		a.Set( $"ModelRotation{slot}", new Vector4( tx.Rotation.x, tx.Rotation.y, tx.Rotation.z, tx.Rotation.w ) );
+
+		// Displacement bends the SILHOUETTE (the noise is deliberately NOT baked into the field),
+		// so the highlight needs the same amp/freq to track the lumpy edge. The look lives on the
+		// MATERIAL — vmat params surface through Material.Attributes; fall back to the shader
+		// defaults if a value was never authored. Amp 0 = off (member not displacing, or the
+		// highlight's MatchDisplacement disabled).
+		float dispAmp = 0f, dispFreq = 0.25f;
+		if ( matchDisplacement && Displace )
+		{
+			var mat = ActiveMaterial;
+			dispAmp = mat?.Attributes.GetFloat( "g_flDispAmp", 0.35f ) ?? 0.35f;
+			dispFreq = mat?.Attributes.GetFloat( "g_flDispFreq", 0.25f ) ?? 0.25f;
+		}
+		a.Set( $"DispAmp{slot}", dispAmp );
+		a.Set( $"DispFreq{slot}", dispFreq );
+
+		a.Set( $"FieldTex{slot}", _fieldGpu.Texture );
+		a.Set( $"FieldMin{slot}", _fieldGpu.Mins );
+		a.Set( $"FieldMax{slot}", _fieldGpu.Maxs );
+		a.Set( $"FieldDims{slot}", _fieldGpu.Dims );
+		a.Set( $"SurfaceDims{slot}", _fieldGpu.SurfaceDims );
+
+		if ( _fieldGpu.Atlas.IsValid() && _fieldGpu.IndirectionTex.IsValid() )
+		{
+			a.Set( $"Atlas{slot}", _fieldGpu.Atlas );
+			a.Set( $"IndirectionTex{slot}", _fieldGpu.IndirectionTex );
+			a.Set( $"BrickDims{slot}", _fieldGpu.BrickDims );
+			a.Set( $"AtlasDims{slot}", _fieldGpu.AtlasDims );
+		}
+		a.Set( $"SdfSparse{slot}", SparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 	}
 
 	static int Hash( List<SdfBrush> brushes )

@@ -45,6 +45,19 @@ public sealed class SculptEditSession : Component
 	/// instead of lerping, so it doesn't trail the camera. Orbiting changes it slowly, so that still eases.</summary>
 	[Property, Group( "Depth of Field" )] public float DofZoomSnapSpeed { get; set; } = 10f;
 
+	/// <summary>Keep the sculpt centred on its object: whenever editing settles (no gizmo drag, no alt-nav, no
+	/// held click), shift every brush so the shape's bounds centre lands on the origin (X/Y only — the height
+	/// offset is deliberate) and move <see cref="RecenterRoot"/> by the opposite world amount. The clay never
+	/// visibly moves; only the pivot does — so the prop rotates around its visual centre after editing. The
+	/// camera absorbs the shift and eases back onto centre over time, finishing even after edit mode ends.
+	/// Off by default: only enable it when the sculpture owns its origin (the hider's disguise) — a face
+	/// sculpture must stay put on its head.</summary>
+	[Property, Group( "Recenter" )] public bool RecenterSculpt { get; set; }
+
+	/// <summary>Object moved to compensate a recenter shift. The hider points this at the pawn root so the
+	/// disguise, its physics body and the origin all stay aligned. Null = the sculpture's own GameObject.</summary>
+	[Property, Group( "Recenter" )] public GameObject RecenterRoot { get; set; }
+
 	/// <summary>Render the in-world transform gizmo on the selected brush. On by default; turn it off for a
 	/// view-only sculpture (the palette/sliders still anchor to the selection's projected position, so a
 	/// colours-only HUD works with the gizmo hidden).</summary>
@@ -162,6 +175,14 @@ public sealed class SculptEditSession : Component
 	SdfRaymarchRenderer Raymarcher =>
 		Target.IsValid() ? Target.GameObject.Components.Get<SdfRaymarchRenderer>() : null;
 
+	// The rig whose pivot RecenterView eases: the owned camera when we have one (creative/menu), else a rig on
+	// our own object — the hider/hunter pawns keep theirs component-disabled and Tick it themselves, so the
+	// lookup must include disabled components. Cached once found.
+	OrbitCameraController _rig;
+	OrbitCameraController Rig => OrbitCamera.IsValid() ? OrbitCamera
+		: _rig.IsValid() ? _rig
+		: (_rig = Components.Get<OrbitCameraController>( FindMode.EverythingInSelf ));
+
 	// Scene-wide gizmo styling (same component the editor tool reads). Re-resolved until a real scene
 	// component is found (so it isn't permanently stuck on the fallback if the GizmoController loads late),
 	// then cached on it so live inspector edits flow straight through.
@@ -210,6 +231,11 @@ public sealed class SculptEditSession : Component
 		// Tear down the rendered gizmo + ghost when leaving edit mode (works whether or not we own a camera).
 		if ( !active )
 		{
+			// Final recenter, even mid-operation — leaving edit mode must never strand an off-centre pivot.
+			// The camera's ease-out keeps running in play mode (the rig's Tick), so this is invisible.
+			TryRecenterSculpt();
+			ReleaseRecenterHold();
+
 			_gizmo.Hide();
 			HideGhosts();
 			RestoreDof();
@@ -231,6 +257,7 @@ public sealed class SculptEditSession : Component
 	// SceneWorld, so it must be released explicitly).
 	protected override void OnDisabled()
 	{
+		ReleaseRecenterHold();
 		_gizmo.Hide();
 		HideGhosts();
 		_wireframes.Hide();
@@ -456,6 +483,7 @@ public sealed class SculptEditSession : Component
 			return;
 
 		UpdateDofFocus(); // keep focus just behind the object as the camera orbits / blur is tuned
+		UpdateRecenter(); // between operations: snap the pivot back under the sculpt (root + brushes shift)
 
 		var brushes = Target.Brushes;
 
@@ -740,6 +768,85 @@ public sealed class SculptEditSession : Component
 
 		_wireframes.Draw( Target.Brushes, Target.WorldTransform, Scene, Scene.Camera,
 			Selected, hover, master, st.OutlineThickness, WireframeDepthBias );
+	}
+
+	// ── Sculpt recentring ────────────────────────────────────────────────────────────────────────────
+	// Editing can walk the shape away from the object's origin, so after edit mode the prop rotates around an
+	// off-centre pivot. Fix the DATA, not the view: between operations, snap the brushes back onto the origin
+	// and move the root the opposite way — the clay stays exactly where it is in the world, only the pivot
+	// moves. The camera absorbs the root shift as debt and eases it out in the rig's Tick, which runs in play
+	// mode too, so exiting edit mode mid-ease can never strand an offset.
+
+	void UpdateRecenter()
+	{
+		// Anything in progress counts as an operation: a gizmo drag, alt-nav (even just holding alt), any held
+		// click (HUD slider drags included) — plus the release frame itself, whose full remesh runs below; the
+		// recenter fires on the following frame instead of stacking a second remesh onto it.
+		bool busy = IsManipulating || _wasManipulating || AltNav.Held || Input.Down( "Attack1" );
+
+		var rig = Rig;
+		if ( rig.IsValid() )
+			rig.HoldRecenterEase = busy; // the camera's catch-up drift also waits for the operation to end
+
+		if ( !busy )
+			TryRecenterSculpt();
+	}
+
+	/// <summary>Snap the sculpt's bounds centre onto the origin (X/Y) if it has drifted: shift every brush,
+	/// move the root by the equal-and-opposite world amount, and hand the camera the shift to ease out.
+	/// No-op when disabled, already centred (within a unit), or an axis is pinned by symmetry — mirrored
+	/// brushes reflect across the ORIGIN planes, so shifting them along a mirrored axis would change the
+	/// shape (pinned even for disabled brushes: a hidden layer must not be silently corrupted).</summary>
+	void TryRecenterSculpt()
+	{
+		if ( !RecenterSculpt || !Target.IsValid() || !Sdf.TryGetBounds( Target.Brushes, out var bounds ) )
+			return;
+
+		var offset = bounds.Center.WithZ( 0f );
+		foreach ( var b in Target.Brushes )
+		{
+			if ( b.MirrorX ) offset.x = 0f;
+			if ( b.MirrorY ) offset.y = 0f;
+		}
+
+		if ( offset.LengthSquared < 1f )
+			return;
+
+		foreach ( var b in Target.Brushes )
+		{
+			// Spline geometry lives entirely in its control points (Position/Rotation are unused for it).
+			if ( b.Shape == SdfShape.Spline && b.Points is { } pts )
+			{
+				for ( int i = 0; i < pts.Count; i++ )
+				{
+					var p = pts[i];
+					pts[i] = new Vector4( p.x - offset.x, p.y - offset.y, p.z - offset.z, p.w ); // w = radius
+				}
+			}
+			else
+			{
+				b.Position -= offset;
+			}
+		}
+
+		// Move the root so the shifted brushes land exactly where the clay already is — no visible motion.
+		var root = RecenterRoot.IsValid() ? RecenterRoot : Target.GameObject;
+		var worldShift = Target.WorldRotation * offset;
+		root.WorldPosition += worldShift;
+
+		var rig = Rig;
+		if ( rig.IsValid() )
+			rig.AbsorbPivotShift( worldShift );
+
+		Target.Rebuild();
+	}
+
+	// Don't leave the camera's catch-up ease frozen when the session stops driving it (edit exit / teardown).
+	void ReleaseRecenterHold()
+	{
+		var rig = Rig;
+		if ( rig.IsValid() )
+			rig.HoldRecenterEase = false;
 	}
 
 	// ── Depth of field (main camera) ─────────────────────────────────────────────────────────────────

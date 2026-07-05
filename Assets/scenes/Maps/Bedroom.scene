@@ -925,7 +925,7 @@
               "HideInGame": false,
               "IsTrigger": false,
               "Mesh": {
-                "Topology": "H4sIAAAAAAAACk2QBw7DMAwDz53p3uP/Ly0OJYEIMBRazpH2BHyBDf9aAgtgACtgndk2s2dm5Nw1newfc641zb5l7dNHuOf0EY97ev3f6SNL9i6eci5hqj3nOswyvZJB3XUKR99HMqjllanWT6/eqXu3+Jjzk8xqeWWq6+UbqVtm0qdZvaNaXplq/fTyzdWW/3gfM8l19gNhk0ACxAEAAA==",
+                "Topology": "H4sIAAAAAAAACq2QSQqAMBAES0Ux4HLw4v8/OlKQQPAgCdgQMg1DL7MCN7AAEREJGPMsZuCq+BcGYANS476eR4f+G2Y7Af+WfXv5dmDKnfU2g1ydoim3j13sJO/NV7zqe/4FM5X5AbeFVpnEAQAA",
                 "Positions": [
                   "-8,-666,-160",
                   "8,-666,-160",
@@ -1101,7 +1101,7 @@
               "HideInGame": false,
               "IsTrigger": false,
               "Mesh": {
-                "Topology": "H4sIAAAAAAAACk2QBw7DMAwDz53p3uP/Ly0OJYEIMBRazpH2BHyBDf9aAgtgACtgndk2s2dm5Nw1newfc641zb5l7dNHuOf0EY97ev3f6SNL9i6eci5hqj3nOswyvZJB3XUKR99HMqjllanWT6/eqXu3+Jjzk8xqeWWq6+UbqVtm0qdZvaNaXplq/fTyzdWW/3gfM8l19gNhk0ACxAEAAA==",
+                "Topology": "H4sIAAAAAAAACrXQSQqEUBRD0QN2BY4Eu/1vVAkqiDhQKO/kk/chJPlhRm1j2enQnnSDAj260/1LSoyXHG+A4dLrn2STCXmf5jkyVUi/dEvH6PgcntHZO1tn8+g7z/yty+GqD8QBAAA=",
                 "Positions": [
                   "-8,-666,-160",
                   "8,-666,-160",
@@ -1277,7 +1277,7 @@
               "HideInGame": false,
               "IsTrigger": false,
               "Mesh": {
-                "Topology": "H4sIAAAAAAAACk2QBw7DMAwDz53p3uP/Ly0OJYEIMBRazpH2BHyBDf9aAgtgACtgndk2s2dm5Nw1newfc641zb5l7dNHuOf0EY97ev3f6SNL9i6eci5hqj3nOswyvZJB3XUKR99HMqjllanWT6/eqXu3+Jjzk8xqeWWq6+UbqVtm0qdZvaNaXplq/fTyzdWW/3gfM8l19gNhk0ACxAEAAA==",
+                "Topology": "H4sIAAAAAAAACo2Q4QrCMBCDv6nTOQUduOn7v2jlwxz0nwuUNr0jyd0EfIAzPxyBJzAAJ+ABtNbaJbVXauKQXm/yf09fYereIzB3mv+g/5Yc8iHa13iO0ZrD7fPcukxrMsjrmHmPv356OZNcb/+WbidvwHuPXu3BTGavrM4oV6c05frp5c7lQh3nKU1rXwI4d77EAQAA",
                 "Positions": [
                   "-582,-8,-160",
                   "582,-8,-160",
@@ -1453,7 +1453,7 @@
               "HideInGame": false,
               "IsTrigger": false,
               "Mesh": {
-                "Topology": "H4sIAAAAAAAACk2QBw7DMAwDz53p3uP/Ly0OJYEIMBRazpH2BHyBDf9aAgtgACtgndk2s2dm5Nw1newfc641zb5l7dNHuOf0EY97ev3f6SNL9i6eci5hqj3nOswyvZJB3XUKR99HMqjllanWT6/eqXu3+Jjzk8xqeWWq6+UbqVtm0qdZvaNaXplq/fTyzdWW/3gfM8l19gNhk0ACxAEAAA==",
+                "Topology": "H4sIAAAAAAAACrWRSQqAMBAEywX1EnA56P8/qhQkMIgKCtYlNAM9PZ0B2IAO2DMJqIJ2tgZdqIERSBezL/TAfLPrDzpgOd3+RJN7mYAWMK9ZzazWp3iq7cdu7Ej9Np/73BX/IqKv7wFRWZw/xAEAAA==",
                 "Positions": [
                   "-582,-8,-160",
                   "582,-8,-160",
@@ -9123,6 +9123,26 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "Target": null
+        },
+        {
+          "__type": "Mimiclay.SdfHighlightOutline",
+          "__guid": "8cce388b-4dd5-486a-afbd-ee5de6d0efb4",
+          "__enabled": true,
+          "Flags": 0,
+          "Color": "1,1,1,0",
+          "IgnoreDepthOfField": false,
+          "InsideColor": "0,0,0,0",
+          "InsideObscuredColor": "0.52558,0.20045,0.20045,0.53",
+          "MatchDisplacement": false,
+          "ObscuredColor": "0,0,0,0.4",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Placement": "Center",
+          "Width": 4
         }
       ],
       "Children": [
@@ -9490,7 +9510,7 @@
               "__guid": "b24a84fe-d523-4b94-8135-3c70c600c411",
               "__enabled": true,
               "Flags": 0,
-              "AdaptiveQuality": true,
+              "AdaptiveQuality": false,
               "BrushCulling": true,
               "CullRadii": 220,
               "DebugBounds": false,
@@ -9650,7 +9670,7 @@
               "__guid": "cd336c60-872f-401a-a23c-23f935f86333",
               "__enabled": true,
               "Flags": 0,
-              "AdaptiveQuality": true,
+              "AdaptiveQuality": false,
               "BrushCulling": true,
               "CullRadii": 220,
               "DebugBounds": false,
@@ -9973,6 +9993,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "b1b34208-4711-4703-985b-23fac8126ee5"
             },
             "Property": "AdaptiveQuality",
@@ -10101,6 +10137,22 @@
                 "BoundingRadius": 13.655473
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -11065,6 +11117,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "6fc1c8a7-e4f7-42f9-983b-d952bf0e16ed"
             },
             "Property": "AdaptiveQuality",
@@ -11105,6 +11173,22 @@
             },
             "Property": "Position",
             "Value": "-258.962524,872.520386,256.148193"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8f2ee795-b379-4216-a23f-b49a850b1a64"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8f2ee795-b379-4216-a23f-b49a850b1a64"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11141,6 +11225,22 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.49746424,0.86748445"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e4fd6697-367c-455e-9068-c1e8d8dc5607"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e4fd6697-367c-455e-9068-c1e8d8dc5607"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11221,6 +11321,22 @@
             },
             "Property": "Rotation",
             "Value": "0,-0,-0.835807204,0.549023092"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "88753e23-1fd1-4f67-9aa4-6332676362b6"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "88753e23-1fd1-4f67-9aa4-6332676362b6"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11671,6 +11787,22 @@
                 "BoundingRadius": 4.3043747
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ffc9de5e-5882-4e3c-b6b3-7003846baf37"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ffc9de5e-5882-4e3c-b6b3-7003846baf37"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11905,6 +12037,22 @@
                 "BoundingRadius": 19.519297
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12139,6 +12287,22 @@
                 "BoundingRadius": 19.519297
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12175,6 +12339,22 @@
             },
             "Property": "Rotation",
             "Value": "-0.0263009369,-0.117310598,-0.968699396,-0.217181593"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a78df9de-4ad2-475e-bed3-b9376bbf5d3c"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a78df9de-4ad2-475e-bed3-b9376bbf5d3c"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12189,7 +12369,7 @@
       }
     },
     {
-      "__guid": "e7505bde-7252-484a-a5bf-33bb65314e44",
+      "__guid": "bb1959c5-5bf8-85de-9372-4819abcf651f",
       "__version": 2,
       "__Prefab": "prefabs/saved/trophy.prefab",
       "__PrefabInstancePatch": {
@@ -12199,29 +12379,45 @@
           {
             "Target": {
               "Type": "GameObject",
-              "IdValue": "23f86ea5-5225-43e4-8b21-8c66407074c8"
+              "IdValue": "43b1e208-6903-411d-b19d-7b1599b31cf8"
             },
             "Property": "Position",
-            "Value": "-111.751877,872.456665,219.971573"
+            "Value": "-112.035164,869.343872,221.825562"
           },
           {
             "Target": {
               "Type": "GameObject",
-              "IdValue": "23f86ea5-5225-43e4-8b21-8c66407074c8"
+              "IdValue": "43b1e208-6903-411d-b19d-7b1599b31cf8"
             },
             "Property": "Rotation",
-            "Value": "0,0,-0.849422097,0.527713835"
+            "Value": "0,0,-0.857926309,0.513772786"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e5f5e4cc-0e61-45d5-b797-6ef092a89d90"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e5f5e4cc-0e61-45d5-b797-6ef092a89d90"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
       },
       "__PrefabIdToInstanceId": {
-        "23f86ea5-5225-43e4-8b21-8c66407074c8": "e7505bde-7252-484a-a5bf-33bb65314e44",
-        "4445a5c7-7487-4673-9344-16ad1674449d": "a13fbfb9-6298-4474-8141-2fba7916128d",
-        "c790123e-1273-4ed5-a099-39ae12d481c3": "7e69e87c-3225-4353-8e27-d726304be1d9",
-        "16bb5a43-7e31-4e87-8fb1-aed9fe9940b8": "a1cb0131-4abd-4b0e-baec-d2c1831801bd",
-        "7a236c60-5ae7-4200-8598-91dc0e02a764": "5fef5e22-8cdc-4bc8-aa67-d247596b4841",
-        "48adff34-eb9f-4142-a18f-3bad87fea689": "d705cce7-0070-48e5-a6f6-80f83ff522b2"
+        "de64ddee-9d5c-475b-9ee6-c4284ad764de": "ff470062-4834-8de1-94a0-50407c2c43c5",
+        "5a169cf9-b454-4ea4-a1b2-0cfbad600a25": "007800de-16d7-8ef9-bb60-97a4457107b9",
+        "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b": "d585a64d-9121-8954-90c4-b471b7f91582",
+        "e5f5e4cc-0e61-45d5-b797-6ef092a89d90": "d863abe2-10bb-89ae-8fe8-63cdb76f830c",
+        "e2593524-cc48-4c33-ac9a-033a2d62c294": "d2dc9635-4f3a-8ba8-8bdf-0947010d3d92",
+        "43b1e208-6903-411d-b19d-7b1599b31cf8": "bb1959c5-5bf8-85de-9372-4819abcf651f"
       }
     },
     {
@@ -12247,6 +12443,22 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.4047755,0.914416015"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ea1c0a8f-6aa1-42e3-b081-a47ad8aab28d"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ea1c0a8f-6aa1-42e3-b081-a47ad8aab28d"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []

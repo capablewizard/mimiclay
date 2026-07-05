@@ -166,6 +166,26 @@
         "Static": false,
         "Surface": null,
         "SurfaceVelocity": "0,0,0"
+      },
+      {
+        "__type": "Mimiclay.SdfHighlightOutline",
+        "__guid": "4c666659-4ee8-4986-8842-86a838680a33",
+        "__enabled": true,
+        "Flags": 0,
+        "Color": "1,1,1,0",
+        "IgnoreDepthOfField": true,
+        "InsideColor": "0,0,0,0",
+        "InsideObscuredColor": "0,0.42636,0.5814,0.53",
+        "MatchDisplacement": false,
+        "ObscuredColor": "0,0,0,0.4",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Placement": "Center",
+        "Width": 4
       }
     ],
     "Children": [

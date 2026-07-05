@@ -78,6 +78,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	[Property, Group( "Camera" )] public float MinDistance { get; set; } = 24f;
 	[Property, Group( "Camera" )] public float MaxDistance { get; set; } = 2000f;
 
+	/// <summary>Off = the camera boom no longer pulls in when geometry blocks it, so it keeps its full
+	/// distance and clips through walls instead.</summary>
+	[Property, Group( "Camera" )] public bool CameraCollision { get; set; } = true;
+
 	/// <summary>In play mode, holding Alt orbits the camera without also holding a mouse button (alt+RMB still
 	/// dollies, alt+MMB still pans). Off = Maya-style alt+LMB to orbit. Edit mode always needs the click (so the
 	/// cursor stays free for the gizmo).</summary>
@@ -224,6 +228,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		_session = Components.Create<SculptEditSession>();
 		_session.Target = _body;
+
+		// Keep the disguise centred on the pawn: whenever an edit settles, the session shifts the brushes onto
+		// the origin and moves the PAWN (us) the opposite way — the clay never visibly moves, but the pivot the
+		// prop rotates around ends up under its visual centre. The rig absorbs the shift and eases back onto it.
+		_session.RecenterSculpt = true;
+		_session.RecenterRoot = GameObject;
 
 		// Networking: point the prefab's SdfNetworkSync at this machine's disguise. It does the rest — owner
 		// publishes brushes on commit + streams live drags, proxies apply + interpolate, late-joiners get the
@@ -474,6 +484,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// turns with the camera (play) or stays frozen (edit, while sculpting).
 	void UpdateCamera()
 	{
+		_orbit.BoomCollision = CameraCollision; // mirrored every frame so the inspector toggle takes effect live
+
 		if ( EditMode )
 		{
 			// Edit: the rig reads Maya alt-nav itself (orbit/dolly/pan + the dot cursor). We leave _bodyYaw alone,
