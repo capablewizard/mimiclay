@@ -143,6 +143,8 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OrbitCamera": null,
+              "RecenterSculpt": false,
+              "RecenterSpeed": 2,
               "ShowGizmo": true,
               "ShowShadowProxy": false,
               "ShowWireframes": true,

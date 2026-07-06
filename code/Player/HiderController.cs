@@ -209,13 +209,18 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		_bodyYaw = EyeAngles.yaw;
 
-		// Stand up the shared orbit rig in follow mode, pointed at the disguise. It owns the camera for play AND
+		// Stand up the shared orbit rig in follow mode, pointed at the pawn. It owns the camera for play AND
 		// edit. Kept disabled as a component (it never runs its own OnUpdate) — we Tick it from UpdateCamera so the
 		// ordering against our look input is deterministic and a proxy/dormant prop never drives the camera.
 		_orbit = Components.GetOrCreate<OrbitCameraController>();
 		_orbit.Enabled = false;
-		_orbit.FollowTarget = _body.GameObject;
-		_orbit.FollowOffset = Vector3.Up * CameraHeightOffset;
+
+		// Follow the PAWN, not the disguise: the recenter glide (see SculptEditSession.RecenterSculpt) slides
+		// the disguise around inside the pawn, and the camera must NOT ride along — the clay drifting onto the
+		// pawn origin IS the on-screen centring. The disguise's ground lift folds into the offset so the
+		// framing matches the old follow-the-disguise setup exactly.
+		_orbit.FollowTarget = GameObject;
+		_orbit.FollowOffset = Vector3.Up * (CameraHeightOffset + _body.LocalPosition.z);
 		_orbit.IgnoreCollision = GameObject; // boom ignores the pawn + its disguise, same as before
 		_orbit.MinDistance = MinDistance;
 		_orbit.MaxDistance = MaxDistance;
@@ -229,11 +234,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		_session = Components.Create<SculptEditSession>();
 		_session.Target = _body;
 
-		// Keep the disguise centred on the pawn: whenever an edit settles, the session shifts the brushes onto
-		// the origin and moves the PAWN (us) the opposite way — the clay never visibly moves, but the pivot the
-		// prop rotates around ends up under its visual centre. The rig absorbs the shift and eases back onto it.
+		// Keep the disguise centred on the pawn: between edits the session glides the disguise GameObject so
+		// its shape sits over the pawn origin — the clay drifts to the middle of the view (the camera follows
+		// the pawn) and the prop rotates around its visual centre in play mode. Brushes are never touched.
 		_session.RecenterSculpt = true;
-		_session.RecenterRoot = GameObject;
 
 		// Networking: point the prefab's SdfNetworkSync at this machine's disguise. It does the rest — owner
 		// publishes brushes on commit + streams live drags, proxies apply + interpolate, late-joiners get the

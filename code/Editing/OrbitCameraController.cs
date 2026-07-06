@@ -86,7 +86,6 @@ public sealed class OrbitCameraController : Component
 		float dist = FocusHint is Vector3 f ? Vector3.Dot( f - cam.WorldPosition, fwd ) : DefaultDistance;
 		Distance = dist.Clamp( MinDistance, MaxDistance );
 		Pivot = cam.WorldPosition + fwd * Distance;
-		_recenterDebt = Vector3.Zero; // a fresh seed IS the desired view — nothing left to ease out
 		return true;
 	}
 
@@ -133,11 +132,6 @@ public sealed class OrbitCameraController : Component
 		if ( FollowTarget.IsValid() )
 			Pivot = FollowTarget.WorldPosition + FollowOffset + _panOffset;
 
-		// Ease out any absorbed recenter shift (paused mid-operation) so the view settles onto the moved
-		// pivot. Runs every Tick — play mode included — so an ease that starts in edit mode always finishes.
-		if ( !HoldRecenterEase )
-			_recenterDebt = Vector3.Lerp( _recenterDebt, Vector3.Zero, 1f - MathF.Exp( -RecenterEaseSpeed * Time.Delta ) );
-
 		Apply( cam );
 	}
 
@@ -160,27 +154,6 @@ public sealed class OrbitCameraController : Component
 	// Drag up zooms in, down zooms out — exponential so it feels even at any distance.
 	public void Dolly( Vector2 d ) => Distance = (Distance * MathF.Pow( 1f + ZoomSpeed, d.y )).Clamp( MinDistance, MaxDistance );
 
-	/// <summary>The follow target just teleported by <paramref name="worldDelta"/> without its geometry
-	/// visibly moving (a sculpt recenter shifted the brushes one way and the root the other): keep the camera
-	/// exactly where it was by absorbing the shift as debt, then ease the debt out over time so the view
-	/// gently drifts onto the new pivot. No-op in free-pivot mode — the pivot doesn't track the object there,
-	/// so it never jumped.</summary>
-	public void AbsorbPivotShift( Vector3 worldDelta )
-	{
-		if ( FollowTarget.IsValid() )
-			_recenterDebt -= worldDelta;
-	}
-
-	/// <summary>How fast the absorbed shift eases out (per second, exponential). Kept gentle — it's a slow
-	/// drift back onto the sculpt, not a snap.</summary>
-	[Property] public float RecenterEaseSpeed { get; set; } = 1.5f;
-
-	/// <summary>Freeze the recenter ease this frame. The edit session holds this while any operation is in
-	/// progress (gizmo drag, alt-nav, held click) so the view never moves under the user's cursor.</summary>
-	public bool HoldRecenterEase { get; set; }
-
-	Vector3 _recenterDebt; // camera offset left over after AbsorbPivotShift; eased to zero every Tick
-
 	// Vertical pan only. In follow mode it offsets the follow point; otherwise it moves the world pivot.
 	public void Pan( Vector2 d )
 	{
@@ -195,13 +168,12 @@ public sealed class OrbitCameraController : Component
 	void Apply( CameraComponent cam )
 	{
 		var rot = _angles.ToRotation();
-		var pivot = Pivot + _recenterDebt; // view-only offset — Pivot itself stays the true orbit centre
-		var desired = pivot - rot.Forward * Distance;
+		var desired = Pivot - rot.Forward * Distance;
 
 		// Pull the boom in if it would clip through geometry (gameplay only).
 		if ( BoomCollision && IgnoreCollision.IsValid() )
 		{
-			var tr = Scene.Trace.Ray( pivot, desired )
+			var tr = Scene.Trace.Ray( Pivot, desired )
 				.Radius( 8f )
 				.IgnoreGameObjectHierarchy( IgnoreCollision )
 				.Run();

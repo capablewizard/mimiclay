@@ -177,24 +177,29 @@
 	// --- Inline styles (all design px, derived from Size + the HSV state) ---
 
 	static string Px( float v ) => v.ToString( "0.#", CultureInfo.InvariantCulture ) + "px";
+	static string Pct( float v ) => v.ToString( "0.###", CultureInfo.InvariantCulture ) + "%";
 
 	// One edge of the hue band, drawn as a CSS border circle rather than baked into the texture — a baked
 	// colour goes through the texture colour pipeline and comes out darker than the same hex in CSS, so the
 	// outlines are real borders sharing $paper-ink with the ball's. `grow` fattens the circle so the inner
 	// edge's border lands ON the band's inner rim (a border draws inside its own bounds).
+	//
+	// Sized in PERCENT of the wheel panel, not px: the ring texture is %-sized (100%), and px-styled siblings
+	// can land on a different scale family than %-sized ones (seen live: ~1% size + ~1px offset between the
+	// band and px-positioned circles). Same unit → same layout path → concentric by construction.
 	string RingOutlineStyle( float frac, float grow )
 	{
-		float d = Size * frac + grow;
-		float off = (Size - d) * 0.5f;
-		return $"left: {Px( off )}; top: {Px( off )}; width: {Px( d )}; height: {Px( d )};";
+		float dPct = (frac + grow / Size) * 100f;
+		float offPct = (100f - dPct) * 0.5f;
+		return $"left: {Pct( offPct )}; top: {Pct( offPct )}; width: {Pct( dPct )}; height: {Pct( dPct )};";
 	}
 
 	string BallStyle()
 	{
-		float d = Size * BallFrac;
-		float off = (Size - d) * 0.5f;
+		float dPct = BallFrac * 100f;
+		float offPct = (100f - dPct) * 0.5f;
 		var hue = ClayLook.HsvToRgb( _hue, 1f, 1f ); // shading comes from the overlay texture; border in the scss
-		return $"left: {Px( off )}; top: {Px( off )}; width: {Px( d )}; height: {Px( d )}; background-color: {ClayLook.Hex( hue )};";
+		return $"left: {Pct( offPct )}; top: {Pct( offPct )}; width: {Pct( dPct )}; height: {Pct( dPct )}; background-color: {ClayLook.Hex( hue )};";
 	}
 
 	string RingHandleStyle()
