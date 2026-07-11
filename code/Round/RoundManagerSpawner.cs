@@ -25,6 +25,10 @@ public sealed class RoundManagerSpawner : Component
 	[Property, Group( "Prefabs" )] public GameObject HunterPrefab { get; set; }
 	[Property, Group( "Prefabs" )] public GameObject PropPrefab { get; set; }
 
+	/// <summary>One-shot smoke burst played where a prop is found, covering the swap to a hunter pawn (the
+	/// "substitution" poof). Cloned locally on every machine by <see cref="RoundManager.PlayCaughtPuff"/>.</summary>
+	[Property, Group( "Prefabs" )] public GameObject CaughtPuffPrefab { get; set; }
+
 	[Property, Group( "Scoring" )] public int FindReward { get; set; } = 50;
 	[Property, Group( "Scoring" )] public float PropPointsPerSecond { get; set; } = 1f;
 

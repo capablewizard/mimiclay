@@ -64,7 +64,7 @@
       {
         "__type": "Sandbox.ModelRenderer",
         "__guid": "20000001-0000-4000-8000-000000000003",
-        "__enabled": true,
+        "__enabled": false,
         "Flags": 0,
         "BodyGroups": 18446744073709551615,
         "CreateAttachments": false,
@@ -124,6 +124,8 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "OverdrawOptimization": false,
+        "SdfShadows": true,
+        "ShadowBias": 0,
         "SparseField": true,
         "TightBounds": false,
         "Transmission": true,
@@ -185,7 +187,7 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "Placement": "Center",
-        "Width": 4
+        "Width": 0
       }
     ],
     "Children": [

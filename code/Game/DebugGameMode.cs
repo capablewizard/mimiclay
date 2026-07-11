@@ -27,6 +27,10 @@ public enum DebugRole { Hunter, Prop }
 [Icon( "bug_report" )]
 public sealed class DebugGameMode : Component
 {
+	/// <summary>The scene's debug mode, so the hunter's shot can route hits here when there's no
+	/// <see cref="RoundManager"/> running. Set while enabled.</summary>
+	public static DebugGameMode Current { get; private set; }
+
 	/// <summary>Max lobby connections.</summary>
 	public const int MaxPlayers = 8;
 
@@ -48,6 +52,10 @@ public sealed class DebugGameMode : Component
 	[Property, Group( "Prefabs" )] public GameObject HunterPrefab { get; set; }
 	[Property, Group( "Prefabs" )] public GameObject PropPrefab { get; set; }
 
+	/// <summary>Optional: the one-shot smoke burst cloned on every machine where a shot prop pops (the same
+	/// caught_puff.prefab the real round uses — see <see cref="RoundManager.PlayCaughtPuff"/>).</summary>
+	[Property, Group( "Prefabs" )] public GameObject CaughtPuffPrefab { get; set; }
+
 	// Host-side: the pawn each connection is actively controlling, keyed by Connection.Id.
 	readonly Dictionary<Guid, GameObject> _pawns = new();
 
@@ -59,6 +67,12 @@ public sealed class DebugGameMode : Component
 	GameObject _localPawn;
 
 	DebugRole DefaultRole => DefaultToProp ? DebugRole.Prop : DebugRole.Hunter;
+
+	protected override void OnEnabled() => Current = this;
+	protected override void OnDisabled()
+	{
+		if ( Current == this ) Current = null;
+	}
 
 	protected override void OnStart()
 	{
@@ -105,6 +119,47 @@ public sealed class DebugGameMode : Component
 					SpawnFor( connection, DefaultRole );
 			}
 		}
+	}
+
+	/// <summary>Debug stand-in for <see cref="RoundManager.ReportPropHit"/>: a hunter's shot landed on a prop pawn.
+	/// No roster or phases here — the prop just pops (with the puff), and if it was a connection's ACTIVE pawn that
+	/// player respawns as a hunter, infection-style. A retired scenery prop (left standing by a respawn) simply pops.
+	/// Routed here by <see cref="HunterController"/> only when no RoundManager is running.</summary>
+	[Rpc.Host]
+	public void ReportPropHit( GameObject propPawn )
+	{
+		if ( !propPawn.IsValid() )
+			return;
+
+		PlayCaughtPuff( propPawn.WorldPosition + Vector3.Up * 20f );
+
+		// Whose active pawn is this? (Scenery props aren't in _pawns — the lookup misses and only the pop happens.)
+		var ownerId = _pawns.FirstOrDefault( kv => kv.Value == propPawn ).Key;
+
+		// A FOUND prop pops — unlike a voluntary respawn, which leaves the old prop standing as scenery.
+		propPawn.Destroy();
+
+		var connection = Connection.All.FirstOrDefault( c => c.Id == ownerId );
+		if ( connection is not null )
+			SpawnFor( connection, DebugRole.Hunter );
+	}
+
+	// Everyone clones the puff locally, same as RoundManager.PlayCaughtPuff (duplicated — this class is a throwaway).
+	[Rpc.Broadcast]
+	void PlayCaughtPuff( Vector3 position )
+	{
+		if ( !CaughtPuffPrefab.IsValid() )
+			return;
+
+		ExpirePuff( CaughtPuffPrefab.Clone( position ) );
+	}
+
+	// No delayed destroy on GameObject — retire the one-shot clone once every particle is long dead.
+	async void ExpirePuff( GameObject puff )
+	{
+		await Task.DelaySeconds( 2f );
+		if ( puff.IsValid() )
+			puff.Destroy();
 	}
 
 	// Client -> host: the caller wants its pawn (re)spawned in this role. Runs on the host, which owns spawning.

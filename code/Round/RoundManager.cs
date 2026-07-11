@@ -450,7 +450,32 @@ public sealed class RoundManager : Component, IRoundContext
 			Players[hunter.Id] = seeker;
 		}
 
+		// Poof — everyone sees the substitution smoke where the prop stood, masking the prop→hunter pawn swap.
+		PlayCaughtPuff( propPawn.WorldPosition + Vector3.Up * 20f );
+
 		// All props found ends the round immediately — TickHostPhase picks that up next frame via AliveProps.
+	}
+
+	/// <summary>Host→everyone: burst the caught-prop smoke at <paramref name="position"/>. Cloned LOCALLY per machine
+	/// from the scene-placed spawner's prefab (the spawner exists on every machine; this manager's own [Property]s
+	/// wouldn't). Purely cosmetic — losing it (no spawner, prefab unset) loses nothing but the poof.</summary>
+	[Rpc.Broadcast]
+	void PlayCaughtPuff( Vector3 position )
+	{
+		var prefab = RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.CaughtPuffPrefab : null;
+		if ( !prefab.IsValid() )
+			return;
+
+		ExpirePuff( prefab.Clone( position ) );
+	}
+
+	// The burst is a one-shot (~0.7s max particle life) and GameObject has no delayed destroy — retire the clone once
+	// every particle is long dead. Component.Task cancels this on scene change, taking the puff with the scene anyway.
+	async void ExpirePuff( GameObject puff )
+	{
+		await Task.DelaySeconds( 2f );
+		if ( puff.IsValid() )
+			puff.Destroy();
 	}
 
 	// Host-only. Surviving props earn points each frame. Size weighting is a STUB: real rule is "bigger prop hiding

@@ -4,8 +4,9 @@ namespace Mimiclay;
 
 /// <summary>
 /// Hunter: a plain first-person seeker. Movement/look/crouch/jump/camera all come from the stock s&amp;box
-/// <see cref="PlayerController"/> (capsule, ground/step handling, footsteps, eye transform) — this component
-/// adds a hitscan shot on attack1 and an edit mode for sculpting its own face.
+/// <see cref="PlayerController"/> (capsule, ground/step handling, landing sounds, eye transform) — this component
+/// adds a hitscan shot on attack1, walk footstep sounds (see <see cref="EnableFootsteps"/> — the stock ones are
+/// animation-event driven and this pawn has no animated model), and an edit mode for sculpting its own face.
 ///
 /// <b>Edit mode</b> (Q): suspends first-person control (look + movement frozen) and hands the shared camera to
 /// an <see cref="OrbitCameraController"/> framed on the hunter's <see cref="Face"/> sculpture, so you orbit and
@@ -28,6 +29,27 @@ public sealed class HunterController : Component
 
 	// Owner-side gate: the next moment a shot is allowed.
 	TimeUntil _nextShot;
+
+	/// <summary>Emit footstep sounds while walking. The stock controller only plays WALK steps from animation
+	/// events on a SkinnedModelRenderer — this pawn has none (capsule + SDF head), so without this the only
+	/// footstep sound you'd ever hear is the engine's physics-driven landing thump. We reproduce the walk half
+	/// ourselves: distance-gated calls into the controller's own PlayFootstepSound (surface sounds + mixer).</summary>
+	[Property, Group( "Footsteps" )] public bool EnableFootsteps { get; set; } = true;
+
+	/// <summary>World units of horizontal travel per step when walking (the stride at WalkSpeed and below).</summary>
+	[Property, Group( "Footsteps" )] public float StepDistance { get; set; } = 60f;
+
+	/// <summary>Stride at full run (RunSpeed) — longer than the walk stride so sprinting doesn't sound like a
+	/// drum roll. The actual stride blends between the two with speed, so in-between speeds ease smoothly
+	/// rather than snapping cadence at some threshold.</summary>
+	[Property, Group( "Footsteps" )] public float RunStepDistance { get; set; } = 100f;
+
+	// Footstep emitter state: distance walked since the last step, where we last measured from (invalid until
+	// re-seeded on the first grounded frame), and which foot lands next (alternates left/right sounds).
+	float _stepAccum;
+	Vector3 _stepFrom;
+	bool _stepSeeded;
+	int _stepFoot;
 
 	/// <summary>The SDF sculpture edited in face-edit mode (the "Head"). Auto-resolved in <see cref="OnStart"/>
 	/// when left unset: a child named "Head" with a sculpture, else the first sculpture in the hierarchy.</summary>
@@ -52,7 +74,12 @@ public sealed class HunterController : Component
 	SculptEditSession _session;
 	OrbitCameraController _orbit;
 
-	bool EditMode => _session?.IsEditing ?? false;
+	// Grounded eye-z smoothing (same treatment as the stock camera path): walking up a step teleports the body
+	// vertically in one physics tick, so the eye z is lerped toward the new height instead of snapping. 0 = unseeded.
+	float _eyez;
+
+	// Internal: the crosshair HUD (HunterCrosshair) reads this to hide the dot while sculpting.
+	internal bool EditMode => _session?.IsEditing ?? false;
 
 	protected override void OnAwake()
 	{
@@ -152,6 +179,12 @@ public sealed class HunterController : Component
 		}
 
 		HideOwnBody();
+		UpdateFootsteps();
+
+		// ONE smoothed live eye per frame, shared by the camera and the head placement below, so the two can
+		// never disagree mid-frame. Computed on every machine (proxies place the head from their network-
+		// interpolated pawn transform); SmoothedEyePosition advances _eyez, so call it exactly once per frame.
+		Vector3 eye = _controller.IsValid() ? SmoothedEyePosition() : WorldPosition;
 
 		if ( !IsProxy && !EditMode && _controller.IsValid() )
 		{
@@ -160,34 +193,60 @@ public sealed class HunterController : Component
 			// mouse after leaving edit mode.
 			Mouse.Visibility = MouseVisibility.Hidden;
 
-			DriveCamera();
+			DriveCamera( eye );
 
 			// Owner-only: otherwise every machine would shoot when ITS local player clicked, from a remote pawn's
 			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
-			// No shooting while controls are locked (the Starting countdown).
+			// No shooting while controls are locked (the Starting countdown). The shot leaves from the same eye
+			// the camera sits at, so the trace always matches what the crosshair shows.
 			if ( !locked && Input.Pressed( "attack1" ) && _nextShot <= 0f )
-				Shoot();
+				Shoot( eye );
 		}
 
-		// Park the debug eye marker at the eye, aimed where we're looking — on ALL machines (the eye transform is
-		// networked), so remote hunters' aim is visible too.
+		// Park the head at the eye, aimed where we're looking — on ALL machines (the eye transform is networked),
+		// so remote hunters' heads track their aim too. (Eyes is wired to the sculpted Head in hunter.prefab.)
+		// MUST be placed from the same smoothed eye as the camera: positioning it from the controller's cached
+		// EyePosition (stamped raw during fixed update) made the head — visible only as its raymarched shadow in
+		// first person — step at the physics tick rate against the now-gliding camera.
 		if ( Eyes.IsValid() && _controller.IsValid() )
 		{
-			Eyes.WorldPosition = _controller.EyePosition;
+			Eyes.WorldPosition = eye;
 			Eyes.WorldRotation = _controller.EyeAngles.ToRotation();
 		}
+	}
+
+	// The eye everything visual hangs off this frame, computed LIVE — never read _controller.EyePosition for
+	// placement: that property is a cached EyeTransform the stock controller re-stamps at the end of its
+	// OnFixedUpdate, where transform reads are the raw end-of-tick position. Sampling that cache steps whatever
+	// it drives at the physics tick rate instead of gliding (first seen as the whole scene jittering via the
+	// camera, then as the head shadow jittering via the Eyes placement). WorldPosition read here (outside fixed
+	// update) is the engine-interpolated transform; the formula mirrors MoveMode.CalculateEyeTransform.
+	//
+	// Grounded step smoothing (same as the stock camera path): stepping up moves the body vertically in one
+	// tick, so glide the eye z toward it rather than snapping. Airborne follows raw so jumps/falls stay 1:1.
+	// Advances _eyez — call exactly once per frame (OnUpdate does), and use the returned eye everywhere.
+	Vector3 SmoothedEyePosition()
+	{
+		var eye = _controller.WorldPosition
+			+ Vector3.Up * (_controller.CurrentHeight - _controller.EyeDistanceFromTop);
+
+		if ( !_controller.IsAirborne && _eyez != 0f )
+			eye.z = _eyez.LerpTo( eye.z, Time.Delta * 50f );
+		_eyez = eye.z;
+
+		return eye;
 	}
 
 	// Position the shared scene camera at the eye — FIRST PERSON, position + rotation ONLY. No FieldOfView /
 	// render-setting changes, so the camera is left exactly as clean as we found it for the next pawn that drives
 	// it. This is the whole point: one camera, every controller sets only its transform.
-	void DriveCamera()
+	void DriveCamera( Vector3 eye )
 	{
 		var cam = Scene.Camera;
 		if ( !cam.IsValid() )
 			return;
 
-		cam.WorldPosition = _controller.EyePosition;
+		cam.WorldPosition = eye;
 		cam.WorldRotation = _controller.EyeAngles.ToRotation();
 	}
 
@@ -224,6 +283,61 @@ public sealed class HunterController : Component
 					r.RenderHidden = hideOwn;
 			}
 		}
+	}
+
+	// Walk footsteps: every StepDistance units of grounded horizontal travel, play the ground surface's step
+	// sound through the controller's own PlayFootstepSound (which handles surface lookup, left/right selection,
+	// the footstep mixer and FootstepVolume). Runs on EVERY machine — proxies categorize ground too and their
+	// pawn transform is networked, so remote hunters' steps are audible to hiders, same as stock animation-event
+	// footsteps would be. Volume scales with observed speed like the engine's event handler does. Landing thumps
+	// stay the engine's job (physics-driven, already working) — going airborne resets the accumulator so a jump
+	// doesn't bank distance toward an instant step on top of the land sound.
+	void UpdateFootsteps()
+	{
+		if ( !EnableFootsteps || !_controller.IsValid() )
+			return;
+
+		if ( !_controller.IsOnGround )
+		{
+			_stepSeeded = false;
+			_stepAccum = 0f;
+			return;
+		}
+
+		var pos = _controller.WorldPosition;
+
+		if ( !_stepSeeded )
+		{
+			_stepFrom = pos;
+			_stepSeeded = true;
+			return;
+		}
+
+		float moved = (pos - _stepFrom).WithZ( 0f ).Length;
+		_stepFrom = pos;
+
+		// Observed horizontal speed, from the same delta — works identically for owner and proxy (proxies read
+		// their network-interpolated transform; the controller's WishVelocity/Velocity aren't reliable there).
+		float speed = Time.Delta > 0f ? moved / Time.Delta : 0f;
+
+		// Stride lengthens with speed: StepDistance at WalkSpeed (and below), RunStepDistance at RunSpeed,
+		// blended in between. The controller's speed properties are prefab values, identical on every machine,
+		// so owner and proxies compute the same cadence.
+		float stride = speed.Remap( _controller.WalkSpeed, _controller.RunSpeed, StepDistance, RunStepDistance );
+
+		_stepAccum += moved;
+		if ( _stepAccum < stride )
+			return;
+
+		_stepAccum = 0f;
+
+		// Same speed→volume mapping as the stock animation-event path; near-still shuffles stay silent.
+		float volume = speed.Remap( 0f, 400f, 0f, 1f );
+		if ( volume <= 0.1f )
+			return;
+
+		_stepFoot = 1 - _stepFoot;
+		_controller.PlayFootstepSound( pos, volume, _stepFoot );
 	}
 
 	// Enter/leave face-edit mode. On enter, the session enables the orbit camera (seeding it from the current
@@ -293,12 +407,11 @@ public sealed class HunterController : Component
 		return _controller.IsValid() ? _controller.EyePosition : WorldPosition;
 	}
 
-	void Shoot()
+	void Shoot( Vector3 from )
 	{
 		if ( !_controller.IsValid() )
 			return;
 
-		var from = _controller.EyePosition;
 		var dir = _controller.EyeAngles.ToRotation().Forward;
 
 		_nextShot = ShootCooldown;
@@ -314,9 +427,15 @@ public sealed class HunterController : Component
 		// A hit on a prop pawn (its disguise collider belongs to a HiderController up the hierarchy) is reported to
 		// the host, which validates the phase + that it's a live prop, then pops it and converts that player to a
 		// hunter. Anything else is just map geometry. The call is [Rpc.Host] so it routes to the host from here.
+		// With no round running, a DebugGameMode scene handles the hit instead (no phases — the prop just pops).
 		var hider = FindHider( tr.GameObject );
-		if ( hider.IsValid() && RoundManager.Current.IsValid() )
+		if ( !hider.IsValid() )
+			return;
+
+		if ( RoundManager.Current.IsValid() )
 			RoundManager.Current.ReportPropHit( hider.GameObject );
+		else if ( DebugGameMode.Current.IsValid() )
+			DebugGameMode.Current.ReportPropHit( hider.GameObject );
 	}
 
 	// Walk up from the traced object to the pawn root that carries the HiderController (the collider we hit is the

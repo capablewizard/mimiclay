@@ -22,9 +22,12 @@
         "Flags": 0,
         "AirControl": 2.5,
         "AltHoldOrbits": true,
+        "CameraCollision": false,
         "CameraDistance": 180,
         "CameraHeightOffset": 16,
+        "CenterPivotOnShape": true,
         "CrouchSpeed": 60,
+        "DebugCameraPivot": false,
         "DebugGroundProbes": false,
         "DisguisePrefab": "prefabs/disguise.prefab",
         "FallGravityMult": 1.9,
@@ -44,6 +47,7 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "PanSpeed": 1,
+        "PivotSmoothSpeed": 2,
         "RunSpeed": 200,
         "SnagCompliance": 1,
         "StopSpeed": 6,
@@ -65,7 +69,57 @@
         "Target": null
       }
     ],
-    "Children": [],
+    "Children": [
+      {
+        "__guid": "dfb05857-98ad-4ce8-9b9e-e1b3c3fec726",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Pause HUD",
+        "Position": "0,0,0",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.ScreenPanel",
+            "__guid": "f6d58ff7-bd6c-49fa-b9a1-4a8d1f1c1e43",
+            "__enabled": true,
+            "Flags": 0,
+            "AutoScreenScale": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "Opacity": 1,
+            "Scale": 1,
+            "ScaleStrategy": "ConsistentHeight",
+            "TargetCamera": null,
+            "ZIndex": 1000
+          },
+          {
+            "__type": "Mimiclay.PauseMenu",
+            "__guid": "8dbd21e7-cab0-47da-b4f7-b3bdeb09eaaf",
+            "__enabled": true,
+            "Flags": 0,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null
+          }
+        ],
+        "Children": []
+      }
+    ],
     "__properties": {
       "NetworkInterpolation": true,
       "TimeScale": 1,

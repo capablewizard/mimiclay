@@ -1,0 +1,32 @@
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	Hunter crosshair — the dot cursor, parked dead centre. Lives on the hunter prefab's HUD child so it exists
+	exactly when a hunter pawn does (rounds AND debug scenes); drawn only for the OWNING hunter in first-person
+	play. Proxies draw nothing, and face-edit mode draws nothing either — the orbit camera frees the real cursor
+	there, so a crosshair would just be a second dot.
+*@
+
+<root class="hunter-crosshair">
+	@if ( Visible )
+	{
+		<div class="dot" />
+	}
+</root>
+
+@code
+{
+	HunterController _hunter;
+
+	// The pawn's controller, resolved once from the prefab hierarchy (this panel sits on the HUD child).
+	HunterController Hunter => _hunter.IsValid() ? _hunter : _hunter = Components.Get<HunterController>( FindMode.InAncestors );
+
+	// Ownership is gated LIVE, not in OnStart — same reason as HunterController.OnUpdate: a host-spawned pawn
+	// runs OnStart on the owning client before ownership replicates, so an early IsProxy read is stale.
+	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode;
+
+	protected override int BuildHash() => Visible ? 1 : 0;
+}

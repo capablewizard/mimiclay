@@ -37,6 +37,7 @@
         "BodyMass": 500,
         "BodyRadius": 16,
         "BrakePower": 1,
+        "CameraCollisionIgnore": "",
         "CameraOffset": "0,0,0",
         "ColliderObject": {
           "_type": "gameobject",
@@ -161,7 +162,7 @@
         "Flags": 0,
         "Color": "1,1,1,0",
         "InsideColor": "1,0.17209,0.17209,0",
-        "InsideObscuredColor": "0.85116,0.42756,0.42756,0.47",
+        "InsideObscuredColor": "1,0.29412,0.29412,0.8",
         "Material": null,
         "ObscuredColor": "1,0.3907,0.3907,0.86",
         "OnComponentDestroy": null,
@@ -172,7 +173,7 @@
         "OnComponentUpdate": null,
         "OverrideTargets": false,
         "Targets": null,
-        "Width": 0.25
+        "Width": 0
       },
       {
         "__type": "Mimiclay.SdfNetworkSync",
@@ -617,7 +618,7 @@
           {
             "__type": "Sandbox.ModelRenderer",
             "__guid": "2f4be301-9005-43ef-ad03-28aa924d0065",
-            "__enabled": true,
+            "__enabled": false,
             "Flags": 0,
             "BodyGroups": 18446744073709551615,
             "CreateAttachments": false,
@@ -677,6 +678,8 @@
             "OnComponentStart": null,
             "OnComponentUpdate": null,
             "OverdrawOptimization": true,
+            "SdfShadows": true,
+            "ShadowBias": 0,
             "SparseField": true,
             "TightBounds": false,
             "Transmission": true,
@@ -777,7 +780,7 @@
           {
             "__type": "Sandbox.ModelRenderer",
             "__guid": "147d1337-93c9-4d7e-8af5-02263ddd9d6b",
-            "__enabled": true,
+            "__enabled": false,
             "Flags": 0,
             "BodyGroups": 18446744073709551615,
             "CreateAttachments": false,
@@ -837,6 +840,8 @@
             "OnComponentStart": null,
             "OnComponentUpdate": null,
             "OverdrawOptimization": true,
+            "SdfShadows": true,
+            "ShadowBias": 0,
             "SparseField": true,
             "TightBounds": false,
             "Transmission": true,
@@ -882,6 +887,18 @@
           {
             "__type": "Mimiclay.PauseMenu",
             "__guid": "225b7c85-fd22-489e-8a3c-68ecb0cc272e",
+            "__enabled": true,
+            "Flags": 0,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null
+          },
+          {
+            "__type": "Mimiclay.HunterCrosshair",
+            "__guid": "91d2db59-0e4e-4698-929c-6a2bb37e92fb",
             "__enabled": true,
             "Flags": 0,
             "OnComponentDestroy": null,
