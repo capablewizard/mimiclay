@@ -56,6 +56,12 @@ public sealed class OrbitCameraController : Component
 	public Vector3 Pivot { get; set; }
 	public float Distance { get; set; }
 
+	/// <summary>When set, the pivot's world X/Y is pinned to this point every frame — height (Z) still comes
+	/// from the follow target + offset + pan as normal, so the player keeps their up/down framing. Lets an
+	/// owner orbit something other than the follow origin: the hider pins this to its disguise shape's bounds
+	/// centre so the camera always orbits the clay itself. Null = off (pivot behaves exactly as before).</summary>
+	public Vector2? PivotXYOverride { get; set; }
+
 	/// <summary>Camera orientation. Yaw drives the follow camera's facing (the hider reads this for movement).</summary>
 	public Angles Angles
 	{
@@ -131,6 +137,9 @@ public sealed class OrbitCameraController : Component
 
 		if ( FollowTarget.IsValid() )
 			Pivot = FollowTarget.WorldPosition + FollowOffset + _panOffset;
+
+		if ( PivotXYOverride is { } xy )
+			Pivot = new Vector3( xy.x, xy.y, Pivot.z );
 
 		Apply( cam );
 	}

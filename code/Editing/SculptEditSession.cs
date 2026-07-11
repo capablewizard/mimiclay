@@ -45,22 +45,6 @@ public sealed class SculptEditSession : Component
 	/// instead of lerping, so it doesn't trail the camera. Orbiting changes it slowly, so that still eases.</summary>
 	[Property, Group( "Depth of Field" )] public float DofZoomSnapSpeed { get; set; } = 10f;
 
-	/// <summary>Keep the sculpt centred over its parent: between operations (no gizmo drag, no alt-nav, no
-	/// held click) the sculpture GAMEOBJECT glides within its parent until the shape's bounds centre sits on
-	/// the parent's origin — X/Y only; the ground lift stays put and up/down framing stays the player's. The
-	/// brush data never changes (no rebuilds, and symmetry planes ride along with the object) — the whole
-	/// clay just drifts home: to the middle of the screen (the hider's camera follows the PARENT pawn, not
-	/// the sculpture) and onto the pivot the prop rotates around in play mode. An unfinished glide keeps
-	/// settling after edit mode ends, and proxies run it too — the goal derives purely from the synced
-	/// brushes, so every machine converges to the same offset. Off by default: enable it only where the
-	/// sculpture hangs under a root that owns the pivot (the hider's disguise) — a face sculpture must stay
-	/// put on its head.</summary>
-	[Property, Group( "Recenter" )] public bool RecenterSculpt { get; set; }
-
-	/// <summary>How fast the glide closes on centre (per second, exponential). Kept gentle — the clay should
-	/// drift home, not snap.</summary>
-	[Property, Group( "Recenter" )] public float RecenterSpeed { get; set; } = 2f;
-
 	/// <summary>Render the in-world transform gizmo on the selected brush. On by default; turn it off for a
 	/// view-only sculpture (the palette/sliders still anchor to the selection's projected position, so a
 	/// colours-only HUD works with the gizmo hidden).</summary>
@@ -466,8 +450,7 @@ public sealed class SculptEditSession : Component
 
 	protected override void OnUpdate()
 	{
-		UpdateWireframes();     // runs even when not editing so it can fade OUT after exit
-		UpdateRecenterGlide();  // runs even when not editing so a glide cut short by exiting still settles
+		UpdateWireframes(); // runs even when not editing so it can fade OUT after exit
 
 		if ( !IsEditing || !Target.IsValid() )
 			return;
@@ -757,48 +740,6 @@ public sealed class SculptEditSession : Component
 
 		_wireframes.Draw( Target.Brushes, Target.WorldTransform, Scene, Scene.Camera,
 			Selected, hover, master, st.OutlineThickness, WireframeDepthBias );
-	}
-
-	// ── Sculpt recentring ────────────────────────────────────────────────────────────────────────────
-	// Editing can walk the shape away from the pivot the prop rotates around in play (its parent's origin),
-	// so rotation swings the clay in an arc — and since the hider's camera follows the parent pawn, the clay
-	// sits off-centre on screen too. Fix: glide the sculpture GAMEOBJECT within its parent until the shape's
-	// bounds centre is over the parent origin. The brushes never change — no rebuilds, and the symmetry
-	// planes travel with the object — the whole clay just drifts home, which reads on screen as the object
-	// easing into the middle of the view. OnUpdate calls this BEFORE its IsEditing gate, so a glide cut short
-	// by leaving edit mode keeps settling; proxies run it too and converge on the same synced-brush-derived
-	// goal.
-
-	void UpdateRecenterGlide()
-	{
-		if ( !RecenterSculpt || !Target.IsValid() )
-			return;
-
-		// While editing, anything in progress pauses the glide: a gizmo drag, alt-nav (even just holding
-		// alt), any held click (HUD sliders included) — plus the release frame, so its full remesh isn't
-		// competing with the start of a drift. (Proxies never edit, so they glide whenever off-centre.)
-		if ( IsEditing && (IsManipulating || _wasManipulating || AltNav.Held || Input.Down( "Attack1" )) )
-			return;
-
-		if ( !Sdf.TryGetBounds( Target.Brushes, out var bounds ) )
-			return;
-
-		var go = Target.GameObject;
-
-		// The local position that puts the bounds centre on the parent's origin in X/Y. Z — the ground lift —
-		// is deliberate and stays exactly where it is, so the player keeps their up/down framing.
-		var centred = -(go.LocalRotation * bounds.Center);
-		var local = go.LocalPosition;
-		var goal = new Vector3( centred.x, centred.y, local.z );
-
-		var delta = goal - local;
-		if ( delta.LengthSquared < 0.0001f )
-			return; // settled
-
-		// Exponential glide; the last quarter-unit snaps so it actually terminates.
-		go.LocalPosition = delta.Length < 0.25f
-			? goal
-			: Vector3.Lerp( local, goal, 1f - MathF.Exp( -RecenterSpeed * Time.Delta ) );
 	}
 
 	// ── Depth of field (main camera) ─────────────────────────────────────────────────────────────────

@@ -94,10 +94,25 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// Shape networking lives on a reusable SdfNetworkSync component (in the prop prefab), pointed at the disguise
 	// in OnStart. The SDF core + this controller stay networking-agnostic — see SdfNetworkSync.
 
+	/// <summary>Pin the orbit camera's pivot X/Y to the disguise shape's bounds centre (world) instead of the
+	/// disguise origin — so the camera orbits the clay itself even when editing has walked the shape away from
+	/// the pivot. Height (Z) is untouched: it stays the follow height plus your pan, and the shape itself
+	/// never moves.</summary>
+	[Property, Group( "Camera" )] public bool CenterPivotOnShape { get; set; } = true;
+
+	/// <summary>How fast the pinned pivot eases onto the shape's centre (per second, exponential). The centre
+	/// is smoothed in the body's local frame — moving and turning never lag — so this purely softens the
+	/// camera's tracking while shapes are dragged/edited. Higher = tighter tracking.</summary>
+	[Property, Group( "Camera" ), Range( 1f, 30f )] public float PivotSmoothSpeed { get; set; } = 8f;
+
 	// ── Debug ─────────────────────────────────────────────────────────────────────────────────────────
 	/// <summary>Draw the ground-probe points + traces each step (green = found ground, red = nothing) — including
 	/// in edit mode — so you can see the footprint snapshot the body is standing on.</summary>
 	[Property, Group( "Debug" )] public bool DebugGroundProbes { get; set; }
+
+	/// <summary>Draw a marker at the orbit camera's pivot every frame (magenta sphere + vertical line), so you
+	/// can see exactly what point the camera is orbiting.</summary>
+	[Property, Group( "Debug" )] public bool DebugCameraPivot { get; set; }
 
 	// ── Runtime state ─────────────────────────────────────────────────────────────────────────────────
 	/// <summary>Where the player is looking, seeded on spawn. Yaw drives movement + body facing.</summary>
@@ -209,18 +224,13 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		_bodyYaw = EyeAngles.yaw;
 
-		// Stand up the shared orbit rig in follow mode, pointed at the pawn. It owns the camera for play AND
+		// Stand up the shared orbit rig in follow mode, pointed at the disguise. It owns the camera for play AND
 		// edit. Kept disabled as a component (it never runs its own OnUpdate) — we Tick it from UpdateCamera so the
 		// ordering against our look input is deterministic and a proxy/dormant prop never drives the camera.
 		_orbit = Components.GetOrCreate<OrbitCameraController>();
 		_orbit.Enabled = false;
-
-		// Follow the PAWN, not the disguise: the recenter glide (see SculptEditSession.RecenterSculpt) slides
-		// the disguise around inside the pawn, and the camera must NOT ride along — the clay drifting onto the
-		// pawn origin IS the on-screen centring. The disguise's ground lift folds into the offset so the
-		// framing matches the old follow-the-disguise setup exactly.
-		_orbit.FollowTarget = GameObject;
-		_orbit.FollowOffset = Vector3.Up * (CameraHeightOffset + _body.LocalPosition.z);
+		_orbit.FollowTarget = _body.GameObject;
+		_orbit.FollowOffset = Vector3.Up * CameraHeightOffset;
 		_orbit.IgnoreCollision = GameObject; // boom ignores the pawn + its disguise, same as before
 		_orbit.MinDistance = MinDistance;
 		_orbit.MaxDistance = MaxDistance;
@@ -233,11 +243,6 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		_session = Components.Create<SculptEditSession>();
 		_session.Target = _body;
-
-		// Keep the disguise centred on the pawn: between edits the session glides the disguise GameObject so
-		// its shape sits over the pawn origin — the clay drifts to the middle of the view (the camera follows
-		// the pawn) and the prop rotates around its visual centre in play mode. Brushes are never touched.
-		_session.RecenterSculpt = true;
 
 		// Networking: point the prefab's SdfNetworkSync at this machine's disguise. It does the rest — owner
 		// publishes brushes on commit + streams live drags, proxies apply + interpolate, late-joiners get the
@@ -275,6 +280,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// Drawn here (not in the fixed step) so it shows in edit mode too, where movement is suspended.
 		if ( DebugGroundProbes )
 			DrawGroundProbes();
+		if ( DebugCameraPivot )
+			DrawCameraPivot(); // after UpdateCamera, so it shows this frame's pivot (override included)
 	}
 
 	protected override void OnFixedUpdate()
@@ -483,12 +490,47 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		}
 	}
 
+	// Smoothed X/Y of the shape's bounds centre in the BODY'S LOCAL frame (null = pin off). Smoothing locally
+	// — not the world point — keeps the camera glued to the body while it moves AND turns; only edits ease.
+	Vector2? _pivotOffsetXY;
+
+	// Draw the orbit pivot (magenta sphere + vertical line) so you can see exactly what the camera orbits.
+	void DrawCameraPivot()
+	{
+		var p = _orbit.Pivot;
+		Scene.DebugOverlay.Sphere( new Sphere( p, 2f ), Color.Magenta, 0f );
+		Scene.DebugOverlay.Line( p - Vector3.Up * 24f, p + Vector3.Up * 24f, Color.Magenta.WithAlpha( 0.5f ), 0f );
+	}
+
 	// ── Camera ────────────────────────────────────────────────────────────────────────────────────────
 	// Both modes are served by the shared orbit rig; the only hider-specific concern is whether the disguise body
 	// turns with the camera (play) or stays frozen (edit, while sculpting).
 	void UpdateCamera()
 	{
 		_orbit.BoomCollision = CameraCollision; // mirrored every frame so the inspector toggle takes effect live
+
+		// Pin the pivot's X/Y to the shape's centre (the rig keeps the height + pan). The smoothing happens in
+		// the BODY'S LOCAL frame: the local bounds centre only changes when the sculpt is edited, so walking
+		// AND turning feed through raw (camera stays glued while moving/rotating) and only edits ease in
+		// softly. Recomputed per frame; cleared when toggled off so the rig falls back to plain follow.
+		if ( CenterPivotOnShape && _body.IsValid() && Sdf.TryGetBounds( _body.Brushes, out var b ) )
+		{
+			var targetLocal = new Vector2( b.Center.x, b.Center.y );
+			_pivotOffsetXY = _pivotOffsetXY is { } current
+				? Vector2.Lerp( current, targetLocal, 1f - MathF.Exp( -PivotSmoothSpeed * Time.Delta ) )
+				: targetLocal; // first frame (spawn / toggled back on): start on target, no glide from stale state
+
+			// Rotate the smoothed local offset out by the body's LIVE transform (upright-locked, so local Z
+			// never bleeds into world X/Y).
+			var local = _pivotOffsetXY.Value;
+			var world = _body.WorldTransform.PointToWorld( new Vector3( local.x, local.y, 0f ) );
+			_orbit.PivotXYOverride = new Vector2( world.x, world.y );
+		}
+		else
+		{
+			_pivotOffsetXY = null;
+			_orbit.PivotXYOverride = null;
+		}
 
 		if ( EditMode )
 		{

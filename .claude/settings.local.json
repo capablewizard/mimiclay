@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(curl -s -A \"Mozilla/5.0\" \"https://sbox.game/facepunch/machines/source?file=SplineComponent.cs\" -o /tmp/sc.html)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(git -C /d/SBox/Projects/mimiclay status --porcelain)",
+      "Bash(git -C /d/SBox/Projects/mimiclay diff HEAD --stat)"
     ]
   }
 }
