@@ -3,13 +3,15 @@ using System.Threading.Tasks;
 
 namespace Mimiclay;
 
-/// <summary>How the sibling meshed ModelRenderer is used while raymarching. The raymarch now writes
-/// the depth+normals prepass itself (depth sorting, occlusion via DepthClamp, and AO), so the mesh's
-/// only remaining job is casting shadows (the raymarch can't — its shadow-camera ray would be wrong).</summary>
+/// <summary>How the sibling meshed ModelRenderer is used while raymarching. The raymarch writes
+/// the depth+normals prepass itself (depth sorting, occlusion via DepthClamp, and AO) and — with
+/// <see cref="SdfRaymarchRenderer.SdfShadows"/> on — casts its own shadows too, so the mesh's only
+/// remaining job in the SDF band is the legacy shadow path (SdfShadows off).</summary>
 public enum SdfMeshMode
 {
-	/// <summary>Invisible shadow caster (ShadowsOnly): casts exact shadows, never appears in the
-	/// camera's colour pass. Default. (The name is historical — it no longer feeds a depth proxy.)</summary>
+	/// <summary>Invisible shadow caster (ShadowsOnly) while SdfShadows is OFF; fully disabled in the
+	/// SDF band while SdfShadows is ON (the raymarch casts its own shadow). Default. (The name is
+	/// historical — it no longer feeds a depth proxy.)</summary>
 	DepthProxy,
 	/// <summary>Disabled entirely (no shadows).</summary>
 	Hidden,
@@ -40,6 +42,19 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	[Property, Range( 16, 256 )] public int MaxSteps { get; set; } = 96;
 	[Property, Range( 0.005f, 1f )] public float Epsilon { get; set; } = 0.05f;
+
+	/// <summary>Cast shadows by re-marching the SDF in each shadow view — the shader detects the sun's
+	/// ORTHOGRAPHIC cascade cameras per-view and traces parallel rays there. Shadows then match the
+	/// raymarched surface exactly (displacement lumps, live edits, subtractions) and stop depending on
+	/// the remesh entirely; the sibling mesh is fully disabled in the SDF band and only takes over
+	/// (shadows included) past the mesh handoff. OFF = the legacy path: the mesh renders ShadowsOnly
+	/// and the raymarch casts nothing — kept for A/B (mesh shadows are cheaper: no per-cascade march).</summary>
+	[Property, Group( "Shadows" )] public bool SdfShadows { get; set; } = true;
+
+	/// <summary>Extra caster-side depth bias (world units, along the light ray) written by the shadow
+	/// march. The engine's receiver-side bias (per-cascade + receiver-plane) normally suffices — leave
+	/// at 0 and raise slightly only if a prop shows shadow acne on itself.</summary>
+	[Property, Group( "Shadows" ), Range( 0f, 4f )] public float ShadowBias { get; set; }
 
 	/// <summary>Bake the whole brush field to a 3D distance texture and march by sampling it (one trilinear
 	/// fetch per step) instead of re-evaluating every brush each step. Decouples render cost from brush
@@ -141,16 +156,21 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[Property] public SdfMeshMode MeshMode { get; set; } = SdfMeshMode.DepthProxy;
 
 	/// <summary>Hide the rendered surface while still casting a shadow — first-person parity with a
-	/// ModelRenderer set to ShadowsOnly. Forces the raymarched scene object off and the sibling mesh to
-	/// ShadowsOnly, re-applied every frame AFTER the distance switch so it overrides whatever band the
+	/// ModelRenderer set to ShadowsOnly. With <see cref="SdfShadows"/> on, the raymarched scene object
+	/// STAYS enabled but is clipped from every perspective view in-shader (SdfShadowOnly) and excluded
+	/// from the game passes, so only its ortho sun-shadow march survives; the mesh carries the
+	/// shadows-only job past the handoff. With SdfShadows off it's the old path: scene object off, mesh
+	/// ShadowsOnly. Re-applied every frame AFTER the distance switch so it overrides whatever band the
 	/// renderer is in. Used to hide a pawn's own SDF body on the machine that controls it. Not a
 	/// [Property] — it's driven at runtime by the controlling pawn, not authored on the prefab.</summary>
 	public bool RenderHidden { get; set; }
 
 	// Any reason the raymarched surface should be off this frame. Every place that turns _so.RenderingEnabled ON
 	// honours this, so a per-frame Refresh (the props edit constantly) can't override a hide. _fieldOnlyHidden is
-	// included so this is a strict superset of the old "&& !_fieldOnlyHidden" guard.
-	bool ForceHidden => RenderHidden || _fieldOnlyHidden;
+	// included so this is a strict superset of the old "&& !_fieldOnlyHidden" guard. RenderHidden only forces the
+	// scene object OFF on the legacy path — with SdfShadows the object must keep rendering (into shadow views
+	// only, gated in-shader by SdfShadowOnly + ExcludeGameLayer), or it would cast no shadow at all.
+	bool ForceHidden => (RenderHidden && !SdfShadows) || _fieldOnlyHidden;
 
 	/// <summary>Overdraw optimisation: skip the redundant back-face march (the box draws both faces)
 	/// and use conservative depth so the GPU keeps early-Z and rejects hidden fragments before
@@ -204,6 +224,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	int _lastHash;
 	ModelRenderer _meshRenderer;
 	SdfMeshMode _lastMeshMode = (SdfMeshMode)(-1);
+	bool _lastSdfShadows; // toggling SdfShadows re-applies the mesh mode (mesh on/off swaps with it)
 	Vector3 _curMins, _curMaxs;       // world AABB (shader march bracket + frustum bounds)
 	Vector3 _curLocalMins, _curLocalMaxs; // local AABB (the oriented proxy box, for debug draw)
 	Vector3 _curProxyMins, _curProxyMaxs; // padded local proxy bounds actually built (highlight proxy rebuilds from these)
@@ -245,9 +266,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		Refresh();
 	}
 
-	// Configure the sibling mesh per MeshMode. DepthProxy = ShadowsOnly: it casts exact (unshrunk)
-	// shadows and stays out of the camera's colour/depth passes. The raymarch handles its own
-	// depth+normals prepass now, so the mesh's only job here is shadows.
+	// Configure the sibling mesh per MeshMode. DepthProxy with SdfShadows = mesh fully off (the
+	// raymarch writes its own prepass AND casts its own shadows); without SdfShadows it's the legacy
+	// ShadowsOnly caster. The raymarch handles its own depth+normals prepass either way.
 	void ApplyMeshMode()
 	{
 		if ( !_meshRenderer.IsValid() )
@@ -258,7 +279,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		switch ( MeshMode )
 		{
 			case SdfMeshMode.DepthProxy:
-				_meshRenderer.Enabled = true;
+				_meshRenderer.Enabled = !SdfShadows;
 				_meshRenderer.MaterialOverride = null;
 				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
 				break;
@@ -275,6 +296,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		}
 
 		_lastMeshMode = MeshMode;
+		_lastSdfShadows = SdfShadows;
 	}
 
 	void EnsureResources()
@@ -399,11 +421,28 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		if ( !RenderHidden )
 			return;
 
+		if ( !_meshRenderer.IsValid() )
+			_meshRenderer = GameObject.Components.Get<ModelRenderer>();
+
+		if ( SdfShadows )
+		{
+			// The scene object itself is the shadow caster (SdfShadowOnly + ExcludeGameLayer, set in
+			// Refresh, keep it out of every camera view) — so it must STAY enabled, and the band logic
+			// above already left it on only inside the SDF band. Past the handoff the SDF is off, so
+			// the mesh takes the shadows-only job there; inside the band it's off entirely (no double
+			// caster).
+			bool sdfBand = _so.IsValid() && _so.RenderingEnabled;
+			if ( _meshRenderer.IsValid() )
+			{
+				_meshRenderer.Enabled = !sdfBand;
+				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
+			}
+			return;
+		}
+
 		if ( _so.IsValid() )
 			_so.RenderingEnabled = false;
 
-		if ( !_meshRenderer.IsValid() )
-			_meshRenderer = GameObject.Components.Get<ModelRenderer>();
 		if ( _meshRenderer.IsValid() )
 		{
 			_meshRenderer.Enabled = true;
@@ -489,8 +528,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			}
 			else if ( sdf )
 			{
-				// SDF is the visible surface; the mesh only casts shadows (unless MeshMode hides it).
-				_meshRenderer.Enabled = MeshMode != SdfMeshMode.Hidden;
+				// SDF is the visible surface. With SdfShadows the raymarch casts its own shadow and
+				// the mesh has no job at all; otherwise the mesh is the legacy ShadowsOnly caster
+				// (unless MeshMode hides it).
+				_meshRenderer.Enabled = MeshMode != SdfMeshMode.Hidden && !SdfShadows;
 				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
 				_meshRenderer.LodOverride = null;
 			}
@@ -548,7 +589,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		if ( brushes is not { Count: > 0 } )
 			return;
 
-		if ( MeshMode != _lastMeshMode )
+		if ( MeshMode != _lastMeshMode || SdfShadows != _lastSdfShadows )
 			ApplyMeshMode();
 
 		EnsureResources();
@@ -628,11 +669,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				// Per-object attributes (BrushData/Bounds/Count) don't survive batching, so two
 				// SDF objects sharing the material would collapse into one draw and hide together.
 				_so.Batchable = false;
-				// The raymarch writes the camera depth+normals prepass (for AO + depth sorting), but
-				// it must NOT cast shadows: the shadow camera is orthographic and our ray
-				// reconstruction assumes perspective, so it'd cast wrong shadows. The sibling mesh
-				// (ShadowsOnly) handles shadows instead.
-				_so.Flags.CastShadows = false;
+				// Shadow casting: the shader's Depth mode detects the sun's orthographic cascade
+				// views per-view and traces PARALLEL rays there, so the marched surface casts its
+				// own exact shadow. Kept in sync with SdfShadows every frame below; OFF = the
+				// legacy sibling-mesh (ShadowsOnly) path.
+				_so.Flags.CastShadows = SdfShadows;
 			}
 
 			_so.Bounds = worldBb;
@@ -643,6 +684,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// shader discards every pixel and the object vanishes while still "valid". Setting
 		// them each frame restores it immediately.
 		_so.RenderingEnabled = !ForceHidden;
+		// Shadow wiring, kept live so toggling SdfShadows / RenderHidden lands immediately. ShadowOnly
+		// (the hidden pawn body) clips every PERSPECTIVE view in-shader — only the ortho sun-shadow
+		// march survives; ExcludeGameLayer additionally keeps it out of the game colour passes.
+		bool shadowOnly = RenderHidden && SdfShadows;
+		_so.Flags.CastShadows = SdfShadows;
+		_so.Flags.ExcludeGameLayer = shadowOnly;
+		_so.Attributes.Set( "SdfShadowOnly", shadowOnly ? 1 : 0 );
+		_so.Attributes.Set( "SdfShadowBias", ShadowBias );
 		_so.Attributes.Set( "BrushData", _dataTex );
 		_so.Attributes.Set( "SplineData", _splineTex );
 		_so.Attributes.Set( "TextSdf", _textAtlas.Texture );
@@ -984,8 +1033,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// <summary>Whether the highlight can include this renderer this frame: a live proxy and a valid baked field.</summary>
 	internal bool HighlightReady => !_released && _so.IsValid() && _fieldReady && _fieldGpu is { IsValid: true };
 
-	/// <summary>The highlight follows the surface's own hide flags (a concealed pawn body must not glow).</summary>
-	internal bool HighlightVisible => !ForceHidden;
+	/// <summary>The highlight follows the surface's own hide flags (a concealed pawn body must not glow).
+	/// Checked against the raw flags, NOT ForceHidden: with SdfShadows a RenderHidden body keeps its scene
+	/// object enabled (shadow-only), but it still must not outline.</summary>
+	internal bool HighlightVisible => !RenderHidden && !_fieldOnlyHidden;
 
 	/// <summary>Padded local proxy bounds — the highlight unions these (through each member's
 	/// transform) into its single group proxy box.</summary>

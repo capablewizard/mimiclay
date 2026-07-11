@@ -114,6 +114,14 @@ PS
 	float4    g_vModelRotation < Attribute( "ModelRotation" ); Default4( 0.0, 0.0, 0.0, 1.0 ); >;
 	int       g_nMaxSteps   < Attribute( "MaxSteps" ); Default( 96 ); >;   // close-up step ceiling
 	float     g_flEpsilon   < Attribute( "Epsilon" ); Default( 0.05 ); >; // close-up hit threshold
+	// Shadow casting (the scene object renders into the sun's ORTHOGRAPHIC cascade views; the march
+	// detects those per-view and traces parallel rays). Bias pushes the written shadow depth a touch
+	// deeper along the light ray — caster-side acne insurance on top of the engine's receiver-side
+	// bias, normally 0. ShadowOnly = render ONLY in ortho (sun-shadow) views: every perspective view
+	// (camera forward, camera depth prepass, spot-light shadows) is clipped — the RenderHidden pawn
+	// body, mirroring ModelRenderer.ShadowsOnly.
+	float     g_flSdfShadowBias < Attribute( "SdfShadowBias" ); Default( 0.0 ); >;
+	int       g_nSdfShadowOnly  < Attribute( "SdfShadowOnly" ); Default( 0 ); >;
 	// Adaptive quality (scaled by on-screen size): floors used when the object is small/far, and
 	// the near/far LOD distances measured in BOUNDING-RADII. Defaults keep quality maxed (LOD off).
 	int       g_nMinSteps   < Attribute( "MinSteps" );   Default( 96 ); >;
@@ -991,7 +999,19 @@ PS
 		if ( g_DirectionalLightEnabled )
 		{
 			float3 L = -normalize( g_DirectionalLightDirection.xyz );
-			float vis = DirectionalLightShadow::GetVisibility( m.WorldPosition, m.ScreenPosition.xy );
+			// Cascade-only sun visibility (NOT GetVisibility): the engine's GetVisibility now also
+			// composites the screen-space contact-shadow mask (bindless + MSAA gather), and inlining
+			// that here CRASHES DXC on the heavy D_TRANSMISSION combo variants — no diagnostic, the
+			// compiler just dies at ~90% of the sweep. The cascade PCF sample is the part that matters
+			// for dimming transmission in shadow; a contact mask on a soft back-scatter term is noise.
+			float vis = 1.0;
+			if ( g_DirectionalLightCascadeCount > 0 )
+			{
+				float3 posLs;
+				int cascade = FindCascade( m.WorldPosition, posLs );
+				if ( cascade >= 0 )
+					vis = DirectionalLightShadow::SampleCascade( cascade, m.WorldPosition, m.ScreenPosition.xy );
+			}
 			// Let some sun scatter through even when the front face is shadowed (back-lit leaves/skin
 			// still glow), like foliage.shader does for its sun term.
 			ApplyTransLight( m, transColor, p, L, g_DirectionalLightColor.rgb, lerp( 0.2, 1.0, vis ), tapThick, g_flTransAmbient, viewDir );
@@ -1043,6 +1063,15 @@ PS
 		return normalize( tnX.zyx * bw.x + tnY.xzy * bw.y + tnZ.xyz * bw.z );
 	}
 
+	// Orthographic view? The projection's w-generating row is (0,0,0,1) for ortho (w is constant) and
+	// has a non-zero xyz for any perspective projection. The per-view constants are rebound per pass,
+	// so inside a directional-light shadow cascade this flips to the LIGHT's (ortho) camera — which is
+	// exactly how the march knows to trace parallel rays there. Also correct for an ortho editor view.
+	bool IsOrthoView()
+	{
+		return abs( g_matWorldToProjection[3].x ) + abs( g_matWorldToProjection[3].y ) + abs( g_matWorldToProjection[3].z ) < 1e-6;
+	}
+
 	// Adaptive-quality factor for this object: 1 = full quality (near / large on screen), 0 = the
 	// floor (small / far). ratio = camera distance measured in bounding-radii (scale-invariant).
 	float LodQuality( float3 ro )
@@ -1059,8 +1088,31 @@ PS
 	{
 		hitP = float3( 0, 0, 0 );
 
-		float3 ro = g_vCameraPositionWs;
-		float3 rd = normalize( i.vPositionWithOffsetWs );
+		// Projection-aware ray. vPositionWithOffsetWs = worldPos − g_vHighPrecisionLightingOffsetWs
+		// (subtracted in the shared VS with the SAME constant this pass sees), so adding the constant
+		// back recovers the exact fragment world position in ANY view — including shadow views, where
+		// the offset is NOT the view's camera position (it stays the frame's game camera).
+		float3 ro, rd;
+		bool ortho = IsOrthoView();
+		if ( ortho )
+		{
+			// Ortho view (directional-light shadow cascade, or an ortho editor viewport): rays are
+			// PARALLEL along the view forward. Pull the origin back past the whole bounds so the
+			// tEnter bracket below always enters from outside, wherever the ortho near plane sits.
+			float3 wp = i.vPositionWithOffsetWs + g_vHighPrecisionLightingOffsetWs.xyz;
+			rd = normalize( g_vCameraDirWs );
+			ro = wp - rd * ( length( g_vBoundsMax - g_vBoundsMin ) + 8.0 );
+		}
+		else
+		{
+			// In camera views the offset IS the camera position, so the correction term is exactly
+			// zero and this matches the original camera-relative ray bit-for-bit. In a PERSPECTIVE
+			// shadow view (spot light) ro rebinds to the light while the offset stays the game
+			// camera — the correction re-bases the interpolant onto the light so the ray is right
+			// there too.
+			ro = g_vCameraPositionWs;
+			rd = normalize( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
+		}
 
 		// Bracket the march: a tight bounding sphere (round props) or the bounds AABB.
 	#if ( D_TIGHT_BOUNDS )
@@ -1101,8 +1153,10 @@ PS
 
 		// Adaptive quality by projected size: full steps/epsilon when big on screen, the floors
 		// when small/far. Per object (LodQuality uses the bounds centre), so every pixel of one
-		// object marches at the same budget.
-		float q = LodQuality( ro );
+		// object marches at the same budget. Ortho (shadow) views have no meaningful camera
+		// distance — the pulled-back per-pixel origin would read as "far" and melt the shadow to
+		// the quality floor — so they march at full quality.
+		float q = ortho ? 1.0 : LodQuality( ro );
 		int   maxSteps = (int)lerp( (float)g_nMinSteps, (float)g_nMaxSteps, q );
 		float eps      = lerp( g_flFarEpsilon, g_flEpsilon, q );
 
@@ -1172,6 +1226,16 @@ PS
 		}
 	#endif
 
+		// RenderHidden pawn body: render ONLY into ortho (sun-shadow) views. Every perspective view —
+		// camera forward, camera depth prepass, spot-light shadows — is clipped, so the hidden body
+		// can't occlude or appear anywhere; only its sun shadow survives (ModelRenderer.ShadowsOnly
+		// parity for the raymarched surface).
+		if ( g_nSdfShadowOnly != 0 && !IsOrthoView() )
+		{
+			clip( -1 );
+			return o;
+		}
+
 		float3 p;
 		if ( !RayMarchHit( i, p ) )
 		{
@@ -1183,8 +1247,15 @@ PS
 		// Depth+normals prepass: output the SDF surface normal into the G-buffer (for SSAO/SSR) and
 		// the surface depth — no shading. This is what gives the raymarch AO and puts it in the
 		// engine depth buffer (so depth sorting + DepthClamp occlusion work via the engine chain).
+		// This same mode also renders the SHADOW views: in an ortho view (a sun cascade) the written
+		// depth is the shadow map. The optional caster bias pushes it a touch deeper along the light
+		// ray there — acne insurance the camera prepass must never get (its depth must stay exact,
+		// the forward pass depth-tests against it).
+		float3 pd = p;
+		if ( IsOrthoView() )
+			pd += normalize( g_vCameraDirWs ) * g_flSdfShadowBias;
 		o.vColor = DepthNormals::Output( SdfNormal( p ) );
-		o.flDepth = DepthFromWorld( p );
+		o.flDepth = DepthFromWorld( pd );
 		return o;
 	#endif
 

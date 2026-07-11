@@ -824,7 +824,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "67136f6f-9297-467f-be8a-08ee0e147b1b"
+                  "$blob": "7b85b1c3-8122-411e-aec2-2343a5a4886f"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -880,7 +880,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "09310dad-9749-4b1b-967e-76b1214261eb"
+                  "$blob": "8f68c8db-d977-4f3b-87d9-7cc12b531649"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -936,7 +936,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7a33cdd6-8eba-4acc-bf54-767c4f27921b"
+                  "$blob": "5a5b68ff-6a03-4409-9349-e8b58065f726"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -992,7 +992,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "10a0e441-54a5-401d-b594-eb6f41c16af7"
+                  "$blob": "91f118a9-01e2-4d63-b3c6-4c88c0e07ba1"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1048,7 +1048,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6e465870-cce3-46f7-9a26-424fa84c64cb"
+                  "$blob": "508e7d57-72a3-4e55-b56b-a4687e89e012"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1104,7 +1104,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c294c9b5-515e-44ac-b292-e8ec71dab68e"
+                  "$blob": "0455363f-d019-4809-bfa5-797520f9e770"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1160,7 +1160,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1d4cc3a8-87d5-4af1-af98-1f93d0ae691a"
+                  "$blob": "60391fb5-0fb0-452a-963b-b4b760a423b6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1216,7 +1216,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ee5e365f-8527-47e3-92b1-294d3836ba1c"
+                  "$blob": "f1f8c6ab-0d5e-440b-9142-3047a0ca7bb5"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1272,7 +1272,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "30dd3aa7-0024-4d7f-80e6-b9f612ffbdac"
+                  "$blob": "1448a86b-b6bb-453f-a279-2f6d9b9adf77"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1328,7 +1328,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f2895986-5a4b-4871-a112-cb03c2baae4a"
+                  "$blob": "5e65748e-7ca9-4069-a6df-0bdc8647ad77"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1384,7 +1384,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "878807ba-1344-4313-92c1-e42bb686c052"
+                  "$blob": "3559cc70-8a2c-4f43-88de-98d807cac9bb"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1440,7 +1440,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ba4a44dc-37e9-4849-8e9c-98fa2524eab9"
+                  "$blob": "d9692c96-0274-4b13-86b5-2bafb62eee2c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1496,7 +1496,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4d63d3b8-7993-484a-8b97-a06004241db4"
+                  "$blob": "00ce60e4-9da4-450a-89a5-9652b5c3d015"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1552,7 +1552,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "136145db-0d4b-470b-b7e0-dba5687c553e"
+                  "$blob": "82ba1ea1-f9cc-4538-98aa-edc719426ce3"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1608,7 +1608,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ac887ba8-42ea-44e8-8965-51b5c017cec0"
+                  "$blob": "098a5f55-d255-4205-8f08-bb84b4f27c59"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1664,7 +1664,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7647d536-4ce3-4e61-afdd-44a034bece84"
+                  "$blob": "e981936f-6052-4618-94a6-c0abed4b2678"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1720,7 +1720,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "bbc98249-f1e3-4e65-bcdf-20b32323b850"
+                  "$blob": "661acd26-ad12-482b-96a4-79edaad2c875"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1776,7 +1776,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "62a738ee-aa26-42fb-b7d3-fb1452d83bc8"
+                  "$blob": "f5ba8d2d-a635-447a-b1ee-3d60858c82c3"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1832,7 +1832,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d3be441a-2eea-40ec-b7cd-e3a789d796e8"
+                  "$blob": "7be7e0c6-5909-4488-b3ae-fa4f4cfbfe2c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1888,7 +1888,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1b3a441d-faee-425b-a254-811cbe9b42d7"
+                  "$blob": "2ee1a9b8-e8b3-4c26-9377-bc8e8a060ce6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1944,7 +1944,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9ea9ed8f-8d69-49d3-ac80-fe69ffb2a103"
+                  "$blob": "6c3ad746-5af4-4541-b958-c948a2bba9f5"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2000,7 +2000,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8b51e71a-3661-439d-bb71-c9b5c610b451"
+                  "$blob": "75017168-275c-4d53-87d5-db659f802b3c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2056,7 +2056,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a2039d8b-6227-485a-a6ac-dc4ffb9b4dd9"
+                  "$blob": "a9282416-d8fd-4604-aa40-6e42ffd9c03a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2112,7 +2112,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a9fa095a-5837-48d6-a8e9-cbbcb4893b7e"
+                  "$blob": "ae5fb71c-e075-4a83-bb2c-89eaff7f4b64"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2168,7 +2168,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "268826af-945c-477e-9544-1585e131263a"
+                  "$blob": "66ac1b20-069a-4125-b969-4a7386db8bb7"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2224,7 +2224,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0cf2e83e-132e-4ba3-be74-9eaf9aaffb77"
+                  "$blob": "343d9901-fbd5-4458-b130-8de9fc83e1bb"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2280,7 +2280,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "aaf7c571-7f92-4aa6-b08b-43b54f56c620"
+                  "$blob": "f0753291-297a-483c-8920-a8a71de59202"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2336,7 +2336,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5be27e86-bc1b-4207-82cd-ad9d68061d58"
+                  "$blob": "a0fea215-46e7-4135-8307-708cdd1303a5"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2392,7 +2392,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "32125c34-e581-43b4-a092-83da32bf075d"
+                  "$blob": "4cbac018-dfdc-4bd2-bd76-fbe26177eaa6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2448,7 +2448,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2807950a-58c4-4d3a-8177-f16534ed9e9b"
+                  "$blob": "d94a2c10-858b-4406-9eee-b79d1822b364"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2504,7 +2504,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "de7f7d0d-e671-46dd-8617-8df1c2405079"
+                  "$blob": "43a07064-af7f-4025-8a89-1030544e335b"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2560,7 +2560,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d84b4e11-ae75-442e-87bf-41213122f570"
+                  "$blob": "b4099cc0-6a07-49bf-9b09-6cd4b7dc9205"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2616,7 +2616,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b805e107-8205-4f4c-93cd-fcbb838f4a83"
+                  "$blob": "3dcefd69-c099-4097-8dd7-ffd8116eed1e"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2672,7 +2672,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e1c724f8-684a-4938-bc7d-2ef5cf4a4864"
+                  "$blob": "d30c6d9d-4f38-4abb-aaa7-8ae9d3332aa4"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2728,7 +2728,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3c521b48-c46d-4a48-8a2a-a31cded138d4"
+                  "$blob": "65e849a4-1316-44be-a31f-f880d3705b13"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2784,7 +2784,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8f7cb2c9-4585-498e-8259-095e6099c332"
+                  "$blob": "e7e905fa-6fd9-4b9a-825b-517f7db02fdf"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2840,7 +2840,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9cf02f57-4bca-4530-9a80-b7f28e255ed7"
+                  "$blob": "1d372481-ce02-4e82-b5fa-8cf70e581ba6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2896,7 +2896,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4105fc7b-45c9-496e-a63f-b60a3797155a"
+                  "$blob": "1d226923-0efb-4bb4-8e35-07702a7923f9"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2952,7 +2952,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c1eb1227-38d8-4cec-8cd3-9c5e6069d5a4"
+                  "$blob": "8466a1f8-a646-4f2a-85aa-55fcf6cb8b8b"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3008,7 +3008,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ad24ee68-cf53-4510-be67-21ff0772e043"
+                  "$blob": "93d94e7d-991e-4810-8687-8bfd4acd7269"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3064,7 +3064,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c787c8aa-b5c4-466c-9e69-29910cd83a86"
+                  "$blob": "6c6d6fe6-cf50-401c-bdde-c1311b4bac4d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3120,7 +3120,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0032de89-3f39-4ac8-997b-ecc2da1bcde8"
+                  "$blob": "8a8057a4-0197-454d-ae20-a8f85c0df676"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3176,7 +3176,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "235e9458-8674-4bf0-9f96-1ba163b78660"
+                  "$blob": "217459aa-30c8-402f-b99c-357f08131396"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3232,7 +3232,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7ffcb886-03b8-44b2-843c-a9359cd00d23"
+                  "$blob": "d43ade4b-aded-44e8-872d-ef6314dbdb5a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3288,7 +3288,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a2ffd77d-bfad-4008-8de6-bc5cd2e4b1e9"
+                  "$blob": "c33e25ac-291b-4d21-aa6c-a1988425d0f4"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3344,7 +3344,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8d943756-573b-4f9f-9802-4929603796ee"
+                  "$blob": "97ff7913-ba5c-4e72-9f7a-e075303df3b2"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -4035,7 +4035,7 @@
             {
               "__type": "Sandbox.ModelRenderer",
               "__guid": "b67aa456-8bbd-4adb-926b-1ac4fcae5920",
-              "__enabled": true,
+              "__enabled": false,
               "Flags": 0,
               "BodyGroups": 18446744073709551615,
               "CreateAttachments": false,
@@ -4095,6 +4095,8 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OverdrawOptimization": true,
+              "SdfShadows": true,
+              "ShadowBias": 0,
               "SparseField": true,
               "TightBounds": false,
               "Transmission": true,
@@ -4195,7 +4197,7 @@
             {
               "__type": "Sandbox.ModelRenderer",
               "__guid": "adda6063-5533-400e-bdac-ae638f3036c7",
-              "__enabled": true,
+              "__enabled": false,
               "Flags": 0,
               "BodyGroups": 18446744073709551615,
               "CreateAttachments": false,
@@ -4255,6 +4257,8 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OverdrawOptimization": true,
+              "SdfShadows": true,
+              "ShadowBias": 0,
               "SparseField": true,
               "TightBounds": false,
               "Transmission": true,
@@ -4300,6 +4304,696 @@
             {
               "__type": "Mimiclay.PauseMenu",
               "__guid": "4c16e525-cdd7-49f7-81e5-bd7af41fc22c",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        }
+      ]
+    },
+    {
+      "__guid": "09e1b612-0c09-4a89-b543-850c2f9946e9",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "hunter (1)",
+      "Position": "-621.721313,515.549316,0.00225698948",
+      "Rotation": "0,0,-0.991444826,0.130526245",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 1,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.HighlightOutline",
+          "__guid": "e7889611-13a4-4991-9cac-9a3904cae88c",
+          "__enabled": false,
+          "Flags": 0,
+          "Color": "1,1,1,0",
+          "InsideColor": "1,0.17209,0.17209,0",
+          "InsideObscuredColor": "0.85116,0.42756,0.42756,0.47",
+          "Material": null,
+          "ObscuredColor": "1,0.3907,0.3907,0.86",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OverrideTargets": false,
+          "Targets": null,
+          "Width": 0.25
+        },
+        {
+          "__type": "Mimiclay.SdfNetworkSync",
+          "__guid": "081d0c1b-3017-43a9-b12f-74354dfa83e2",
+          "__enabled": true,
+          "Flags": 0,
+          "Interpolate": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Target": null
+        },
+        {
+          "__type": "Mimiclay.SdfHighlightOutline",
+          "__guid": "ee7e7fd3-69e8-4d0c-9cac-c566b68e0992",
+          "__enabled": true,
+          "Flags": 0,
+          "Color": "1,1,1,0",
+          "IgnoreDepthOfField": false,
+          "InsideColor": "0,0,0,0",
+          "InsideObscuredColor": "0.52558,0.20045,0.20045,0.53",
+          "MatchDisplacement": false,
+          "ObscuredColor": "0,0,0,0.4",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Placement": "Center",
+          "Width": 4
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "e1fc40af-100f-49d4-9ca0-b407be62e4a3",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Head",
+          "Position": "0,0,62.510994",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.SdfSculpture",
+              "__guid": "b57934a6-1c13-492f-97f2-fd0619f05a13",
+              "__enabled": true,
+              "Flags": 0,
+              "AutoRebuild": true,
+              "BakedMesh": null,
+              "Brushes": [
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "0,0,0",
+                  "Rotation": "0,0,0,1",
+                  "Size": "15.9588165,17.6010208,15.9588165",
+                  "Points": [],
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0,
+                  "Rounding": 0.75,
+                  "Color": "0.21569,0.72549,1,1",
+                  "Metallic": 0,
+                  "Roughness": 0.5,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 17.60102
+                },
+                {
+                  "Shape": "Cylinder",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "0.443737149,17.6089115,3.465729",
+                  "Rotation": "-0.417529047,0.582460344,-0.490847856,0.495457232",
+                  "Size": "5.05940056,5.05940056,1.13759148",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 1.322088,
+                  "Rounding": 0.75,
+                  "Color": "0.21569,0.72549,1,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": true,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 5.5162377
+                },
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "12.6683683,8.57676601,5.65439606",
+                  "Rotation": "0.0218035262,-0.163211569,0.207804143,0.964211643",
+                  "Size": "2.4659009,5.21790266,5.21790266",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.6310216,
+                  "Rounding": 0.75,
+                  "Color": "1,1,1,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": true,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 5.375658
+                },
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "15.146121,9.75712109,6.56701326",
+                  "Rotation": "0.0218035262,-0.163211569,0.207804143,0.964211643",
+                  "Size": "1.2921927,2.73430943,2.73430943",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.7490705,
+                  "Rounding": 0.75,
+                  "Color": "0.18605,0.18605,0.18605,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": true,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 2.921577
+                },
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "13.8051414,-10.9659367,8.20025635",
+                  "Rotation": "0,0,0,1",
+                  "Size": "1.34959793,1.34959793,1.34959793",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.30960143,
+                  "Rounding": 0.75,
+                  "Color": "1,1,1,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 1.4269983
+                },
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "14.8147593,8.16230869,8.20025635",
+                  "Rotation": "0,0,0,1",
+                  "Size": "1.34959793,1.34959793,1.34959793",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.30960143,
+                  "Rounding": 0.75,
+                  "Color": "1,1,1,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 1.4269983
+                },
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Subtract",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "13.0536575,-2.2649765E-06,-1.53904915",
+                  "Rotation": "0,0,0,1",
+                  "Size": "4.75075483,4.34987116,2.12355399",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.4647285,
+                  "Rounding": 0.8306304,
+                  "Color": "0.25098,0.25098,0.25098,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 4.866937
+                },
+                {
+                  "Shape": "Cylinder",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "12.8669415,-0.0091753006,1.65226197",
+                  "Rotation": "-0.0038407743,0.689104617,-0.00447694212,0.724637985",
+                  "Size": "2.76393652,2.76393652,2.01331377",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.012509089,
+                  "Rounding": 0.5,
+                  "Color": "1,1,1,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 3.4225976
+                },
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "10.6044788,-6.07967377E-06,-4.78850412",
+                  "Rotation": "0,0,0,1",
+                  "Size": "3.0321033,5.36458778,3.0321033",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.6062361,
+                  "Rounding": 0.75,
+                  "Color": "0.90196,0.18039,0.28627,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 5.5161467
+                },
+                {
+                  "Shape": "Cylinder",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "-3.55589533,7.57108164,16.1918144",
+                  "Rotation": "-0.191648126,-0.11584118,0.00154472888,0.974602163",
+                  "Size": "7.78248119,7.78248119,3.06294203",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 1.2725041,
+                  "Rounding": 1.7206268,
+                  "Color": "0.99608,0.78824,0.16863,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 8.681655
+                },
+                {
+                  "Shape": "Cylinder",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "4.610116,6.83005857,15.2595568",
+                  "Rotation": "-0.191498339,-0.0685436726,-0.00773112476,0.979066014",
+                  "Size": "7.78248119,7.78248119,1.07964277",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0.8090316,
+                  "Rounding": 0.6346765,
+                  "Color": "0.99608,0.78824,0.16863,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 8.05927
+                }
+              ],
+              "FlipFaces": false,
+              "Material": null,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "Resolution": 32
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "8f1968f4-de98-4860-9855-ff5b8cabc653",
+              "__enabled": false,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "Off",
+              "Tint": "1,1,1,1"
+            },
+            {
+              "__type": "Mimiclay.SdfRaymarchRenderer",
+              "__guid": "c6117b67-5b86-4913-80b1-cbe44016c6a9",
+              "__enabled": true,
+              "Flags": 0,
+              "AdaptiveQuality": false,
+              "BrushCulling": true,
+              "CullRadii": 220,
+              "DebugBounds": false,
+              "DebugLiveField": false,
+              "DebugLod": false,
+              "DebugSwitchState": false,
+              "DepthClamp": false,
+              "Displace": true,
+              "DistanceSwitching": true,
+              "Epsilon": 0.05,
+              "FarEpsilon": 0.4,
+              "FieldCacheOnly": true,
+              "FieldNormalScale": 0.5,
+              "FieldResolution": 256,
+              "FullQualityRadii": 6,
+              "LodHysteresis": 0.06,
+              "Material": "materials/plasticine.vmat",
+              "MaxSteps": 96,
+              "MeshLod1Radii": 90,
+              "MeshLod2Radii": 140,
+              "MeshMode": "DepthProxy",
+              "MinQualityRadii": 60,
+              "MinSteps": 28,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverdrawOptimization": true,
+              "SdfShadows": true,
+              "ShadowBias": 0,
+              "SparseField": true,
+              "TightBounds": false,
+              "Transmission": true,
+              "UseFieldCache": true
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "648101cb-ecd6-464a-b46b-923416570aad",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Body",
+          "Position": "0,0,62.5109901",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": false,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.SdfSculpture",
+              "__guid": "67b7f7fe-9ae4-4c23-a77c-a875815c6ab7",
+              "__enabled": true,
+              "Flags": 0,
+              "AutoRebuild": true,
+              "BakedMesh": null,
+              "Brushes": [
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "0,0,-47.6577988",
+                  "Rotation": "0,0,0,1",
+                  "Size": "14.2545033,14.2545033,14.2545033",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 0,
+                  "Rounding": 0.75,
+                  "Color": "0.21569,0.72549,1,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 14.254503
+                },
+                {
+                  "Shape": "Sphere",
+                  "Operation": "Add",
+                  "CrossSection": "Triangle",
+                  "Text": "clay",
+                  "Font": "Poppins",
+                  "Enabled": true,
+                  "Position": "0,0,-29.005661",
+                  "Rotation": "0,0,0,1",
+                  "Size": "9.68860626,9.68860626,12.032712",
+                  "Points": null,
+                  "Curvature": 1,
+                  "SplineClosed": false,
+                  "Slice": 0,
+                  "SlicePlaneN": 1,
+                  "LocalCentre": "0,0,0",
+                  "Blend": 14.214451,
+                  "Rounding": 0.75,
+                  "Color": "0.21569,0.72549,1,1",
+                  "Metallic": 0,
+                  "Roughness": 1,
+                  "MirrorX": false,
+                  "MirrorY": false,
+                  "MirrorZ": false,
+                  "IsSplineLoop": false,
+                  "BoundingRadius": 15.586325
+                }
+              ],
+              "FlipFaces": false,
+              "Material": null,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "Resolution": 32
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "caf83162-f56e-4375-b5ba-5908d3be29af",
+              "__enabled": false,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "ShadowsOnly",
+              "Tint": "1,1,1,1"
+            },
+            {
+              "__type": "Mimiclay.SdfRaymarchRenderer",
+              "__guid": "f7711009-404d-4d57-b333-7ffa5b5dd4aa",
+              "__enabled": true,
+              "Flags": 0,
+              "AdaptiveQuality": false,
+              "BrushCulling": true,
+              "CullRadii": 220,
+              "DebugBounds": false,
+              "DebugLiveField": false,
+              "DebugLod": false,
+              "DebugSwitchState": false,
+              "DepthClamp": false,
+              "Displace": true,
+              "DistanceSwitching": true,
+              "Epsilon": 0.05,
+              "FarEpsilon": 0.4,
+              "FieldCacheOnly": true,
+              "FieldNormalScale": 0.5,
+              "FieldResolution": 64,
+              "FullQualityRadii": 6,
+              "LodHysteresis": 0.06,
+              "Material": "materials/plasticine.vmat",
+              "MaxSteps": 96,
+              "MeshLod1Radii": 90,
+              "MeshLod2Radii": 140,
+              "MeshMode": "DepthProxy",
+              "MinQualityRadii": 60,
+              "MinSteps": 28,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverdrawOptimization": true,
+              "SdfShadows": true,
+              "ShadowBias": 0,
+              "SparseField": true,
+              "TightBounds": false,
+              "Transmission": true,
+              "UseFieldCache": true
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "24effbcb-4283-408d-9618-ee815671588f",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Pause HUD",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ScreenPanel",
+              "__guid": "7d2a4722-fb65-4428-b4c2-d955856d0cd7",
+              "__enabled": true,
+              "Flags": 0,
+              "AutoScreenScale": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "Opacity": 1,
+              "Scale": 1,
+              "ScaleStrategy": "ConsistentHeight",
+              "TargetCamera": null,
+              "ZIndex": 1000
+            },
+            {
+              "__type": "Mimiclay.PauseMenu",
+              "__guid": "25c0238f-9e30-4df9-8253-44a34423f95a",
               "__enabled": true,
               "Flags": 0,
               "OnComponentDestroy": null,
@@ -4549,16 +5243,8 @@
               "Type": "Component",
               "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           },
           {
             "Target": {
@@ -4697,16 +5383,8 @@
               "Type": "Component",
               "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "bcb6091e-86e1-4f9f-a532-5ed63a355a91"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           },
           {
             "Target": {
@@ -5673,16 +6351,8 @@
               "Type": "Component",
               "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           },
           {
             "Target": {
@@ -5733,16 +6403,8 @@
               "Type": "Component",
               "IdValue": "8f2ee795-b379-4216-a23f-b49a850b1a64"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8f2ee795-b379-4216-a23f-b49a850b1a64"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -5881,16 +6543,8 @@
               "Type": "Component",
               "IdValue": "88753e23-1fd1-4f67-9aa4-6332676362b6"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "88753e23-1fd1-4f67-9aa4-6332676362b6"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -6347,16 +7001,8 @@
               "Type": "Component",
               "IdValue": "ffc9de5e-5882-4e3c-b6b3-7003846baf37"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ffc9de5e-5882-4e3c-b6b3-7003846baf37"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -6597,16 +7243,8 @@
               "Type": "Component",
               "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -6847,16 +7485,8 @@
               "Type": "Component",
               "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "e7563d19-996e-46b2-9c85-713b6774a6fe"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -6899,16 +7529,8 @@
               "Type": "Component",
               "IdValue": "a78df9de-4ad2-475e-bed3-b9376bbf5d3c"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a78df9de-4ad2-475e-bed3-b9376bbf5d3c"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -6951,16 +7573,8 @@
               "Type": "Component",
               "IdValue": "e5f5e4cc-0e61-45d5-b797-6ef092a89d90"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "e5f5e4cc-0e61-45d5-b797-6ef092a89d90"
-            },
-            "Property": "RenderType",
-            "Value": "On"
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []

@@ -16,4 +16,12 @@ Layer0
 	TextureColor "materials/default/default_color.tga"
 	TextureNormal "materials/plasticine_imperfections_17.png"
 	TextureRoughness "materials/default/default_rough.tga"
+
+	// Shadow casting: mark the material alpha-tested so pure-depth passes (the shadow cascades)
+	// bind THIS shader's Depth program instead of the shared depth_only override material.
+	// Without this the raymarched prop casts its proxy BOX as the shadow.
+	Attributes
+	{
+		alphatest "1"
+	}
 }
