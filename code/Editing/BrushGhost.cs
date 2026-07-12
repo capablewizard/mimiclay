@@ -43,7 +43,8 @@ public sealed class BrushGhost
 		int hash = HashCode.Combine( (int)brush.Shape, brush.Size, brush.Position, brush.Rotation, color,
 			sculptTx.Position, sculptTx.Rotation, mirror );
 		hash = HashCode.Combine( hash, (int)brush.CrossSection, brush.Slice ); // profile swap / slice drag rebuilds the ghost
-		hash = HashCode.Combine( hash, brush.Text, brush.Font ); // (text ghost is its quad box — hashed for consistency)
+		hash = HashCode.Combine( hash, brush.Text, brush.Font );
+		hash = HashCode.Combine( hash, brush.TextData is not null ); // ink-rect ghost: rebuild when the bake lands
 		if ( brush.Points is { } pts ) // spline: rebuild when the swept curve changes
 		{
 			hash = HashCode.Combine( hash, pts.Count, brush.Curvature, brush.SplineClosed );
@@ -89,8 +90,8 @@ public sealed class BrushGhost
 			_sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
 			switch ( brush.Shape )
 			{
-				case SdfShape.Box:
-				case SdfShape.Text: Box( s, col ); break; // text hovers as its quad
+				case SdfShape.Box: Box( s, col ); break;
+				case SdfShape.Text: Box( brush.TextInkExtents() * Pad, col ); break; // the ink rect, matching the wireframe
 				case SdfShape.Cylinder: Cylinder( s.x, s.z, col ); break;
 				case SdfShape.Cone: Cone( s.x, s.z, brush.Size.z, brush.SlicePlaneN, col ); break;
 				case SdfShape.Extruded: Extrusion( brush.CrossSection, s, col ); break;

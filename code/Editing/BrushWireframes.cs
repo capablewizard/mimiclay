@@ -74,7 +74,8 @@ public sealed class BrushWireframes
 		{
 			hc.Add( (int)b.Shape );
 			hc.Add( (int)b.CrossSection ); // extruded profile swap rebuilds the wire
-			hc.Add( b.Text ); hc.Add( b.Font ); // (text wire is its quad box — kept hashed for consistency)
+			hc.Add( b.Text ); hc.Add( b.Font );
+			hc.Add( b.TextData is not null ); // ink-rect wire: rebuild when the bake lands (quad → ink box)
 			hc.Add( (int)b.Operation ); // colour depends on add/subtract
 			hc.Add( b.Position );
 			hc.Add( b.Rotation );
@@ -132,8 +133,8 @@ public sealed class BrushWireframes
 		var s = b.Size * Pad; // same 1.04 pad as BrushGhost so the wireframe and solid ghost line up
 		switch ( b.Shape )
 		{
-			case SdfShape.Box:
-			case SdfShape.Text: BoxWire( s ); break; // text outlines as its quad
+			case SdfShape.Box: BoxWire( s ); break;
+			case SdfShape.Text: BoxWire( b.TextInkExtents() * Pad ); break; // the ink rect, matching bounds/collider
 			case SdfShape.Cylinder: CylinderWire( s.x, s.z ); break;
 			case SdfShape.Cone: ConeWire( s.x, s.z, b.Size.z, b.SlicePlaneN ); break; // zoff raw: base-pivot
 			case SdfShape.Extruded: ExtrusionWire( b.CrossSection, s ); break;

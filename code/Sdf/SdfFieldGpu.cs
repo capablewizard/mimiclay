@@ -64,6 +64,8 @@ public sealed class SdfFieldGpu
 	readonly SdfTextAtlas _textAtlas = new(); // baked text distance fields (Text brushes), bound as "TextSdf"
 	ComputeShader _cs;
 	int _nx, _ny, _nz;
+	float _heldCell;   // voxel size carried across Evaluate calls (see the hold band in Evaluate)
+	int _heldCellRes;  // resolution the held cell was computed for — a resolution change re-derives it
 	int _brushCount;        // packed brush count from the last Evaluate (the fill re-evals the same set)
 	float[] _data, _spline;
 
@@ -108,9 +110,27 @@ public sealed class SdfFieldGpu
 		// Surface grid (high res): sizes the brick grid + atlas. Its inclusive far corner sets Maxs, which the guide
 		// shares so both sample the same [Mins,Maxs] bounds.
 		float surfCell = maxAxis / resolution;
-		int snx = Math.Max( 2, (int)MathF.Round( span.x / surfCell ) + 1 );
-		int sny = Math.Max( 2, (int)MathF.Round( span.y / surfCell ) + 1 );
-		int snz = Math.Max( 2, (int)MathF.Round( span.z / surfCell ) + 1 );
+
+		// HOLD the previous cell size while the bounds wobble within a band. Dragging one brush stretches the
+		// union bounds continuously, and a cell that tracks them rescales the whole field every frame — thin
+		// features (text strokes especially) visibly fatten/thin while a brush merely MOVES. Held until the
+		// finer cell would overrun the voxel budget by >10% per axis, or leave >20% of it unused.
+		if ( resolution == _heldCellRes && _heldCell > 0f && surfCell < _heldCell * 1.1f && surfCell > _heldCell * 0.8f )
+			surfCell = _heldCell;
+		_heldCell = surfCell;
+		_heldCellRes = resolution;
+
+		// Snap the grid origin down to a cell multiple, so static brushes resample at identical phases while a
+		// drag slides the bounds min around inside one cell (costs at most one voxel per axis).
+		mn = new Vector3(
+			MathF.Floor( mn.x / surfCell ) * surfCell,
+			MathF.Floor( mn.y / surfCell ) * surfCell,
+			MathF.Floor( mn.z / surfCell ) * surfCell );
+		span = mx - mn;
+
+		int snx = Math.Max( 2, (int)MathF.Ceiling( span.x / surfCell ) + 1 );
+		int sny = Math.Max( 2, (int)MathF.Ceiling( span.y / surfCell ) + 1 );
+		int snz = Math.Max( 2, (int)MathF.Ceiling( span.z / surfCell ) + 1 );
 
 		Mins = mn;
 		// Maxs lands on the inclusive far corner sample (so the shader's UVW remap matches the baker).

@@ -993,7 +993,8 @@ public class SdfBrush
 		{
 			float r = Shape switch
 			{
-				SdfShape.Box or SdfShape.Text => Size.Length, // text spans its quad like a box
+				SdfShape.Box => Size.Length,
+				SdfShape.Text => TextInkExtents().Length, // the ink rect, not the letterboxed quad
 				// Extruded: triangle spans Size.x/Size.y; star/hexagon are radius-Size.x discs (like the cylinder)
 				SdfShape.Extruded => CrossSection == SdfCrossSection.Triangle
 					? Size.Length
@@ -1021,6 +1022,7 @@ public class SdfBrush
 			SdfShape.Cylinder or SdfShape.Cone => new Vector3( Size.x, Size.x, Size.z ),
 			// Star/hexagon profiles fit a radius-Size.x disc; the triangle keeps its Size.x/Size.y extents.
 			SdfShape.Extruded when CrossSection != SdfCrossSection.Triangle => new Vector3( Size.x, Size.x, Size.z ),
+			SdfShape.Text => TextInkExtents(), // the ink rectangle, not the letterboxed quad
 			_ => Size, // Box/triangle half-extents; sphere/ellipsoid per-axis radii
 		};
 
@@ -1044,6 +1046,26 @@ public class SdfBrush
 
 	// Bounds inflation as a fraction of Blend. k/4 = exact for one blend; see AabbExtents for the caveat.
 	const float BlendBoundsFactor = 0.25f;
+
+	/// <summary>Local half-extents of the Text quad shrunk to the baked INK rectangle. The quad maps the
+	/// whole 256×128 slot, but the bake letterboxes the string centred inside it with margins — so the raw
+	/// quad over-bounds the letters badly. The bake records where the ink landed (ContentWidthFrac /
+	/// ContentHeightFrac, ink centred on the slot centre), which gives the tight rect; one slot texel of slack
+	/// covers bilinear reconstruction pushing the zero crossing fractionally past the ink pixels. Rounding
+	/// insets glyphs (never outgrows them), so no extra padding. Full quad until the bake lands.</summary>
+	public Vector3 TextInkExtents()
+	{
+		var d = TextData;
+		if ( d is null )
+			return Size;
+
+		float fy = Math.Clamp( d.ContentHeightFrac, 0f, 1f );
+		float fx = Math.Clamp( d.ContentWidthFrac, 0f, 1f );
+		return new Vector3(
+			Size.x * MathF.Min( fx + 2f / SdfTextData.Width, 1f ),
+			Size.y * MathF.Min( fy + 2f / SdfTextData.Height, 1f ),
+			Size.z );
+	}
 
 	/// <summary>The brush's own AABB in SCULPTURE-LOCAL space, ignoring symmetry (the bounds caller reflects it
 	/// per mirror axis). A spline spans its control points (± each radius); every other shape is

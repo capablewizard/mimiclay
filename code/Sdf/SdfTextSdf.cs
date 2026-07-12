@@ -27,6 +27,11 @@ public sealed class SdfTextData
 	/// × this = letter height.</summary>
 	public float ContentHeightFrac = 0.5f;
 
+	/// <summary>The rendered string's width as a fraction of the slot width — the ink rect's other axis, for
+	/// tight bounds (<see cref="SdfBrush.TextInkExtents"/>). Stored directly rather than derived from
+	/// <see cref="ContentAspect"/>, whose display clamp (12) undershoots on long strings.</summary>
+	public float ContentWidthFrac = 0.5f;
+
 	/// <summary>Bilinear sample at normalized (u, v), v = 0 at the bitmap TOP (matching the shaders' flip).
 	/// Texel units.</summary>
 	public float Sample( float u, float v )
@@ -130,6 +135,7 @@ public static class SdfTextSdf
 		}
 
 		data.ContentHeightFrac = Math.Clamp( (maxY - minY + 1) / (float)HH, 0.05f, 1f );
+		data.ContentWidthFrac = Math.Clamp( (maxX - minX + 1) / (float)HW, 0.05f, 1f );
 		data.ContentAspect = Math.Clamp( (maxX - minX + 1) / (float)(maxY - minY + 1), 0.1f, 12f );
 
 		// Signed distance = dist-to-glyph − dist-to-background (each an exact EDT over the mask):

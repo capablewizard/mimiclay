@@ -169,10 +169,18 @@ public static class SdfCollisionBuilder
 		switch ( b.Shape )
 		{
 			case SdfShape.Box:
-			case SdfShape.Text: // text collides as its quad — coarse, like every other collider approximation
 				for ( int i = 0; i < 8; i++ )
 					dst.Add( new Vector3( (i & 1) != 0 ? sx : -sx, (i & 2) != 0 ? sy : -sy, (i & 4) != 0 ? sz : -sz ) );
 				break;
+
+			case SdfShape.Text: // collide as the baked INK rectangle's box, not the letterboxed quad
+			{
+				var e = b.TextInkExtents();
+				float tx = MathF.Max( e.x, 0.5f ), ty = MathF.Max( e.y, 0.5f ), tz = MathF.Max( e.z, 0.5f );
+				for ( int i = 0; i < 8; i++ )
+					dst.Add( new Vector3( (i & 1) != 0 ? tx : -tx, (i & 2) != 0 ? ty : -ty, (i & 4) != 0 ? tz : -tz ) );
+				break;
+			}
 
 			case SdfShape.Cylinder:
 				for ( int k = 0; k < Ring; k++ )
