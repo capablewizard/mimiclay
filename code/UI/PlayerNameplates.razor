@@ -1,0 +1,167 @@
+@using System
+@using System.Collections.Generic
+@using System.Globalization
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	Player nameplates — team names floated above other players' heads. SCREEN panels, not world panels: each
+	visible pawn's head anchor is projected to the screen every frame and a label is absolutely positioned there
+	on the pawn's HUD ScreenPanel. Lives on the "Pause HUD" child of BOTH pawn prefabs so it exists exactly when
+	a pawn does; only the OWNING pawn's copy draws anything (a proxy's copy renders nothing — same live gate as
+	HunterCrosshair, because ownership replicates after OnStart).
+
+	Everything shown is networked state: pawns are enumerated from the scene's networked proxies (a concealed
+	infection-prep pawn is simply not on the wire, so its name can't leak), the role IS the replicated pawn type
+	(HunterController vs HiderController — more truthful than the roster row, and it works in debug scenes too),
+	and the name comes from the round's [Sync]'d roster, falling back to the pawn's Network.Owner display name.
+
+	Visibility is team-scoped per RoundMode:
+	  • Infection — hunter names show to EVERYONE (hunters see each other; a prop sees the hunters), and prop
+	    names never show to anyone — that's the hiding.
+	  • Teams — you see your own team only (hunters see hunters, props see props).
+	No RoundManager (debug scenes, lobby) falls back to the Infection rule.
+*@
+
+<root class="player-nameplates">
+	@foreach ( var p in _plates )
+	{
+		<div class="plate" style=@PlateStyle( p ) @key=@p.PawnId>
+			<div class="name">@p.Name</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	/// <summary>Extra world-space clearance between the top of the head/disguise bounds and the label.</summary>
+	[Property] public float HeadClearance { get; set; } = 10f;
+
+	// One drawn label: which pawn it belongs to (@key, so the razor diff tracks plates across frames), the name,
+	// and the projected screen position as viewport fractions (resolution-independent — see PlateStyle).
+	readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen );
+
+	readonly List<Plate> _plates = new();
+
+	HunterController _hunter;
+	HiderController _hider;
+
+	// The pawn this HUD hangs off, resolved from the prefab hierarchy (this panel sits on the HUD child). One of
+	// these is null depending on which prefab we're on.
+	HunterController Hunter => _hunter.IsValid() ? _hunter : _hunter = Components.Get<HunterController>( FindMode.InAncestors );
+	HiderController Hider => _hider.IsValid() ? _hider : _hider = Components.Get<HiderController>( FindMode.InAncestors );
+
+	// Gate LIVE, not in OnStart — a pawn runs OnStart on the owning client before ownership replicates, so an
+	// early IsProxy read is stale (same reasoning as HunterCrosshair).
+	bool IsOwnHud => (Hunter.IsValid() && !Hunter.IsProxy) || (Hider.IsValid() && !Hider.IsProxy);
+
+	// Our team, straight from which pawn prefab this HUD belongs to.
+	PlayerRole LocalRole => Hunter.IsValid() ? PlayerRole.Hunter : Hider.IsValid() ? PlayerRole.Prop : PlayerRole.Unassigned;
+
+	// Settings is [Sync]'d, so this reads correctly on every machine incl. late-joiners.
+	RoundMode Mode => RoundManager.Current.IsValid() ? RoundManager.Current.Settings.Mode : RoundMode.Infection;
+
+	protected override void OnUpdate()
+	{
+		_plates.Clear();
+
+		var cam = Scene.Camera;
+		if ( !IsOwnHud || !cam.IsValid() )
+			return;
+
+		var localRole = LocalRole;
+		var mode = Mode;
+
+		foreach ( var (pawn, role) in ProxyPawns() )
+		{
+			if ( !TeamVisible( role, localRole, mode ) )
+				continue;
+
+			var name = NameFor( pawn );
+			if ( string.IsNullOrWhiteSpace( name ) )
+				continue;
+
+			var screen = cam.PointToScreenNormal( AnchorFor( pawn ), out var behind );
+			if ( behind || screen.x < -0.05f || screen.x > 1.05f || screen.y < -0.05f || screen.y > 1.05f )
+				continue;
+
+			_plates.Add( new Plate( pawn.Id, name, screen ) );
+		}
+
+		// Stable order so the razor diff matches plates by @key, not by enumeration luck.
+		_plates.Sort( ( a, b ) => a.PawnId.CompareTo( b.PawnId ) );
+	}
+
+	// Every OTHER player's pawn in the scene, with its role read from the pawn type. Proxies only — our own pawn
+	// never gets a plate, and a pawn that isn't networked yet (infection concealment) doesn't exist here at all.
+	IEnumerable<(GameObject Pawn, PlayerRole Role)> ProxyPawns()
+	{
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+			if ( h.IsValid() && h.IsProxy )
+				yield return (h.GameObject, PlayerRole.Hunter);
+
+		foreach ( var h in Scene.GetAllComponents<HiderController>() )
+			if ( h.IsValid() && h.IsProxy )
+				yield return (h.GameObject, PlayerRole.Prop);
+	}
+
+	// The mode's team rule. Infection: hunters are public — everyone sees their names — and props are secret from
+	// everyone. Teams: fixed sides, you see your own side only.
+	static bool TeamVisible( PlayerRole pawnRole, PlayerRole localRole, RoundMode mode )
+		=> mode == RoundMode.Infection
+			? pawnRole == PlayerRole.Hunter
+			: pawnRole == localRole;
+
+	// Prefer the round roster's snapshotted name (it's [Sync]'d and survives odd connection states); fall back to
+	// the owning connection's display name so debug scenes and the lobby still label pawns.
+	string NameFor( GameObject pawn )
+	{
+		var owner = pawn.Network.Owner;
+		if ( owner is null )
+			return null;
+
+		if ( RoundManager.Current.IsValid()
+			&& RoundManager.Current.Players.TryGetValue( owner.Id, out var info )
+			&& !string.IsNullOrWhiteSpace( info.Name ) )
+			return info.Name;
+
+		return owner.DisplayName;
+	}
+
+	// Where the plate anchors in the world: the top of the pawn's sculpture bounds — the hunter's Head sits at its
+	// eye and the prop's Disguise IS its body, so "top of the sculpture" is the head for both — plus clearance.
+	// A pawn with no sculpture yet falls back to a rough standing height above its root.
+	Vector3 AnchorFor( GameObject pawn )
+	{
+		var sculpt = pawn.Components.Get<SdfSculpture>( FindMode.EnabledInSelfAndDescendants );
+		if ( sculpt.IsValid() && Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
+		{
+			var topLocal = bounds.Center.WithZ( bounds.Maxs.z );
+			return sculpt.WorldTransform.PointToWorld( topLocal ) + Vector3.Up * HeadClearance;
+		}
+
+		return pawn.WorldPosition + Vector3.Up * 80f;
+	}
+
+	// left/top as viewport percentages (the overlay root is full-screen), invariant-formatted so the style parses
+	// on any system locale. The SCSS translate pulls the plate back over the point (centred, sitting above it).
+	static string PlateStyle( Plate p )
+		=> $"left: {(p.Screen.x * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
+			$"top: {(p.Screen.y * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%;";
+
+	// Positions move nearly every frame, so hashing the plate list keeps the labels glued to the heads; @key stops
+	// the diff from rebuilding the label panels themselves.
+	protected override int BuildHash()
+	{
+		var hash = new HashCode();
+		foreach ( var p in _plates )
+		{
+			hash.Add( p.PawnId );
+			hash.Add( p.Name );
+			hash.Add( p.Screen );
+		}
+		return hash.ToHashCode();
+	}
+}

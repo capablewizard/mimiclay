@@ -1,0 +1,33 @@
+@import "/UI/_theme.scss";
+
+// Player nameplates — team names floated above heads. The root is a full-screen overlay; each plate is
+// absolutely positioned by the razor (left/top as viewport percentages at the anchor point) and the translate
+// pulls it back over that point: centred horizontally, sitting fully above the head. Scene-text treatment from
+// the theme (cream + drop shadow) since the names float straight over the 3D scene with no card behind them.
+// z-index below siblings + pointer-events: none so names never cover the pause menu or eat a click.
+.player-nameplates {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: -1;
+	pointer-events: none;
+
+	.plate {
+		position: absolute;
+		transform: translateX( -50% ) translateY( -100% );
+		flex-direction: row;
+		justify-content: center;
+		pointer-events: none;
+
+		.name {
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 18px;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
+			white-space: nowrap;
+		}
+	}
+}
