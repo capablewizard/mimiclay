@@ -49,12 +49,6 @@ public sealed class RuntimeBrushGizmo
 	Vector3 _grabWorldPos, _grabWorldRotAxis, _grabPoint, _grabSize;
 	Rotation _grabWorldRot;
 
-	// Per-family opacity. Only the "transform" family remains (the blend/rounding sliders are now 2D HUD
-	// controls), so this no longer fades one handle group against another — kept as the single hook the rest
-	// of the draw/tint code reads through.
-	static readonly string[] Families = { "transform" };
-	readonly Dictionary<string, float> _familyAlpha = new();
-
 	// Render resources (reused frame to frame).
 	readonly List<Vertex> _verts = new();
 	readonly List<int> _indices = new();
@@ -92,8 +86,6 @@ public sealed class RuntimeBrushGizmo
 		// Release the drag on a real button-up (even while alt is held).
 		if ( _active is not null && !Input.Down( "Attack1" ) )
 			_active = null;
-
-		UpdateFamilyAlphas( style.FadeTime );
 
 		// A spline is a chain of control points, not a single transform — each point gets a move dot and a
 		// radius dot instead of the full gizmo. Self-contained hover/draw/drag pass.
@@ -152,8 +144,7 @@ public sealed class RuntimeBrushGizmo
 				h = HashCode.Combine( h, pt );
 			h = HashCode.Combine( h, b.Curvature, b.SplineClosed );
 		}
-		int af = (int)(FamilyAlpha( "transform" ) * 100);
-		return HashCode.Combine( h, _hover, _active, af, _style.VisualHash(), (int)(_masterAlpha * 100) );
+		return HashCode.Combine( h, _hover, _active, _style.VisualHash(), (int)(_masterAlpha * 100) );
 	}
 
 	/// <summary>Tear down the rendered mesh (call when leaving edit mode / disabling the session).</summary>
@@ -1006,29 +997,12 @@ public sealed class RuntimeBrushGizmo
 		v = Vector3.Cross( axis, u ).Normal;
 	}
 
-	// Fade a handle's colour by its family's current opacity (so non-active families dim out while dragging).
-	Color Tint( Color c, string name ) => c.WithAlpha( c.a * FamilyAlpha( name ) * _masterAlpha );
+	// Handle colour through the gizmo's master fade. (The old per-family fade — dimming handle groups against
+	// each other during a drag — died with the 3D blend/round sliders; every handle is "transform" now. The
+	// name parameter stays so call sites read naturally and a future group fade has its hook back.)
+	Color Tint( Color c, string name ) => c.WithAlpha( c.a * _masterAlpha );
 
 	bool IsHot( string name ) => _active == name || (_hover == name && _active is null);
-
-	// Every handle (move/scale/rotate/plane/screen-move/uniform) is in the single "transform" family now.
-	static string Family( string name ) => "transform";
-
-	float FamilyAlpha( string name ) => _familyAlpha.TryGetValue( Family( name ), out var v ) ? v : 1f;
-
-	// Ease each family toward its target: 1 when idle or active, 0 for the non-active families during a drag.
-	void UpdateFamilyAlphas( float fadeTime )
-	{
-		string active = _active is null ? null : Family( _active );
-		float step = fadeTime > 0.001f ? MathF.Min( 1f, Time.Delta / fadeTime ) : 1f;
-
-		foreach ( var f in Families )
-		{
-			float target = active is null || f == active ? 1f : 0f;
-			float cur = _familyAlpha.TryGetValue( f, out var v ) ? v : 1f;
-			_familyAlpha[f] = MathX.Lerp( cur, target, step );
-		}
-	}
 
 	static Color Highlight( Color c, bool on ) => on ? Color.Lerp( c, Color.White, 0.4f ) : c;
 	static float AxisHalf( SdfBrush b, int i ) => i == 0 ? b.Size.x : i == 1 ? b.Size.y : b.Size.z;

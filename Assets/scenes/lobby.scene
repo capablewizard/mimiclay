@@ -731,7 +731,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "77305b35-3938-4d9d-bc9e-d22ff6c8570c"
+              "$blob": "2f06d930-4ffd-4de8-a15f-975da632ec04"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"

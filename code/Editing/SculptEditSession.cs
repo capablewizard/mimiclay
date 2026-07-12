@@ -210,6 +210,8 @@ public sealed class SculptEditSession : Component
 		// Tear down the rendered gizmo + ghost when leaving edit mode (works whether or not we own a camera).
 		if ( !active )
 		{
+			if ( _pendingCommit )
+				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit
 			_gizmo.Hide();
 			HideGhosts();
 			RestoreDof();
@@ -231,6 +233,8 @@ public sealed class SculptEditSession : Component
 	// SceneWorld, so it must be released explicitly).
 	protected override void OnDisabled()
 	{
+		if ( _pendingCommit )
+			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown
 		_gizmo.Hide();
 		HideGhosts();
 		_wireframes.Hide();
@@ -250,14 +254,15 @@ public sealed class SculptEditSession : Component
 
 	// ── HUD-facing API (drives the same logic regardless of game mode) ───────────────────────────────
 
-	/// <summary>Add an additive (or subtractive) brush of the given shape and select it.</summary>
+	/// <summary>Add an additive (or subtractive) brush of the given shape and select it. At the brush cap the
+	/// add is refused (see <see cref="SdfSculpture.AddBrush"/>) and the selection stays put.</summary>
 	public void Add( SdfShape shape, SdfOperation operation = SdfOperation.Add )
 	{
 		if ( !Target.IsValid() )
 			return;
 
-		Target.AddBrush( shape, operation );
-		Selected = Target.Brushes.Count - 1;
+		if ( Target.AddBrush( shape, operation ) )
+			Selected = Target.Brushes.Count - 1;
 	}
 
 	/// <summary>Select a brush by index, or pass a negative index to clear the selection.</summary>
@@ -398,12 +403,41 @@ public sealed class SculptEditSession : Component
 			NotifyChanged();
 	}
 
-	/// <summary>Rebuild after the HUD edits a brush property (colour/metalness/roughness/etc.).</summary>
+	/// <summary>Rebuild after the HUD edits a brush property — the full COMMIT: 3-LOD surface-nets remesh,
+	/// physics collider rebuild, reliable network snapshot. For continuous gestures (slider drags, colour
+	/// scrubs, typing) use <see cref="PreviewChanged"/> + <see cref="CommitChanged"/> instead; this is for
+	/// discrete one-shot edits (palette click, cross-section swap, add/remove/reorder).</summary>
 	public void NotifyChanged()
 	{
+		_pendingCommit = false; // a full commit covers anything previewed before it
 		if ( Target.IsValid() )
 			Target.Rebuild();
 	}
+
+	// A preview happened and no commit has followed yet. The debounce in OnUpdate backstops gestures with no
+	// clean end event (typing in the text field) and any missed control release.
+	bool _pendingCommit;
+	RealTimeSince _sincePreview;
+	const float CommitDebounce = 0.5f;
+
+	/// <summary>A HUD control is mid-gesture (slider drag, colour-wheel scrub, text typing): update only the
+	/// LIVE surface — the raymarcher reads the brushes directly each frame, and the shadow proxy keeps shadows
+	/// plus the 20 Hz network preview stream moving — and defer the expensive commit until the gesture ends.
+	/// This is exactly the preview/commit split gizmo handle drags already have; without it, every mouse-move
+	/// on a slider was a full commit (remesh + collider + reliable network send) on every machine.</summary>
+	public void PreviewChanged()
+	{
+		if ( !Target.IsValid() )
+			return;
+
+		Target.RebuildShadowProxy();
+		_pendingCommit = true;
+		_sincePreview = 0;
+	}
+
+	/// <summary>The HUD gesture ended → run the one full commit for everything previewed since. Safe to call
+	/// redundantly: the sculpture's content-hash cache makes a no-change commit cheap.</summary>
+	public void CommitChanged() => NotifyChanged();
 
 	// ── Save / load (local on-disk library) ──────────────────────────────────────────────────────────
 	// Persist the current sculpture so it survives across sessions, without the editor prefab pipeline. See
@@ -596,13 +630,17 @@ public sealed class SculptEditSession : Component
 			Target.Rebuild();
 		_wasManipulating = IsManipulating;
 
-		// Field cache: use the GPU field evaluator for the WHOLE active session. It's cheap (the renderer only
-		// re-dispatches the compute eval when brushes actually change), so every edit updates instantly whether
-		// it's a handle drag OR a slider (blend, rounding, curvature, colour) - no CPU bake, no settle hitch.
-		// Un-suppressed on deactivate / disable (above), so a settled prop falls back to the shared cached bake.
-		var rmCache = Raymarcher;
-		if ( rmCache.IsValid() )
-			rmCache.SuppressFieldCache = true;
+		// Backstop commit for HUD previews with no explicit end event (text typing) or a missed control
+		// release: once the edits go quiet and nothing is still captured, run the deferred full commit.
+		if ( _pendingCommit && _sincePreview > CommitDebounce
+			&& !ClaySlider.Pressed && !ClayColorPicker.Pressed && !IsManipulating )
+			CommitChanged();
+
+		// Field cache: the GPU field evaluator stays on for the WHOLE active session — it's cheap locally (the
+		// renderer only re-dispatches the compute eval when brushes actually change, and this is the one prop
+		// this machine is editing), so every edit updates instantly with no CPU bake or settle hitch. We do NOT
+		// set SuppressFieldCache here: that flag now belongs to SdfNetworkSync, which suppresses baking on
+		// PROXIES during remote drags (where per-frame interpolation would re-dispatch every frame, per prop).
 	}
 
 	// Debug view: hide the raymarcher (its OnDisabled hands the sibling mesh back to visible) and put the
@@ -666,8 +704,10 @@ public sealed class SculptEditSession : Component
 
 	void AddShape( Action add )
 	{
+		int before = Target.Brushes?.Count ?? 0;
 		add();
-		Selected = Target.Brushes.Count - 1; // select the brush we just added
+		if ( (Target.Brushes?.Count ?? 0) > before )
+			Selected = Target.Brushes.Count - 1; // select the brush we just added (a cap-refused add changes nothing)
 	}
 
 	void RemoveLast()

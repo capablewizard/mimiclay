@@ -159,26 +159,6 @@
         "StartAsleep": false
       },
       {
-        "__type": "Sandbox.HighlightOutline",
-        "__guid": "9376761d-3e80-4b10-8aa5-e76bf606d603",
-        "__enabled": false,
-        "Flags": 0,
-        "Color": "1,1,1,0",
-        "InsideColor": "1,0.17209,0.17209,0",
-        "InsideObscuredColor": "1,0.29412,0.29412,0.8",
-        "Material": null,
-        "ObscuredColor": "1,0.3907,0.3907,0.86",
-        "OnComponentDestroy": null,
-        "OnComponentDisabled": null,
-        "OnComponentEnabled": null,
-        "OnComponentFixedUpdate": null,
-        "OnComponentStart": null,
-        "OnComponentUpdate": null,
-        "OverrideTargets": false,
-        "Targets": null,
-        "Width": 0
-      },
-      {
         "__type": "Mimiclay.SdfNetworkSync",
         "__guid": "40000001-0000-4000-8000-000000000011",
         "__enabled": true,

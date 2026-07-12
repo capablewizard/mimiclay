@@ -75,6 +75,10 @@ public static class MenuNetworking
 	/// <summary>Clear the current error immediately (the UI's fade timer calls this once it expires).</summary>
 	public static void ClearError() => LastError = null;
 
+	/// <summary>Surface a session-loss message on the menu. <see cref="DeadSessionWatchdog"/> calls this right
+	/// before <see cref="ExitToMenu"/>, so the player lands on the menu with an explanation, not a silent kick.</summary>
+	public static void NotifyDisconnected( string message ) => SetError( message );
+
 	/// <summary>Host a new lobby for the chosen mode/settings, then (as host) load that mode's gameplay scene. The
 	/// settings are written into lobby data first so they're live the instant clients see the session.</summary>
 	public static void Host( GameModeKind mode, int maxPlayers, LobbyPrivacy privacy, string sessionName )

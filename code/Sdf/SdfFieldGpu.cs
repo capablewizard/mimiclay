@@ -18,9 +18,9 @@ namespace Mimiclay;
 /// </summary>
 public sealed class SdfFieldGpu
 {
-	const int MaxBrushes = 64;
+	const int MaxBrushes = SdfBrushPacker.MaxBrushes;
 	const int TexelsPerBrush = 7;
-	const int MaxSplinePoints = 256;
+	const int MaxSplinePoints = SdfBrushPacker.MaxSplinePoints;
 
 	/// <summary>Voxels per brick edge (the sparse-brick block size). The occupancy volume marks which of these
 	/// 8³ bricks the surface passes through.</summary>
@@ -369,12 +369,25 @@ public sealed class SdfFieldGpu
 
 /// <summary>
 /// Packs an <see cref="SdfBrush"/> list into the flat RGBA32F arrays the raymarch / compute shaders read (7
-/// texels per brush + a shared spline control-point pool). Extracted from SdfRaymarchRenderer so the world-space
-/// pack (the analytic march + colour) and the local-space pack (the GPU field evaluator) share one definition.
-/// Pass <c>tx = WorldTransform</c> for world space, or <c>Transform.Zero</c> for the prop's local space.
+/// texels per brush + a shared spline control-point pool). ONE definition shared by every consumer — and since
+/// the raymarch went local-space (it folds world samples via ModelOrigin/ModelRotation), every consumer packs
+/// with <c>Transform.Zero</c>: the renderer's march + colour AND the GPU field evaluator read identical
+/// local-space data evaluated by the same sdf_eval.hlsl. The <c>tx</c> parameter remains for generality.
 /// </summary>
 public static class SdfBrushPacker
 {
+	/// <summary>The hard cap on brushes one sculpture can render — the GPU brush texture's size. THE canonical
+	/// limit: <see cref="SdfSculpture.AddBrush"/> refuses past it and <see cref="SdfNetworkSync"/> rejects
+	/// oversized payloads, because a brush past the cap is silently NOT packed — the raymarched shape would
+	/// diverge from the meshed/collision/networked shape with no warning.</summary>
+	public const int MaxBrushes = 64;
+
+	/// <summary>Cap on spline control points pooled across all spline brushes of one sculpture (GPU pool size).</summary>
+	public const int MaxSplinePoints = 256;
+
+	// Truncation warnings, throttled — Pack runs per frame during drags, one line every few seconds is plenty.
+	static RealTimeSince _sinceTruncWarn = 999f;
+
 	public static int Pack( List<SdfBrush> brushes, Transform tx, float[] data, float[] spline,
 		int maxBrushes, int texelsPerBrush, int maxSplinePoints, SdfTextAtlas textAtlas = null )
 	{
@@ -384,7 +397,8 @@ public static class SdfBrushPacker
 		int textSlot = 0; // atlas slots assigned in brush order — deterministic, so every pack agrees
 		int written = 0;
 
-		for ( int k = 0; k < brushes.Count && written < maxBrushes; k++ )
+		int k = 0;
+		for ( ; k < brushes.Count && written < maxBrushes; k++ )
 		{
 			var b = brushes[k];
 			if ( !b.Enabled )
@@ -450,6 +464,20 @@ public static class SdfBrushPacker
 			data[o + 24] = wmx.x; data[o + 25] = wmx.y; data[o + 26] = wmx.z;
 			data[o + 27] = b.Slice; // planar slice fraction (sphere/cone), riding the AABB-max texel's free lane
 			written++;
+		}
+
+		// Anything enabled left unpacked means the rendered shape has silently diverged from the authored one
+		// (authoring + network apply cap at MaxBrushes, so reaching this is a bug or a hand-edited asset) — say so.
+		for ( ; k < brushes.Count; k++ )
+		{
+			if ( !brushes[k].Enabled )
+				continue;
+			if ( _sinceTruncWarn > 5f )
+			{
+				_sinceTruncWarn = 0f;
+				Log.Warning( $"SdfBrushPacker: {brushes.Count} brushes exceed the {maxBrushes}-brush cap — extras are NOT rendered and the visible shape no longer matches the mesh/collision." );
+			}
+			break;
 		}
 
 		return written;

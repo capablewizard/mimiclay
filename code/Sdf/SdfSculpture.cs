@@ -347,62 +347,24 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 		return copy;
 	}
 
-	/// <summary>Deterministic (FNV-1a) content hash of the geometry inputs. Unlike System.HashCode it's
-	/// stable across runs, so it can be baked into a .sdfmesh on disk and compared on a later load to tell
-	/// whether the bake still matches the brushes. Excludes Material — geometry only (the material is
-	/// applied when the mesh is uploaded, not baked into the data).</summary>
+	/// <summary>Deterministic (FNV-1a) content hash of the geometry inputs — resolution + flip + the canonical
+	/// per-brush hash (<see cref="SdfBrush.HashInto"/>, the ONE place brush properties are hashed). Stable across
+	/// runs, so it can be baked into a .sdfmesh on disk and compared on a later load to tell whether the bake
+	/// still matches the brushes. Excludes Material — geometry only (the material is applied when the mesh is
+	/// uploaded, not baked into the data).</summary>
 	public static int ContentHash( List<SdfBrush> brushes, int resolution, bool flip )
 	{
 		unchecked
 		{
 			int h = unchecked((int)2166136261);
-			int F( float f ) => BitConverter.SingleToInt32Bits( f );
 			void Mix( int x ) { h = (h ^ x) * 16777619; }
-			// Per-char mix — string.GetHashCode is randomized per run, and this hash is persisted to disk.
-			void MixString( string str )
-			{
-				Mix( str?.Length ?? -1 );
-				if ( str is not null )
-					foreach ( char c in str )
-						Mix( c );
-			}
 
 			Mix( resolution );
 			Mix( flip ? 1 : 0 );
 			Mix( brushes.Count );
 
 			foreach ( var b in brushes )
-			{
-				Mix( (int)b.Shape );
-				Mix( (int)b.CrossSection ); // extruded profile changes the geometry
-				MixString( b.Text );        // text brushes: the string IS the geometry
-				MixString( b.Font );
-				Mix( (int)b.Operation );
-				Mix( b.Enabled ? 1 : 0 );
-				Mix( F( b.Position.x ) ); Mix( F( b.Position.y ) ); Mix( F( b.Position.z ) );
-				Mix( F( b.Size.x ) ); Mix( F( b.Size.y ) ); Mix( F( b.Size.z ) );
-				Mix( F( b.Rotation.x ) ); Mix( F( b.Rotation.y ) ); Mix( F( b.Rotation.z ) ); Mix( F( b.Rotation.w ) );
-				Mix( F( b.Blend ) );
-				Mix( F( b.Rounding ) );
-				Mix( F( b.Slice ) ); // slice moves the cut plane — a stale mesh/shadow would keep the old top
-				Mix( F( b.Color.r ) ); Mix( F( b.Color.g ) ); Mix( F( b.Color.b ) ); Mix( F( b.Color.a ) );
-				Mix( F( b.Metallic ) );
-				Mix( F( b.Roughness ) );
-				Mix( b.MirrorX ? 1 : 0 );
-				Mix( b.MirrorY ? 1 : 0 );
-				Mix( b.MirrorZ ? 1 : 0 );
-
-				if ( b.Points is { } pts )
-				{
-					Mix( pts.Count );
-					foreach ( var pt in pts )
-					{
-						Mix( F( pt.x ) ); Mix( F( pt.y ) ); Mix( F( pt.z ) ); Mix( F( pt.w ) );
-					}
-					Mix( F( b.Curvature ) );
-					Mix( b.SplineClosed ? 1 : 0 );
-				}
-			}
+				b.HashInto( ref h );
 
 			return h;
 		}
@@ -446,9 +408,18 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 
 	/// <summary>Add a brush of the given shape/operation, offset above the last one, and rebuild. Public so
 	/// the in-game edit UI can drive it the same way the inspector buttons do.</summary>
-	public void AddBrush( SdfShape shape, SdfOperation operation = SdfOperation.Add )
+	/// <summary>Add a brush of the given shape. Returns false (and adds nothing) at the brush cap — the GPU
+	/// packer silently drops brushes past <see cref="SdfBrushPacker.MaxBrushes"/>, so past it the raymarched,
+	/// meshed, collision and networked shapes would all quietly disagree. Refusing here keeps them in step.</summary>
+	public bool AddBrush( SdfShape shape, SdfOperation operation = SdfOperation.Add )
 	{
 		Brushes ??= new();
+
+		if ( Brushes.Count >= SdfBrushPacker.MaxBrushes )
+		{
+			Log.Warning( $"SdfSculpture: brush cap reached ({SdfBrushPacker.MaxBrushes}) — not adding another." );
+			return false;
+		}
 
 		// Stack each new brush above the previous one's height, but always centred on XY (so it never drifts
 		// sideways from where earlier brushes were moved to).
@@ -482,5 +453,6 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 		} );
 
 		Rebuild();
+		return true;
 	}
 }

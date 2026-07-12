@@ -56,7 +56,9 @@ public struct PlayerInfo
 	/// <summary>Hunter or Prop for this round (decided at <see cref="RoundPhase.Starting"/>).</summary>
 	public PlayerRole Role;
 
-	/// <summary>A prop that hasn't been found yet, or a hunter (always true). Cleared when a prop is shot.</summary>
+	/// <summary>A prop that hasn't been found yet. Cleared when a prop is shot — and NOT reset by the
+	/// conversion, so a converted player's row reads Role=Hunter with Alive=false. Alive is only meaningful
+	/// for props (the win-check counts Role==Prop &amp;&amp; Alive); never gate hunters on it.</summary>
 	public bool Alive;
 
 	/// <summary>This prop was found by a hunter (drives stats + "converted to hunter").</summary>

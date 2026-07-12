@@ -134,7 +134,7 @@
 
 	bool _open;
 
-	// The picked map's ResourcePath (or RandomIdent). Mirrors LobbyController.Settings.MapIdent, kept here so the
+	// The picked map's ResourcePath (or RandomIdent). Mirrors LobbyManager.Settings.MapIdent, kept here so the
 	// row highlight + preview update instantly on click.
 	string _picked = MapCatalog.RandomIdent;
 
@@ -143,8 +143,8 @@
 
 	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
 
-	// The live settings to display (host owns LobbyController, so its setters mutate the synced struct directly).
-	RoundSettings S => LobbyController.Current.IsValid() ? LobbyController.Current.Settings : RoundSettings.Default;
+	// The live settings to display (host owns the LobbyManager, so its setters mutate the synced struct directly).
+	RoundSettings S => LobbyManager.Current.IsValid() ? LobbyManager.Current.Settings : RoundSettings.Default;
 
 	// People currently in the lobby — the "y" in the hunters "x/y" readout.
 	int LobbyPlayerCount => Connection.All.Count;
@@ -170,7 +170,7 @@
 		// G toggles the panel — but don't reopen once the launch countdown is already running.
 		if ( Input.Keyboard.Pressed( "G" ) )
 		{
-			if ( !_open && (LobbyController.Current?.Launching ?? false) )
+			if ( !_open && (LobbyManager.Current?.Launching ?? false) )
 				return;
 			SetOpen( !_open );
 		}
@@ -185,7 +185,7 @@
 
 	void StartGame()
 	{
-		LobbyController.Current?.RequestStart();
+		LobbyManager.Current?.RequestStart();
 		SetOpen( false );
 	}
 
@@ -200,20 +200,20 @@
 		var i = System.Array.FindIndex( modes, m => m.Kind == S.Mode );
 		if ( i < 0 ) i = 0;
 		i = ((i + dir) % modes.Length + modes.Length) % modes.Length; // wrap both directions
-		LobbyController.Current?.SetRoundMode( modes[i].Kind );
+		LobbyManager.Current?.SetRoundMode( modes[i].Kind );
 	}
 
-	// ── Settings steppers (clamped by the LobbyController setters) ───────────────────────────────────────────
-	void AddHunters( int d ) => LobbyController.Current?.SetHunterCount( (int)S.HunterCount + d );
-	void AddHide( float d ) => LobbyController.Current?.SetHideSeconds( S.HideSeconds + d );
-	void AddHunt( float d ) => LobbyController.Current?.SetHuntSeconds( S.HuntSeconds + d );
-	void AddReveal( float d ) => LobbyController.Current?.SetRevealSeconds( S.RevealSeconds + d );
+	// ── Settings steppers (clamped by the LobbyManager setters) ──────────────────────────────────────────────
+	void AddHunters( int d ) => LobbyManager.Current?.SetHunterCount( (int)S.HunterCount + d );
+	void AddHide( float d ) => LobbyManager.Current?.SetHideSeconds( S.HideSeconds + d );
+	void AddHunt( float d ) => LobbyManager.Current?.SetHuntSeconds( S.HuntSeconds + d );
+	void AddReveal( float d ) => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d );
 
 	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
 	void PickMap( string ident )
 	{
 		_picked = ident;
-		LobbyController.Current?.SetMap( ident );
+		LobbyManager.Current?.SetMap( ident );
 	}
 
 	bool IsPicked( string ident ) => string.Equals( _picked, ident, StringComparison.OrdinalIgnoreCase );

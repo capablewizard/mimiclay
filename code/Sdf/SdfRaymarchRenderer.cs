@@ -33,9 +33,9 @@ public enum SdfMeshMode
 [Icon( "blur_circular" )]
 public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 {
-	const int MaxBrushes = 64;
+	const int MaxBrushes = SdfBrushPacker.MaxBrushes;
 	const int TexelsPerBrush = 7; // pos+shape, size+blend, quat, colour+op, rounding+metal+rough+mirrormask, aabbMin, aabbMax
-	const int MaxSplinePoints = 256; // shared pool of spline control points (xyz world pos, w radius) across all spline brushes
+	const int MaxSplinePoints = SdfBrushPacker.MaxSplinePoints; // shared pool of spline control points (xyz world pos, w radius) across all spline brushes
 
 	/// <summary>Material to render with. Leave empty to use the built-in sdf_raymarch shader.</summary>
 	[Property] public Material Material { get; set; }
@@ -87,10 +87,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// classify→alloc→fill passes.)</summary>
 	[Property, Group( "Distance Field" )] public bool SparseField { get; set; }
 
-	/// <summary>Runtime override (NOT authored): while true, skip baking and force the exact per-brush march,
-	/// even if <see cref="UseFieldCache"/> is on. The in-game sculpt editor sets this while a prop is being
-	/// edited so each change shows instantly with no per-edit bake; clearing it on exit lets the settled shape
-	/// bake once and switch to the cache. Static scene props never touch it, so they stay cached the whole time.</summary>
+	/// <summary>Runtime override (NOT authored): while true, skip field baking entirely and force the exact
+	/// per-brush analytic march, even if <see cref="UseFieldCache"/> is on. Set by <see cref="SdfNetworkSync"/>
+	/// on PROXIES during a remote live-drag — the per-frame sample interpolation would otherwise re-dispatch the
+	/// full field volume every frame (O(voxels × brushes) per remotely-edited prop, and every hider sculpts at
+	/// once in prep); the analytic loop follows the interpolated brushes for free since the brush data textures
+	/// repack per change anyway. Cleared on commit: the settled shape pays one field dispatch and returns to the
+	/// cached path. The OWNER's own edit session does NOT set this — locally there's only one edited prop, and
+	/// its per-change dispatch is the proven-cheap path. Static scene props never touch it.</summary>
 	public bool SuppressFieldCache { get; set; }
 
 	/// <summary>Scale step count / epsilon down as the object shrinks on screen (a pure-SDF LOD —
@@ -160,8 +164,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// STAYS enabled but is clipped from every perspective view in-shader (SdfShadowOnly) and excluded
 	/// from the game passes, so only its ortho sun-shadow march survives; the mesh carries the
 	/// shadows-only job past the handoff. With SdfShadows off it's the old path: scene object off, mesh
-	/// ShadowsOnly. Re-applied every frame AFTER the distance switch so it overrides whatever band the
-	/// renderer is in. Used to hide a pawn's own SDF body on the machine that controls it. Not a
+	/// ShadowsOnly. Resolved with everything else in ApplyVisibility (the single visibility writer), so it
+	/// wins in every band. Used to hide a pawn's own SDF body on the machine that controls it. Not a
 	/// [Property] — it's driven at runtime by the controlling pawn, not authored on the prefab.</summary>
 	public bool RenderHidden { get; set; }
 
@@ -238,8 +242,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	bool _destroyed; // set in OnDestroy; cancels the deferred sibling-mesh hand-back during a delete
 
 	// Live-edit field (Dreams "evaluator / CS of doom"): a per-instance volume re-evaluated on the GPU by a
-	// compute shader while this prop is being edited (SuppressFieldCache), so the march stays on D_FIELD_TEX
-	// instead of the analytic per-brush path — with no CPU eval and no upload. Null when settled (shared bake).
+	// compute shader whenever the brushes change, so the march stays on D_FIELD_TEX instead of the analytic
+	// per-brush path — with no CPU eval and no upload. SuppressFieldCache skips this entirely (remote drags
+	// march analytically; see the property doc). Null when settled (shared bake).
 	SdfFieldGpu _fieldGpu;
 	int _lastFieldHash; // (brushes + resolution + sparse) hash of the last GPU dispatch — re-dispatch when it changes
 	bool _fieldOnlyHidden;   // FieldCacheOnly + no field ready this frame -> hide the surface (last-word visibility)
@@ -402,9 +407,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				UpdateDistanceSwitch( cam.WorldPosition );
 		}
 
-		// Last word on visibility, after the distance switch / Refresh have set their band state.
-		ApplyRenderHidden();
-		ApplyFieldOnlyHide();
+		// ONE resolved visibility application per frame, after every input (Refresh state, band state) is
+		// current. Replaces the old chain of order-dependent writers.
+		ApplyVisibility();
 
 		// Sync the sibling highlight LAST, from this frame's refreshed state. Driven from here (not
 		// the highlight's own OnUpdate) so component update order can never leave the outline
@@ -414,49 +419,69 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			Highlight.SyncFromRenderer( this );
 	}
 
-	// Invisible-but-shadow-casting override (see RenderHidden). Runs after the per-frame band logic so it
-	// wins regardless of which LOD band the renderer landed in this frame.
-	void ApplyRenderHidden()
+	// THE one place that decides what renders. Every input — the distance-switch band, ForceHidden,
+	// RenderHidden, SdfShadows, MeshMode, the field-only hide — resolves to one state applied in one pass.
+	// It replaced five separate writers (Refresh, UpdateDistanceSwitch, ApplyRenderHidden, ApplyFieldOnlyHide,
+	// RestoreStaticState) whose correctness depended on their call order inside a single frame; keep it that
+	// way — a new visibility input belongs HERE, not in a new "runs last" method.
+	void ApplyVisibility()
 	{
-		if ( !RenderHidden )
+		if ( !_so.IsValid() )
 			return;
 
 		if ( !_meshRenderer.IsValid() )
 			_meshRenderer = GameObject.Components.Get<ModelRenderer>();
 
-		if ( SdfShadows )
+		// Band state from the distance switch's hysteresis flags; static mode (DistanceSwitching off) counts
+		// as permanently inside the SDF band.
+		bool culled = DistanceSwitching && _aboveCull;
+		bool sdf = !culled && (!DistanceSwitching || !_aboveHandoff);
+		int meshLod = _aboveLod2 ? 2 : _aboveLod1 ? 1 : 0;
+
+		// The raymarched surface: its band, minus every hide (ForceHidden folds in RenderHidden-without-
+		// SdfShadows and the field-only hide). With RenderHidden AND SdfShadows the object stays on as the
+		// in-band shadow-only caster — the SdfShadowOnly + ExcludeGameLayer attrs set in Refresh keep it
+		// out of every colour pass.
+		bool soOn = sdf && !ForceHidden;
+		_so.RenderingEnabled = soOn;
+
+		if ( !_meshRenderer.IsValid() )
+			return;
+
+		if ( RenderHidden )
 		{
-			// The scene object itself is the shadow caster (SdfShadowOnly + ExcludeGameLayer, set in
-			// Refresh, keep it out of every camera view) — so it must STAY enabled, and the band logic
-			// above already left it on only inside the SDF band. Past the handoff the SDF is off, so
-			// the mesh takes the shadows-only job there; inside the band it's off entirely (no double
-			// caster).
-			bool sdfBand = _so.IsValid() && _so.RenderingEnabled;
-			if ( _meshRenderer.IsValid() )
-			{
-				_meshRenderer.Enabled = !sdfBand;
-				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
-			}
+			// Invisible-but-shadow-casting pawn: the mesh is a ShadowsOnly caster — everywhere when the SDF
+			// doesn't cast its own shadows, otherwise only outside the SDF band (in-band the scene object
+			// casts; two casters would double the shadow).
+			_meshRenderer.Enabled = SdfShadows ? !soOn : true;
+			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
+			_meshRenderer.LodOverride = DistanceSwitching && !sdf && !culled ? meshLod : null;
 			return;
 		}
 
-		if ( _so.IsValid() )
-			_so.RenderingEnabled = false;
+		// Static mode: the mesh is whatever ApplyMeshMode configured (per MeshMode) — don't fight it.
+		if ( !DistanceSwitching )
+			return;
 
-		if ( _meshRenderer.IsValid() )
+		if ( culled )
 		{
-			_meshRenderer.Enabled = true;
-			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
+			_meshRenderer.Enabled = false;
 		}
-	}
-
-	// FieldCacheOnly hide (see _fieldOnlyHidden): force the raymarched surface off when there's no field ready,
-	// so the analytic march never appears. Only ever hides — never re-enables — so it composes with the distance
-	// switch and RenderHidden (whichever wants it off, it stays off). Runs last in OnUpdate.
-	void ApplyFieldOnlyHide()
-	{
-		if ( _fieldOnlyHidden && _so.IsValid() )
-			_so.RenderingEnabled = false;
+		else if ( sdf )
+		{
+			// SDF is the visible surface. With SdfShadows the raymarch casts its own shadow and the mesh
+			// has no job at all; otherwise the mesh is the legacy ShadowsOnly caster (unless MeshMode hides it).
+			_meshRenderer.Enabled = MeshMode != SdfMeshMode.Hidden && !SdfShadows;
+			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
+			_meshRenderer.LodOverride = null;
+		}
+		else
+		{
+			// Mesh band: show the mesh at the LOD this distance selects.
+			_meshRenderer.Enabled = true;
+			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.On;
+			_meshRenderer.LodOverride = meshLod;
+		}
 	}
 
 	// Editor: the scene-view camera is only reachable as Gizmo.Camera inside a gizmo scope, so the
@@ -468,6 +493,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			return;
 
 		UpdateDistanceSwitch( Gizmo.Camera.Position );
+		ApplyVisibility(); // OnUpdate applied before this ran (editor order) — re-apply with the fresh band
 
 		if ( DebugSwitchState && _curRadius > 0.01f )
 		{
@@ -488,16 +514,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		}
 	}
 
-	// Resolve the pipeline stage from camera distance and apply it: SDF on/off, sibling mesh
-	// visible/shadows-only/disabled, and the forced mesh LOD. One ratio drives all of it, so the label
-	// can never disagree with what's drawn, and there's a single set of thresholds to tune.
+	// Resolve the pipeline stage from camera distance — COMPUTE ONLY: it updates the hysteresis band flags
+	// and the debug label state; ApplyVisibility (the one visibility writer) turns those into what actually
+	// renders. One ratio drives all of it, so the label can never disagree with what's drawn, and there's a
+	// single set of thresholds to tune.
 	void UpdateDistanceSwitch( Vector3 viewPos )
 	{
 		if ( !_so.IsValid() || _curRadius <= 0.01f )
 			return;
-
-		if ( !_meshRenderer.IsValid() )
-			_meshRenderer = GameObject.Components.Get<ModelRenderer>();
 
 		float ratio = (viewPos - _curCenter).Length / _curRadius;
 		float h = LodHysteresis;
@@ -513,38 +537,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_aboveLod2 = Above( ratio, tLod2, _aboveLod2, h );
 		_aboveCull = Above( ratio, tCull, _aboveCull, h );
 
-		bool culled = _aboveCull;
-		bool sdf = !culled && !_aboveHandoff;
-		int meshLod = _aboveLod2 ? 2 : _aboveLod1 ? 1 : 0;
-
-		// SDF scene object renders only in its band (and not while any hide flag is set).
-		_so.RenderingEnabled = sdf && !ForceHidden;
-
-		if ( _meshRenderer.IsValid() )
-		{
-			if ( culled )
-			{
-				_meshRenderer.Enabled = false;
-			}
-			else if ( sdf )
-			{
-				// SDF is the visible surface. With SdfShadows the raymarch casts its own shadow and
-				// the mesh has no job at all; otherwise the mesh is the legacy ShadowsOnly caster
-				// (unless MeshMode hides it).
-				_meshRenderer.Enabled = MeshMode != SdfMeshMode.Hidden && !SdfShadows;
-				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
-				_meshRenderer.LodOverride = null;
-			}
-			else
-			{
-				// Mesh band: show the mesh at the LOD this distance selects.
-				_meshRenderer.Enabled = true;
-				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.On;
-				_meshRenderer.LodOverride = meshLod;
-			}
-		}
-
-		_switchState = culled ? 4 : sdf ? 0 : 1 + meshLod;
+		_switchState = _aboveCull ? 4 : !_aboveHandoff ? 0 : 1 + (_aboveLod2 ? 2 : _aboveLod1 ? 1 : 0);
 	}
 
 	// Hysteresis gate: returns whether `ratio` is above `threshold`, but only flips state once the ratio
@@ -556,15 +549,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		return ratio > threshold * (1f + h);       // go above only once past the upper edge
 	}
 
-	// Undo the coordinator's per-frame state when DistanceSwitching is turned off, so the renderer
-	// returns to its static MeshMode behaviour instead of being stuck wherever the switch left it.
+	// Undo the coordinator's state when DistanceSwitching is turned off: back to the static MeshMode mesh
+	// config. The scene object needs nothing here — ApplyVisibility resolves it every frame either way.
 	void RestoreStaticState()
 	{
 		if ( _meshRenderer.IsValid() )
 			_meshRenderer.LodOverride = null;
 		ApplyMeshMode();
-		if ( _so.IsValid() )
-			_so.RenderingEnabled = !ForceHidden;
 	}
 
 	/// <summary>Force a full repack + rebuild, ignoring the change-hash.</summary>
@@ -595,8 +586,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		EnsureResources();
 		var tx = WorldTransform;
 
-		// Rebuild geometry + packed brush data only when the brushes / transform change.
-		int hash = HashCode.Combine( Hash( brushes ), tx.Position, tx.Rotation, Material, TightBounds );
+		// Rebuild geometry + packed brush data only when the brushes / transform change. UseFieldCache is in
+		// here because the proxy's padding (liveBounds below) depends on it — toggling it used to leave a
+		// stale proxy until the next brush edit.
+		int hash = HashCode.Combine( Hash( brushes ), tx.Position, tx.Rotation, Material, TightBounds, UseFieldCache );
 		if ( hash != _lastHash || !_so.IsValid() || _forceRepack )
 		{
 			// Bounds computed in the object's LOCAL frame, so the proxy can be ORIENTED to the object
@@ -606,7 +599,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 			_forceRepack = false;
 			_lastHash = hash;
-			_curCount = PackBrushes( brushes, tx );
+			_curCount = PackBrushes( brushes );
 
 			// World centre/radius (LOD + sphere proxy) from the local AABB centre.
 			_curCenter = tx.PointToWorld( (lmins + lmaxs) * 0.5f );
@@ -682,8 +675,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// Re-apply ALL per-object attributes every frame. If a binding is dropped (e.g. when
 		// selection rebinds the shared material), BrushCount reads 0 -> this clip()-heavy
 		// shader discards every pixel and the object vanishes while still "valid". Setting
-		// them each frame restores it immediately.
-		_so.RenderingEnabled = !ForceHidden;
+		// them each frame restores it immediately. (RenderingEnabled is NOT set here — that's
+		// ApplyVisibility's job, the single visibility writer.)
 		// Shadow wiring, kept live so toggling SdfShadows / RenderHidden lands immediately. ShadowOnly
 		// (the hidden pawn body) clips every PERSPECTIVE view in-shader — only the ortho sun-shadow
 		// march survives; ExcludeGameLayer additionally keeps it out of the game colour passes.
@@ -700,9 +693,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "BoundsMax", _curMaxs );
 		_so.Attributes.Set( "BoundsCenter", _curCenter );
 		_so.Attributes.Set( "BoundsRadius", _curRadius );
-		// Object placement, so the shader can re-base the triplanar projection into model space (the
-		// plasticine texture stays locked to the prop). Brushes are still baked to world for the march;
-		// only the surface texturing uses this. Rotation-only inverse in the shader assumes unit scale.
+		// Object placement — the shader's world<->model fold. Brushes are packed in LOCAL space now, so
+		// the march folds every sample through this transform (and the triplanar projection re-bases
+		// through it too). Rotation-only inverse in the shader assumes unit scale.
 		_so.Attributes.Set( "ModelOrigin", tx.Position );
 		_so.Attributes.Set( "ModelRotation", new Vector4( tx.Rotation.x, tx.Rotation.y, tx.Rotation.z, tx.Rotation.w ) );
 		_so.Attributes.Set( "MaxSteps", MaxSteps );
@@ -741,7 +734,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// and an edited one updates instantly. The shared CPU bake (SdfFieldBaker) is retired for now (see the note
 		// in that file); it can return later to share one texture across many identical clones if that's worth it.
 		_fieldReady = false;
-		if ( UseFieldCache && _curCount > 0 && _curRadius > 0.01f )
+		if ( UseFieldCache && !SuppressFieldCache && _curCount > 0 && _curRadius > 0.01f )
 		{
 			_fieldGpu ??= new SdfFieldGpu();
 			// Re-dispatch when anything the build depends on changes: the brushes, the resolution, OR the sparse
@@ -786,7 +779,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// FieldCacheOnly: suppress the analytic march entirely. When the field path is active but nothing's
 		// ready yet (first build in flight), hide the surface this frame rather than revealing the brush loop —
 		// applied as the last word on visibility in OnUpdate/UpdateDistanceSwitch.
-		_fieldOnlyHidden = FieldCacheOnly && UseFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
+		_fieldOnlyHidden = FieldCacheOnly && UseFieldCache && !SuppressFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
 
 		if ( DebugLiveField )
 		{
@@ -816,14 +809,16 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// (eye toggle off) are skipped so they vanish in the raymarch path too; order is preserved among the rest.
 	// The layout lives in SdfBrushPacker — ONE definition shared with the GPU field baker, so the two packs
 	// can't drift apart (a divergence here once shipped the extruded profile id to the field but not the march).
-	int PackBrushes( List<SdfBrush> brushes, Transform tx )
+	int PackBrushes( List<SdfBrush> brushes )
 	{
 		var data = new float[MaxBrushes * TexelsPerBrush * 4];
-		var spline = new float[MaxSplinePoints * 4]; // shared control-point pool (xyz world pos, w radius)
+		var spline = new float[MaxSplinePoints * 4]; // shared control-point pool (xyz local pos, w radius)
 
-		// tx = WorldTransform: this pack is WORLD-space (the proxy march runs in world), unlike the field
-		// baker's local-space pack (Transform.Zero).
-		int written = SdfBrushPacker.Pack( brushes, tx, data, spline, MaxBrushes, TexelsPerBrush, MaxSplinePoints, _textAtlas );
+		// LOCAL-space pack (Transform.Zero) — the exact same data the GPU field baker consumes. The march
+		// shader folds each world sample into the prop's local frame (ModelOrigin/ModelRotation) instead of
+		// the brushes being baked to world, so both consumers share one evaluator (sdf_eval.hlsl) and the
+		// packed data is placement-invariant.
+		int written = SdfBrushPacker.Pack( brushes, global::Transform.Zero, data, spline, MaxBrushes, TexelsPerBrush, MaxSplinePoints, _textAtlas );
 
 		_dataTex.Update<float>( data, 0, 0, MaxBrushes * TexelsPerBrush, 1 );
 		_splineTex.Update<float>( spline, 0, 0, MaxSplinePoints, 1 );
@@ -1098,38 +1093,18 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		a.Set( $"SdfSparse{slot}", SparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 	}
 
+	// The repack / field-dispatch change hash. Built on the ONE canonical per-brush hash (SdfBrush.HashInto) —
+	// the same mixing SdfSculpture.ContentHash uses — so a new brush property added there is automatically
+	// picked up here too, instead of silently rendering stale until someone notices the missing hash line.
 	static int Hash( List<SdfBrush> brushes )
 	{
-		var h = new HashCode();
-		h.Add( brushes.Count );
-		foreach ( var b in brushes )
+		unchecked
 		{
-			h.Add( (int)b.Shape );
-			h.Add( (int)b.CrossSection ); // extruded profile swap must repack + re-bake the field
-			h.Add( b.Text ); h.Add( b.Font ); // text brushes re-bake their glyph field
-			h.Add( (int)b.Operation );
-			h.Add( b.Enabled );
-			h.Add( b.Position );
-			h.Add( b.Size );
-			h.Add( b.Rotation );
-			h.Add( b.Blend );
-			h.Add( b.Rounding );
-			h.Add( b.Slice );
-			h.Add( b.Color );
-			h.Add( b.Metallic );
-			h.Add( b.Roughness );
-			h.Add( b.MirrorX );
-			h.Add( b.MirrorY );
-			h.Add( b.MirrorZ );
-			if ( b.Points is { } pts )
-			{
-				h.Add( pts.Count );
-				foreach ( var pt in pts )
-					h.Add( pt );
-				h.Add( b.Curvature );
-				h.Add( b.SplineClosed );
-			}
+			int h = unchecked((int)2166136261);
+			h = (h ^ brushes.Count) * 16777619;
+			foreach ( var b in brushes )
+				b.HashInto( ref h );
+			return h;
 		}
-		return h.ToHashCode();
 	}
 }

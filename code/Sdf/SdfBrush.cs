@@ -173,6 +173,63 @@ public class SdfBrush
 		SplineClosed = SplineClosed,
 	};
 
+	/// <summary>Mix every shape-defining property of this brush into a running FNV-1a hash — THE one canonical
+	/// change-hash for a brush. <see cref="SdfSculpture.ContentHash"/> (mesh/bake caching, persisted into
+	/// .sdfmesh assets) and <see cref="SdfRaymarchRenderer"/>'s repack/field-dispatch hash both build on it, so
+	/// a NEW brush property has exactly ONE hash site: add it here (plus the packer / <see cref="Copy"/> /
+	/// <see cref="LerpFrom"/> per the add-a-property checklist) and every consumer picks it up — a missed hash
+	/// used to fail silently as a stale mesh or a raymarch that ignored the edit. Deterministic across runs
+	/// (no string.GetHashCode, no System.HashCode) because the content hash lives on disk; the mixing order is
+	/// frozen — reordering invalidates every existing .sdfmesh bake.</summary>
+	public void HashInto( ref int h )
+	{
+		unchecked
+		{
+			int hh = h;
+			void Mix( int x ) { hh = (hh ^ x) * 16777619; }
+			int F( float f ) => BitConverter.SingleToInt32Bits( f );
+			void MixString( string str )
+			{
+				Mix( str?.Length ?? -1 );
+				if ( str is not null )
+					foreach ( char c in str )
+						Mix( c );
+			}
+
+			Mix( (int)Shape );
+			Mix( (int)CrossSection ); // extruded profile changes the geometry
+			MixString( Text );        // text brushes: the string IS the geometry
+			MixString( Font );
+			Mix( (int)Operation );
+			Mix( Enabled ? 1 : 0 );
+			Mix( F( Position.x ) ); Mix( F( Position.y ) ); Mix( F( Position.z ) );
+			Mix( F( Size.x ) ); Mix( F( Size.y ) ); Mix( F( Size.z ) );
+			Mix( F( Rotation.x ) ); Mix( F( Rotation.y ) ); Mix( F( Rotation.z ) ); Mix( F( Rotation.w ) );
+			Mix( F( Blend ) );
+			Mix( F( Rounding ) );
+			Mix( F( Slice ) ); // slice moves the cut plane — a stale mesh/shadow would keep the old top
+			Mix( F( Color.r ) ); Mix( F( Color.g ) ); Mix( F( Color.b ) ); Mix( F( Color.a ) );
+			Mix( F( Metallic ) );
+			Mix( F( Roughness ) );
+			Mix( MirrorX ? 1 : 0 );
+			Mix( MirrorY ? 1 : 0 );
+			Mix( MirrorZ ? 1 : 0 );
+
+			if ( Points is { } pts )
+			{
+				Mix( pts.Count );
+				foreach ( var pt in pts )
+				{
+					Mix( F( pt.x ) ); Mix( F( pt.y ) ); Mix( F( pt.z ) ); Mix( F( pt.w ) );
+				}
+				Mix( F( Curvature ) );
+				Mix( SplineClosed ? 1 : 0 );
+			}
+
+			h = hh;
+		}
+	}
+
 	/// <summary>Set this brush to the blend between <paramref name="a"/> and <paramref name="b"/> at
 	/// <paramref name="t"/> — IN PLACE (no allocation), for smoothing the networked live-drag stream on proxies.
 	/// Only the values a gizmo drag moves CONTINUOUSLY are interpolated: Position/Size/Blend/Rounding lerp,
@@ -675,8 +732,13 @@ public class SdfBrush
 			r2 = 0f;               // (this is the old zApex = H − r/sinB when unsliced)
 		}
 
-		if ( zt <= zb ) // eroded away entirely — the fully-rounded limit is a ball
-			return MathF.Sqrt( qx * qx + (p.z - (zb + zt) * 0.5f) * (p.z - (zb + zt) * 0.5f) ) - r;
+		if ( zt <= zb ) // caps met — eroded core is a flat disc of radius r1 == r2 (0 when unsliced → ball)
+		{
+			float rd = MathF.Max( 0.5f * (r1 + r2), 0f );
+			float wx = MathF.Max( qx - rd, 0f );
+			float wz = p.z - (zb + zt) * 0.5f;
+			return MathF.Sqrt( wx * wx + wz * wz ) - r;
+		}
 
 		return CappedCone( qx, p.z - (zb + zt) * 0.5f, (zt - zb) * 0.5f, r1, r2 ) - r;
 	}

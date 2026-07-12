@@ -1,7 +1,8 @@
 //=========================================================================================================================
-// SDF raymarcher. Renders a bounding box; the pixel shader sphere-traces the SDF brush list
-// (fed via a data texture) in world space, reconstructs the hit position + normal, and hands
-// them to the standard shading model. Modelled on base/shaders/lpv_debug.shader.
+// SDF raymarcher. Renders a bounding box; the pixel shader sphere-traces the SDF brush list along the
+// world-space view ray, folding each sample into the prop's LOCAL frame where the brushes are packed and
+// evaluated (the shared sdf_eval.hlsl — one evaluator with the GPU field baker), then reconstructs the hit
+// position + normal and hands them to the standard shading model. Modelled on base/shaders/lpv_debug.shader.
 //=========================================================================================================================
 HEADER
 {
@@ -95,21 +96,24 @@ PS
 		// (Per-brush / per-spline-segment AABB cull is toggled by the g_nSdfCull RUNTIME uniform below, NOT a
 		// dynamic combo: a 7th combo doubled the variant count and crashed the Vfx shader compiler on a full
 		// recompile, which then poisoned the whole package compile. A runtime branch keeps the toggle without
-		// multiplying variants. Brush world AABBs are packed in texels 5/6; the spline span bound is a sphere.)
+		// multiplying variants. Brush LOCAL-space AABBs are packed in texels 5/6; the spline span bound is a sphere.)
 
-	Texture2D g_tBrushData < Attribute( "BrushData" ); >;
-	Texture2D g_tSplineData < Attribute( "SplineData" ); >; // spline control points: xyz = world pos, w = radius
-	Texture2D g_tTextSdf < Attribute( "TextSdf" ); >;       // baked text distance fields (R32F, stacked slots)
-	SamplerState g_sTextSdf < Filter( BILINEAR ); AddressU( CLAMP ); AddressV( CLAMP ); >;
-	int       g_nBrushCount < Attribute( "BrushCount" ); Default( 0 ); >;
-	int       g_nSdfCull    < Attribute( "SdfCull" ); Default( 1 ); >; // 1 = AABB early-out on (runtime toggle, not a combo)
+	// Shared analytic evaluator (LOCAL/model space): the brush/spline/text inputs, every primitive, the
+	// combine ops and the packed-brush loop (SdfDist at a LOCAL point) all live in sdf_eval.hlsl — ONE
+	// definition shared with the GPU field baker's compute shaders (sdf_field_cs / sdf_atlas_fill_cs /
+	// sdf_brick_classify_cs). The renderer packs brushes in the prop's local frame; this shader folds
+	// each world-space sample into that frame once (SdfDistWs below), so there is no world-space
+	// evaluator copy to keep in sync any more.
+	#include "sdf_eval.hlsl"
+
 	float3    g_vBoundsMin    < Attribute( "BoundsMin" ); >;
 	float3    g_vBoundsMax    < Attribute( "BoundsMax" ); >;
 	float3    g_vBoundsCenter < Attribute( "BoundsCenter" ); >;
 	float     g_flBoundsRadius < Attribute( "BoundsRadius" ); Default( 1.0 ); >;
-	// Object placement, so the pixel shader can re-base the triplanar projection from world into
-	// the prop's MODEL space (texture locked to the prop). The march itself stays in world space;
-	// only the surface-texturing coordinate frame changes. Assumes unit scale (rotation-only).
+	// Object placement — the world<->model fold. The ray marches in world space, but the brushes and
+	// the baked field live in the prop's LOCAL frame, so every field sample folds through this
+	// transform (and the triplanar projection re-bases through it too). Assumes unit scale: the
+	// transform is rigid, so the inverse rotation is the quat conjugate and distances are preserved.
 	float3    g_vModelOrigin   < Attribute( "ModelOrigin" ); >;
 	float4    g_vModelRotation < Attribute( "ModelRotation" ); Default4( 0.0, 0.0, 0.0, 1.0 ); >;
 	int       g_nMaxSteps   < Attribute( "MaxSteps" ); Default( 96 ); >;   // close-up step ceiling
@@ -213,451 +217,19 @@ PS
 		#define SDF_TILESX   16u
 		#define SDF_TILESY   16u
 
-	// --- SDF primitives (mirror of the C# Sdf evaluator) ---
-
-	float sdSphere( float3 p, float r ) { return length( p ) - r; }
-
-	// Ellipsoid with per-axis radii r (IQ approximation). Uniform r = sphere.
-	float sdEllipsoid( float3 p, float3 r )
-	{
-		r = max( r, 1e-3 );
-		float k0 = length( p / r );
-		float k1 = length( p / (r * r) );
-		return k1 > 1e-6 ? k0 * (k0 - 1.0) / k1 : -min( r.x, min( r.y, r.z ) );
-	}
-
-	float sdBox( float3 p, float3 b, float r )
-	{
-		r = max( 0.0, min( r, min( b.x, min( b.y, b.z ) ) ) );
-		float3 q = abs( p ) - b + r;
-		return length( max( q, 0.0 ) ) + min( max( q.x, max( q.y, q.z ) ), 0.0 ) - r;
-	}
-
-	float dot2( float2 v ) { return dot( v, v ); }
-
-	// Capped cylinder along Z. radius = B.x, half-height = B.z.
-	float sdCylinder( float3 p, float rad, float h, float r )
-	{
-		r = max( 0.0, min( r, min( rad, h ) ) );
-		float dx = length( p.xy ) - (rad - r);
-		float dz = abs( p.z ) - (h - r);
-		return min( max( dx, dz ), 0.0 ) + length( max( float2( dx, dz ), 0.0 ) ) - r;
-	}
-
-	// IQ capped cone, centred on Z. qx radial, qy axial; bottom radius r1 at qy=-h, top r2 at qy=+h.
-	float cappedCone( float qx, float qy, float h, float r1, float r2 )
-	{
-		float2 k2 = float2( r2 - r1, 2.0 * h );
-		float2 ca = float2( qx - min( qx, (qy < 0.0) ? r1 : r2 ), abs( qy ) - h );
-		float t = clamp( dot( float2( r2 - qx, h - qy ), k2 ) / dot( k2, k2 ), 0.0, 1.0 );
-		float2 cb = float2( qx - r2, qy - h ) + k2 * t;
-		float s = (cb.x < 0.0 && ca.y < 0.0) ? -1.0 : 1.0;
-		return s * sqrt( min( dot( ca, ca ), dot( cb, cb ) ) );
-	}
-
-	#define MAX_SLICE 0.95 // must match SdfBrush.MaxSlice (deepest cut still leaves a sliver)
-
-	// Cone (base radius R at z=-H, apex at +H), optionally SLICED flat by the slice fraction — the slice is
-	// part of the primitive (a frustum), so ONE Minkowski opening rounds every edge together: erode all faces
-	// (slant, base, cut) by r, exact capped-cone distance of the eroded trapezoid, dilate by r. The cut rim
-	// rounds exactly like the base rim and the flat survives any legal r. Unsliced (Rt = 0) this reproduces
-	// the classic pointed-cone formula exactly. Matches SdfBrush.ConeDistance.
-	float sdCone( float3 p, float R, float H, float rounding, float slice )
-	{
-		float qx = length( p.xy );
-
-		float s = clamp( slice, 0.0, MAX_SLICE );
-		float zcut = H * (1.0 - 2.0 * s); // top cap height (= +H when unsliced)
-		float Rt = R * s;                 // top cap radius (0 = pointed)
-		float hh = (zcut + H) * 0.5;      // frustum half-height
-		float zc0 = (zcut - H) * 0.5;     // frustum centre
-
-		if ( hh < 1e-4 || R < 1e-4 )
-			return length( float2( qx, p.z - zc0 ) ) - max( R, max( Rt, 1e-3 ) );
-
-		float L = sqrt( (R - Rt) * (R - Rt) + 4.0 * hh * hh ); // slant length
-		float k = (Rt - R) / (2.0 * hh);                       // slant slope dq/dz (< 0)
-		// Erosion limit: caps can't cross, eroded base radius can't go negative (= inradius when unsliced).
-		float r = clamp( rounding, 0.0, min( hh, 2.0 * hh * R / max( L + R - Rt, 1e-4 ) ) );
-
-		if ( r < 1e-4 )
-			return cappedCone( qx, p.z - zc0, hh, R, Rt );
-
-		// Erode: caps move in by r; the slant shifts horizontally by r/cos(tilt) = r·L/(2hh).
-		float dq = r * L / (2.0 * hh);
-		float zb = -H + r, zt = zcut - r;
-		float r1 = R + r * k - dq;  // eroded radius at the bottom cap
-		float r2 = Rt - r * k - dq; // eroded radius at the top cap
-
-		if ( r2 < 0.0 )
-		{
-			zt = (dq - R) / k - H; // slant meets the axis below the top cap — eroded shape is pointed
-			r2 = 0.0;              // (the classic zApex = H − r/sinB when unsliced)
-		}
-
-		if ( zt <= zb ) // eroded away entirely — the fully-rounded limit is a ball
-			return length( float2( qx, p.z - (zb + zt) * 0.5 ) ) - r;
-
-		return cappedCone( qx, p.z - (zb + zt) * 0.5, (zt - zb) * 0.5, r1, r2 ) - r;
-	}
-
-	// Exact signed distance to a 2D triangle from its three vertices (IQ). Componentwise min pairs
-	// nearest squared distance (.x) with an inside/outside sign from edge winding (.y).
-	float sdTriangle2D( float2 p, float2 p0, float2 p1, float2 p2 )
-	{
-		float2 e0 = p1 - p0, e1 = p2 - p1, e2 = p0 - p2;
-		float2 w0 = p - p0, w1 = p - p1, w2 = p - p2;
-		float2 pq0 = w0 - e0 * clamp( dot( w0, e0 ) / dot( e0, e0 ), 0.0, 1.0 );
-		float2 pq1 = w1 - e1 * clamp( dot( w1, e1 ) / dot( e1, e1 ), 0.0, 1.0 );
-		float2 pq2 = w2 - e2 * clamp( dot( w2, e2 ) / dot( e2, e2 ), 0.0, 1.0 );
-		float s = sign( e0.x * e2.y - e0.y * e2.x );
-		float2 d = min( min( float2( dot( pq0, pq0 ), s * (w0.x * e0.y - w0.y * e0.x) ),
-		                     float2( dot( pq1, pq1 ), s * (w1.x * e1.y - w1.y * e1.x) ) ),
-		                     float2( dot( pq2, pq2 ), s * (w2.x * e2.y - w2.y * e2.x) ) );
-		return -sqrt( d.x ) * sign( d.y );
-	}
-
-	float triInradius( float2 a, float2 b, float2 c )
-	{
-		float per = length( a - b ) + length( b - c ) + length( c - a );
-		float area = abs( (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y) ) * 0.5;
-		return per > 1e-5 ? 2.0 * area / per : 0.0;
-	}
-
-	// Inset vertex vi along its angle bisector so adjacent edges shift in by r (polygon inset).
-	float2 insetVertex( float2 vi, float2 n1, float2 n2, float r )
-	{
-		float2 a = normalize( n1 - vi ), b = normalize( n2 - vi );
-		float2 bis = a + b;
-		float bl = length( bis );
-		if ( bl < 1e-5 ) return vi;
-		bis /= bl;
-		float sinHalf = sqrt( max( (1.0 - dot( a, b )) * 0.5, 1e-6 ) );
-		return vi + bis * (r / sinHalf);
-	}
-
-	// Isosceles triangular prism: triangle in XY (apex (0,+hy), base corners (±wx,-hy)) extruded along
-	// Z to half-depth hz. Rounding insets the triangle then dilates by r (stays inside the silhouette).
-	float sdTriPrism( float3 p, float wx, float hy, float hz, float rounding )
-	{
-		wx = max( wx, 1e-3 ); hy = max( hy, 1e-3 );
-		float2 v0 = float2( 0.0, hy ), v1 = float2( -wx, -hy ), v2 = float2( wx, -hy );
-		float r = clamp( rounding, 0.0, min( triInradius( v0, v1, v2 ), hz ) );
-		if ( r > 1e-4 )
-		{
-			float2 i0 = insetVertex( v0, v1, v2, r ), i1 = insetVertex( v1, v0, v2, r ), i2 = insetVertex( v2, v0, v1, r );
-			v0 = i0; v1 = i1; v2 = i2;
-		}
-		float d2 = sdTriangle2D( p.xy, v0, v1, v2 );
-		float dz = abs( p.z ) - (hz - r);
-		return min( max( d2, dz ), 0.0 ) + length( max( float2( d2, dz ), 0.0 ) ) - r;
-	}
-
-	// IQ exact regular hexagon, a = apothem (centre to flat edge). Vertices on ±X (must match
-	// SdfBrush.Hexagon2D / CrossSectionOutline).
-	float sdHexagon2D( float2 p, float a )
-	{
-		const float3 k = float3( -0.86602540, 0.5, 0.57735027 );
-		p = abs( p );
-		p -= 2.0 * min( dot( k.xy, p ), 0.0 ) * k.xy;
-		p -= float2( clamp( p.x, -k.z * a, k.z * a ), a );
-		return length( p ) * sign( p.y );
-	}
-
-	// IQ exact regular pentagon, a = apothem, one vertex pointing +Y (IQ's original is flat-top/vertex-down,
-	// hence the Y negate) — must match SdfBrush.Pentagon2D / CrossSectionOutline.
-	float sdPentagon2D( float2 p, float a )
-	{
-		const float3 k = float3( 0.80901699, 0.58778525, 0.72654253 ); // cos36, sin36, tan36
-		p.y = -p.y; // vertex-up convention
-		p.x = abs( p.x );
-		p -= 2.0 * min( dot( float2( -k.x, k.y ), p ), 0.0 ) * float2( -k.x, k.y );
-		p -= 2.0 * min( dot( float2( k.x, k.y ), p ), 0.0 ) * float2( k.x, k.y );
-		p -= float2( clamp( p.x, -k.z * a, k.z * a ), a );
-		return length( p ) * sign( p.y );
-	}
-
-	// IQ exact 5-point star (sdStar, n = 5, m = 3), R = tip circumradius, one tip along +Y (must match
-	// SdfBrush.Star2D / CrossSectionOutline).
-	float sdStar2D( float2 p, float R )
-	{
-		const float an = 0.62831853;                        // PI/5
-		const float2 acs = float2( 0.80901699, 0.58778525 ); // (cos, sin) PI/5
-		const float2 ecs = float2( 0.5, 0.86602540 );        // (cos, sin) PI/3 — the edge direction
-		float bn = atan2( p.x, p.y );
-		bn -= 2.0 * an * floor( bn / (2.0 * an) );           // positive mod (fmod mirrors negatives)
-		bn -= an;
-		p = length( p ) * float2( cos( bn ), abs( sin( bn ) ) );
-		p -= R * acs;
-		p += ecs * clamp( -dot( p, ecs ), 0.0, R * acs.y / ecs.y );
-		return length( p ) * sign( p.x );
-	}
-
-	#define STAR_EDGE_FACTOR 0.40673664 // sin(60°−36°): star edge-to-centre / circumradius (SdfBrush.StarEdgeFactor)
-
-	// Extruded profile (shape 4): triangle (xs 0), 5-point star (1), regular hexagon (2). Triangle keeps the
-	// isosceles wx/hy params; star/hexagon are regular with circumradius wx. Rounding = erode the profile then
-	// dilate (Minkowski opening), so it stays inside the sharp silhouette — matches SdfBrush.ExtrudedDistance.
-	float sdExtruded( float3 p, float wx, float hy, float hz, float rounding, int xs )
-	{
-		if ( xs == 1 )
-		{
-			float R = max( wx, 1e-3 );
-			float r = clamp( rounding, 0.0, min( R * STAR_EDGE_FACTOR, hz ) );
-			float d2 = sdStar2D( p.xy, R - r / STAR_EDGE_FACTOR ); // uniform scale = exact all-edges inset
-			float dz = abs( p.z ) - (hz - r);
-			return min( max( d2, dz ), 0.0 ) + length( max( float2( d2, dz ), 0.0 ) ) - r;
-		}
-		if ( xs == 2 )
-		{
-			float a = max( wx, 1e-3 ) * 0.86602540; // apothem from circumradius
-			float r = clamp( rounding, 0.0, min( a, hz ) );
-			float d2 = sdHexagon2D( p.xy, a - r );
-			float dz = abs( p.z ) - (hz - r);
-			return min( max( d2, dz ), 0.0 ) + length( max( float2( d2, dz ), 0.0 ) ) - r;
-		}
-		if ( xs == 3 )
-		{
-			float a = max( wx, 1e-3 ) * 0.80901699; // apothem from circumradius
-			float r = clamp( rounding, 0.0, min( a, hz ) );
-			float d2 = sdPentagon2D( p.xy, a - r );
-			float dz = abs( p.z ) - (hz - r);
-			return min( max( d2, dz ), 0.0 ) + length( max( float2( d2, dz ), 0.0 ) ) - r;
-		}
-		return sdTriPrism( p, wx, hy, hz, rounding );
-	}
-
-	// Planar slice for the sphere (the cone folds its slice into sdCone): intersect with the half-space below
-	// z = halfH·(1 − 2·slice), the rim rounded by the Round slider (erode shape + plane by r, rounded-corner
-	// join, dilate by r — the same combine the extrusions use). Matches SdfBrush.SliceRound. Callers pre-clamp
-	// r so the fillet fits the cut disc (see SdfShapeDist).
-	float sliceRound( float d, float z, float halfH, float slice, float rounding )
-	{
-		if ( slice <= 0.0 ) return d;
-		float zcut = halfH * (1.0 - 2.0 * min( slice, MAX_SLICE ));
-		float dz = z - zcut;
-		float r = clamp( rounding, 0.0, (zcut + halfH) * 0.5 ); // ≤ half the remaining thickness
-		if ( r <= 1e-3 ) return max( d, dz ); // hard slice
-		float2 w = float2( d, dz ) + r;
-		return min( max( w.x, w.y ), 0.0 ) + length( max( w, 0.0 ) ) - r;
-	}
-
-	// Extruded TEXT: the 2D profile is the brush's baked distance field (one atlas slot, texel units), sampled
-	// at the local XY and pushed through the same rounded extrusion as the analytic profiles. Outside the text
-	// quad the clamped sample is repaired with the quad distance (both are lower bounds on the true glyph
-	// distance; max keeps marching safe). Round insets the glyphs — a real distance field, so letter edges and
-	// corners round like clay. Matches SdfBrush.TextDistance.
-	#define TEXT_SLOT_W 256.0 // must match SdfTextData.Width/Height and SdfTextSdf.MaxSlots
-	#define TEXT_SLOT_H 128.0
-	#define TEXT_SLOTS  8.0
-
-	float sdText( float3 p, float3 he, int slot, float rounding )
-	{
-		float2 h2 = max( he.xy, 1e-3 );
-		float2 uv = saturate( p.xy / (2.0 * h2) + 0.5 );
-		uv.y = 1.0 - uv.y; // bitmap rows run top-down
-
-		// Half-texel-inset remap into this brush's atlas slot, so bilinear never bleeds into a neighbour slot.
-		float2 st = float2( (uv.x * (TEXT_SLOT_W - 1.0) + 0.5) / TEXT_SLOT_W,
-		                    ((uv.y * (TEXT_SLOT_H - 1.0) + 0.5) / TEXT_SLOT_H + slot) / TEXT_SLOTS );
-		float ts = min( 2.0 * h2.x / TEXT_SLOT_W, 2.0 * h2.y / TEXT_SLOT_H ); // world per texel (conservative)
-		float d2 = g_tTextSdf.SampleLevel( g_sTextSdf, st, 0 ).r * ts;
-
-		// Outside the quad there's no field data (the sample is edge-clamped). Nearest glyph is inward of the
-		// clamp point while p is outward of it, so those legs can't oppose: d_true² ≥ dq² + sample². This
-		// Pythagorean bound is tight and SMOOTH across the rim — a cruder max() bound kinks the field along the
-		// quad rectangle, which reads as a crease wherever the rim blends with nearby clay.
-		float2 q = abs( p.xy ) - h2;
-		float dq = length( max( q, 0.0 ) );
-		if ( dq > 0.0 )
-		{
-			float d2o = max( d2, 0.0 );
-			d2 = sqrt( dq * dq + d2o * d2o );
-		}
-
-		float hz = max( he.z, 1e-3 );
-		float r = clamp( rounding, 0.0, hz );
-		float d2e = d2 + r; // erode the glyphs; the -r below dilates — rounds every letter edge
-		float dz = abs( p.z ) - (hz - r);
-		return min( max( d2e, dz ), 0.0 ) + length( max( float2( d2e, dz ), 0.0 ) ) - r;
-	}
-
-	float SdfShapeDist( float shapeId, float3 pl, float4 B, float rr, int xs, float slice )
-	{
-		int shape = (int)(shapeId + 0.5);
-		if ( shape == 1 ) return sdBox( pl, B.xyz, rr );
-		if ( shape == 2 ) return sdCylinder( pl, B.x, B.z, rr );
-		if ( shape == 3 )
-		{
-			pl.z -= B.z; // base-pivot cone: Position sits on the base; shift into the centred cone frame
-			return sdCone( pl, B.x, B.z, rr, slice ); // slice is part of the primitive (rounded frustum)
-		}
-		if ( shape == 4 ) return sdExtruded( pl, B.x, B.y, B.z, rr, xs );
-		// Shape 5 = Spline is handled in OneBrushDist (it reads the control-point pool, not this local-space
-		// path), so it never reaches here — return empty as a safety fallback rather than a wrong ellipsoid.
-		if ( shape == 5 ) return 1e9;
-		if ( shape == 6 ) return sdText( pl, B.xyz, xs, rr ); // xs lane doubles as the text atlas slot
-		// Sphere/ellipsoid: rim fillet capped by the CAP DEPTH (material under the cut plane, 2·rz·slice) and
-		// the shape's radii — past the depth the fillet consumes the flat and the top sinks below the cut. At
-		// the limit the slice rounds into a smooth dome kissing the plane (SdfBrush.SphereSliceMaxRounding).
-		float ss = min( max( slice, 0.0 ), MAX_SLICE );
-		float rs = min( rr, min( min( B.x, min( B.y, B.z ) ), 2.0 * max( B.z, 1e-3 ) * ss ) );
-		return sliceRound( sdEllipsoid( pl, B.xyz ), pl.z, max( B.z, 1e-3 ), slice, rs );
-	}
-
-	float smin( float a, float b, float k )
-	{
-		if ( k <= 0.0 ) return min( a, b );
-		float h = saturate( 0.5 + 0.5 * (b - a) / k );
-		return lerp( b, a, h ) - k * h * (1.0 - h);
-	}
-
-	float ssub( float d, float s, float k )
-	{
-		if ( k <= 0.0 ) return max( d, -s );
-		float h = saturate( 0.5 - 0.5 * (d + s) / k );
-		return lerp( d, -s, h ) + k * h * (1.0 - h);
-	}
-
-	// Rotate vector v by quaternion q.
-	float3 qrot( float4 q, float3 v )
-	{
-		return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
-	}
-
-	// World <-> object(model) space, for re-basing the triplanar projection onto the prop. Rigid
-	// (rotation + translation, unit scale assumed), so the inverse rotation is the quat conjugate.
+	// World <-> object(model) space — the fold every field sample and the triplanar projection go
+	// through. Rigid (rotation + translation, unit scale), so the inverse rotation is the quat
+	// conjugate and distances survive the fold unchanged. (qrot comes from sdf_eval.hlsl.)
 	float3 WorldToModelPos( float3 wp )  { return qrot( float4( -g_vModelRotation.xyz, g_vModelRotation.w ), wp - g_vModelOrigin ); }
 	float3 WorldToModelDir( float3 wd )  { return qrot( float4( -g_vModelRotation.xyz, g_vModelRotation.w ), wd ); }
 	float3 ModelToWorldPos( float3 mp )  { return qrot( g_vModelRotation, mp ) + g_vModelOrigin; }
 		float3 ModelToWorldDir( float3 md )  { return qrot( g_vModelRotation, md ); }
 
-	#define TEXELS_PER_BRUSH 7 // must match SdfRaymarchRenderer.TexelsPerBrush (slots 5/6 = world AABB min/max)
-	float4 LoadBrush( int k, int slot ) { return g_tBrushData.Load( int3( k * TEXELS_PER_BRUSH + slot, 0, 0 ) ); }
-
-	// Signed distance to an axis-aligned box [mn,mx]: 0 inside, positive outside. The per-brush cull bound.
-	float sdAabb( float3 p, float3 mn, float3 mx )
-	{
-		float3 c = (mn + mx) * 0.5, e = (mx - mn) * 0.5;
-		float3 q = abs( p - c ) - e;
-		return length( max( q, 0.0 ) ) + min( max( q.x, max( q.y, q.z ) ), 0.0 );
-	}
-
-		float4 LoadSplinePoint( int i ) { return g_tSplineData.Load( int3( i, 0, 0 ) ); } // xyz world pos, w radius
-
-		// IQ exact signed distance to a rounded cone (tapered capsule) from sphere a (a.xyz, a.w) to b.
-		float sdRoundCone( float3 p, float4 a, float4 b )
+		// Sample the baked field at LOCAL point lp (the field is baked in the prop's local frame — the
+		// caller already folded): map to a UVW and do one trilinear fetch. Samples sit on the inclusive
+		// corners, so the 0..1 position is stretched across (Dims-1) cells and offset by the half-texel.
+		float SampleFieldTex( float3 lp )
 		{
-			float3 ba = b.xyz - a.xyz;
-			float l2 = dot( ba, ba );
-			if ( l2 < 1e-6 ) return length( p - a.xyz ) - max( a.w, b.w ); // coincident — larger sphere
-
-			float r1 = a.w, r2 = b.w;
-			float rr = r1 - r2;
-			float a2 = l2 - rr * rr;
-			float il2 = 1.0 / l2;
-
-			float3 pa = p - a.xyz;
-			float y = dot( pa, ba );
-			float z = y - l2;
-			float3 xv = pa * l2 - ba * y;
-			float x2 = dot( xv, xv );
-			float y2 = y * y * l2;
-			float z2 = z * z * l2;
-
-			float k = sign( rr ) * rr * rr * x2;
-			if ( sign( z ) * a2 * z2 > k ) return sqrt( x2 + z2 ) * il2 - r2;
-			if ( sign( y ) * a2 * y2 < k ) return sqrt( x2 + y2 ) * il2 - r1;
-			return ( sqrt( x2 * a2 * il2 ) + y * rr ) * il2 - r1;
-		}
-
-		#define SPLINE_TESS 8 // sub-segments per span when curved (must match SdfBrush.SplineTessellation)
-
-		// Hermite/Catmull-Rom point (xyz pos, w radius) at t along span p1→p2; tangents from p0/p3 scaled by
-		// curvature (0 = straight, 1 = full Catmull-Rom). Matches SdfBrush.CatmullRomPoint.
-		float4 CatmullRomPoint( float4 p0, float4 p1, float4 p2, float4 p3, float t, float curv )
-		{
-			float t2 = t * t, t3 = t2 * t;
-			float h00 = 2.0 * t3 - 3.0 * t2 + 1.0;
-			float h10 = t3 - 2.0 * t2 + t;
-			float h01 = -2.0 * t3 + 3.0 * t2;
-			float h11 = t3 - t2;
-
-			float4 m1 = (p2 - p0) * (0.5 * curv);
-			float4 m2 = (p3 - p1) * (0.5 * curv);
-			float4 r = h00 * p1 + h10 * m1 + h01 * p2 + h11 * m2;
-			r.w = max( r.w, 0.1 ); // curve can overshoot — keep radius positive
-			return r;
-		}
-
-		// Variable-radius tube through count control points starting at `off` in the shared pool. Straight
-		// (curv 0) → one rounded cone per span; curved → SPLINE_TESS Catmull-Rom sub-segments per span. p and
-		// the points are in WORLD space (baked there). Matches SdfBrush.SplineDistance.
-		float SplineDist( float3 p, int off, int count, float curv, bool closed )
-		{
-			if ( count < 1 ) return 1e9;
-			if ( count == 1 ) { float4 a = LoadSplinePoint( off ); return length( p - a.xyz ) - a.w; }
-
-			bool loop = closed && count >= 3; // a closed ring needs >= 3 points; else treat as open
-			int segs = loop ? count : count - 1;
-			int k = curv <= 1e-4 ? 1 : SPLINE_TESS;
-			float d = 1e9;
-			[loop] for ( int i = 0; i < segs; i++ )
-			{
-				// Catmull-Rom control indices: closed wraps modularly (last→first); open clamps the phantoms.
-				int j0 = loop ? (i - 1 + count) % count : (i > 0 ? i - 1 : 0);
-				int j2 = loop ? (i + 1) % count : i + 1;
-				int j3 = loop ? (i + 2) % count : (i < count - 2 ? i + 2 : count - 1);
-				float4 p0 = LoadSplinePoint( off + j0 );
-				float4 p1 = LoadSplinePoint( off + i );
-				float4 p2 = LoadSplinePoint( off + j2 );
-				float4 p3 = LoadSplinePoint( off + j3 );
-
-			if ( g_nSdfCull != 0 )
-			{
-				// Per-span cull: a bounding sphere around this span's tube gives a lower bound on the distance
-				// to it; if that's already >= the best so far, this span's cone(s) can't lower the min — skip
-				// them. Generous margins (chord half-length + max radius + a curve bulge) keep the curved tube
-				// inside the sphere, so the cull never removes a span that could actually be nearest.
-				float3 sc = (p1.xyz + p2.xyz) * 0.5;
-				float sr = 0.5 * length( p2.xyz - p1.xyz ) + max( p1.w, p2.w );
-				if ( curv > 1e-4 )
-				{
-					sr += 0.5 * curv * max( length( p2.xyz - p0.xyz ), length( p3.xyz - p1.xyz ) ); // position bulge
-					sr += 0.5 * curv * max( abs( p2.w - p0.w ), abs( p3.w - p1.w ) );                 // radius overshoot
-				}
-				if ( length( p - sc ) - sr >= d )
-					continue;
-			}
-
-				float4 prev = p1;
-				[loop] for ( int s = 1; s <= k; s++ )
-				{
-					float4 cur = CatmullRomPoint( p0, p1, p2, p3, s / (float)k, curv );
-					d = min( d, sdRoundCone( p, prev, cur ) );
-					prev = cur;
-				}
-			}
-			return d;
-		}
-
-		// Bare distance to one brush at world point wp (no symmetry). Spline (shape 5) is evaluated directly
-		// in world from its control-point pool (offset=B.x, count=B.y); every other shape is transformed into
-		// the brush's local frame first. xs = extruded cross-section id (slot 5 .w); slice = planar top-slice
-		// fraction (slot 6 .w).
-		float OneBrushDist( float3 wp, float4 A, float4 B, float4 C, float rr, int xs, float slice )
-		{
-			if ( (int)(A.w + 0.5) == 5 )
-				return SplineDist( wp, (int)(B.x + 0.5), (int)(B.y + 0.5), B.z, rr > 0.5 ); // B.z = curvature, rr (E.x) = closed flag
-			return SdfShapeDist( A.w, qrot( float4( -C.xyz, C.w ), wp - A.xyz ), B, rr, xs, slice );
-		}
-
-		// Sample the baked field at world point p: fold into the prop's local frame (where the field was
-		// baked), map to a UVW, and do one trilinear fetch. Samples sit on the inclusive corners, so the
-		// 0..1 position is stretched across (Dims-1) cells and offset by the half-texel before sampling.
-		float SampleFieldTex( float3 p )
-		{
-			float3 lp = WorldToModelPos( p );
 			float3 t  = (lp - g_vFieldMin) / max( g_vFieldMax - g_vFieldMin, 1e-4 );
 			float3 uvw = (t * (g_vFieldDims - 1.0) + 0.5) / g_vFieldDims; // sampler CLAMP guards t outside [0,1]
 			return g_tField.SampleLevel( g_sField, uvw, 0 ).r;
@@ -668,16 +240,15 @@ PS
 		// cheap guide and take a big step with NO brick lookup. Only once within ~2 bricks of the surface do we look
 		// up the point's brick — occupied → its high-res atlas tile (the real surface); empty → keep stepping on the
 		// guide. The brick grid is sized by g_vSurfaceDims (high), independent of the guide texture's resolution.
-		float SampleFieldSparse( float3 p )
+		float SampleFieldSparse( float3 lp )
 		{
-			float guide = SampleFieldTex( p );  // low-res guide (g_tField); one trilinear fetch, like the dense path
+			float guide = SampleFieldTex( lp ); // low-res guide (g_tField); one trilinear fetch, like the dense path
 			float3 scell = (g_vFieldMax - g_vFieldMin) / max( g_vSurfaceDims - 1.0, 1.0 );
 			float  nearBand = 2.0 * SDF_BLOCK * max( scell.x, max( scell.y, scell.z ) ); // ~2 bricks, world units
 			if ( guide > nearBand )
 				return guide;                   // far from the surface: cheap guide step, no brick lookup
 
 			// Near the surface: locate the brick on the HIGH-RES grid and consult the atlas.
-			float3 lp    = WorldToModelPos( p );
 			float3 fv    = (lp - g_vFieldMin) / scell;     // continuous surface-voxel coordinate
 			int3   bd    = (int3)( g_vBrickDims + 0.5 );
 			int3   brick = (int3)floor( fv / SDF_BLOCK );
@@ -697,36 +268,6 @@ PS
 			float3 av  = (float3)tc * SDF_TILESIZE + vit;
 			float3 uvw = ( av + 0.5 ) / g_vAtlasDims;
 			return g_tAtlas.SampleLevel( g_sField, uvw, 0 ).r;
-		}
-
-		// Distance to one brush's primitive at world point p, including its mirror-symmetry copies.
-		// A/B/C are the packed pos+shape / size+blend / quat slots; `rr` is rounding; `mask` is the
-		// mirror bitmask (1=X, 2=Y, 4=Z). Mirroring happens across the SCULPTURE origin, so the world
-		// point is folded into model space, reflected, and folded back — matching SdfBrush.Distance.
-		float BrushDist( float3 p, float4 A, float4 B, float4 C, float rr, int mask, int xs, float slice )
-		{
-			float bd = OneBrushDist( p, A, B, C, rr, xs, slice );
-			if ( mask == 0 )
-				return bd;
-
-			// Union the primitive with its reflection across every enabled sculpture-origin plane.
-			// Enumerate each sign combination of the enabled axes (1, 3, or 7 extra copies); the seam
-			// fuses with the brush's own blend (B.w), exactly like the CPU evaluator.
-			float3 L = WorldToModelPos( p );
-			int nx = (mask & 1) ? 1 : 0;
-			int ny = (mask & 2) ? 1 : 0;
-			int nz = (mask & 4) ? 1 : 0;
-			[loop] for ( int sx = 0; sx <= nx; sx++ )
-			[loop] for ( int sy = 0; sy <= ny; sy++ )
-			[loop] for ( int sz = 0; sz <= nz; sz++ )
-			{
-				if ( sx + sy + sz == 0 )
-					continue; // the un-mirrored primitive, already in bd
-
-				float3 Lm = L * float3( sx ? -1.0 : 1.0, sy ? -1.0 : 1.0, sz ? -1.0 : 1.0 );
-				bd = smin( bd, OneBrushDist( ModelToWorldPos( Lm ), A, B, C, rr, xs, slice ), B.w );
-			}
-			return bd;
 		}
 
 	// --- Plasticine displacement noise (cheap hash-based 3D value noise, no texture fetch) ---
@@ -755,64 +296,48 @@ PS
 	// Signed displacement (centred on 0): big lump + a half-scale octave for an uneven, hand-pressed
 	// feel. Deliberately LOW frequency — fine grain is left to the triplanar normal map, and fine
 	// displacement would just alias against the SdfNormal finite-difference epsilon (0.05) anyway.
-	// Sampled in MODEL space (like the triplanar surface), so the lumps are locked to the prop and
+	// Takes the LOCAL point (like the triplanar surface), so the lumps are locked to the prop and
 	// move/rotate with it instead of the prop sliding through a fixed world-space noise field. The
 	// transform is rigid, so the field's gradient magnitude (the L safety factor below) is unchanged.
-	float Displacement( float3 p )
+	float Displacement( float3 lp )
 	{
-		float3 x = WorldToModelPos( p ) * g_flDispFreq;
+		float3 x = lp * g_flDispFreq;
 		float n = vnoise( x ) * 0.67 + vnoise( x * 2.03 + 11.7 ) * 0.33; // ~[0,1]
 		return (n * 2.0 - 1.0) * g_flDispAmp;
 	}
 
-	float SdfDist( float3 p )
+	// Combined field at WORLD point p: fold once into the prop's LOCAL frame — where the brushes are
+	// packed and the field is baked — and evaluate there. The transform is rigid (unit scale), so the
+	// local distance IS the world distance and sphere-trace steps along the world ray stay valid. The
+	// analytic loop is the shared sdf_eval.hlsl SdfDist — the same code the field baker dispatches.
+	float SdfDistWs( float3 p )
 	{
+		float3 lp = WorldToModelPos( p );
 	#if ( D_FIELD_TEX )
 		// Cached path: one trilinear fetch of the baked field instead of the per-brush loop. Sparse-atlas vs dense
 		// volume is a RUNTIME branch (g_nSdfSparse), not a combo, to avoid a 7th DynamicCombo.
-		float d = g_nSdfSparse != 0 ? SampleFieldSparse( p ) : SampleFieldTex( p );
+		float d = g_nSdfSparse != 0 ? SampleFieldSparse( lp ) : SampleFieldTex( lp );
 	#else
-		float d = 1e9;
-		[loop]
-		for ( int k = 0; k < g_nBrushCount; k++ )
-		{
-			float4 A = LoadBrush( k, 0 ); // pos.xyz, shape (0 sphere / 1 box)
-			float4 B = LoadBrush( k, 1 ); // size.xyz, blend
-			float4 C = LoadBrush( k, 2 ); // rotation quat xyzw
-			float4 D = LoadBrush( k, 3 ); // color.rgb, op (0 add / 1 subtract)
-			float4 E = LoadBrush( k, 4 ); // rounding .x, metalness .y, roughness .z, mirror mask .w
-			float4 F = LoadBrush( k, 5 ); // cull AABB min .xyz, extruded cross-section id .w
-			float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
-
-			// AABB early-out (runtime-toggled by g_nSdfCull, not a combo).
-			// Skip this brush when it can't change the running distance d. sdAabb is a safe lower bound on the
-			// brush distance (the packed box covers the primitive, mirror copies and blend padding).
-			// Add: a brush only matters within blend of becoming the new nearest (bd >= d+k). Subtract: a
-			// carver only matters while material is within blend. One threshold covers both: k+d for add,
-			// k-d for subtract (a single k+d over-culls subtracts where d is negative, i.e. deep inside).
-			if ( g_nSdfCull != 0 && sdAabb( p, F.xyz, G.xyz ) > (D.w < 0.5 ? d + B.w : B.w - d) )
-				continue;
-
-			float bd = BrushDist( p, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
-
-			d = (D.w < 0.5) ? smin( d, bd, B.w ) : ssub( d, bd, B.w );
-		}
+		float d = SdfDist( lp );
 	#endif
 	#if ( D_DISPLACE )
 		// Subtracting noise along the field pushes the whole iso-surface in/out -> bumpy silhouette.
 		// SdfNormal differences this same field, so shading + the depth-prepass normal track the lumps.
-		d -= Displacement( p );
+		d -= Displacement( lp );
 	#endif
 		return d;
 	}
 
 	struct SdfSurface { float3 col; float metal; float rough; };
 
-	// Re-runs the union, blending colour AND per-brush metalness/roughness by the same smooth-min
-	// factor as the geometry, so merged brushes share smooth material seams instead of a hard
-	// nearest-brush boundary (a sharp specular edge reads far worse than a colour edge).
+	// Re-runs the union at the WORLD hit point (folded local once, like SdfDistWs), blending colour AND
+	// per-brush metalness/roughness by the same smooth-min factor as the geometry, so merged brushes share
+	// smooth material seams instead of a hard nearest-brush boundary (a sharp specular edge reads far
+	// worse than a colour edge). Runs ONCE per pixel at the hit, so it always walks the analytic brushes
+	// (sdf_eval.hlsl's BrushDist) even on the D_FIELD_TEX path — the field has no colour.
 	SdfSurface SdfShade( float3 p )
 	{
+		float3 lp = WorldToModelPos( p );
 		float d = 1e9;
 		SdfSurface s;
 		s.col = float3( 1, 1, 1 ); s.metal = 0.0; s.rough = 1.0; // empty-space material; first brush overrides
@@ -828,14 +353,14 @@ PS
 			float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
 
 			// AABB early-out (runtime-toggled by g_nSdfCull, not a combo).
-			// Same early-out as SdfDist: a far brush can't change the blended distance/colour here either.
-			// Add: a brush only matters within blend of becoming the new nearest (bd >= d+k). Subtract: a
-			// carver only matters while material is within blend. One threshold covers both: k+d for add,
-			// k-d for subtract (a single k+d over-culls subtracts where d is negative, i.e. deep inside).
-			if ( g_nSdfCull != 0 && sdAabb( p, F.xyz, G.xyz ) > (D.w < 0.5 ? d + B.w : B.w - d) )
+			// Same early-out as the shared SdfDist: a far brush can't change the blended distance/colour
+			// here either. Add: a brush only matters within blend of becoming the new nearest (bd >= d+k).
+			// Subtract: a carver only matters while material is within blend. One threshold covers both:
+			// k+d for add, k-d for subtract (a single k+d over-culls subtracts where d is negative).
+			if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > (D.w < 0.5 ? d + B.w : B.w - d) )
 				continue;
 
-			float bd = BrushDist( p, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
+			float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
 
 			float kk = B.w;
 
@@ -890,9 +415,9 @@ PS
 		e = max( g_flFieldNormalScale * max( cell.x, max( cell.y, cell.z ) ), 0.05 );
 	#endif
 		float3 g = float3(
-			SdfDist( p + float3( e, 0, 0 ) ) - SdfDist( p - float3( e, 0, 0 ) ),
-			SdfDist( p + float3( 0, e, 0 ) ) - SdfDist( p - float3( 0, e, 0 ) ),
-			SdfDist( p + float3( 0, 0, e ) ) - SdfDist( p - float3( 0, 0, e ) ) );
+			SdfDistWs( p + float3( e, 0, 0 ) ) - SdfDistWs( p - float3( e, 0, 0 ) ),
+			SdfDistWs( p + float3( 0, e, 0 ) ) - SdfDistWs( p - float3( 0, e, 0 ) ),
+			SdfDistWs( p + float3( 0, 0, e ) ) - SdfDistWs( p - float3( 0, 0, e ) ) );
 		// Guard the gradient: at grazing/silhouette hits the central difference can collapse to ~0, and
 		// normalize(0) is NaN. A NaN here lands in the SHARED depth+normals prepass and poisons every
 		// screen-space pass that samples it (noise over all SDFs at once). Fall back to facing the camera.
@@ -917,11 +442,11 @@ PS
 		e = max( e, 2.0 * max( cell.x, max( cell.y, cell.z ) ) );
 	#endif
 		float2 k = float2( 1.0, -1.0 );
-		float t1 = SdfDist( p + k.xyy * e );
-		float t2 = SdfDist( p + k.yyx * e );
-		float t3 = SdfDist( p + k.yxy * e );
-		float t4 = SdfDist( p + k.xxx * e );
-		return (t1 + t2 + t3 + t4 - 4.0 * SdfDist( p )) / e;
+		float t1 = SdfDistWs( p + k.xyy * e );
+		float t2 = SdfDistWs( p + k.yyx * e );
+		float t3 = SdfDistWs( p + k.yxy * e );
+		float t4 = SdfDistWs( p + k.xxx * e );
+		return (t1 + t2 + t3 + t4 - 4.0 * SdfDistWs( p )) / e;
 	}
 
 	// --- Transmission / subsurface (D_TRANSMISSION). The whole reason this is cheap: meshes need a
@@ -933,7 +458,7 @@ PS
 	// direction-agnostic, nearly free. Clamped to the probe depth — a single tap can't see past it.
 	float SdfThicknessTap( float3 p, float3 N )
 	{
-		return clamp( -SdfDist( p - N * g_flTransProbe ), 0.0, g_flTransProbe );
+		return clamp( -SdfDistWs( p - N * g_flTransProbe ), 0.0, g_flTransProbe );
 	}
 
 	// Short march toward the light: sum the length spent inside the solid between the surface and the
@@ -949,7 +474,7 @@ PS
 		[loop]
 		for ( int s = 0; s < TRANS_MARCH_STEPS; s++ )
 		{
-			if ( SdfDist( p + L * t ) < 0.0 )
+			if ( SdfDistWs( p + L * t ) < 0.0 )
 				inside += stepLen;
 			t += stepLen;
 		}
@@ -984,7 +509,7 @@ PS
 		m.Emission += transColor * lightColor * ( backlit * g_flTransScale + ambient ) * atten * lightMask;
 	}
 
-	// p is the raw world hit (the frame SdfDist marches in); m.WorldPosition / m.ScreenPosition are
+	// p is the raw world hit (the frame SdfDistWs marches in); m.WorldPosition / m.ScreenPosition are
 	// what the engine's shadow + light queries expect (camera-relative + the high-precision offset).
 	void ApplyTransmission( inout Material m, float3 p, float3 viewDir )
 	{
@@ -1185,7 +710,7 @@ PS
 		[loop]
 		for ( int s = 0; s < maxSteps; s++ )
 		{
-			float d = SdfDist( ro + rd * t );
+			float d = SdfDistWs( ro + rd * t );
 			if ( d < eps ) { hitP = ro + rd * ( t + d ); return true; } // refine onto surface (d~=0), not the eps-shell: kills field-path contour banding
 			t += d * stepScale;
 			if ( t > tExit ) break;

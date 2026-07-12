@@ -34,6 +34,10 @@
 	/// <summary>Fires with the new value (in Min..Max) as the user presses / drags.</summary>
 	[Parameter] public Action<float> OnInput { get; set; }
 
+	/// <summary>Fires once when the gesture ends (drag release, or a plain click's release) — the moment for the
+	/// owner to COMMIT what <see cref="OnInput"/> only previewed.</summary>
+	[Parameter] public Action OnCommit { get; set; }
+
 	Panel Track { get; set; }
 
 	// Guarded exponent — never 0/negative (would divide-by-zero / invert the curve).
@@ -109,10 +113,18 @@
 
 	// Drag release ends the scrub. The capture overlay keeps the cursor over an interactive surface, so this
 	// fires reliably even when you let go out over the 3D scene.
-	protected override void OnDragEnd( DragEvent e ) => Pressed = Dragging = false;
+	protected override void OnDragEnd( DragEvent e )
+	{
+		Pressed = Dragging = false;
+		OnCommit?.Invoke();
+	}
 
 	// Press-release without a drag (a plain click on the track): no OnDragEnd fires, so clear the press here.
-	protected override void OnClick( MousePanelEvent e ) => Pressed = false;
+	protected override void OnClick( MousePanelEvent e )
+	{
+		Pressed = false;
+		OnCommit?.Invoke();
+	}
 
 	// Re-render when the inbound value or range changes (the gizmo / another control can move blend/round too).
 	protected override int BuildHash() => HashCode.Combine( Label, Value, Min, Max, Curve );

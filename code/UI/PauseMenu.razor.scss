@@ -43,3 +43,13 @@
 	// instead of the left edge.
 	.menu-button { transform-origin: center center; }
 }
+
+// The host's "leaving ends the game for everyone" warning, above the Leave/Cancel pair.
+.confirm-note
+{
+	color: #fff3e0;
+	font-size: 24px;
+	text-shadow: 0px 2px 4px rgba( 0, 0, 0, 0.6 );
+	margin-bottom: 12px;
+	text-align: center;
+}

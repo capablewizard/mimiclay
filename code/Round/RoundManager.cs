@@ -43,15 +43,17 @@ public sealed class RoundManager : Component, IRoundContext
 	/// (comma-separated guids). Written by <see cref="LobbyController"/>, read in <see cref="AssignRoles"/>.</summary>
 	public const string HunterIdsKey = "r.hids";
 
+	// Scoring + debug config. NOT [Property]: this component is only ever code-created by RoundManagerSpawner
+	// (never scene-placed), so the inspector never sees it — author these on the SPAWNER, which copies them here.
 	/// <summary>Points a hunter earns per prop found.</summary>
-	[Property, Group( "Scoring" )] public int FindReward { get; set; } = 50;
+	public int FindReward { get; set; } = 50;
 	/// <summary>Base points a surviving prop earns each second (before the size weighting — see the scoring stub).</summary>
-	[Property, Group( "Scoring" )] public float PropPointsPerSecond { get; set; } = 1f;
+	public float PropPointsPerSecond { get; set; } = 1f;
 
 	/// <summary>DEBUG: everyone spawns as a prop and the Hide phase never ends — endless time to sculpt + test hiding,
 	/// no hunters, no round progression. Set on <see cref="RoundManagerSpawner"/> (it's the editor-placed object) and
 	/// copied here. Leave off for real play.</summary>
-	[Property, Group( "Debug" )] public bool DebugSoloHide { get; set; }
+	public bool DebugSoloHide { get; set; }
 
 	// ── Networked state ───────────────────────────────────────────────────────────────────────────────────
 	// This manager is NetworkSpawn'd as a NetworkMode.Object by RoundManagerSpawner (NOT scene-placed), so [Sync]
@@ -96,7 +98,9 @@ public sealed class RoundManager : Component, IRoundContext
 	// ── IRoundContext (for the phase-agnostic HUD) ───────────────────────────────────────────────────────────
 	RoundPhase IRoundContext.Phase => Phase;
 	float IRoundContext.TimeRemaining => MathF.Max( 0f, PhaseEndsAt );
-	bool IRoundContext.HasTimer => true; // every in-map phase is timed
+	// Every in-map phase is timed — except DebugSoloHide's endless Hide, whose 999999 s would otherwise
+	// render as a "16666:39" clock.
+	bool IRoundContext.HasTimer => !(DebugSoloHide && Phase == RoundPhase.Hide);
 
 	protected override void OnEnabled()
 	{

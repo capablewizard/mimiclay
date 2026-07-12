@@ -34,6 +34,10 @@
 	/// <summary>Fires with the new colour as the user presses / drags either handle.</summary>
 	[Parameter] public Action<Color> OnInput { get; set; }
 
+	/// <summary>Fires once when the gesture ends (drag release, or a plain click's release) — the moment for the
+	/// owner to COMMIT what <see cref="OnInput"/> only previewed. Same contract as ClaySlider.OnCommit.</summary>
+	[Parameter] public Action OnCommit { get; set; }
+
 	/// <summary>Wheel diameter in design px (the panel is square).</summary>
 	[Parameter] public float Size { get; set; } = 190f;
 
@@ -129,6 +133,7 @@
 	{
 		Pressed = Dragging = false;
 		_zone = Zone.None;
+		OnCommit?.Invoke();
 	}
 
 	// Press-release without a drag: no OnDragEnd fires, so clear the press here (mirrors ClaySlider).
@@ -136,6 +141,7 @@
 	{
 		Pressed = false;
 		_zone = Zone.None;
+		OnCommit?.Invoke();
 	}
 
 	// Cursor in wheel space: centre (0,0), edge radius 1. MousePosition and Box.Rect are BOTH real screen px

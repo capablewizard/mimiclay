@@ -241,14 +241,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		_orbit.Angles = new Angles( 15f, EyeAngles.yaw, 0f );
 		_orbit.Distance = CameraDistance;
 
-		_session = Components.Create<SculptEditSession>();
-		_session.Target = _body;
-
-		// Networking: point the prefab's SdfNetworkSync at this machine's disguise. It does the rest — owner
-		// publishes brushes on commit + streams live drags, proxies apply + interpolate, late-joiners get the
-		// snapshot. The disguise is a local clone, so Target is wired here rather than in the prefab.
-		var sync = Components.GetOrCreate<SdfNetworkSync>();
-		sync.Target = _body;
+		// Edit session + network sync, both bound to this machine's disguise — SculptablePawn keeps the
+		// "session and sync always target the same sculpture" invariant in one place. No orbit rig handed to
+		// the session: the hider's always-on rig above owns the camera for play AND edit. The disguise is a
+		// local clone, so the target is wired here rather than in the prefab.
+		_session = SculptablePawn.AttachEditing( this, _body );
 	}
 
 	protected override void OnUpdate()

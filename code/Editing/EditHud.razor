@@ -143,11 +143,11 @@
 			var pickerOpacity = !pickerShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f);
 			var pfb = _fadeBrush;
 			<div @ref="PickerPanel" class="picker-float" style="left: @((int)_pickerPos.x)px; top: @((int)_pickerPos.y)px; width: @((int)PickerSize)px; opacity: @(pickerOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(pickerOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
-				<ClayColorPicker Size=@PickerSize Value=@(pfb?.Color ?? Color.White) OnInput=@((Color c) => SetColor( c )) />
+				<ClayColorPicker Size=@PickerSize Value=@(pfb?.Color ?? Color.White) OnInput=@((Color c) => SetColor( c )) OnCommit=@CommitEdit />
 				<ClaySlider Label="Metal" Value=@(pfb?.Metallic ?? 0f) Min=@(0f) Max=@(1f)
-					OnInput=@((float v) => SetMetallic( v )) />
+					OnInput=@((float v) => SetMetallic( v )) OnCommit=@CommitEdit />
 				<ClaySlider Label="Rough" Value=@(pfb?.Roughness ?? 1f) Min=@(0f) Max=@(1f)
-					OnInput=@((float v) => SetRoughness( v )) />
+					OnInput=@((float v) => SetRoughness( v )) OnCommit=@CommitEdit />
 			</div>
 		}
 
@@ -176,23 +176,23 @@
 			var sliceVal = fb?.Slice ?? 0f;
 			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @(SliderWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
-					OnInput=@((float v) => SetBlend( v )) />
+					OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
 				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
 				   cone) add Slice as a third slider. *@
 				@if ( isSpline )
 				{
 					<ClaySlider Label="Curve" Value=@curveVal Min=@(0f) Max=@(1f)
-						OnInput=@((float v) => SetCurvature( v )) />
+						OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
 				}
 				else
 				{
 					<ClaySlider Label="Round" Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
-						OnInput=@((float v) => SetRounding( v )) />
+						OnInput=@((float v) => SetRounding( v )) OnCommit=@CommitEdit />
 					@if ( isSphere || isCone )
 					{
 						<ClaySlider Label="Slice" Value=@sliceVal Min=@(0f) Max=@SdfBrush.MaxSlice
-							OnInput=@((float v) => SetSlice( v )) />
+							OnInput=@((float v) => SetSlice( v )) OnCommit=@CommitEdit />
 					}
 				}
 				@* Extruded "Shape" brush: pick the 2D profile it sweeps — a row of icon chips in the same
@@ -562,13 +562,17 @@
 
 	// Top-left of the slider stack (panel px): centred horizontally on the gizmo, dropped below it, clamped
 	// on-screen. Mirrors the palette's tracking so both follow the gizmo as the view orbits.
-	// Apply slider edits to the selected brush and rebuild the field (same path the gizmo sliders used).
+	// Continuous slider edits PREVIEW (live surface + throttled network stream); the slider's OnCommit fires
+	// CommitEdit on release for the one full commit — the same split gizmo handle drags use. Discrete one-shot
+	// edits (palette click, cross-section swap) still commit directly via NotifyChanged.
+	void CommitEdit() => Session?.CommitChanged();
+
 	void SetBlend( float v )
 	{
 		if ( Brush is null )
 			return;
 		Brush.Blend = Math.Clamp( v, 0f, SdfBrush.MaxBlend );
-		Session?.NotifyChanged();
+		Session?.PreviewChanged();
 	}
 
 	void SetRounding( float v )
@@ -576,7 +580,7 @@
 		if ( Brush is null )
 			return;
 		Brush.Rounding = Math.Clamp( v, GizmoSettingsRoundingMin, Brush.MaxRounding() );
-		Session?.NotifyChanged();
+		Session?.PreviewChanged();
 	}
 
 	void SetCurvature( float v )
@@ -584,7 +588,7 @@
 		if ( Brush is null )
 			return;
 		Brush.Curvature = Math.Clamp( v, 0f, 1f );
-		Session?.NotifyChanged();
+		Session?.PreviewChanged();
 	}
 
 	void SetSlice( float v )
@@ -592,7 +596,7 @@
 		if ( Brush is null )
 			return;
 		Brush.Slice = Math.Clamp( v, 0f, SdfBrush.MaxSlice );
-		Session?.NotifyChanged();
+		Session?.PreviewChanged();
 	}
 
 	/// <summary>The selected text brush's string, two-way bound to the HUD's TextEntry. Setting it re-bakes
@@ -616,7 +620,9 @@
 
 			float newY = MathF.Max( letterH / baked.ContentHeightFrac, 1f );
 			Brush.Size = new Vector3( newY * (SdfTextData.Width / (float)SdfTextData.Height), newY, Brush.Size.z );
-			Session?.NotifyChanged();
+			// Typing is a continuous gesture with no release event: preview per keystroke, and the session's
+			// commit debounce runs the full commit once the typing goes quiet.
+			Session?.PreviewChanged();
 		}
 	}
 
@@ -712,14 +718,14 @@
 		Session?.NotifyChanged();
 	}
 
-	// Apply colour-wheel / metal / rough edits from the picker column straight onto the selected brush —
-	// the same path a palette click takes, just one property at a time.
+	// Apply colour-wheel / metal / rough edits from the picker column straight onto the selected brush.
+	// These scrub continuously, so they PREVIEW; the control's OnCommit fires the full commit on release.
 	void SetColor( Color c )
 	{
 		if ( Brush is null )
 			return;
 		Brush.Color = c.WithAlpha( 1f );
-		Session?.NotifyChanged();
+		Session?.PreviewChanged();
 	}
 
 	void SetMetallic( float v )
@@ -727,7 +733,7 @@
 		if ( Brush is null )
 			return;
 		Brush.Metallic = Math.Clamp( v, 0f, 1f );
-		Session?.NotifyChanged();
+		Session?.PreviewChanged();
 	}
 
 	void SetRoughness( float v )
@@ -735,7 +741,7 @@
 		if ( Brush is null )
 			return;
 		Brush.Roughness = Math.Clamp( v, 0f, 1f );
-		Session?.NotifyChanged();
+		Session?.PreviewChanged();
 	}
 
 	// Swatch background: a flat colour, or a diagonal dark→light→dark sheen for metallic materials. The

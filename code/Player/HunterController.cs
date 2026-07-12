@@ -119,14 +119,10 @@ public sealed class HunterController : Component
 		_orbit.Enabled = false;       // only live while editing; the session toggles it
 		_orbit.MinDistance = 8f;      // let the player get right up to the face
 
-		_session = Components.Create<SculptEditSession>();
-		_session.Target = Face;
-		_session.OrbitCamera = _orbit;
-
-		// Networking: point the prefab's SdfNetworkSync at the face so other players see your sculpted head. Same
-		// reusable component the prop uses — it just needs a Target. The owner publishes on commit; proxies apply.
-		var sync = Components.GetOrCreate<SdfNetworkSync>();
-		sync.Target = Face;
+		// Edit session + network sync, both bound to the face — SculptablePawn keeps the "session and sync
+		// always target the same sculpture" invariant in one place (the owner publishes on commit; proxies
+		// apply). Passing the orbit rig makes the session enable/disable the camera around edit mode.
+		_session = SculptablePawn.AttachEditing( this, Face, _orbit );
 	}
 
 	// The sculpture face-edit mode targets: the authored Face, else a child named "Head" carrying a sculpture,

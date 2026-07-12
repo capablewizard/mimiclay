@@ -14,7 +14,9 @@ namespace Mimiclay;
 /// <item><b>Commit</b> (gizmo release / discrete edit): a durable <c>[Sync]</c> snapshot. Late-joiners get it in
 /// the spawn snapshot, and it reconciles any dropped live frame to the exact final shape.</item>
 /// <item><b>Live drag</b>: throttled unreliable RPC frames so proxies follow the handle, smoothed by per-frame
-/// interpolation. The full remesh waits for the commit.</item>
+/// interpolation. After the first full frame of a drag, frames carry only the brushes that CHANGED since the
+/// last tick (see <see cref="StreamDelta"/>) — a drag moves one brush, not forty. The full remesh waits for
+/// the commit, and proxies march analytically (no field bakes) until it lands.</item>
 /// </list>
 ///
 /// <b>Hosting:</b> <c>[Sync]</c>/<c>[Rpc]</c> only work when this component's GameObject is networked, so it
@@ -48,7 +50,15 @@ public sealed class SdfNetworkSync : Component
 	int _sendSeq;     // owner: bumped per send (live + commit)
 	int _appliedSeq;  // proxy: highest seq applied so far
 
+	// Owner: the per-brush JSON of the last streamed shape, diffed each stream tick. Mid-drag only the grabbed
+	// brush (plus a symmetry partner) actually changes, so the wire carries those brushes instead of the whole
+	// list — a full 40-brush disguise at 20 Hz was hundreds of KB/s upstream, fanned out through the host to
+	// every client, and prep phase has every hider dragging at once. Rebuilt on commit / count change.
+	List<string> _streamCache;
+
 	SdfSculpture _bound; // the Target we've currently subscribed to (lazy (re)bind in OnUpdate)
+
+	SdfRaymarchRenderer _raymarcher; // proxy: resolved lazily to gate field baking during remote drags
 
 	protected override void OnDestroy() => Unbind();
 
@@ -127,6 +137,7 @@ public sealed class SdfNetworkSync : Component
 
 		Seq = ++_sendSeq;
 		Data = SdfSculpture.SerializeBrushes( Target.Brushes );
+		_streamCache = null; // the commit is the new baseline; the next drag re-seeds the diff
 	}
 
 	// Live + throttled: fired on every drag-preview change; streams the in-progress brushes so proxies follow the
@@ -139,8 +150,52 @@ public sealed class SdfNetworkSync : Component
 		if ( _sinceStream < StreamInterval )
 			return;
 
+		var brushes = Target.Brushes;
+		if ( brushes is not { Count: > 0 } )
+			return;
+
 		_sinceStream = 0f;
-		Stream( ++_sendSeq, SdfSculpture.SerializeBrushes( Target.Brushes ) );
+
+		// No baseline yet (first tick of a drag, or the count changed) → send the full list once and seed the diff.
+		if ( _streamCache is null || _streamCache.Count != brushes.Count )
+		{
+			RefreshStreamCache( brushes );
+			Stream( ++_sendSeq, SdfSculpture.SerializeBrushes( brushes ) );
+			return;
+		}
+
+		// Diff against the last stream, brush by brush.
+		List<int> changed = null;
+		for ( int i = 0; i < brushes.Count; i++ )
+		{
+			var json = Json.Serialize( brushes[i] );
+			if ( json == _streamCache[i] )
+				continue;
+			_streamCache[i] = json;
+			(changed ??= new List<int>()).Add( i );
+		}
+
+		if ( changed is null )
+			return; // nothing actually moved since the last tick — send nothing at all
+
+		// Lots changed at once (a load, a palette applied across brushes) → the full list is cheaper than a delta.
+		if ( changed.Count > Math.Max( 1, brushes.Count / 3 ) )
+		{
+			Stream( ++_sendSeq, SdfSculpture.SerializeBrushes( brushes ) );
+			return;
+		}
+
+		var subset = new List<SdfBrush>( changed.Count );
+		foreach ( var i in changed )
+			subset.Add( brushes[i] );
+		StreamDelta( ++_sendSeq, brushes.Count, string.Join( ',', changed ), SdfSculpture.SerializeBrushes( subset ) );
+	}
+
+	void RefreshStreamCache( List<SdfBrush> brushes )
+	{
+		_streamCache = new List<string>( brushes.Count );
+		foreach ( var b in brushes )
+			_streamCache.Add( Json.Serialize( b ) );
 	}
 
 	// Live drag frames: unreliable + dropped-if-delayed (only the latest matters) and never grouped with the
@@ -150,6 +205,45 @@ public sealed class SdfNetworkSync : Component
 	{
 		if ( IsProxy )
 			ApplyBrushes( seq, data, full: false );
+	}
+
+	// A live drag frame carrying ONLY the brushes that changed since the last stream tick (indices are a CSV into
+	// the brush list, whose count rides along as a consistency check). Same channel + flags as Stream. Frames are
+	// self-contained against the proxy's CURRENT list, so a dropped delta only costs smoothness — the next delta
+	// (or the reliable commit) lands the same final values.
+	[Rpc.Broadcast( NetFlags.UnreliableNoDelay | NetFlags.OwnerOnly )]
+	void StreamDelta( int seq, int brushCount, string indices, string data )
+	{
+		if ( !IsProxy || !Target.IsValid() || seq <= _appliedSeq )
+			return;
+
+		// Structure diverged (we missed an add/remove, or haven't received the first full shape yet) — don't
+		// guess; the reliable commit reconciles us.
+		var current = Target.Brushes;
+		if ( current is null || current.Count != brushCount )
+			return;
+
+		var subset = SdfSculpture.DeserializeBrushes( data );
+		if ( subset is null )
+			return;
+
+		var parts = indices.Split( ',', StringSplitOptions.RemoveEmptyEntries );
+		if ( parts.Length != subset.Count )
+			return;
+
+		// The full interpolation target: the shape as we currently show it, with the changed slots replaced.
+		var target = Snapshot( current );
+		for ( int k = 0; k < parts.Length; k++ )
+		{
+			if ( !int.TryParse( parts[k], out var i ) || i < 0 || i >= target.Count )
+				return; // malformed → ignore the frame, keep the standing shape
+			target[i] = subset[k];
+		}
+
+		_appliedSeq = seq;
+		SetInterpolationTarget( target );
+		Target.RebuildShadowProxy();
+		SetFieldSuppressed( true );
 	}
 
 	// [Change] callback for the durable snapshot, fired on every machine the synced value lands on. Only proxies
@@ -176,19 +270,37 @@ public sealed class SdfNetworkSync : Component
 		if ( brushes is null )
 			return;
 
+		// Reject oversized payloads outright: authoring caps at MaxBrushes, so anything past it is a modified
+		// client (raymarch cost is per-brush — a 500-brush payload taxes every machine that applies it).
+		if ( brushes.Count > SdfBrushPacker.MaxBrushes )
+			return;
+
 		_appliedSeq = seq;
 
 		if ( full )
 		{
 			StopInterpolation();
 			Target.Brushes = brushes;
+			SetFieldSuppressed( false ); // settled shape → one field dispatch, back to the cached path
 			Target.Rebuild();
 		}
 		else
 		{
 			SetInterpolationTarget( brushes );
 			Target.RebuildShadowProxy();
+			SetFieldSuppressed( true );
 		}
+	}
+
+	// While a remote drag streams in, force the analytic brush march instead of re-dispatching the GPU field —
+	// per-frame interpolation would otherwise re-bake the entire field volume every frame for every remotely-
+	// edited prop (and prep phase has every hider sculpting at once). See SdfRaymarchRenderer.SuppressFieldCache.
+	void SetFieldSuppressed( bool on )
+	{
+		if ( !_raymarcher.IsValid() )
+			_raymarcher = Target.IsValid() ? Target.GameObject.Components.Get<SdfRaymarchRenderer>() : null;
+		if ( _raymarcher.IsValid() )
+			_raymarcher.SuppressFieldCache = on;
 	}
 
 	// ── Live-drag interpolation (proxy only) ──────────────────────────────────────────────────────────────

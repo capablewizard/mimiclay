@@ -139,15 +139,14 @@
 	// What the idle lobby tells the local player to do — the host sets the game up + starts it; everyone else waits.
 	string LobbyStatus => LocalIsHost ? "Press G to set up game" : "Waiting for host to start the game";
 
-	// The active game mode, from a source that actually reaches clients: the round reads Settings from session data
-	// (so RoundManager.Settings is valid everywhere); the lobby card only shows during the launch countdown, whose
-	// mode rode in on the broadcast (LobbyController.LaunchMode).
+	// The active game mode. Both managers are NetworkSpawn'd, so their [Sync] Settings reach every client —
+	// the lobby no longer needs the launch broadcast to smuggle the mode across.
 	RoundMode CurrentMode
 	{
 		get
 		{
 			if ( RoundManager.Current.IsValid() ) return RoundManager.Current.Settings.Mode;
-			if ( LobbyController.Current.IsValid() ) return LobbyController.Current.LaunchMode;
+			if ( LobbyManager.Current.IsValid() ) return LobbyManager.Current.Settings.Mode;
 			return RoundMode.Infection;
 		}
 	}

@@ -1,13 +1,14 @@
 //=========================================================================================================================
-// Shared analytic SDF evaluator (LOCAL/model space). The Dreams "evaluator / CS of doom": evaluate the packed brush list
-// at a local point. Included by the compute shaders that need to bake the field directly from brushes — sdf_field_cs
-// (dense volume), sdf_atlas_fill_cs (sparse atlas tiles) and sdf_brick_classify_cs (brick occupancy) — so the eval lives
-// in ONE place instead of a copy per shader. Brushes are packed in the prop's LOCAL space (identity transform) so the
-// result is placement-invariant. This is a self-contained copy of sdf_raymarch.shader's analytic path kept separate from
-// the delicate raymarch shader (the raymarch works in WORLD space with a model fold; this works in local space directly).
+// THE analytic SDF evaluator (LOCAL/model space). The Dreams "evaluator / CS of doom": evaluate the packed brush list
+// at a local point. Included by EVERY consumer — the field-baking compute shaders (sdf_field_cs dense volume,
+// sdf_atlas_fill_cs sparse atlas tiles, sdf_brick_classify_cs brick occupancy) AND sdf_raymarch.shader itself, which
+// folds each world-space march sample into the prop's local frame (SdfDistWs) and evaluates here. One evaluator, no
+// copies to drift: a new primitive/property is added HERE and every consumer picks it up. Brushes are packed in the
+// prop's LOCAL space (identity transform) so the result is placement-invariant.
 //
-// Requires the including shader to have already done `#include "system.fxc"`. The including shader declares its own OUTPUT
-// (RWTexture etc.) and MainCs; this file owns the brush INPUTS and the distance math.
+// Requires the including shader to have already done `#include "system.fxc"` (common/shared or common/pixel pull it in).
+// The including shader declares its own OUTPUT (RWTexture etc.) and MainCs/MainPs; this file owns the brush INPUTS and
+// the distance math.
 //=========================================================================================================================
 #ifndef MIMICLAY_SDF_EVAL_H
 #define MIMICLAY_SDF_EVAL_H
@@ -99,8 +100,12 @@ float sdCone( float3 p, float R, float H, float rounding, float slice )
 		r2 = 0.0;              // (the classic zApex = H − r/sinB when unsliced)
 	}
 
-	if ( zt <= zb ) // eroded away entirely — the fully-rounded limit is a ball
-		return length( float2( qx, p.z - (zb + zt) * 0.5 ) ) - r;
+	if ( zt <= zb ) // caps met — eroded core is a flat disc of radius r1 == r2 (0 when unsliced → ball)
+	{
+		float rd = max( 0.5 * (r1 + r2), 0.0 );
+		float2 w = float2( max( qx - rd, 0.0 ), p.z - (zb + zt) * 0.5 );
+		return length( w ) - r;
+	}
 
 	return cappedCone( qx, p.z - (zb + zt) * 0.5, (zt - zb) * 0.5, r1, r2 ) - r;
 }

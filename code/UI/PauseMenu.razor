@@ -18,10 +18,20 @@
 		<div class="pause-backdrop"></div>
 
 		<div class="pause-options">
-			<div class="menu-button" @onclick=@Resume><WobbleText Text="Resume" /></div>
-			<div class="menu-button" @onclick=@OpenSettings><WobbleText Text="Options" /></div>
-			<div class="menu-button" @onclick=@ExitToMenu><WobbleText Text="Main Menu" /></div>
-			<div class="menu-button" @onclick=@Quit><WobbleText Text="Quit" /></div>
+			@if ( _confirm != ConfirmKind.None )
+			{
+				@* The host leaving kills the session for everyone — make sure that's what they meant. *@
+				<div class="confirm-note">You're the host — leaving ends the game for everyone here.</div>
+				<div class="menu-button" @onclick=@ConfirmLeave><WobbleText Text="Leave Anyway" /></div>
+				<div class="menu-button" @onclick=@CancelConfirm><WobbleText Text="Cancel" /></div>
+			}
+			else
+			{
+				<div class="menu-button" @onclick=@Resume><WobbleText Text="Resume" /></div>
+				<div class="menu-button" @onclick=@OpenSettings><WobbleText Text="Options" /></div>
+				<div class="menu-button" @onclick=@ExitToMenu><WobbleText Text="Main Menu" /></div>
+				<div class="menu-button" @onclick=@Quit><WobbleText Text="Quit" /></div>
+			}
 		</div>
 	}
 </root>
@@ -29,6 +39,10 @@
 @code
 {
 	bool _open;
+
+	// Which destructive action is waiting on the host's "you'll strand everyone" confirmation.
+	enum ConfirmKind { None, Menu, Quit }
+	ConfirmKind _confirm;
 
 	/// <summary>True while the pause overlay is up. The game's systems read this to go inert and hand the cursor to
 	/// the menu while paused — the edit HUD drops pointer-events (so its buttons don't hover behind the overlay),
@@ -50,6 +64,7 @@
 	{
 		_open = open;
 		IsOpen = open;   // drives the cursor force (PauseMenuSystem) + the edit HUD / camera going inert
+		_confirm = ConfirmKind.None; // opening or closing always lands on the main options, never a stale confirm
 		StateHasChanged();
 	}
 
@@ -58,15 +73,52 @@
 	// Reuse s&box's own settings overlay (graphics/audio/controls) until we build our own Options screen.
 	void OpenSettings() => Game.Overlay.ShowSettingsModal();
 
+	// A host with other players connected ends the session for all of them by leaving — gate that behind an
+	// explicit confirmation. Clients (and a solo host) leave freely.
+	bool LeaveStrandsOthers => Networking.IsActive && Networking.IsHost && Connection.All.Count > 1;
+
 	// Leave the session and return to our front-end menu scene.
 	void ExitToMenu()
 	{
+		if ( LeaveStrandsOthers )
+		{
+			_confirm = ConfirmKind.Menu;
+			StateHasChanged();
+			return;
+		}
+
 		SetOpen( false );
 		MenuNetworking.ExitToMenu();
 	}
 
 	// Leave the game entirely (back to the s&box main menu).
-	void Quit() => Game.Close();
+	void Quit()
+	{
+		if ( LeaveStrandsOthers )
+		{
+			_confirm = ConfirmKind.Quit;
+			StateHasChanged();
+			return;
+		}
+
+		Game.Close();
+	}
+
+	void ConfirmLeave()
+	{
+		var kind = _confirm;
+		SetOpen( false );
+		if ( kind == ConfirmKind.Quit )
+			Game.Close();
+		else
+			MenuNetworking.ExitToMenu();
+	}
+
+	void CancelConfirm()
+	{
+		_confirm = ConfirmKind.None;
+		StateHasChanged();
+	}
 
 	// If we're torn down while open (ExitToMenu / scene change), clear the static so it never sticks "paused".
 	protected override void OnDestroy()
@@ -75,5 +127,5 @@
 		IsOpen = false;
 	}
 
-	protected override int BuildHash() => HashCode.Combine( _open );
+	protected override int BuildHash() => HashCode.Combine( _open, _confirm );
 }
