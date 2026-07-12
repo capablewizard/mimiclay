@@ -285,28 +285,43 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 		renderer.Model = model;
 	}
 
+	// One build in flight at a time, machine-wide. A scene load kicks EVERY sculpture's rebuild in the same
+	// frame; ungated, all their main-thread uploads land together in one enormous frozen frame — and a
+	// multi-second freeze on any machine during a networked scene change collapses the editor-test TCP link
+	// and drops every client (see the scene-change post-mortems). Serialized, each upload lands on its own
+	// frame: props stream in over a second or two, but the game keeps pumping and the session survives.
+	static readonly System.Threading.SemaphoreSlim BuildGate = new( 1 );
+
 	// Worker-thread compute (the heavy O(res^3) field sampling) then a hop to the main thread for the
 	// cheap GPU upload + model assembly. Builds all three LODs — reusing a precomputed LOD1 (the drag proxy)
 	// when one is supplied, so that mesh is computed once and serves as both the drag shadow and final LOD1.
 	static async Task<Model> BuildModelAsync( List<SdfBrush> brushes, Material material, int resolution, bool flip,
 		SurfaceNetsMesher.MeshData reuseLod1, bool haveLod1 )
 	{
-		await GameTask.WorkerThread();
+		await BuildGate.WaitAsync();
+		try
+		{
+			await GameTask.WorkerThread();
 
-		var d0 = SurfaceNetsMesher.ComputeData( brushes, resolution, flip );
-		var d1 = haveLod1 ? reuseLod1 : SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, resolution / 2 ), flip );
-		var d2 = SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, resolution / 4 ), flip );
+			var d0 = SurfaceNetsMesher.ComputeData( brushes, resolution, flip );
+			var d1 = haveLod1 ? reuseLod1 : SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, resolution / 2 ), flip );
+			var d2 = SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, resolution / 4 ), flip );
 
-		await GameTask.MainThread();
+			await GameTask.MainThread();
 
-		if ( d0.IsEmpty )
-			return null;
+			if ( d0.IsEmpty )
+				return null;
 
-		var builder = new ModelBuilder();
-		builder.AddMesh( SurfaceNetsMesher.Upload( d0, material ), 0 );
-		if ( !d1.IsEmpty ) builder.AddMesh( SurfaceNetsMesher.Upload( d1, material ), 1 );
-		if ( !d2.IsEmpty ) builder.AddMesh( SurfaceNetsMesher.Upload( d2, material ), 2 );
-		return builder.Create();
+			var builder = new ModelBuilder();
+			builder.AddMesh( SurfaceNetsMesher.Upload( d0, material ), 0 );
+			if ( !d1.IsEmpty ) builder.AddMesh( SurfaceNetsMesher.Upload( d1, material ), 1 );
+			if ( !d2.IsEmpty ) builder.AddMesh( SurfaceNetsMesher.Upload( d2, material ), 2 );
+			return builder.Create();
+		}
+		finally
+		{
+			BuildGate.Release();
+		}
 	}
 
 	static Task<Model> GetOrBuildModel( int key, Func<Task<Model>> factory )

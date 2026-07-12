@@ -32,6 +32,23 @@ public static class MenuNetworking
 	/// <summary>True while a connect/host/query is in flight, so the UI can show a spinner and gate buttons.</summary>
 	public static bool Busy { get; private set; }
 
+	/// <summary>True once this process has deliberately been in a session (hosted or joined). Gameplay-scene
+	/// bootstraps (<see cref="RoundManagerSpawner"/>, <see cref="LobbyController"/>) read this to tell a genuine
+	/// direct Play (never in a session — safe to self-host) from a client that's briefly !IsActive while following
+	/// the host's scene change (must NOT self-host — that would fork it into a private parallel session it can
+	/// never leave except via the menu). Intent, not timing: the old grace-window approach forked any client whose
+	/// reconnect outlasted the window. Reset by <see cref="NoteSessionEnded"/> — <see cref="ExitToMenu"/>'s
+	/// deliberate leave, and <see cref="SessionResetSystem"/> when play itself stops.</summary>
+	public static bool EverInSession { get; private set; }
+
+	/// <summary>Record that this process deliberately entered a session — see <see cref="EverInSession"/>. Called
+	/// on host/join here, and by the scene bootstraps when they legitimately self-host a direct Play.</summary>
+	public static void NoteSessionStarted() => EverInSession = true;
+
+	/// <summary>Forget the session intent — the session is over, so a later direct Play is safe to self-host
+	/// again. Called by <see cref="ExitToMenu"/> and by <see cref="SessionResetSystem"/> at play teardown.</summary>
+	public static void NoteSessionEnded() => EverInSession = false;
+
 	/// <summary>Last user-facing error from a failed action (e.g. "No games found"), or null. The UI surfaces it.</summary>
 	public static string LastError { get; private set; }
 
@@ -81,6 +98,7 @@ public static class MenuNetworking
 		};
 
 		Networking.CreateLobby( config );
+		NoteSessionStarted();
 
 		// Stamp the session so the browser + round manager know what's running. CreateLobby makes us host
 		// synchronously, so SetData is safe right after.
@@ -106,7 +124,9 @@ public static class MenuNetworking
 
 			// JoinBestLobby queries public lobbies for our game ident and connects to the fullest joinable one.
 			var joined = await Networking.JoinBestLobby( Game.Ident );
-			if ( !joined )
+			if ( joined )
+				NoteSessionStarted();
+			else
 				SetError( "No open games found. Try hosting one!" );
 		}
 		catch ( Exception e )
@@ -160,7 +180,9 @@ public static class MenuNetworking
 				Networking.Disconnect();
 
 			var ok = await Networking.TryConnectSteamId( lobby.LobbyId );
-			if ( !ok )
+			if ( ok )
+				NoteSessionStarted();
+			else
 				SetError( "Couldn't join that game." );
 		}
 		catch ( Exception e )
@@ -185,6 +207,9 @@ public static class MenuNetworking
 	{
 		if ( Networking.IsActive )
 			Networking.Disconnect();
+
+		// A deliberate leave: a later direct Play (or fresh menu flow) starts from a clean slate.
+		NoteSessionEnded();
 
 		var options = new SceneLoadOptions();
 		if ( !options.SetScene( MenuScene ) )
@@ -215,5 +240,29 @@ public static class MenuNetworking
 
 		// ChangeScene loads the scene on the host and broadcasts the load to every client.
 		Game.ChangeScene( options );
+	}
+}
+
+/// <summary>
+/// Clears <see cref="MenuNetworking.EverInSession"/> when the play session itself ends. Statics survive the
+/// editor's Stop→Play (and hotloads) — only <see cref="MenuNetworking.ExitToMenu"/> or an editor restart cleared
+/// the flag before — so a direct Play after ANY earlier session in the same editor run found EverInSession still
+/// true, refused to self-host, and the lobby came up dead (no session, no setup HUD, G did nothing).
+///
+/// Why this hook is the right one: GameObjectSystems persist across in-session scene changes (Scene.Load keeps
+/// them; only Scene.Destroy shuts them down), and Game.IsClosing is true during that destroy exactly when play is
+/// stopping (editor Stop / app close) — never during Game.ChangeScene. So Dispose+IsClosing fires once, precisely
+/// at "the play session is over", which is the moment the session intent stops being true.
+/// </summary>
+public sealed class SessionResetSystem : GameObjectSystem
+{
+	public SessionResetSystem( Scene scene ) : base( scene ) { }
+
+	public override void Dispose()
+	{
+		if ( Game.IsClosing )
+			MenuNetworking.NoteSessionEnded();
+
+		base.Dispose();
 	}
 }

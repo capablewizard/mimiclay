@@ -3,7 +3,7 @@
   "Description": "default map, doesn't do anything.",
   "Preview": null,
   "Scene": "scenes/maps/defaultmap.scene",
-  "Hidden": false,
+  "Hidden": true,
   "__references": [],
   "__version": 0
 }

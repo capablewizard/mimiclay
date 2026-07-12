@@ -29,6 +29,14 @@ public sealed class RoundManagerSpawner : Component
 	/// "substitution" poof). Cloned locally on every machine by <see cref="RoundManager.PlayCaughtPuff"/>.</summary>
 	[Property, Group( "Prefabs" )] public GameObject CaughtPuffPrefab { get; set; }
 
+	/// <summary>The lobby scene the round returns to after consolidation. A real SceneFile REFERENCE, not a
+	/// runtime path string: `SceneFile.Load("scenes/lobby.scene")` (a ResourceLibrary lookup by path) has proven
+	/// unreliable mid-session — it resolved fine from the menu scene, then returned null from inside a map in the
+	/// same session, leaving the round stuck spamming "couldn't resolve lobby scene". A reference deserializes
+	/// with this scene and is dependency-tracked, the same way the map launch resolves its phmap's Scene (which
+	/// has never failed).</summary>
+	[Property, Group( "Scenes" )] public SceneFile LobbyScene { get; set; }
+
 	[Property, Group( "Scoring" )] public int FindReward { get; set; } = 50;
 	[Property, Group( "Scoring" )] public float PropPointsPerSecond { get; set; } = 1f;
 
@@ -42,32 +50,24 @@ public sealed class RoundManagerSpawner : Component
 		if ( Current == this ) Current = null;
 	}
 
-	// Seconds we tolerate "no session" before assuming it's a genuine direct Play (and self-host). A client FOLLOWING
-	// the host's scene change is briefly !IsActive during the swap — self-hosting over that window makes the client
-	// spawn its OWN local manager (which then never syncs). The grace lets a following client reconnect first.
-	const float SelfHostGrace = 1f;
-
 	bool _done;
-	RealTimeSince _sinceStart;
-
-	protected override void OnStart()
-	{
-		_sinceStart = 0;
-	}
 
 	protected override void OnUpdate()
 	{
 		if ( _done )
 			return;
 
-		// No session at all? Either direct Play on this map scene, or a client mid-scene-swap. Wait out the grace
-		// before self-hosting, so a following client (which reconnects within a frame or two) is never self-hosted.
+		// No session? Either a genuine direct Play on this map scene, or a client briefly !IsActive while following
+		// the host's scene change. Intent (has this process ever been in a session?) tells them apart — timing can't:
+		// the old grace window forked any client whose reconnect outlasted it into a private parallel session. A
+		// following client now just waits here (staying not-_done) until the session comes back.
 		if ( !Networking.IsActive )
 		{
-			if ( _sinceStart < SelfHostGrace )
+			if ( MenuNetworking.EverInSession )
 				return;
 
 			Networking.CreateLobby( new LobbyConfig { MaxPlayers = 8 } );
+			MenuNetworking.NoteSessionStarted();
 		}
 
 		// Only the host creates the networked manager; a real client just receives it over the wire and is done.

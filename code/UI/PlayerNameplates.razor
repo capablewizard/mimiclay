@@ -9,7 +9,7 @@
 @*
 	Player nameplates — team names floated above other players' heads. SCREEN panels, not world panels: each
 	visible pawn's head anchor is projected to the screen every frame and a label is absolutely positioned there
-	on the pawn's HUD ScreenPanel. Lives on the "Pause HUD" child of BOTH pawn prefabs so it exists exactly when
+	on the pawn's HUD ScreenPanel. Lives on the "Pawn HUD" child of BOTH pawn prefabs so it exists exactly when
 	a pawn does; only the OWNING pawn's copy draws anything (a proxy's copy renders nothing — same live gate as
 	HunterCrosshair, because ownership replicates after OnStart).
 
@@ -29,7 +29,7 @@
 	@foreach ( var p in _plates )
 	{
 		<div class="plate" style=@PlateStyle( p ) @key=@p.PawnId>
-			<div class="name">@p.Name</div>
+			<div class="name" style=@NameStyle()>@p.Name</div>
 		</div>
 	}
 </root>
@@ -38,6 +38,14 @@
 {
 	/// <summary>Extra world-space clearance between the top of the head/disguise bounds and the label.</summary>
 	[Property] public float HeadClearance { get; set; } = 10f;
+
+	/// <summary>Uniform scale on the nameplate text. 1 = the base size (<see cref="BaseNameSize"/> px, before the
+	/// ScreenPanel's resolution scaling); 2 = double, etc.</summary>
+	[Property] public float NameplateScale { get; set; } = 1f;
+
+	// The un-scaled label size in panel px. Set here (not the SCSS) so NameplateScale has a base to multiply —
+	// the inline style below always overrides a stylesheet font-size anyway.
+	const float BaseNameSize = 18f;
 
 	// One drawn label: which pawn it belongs to (@key, so the razor diff tracks plates across frames), the name,
 	// and the projected screen position as viewport fractions (resolution-independent — see PlateStyle).
@@ -151,11 +159,17 @@
 		=> $"left: {(p.Screen.x * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
 			$"top: {(p.Screen.y * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%;";
 
+	// The label's font-size, from the scale property. Scaling the FONT (not a panel transform) keeps the SCSS
+	// centring translate intact and lets the plate's layout box grow with the text.
+	string NameStyle()
+		=> $"font-size: {(BaseNameSize * NameplateScale).ToString( "0.#", CultureInfo.InvariantCulture )}px;";
+
 	// Positions move nearly every frame, so hashing the plate list keeps the labels glued to the heads; @key stops
 	// the diff from rebuilding the label panels themselves.
 	protected override int BuildHash()
 	{
 		var hash = new HashCode();
+		hash.Add( NameplateScale ); // live-tunable in the editor — re-render when it changes
 		foreach ( var p in _plates )
 		{
 			hash.Add( p.PawnId );

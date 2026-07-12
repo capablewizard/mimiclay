@@ -106,6 +106,7 @@
         "Flags": 0,
         "EditCameraPitch": 10,
         "EditFramingMargin": 1.4,
+        "EnableFootsteps": true,
         "Eyes": {
           "_type": "gameobject",
           "go": "615490c8-f9c6-4555-a36b-dae78cf8680d"
@@ -118,7 +119,9 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "Range": 4096,
-        "ShootCooldown": 1
+        "RunStepDistance": 100,
+        "ShootCooldown": 1,
+        "StepDistance": 60
       },
       {
         "__type": "Sandbox.Rigidbody",
@@ -854,7 +857,7 @@
         "__guid": "2d1cf3f1-63c6-4158-a3b0-adff0ecef90b",
         "__version": 2,
         "Flags": 0,
-        "Name": "Pause HUD",
+        "Name": "Pawn HUD",
         "Position": "0,0,0",
         "Rotation": "0,0,0,1",
         "Scale": "1,1,1",
@@ -885,18 +888,6 @@
             "ZIndex": 1000
           },
           {
-            "__type": "Mimiclay.PauseMenu",
-            "__guid": "225b7c85-fd22-489e-8a3c-68ecb0cc272e",
-            "__enabled": true,
-            "Flags": 0,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null
-          },
-          {
             "__type": "Mimiclay.HunterCrosshair",
             "__guid": "91d2db59-0e4e-4698-929c-6a2bb37e92fb",
             "__enabled": true,
@@ -913,7 +904,57 @@
             "__guid": "3a9c1f72-8b4e-4d1a-9f6e-2c7b5d804a91",
             "__enabled": true,
             "Flags": 0,
-            "HeadClearance": 10,
+            "HeadClearance": 5,
+            "NameplateScale": 2,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null
+          }
+        ],
+        "Children": []
+      },
+      {
+        "__guid": "07ca9bf1-24ed-4505-af8f-1ca6903fe1db",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Pause HUD",
+        "Position": "0,0,0",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.ScreenPanel",
+            "__guid": "81980bd6-de50-4dbd-90f3-055853375643",
+            "__enabled": true,
+            "Flags": 0,
+            "AutoScreenScale": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "Opacity": 1,
+            "Scale": 1,
+            "ScaleStrategy": "ConsistentHeight",
+            "TargetCamera": null,
+            "ZIndex": 1000
+          },
+          {
+            "__type": "Mimiclay.PauseMenu",
+            "__guid": "881ddd8a-6397-45c8-b638-3eb2f1fb8d62",
+            "__enabled": true,
+            "Flags": 0,
             "OnComponentDestroy": null,
             "OnComponentDisabled": null,
             "OnComponentEnabled": null,

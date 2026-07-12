@@ -73,6 +73,16 @@ public sealed class RoundManager : Component, IRoundContext
 	// ── Host-only bookkeeping (not networked) ────────────────────────────────────────────────────────────────
 	readonly Dictionary<Guid, float> _scoreAccum = new();      // fractional prop score carried between integer ticks
 
+	// Host-side per-shooter gate on ReportPropHit. The real cooldown (HunterController.ShootCooldown, 1s) runs
+	// owner-side and is therefore client trust; this re-enforces it at the RPC boundary. Slightly looser than the
+	// real cooldown so an honest client's shots never trip it through timing jitter.
+	const float HostShotCooldown = 0.8f;
+	readonly Dictionary<Guid, RealTimeUntil> _shotGate = new();
+
+	// Whether this Hunt opened with any hunters at all. Gates the "every hunter left → end early" check so a round
+	// that legitimately never had hunters (solo direct Play spawns the lone player as a prop) keeps its timer.
+	bool _huntHadHunters;
+
 	// ── Per-machine pawn state (every machine, incl. clients, owns exactly one pawn — its own) ─────────────────
 	GameObject _ownPawn;
 	PlayerRole _ownPawnRole = PlayerRole.Unassigned;
@@ -155,6 +165,9 @@ public sealed class RoundManager : Component, IRoundContext
 				TickHuntScoring();
 				if ( AliveProps == 0 )
 					TransitionTo( RoundPhase.Consolidation ); // every prop found → hunters win, nothing to reveal
+				else if ( _huntHadHunters && Hunters == 0 )
+					TransitionTo( RoundPhase.Reveal );         // every hunter left → survivors win now, not after 3
+					                                           // minutes of dead air
 				else if ( PhaseEndsAt <= 0f )
 					TransitionTo( RoundPhase.Reveal );         // time up with survivors → show them off
 				break;
@@ -178,7 +191,7 @@ public sealed class RoundManager : Component, IRoundContext
 		{
 			case RoundPhase.Starting:    PhaseEndsAt = Settings.StartCountdownSeconds; break;
 			case RoundPhase.Hide:        PhaseEndsAt = DebugSoloHide ? 999999f : Settings.HideSeconds; break;
-			case RoundPhase.Hunt:        PhaseEndsAt = Settings.HuntSeconds; break;
+			case RoundPhase.Hunt:        PhaseEndsAt = Settings.HuntSeconds; _huntHadHunters = Hunters > 0; break;
 			case RoundPhase.Reveal:      PhaseEndsAt = Settings.RevealSeconds; break;
 			case RoundPhase.Consolidation: PhaseEndsAt = Settings.ConsolidationSeconds; break;
 		}
@@ -232,6 +245,10 @@ public sealed class RoundManager : Component, IRoundContext
 		}
 
 		var hunters = ReadHunterIds();
+		// Only keep nominees who are still connected — the lobby stamped these ids 10+ seconds ago (countdown + map
+		// load), so a nominee may have left. Without this, a stale non-empty set that matches NO connection would
+		// skip the random fallback and start a zero-hunter round.
+		hunters.IntersectWith( conns.Select( c => c.Id ) );
 		if ( hunters.Count == 0 )
 			hunters = ChooseRandomHunters( conns, Settings.HunterCount );
 
@@ -335,9 +352,12 @@ public sealed class RoundManager : Component, IRoundContext
 	Transform PickSpot( List<RoundSpawnPoint> spots, int index )
 	{
 		var origin = spots.Count > 0 ? spots[index % spots.Count].GameObject : GameObject;
+		// When there are more pawns than markers the index wraps back onto used spots — ring the extras around the
+		// marker so nobody spawns inside anybody (overlapping hulls get solver-shoved, sometimes through the floor).
+		var stack = spots.Count > 0 ? index / spots.Count : index;
 		// Lifted +64 like DebugGameMode so the pawn drops onto the floor and the hider seeds its yaw from spawn.
 		return new Transform(
-			origin.WorldPosition + Vector3.Up * 64f,
+			origin.WorldPosition + RoundSpawnPoint.StackOffset( stack ) + Vector3.Up * 64f,
 			Rotation.FromYaw( origin.WorldRotation.Yaw() ) );
 	}
 
@@ -429,6 +449,31 @@ public sealed class RoundManager : Component, IRoundContext
 			return;
 
 		var hunter = Rpc.Caller;
+
+		// Validate the SHOOTER, not just the target — this RPC is the trust boundary: the trace, cooldown and range
+		// all run owner-side, so a modified client can call it directly with any pawn. (Alive is deliberately NOT
+		// checked: a converted prop is Role=Hunter with Alive=false and hunts legitimately.) Skipped when there's no
+		// session (solo direct Play has no Rpc.Caller to validate).
+		if ( Networking.IsActive )
+		{
+			if ( hunter is null || !Players.TryGetValue( hunter.Id, out var shooter ) || shooter.Role != PlayerRole.Hunter )
+				return;
+
+			// Host-side re-check of the shot cooldown.
+			if ( _shotGate.TryGetValue( hunter.Id, out var gate ) && gate > 0f )
+				return;
+			_shotGate[hunter.Id] = HostShotCooldown;
+
+			// Range sanity: the claimed hit must be within the shooter's weapon reach (+ slack for latency movement).
+			// If the shooter's pawn isn't visible to the host yet (the respawn frame after a conversion), skip this
+			// check rather than reject — the role + rate gates above still hold.
+			var shooterPawn = Scene.GetAllComponents<HunterController>()
+				.FirstOrDefault( h => h.GameObject.Network.Owner?.Id == hunter.Id );
+			if ( shooterPawn.IsValid()
+				&& shooterPawn.GameObject.WorldPosition.Distance( propPawn.WorldPosition ) > shooterPawn.Range * 1.25f )
+				return;
+		}
+
 		var ownerId = propPawn.Network.Owner?.Id;
 		if ( ownerId is null || !Players.TryGetValue( ownerId.Value, out var prop ) )
 			return;
@@ -507,6 +552,10 @@ public sealed class RoundManager : Component, IRoundContext
 
 	int AliveProps => Players.Values.Count( p => p.Role == PlayerRole.Prop && p.Alive );
 
+	// Hunters on the roster. Alive is meaningless for hunters (a converted prop is Role=Hunter, Alive=false), so
+	// this counts rows by role only.
+	int Hunters => Players.Values.Count( p => p.Role == PlayerRole.Hunter );
+
 	// ── Stubs to flesh out next ──────────────────────────────────────────────────────────────────────────────
 	// Reveal flash: surviving props pulse with the outline shader so spectators can see where they were hiding.
 	void FlashSurvivingProps()
@@ -527,16 +576,21 @@ public sealed class RoundManager : Component, IRoundContext
 
 			Players.Remove( id );
 			_scoreAccum.Remove( id );
+			_shotGate.Remove( id );
 		}
 
-		// Add anyone who joined mid-round. They slot in as a prop during Hide, otherwise as a hunter, on the next free
-		// spot of that role; their own machine spawns the pawn.
+		// Add anyone who joined mid-round: a prop through prep (Starting + Hide — the round hasn't begun, they should
+		// hide like everyone else), a hunter during the Hunt. Once the round is wrapping up (Reveal/Consolidation)
+		// there's nothing left to join — no row, no pawn; the lobby rosters them for the next round.
 		foreach ( var c in Connection.All )
 		{
 			if ( Players.ContainsKey( c.Id ) )
 				continue;
 
-			var role = Phase == RoundPhase.Hide ? PlayerRole.Prop : PlayerRole.Hunter;
+			if ( Phase is RoundPhase.Reveal or RoundPhase.Consolidation )
+				continue;
+
+			var role = Phase is RoundPhase.Starting or RoundPhase.Hide ? PlayerRole.Prop : PlayerRole.Hunter;
 			Players[c.Id] = new PlayerInfo
 			{
 				Connection = c.Id,
@@ -563,10 +617,17 @@ public sealed class RoundManager : Component, IRoundContext
 
 		// TODO: carry the round's results (cumulative scores, who won) back to the lobby via lobby data so the
 		// lobby can show a running scoreboard. For the block-out we just return.
+		// The spawner's SceneFile REFERENCE is the reliable path; the string lookup is only a fallback for a map
+		// whose spawner hasn't wired LobbyScene (ResourceLibrary-by-path has returned null mid-session before).
 		var options = new SceneLoadOptions();
-		if ( !options.SetScene( LobbyController.LobbyScene ) )
+		var lobby = RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.LobbyScene : null;
+		var resolved = lobby is not null ? options.SetScene( lobby ) : options.SetScene( LobbyController.LobbyScene );
+		if ( !resolved )
 		{
-			Log.Warning( $"RoundManager: couldn't resolve lobby scene '{LobbyController.LobbyScene}'." );
+			// Push the phase timer back so TickHostPhase retries in a few seconds instead of every frame —
+			// a failed resolve otherwise re-runs this (and its engine warning) once per frame, forever.
+			Log.Warning( $"RoundManager: couldn't resolve the lobby scene — retrying in 5s. Wire LobbyScene on the map's RoundManagerSpawner." );
+			PhaseEndsAt = 5f;
 			return;
 		}
 

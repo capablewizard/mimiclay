@@ -1,0 +1,9 @@
+{
+  "Title": "Bedroom",
+  "Description": "Hide among the toys of a giant kid's bedroom.",
+  "Preview": null,
+  "Scene": "scenes/maps/bedroom.scene",
+  "Hidden": false,
+  "__references": [],
+  "__version": 0
+}

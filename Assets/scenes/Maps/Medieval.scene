@@ -510,6 +510,7 @@
           "__guid": "10997264-700e-4905-9732-3840de25b26b",
           "__enabled": true,
           "Flags": 0,
+          "LobbyScene": "scenes/lobby.scene",
           "CaughtPuffPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/caught_puff.prefab"

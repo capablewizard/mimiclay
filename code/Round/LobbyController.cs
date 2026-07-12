@@ -33,7 +33,13 @@ public sealed class LobbyController : Component, IRoundContext
 	[Property, Group( "Prefabs" )] public GameObject HunterPrefab { get; set; }
 	[Property, Group( "Prefabs" )] public GameObject PropPrefab { get; set; }
 
-	/// <summary>Where lobby pawns appear (falls back to this GameObject). One shared spot is fine — nobody's hiding.</summary>
+	/// <summary>Ordered lobby spawn spots: slot i spawns at point i, wrapping with a ring offset once the points run
+	/// out. Everyone spawning on ONE point at the same instant overlaps hulls, and the physics solver shoves the
+	/// pile apart — sometimes through the floor — so give the lobby at least as many points as players.</summary>
+	[Property] public List<GameObject> SpawnPoints { get; set; } = new();
+
+	/// <summary>Legacy single spawn spot, used only when <see cref="SpawnPoints"/> is empty (falls back to this
+	/// GameObject). Kept so existing scenes still work; simultaneous spawns ring around it rather than stack.</summary>
 	[Property] public GameObject SpawnPoint { get; set; }
 
 	// ── Round defaults (tune in the inspector) ──────────────────────────────────────────────────────────────
@@ -113,14 +119,20 @@ public sealed class LobbyController : Component, IRoundContext
 	{
 		// Launched directly (you pressed Play on lobby.scene) there's no session yet, so Connection.All is empty and
 		// nothing would spawn. Self-host a single-player lobby — same trick DebugGameMode used — so the loop is
-		// testable straight from the scene. Entered through the menu's Host flow the session is already active, so
-		// this is skipped and we just join the existing one.
-		if ( !Networking.IsActive )
+		// testable straight from the scene. A client returning map→lobby behind the host is ALSO briefly !IsActive
+		// while it reconnects; that must never self-host (it'd fork into a private parallel lobby), so gate on
+		// session intent, not on timing.
+		if ( !Networking.IsActive && !MenuNetworking.EverInSession )
+		{
 			Networking.CreateLobby( new LobbyConfig { MaxPlayers = MaxLobbyPlayers } );
+			MenuNetworking.NoteSessionStarted();
+		}
 
 		// The host owns the round setup: seed the synced Settings from the inspector defaults (clients receive them
 		// via [Sync]) and spawn the setup panel (programmatically, like the pause/edit HUDs — clients don't get one).
-		if ( IsHostAuthority )
+		// Checked against the LIVE session (not IsHostAuthority, which reads true on a still-reconnecting client and
+		// would hand a mere client the host's setup panel).
+		if ( Networking.IsActive && Networking.IsHost )
 		{
 			Settings = DefaultSettings;
 			EnsureSetupHud();
@@ -156,7 +168,7 @@ public sealed class LobbyController : Component, IRoundContext
 		{
 			if ( _known.Add( c.Id ) )
 			{
-				Players[c.Id] = NewRow( c, PlayerRole.Hunter );
+				Players[c.Id] = NewRow( c, PlayerRole.Hunter, NextFreeSpawnIndex() );
 				SpawnPawn( c, PlayerRole.Hunter );
 			}
 		}
@@ -215,7 +227,7 @@ public sealed class LobbyController : Component, IRoundContext
 		if ( role is not PlayerRole.Hunter and not PlayerRole.Prop )
 			return;
 
-		var row = Players.TryGetValue( c.Id, out var existing ) ? existing : NewRow( c, role );
+		var row = Players.TryGetValue( c.Id, out var existing ) ? existing : NewRow( c, role, NextFreeSpawnIndex() );
 		row.Role = role;
 		Players[c.Id] = row;
 		_known.Add( c.Id );
@@ -337,8 +349,8 @@ public sealed class LobbyController : Component, IRoundContext
 	string NominatedHunterIds()
 		=> string.Join( ',', Players.Values.Where( p => p.Nominated ).Select( p => p.Connection ) );
 
-	// ── Spawning (mirrors RoundManager's, scoped to the lobby's single spawn) ────────────────────────────────
-	static PlayerInfo NewRow( Connection c, PlayerRole role ) => new()
+	// ── Spawning (mirrors RoundManager's, against the lobby's spawn point list) ─────────────────────────────
+	static PlayerInfo NewRow( Connection c, PlayerRole role, int spawnIndex ) => new()
 	{
 		Connection = c.Id,
 		Name = c.DisplayName,
@@ -347,7 +359,34 @@ public sealed class LobbyController : Component, IRoundContext
 		Found = false,
 		Nominated = false,
 		Score = 0,
+		SpawnIndex = spawnIndex,
 	};
+
+	// Lowest slot no current row holds — leavers free their spot, joiners fill the gap, so the lobby stays packed
+	// around the first points rather than marching ever further down the wrap.
+	int NextFreeSpawnIndex()
+	{
+		var used = Players.Values.Select( p => p.SpawnIndex ).ToHashSet();
+		var i = 0;
+		while ( used.Contains( i ) ) i++;
+		return i;
+	}
+
+	// The spot for a slot: point slot%N (SpawnPoints, else the legacy single SpawnPoint, else this GameObject),
+	// ringed outward via StackOffset once the points run out — same de-stack rule as RoundManager.PickSpot, so
+	// simultaneous spawns never overlap hulls no matter how few points the scene has.
+	Transform SpotAt( int slot )
+	{
+		var points = SpawnPoints?.Where( p => p.IsValid() ).ToList();
+		if ( points is null || points.Count == 0 )
+			points = new List<GameObject> { SpawnPoint.IsValid() ? SpawnPoint : GameObject };
+
+		var origin = points[slot % points.Count];
+		var stack = slot / points.Count;
+		return new Transform(
+			origin.WorldPosition + RoundSpawnPoint.StackOffset( stack ) + Vector3.Up * 64f,
+			Rotation.FromYaw( origin.WorldRotation.Yaw() ) );
+	}
 
 	GameObject SpawnPawn( Connection connection, PlayerRole role )
 	{
@@ -358,10 +397,7 @@ public sealed class LobbyController : Component, IRoundContext
 			return null;
 		}
 
-		var origin = SpawnPoint ?? GameObject;
-		var at = new Transform(
-			origin.WorldPosition + Vector3.Up * 64f,
-			Rotation.FromYaw( origin.WorldRotation.Yaw() ) );
+		var at = SpotAt( Players.TryGetValue( connection.Id, out var row ) ? row.SpawnIndex : 0 );
 
 		var pawn = prefab.Clone( at, name: $"Lobby Pawn ({role}) {connection.DisplayName}" );
 		if ( !pawn.IsValid() )

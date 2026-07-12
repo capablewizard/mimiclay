@@ -464,7 +464,8 @@
           "SpawnPoint": {
             "_type": "gameobject",
             "go": "a187ad1c-ec26-4a70-8e66-3dfd925190d0"
-          }
+          },
+          "SpawnPoints": []
         }
       ],
       "Children": []
@@ -730,7 +731,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "5b6f8454-a582-4b4e-82d6-5969fb690547"
+              "$blob": "77305b35-3938-4d9d-bc9e-d22ff6c8570c"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -755,6 +756,231 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "fe573416-f32c-40cf-ac35-53604651bee6",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoundSpawns",
+      "Position": "-147.377869,-81.8145142,23.1332855",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoundSpawnPoint",
+          "__guid": "c8fc1ac8-aca7-42d1-86d7-e2cedc7e7338",
+          "__enabled": true,
+          "Flags": 0,
+          "HunterStart": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "f40ec378-ba62-4b21-9487-5b15ec933738",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "cad0b2b2-9a98-4331-9270-88d440092931",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "4011aded-780b-4d3f-ae3a-80f1362d21e1",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "21.1792145,292.438873,-60.610939",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "f99cb09d-924d-4efd-9ead-107ad412701f",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "bc9f1677-016e-4f12-9ffb-f996354e8f80",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "-55.0375671,-133.236023,-60.6496964",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "ef561ba7-4004-42ff-bb69-2d5fd3b5c8d4",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "5f6cd485-600d-431b-b6f3-b7b3fa0a309d",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "-118.238434,-345.288635,-60.6441231",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "f8d32520-e087-4af5-9174-c5d449bae67e",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "0ee5a86a-b346-47d4-abe1-59dfe12ed860",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "-420.488464,456.392975,-60.6568985",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "88421a91-ac94-4d6e-bd06-7a71c5b72ff8",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "48713c14-422a-4d1b-a6ba-2d42a88d20a0",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "31.5769653,522.301392,-60.5893936",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "cd5b7c46-d1cb-4da3-90e2-99df1dd5ebba",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        }
+      ]
     }
   ],
   "SceneProperties": {

@@ -190,57 +190,7 @@
         "Width": 0
       }
     ],
-    "Children": [
-      {
-        "__guid": "56ee4b8a-e3b4-4246-88ca-9b2f53855a12",
-        "__version": 2,
-        "Flags": 0,
-        "Name": "Pause HUD",
-        "Position": "0,0,0",
-        "Rotation": "0,0,0,1",
-        "Scale": "1,1,1",
-        "Tags": "",
-        "Enabled": true,
-        "NetworkMode": 2,
-        "NetworkFlags": 0,
-        "NetworkOrphaned": 0,
-        "NetworkTransmit": true,
-        "OwnerTransfer": 1,
-        "Components": [
-          {
-            "__type": "Sandbox.ScreenPanel",
-            "__guid": "77019ac2-bc7d-4562-81d8-8feae7199f21",
-            "__enabled": true,
-            "Flags": 0,
-            "AutoScreenScale": true,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null,
-            "Opacity": 1,
-            "Scale": 1,
-            "ScaleStrategy": "ConsistentHeight",
-            "TargetCamera": null,
-            "ZIndex": 1000
-          },
-          {
-            "__type": "Mimiclay.PauseMenu",
-            "__guid": "e4343392-5f80-48e9-b1a5-ba7386830d79",
-            "__enabled": true,
-            "Flags": 0,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null
-          }
-        ],
-        "Children": []
-      }
-    ],
+    "Children": [],
     "__properties": {
       "NetworkInterpolation": true,
       "TimeScale": 1,

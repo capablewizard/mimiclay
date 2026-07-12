@@ -22,9 +22,9 @@
 		pointer-events: none;
 
 		.name {
+			// font-size comes from the razor (BaseNameSize × the NameplateScale property), inline per plate.
 			font-family: $body-font;
 			font-weight: $body-weight;
-			font-size: 18px;
 			color: $scene-text;
 			text-shadow: $scene-shadow;
 			white-space: nowrap;

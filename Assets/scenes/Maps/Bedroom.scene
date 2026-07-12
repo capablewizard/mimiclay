@@ -499,7 +499,7 @@
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": false,
+      "Enabled": true,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -511,6 +511,7 @@
           "__guid": "10997264-700e-4905-9732-3840de25b26b",
           "__enabled": true,
           "Flags": 0,
+          "LobbyScene": "scenes/lobby.scene",
           "CaughtPuffPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/caught_puff.prefab"
@@ -540,12 +541,12 @@
       "__guid": "57334bc2-fd1d-491b-9479-b4548ff1d2b0",
       "__version": 2,
       "Flags": 0,
-      "Name": "RoundManager (1)",
+      "Name": "DebugGameMode",
       "Position": "-128.581406,-98.0938568,68.1054382",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": true,
+      "Enabled": false,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -639,7 +640,7 @@
       "__guid": "c155c452-e283-4cf8-a524-29d8bcaca0da",
       "__version": 2,
       "Flags": 0,
-      "Name": "RoundSpawn",
+      "Name": "RoundSpawns",
       "Position": "-147.377869,-81.8145142,60.6295547",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
@@ -665,7 +666,200 @@
           "OnComponentUpdate": null
         }
       ],
-      "Children": []
+      "Children": [
+        {
+          "__guid": "4b955704-4ffa-4e80-9240-c50dff651f9b",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "0c58224e-27ec-44ff-9c4d-1b92f4272787",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "d6a3ac8d-375d-46ad-b161-bbb53df9449e",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "21.1792145,292.438873,-60.610939",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "06d72805-912a-445b-8d15-c7ad2171cde3",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "25a1b7d1-8300-405d-99ca-86fc36b4f558",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "-55.0375671,-133.236023,-60.6496964",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "01a67b18-e133-4548-9785-63a4838f50c7",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "dfcaf02a-924d-4c76-aa39-f431e172d877",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "-118.238434,-345.288635,-60.6441231",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "f53875aa-828c-4394-8464-9192fbd22a14",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "c6b7686c-bd6c-4a3b-a95a-6723e485edbc",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "-420.488464,456.392975,-60.6568985",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "cfd42f13-8642-4d9a-91f3-9a143cfae9e9",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "3f9c35ff-c6cb-48a1-9547-6abe047356da",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SpawnPoint",
+          "Position": "31.5769653,522.301392,-60.5893936",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "1adbb124-a121-4575-86d7-fc6165e62357",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        }
+      ]
     },
     {
       "__guid": "8b28ec4c-422a-4b0a-80ee-321a9cc3c2a6",
@@ -878,7 +1072,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0da75ad1-026d-4962-b3bf-73e0194c315d"
+                  "$blob": "14c27831-1bf8-4500-bb41-1a05fd099edf"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -934,7 +1128,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eadb8966-c74a-47e1-a4eb-1ce1f7b230ed"
+                  "$blob": "339bf38d-5a60-442f-9535-f1f0510abe30"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -990,7 +1184,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f686e791-1c9c-4315-9b68-e7d6b7acb425"
+                  "$blob": "91942204-a0d3-4587-af7e-4e1b867552d6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1046,7 +1240,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ebe007dd-4982-4d55-9c92-b28b0c3125e0"
+                  "$blob": "51b5f239-1622-48e1-a5cf-ba7ccf5a88a2"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1102,7 +1296,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "52704ba8-9e6e-4949-8961-cd86dca15dfd"
+                  "$blob": "8d8cf3ff-440e-4e09-a4da-3259b3391c79"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1158,7 +1352,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8fb416c3-1cc9-46c9-8644-52b14476e0d4"
+                  "$blob": "09a3616c-23d8-489b-8240-13795a21acac"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1214,7 +1408,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1cf4d4dc-fac4-4a46-9e8b-c72ea52cebd9"
+                  "$blob": "fe0305d8-2d11-48c2-ba6e-656bd2bb9a16"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1270,7 +1464,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a65f53d0-5e63-4184-8127-d4e6413bfd8a"
+                  "$blob": "77e42d31-7e6d-4665-b7f9-c6a4f245f56a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1326,7 +1520,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b87b4c68-df13-40c6-95f3-93704a8aede3"
+                  "$blob": "a8717e5e-20fe-4529-baec-18368dc42c9c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1382,7 +1576,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "52289553-3847-4526-8e92-28222450c1d9"
+                  "$blob": "acb97ef9-1683-42a5-9411-7c4f1dd010a6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1438,7 +1632,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6dde06f6-2556-4aaa-93cf-58b1cebe604f"
+                  "$blob": "5d1a7b53-3866-4971-869a-30b1d8335b0a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1494,7 +1688,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e9f23487-2634-4ad1-b955-c5c07fe83f16"
+                  "$blob": "33a1c33f-58c5-490d-b6f4-25ca8c474b08"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1550,7 +1744,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5bcb8b67-12db-43eb-9319-d2c07d85949a"
+                  "$blob": "03235294-8a6e-4eef-962a-2da5a071f049"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1606,7 +1800,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "13f890f3-0553-4d39-9576-ac7fdf6a27d3"
+                  "$blob": "ba3177aa-6520-4307-887e-324bc6711a59"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1662,7 +1856,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6e6b79db-54e8-416a-8dce-05a4e6dd9489"
+                  "$blob": "5135d60e-081d-457e-a56e-53357115b354"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1718,7 +1912,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c0b03650-087e-44e6-ae91-b29e7cc37639"
+                  "$blob": "e0037ac3-f219-402c-8b23-3d72170d5e80"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1774,7 +1968,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "aa7f32d2-fd08-4e40-8a22-6af6eaeb0680"
+                  "$blob": "54cc94fa-6079-48c1-9e6f-684689c7c616"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1830,7 +2024,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3ccf5a58-ac74-48cf-9a60-109944c6ba3c"
+                  "$blob": "270c6205-7126-4708-ade9-41510f721b93"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1886,7 +2080,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8947b51e-32e5-4f0b-a537-8a500847fab0"
+                  "$blob": "722c8716-60eb-44e8-a58c-9253175bdc87"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1942,7 +2136,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e3761b56-b293-4943-a80c-c934d73cd618"
+                  "$blob": "8970c875-d698-4aa9-992a-4aa578ade10f"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1998,7 +2192,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "cf834c98-114e-4ae9-9e04-352a524a185c"
+                  "$blob": "adf428e5-57b0-4e1a-80e7-3fd970e04f97"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2054,7 +2248,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eb8df4c0-f04b-4fea-846b-1763604e0c6b"
+                  "$blob": "f4f0f90c-474e-4b77-8111-f48250b66051"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2110,7 +2304,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "23a1aca2-2281-4882-a30e-61b453a0c5fe"
+                  "$blob": "f24b1d9d-92c2-423d-b67a-ed3c2719ee7a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2166,7 +2360,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "02176973-59f7-44a1-a6b7-ec50974ff9d7"
+                  "$blob": "7287231a-fd32-4581-b0d9-19c036dad552"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2222,7 +2416,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a7a12e24-b785-4068-b4b3-d7bde2535491"
+                  "$blob": "0660df41-9de4-4969-bb2e-23318164ab74"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2278,7 +2472,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3abebecc-78f2-4d99-baab-de8f670f07c4"
+                  "$blob": "1ab89db0-ec6e-4858-9568-92540dad2a84"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2334,7 +2528,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eb51708c-cc1c-4284-9544-8bb3ca9f4d61"
+                  "$blob": "c95c330c-3478-4e98-9171-716fee9863bc"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2390,7 +2584,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4549cab0-2c57-4609-89a0-8ca25fb58c44"
+                  "$blob": "ffd805cb-f614-452a-9341-9fc035573f04"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2446,7 +2640,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3052ac48-9534-4274-8ada-334070f9ffd0"
+                  "$blob": "0a9b2786-f2c9-4af5-8876-97c9f7c172d0"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2502,7 +2696,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d0de95f5-d89e-446b-a134-c9e875f575f1"
+                  "$blob": "29337a46-a31b-4e06-a7a2-70fdc12d1d03"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2558,7 +2752,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "600432e0-76ef-4eed-87ac-b008867f105b"
+                  "$blob": "5b800ee0-6c55-4ab3-aafd-4c410e5addd8"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2614,7 +2808,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a79cc3ef-a1a0-410c-9bc8-c17b12790461"
+                  "$blob": "f5be2209-3cbf-42eb-bf56-d8c675a8c850"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2670,7 +2864,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9287e11e-2fd9-450e-9630-316130452775"
+                  "$blob": "da6e7df7-d09f-44c3-a303-0bc0323efc1e"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2726,7 +2920,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9f24c5ad-77cb-4a67-b83a-c5b6cc44e420"
+                  "$blob": "0de216e8-ad18-4b03-8461-fe1359b6f0b0"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2782,7 +2976,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5b254b4f-6be9-4739-9cdb-ba0ac57735ec"
+                  "$blob": "1b3c1251-4d9e-488e-9785-e3767056a021"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2838,7 +3032,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8e86cb58-e628-4443-b6d5-0482edd0f1f9"
+                  "$blob": "8f37015f-ba8e-4fa6-a869-85bcce5c9a56"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2894,7 +3088,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "bae18999-f64a-4fa1-9a18-558c94bacbcb"
+                  "$blob": "c600c1de-46fe-4eef-b71f-0022dc45a069"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2950,7 +3144,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "911caba0-9e6c-42e2-9450-595e74bb52be"
+                  "$blob": "8ac5126b-f106-4670-8a8f-bbe3e5bbb194"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3006,7 +3200,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6c63bc1c-a38d-484e-95b0-69776bdcd26e"
+                  "$blob": "93cc74c7-d904-4c3d-8f33-616244a990ee"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3062,7 +3256,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a3ef037a-b06e-4b6e-93fb-7747873f7f91"
+                  "$blob": "e95db2b7-4971-4b10-bf83-d5228a15856e"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3118,7 +3312,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f4df5b19-cc23-4c3b-845d-238281834033"
+                  "$blob": "6ba4f7b0-2812-4dd2-bb37-e024dd66a0a0"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3174,7 +3368,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f2ff3e76-e192-4dc3-9cfa-675a98466372"
+                  "$blob": "86ef6fc7-f3bb-4b6b-8e23-9247916db395"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3230,7 +3424,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2640dad1-3ab5-4382-a841-92821d5b866e"
+                  "$blob": "e0822e72-73f6-47a3-b0c9-6b289c4df1cd"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3286,7 +3480,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d56c8ab8-4030-4cfa-9db6-082ae63243fc"
+                  "$blob": "7e685ba6-f840-40e6-90dc-faf250d754dc"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3342,7 +3536,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "40d93c3b-c15a-44b3-b345-1dd8d64581b2"
+                  "$blob": "eb519656-10f8-4040-adf4-a61c618f8ed1"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3398,7 +3592,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "06fdec2d-6b6c-43b6-a009-f38075b75ef6"
+                  "$blob": "d07e8e2a-6e79-4dce-b242-b05495e11279"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -5086,7 +5280,16 @@
           "__PrefabInstancePatch": {
             "AddedObjects": [],
             "RemovedObjects": [],
-            "PropertyOverrides": [],
+            "PropertyOverrides": [
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "25bded34-a4bf-4e2c-a10e-42f0e85a15dc"
+                },
+                "Property": "__enabled",
+                "Value": false
+              }
+            ],
             "MovedObjects": []
           },
           "__PrefabIdToInstanceId": {
