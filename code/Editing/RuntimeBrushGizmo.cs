@@ -142,7 +142,7 @@ public sealed class RuntimeBrushGizmo
 		{
 			foreach ( var pt in pts )
 				h = HashCode.Combine( h, pt );
-			h = HashCode.Combine( h, b.Curvature, b.SplineClosed );
+			h = HashCode.Combine( h, b.Curvature, b.SplineClosed, b.SplinePerPointRadius ); // per-point mode shows/hides the radius dots
 		}
 		return HashCode.Combine( h, _hover, _active, _style.VisualHash(), (int)(_masterAlpha * 100) );
 	}
@@ -284,15 +284,11 @@ public sealed class RuntimeBrushGizmo
 			{
 				var c = tx.PointToWorld( new Vector3( pts[i].x, pts[i].y, pts[i].z ) );
 				Hover( $"ptMove{i}", RayPointDist( _ray, c, out float dm ), dm, W( c, _style.SplinePointRadius * gs ) + GrabPad( c ) );
-				var rp = c + _sRight * pts[i].w;
-				Hover( $"ptRad{i}", RayPointDist( _ray, rp, out float dr ), dr, W( rp, _style.SplinePointRadius * _style.SplineRadiusDotScale * gs ) + GrabPad( rp ) );
-			}
-
-			// Close-loop toggle handle, at the midpoint of the gap between the last and first points (>= 3 pts).
-			if ( pts.Count >= 3 )
-			{
-				var mid = SplineCloseMid( tx, brush );
-				Hover( "splineClose", RayPointDist( _ray, mid, out float dc ), dc, W( mid, _style.SplinePointRadius * gs ) + GrabPad( mid ), PriorityScreen );
+				if ( brush.SplinePerPointRadius ) // radius dots only in per-point mode (else the HUD Size slider drives all)
+				{
+					var rp = c + _sRight * pts[i].w;
+					Hover( $"ptRad{i}", RayPointDist( _ray, rp, out float dr ), dr, W( rp, _style.SplinePointRadius * _style.SplineRadiusDotScale * gs ) + GrabPad( rp ) );
+				}
 			}
 		}
 
@@ -368,11 +364,11 @@ public sealed class RuntimeBrushGizmo
 			for ( int i = 0; i < pts.Count; i++ )
 			{
 				changed |= SplinePointMove( tx, brush, i, gs, n );
-				changed |= SplinePointRadius( tx, brush, i, gs, n );
+				if ( brush.SplinePerPointRadius )
+					changed |= SplinePointRadius( tx, brush, i, gs, n );
 			}
 
-			changed |= SplineCloseToggle( tx, brush, gs );
-
+			// Close-loop and per-point-radius are HUD chips now (next to the sliders), not 3D handles.
 			// The line-click insert is driven by the HUD's add-point cursor panel (TryInsertSplinePoint), not
 			// here — that pointer-events:all panel sits under the cursor and swallows the raw Attack1 click.
 		}
@@ -466,52 +462,6 @@ public sealed class RuntimeBrushGizmo
 	}
 
 	// ── handles (draw + drag) ────────────────────────────────────────────────────────────────────────
-
-	static readonly Color SplineCloseColor = new( 0.4f, 0.9f, 0.5f );   // green: click to close the loop
-	static readonly Color SplineBreakColor = new( 0.9f, 0.3f, 0.3f ); // muted red: click to open the loop
-
-	Vector3 SplineCloseMid( Transform tx, SdfBrush brush )
-	{
-		var pts = brush.Points;
-		var wLast = tx.PointToWorld( new Vector3( pts[^1].x, pts[^1].y, pts[^1].z ) );
-		var wFirst = tx.PointToWorld( new Vector3( pts[0].x, pts[0].y, pts[0].z ) );
-		return (wLast + wFirst) * 0.5f;
-	}
-
-	// "Close loop" toggle: a handle at the gap midpoint. While OPEN it sits on a faint ghost of the closing
-	// segment (last to first); clicking closes the loop. While CLOSED the segment is already part of the centre
-	// line; clicking opens it. Needs >= 3 points to be a real ring.
-	bool SplineCloseToggle( Transform tx, SdfBrush brush, float gs )
-	{
-		var pts = brush.Points;
-		if ( pts is not { Count: >= 3 } )
-			return false;
-
-		const string name = "splineClose";
-		bool hot = IsHot( name );
-		var mid = SplineCloseMid( tx, brush );
-
-		// Idle it's just a small quiet marker; ONLY on hover does the ghost closing segment appear (preview of
-		// the join) and the dot grow — so an open spline you aren't closing isn't cluttered by a permanent line.
-		if ( !brush.SplineClosed && hot )
-		{
-			var wLast = tx.PointToWorld( new Vector3( pts[^1].x, pts[^1].y, pts[^1].z ) );
-			var wFirst = tx.PointToWorld( new Vector3( pts[0].x, pts[0].y, pts[0].z ) );
-			Line( wLast, wFirst, _style.SplineThickness( false ), Tint( SplineCloseColor.WithAlpha( 0.85f ), "transform" ) );
-		}
-
-		float fullR = W( mid, _style.SplinePointRadius * gs );
-		var col = brush.SplineClosed ? SplineBreakColor : SplineCloseColor;
-		Disc( mid, hot ? fullR * _style.HotScale : fullR * 0.5f, Tint( hot ? Color.Lerp( col, Color.White, 0.4f ) : col.WithAlpha( 0.55f ), "transform" ) );
-
-		if ( _pressed && _hover == name )
-		{
-			brush.SplineClosed = !brush.SplineClosed;
-			return true;
-		}
-
-		return false;
-	}
 
 	bool MoveAxis( Transform tx, SdfBrush brush, int i, Vector3 c, Vector3 axis, float inner, float outer )
 	{

@@ -86,9 +86,18 @@ public class SdfBrush
 	[Property, Range( 0f, 1f ), Group( "Spline" )] public float Curvature { get; set; } = 1f;
 
 	/// <summary>Closed spline: also join the last control point back to the first (a loop / ring), with the
-	/// Catmull-Rom tangents wrapping around instead of clamping at the ends. Toggled by the ghost-arc handle on
-	/// the gizmo.</summary>
+	/// Catmull-Rom tangents wrapping around instead of clamping at the ends. Toggled by the Loop chip in the
+	/// HUD's slider stack.</summary>
 	[Property, Group( "Spline" )] public bool SplineClosed { get; set; }
+
+	/// <summary>Per-point radius editing for the spline — a UI MODE, not geometry (the tube always reads each
+	/// point's <c>w</c>). ON = every control point keeps its own radius dot in the 3D view; OFF (the default) =
+	/// the radius dots hide and the HUD shows one Size slider that drives every point's radius together.
+	/// Toggling it off folds varied radii to their average (the slider has to show a single number).</summary>
+	[Property, Group( "Spline" )] public bool SplinePerPointRadius { get; set; }
+
+	/// <summary>Cap for the HUD's uniform spline Size slider (per-point radius dot drags stay unbounded).</summary>
+	public const float MaxSplineRadius = 32f;
 
 	/// <summary>Sub-segments per span when the spline is curved (Curvature &gt; 0). Higher = smoother but more
 	/// cost in the live per-brush march (the field cache / mesh bake it once, so they don't care).</summary>
@@ -171,6 +180,7 @@ public class SdfBrush
 		Points = Points is null ? null : new List<Vector4>( Points ), // deep copy (Vector4 is a value type)
 		Curvature = Curvature,
 		SplineClosed = SplineClosed,
+		SplinePerPointRadius = SplinePerPointRadius,
 	};
 
 	/// <summary>Mix every shape-defining property of this brush into a running FNV-1a hash — THE one canonical
@@ -281,6 +291,7 @@ public class SdfBrush
 		MirrorY = b.MirrorY;
 		MirrorZ = b.MirrorZ;
 		SplineClosed = b.SplineClosed; // structural — snap, never interpolate
+		SplinePerPointRadius = b.SplinePerPointRadius; // UI mode — snap (geometry ignores it)
 	}
 
 	/// <summary>Signed distance from <paramref name="p"/> (sculpture-local space) to this brush, including

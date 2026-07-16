@@ -174,6 +174,9 @@
 			var xsVal = fb?.CrossSection ?? SdfCrossSection.Triangle;
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
+			var splinePerPoint = fb?.SplinePerPointRadius ?? false;
+			var splineSizeVal = fb?.Points is { Count: > 0 } sp ? sp[0].w : 10f; // uniform mode keeps all radii equal — point 0 IS the value
+			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
 			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @(SliderWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
@@ -184,6 +187,23 @@
 				{
 					<ClaySlider Label="Curve" Value=@curveVal Min=@(0f) Max=@(1f)
 						OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
+					@* Uniform size mode: one slider drives every control point's radius. Per-point mode swaps
+					   it for the 3D radius dots (the linear_scale chip below toggles between them). *@
+					@if ( !splinePerPoint )
+					{
+						<ClaySlider Label="Size" Value=@splineSizeVal Min=@(1f) Max=@SdfBrush.MaxSplineRadius
+							OnInput=@((float v) => SetSplineSize( v )) OnCommit=@CommitEdit />
+					}
+					@* Loop (close the ring; needs 3+ points) and per-point-size chips — same paper style as the
+					   extruded profile picker. These used to be 3D handles / dots on the gizmo. *@
+					<div class="xsection-row">
+						<div class="chip mini @(fb?.SplineClosed == true ? "on" : "") @(canLoop ? "" : "disabled")" @onclick=@(() => ToggleSplineClosed())>
+							<div class="icon">loop</div><span>Loop</span>
+						</div>
+						<div class="chip mini @(splinePerPoint ? "on" : "")" @onclick=@(() => ToggleSplinePerPoint())>
+							<div class="icon">linear_scale</div><span>Per Point</span>
+						</div>
+					</div>
 				}
 				else
 				{
@@ -599,6 +619,50 @@
 		Session?.PreviewChanged();
 	}
 
+	// Uniform spline size: the one slider drives every control point's radius together (per-point mode
+	// swaps this slider for the 3D radius dots).
+	void SetSplineSize( float v )
+	{
+		var pts = Brush?.Points;
+		if ( pts is not { Count: > 0 } )
+			return;
+		float r = Math.Clamp( v, 1f, SdfBrush.MaxSplineRadius );
+		for ( int i = 0; i < pts.Count; i++ )
+			pts[i] = new Vector4( pts[i].x, pts[i].y, pts[i].z, r );
+		Session?.PreviewChanged();
+	}
+
+	// Close/open the spline ring (the old gizmo gap-midpoint handle, now a chip). Needs 3+ points to be a ring.
+	void ToggleSplineClosed()
+	{
+		if ( Brush is null || Brush.Points is not { Count: >= 3 } )
+			return;
+		Brush.SplineClosed = !Brush.SplineClosed;
+		Session?.NotifyChanged();
+	}
+
+	// Swap between per-point radius dots and the uniform Size slider. Going TO uniform folds varied radii to
+	// their average — the slider has to show (and honestly control) a single number. Going to per-point keeps
+	// the current radii as-is, so the dots pick up exactly where the slider left them.
+	void ToggleSplinePerPoint()
+	{
+		var b = Brush;
+		if ( b?.Points is not { Count: > 0 } pts )
+			return;
+
+		b.SplinePerPointRadius = !b.SplinePerPointRadius;
+		if ( !b.SplinePerPointRadius )
+		{
+			float avg = 0f;
+			foreach ( var pt in pts )
+				avg += pt.w;
+			avg = Math.Clamp( avg / pts.Count, 1f, SdfBrush.MaxSplineRadius );
+			for ( int i = 0; i < pts.Count; i++ )
+				pts[i] = new Vector4( pts[i].x, pts[i].y, pts[i].z, avg );
+		}
+		Session?.NotifyChanged();
+	}
+
 	/// <summary>The selected text brush's string, two-way bound to the HUD's TextEntry. Setting it re-bakes
 	/// the glyph field and resizes the quad so the LETTERS keep a constant world height — the quad grows
 	/// with the string. The quad stays locked to the glyph slot's 2:1 aspect: the slot→world mapping must be
@@ -976,6 +1040,10 @@
 		hc.Add( b?.Rounding ?? 0f );   // drives the 2D roundness slider's fill
 		hc.Add( b?.Slice ?? 0f );      // drives the slice slider's fill (sphere/cone)
 		hc.Add( b?.Curvature ?? 0f );  // drives the spline curvature slider's fill
+		hc.Add( b?.SplineClosed ?? false );         // highlights the Loop chip
+		hc.Add( b?.SplinePerPointRadius ?? false ); // highlights the Per Point chip + swaps slider/dots
+		hc.Add( b?.Points is { Count: > 0 } bp ? bp[0].w : 0f ); // drives the uniform Size slider's fill
+		hc.Add( b?.Points?.Count ?? 0 );            // enables/disables the Loop chip (3+ points)
 		hc.Add( (int)(b?.Shape ?? SdfShape.Sphere) ); // show/hide the curvature slider (spline only)
 		hc.Add( (int)(b?.CrossSection ?? SdfCrossSection.Triangle) ); // highlight the picked profile chip
 		hc.Add( b?.Text ); // show/refresh the text-entry row

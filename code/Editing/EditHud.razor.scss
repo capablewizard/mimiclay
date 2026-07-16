@@ -420,8 +420,18 @@
 
 			.chip.mini {
 				padding: 8px 0;
+				gap: 6px;
 
 				.icon { font-size: 22px; color: $paper-ink; }
+
+				// Spline chips carry a short label next to the glyph (Loop / Per Point).
+				span { font-size: 13px; }
+
+				// Loop needs 3+ points to be a ring — until then the chip is visibly parked.
+				&.disabled {
+					opacity: 0.45;
+					pointer-events: none;
+				}
 			}
 		}
 
