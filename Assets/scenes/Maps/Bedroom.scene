@@ -1072,7 +1072,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "298d73b3-04ed-4258-94f8-0fd5eaa719d3"
+                  "$blob": "f0b2aa2c-8dbf-4aaa-80ec-37ed99f55f73"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1128,7 +1128,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e7c74689-3674-4789-89b4-1aaeb1bb9995"
+                  "$blob": "efc408b8-a5ed-4f1e-a483-3b9454149742"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1184,7 +1184,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "84ddbd21-b20b-41ec-baa7-17d854fd2b58"
+                  "$blob": "bd4de22c-49bc-444d-87d6-384ebe829751"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1240,7 +1240,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "dc9e6177-80eb-48db-98d3-0fe181007f9d"
+                  "$blob": "2762d096-e857-429f-a142-73e7b0b30f94"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1296,7 +1296,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b6678410-b9e6-42cb-b8a9-80cceea8176a"
+                  "$blob": "190bffd5-b0ee-4721-9f67-694f5e16f0e7"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1352,7 +1352,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2c92164c-2a96-47b5-9d9e-f9b61b9186b7"
+                  "$blob": "3ba4b8d6-922d-4b45-9618-6fabd87dad53"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1408,7 +1408,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a0f1e517-95cd-4d8a-9bcd-cd1e90cf4e4a"
+                  "$blob": "78d00400-9e8d-4fb8-be67-de631fb73f26"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1464,7 +1464,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eb90d718-8f91-4e8c-b5f5-ad79311164b1"
+                  "$blob": "c06fdd81-74a9-46d8-b94d-22b512b33ec0"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1520,7 +1520,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8d5687b2-f015-4a0f-b8a3-8e98194ffbb2"
+                  "$blob": "fa38449c-63ad-4379-a13a-e0af7a66e07d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1576,7 +1576,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "de94d0fa-dbd5-44d9-b414-51a47d715f52"
+                  "$blob": "73197f76-94bd-40b9-9c61-e88b50caabb5"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1632,7 +1632,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f4cd4cfa-1283-4fae-b029-b2e192f63043"
+                  "$blob": "f27e8c2f-09f5-4ebd-b77f-8623e22cb5a8"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1688,7 +1688,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "63a2d5d0-0ac5-4160-bb25-dea00888adb6"
+                  "$blob": "5cea6248-03ed-4bfd-b6ff-b95b6748d6c1"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1744,7 +1744,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c9207ab5-b1d2-47bd-8436-bf2c214fbe40"
+                  "$blob": "8a057b76-38b9-4612-a51b-399950e43c84"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1800,7 +1800,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ef752233-c7bd-4036-8c56-9b69a3b5c8a9"
+                  "$blob": "d7824ea1-30bd-40cb-b065-0d0b1830d203"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1856,7 +1856,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eae93c1b-60f9-4ae1-84f6-23a1453f3c20"
+                  "$blob": "aee7c0de-fc95-4f56-8615-8827a8b961de"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1912,7 +1912,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d96e2609-1537-4e74-8395-50fd45639e5e"
+                  "$blob": "13a78cac-bb00-4562-ba38-06f05573cf27"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1968,7 +1968,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "01df4309-92ae-4e6d-959c-401d49a6d4c3"
+                  "$blob": "ccbb4436-d6f0-40ce-a4bb-fbef717942cf"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1997,7 +1997,7 @@
         {
           "__guid": "a3db7119-73fa-4c02-97c5-a8705ad3367d",
           "__version": 2,
-          "Flags": 0,
+          "Flags": 32768,
           "Name": "Chair Seat",
           "Position": "242,464,25",
           "Rotation": "0,0,0,1",
@@ -2024,7 +2024,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4b34c276-5e11-4216-a0a8-905ef739e239"
+                  "$blob": "9002222c-9f45-4610-991c-b4a1484c8915"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2053,7 +2053,7 @@
         {
           "__guid": "b5881d53-e6ae-4cf9-8eaf-608e42043055",
           "__version": 2,
-          "Flags": 0,
+          "Flags": 32768,
           "Name": "Chair Back",
           "Position": "242,435,90",
           "Rotation": "0,0,0,1",
@@ -2080,7 +2080,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f32bd2d6-c00a-418f-be31-7f91f8a732b3"
+                  "$blob": "89ed6a5e-db36-4a7a-8e8f-713c41fb560e"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2136,7 +2136,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8c39648c-a960-400d-85e3-9042a80693d5"
+                  "$blob": "428eac82-410e-4a90-82b1-077472cdcfbf"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2192,7 +2192,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "14a114b4-1344-4672-b523-5736da98c0a7"
+                  "$blob": "a65a38f9-34e8-4685-9ca8-7a6e10c9bb73"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2248,7 +2248,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "47041132-71f9-4ab6-b22c-4d53c78a39d2"
+                  "$blob": "3c480661-e590-436b-ada6-c54819618812"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2304,7 +2304,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f3cc1715-f385-482b-b9cc-1b1e4a9e6896"
+                  "$blob": "06f1761b-c47a-4664-b706-0c901fb33f9a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2360,7 +2360,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "35153987-55b8-443e-959d-fcafec5239b6"
+                  "$blob": "5ecfa534-c2fd-47e2-96a0-767808ac3aad"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2416,7 +2416,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "bad30acf-414c-4294-ab76-fea4b6f8df1e"
+                  "$blob": "25eea9c9-4a21-461d-9e17-a9e26574601d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2472,7 +2472,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7c12021e-e13b-4d2d-bb72-b211ef546816"
+                  "$blob": "1163b304-a0a9-4e1a-afb8-3b2dc0fa646b"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2528,7 +2528,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "31699560-43a9-4e78-a0c7-d7b77595097b"
+                  "$blob": "b1cb06d7-51b6-421c-af0f-2c1904f5cd53"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2584,7 +2584,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c84e48de-0d89-4a7e-8888-df8612015d2f"
+                  "$blob": "03a76fc3-2913-47f8-9554-a7cd356d98c5"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2640,7 +2640,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9a8f97af-dd51-481a-bcd7-b4bcf300429e"
+                  "$blob": "6432e655-93cf-4a53-902a-3c32119174c8"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2696,7 +2696,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "09ccc3c6-cf27-4819-9f93-9eeefb808714"
+                  "$blob": "baeadde2-74a3-4821-a8de-e6cd4e895428"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2752,7 +2752,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8647a6eb-4542-404d-8163-1897cfb75974"
+                  "$blob": "4b9c0194-8bf5-4c3e-bde4-16db3028eae2"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2808,7 +2808,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9bd5a2d4-7b36-4223-b7ea-3f69879c56f9"
+                  "$blob": "323f01fe-18b7-4473-98d2-8ff856f15464"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2864,7 +2864,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f472535f-da19-40a4-9938-7e4ec430355a"
+                  "$blob": "d89db2fa-9dcf-4b86-be6d-b196fdd210e2"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2920,7 +2920,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0250308f-f219-4f7b-97bf-5e4398073b7c"
+                  "$blob": "9ccafd84-37b4-4189-829b-3e855d4e11fc"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2976,7 +2976,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7a90e9ee-772f-4db1-9269-60835f319695"
+                  "$blob": "14bcd958-a05f-4791-b5a6-764787139d57"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3032,7 +3032,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "80c276ee-93c0-4611-a882-e73020d58c40"
+                  "$blob": "8a88bb20-5dbd-4606-9f16-baceed619e8c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3088,7 +3088,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7d906f72-28b7-4bc7-bb7f-51551fbe1b0b"
+                  "$blob": "4393cdb0-1725-49ba-a7d5-664a059a9cb8"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3144,7 +3144,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6a86842b-c84c-4869-897e-a00e21b955fc"
+                  "$blob": "ad8f1747-5c47-47c5-90f3-d8a7f554a865"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3200,7 +3200,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3b5bb652-fa9a-49b0-885a-b98f4477306e"
+                  "$blob": "3f9a7d07-9f28-4d85-968c-552e21edcfe1"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3256,7 +3256,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "53f55b5f-bd7a-4cda-ac15-4fc02e2b930d"
+                  "$blob": "89d6da20-add3-46c4-8c9e-e23f6f528b7e"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3312,7 +3312,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e67f50a5-e0d6-42ad-b834-993a0d946e24"
+                  "$blob": "144f05ad-79ff-4fbd-a2a3-1c00a3dac4c1"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3368,7 +3368,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4854c57a-c611-42ae-8764-9a92221051a8"
+                  "$blob": "9b357586-0ff9-42ee-8aa6-fe63ccc6cef2"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3424,7 +3424,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2d12a009-f9bc-4bac-ba60-350839c5aea2"
+                  "$blob": "1ffff941-3e61-4dc2-95ec-15d88af6e035"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3480,7 +3480,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4503c564-32b7-49a0-9036-b003b930d8e7"
+                  "$blob": "119507c6-9980-402d-9a1b-273b28e88680"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3536,7 +3536,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e36d7251-83ae-4ef0-8792-10acf3867044"
+                  "$blob": "34eb8a9f-52ea-44ad-bc86-53cb9beef766"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3592,7 +3592,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "aa2eb235-2c2e-4a3f-b62a-80d633f96a50"
+                  "$blob": "bfdcff04-0936-456b-b2d1-931ac487fb5e"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3985,6 +3985,7 @@
                   "Points": [],
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4012,6 +4013,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4039,6 +4041,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4066,6 +4069,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4093,6 +4097,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4120,6 +4125,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4147,6 +4153,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4174,6 +4181,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4201,6 +4209,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4228,6 +4237,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4255,6 +4265,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4390,6 +4401,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4417,6 +4429,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4675,6 +4688,7 @@
                   "Points": [],
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4702,6 +4716,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4729,6 +4744,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4756,6 +4772,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4783,6 +4800,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4810,6 +4828,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4837,6 +4856,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4864,6 +4884,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4891,6 +4912,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4918,6 +4940,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -4945,6 +4968,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -5080,6 +5104,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -5107,6 +5132,7 @@
                   "Points": null,
                   "Curvature": 1,
                   "SplineClosed": false,
+                  "SplinePerPointRadius": false,
                   "Slice": 0,
                   "SlicePlaneN": 1,
                   "LocalCentre": "0,0,0",
@@ -5347,6 +5373,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5391,6 +5418,7 @@
                 ],
                 "Curvature": 1,
                 "SplineClosed": true,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5435,6 +5463,7 @@
                 ],
                 "Curvature": 1,
                 "SplineClosed": true,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5479,6 +5508,7 @@
                 ],
                 "Curvature": 1,
                 "SplineClosed": true,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5583,6 +5613,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5635,6 +5666,7 @@
                 ],
                 "Curvature": 1,
                 "SplineClosed": true,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5755,6 +5787,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5782,6 +5815,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5809,6 +5843,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5836,6 +5871,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5863,6 +5899,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5890,6 +5927,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5917,6 +5955,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5944,6 +5983,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5971,6 +6011,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -5998,6 +6039,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6025,6 +6067,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6052,6 +6095,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6079,6 +6123,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6106,6 +6151,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6133,6 +6179,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6160,6 +6207,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6187,6 +6235,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6214,6 +6263,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6241,6 +6291,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6268,6 +6319,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6295,6 +6347,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6322,6 +6375,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6349,6 +6403,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6376,6 +6431,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6403,6 +6459,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6430,6 +6487,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6457,6 +6515,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6484,6 +6543,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6511,6 +6571,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6538,6 +6599,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6565,6 +6627,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6592,6 +6655,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6619,6 +6683,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -6995,6 +7060,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7022,6 +7088,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7049,6 +7116,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7076,6 +7144,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7103,6 +7172,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7130,6 +7200,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7157,6 +7228,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7184,6 +7256,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7211,6 +7284,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7238,6 +7312,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7265,6 +7340,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7292,6 +7368,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7319,6 +7396,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7346,6 +7424,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7373,6 +7452,7 @@
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7477,6 +7557,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7504,6 +7585,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7531,6 +7613,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7558,6 +7641,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7585,6 +7669,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7612,6 +7697,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7639,6 +7725,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7743,6 +7830,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7770,6 +7858,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7797,6 +7886,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7824,6 +7914,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7851,6 +7942,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7878,6 +7970,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
@@ -7905,6 +7998,7 @@
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
+                "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
