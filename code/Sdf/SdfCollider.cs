@@ -7,8 +7,9 @@ namespace Mimiclay;
 /// Gives an <see cref="SdfSculpture"/> physics. Add this component alongside a sculpture to make it solid;
 /// leave it off (e.g. on player-model parts) and the sculpture is a pure visual. Mirrors how s&amp;box splits
 /// <c>ModelRenderer</c> (visual) from <c>ModelCollider</c> (physics): the sculpture owns shapes + properties,
-/// this owns collision. It reads the sibling sculpture's brushes, builds a cheap primitive collider via
-/// <see cref="SdfCollisionBuilder"/>, and drives a sibling <see cref="ModelCollider"/> with the result.
+/// this owns collision. It reads the sibling sculpture's brushes, builds a cheap convex collider (carve-aware:
+/// heavily subtracted brushes become hollowed voxel boxes, so an open bin really is open — see
+/// <see cref="SdfCollisionBuilder"/>), and drives a sibling <see cref="ModelCollider"/> with the result.
 ///
 /// Rebuilds itself whenever the shape is COMMITTED — it subscribes to <see cref="SdfSculpture.Committed"/>
 /// (gizmo release / discrete edits / a networked disguise swap), never mid-drag — so gameplay code never has
@@ -68,7 +69,10 @@ public sealed class SdfCollider : Component
 		_sculpture ??= GameObject.Components.Get<SdfSculpture>();
 		var brushes = _sculpture.IsValid() ? _sculpture.Brushes : null;
 
-		var model = SdfCollisionBuilder.Build( brushes );
+		// The carved-copy record keeps the foot probes in lockstep with the collider: any copy Build swaps to
+		// voxel boxes gets its probes placed ON those boxes (see ComputeFootPoints), not on the smooth field.
+		var carved = new List<SdfCollisionBuilder.CarvedCopy>();
+		var model = SdfCollisionBuilder.Build( brushes, carved );
 
 		var collider = GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
@@ -79,7 +83,7 @@ public sealed class SdfCollider : Component
 		try
 		{
 			_footPoints = brushes is not null
-				? SdfCollisionBuilder.ComputeFootPoints( brushes, FootProbeSpacing )
+				? SdfCollisionBuilder.ComputeFootPoints( brushes, FootProbeSpacing, carved )
 				: new();
 		}
 		catch
