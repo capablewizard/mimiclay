@@ -126,6 +126,13 @@ PS
 	// body, mirroring ModelRenderer.ShadowsOnly.
 	float     g_flSdfShadowBias < Attribute( "SdfShadowBias" ); Default( 0.0 ); >;
 	int       g_nSdfShadowOnly  < Attribute( "SdfShadowOnly" ); Default( 0 ); >;
+	// Viewmodel (the hunter's first-person gun, drawn via the overlay layer): 1 = depth-squash BOTH passes
+	// toward the camera (forward: the overlay's scene-depth test can never clip it into world geometry;
+	// prepass: screen-space AO sees a tiny near-camera blob depth-isolated from the world, so SSAO reads
+	// ~1 — no wall-AO splotches, no approach/intersection blackening) and swap the material AO for a 5-tap
+	// AO computed from the DISTANCE FIELD itself, which the engine min()s against the neutral screen AO.
+	// Screen-space AO at a viewmodel's REAL depth is unfixable: the world legitimately occludes it there.
+	int       g_nSdfViewmodel   < Attribute( "SdfViewmodel" );  Default( 0 ); >;
 	// Adaptive quality (scaled by on-screen size): floors used when the object is small/far, and
 	// the near/far LOD distances measured in BOUNDING-RADII. Defaults keep quality maxed (LOD off).
 	int       g_nMinSteps   < Attribute( "MinSteps" );   Default( 96 ); >;
@@ -449,6 +456,26 @@ PS
 		return (t1 + t2 + t3 + t4 - 4.0 * SdfDistWs( p )) / e;
 	}
 
+	// 5-tap distance-field ambient occlusion (the classic ladder): step outward along the normal and
+	// compare how much free space the field reports against how far we walked — the shortfall, weighted
+	// toward the near taps, is occlusion. Exact against the object's own geometry and fully screen-space
+	// independent, so it stands in for SSAO on the VIEWMODEL (whose squashed depth makes screen AO read
+	// neutral — screen AO at a viewmodel's real depth is unfixable, the world legitimately occludes it).
+	// Tap heights (0.8..4 units) suit gun-scale crevices. 5 field samples, same cost family as curvature.
+	float SdfAO( float3 p, float3 n )
+	{
+		float occ = 0.0;
+		float sca = 1.0;
+		[unroll]
+		for ( int k2 = 1; k2 <= 5; k2++ )
+		{
+			float h = 0.8 * k2;
+			occ += max( h - SdfDistWs( p + n * h ), 0.0 ) / h * sca;
+			sca *= 0.6;
+		}
+		return saturate( 1.0 - 0.55 * occ ); // occ tops out ~2.3 (the weight sum) -> full enclosure clamps to 0
+	}
+
 	// --- Transmission / subsurface (D_TRANSMISSION). The whole reason this is cheap: meshes need a
 	// baked thickness map because they don't know their own interior — we have the actual field, so we
 	// read thickness straight out of it. Forward pass only (the depth prepass returns before shading,
@@ -761,6 +788,7 @@ PS
 			return o;
 		}
 
+
 		float3 p;
 		if ( !RayMarchHit( i, p ) )
 		{
@@ -779,6 +807,13 @@ PS
 		float3 pd = p;
 		if ( IsOrthoView() )
 			pd += normalize( g_vCameraDirWs ) * g_flSdfShadowBias;
+		// Viewmodel: the prepass depth is squashed toward the camera with the SAME transform as forward —
+		// the depth buffer then holds a tiny near-camera blob whose huge depth gap to every world surface
+		// makes screen-space AO ignore it entirely (its own AO comes from the field instead, in forward).
+		// Coverage still matches the overlay exactly, so the game-pass pixels this culls all get gun colour.
+		// (Shadow/ortho views never see a viewmodel — CastShadows is off — so the squash can't corrupt them.)
+		if ( g_nSdfViewmodel != 0 )
+			pd = g_vCameraPositionWs + ( pd - g_vCameraPositionWs ) * 0.02;
 		o.vColor = DepthNormals::Output( SdfNormal( p ) );
 		o.flDepth = DepthFromWorld( pd );
 		return o;
@@ -799,6 +834,18 @@ PS
 		float flDepthNudge = 0.1;
 	#endif
 		float flSurfaceDepth = DepthFromWorld( p - normalize( i.vPositionWithOffsetWs ) * flDepthNudge );
+
+		// Viewmodel: the depth-nudge idea taken to its extreme — project the hit from a point squashed 98%
+		// of the way to the camera, so this depth beats any world surface in whatever depth convention is
+		// active (points inside the near plane clamp to the viewport near bound, which still wins). Squash
+		// the NUDGED point: the prepass wrote the same squash of the un-nudged hit, and depth precision is
+		// at its densest near the camera, so the nudge keeps forward on the winning side of its own prepass
+		// value exactly like the normal path. This makes the overlay a true draw-over instead of scene-clipped.
+		if ( g_nSdfViewmodel != 0 )
+		{
+			float3 pn = p - normalize( i.vPositionWithOffsetWs ) * flDepthNudge;
+			flSurfaceDepth = DepthFromWorld( g_vCameraPositionWs + ( pn - g_vCameraPositionWs ) * 0.02 );
+		}
 
 		// LOD debug: flat heatmap by quality (red = floor / cheapest, yellow = mid, green = full).
 		if ( g_flDebugLod > 0.5 )
@@ -837,6 +884,11 @@ PS
 		m.Albedo = albedo * g_vTintColor * surf.col;
 		m.Roughness = max( saturate( roughness * g_flRoughness * surf.rough ), 0.08 );
 		m.Metalness = saturate( surf.metal + g_flMetalness );
+
+		// Viewmodel: self-AO computed from the field replaces screen-space AO (which the squashed depth
+		// neutralized to ~1). The engine min()s material AO with screen AO, so this term simply wins.
+		if ( g_nSdfViewmodel != 0 )
+			m.AmbientOcclusion = SdfAO( p, baseN );
 
 		// Curvature → diffuse: darken crevices (seam grime), lift ridges (worn edges) — clay reads its
 		// shape through these cues even under flat light. Albedo only, so lighting/spec stay physical.

@@ -82,12 +82,34 @@ public sealed class HunterGun : Component
 	/// z up) — tune where the grip sits in the hand without moving the hand (and the arm arc) itself.</summary>
 	[Property, Group( "Arm" )] public Vector3 HandOffset { get; set; } = Vector3.Zero;
 
-	/// <summary>Viewmodel offset from the camera eye, in aim space (x forward, y left, z up).</summary>
+	/// <summary>Viewmodel offset from the camera eye, in aim space (x forward, y left, z up), as authored at
+	/// <see cref="ViewBaseFov"/>. At other FOVs the forward component is compensated (see Place) so the gun
+	/// keeps the same screen position and apparent size instead of swimming with the FOV setting.</summary>
 	[Property, Group( "Placement" )] public Vector3 ViewOffset { get; set; } = new( 15f, -8f, -12f );
+
+	/// <summary>The camera FOV <see cref="ViewOffset"/> was tuned at. When the live camera FOV differs (user
+	/// preference, zoom), the viewmodel's forward distance is scaled by tan(base/2)/tan(live/2) — that single
+	/// scale keeps both the on-screen position AND the apparent size of the gun where you authored them.</summary>
+	[Property, Group( "Placement" ), Range( 40f, 120f )] public float ViewBaseFov { get; set; } = 90f;
+
+	/// <summary>Which render path the viewmodel draws through — live-tweakable debug switch while the anti-clip
+	/// path is proven out. Normal = game pass (clips into walls, always visible). Viewmodel = native viewmodel
+	/// layer (on top + altered depth — currently renders invisible, under investigation). OverlayNoDepth =
+	/// after post, no depth at all (pure draw-over). OverlayFlag = the known-live ModelRenderer overlay path
+	/// (after post, scene depth — likely still clips; diagnostic).</summary>
+	[Property, Group( "Placement" )] public SdfViewLayer ViewLayerMode { get; set; } = SdfViewLayer.Normal;
 
 	/// <summary>Mounting rotation of the gun on its parent (the hand for the world model, the aim for the view
 	/// model). The sculpt's barrel runs along its local +y, so the default -90 yaw points it forward.</summary>
 	[Property, Group( "Placement" )] public Angles RotationOffset { get; set; } = new( 0f, -90f, 0f );
+
+	/// <summary>While this machine renders the first-person gun, switch the sun's screen-space CONTACT
+	/// shadows off (restored the moment we're not first-person: edit mode, death, pawn teardown). The
+	/// contact-shadow pass marches the depth buffer toward the light, and the viewmodel's depth-squashed
+	/// near blob (which keeps screen-space AO neutral) reads as a solid occluder there — the gun fully
+	/// self-shadows out of the directional light. Same depth chain feeds both effects, so they can't
+	/// coexist; this trades a subtle world effect, per machine, for a lit gun. Cascade shadows unaffected.</summary>
+	[Property, Group( "Placement" )] public bool DisableSunContactShadows { get; set; } = true;
 
 	GameObject _world;
 	GameObject _view;
@@ -95,6 +117,11 @@ public sealed class HunterGun : Component
 	SdfRaymarchRenderer _viewSdf;
 	SdfSculpture _worldSculpt;
 	SdfSculpture _viewSculpt;
+
+	// The sun whose ContactShadows we override while first-person, and whether we currently hold an
+	// override (only ever restore a value WE changed — if the scene authored them off, stay hands-off).
+	DirectionalLight _sun;
+	bool _sunOverridden;
 
 	// The pristine prefab-scale brush list both models derive from, and the scale each model last applied
 	// (0 = never — the first Place() always applies). Deriving from the SOURCE every time (instead of scaling
@@ -126,6 +153,7 @@ public sealed class HunterGun : Component
 		// Viewmodel: no shadow of any kind — SdfShadows off stops the raymarch casting, MeshMode.Hidden stops
 		// the legacy shadows-only sibling mesh taking over the job. Applied to snapshot-received clones too
 		// (idempotent), since the owner's instance streams with these already set but a fresh one doesn't.
+		// (ViewmodelLayer is asserted per frame in Place, from the live-tweakable UseViewmodelLayer.)
 		if ( _viewSdf.IsValid() )
 		{
 			_viewSdf.SdfShadows = false;
@@ -149,6 +177,8 @@ public sealed class HunterGun : Component
 		ApplyScale( _worldSculpt, WorldGunScale, ref _worldApplied );
 		if ( firstPerson )
 			ApplyScale( _viewSculpt, ViewGunScale, ref _viewApplied );
+
+		ApplySunContactShadows( firstPerson );
 
 		var aimRot = aim.ToRotation();
 
@@ -180,12 +210,35 @@ public sealed class HunterGun : Component
 			if ( firstPerson )
 			{
 				if ( _viewSdf.IsValid() )
+				{
 					ApplyFieldResolution( _viewSdf, ViewFieldResolution );
+					_viewSdf.ViewLayer = ViewLayerMode;
+				}
 
-				_view.WorldPosition = eye + aimRot * ViewOffset;
+				// FOV compensation: scale the FORWARD distance only, by tan(base/2)/tan(live/2). Screen
+				// position is lateral/(forward·tan(half)) and apparent size is modelSize/(forward·tan(half)) —
+				// scaling forward alone cancels the tan out of both, so the gun stays visually put as the FOV
+				// changes. (Perspective distortion at extreme FOVs remains — that's inherent to rendering in
+				// the main projection.)
+				var offset = ViewOffset.WithX( ViewOffset.x * FovCompensation() );
+
+				_view.WorldPosition = eye + aimRot * offset;
 				_view.WorldRotation = aimRot * RotationOffset.ToRotation();
 			}
 		}
+	}
+
+	// tan(base/2)/tan(live/2) — 1 when the live camera FOV matches ViewBaseFov. Reads the live FOV off the
+	// shared camera each frame so preference changes and zoom effects are tracked automatically.
+	float FovCompensation()
+	{
+		var cam = Scene.Camera;
+		if ( !cam.IsValid() )
+			return 1f;
+
+		float baseTan = MathF.Tan( ViewBaseFov.DegreeToRadian() * 0.5f );
+		float liveTan = MathF.Tan( cam.FieldOfView.DegreeToRadian() * 0.5f );
+		return liveTan > 0.001f ? baseTan / liveTan : 1f;
 	}
 
 	// Assert a field resolution on a clone's renderer. Safe to call every frame: the renderer folds
@@ -196,6 +249,38 @@ public sealed class HunterGun : Component
 		sdf.FieldResolution = resolution;
 		if ( resolution > 256 )
 			sdf.SparseField = true;
+	}
+
+	// Hold the sun's contact shadows off while the first-person gun is on screen (see DisableSunContactShadows),
+	// give them back the moment it isn't. Purely local rendering state — scene-component property changes
+	// don't replicate, so hiders/other machines keep their contact shadows untouched.
+	void ApplySunContactShadows( bool firstPerson )
+	{
+		bool want = firstPerson && DisableSunContactShadows && ViewLayerMode != SdfViewLayer.Normal;
+
+		if ( want && !_sunOverridden )
+		{
+			if ( !_sun.IsValid() )
+				_sun = Scene.GetAllComponents<DirectionalLight>().FirstOrDefault( l => l.ContactShadows );
+
+			if ( _sun.IsValid() )
+			{
+				_sun.ContactShadows = false;
+				_sunOverridden = true;
+			}
+		}
+		else if ( !want && _sunOverridden )
+		{
+			if ( _sun.IsValid() )
+				_sun.ContactShadows = true;
+			_sunOverridden = false;
+		}
+	}
+
+	protected override void OnDisabled()
+	{
+		// Pawn teardown/disable while first-person — give the sun its contact shadows back.
+		ApplySunContactShadows( false );
 	}
 
 	// Swap the sculpture's brushes for a freshly scaled derivation of the source list, only when the wanted

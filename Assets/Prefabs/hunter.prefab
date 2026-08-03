@@ -132,6 +132,7 @@
         "__guid": "40000001-0000-4000-8000-000000000021",
         "__enabled": true,
         "Flags": 0,
+        "DisableSunContactShadows": true,
         "GunPrefab": "prefabs/saved/revolver.prefab",
         "Hand": null,
         "HandOffset": "18.8133507,4.42000008,-3.1400032",
@@ -144,8 +145,10 @@
         "RotationOffset": "0,180,0",
         "Shoulder": null,
         "ShoulderOffset": "0,-16,-22",
+        "ViewBaseFov": 90,
         "ViewFieldResolution": 512,
         "ViewGunScale": 0.32689077,
+        "ViewLayerMode": "OverlayFlag",
         "ViewOffset": "80,-21.8866482,-27.4867191",
         "WorldFieldResolution": 256,
         "WorldGunScale": 0.2739496

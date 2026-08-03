@@ -7,6 +7,21 @@ namespace Mimiclay;
 /// the depth+normals prepass itself (depth sorting, occlusion via DepthClamp, and AO) and — with
 /// <see cref="SdfRaymarchRenderer.SdfShadows"/> on — casts its own shadows too, so the mesh's only
 /// remaining job in the SDF band is the legacy shadow path (SdfShadows off).</summary>
+/// <summary>Render-path candidates for a first-person viewmodel (see <see cref="SdfRaymarchRenderer.ViewLayer"/>).
+/// Debug/experimental while the anti-clip path is proven out — each maps to a different engine mechanism.</summary>
+public enum SdfViewLayer
+{
+	/// <summary>Normal game passes — depth-tested against the world (a viewmodel clips into walls).</summary>
+	Normal,
+	/// <summary>Native viewmodel layer (RenderLayer match + ViewModelLayer flag): on top, altered depth.</summary>
+	Viewmodel,
+	/// <summary>OverlayWithoutDepth layer match: drawn after post-processing with NO depth — pure draw-over.</summary>
+	OverlayNoDepth,
+	/// <summary>GameOverlayLayer FLAG (the ModelRenderer RenderOptions.Overlay path — known-live in the modern
+	/// pipeline): after post, but still with scene depth, so it may still clip. Diagnostic.</summary>
+	OverlayFlag,
+}
+
 public enum SdfMeshMode
 {
 	/// <summary>Invisible shadow caster (ShadowsOnly) while SdfShadows is OFF; fully disabled in the
@@ -168,6 +183,56 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// wins in every band. Used to hide a pawn's own SDF body on the machine that controls it. Not a
 	/// [Property] — it's driven at runtime by the controlling pawn, not authored on the prefab.</summary>
 	public bool RenderHidden { get; set; }
+
+	/// <summary>Which render path the raymarched surface draws through — the candidates for a first-person
+	/// viewmodel that can't clip into world geometry. Runtime-driven by the owning pawn (the hunter's gun),
+	/// like <see cref="RenderHidden"/> — not a [Property].</summary>
+	public SdfViewLayer ViewLayer { get; set; } = SdfViewLayer.Normal;
+
+	// The layer state actually applied to _so (null = never applied / _so recreated). Tracked OURSELVES because
+	// SceneObject.RenderLayer's setter is buggy: its early-out compares a cached value that the Default branch
+	// clears natively but never writes back — after one ViewModel→Default round-trip the cache reads ViewModel
+	// while the native match is null, and re-setting ViewModel early-outs forever (observed as the debug toggle
+	// working once each way, then going dead).
+	SdfViewLayer? _appliedViewLayer;
+
+	// Apply ViewLayer on CHANGE only, never trusting the scene object's own change detection. Match-based modes
+	// route through a second real layer first so the setter's stale cache can't early-out the transition,
+	// whatever state previous toggles left it in.
+	void ApplyViewLayer()
+	{
+		if ( _appliedViewLayer == ViewLayer )
+			return;
+
+		_appliedViewLayer = ViewLayer;
+
+		// Reset the flag-based bits; each mode below re-asserts what it needs.
+		_so.Flags.ViewModelLayer = false;
+		_so.Flags.OverlayLayer = false;
+
+		switch ( ViewLayer )
+		{
+			case SdfViewLayer.Viewmodel:
+				_so.RenderLayer = SceneRenderLayer.OverlayWithDepth; // cache-mover; both assignments land natively
+				_so.RenderLayer = SceneRenderLayer.ViewModel;
+				_so.Flags.ViewModelLayer = true;
+				break;
+
+			case SdfViewLayer.OverlayNoDepth:
+				_so.RenderLayer = SceneRenderLayer.OverlayWithDepth; // cache-mover
+				_so.RenderLayer = SceneRenderLayer.OverlayWithoutDepth;
+				break;
+
+			case SdfViewLayer.OverlayFlag:
+				_so.RenderLayer = SceneRenderLayer.Default;
+				_so.Flags.OverlayLayer = true;
+				break;
+
+			default:
+				_so.RenderLayer = SceneRenderLayer.Default;
+				break;
+		}
+	}
 
 	// Any reason the raymarched surface should be off this frame. Every place that turns _so.RenderingEnabled ON
 	// honours this, so a per-frame Refresh (the props edit constantly) can't override a hide. _fieldOnlyHidden is
@@ -662,6 +727,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				// Per-object attributes (BrushData/Bounds/Count) don't survive batching, so two
 				// SDF objects sharing the material would collapse into one draw and hide together.
 				_so.Batchable = false;
+				_appliedViewLayer = null; // fresh object, fresh layer state — re-apply whatever's wanted
 				// Shadow casting: the shader's Depth mode detects the sun's orthographic cascade
 				// views per-view and traces PARALLEL rays there, so the marched surface casts its
 				// own exact shadow. Kept in sync with SdfShadows every frame below; OFF = the
@@ -683,6 +749,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		bool shadowOnly = RenderHidden && SdfShadows;
 		_so.Flags.CastShadows = SdfShadows;
 		_so.Flags.ExcludeGameLayer = shadowOnly;
+		ApplyViewLayer();
+		// Viewmodel shader behaviour rides any non-Normal view layer: BOTH passes depth-squash toward the
+		// camera (forward: the overlay's scene-depth test can never clip the gun into geometry; prepass:
+		// screen AO sees a depth-isolated near blob and reads ~1 — screen AO at a viewmodel's real depth is
+		// unfixable, the world legitimately occludes it there) and the material AO term switches to the
+		// 5-tap field-computed self-AO, which wins the engine's min() against the neutral screen AO.
+		_so.Attributes.Set( "SdfViewmodel", ViewLayer != SdfViewLayer.Normal ? 1 : 0 );
 		_so.Attributes.Set( "SdfShadowOnly", shadowOnly ? 1 : 0 );
 		_so.Attributes.Set( "SdfShadowBias", ShadowBias );
 		_so.Attributes.Set( "BrushData", _dataTex );
