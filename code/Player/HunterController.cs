@@ -88,6 +88,7 @@ public sealed class HunterController : Component
 	SdfRaymarchRenderer[] _sdfRenderers;
 	SculptEditSession _session;
 	OrbitCameraController _orbit;
+	HunterGun _gun;
 
 	// Grounded eye-z smoothing (same treatment as the stock camera path): walking up a step teleports the body
 	// vertically in one physics tick, so the eye z is lerped toward the new height instead of snapping. 0 = unseeded.
@@ -120,10 +121,19 @@ public sealed class HunterController : Component
 		// ModelRenderer per-frame (raymarch vs. shadow-only by LOD band), so we must NOT sweep those into
 		// _bodyRenderers — forcing their RenderType from here would fight that and double-draw on proxies.
 		// We hide them through RenderHidden instead. Plain body renderers (the capsule parts) we own directly.
-		_sdfRenderers = Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants ).ToArray();
+		// Gun clones (tagged) are skipped: HunterGun owns their visibility with different rules (the viewmodel
+		// must SHOW in first person — sweeping it here would force it shadows-only, i.e. fully off).
+		_sdfRenderers = Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants )
+			.Where( r => !r.GameObject.Tags.Has( HunterGun.CloneTag ) )
+			.ToArray();
 		_bodyRenderers = Components.GetAll<ModelRenderer>( FindMode.EnabledInSelfAndDescendants )
 			.Where( r => !r.GameObject.Components.Get<SdfRaymarchRenderer>().IsValid() )
+			.Where( r => !r.GameObject.Tags.Has( HunterGun.CloneTag ) )
 			.ToArray();
+
+		// The detector gun display (world model + owner viewmodel). Optional — a pawn without the component
+		// just has no gun; placement is pushed from OnUpdate so it shares the smoothed eye with the camera.
+		_gun = Components.Get<HunterGun>();
 
 		// Face-edit mode. Resolve the editable sculpture (the head), then stand up the shared edit machinery:
 		// an orbit camera (idle until edit mode hands it the view) and a SculptEditSession pointed at the face.
@@ -156,11 +166,15 @@ public sealed class HunterController : Component
 
 	// The sculpture face-edit mode targets: the authored Face, else a child named "Head" carrying a sculpture,
 	// else the first sculpture anywhere under the pawn (so a bare/renamed setup still finds something to edit).
+	// Gun clones carry sculptures too — filtered by tag so the fallback can't hand you the gun to face-edit.
 	SdfSculpture ResolveFace()
 	{
 		var head = GameObject.Children.FirstOrDefault( c => c.Name == "Head" );
 		var onHead = head.IsValid() ? head.Components.Get<SdfSculpture>( FindMode.EnabledInSelfAndDescendants ) : null;
-		return onHead.IsValid() ? onHead : Components.Get<SdfSculpture>( FindMode.EnabledInSelfAndDescendants );
+		return onHead.IsValid()
+			? onHead
+			: Components.GetAll<SdfSculpture>( FindMode.EnabledInSelfAndDescendants )
+				.FirstOrDefault( s => !s.GameObject.Tags.Has( HunterGun.CloneTag ) );
 	}
 
 	protected override void OnUpdate()
@@ -239,6 +253,12 @@ public sealed class HunterController : Component
 			Eyes.WorldPosition = eye;
 			Eyes.WorldRotation = _controller.EyeAngles.ToRotation();
 		}
+
+		// Gun display, from the SAME smoothed eye (and after DriveCamera, so the viewmodel can never lag the
+		// camera by a frame). Runs on every machine — proxies swing the arm/world model from the networked eye
+		// transform; firstPerson gates the viewmodel to the owning machine outside edit mode.
+		if ( _gun.IsValid() && _controller.IsValid() )
+			_gun.Place( eye, _controller.EyeAngles, !IsProxy && !EditMode );
 	}
 
 	// The eye everything visual hangs off this frame, computed LIVE — never read _controller.EyePosition for
@@ -284,12 +304,32 @@ public sealed class HunterController : Component
 	// setting a value to its current value is a no-op.
 	void HideOwnBody()
 	{
-		// Only manages our OWN body's first-person hide; a proxy pawn (another player's) isn't ours to touch — bail.
+		// Hidden in first person — but while editing your own face you need to SEE yourself, so show it then.
+		// Always false on proxies: other players' hunters render fully.
+		var hideOwn = !IsProxy && !EditMode;
+
+		// Run puffs go shadows-only in first person too. ParticleModelRenderer has no ShadowRenderType, but
+		// shadows-only IS just CastShadows + ExcludeGameLayer at the SceneObject level, and its RenderOptions.Game
+		// maps to ExcludeGameLayer — re-applied to every live particle each frame, so this flips existing puffs
+		// as well as new ones. CastShadows stays on from the prefab, untouched.
+		//
+		// Asserted on EVERY machine — unlike the body below — because the state a proxy ARRIVES with can't be
+		// trusted: network spawn/refresh serializes the owner's LIVE GameObject JSON, RenderOptions.GameLayer
+		// included, so a pawn shipped after its owner has been in first person lands with Game=false baked in.
+		// Bailing on proxies left nothing to restore it and remote puffs rendered as shadows only. Rendering
+		// flags are per-machine (no sync), so a proxy re-asserting its own copy networks nothing.
+		if ( _runRenderers is not null )
+		{
+			foreach ( var r in _runRenderers )
+			{
+				if ( r.IsValid() )
+					r.RenderOptions.Game = !hideOwn;
+			}
+		}
+
+		// Body/SDF first-person hide: our own pawn only — a proxy pawn (another player's) isn't ours to touch.
 		if ( IsProxy )
 			return;
-
-		// Hidden in first person — but while editing your own face you need to SEE yourself, so show it then.
-		var hideOwn = !IsProxy && !EditMode;
 
 		if ( _bodyRenderers is not null )
 		{
@@ -307,19 +347,6 @@ public sealed class HunterController : Component
 			{
 				if ( r.IsValid() )
 					r.RenderHidden = hideOwn;
-			}
-		}
-
-		// Run puffs go shadows-only in first person too. ParticleModelRenderer has no ShadowRenderType, but
-		// shadows-only IS just CastShadows + ExcludeGameLayer at the SceneObject level, and its RenderOptions.Game
-		// maps to ExcludeGameLayer — re-applied to every live particle each frame, so this flips existing puffs
-		// as well as new ones. CastShadows stays on from the prefab, untouched.
-		if ( _runRenderers is not null )
-		{
-			foreach ( var r in _runRenderers )
-			{
-				if ( r.IsValid() )
-					r.RenderOptions.Game = !hideOwn;
 			}
 		}
 	}

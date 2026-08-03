@@ -138,12 +138,15 @@
 		return owner.DisplayName;
 	}
 
-	// Where the plate anchors in the world: the top of the pawn's sculpture bounds — the hunter's Head sits at its
-	// eye and the prop's Disguise IS its body, so "top of the sculpture" is the head for both — plus clearance.
-	// A pawn with no sculpture yet falls back to a rough standing height above its root.
+	// Where the plate anchors in the world: the top of the pawn's OWN sculpture bounds — the hunter's Head sits
+	// at its eye and the prop's Disguise IS its body, so "top of the sculpture" is the head for both — plus
+	// clearance. The sculpture comes from the controller's own wiring (Face / DisguiseSculpture, both resolved
+	// on every machine in their OnStart), NEVER from a descendant search: the pawn also carries gun-clone
+	// sculptures now, and a search kept finding the gun and hovering the name over it. A pawn with no resolved
+	// sculpture falls back to a rough standing height above its root.
 	Vector3 AnchorFor( GameObject pawn )
 	{
-		var sculpt = pawn.Components.Get<SdfSculpture>( FindMode.EnabledInSelfAndDescendants );
+		var sculpt = AnchorSculpture( pawn );
 		if ( sculpt.IsValid() && Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
 		{
 			var topLocal = bounds.Center.WithZ( bounds.Maxs.z );
@@ -151,6 +154,18 @@
 		}
 
 		return pawn.WorldPosition + Vector3.Up * 80f;
+	}
+
+	// THE pawn's body sculpture, straight from its controller — the same objects the controllers themselves
+	// edit/network, so this can never pick up an attachment by accident.
+	static SdfSculpture AnchorSculpture( GameObject pawn )
+	{
+		var hunter = pawn.Components.Get<HunterController>();
+		if ( hunter.IsValid() )
+			return hunter.Face;
+
+		var hider = pawn.Components.Get<HiderController>();
+		return hider.IsValid() ? hider.DisguiseSculpture : null;
 	}
 
 	// left/top as viewport percentages (the overlay root is full-screen), invariant-formatted so the style parses

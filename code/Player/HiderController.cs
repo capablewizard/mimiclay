@@ -125,6 +125,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 	Rigidbody Body;          // our physics body (the disguise's ModelCollider aggregates into it)
 	SdfSculpture _body;      // the sculpted disguise
+
+	// Internal: the disguise sculpture, for code that needs THE pawn's body explicitly (PlayerNameplates
+	// anchors above it) — resolved on every machine in OnStart, so proxies can read it too.
+	internal SdfSculpture DisguiseSculpture => _body;
 	SdfCollider _collider;   // the disguise's physics (footprint snapshot + ModelCollider), if it's solid
 	SculptEditSession _session;
 
