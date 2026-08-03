@@ -51,6 +51,21 @@ public sealed class HunterController : Component
 	bool _stepSeeded;
 	int _stepFoot;
 
+	/// <summary>The run dust effect (the "RunPFX" child): its emitters are enabled only while moving at running
+	/// speed — including a running jump, since horizontal speed carries through the air. Auto-resolved by child
+	/// name in <see cref="OnStart"/> when left unset.</summary>
+	[Property, Group( "Run Effect" )] public GameObject RunEffect { get; set; }
+
+	// Run-effect state: the emitters we toggle (cached once — the ParticleEffect itself stays enabled so live
+	// puffs finish their lifetime instead of popping), our own position-delta tracker (separate from the footstep
+	// one, which resets while airborne — a running JUMP must keep the effect on), and the current on/off state
+	// for hysteresis.
+	ParticleEmitter[] _runEmitters;
+	ParticleModelRenderer[] _runRenderers;
+	Vector3 _runFrom;
+	bool _runSeeded;
+	bool _runOn;
+
 	/// <summary>The SDF sculpture edited in face-edit mode (the "Head"). Auto-resolved in <see cref="OnStart"/>
 	/// when left unset: a child named "Head" with a sculpture, else the first sculpture in the hierarchy.</summary>
 	[Property, Group( "Edit" )] public SdfSculpture Face { get; set; }
@@ -123,6 +138,20 @@ public sealed class HunterController : Component
 		// always target the same sculpture" invariant in one place (the owner publishes on commit; proxies
 		// apply). Passing the orbit rig makes the session enable/disable the camera around edit mode.
 		_session = SculptablePawn.AttachEditing( this, Face, _orbit );
+
+		// Run dust: cache the emitters we gate by speed (see UpdateRunEffect). EverythingInSelf so a re-cache
+		// still finds them after we've disabled them; they start enabled in the prefab, so force the initial
+		// off state — the pawn spawns standing still.
+		RunEffect ??= GameObject.Children.FirstOrDefault( c => c.Name == "RunPFX" );
+		_runEmitters = RunEffect.IsValid()
+			? RunEffect.Components.GetAll<ParticleEmitter>( FindMode.EverythingInSelfAndDescendants ).ToArray()
+			: Array.Empty<ParticleEmitter>();
+		_runRenderers = RunEffect.IsValid()
+			? RunEffect.Components.GetAll<ParticleModelRenderer>( FindMode.EverythingInSelfAndDescendants ).ToArray()
+			: Array.Empty<ParticleModelRenderer>();
+
+		foreach ( var e in _runEmitters )
+			e.Enabled = false;
 	}
 
 	// The sculpture face-edit mode targets: the authored Face, else a child named "Head" carrying a sculpture,
@@ -176,6 +205,7 @@ public sealed class HunterController : Component
 
 		HideOwnBody();
 		UpdateFootsteps();
+		UpdateRunEffect();
 
 		// ONE smoothed live eye per frame, shared by the camera and the head placement below, so the two can
 		// never disagree mid-frame. Computed on every machine (proxies place the head from their network-
@@ -279,6 +309,19 @@ public sealed class HunterController : Component
 					r.RenderHidden = hideOwn;
 			}
 		}
+
+		// Run puffs go shadows-only in first person too. ParticleModelRenderer has no ShadowRenderType, but
+		// shadows-only IS just CastShadows + ExcludeGameLayer at the SceneObject level, and its RenderOptions.Game
+		// maps to ExcludeGameLayer — re-applied to every live particle each frame, so this flips existing puffs
+		// as well as new ones. CastShadows stays on from the prefab, untouched.
+		if ( _runRenderers is not null )
+		{
+			foreach ( var r in _runRenderers )
+			{
+				if ( r.IsValid() )
+					r.RenderOptions.Game = !hideOwn;
+			}
+		}
 	}
 
 	// Walk footsteps: every StepDistance units of grounded horizontal travel, play the ground surface's step
@@ -334,6 +377,43 @@ public sealed class HunterController : Component
 
 		_stepFoot = 1 - _stepFoot;
 		_controller.PlayFootstepSound( pos, volume, _stepFoot );
+	}
+
+	// Run dust: enable the RunPFX emitters only while moving at running speed. Speed is OBSERVED horizontal
+	// travel per frame (same proxy-safe technique as UpdateFootsteps — input and controller velocity aren't
+	// readable on remote machines, but the networked transform is), and deliberately NOT gated on IsOnGround:
+	// a running jump keeps its horizontal speed through the air so the effect stays on, while a standing/walking
+	// jump never crosses the threshold. Hysteresis (turn on above 65% of the walk→run band, off below 45%) stops
+	// the effect flickering while hovering around one cutoff. Edit mode and the round freeze zero velocity, so
+	// the effect switches itself off there with no special casing.
+	void UpdateRunEffect()
+	{
+		if ( _runEmitters is not { Length: > 0 } || !_controller.IsValid() )
+			return;
+
+		var pos = _controller.WorldPosition;
+
+		if ( !_runSeeded )
+		{
+			_runFrom = pos;
+			_runSeeded = true;
+			return;
+		}
+
+		float speed = Time.Delta > 0f ? (pos - _runFrom).WithZ( 0f ).Length / Time.Delta : 0f;
+		_runFrom = pos;
+
+		float onAt = _controller.WalkSpeed.LerpTo( _controller.RunSpeed, 0.65f );
+		float offAt = _controller.WalkSpeed.LerpTo( _controller.RunSpeed, 0.45f );
+
+		_runOn = _runOn ? speed > offAt : speed >= onAt;
+
+		// Toggle the EMITTERS, not the effect/GameObject — live puffs keep simulating and fade out naturally.
+		foreach ( var e in _runEmitters )
+		{
+			if ( e.IsValid() )
+				e.Enabled = _runOn;
+		}
 	}
 
 	// Enter/leave face-edit mode. On enter, the session enables the orbit camera (seeding it from the current
