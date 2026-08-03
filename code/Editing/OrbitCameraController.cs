@@ -192,5 +192,10 @@ public sealed class OrbitCameraController : Component
 
 		cam.WorldPosition = desired;
 		cam.WorldRotation = rot;
+
+		// Every rig consumer (sculpt/edit, the prop's play camera) runs at the orbit FOV. Declared through
+		// MainCamera — never written to the CameraComponent directly — and asserted every frame, so the ease
+		// back from the hunter's first-person FOV happens centrally and a live settings change just applies.
+		MainCamera.Fov = GameSettings.OrbitFov;
 	}
 }

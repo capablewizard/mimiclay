@@ -82,15 +82,16 @@ public sealed class HunterGun : Component
 	/// z up) — tune where the grip sits in the hand without moving the hand (and the arm arc) itself.</summary>
 	[Property, Group( "Arm" )] public Vector3 HandOffset { get; set; } = Vector3.Zero;
 
-	/// <summary>Viewmodel offset from the camera eye, in aim space (x forward, y left, z up), as authored at
-	/// <see cref="ViewBaseFov"/>. At other FOVs the forward component is compensated (see Place) so the gun
-	/// keeps the same screen position and apparent size instead of swimming with the FOV setting.</summary>
+	/// <summary>Viewmodel offset from the camera eye, in aim space (x forward, y left, z up). Rendered under
+	/// <see cref="ViewmodelFov"/>'s own projection, so where this puts the gun on screen is independent of
+	/// the camera's FOV — tune it once, at any camera FOV, and it stays put.</summary>
 	[Property, Group( "Placement" )] public Vector3 ViewOffset { get; set; } = new( 15f, -8f, -12f );
 
-	/// <summary>The camera FOV <see cref="ViewOffset"/> was tuned at. When the live camera FOV differs (user
-	/// preference, zoom), the viewmodel's forward distance is scaled by tan(base/2)/tan(live/2) — that single
-	/// scale keeps both the on-screen position AND the apparent size of the gun where you authored them.</summary>
-	[Property, Group( "Placement" ), Range( 40f, 120f )] public float ViewBaseFov { get; set; } = 90f;
+	/// <summary>The viewmodel's OWN field of view — a true second projection for the gun's rays (the SDF
+	/// raymarcher regenerates them per pixel), fully independent of the camera FOV: changing either never
+	/// moves the other. Low values (20–40) give the classic flat, telephoto gun look with minimal
+	/// wide-angle distortion; higher pushes toward the camera's natural perspective.</summary>
+	[Property, Group( "Placement" ), Range( 10f, 120f )] public float ViewmodelFov { get; set; } = 54f;
 
 	/// <summary>Which render path the viewmodel draws through — live-tweakable debug switch while the anti-clip
 	/// path is proven out. Normal = game pass (clips into walls, always visible). Viewmodel = native viewmodel
@@ -102,6 +103,52 @@ public sealed class HunterGun : Component
 	/// <summary>Mounting rotation of the gun on its parent (the hand for the world model, the aim for the view
 	/// model). The sculpt's barrel runs along its local +y, so the default -90 yaw points it forward.</summary>
 	[Property, Group( "Placement" )] public Angles RotationOffset { get; set; } = new( 0f, -90f, 0f );
+
+	/// <summary>Strength of the walk/run bob, in world units of gun travel at full run speed (rendered in
+	/// the gun's own FOV space, so it reads the same at any camera FOV). 0 = off.</summary>
+	[Property, Group( "View Motion" ), Range( 0f, 3f )] public float BobAmount { get; set; } = 1f;
+
+	/// <summary>Bob cadence multiplier. 1 = EXACTLY one vertical bob per footstep at any speed — the phase
+	/// advances π per stride using the same speed→stride blend the footstep sounds use (HunterController's
+	/// StepDistance→RunStepDistance), so the dip and the step sound share a clock. The lateral sway runs at
+	/// half rate, alternating sides with alternating feet. 2 = double-time, 0.5 = half-time.</summary>
+	[Property, Group( "View Motion" ), Range( 0.25f, 3f )] public float BobFrequency { get; set; } = 1f;
+
+	/// <summary>Hooke stiffness k (per s², mass folded to 1) of the POSITION spring — the gun's world
+	/// position chases its target with F = k·error − c·relativeVelocity. Higher = tighter follow. The
+	/// damping is RELATIVE to the target's motion, so steady running leaves no permanent trail — only
+	/// accelerations (starts, stops, the offset arm swinging through a turn) displace the gun.
+	/// 0 = spring off, rigid attach.</summary>
+	[Property, Group( "View Spring" ), Range( 0f, 2000f )] public float PositionStiffness { get; set; } = 500f;
+
+	/// <summary>Hooke damping c (per s) of the position spring. Critical damping is 2·√k (≈45 at the
+	/// default k=500) — below that the gun overshoots and bounces, above it it oozes into place.</summary>
+	[Property, Group( "View Spring" ), Range( 0f, 100f )] public float PositionDamping { get; set; } = 40f;
+
+	/// <summary>Hooke stiffness k of the ROTATION spring — the gun's orientation chases the aim (the
+	/// loose-gimbal lag: it points where you were aiming a beat ago and catches up). Damping here is
+	/// ABSOLUTE, so a steady turn holds a steady lag angle — the classic look. 0 = rigid.</summary>
+	[Property, Group( "View Spring" ), Range( 0f, 2000f )] public float RotationStiffness { get; set; } = 350f;
+
+	/// <summary>Hooke damping c of the rotation spring. Critical is 2·√k (≈37 at the default k=350);
+	/// the default sits just under for a subtle overshoot.</summary>
+	[Property, Group( "View Spring" ), Range( 0f, 100f )] public float RotationDamping { get; set; } = 30f;
+
+	/// <summary>Overall strength of the POSITION spring's visible effect: the spring simulates exactly as
+	/// tuned (k/c set the character), and this scales how much of the resulting lag is rendered.
+	/// 0 = rigid attach, 1 = the full simulated lag, 2 = exaggerated.</summary>
+	[Property, Group( "View Spring" ), Range( 0f, 2f )] public float PositionStrength { get; set; } = 1f;
+
+	/// <summary>Overall strength of the ROTATION spring's visible effect — same idea as
+	/// <see cref="PositionStrength"/>: scales the rendered lag angle without touching the dynamics.</summary>
+	[Property, Group( "View Spring" ), Range( 0f, 2f )] public float RotationStrength { get; set; } = 1f;
+
+	/// <summary>The point the rotation spring pivots around, in the gun PREFAB's local units (auto-scaled
+	/// with <see cref="ViewGunScale"/>, so it stays on the same spot of the gun at any size). Put it at the
+	/// GRIP: lag then reads as wrist flex — the hand stays planted while the muzzle sweeps, instead of the
+	/// gun hinging about its arbitrary sculpt origin. Zero = the model origin (wherever the sculpt author
+	/// left it). ViewOffset positions this pivot point.</summary>
+	[Property, Group( "View Spring" )] public Vector3 ViewRotationPivot { get; set; }
 
 	/// <summary>Material override for the VIEW clone's raymarch (world model keeps the prefab's). Point it
 	/// at plasticine_viewmodel.vmat — its F_TRANSLUCENT feature selects the shader's translucent LIGHTING
@@ -130,6 +177,22 @@ public sealed class HunterGun : Component
 	DirectionalLight _sun;
 	bool _sunOverridden;
 
+	// Viewmodel motion state. The pawn's controller feeds bob speed/grounding. The springs track WORLD
+	// targets (that's what makes lag exist at all — a purely local-space spring settles and never lags);
+	// _targetVel is the finite-difference target velocity the position damping is measured against.
+	// _motionSeeded false = re-seed on the next first-person frame, so entering first person (spawn,
+	// leaving edit mode) snaps the springs onto their targets instead of twanging across the map.
+	PlayerController _controller;
+	HunterController _hunter; // stride tuning (StepDistance/RunStepDistance) lives here, shared with footsteps
+	float _bobPhase;
+	float _bobBlend;
+	Vector3 _springPos;
+	Vector3 _springVel;
+	Vector3 _lastTarget;
+	Rotation _springRot = Rotation.Identity;
+	Vector3 _angVel; // degrees/s, in the spring's local frame (pitch/yaw/roll)
+	bool _motionSeeded;
+
 	// The pristine prefab-scale brush list both models derive from, and the scale each model last applied
 	// (0 = never — the first Place() always applies). Deriving from the SOURCE every time (instead of scaling
 	// the live brushes in place) is what makes the scales freely re-tweakable: no compounding, no baseline
@@ -140,6 +203,12 @@ public sealed class HunterGun : Component
 
 	protected override void OnStart()
 	{
+		// Bob reads real locomotion (speed + grounding) off the pawn's own controller — owner-side only,
+		// which is the only place the viewmodel exists — and the stride tuning off the HunterController,
+		// so the bob and the footstep sounds derive their cadence from the same numbers.
+		_controller = Components.Get<PlayerController>();
+		_hunter = Components.Get<HunterController>();
+
 		// The arm hierarchy: pawn → Shoulder → Hand → GunWorld. Authored in hunter.prefab (so the hand offset
 		// is tweakable in the editor); created here when dropped on a bare GameObject so it still works.
 		Shoulder = Resolve( Shoulder, GameObject, "Shoulder", new Vector3( 0f, -9f, 50f ) );
@@ -220,6 +289,7 @@ public sealed class HunterGun : Component
 				{
 					ApplyFieldResolution( _viewSdf, ViewFieldResolution );
 					_viewSdf.ViewLayer = ViewLayerMode;
+					_viewSdf.ViewmodelFovScale = FovScale();
 
 					// The translucent-lighting material variant, live-swappable for A/B (the renderer
 					// hashes its Material — same reference re-set is free, a change repacks).
@@ -227,30 +297,150 @@ public sealed class HunterGun : Component
 						_viewSdf.Material = ViewMaterial;
 				}
 
-				// FOV compensation: scale the FORWARD distance only, by tan(base/2)/tan(live/2). Screen
-				// position is lateral/(forward·tan(half)) and apparent size is modelSize/(forward·tan(half)) —
-				// scaling forward alone cancels the tan out of both, so the gun stays visually put as the FOV
-				// changes. (Perspective distortion at extreme FOVs remains — that's inherent to rendering in
-				// the main projection.)
-				var offset = ViewOffset.WithX( ViewOffset.x * FovCompensation() );
+				// Spring targets: where a rigid gun would be this frame (bob folds into the position
+				// target, so the springs soften it a touch on the way through — free secondary motion).
+				// The position spring tracks the PIVOT point (grip), and the rotation lag swings the gun
+				// AROUND that sprung pivot — so the hand stays planted while the muzzle sweeps.
+				var targetPos = eye + aimRot * ( ViewOffset + UpdateBob() );
+				UpdateViewSprings( targetPos, aimRot );
 
-				_view.WorldPosition = eye + aimRot * offset;
-				_view.WorldRotation = aimRot * RotationOffset.ToRotation();
+				// Strength scales the RENDERED lag, not the simulation — the spring's character (speed,
+				// bounce) is untouched, only how much of its error shows. Rotation lag scales in angle
+				// space (small + clamped, so per-component scaling is safe).
+				var pivotPos = targetPos + ( _springPos - targetPos ) * PositionStrength;
+				var lagAngles = ( aimRot.Inverse * _springRot ).Angles();
+				var lagRot = aimRot * Rotation.From( new Angles(
+					lagAngles.pitch * RotationStrength,
+					lagAngles.yaw * RotationStrength,
+					lagAngles.roll * RotationStrength ) );
+
+				var rot = lagRot * RotationOffset.ToRotation();
+				_view.WorldRotation = rot;
+				_view.WorldPosition = pivotPos - rot * ( ViewRotationPivot * ViewGunScale );
+			}
+			else
+			{
+				_motionSeeded = false; // next first-person frame re-seeds instead of twanging from stale state
 			}
 		}
 	}
 
-	// tan(base/2)/tan(live/2) — 1 when the live camera FOV matches ViewBaseFov. Reads the live FOV off the
-	// shared camera each frame so preference changes and zoom effects are tracked automatically.
-	float FovCompensation()
+	// Walk bob, as an AIM-SPACE offset added to ViewOffset. Runs only on the owner's first-person frames.
+	Vector3 UpdateBob()
+	{
+		float dt = MathF.Min( Time.Delta, 0.05f );
+
+		if ( !_motionSeeded )
+			_bobBlend = 0f;
+
+		// ── Bob ── cadence LOCKED to the footstep sounds: the phase advances π per stride, and the
+		// stride is the same speed-blended value UpdateFootsteps uses (StepDistance at walk →
+		// RunStepDistance at run), so the vertical dip and the step sound tick the same clock at every
+		// speed. Amplitude blends smoothly with movement and fades while airborne — a jump glides, it
+		// doesn't drum. (Airborne time resets the footstep accumulator but not the bob phase, so the
+		// phase RELATIONSHIP can shift across a jump — the shared cadence is what the ear locks onto.)
+		float speed = _controller.IsValid() ? _controller.Velocity.WithZ( 0f ).Length : 0f;
+		bool grounded = !_controller.IsValid() || _controller.IsOnGround;
+		float walk = _controller.IsValid() ? _controller.WalkSpeed : 110f;
+		float run = _controller.IsValid() ? MathF.Max( _controller.RunSpeed, 1f ) : 320f;
+		float stepDist = _hunter.IsValid() ? _hunter.StepDistance : 60f;
+		float runStepDist = _hunter.IsValid() ? _hunter.RunStepDistance : 100f;
+
+		float bobTarget = grounded ? MathF.Min( speed / run, 1f ) : 0f;
+		_bobBlend = _bobBlend.LerpTo( bobTarget, 1f - MathF.Exp( -8f * dt ) );
+
+		float stride = MathF.Max( speed.Remap( walk, run, stepDist, runStepDist ), 1f );
+		_bobPhase += MathF.PI * ( speed * dt / stride ) * BobFrequency;
+
+		// Lateral sway at step rate, vertical bounce at double rate (two foot-falls per lateral cycle).
+		return new Vector3(
+			0f,
+			MathF.Sin( _bobPhase ) * 0.6f,
+			MathF.Sin( _bobPhase * 2f ) * 0.45f ) * ( BobAmount * _bobBlend );
+	}
+
+	// The two Hooke springs (F = k·error − c·velocity, mass 1), tracking WORLD-space targets — that's
+	// what makes lag exist: the gun is left behind by real motion and pulled back in. Position damping is
+	// measured against the TARGET's velocity (finite-differenced), so tracking a constant-velocity target
+	// (steady running) settles to zero error — only accelerations displace the gun. Rotation damping is
+	// absolute, so a steady turn holds a steady lag angle (the classic loose-gimbal look). Integrated
+	// semi-implicitly in fixed ≤1/120s substeps: stability is independent of frame rate for any stiffness
+	// the sliders allow.
+	void UpdateViewSprings( Vector3 targetPos, Rotation targetRot )
+	{
+		if ( !_motionSeeded )
+		{
+			_motionSeeded = true;
+			_springPos = targetPos;
+			_springVel = Vector3.Zero;
+			_lastTarget = targetPos;
+			_springRot = targetRot;
+			_angVel = Vector3.Zero;
+		}
+
+		float frame = MathF.Min( Time.Delta, 0.1f );
+		var targetVel = frame > 0f ? (targetPos - _lastTarget) / frame : Vector3.Zero;
+		_lastTarget = targetPos;
+
+		// Stiffness 0 = that spring is off -> rigid attach.
+		bool posRigid = PositionStiffness <= 0f;
+		bool rotRigid = RotationStiffness <= 0f;
+
+		for ( float remaining = frame; remaining > 0f; remaining -= 1f / 120f )
+		{
+			float h = MathF.Min( remaining, 1f / 120f );
+
+			if ( !posRigid )
+			{
+				_springVel += ( ( targetPos - _springPos ) * PositionStiffness
+					- ( _springVel - targetVel ) * PositionDamping ) * h;
+				_springPos += _springVel * h;
+			}
+
+			if ( !rotRigid )
+			{
+				// Error as small local angles (spring -> target). Lag stays clamped well under 180°,
+				// so Euler on the error is wrap-safe.
+				var err = ( _springRot.Inverse * targetRot ).Angles();
+				_angVel += ( new Vector3( err.pitch, err.yaw, err.roll ) * RotationStiffness
+					- _angVel * RotationDamping ) * h;
+				_springRot *= Rotation.From( new Angles( _angVel.x * h, _angVel.y * h, _angVel.z * h ) );
+			}
+		}
+
+		if ( posRigid )
+			_springPos = targetPos;
+		if ( rotRigid )
+			_springRot = targetRot;
+
+		// Sanity bounds: a hitch or an extreme tuning can't leave the gun across the screen or facing
+		// backwards — clamp the ERROR, keep the velocity (the spring still animates from the clamp).
+		var offset = _springPos - targetPos;
+		if ( offset.Length > 15f )
+			_springPos = targetPos + offset.Normal * 15f;
+
+		var lag = ( targetRot.Inverse * _springRot ).Angles();
+		var lagV = new Vector3( lag.pitch, lag.yaw, lag.roll );
+		if ( lagV.Length > 25f )
+		{
+			lagV = lagV.Normal * 25f;
+			_springRot = targetRot * Rotation.From( new Angles( lagV.x, lagV.y, lagV.z ) );
+		}
+	}
+
+	// tan(cameraHalf)/tan(viewmodelHalf) — the shader's warp/unwarp ratio that re-projects the gun's rays
+	// into ViewmodelFov's own projection. Reads the live camera FOV each frame, so a camera FOV change
+	// re-derives the ratio and the gun's on-screen rendering stays EXACTLY as authored (full decoupling —
+	// contrast with the old ViewBaseFov offset trick, which only stabilized size/position, not distortion).
+	float FovScale()
 	{
 		var cam = Scene.Camera;
 		if ( !cam.IsValid() )
 			return 1f;
 
-		float baseTan = MathF.Tan( ViewBaseFov.DegreeToRadian() * 0.5f );
-		float liveTan = MathF.Tan( cam.FieldOfView.DegreeToRadian() * 0.5f );
-		return liveTan > 0.001f ? baseTan / liveTan : 1f;
+		float camTan = MathF.Tan( cam.FieldOfView.DegreeToRadian() * 0.5f );
+		float vmTan = MathF.Tan( Math.Clamp( ViewmodelFov, 5f, 170f ).DegreeToRadian() * 0.5f );
+		return vmTan > 0.001f ? camTan / vmTan : 1f;
 	}
 
 	// Assert a field resolution on a clone's renderer. Safe to call every frame: the renderer folds

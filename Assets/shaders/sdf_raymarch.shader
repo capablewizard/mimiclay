@@ -45,9 +45,33 @@ VS
 {
 	#include "common/vertex.hlsl"
 
+	// Viewmodel-FOV warp inputs (mirrored declarations of the per-object attributes the PS reads —
+	// VS and PS are separate programs). Scale = tan(cameraHalfFov)/tan(viewmodelHalfFov), 1 = off.
+	int   g_nSdfViewmodel   < Attribute( "SdfViewmodel" );  Default( 0 ); >;
+	float g_flSdfVmFovScale < Attribute( "SdfVmFovScale" ); Default( 1.0 ); >;
+
 	PixelInput MainVs( VertexInput i )
 	{
 		PixelInput o = ProcessVertex( i );
+
+		// Viewmodel FOV: inflate the proxy's LATERAL view-space extent so its raster footprint covers
+		// exactly the pixels the gun-FOV rays can reach (narrower gun FOV = magnified gun = bigger
+		// footprint). The PS undoes this per pixel, turning each pixel's ray into the ray the GUN's
+		// projection would have generated — a true second FOV without a second camera. The warp is
+		// AFFINE, so the box stays a clean parallelepiped and interpolation stays exact. Position here
+		// is TRUE world space (FinalizeVertex subtracts the high-precision offset after us, and
+		// Position3WsToPs takes true world in). Only ever runs in the camera forward view: the
+		// viewmodel casts no shadows, and its translucent variant clips the whole Depth mode.
+		if ( g_nSdfViewmodel != 0 && g_flSdfVmFovScale > 0.001 )
+		{
+			float3 fwd = normalize( g_vCameraDirWs );
+			float3 rel = o.vPositionWs.xyz - g_vCameraPositionWs;
+			float axial = dot( rel, fwd );
+			float3 warped = g_vCameraPositionWs + fwd * axial + ( rel - fwd * axial ) * g_flSdfVmFovScale;
+			o.vPositionWs.xyz = warped;
+			o.vPositionPs = Position3WsToPs( warped );
+		}
+
 		return FinalizeVertex( o );
 	}
 }
@@ -144,6 +168,10 @@ PS
 	// AO computed from the DISTANCE FIELD itself, which the engine min()s against the neutral screen AO.
 	// Screen-space AO at a viewmodel's REAL depth is unfixable: the world legitimately occludes it there.
 	int       g_nSdfViewmodel   < Attribute( "SdfViewmodel" );  Default( 0 ); >;
+	// Viewmodel FOV ratio, tan(cameraHalfFov)/tan(viewmodelHalfFov): the VS inflates the proxy's lateral
+	// footprint by this, and MainPs divides it back out of the interpolated position so the marched rays
+	// belong to the VIEWMODEL's projection — camera FOV and gun FOV fully decoupled. 1 = off.
+	float     g_flSdfVmFovScale < Attribute( "SdfVmFovScale" ); Default( 1.0 ); >;
 	// Ex-combos, runtime now (variant budget — see the g_nSdfCull note): skip the redundant back-face
 	// march when the box's front faces are on screen, and bracket the march with the bounding SPHERE
 	// (round props) instead of the AABB. Uniform per draw, so the branches are effectively free.
@@ -800,6 +828,19 @@ PS
 			return o;
 		}
 
+		// Viewmodel FOV: undo the VS's lateral warp on this pixel's interpolated position. The recovered
+		// point is the one whose GUN-projection lands on this pixel, so the ray built through it (in
+		// RayMarchHit, and the depth nudge below) IS the gun-FOV ray — marched in plain world space, so
+		// the field, normals, AO and lighting all stay exactly as they are. Affine warp + affine
+		// interpolation → the round trip is exact.
+		if ( g_nSdfViewmodel != 0 && g_flSdfVmFovScale > 0.001 )
+		{
+			float3 fwd = normalize( g_vCameraDirWs );
+			float3 rel = i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs );
+			float axial = dot( rel, fwd );
+			rel = fwd * axial + ( rel - fwd * axial ) / g_flSdfVmFovScale;
+			i.vPositionWithOffsetWs = rel - ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs );
+		}
 
 		float3 p;
 		if ( !RayMarchHit( i, p ) )
@@ -811,7 +852,7 @@ PS
 	#if ( S_MODE_DEPTH )
 		// Depth+normals prepass: output the SDF surface normal into the G-buffer (for SSAO/SSR) and
 		// the surface depth — no shading. This is what gives the raymarch AO and puts it in the
-		// engine depth buffer (so depth sorting + DepthClamp occlusion work via the engine chain).
+		// engine depth buffer (so depth sorting + occlusion work via the engine chain).
 		// This same mode also renders the SHADOW views: in an ortho view (a sun cascade) the written
 		// depth is the shadow map. The optional caster bias pushes it a touch deeper along the light
 		// ray there — acne insurance the camera prepass must never get (its depth must stay exact,

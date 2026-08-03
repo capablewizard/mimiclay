@@ -10,7 +10,8 @@ namespace Mimiclay;
 /// Deliberately not a singleton — nothing enforces uniqueness and last-enabled simply wins — but the
 /// convention is exactly one live instance per scene, so callers can treat <see cref="Current"/> as "the
 /// camera". Use the static pass-throughs (<see cref="Position"/>, <see cref="Rotation"/>,
-/// <see cref="Angles"/>) for quick reads/writes, or grab <see cref="Camera"/> for the full s&amp;box API.
+/// <see cref="Angles"/>, <see cref="Fov"/>) for quick reads/writes, or grab <see cref="Camera"/> for the
+/// full s&amp;box API.
 /// </summary>
 [Title( "Main Camera" )]
 [Category( "Mimiclay" )]
@@ -43,6 +44,11 @@ public sealed class MainCamera : Component
 	/// Only the blur is scaled; focal distance/range are world-space and already resolution-independent.</summary>
 	[Property, Group( "Depth of Field" ), Range( 240f, 2160f )] public float BlurReferenceHeight { get; set; } = 1080f;
 
+	/// <summary>How fast the live field of view eases toward its target, per second (exponential). The ease is
+	/// what makes pawn/mode switches (hunter 90 ↔ orbit 60) read as a smooth zoom instead of a pop.
+	/// 0 = no easing: the FOV snaps to its target the moment a driver asserts it.</summary>
+	[Property, Group( "Field of View" ), Range( 0f, 50f )] public float FovLerpSpeed { get; set; } = 8f;
+
 	// Resolution-aware blur multiplier: keeps the pixel-based DOF the same fraction of the screen everywhere.
 	float ScreenBlurScale => BlurReferenceHeight > 1f ? Screen.Height / BlurReferenceHeight : 1f;
 
@@ -52,6 +58,11 @@ public sealed class MainCamera : Component
 	float _targetBlurSize;
 	float _targetFocalDistance;
 	float _targetFocusRange;
+
+	// Target FOV, same scheme as the DoF targets: whoever drives the camera this frame declares it (per
+	// frame, from GameSettings) and the live camera eases toward it here. Seeded from the authored camera
+	// FOV on awake so scenes where nothing asserts (the menu) keep their authored value.
+	float _targetFov;
 
 	// Static pass-throughs to Current so callers can write `MainCamera.Position = ...` from anywhere.
 	// Reads no-op to sane defaults and writes no-op when there's no live camera, so callers never have to
@@ -118,6 +129,26 @@ public sealed class MainCamera : Component
 		Current._targetFocalDistance = focalDistance;
 		Current._targetFocusRange = focusRange;
 		Current._targetBlurSize = blurSize;
+	}
+
+	/// <summary>Target vertical field of view (degrees). The live camera eases toward it; assert it every
+	/// frame from whatever is driving the camera. Writes are ignored when no camera is live.</summary>
+	public static float Fov
+	{
+		get => Current.IsValid() ? Current._targetFov : 60f;
+		set { if ( Current.IsValid() ) Current._targetFov = value; }
+	}
+
+	/// <summary>Set the target field of view. lerp:true (default) eases toward it; lerp:false snaps the live
+	/// camera immediately (e.g. on a hard scene cut where a zoom would look wrong).</summary>
+	public static void SetFov( float fov, bool lerp = true )
+	{
+		if ( !Current.IsValid() )
+			return;
+
+		Current._targetFov = fov;
+		if ( !lerp && Current.Camera.IsValid() )
+			Current.Camera.FieldOfView = fov;
 	}
 
 	DofControl _dofControl;
@@ -197,6 +228,7 @@ public sealed class MainCamera : Component
 	protected override void OnAwake()
 	{
 		Camera = GameObject.Components.GetOrCreate<CameraComponent>();
+		_targetFov = Camera.FieldOfView;
 
 		// Prefer the inspector-assigned one; fall back to whatever's on this GameObject if it was left unset.
 		DepthOfField ??= GameObject.Components.Get<DepthOfField>();
@@ -214,10 +246,15 @@ public sealed class MainCamera : Component
 
 	protected override void OnUpdate()
 	{
+		// Frame-rate-independent exponential eases, so the zoom/rack feels the same at any FPS.
+		if ( Camera.IsValid() )
+			Camera.FieldOfView = FovLerpSpeed > 0f
+				? MathX.Lerp( Camera.FieldOfView, _targetFov, 1f - MathF.Exp( -FovLerpSpeed * Time.Delta ) )
+				: _targetFov;
+
 		if ( !DepthOfField.IsValid() )
 			return;
 
-		// Frame-rate-independent exponential ease, so the rack feels the same at any FPS.
 		float t = 1f - MathF.Exp( -FocusLerpSpeed * Time.Delta );
 
 		DepthOfField.BlurSize = MathX.Lerp( DepthOfField.BlurSize, _targetBlurSize * ScreenBlurScale, t );

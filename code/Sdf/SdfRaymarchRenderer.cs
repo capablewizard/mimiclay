@@ -189,6 +189,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// like <see cref="RenderHidden"/> — not a [Property].</summary>
 	public SdfViewLayer ViewLayer { get; set; } = SdfViewLayer.Normal;
 
+	/// <summary>Viewmodel FOV ratio — tan(cameraHalfFov)/tan(viewmodelHalfFov). The shader warps the proxy's
+	/// raster footprint by this and unwarps per pixel, so the marched rays belong to the VIEWMODEL's own
+	/// projection: camera FOV and gun FOV are fully independent. 1 = render in the camera's projection.
+	/// Runtime-driven by the owning pawn, like <see cref="ViewLayer"/> — not a [Property].</summary>
+	public float ViewmodelFovScale { get; set; } = 1f;
+
 	// The layer state actually applied to _so (null = never applied / _so recreated). Tracked OURSELVES because
 	// SceneObject.RenderLayer's setter is buggy: its early-out compares a cached value that the Default branch
 	// clears natively but never writes back — after one ViewModel→Default round-trip the cache reads ViewModel
@@ -749,6 +755,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// unfixable, the world legitimately occludes it there) and the material AO term switches to the
 		// 5-tap field-computed self-AO, which wins the engine's min() against the neutral screen AO.
 		_so.Attributes.Set( "SdfViewmodel", ViewLayer != SdfViewLayer.Normal ? 1 : 0 );
+		_so.Attributes.Set( "SdfVmFovScale", MathF.Max( ViewmodelFovScale, 0.01f ) );
 		_so.Attributes.Set( "SdfShadowOnly", shadowOnly ? 1 : 0 );
 		_so.Attributes.Set( "SdfShadowBias", ShadowBias );
 		_so.Attributes.Set( "BrushData", _dataTex );

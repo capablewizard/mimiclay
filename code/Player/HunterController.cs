@@ -27,6 +27,10 @@ public sealed class HunterController : Component
 	/// <summary>Seconds between shots — the hunt's "shoot on a cooldown".</summary>
 	[Property, Group( "Weapon" )] public float ShootCooldown { get; set; } = 1f;
 
+	/// <summary>Played on EVERY machine when this hunter fires (broadcast RPC, positioned at the shooter) —
+	/// a gunshot is public information, props tracking hunters by ear included.</summary>
+	[Property, Group( "Weapon" )] public SoundEvent ShootSound { get; set; }
+
 	// Owner-side gate: the next moment a shot is allowed.
 	TimeUntil _nextShot;
 
@@ -44,12 +48,31 @@ public sealed class HunterController : Component
 	/// rather than snapping cadence at some threshold.</summary>
 	[Property, Group( "Footsteps" )] public float RunStepDistance { get; set; } = 100f;
 
+	/// <summary>Volume of the push-off step played the moment a JUMP leaves the ground (the engine's
+	/// physics-driven landing thump covers the other half of the pair). 0 = silent jumps.</summary>
+	[Property, Group( "Footsteps" ), Range( 0f, 1f )] public float JumpStepVolume { get; set; } = 0.8f;
+
 	// Footstep emitter state: distance walked since the last step, where we last measured from (invalid until
 	// re-seeded on the first grounded frame), and which foot lands next (alternates left/right sounds).
 	float _stepAccum;
 	Vector3 _stepFrom;
 	bool _stepSeeded;
 	int _stepFoot;
+
+	// Jump push-off detection: on the grounded→airborne transition we open a short WATCH instead of deciding
+	// immediately — IsOnGround flips on the fixed tick but WorldPosition here is the engine-INTERPOLATED
+	// transform (see the fixed-tick eye-cache rule), which lags the tick, so the transition frame itself
+	// shows no rise yet and a same-frame velocity gate never fires. Rising past the threshold within the
+	// window = jump (play, ~20ms late — imperceptible); dropping or timing out = a fall (silent).
+	bool _wasGrounded;
+	bool _takeoffWatch;
+	float _takeoffZ;
+	TimeSince _sinceTakeoff;
+
+	// The surface underfoot on the LAST grounded frame. The engine's PlayFootstepSound silently no-ops when
+	// airborne (its first line bails if GroundSurface is invalid — cleared by the same tick that un-grounds),
+	// so the jump push-off must remember what it jumped OFF and play through the pipeline itself.
+	Surface _takeoffSurface;
 
 	/// <summary>The run dust effect (the "RunPFX" child): its emitters are enabled only while moving at running
 	/// speed — including a running jump, since horizontal speed carries through the air. Auto-resolved by child
@@ -283,9 +306,10 @@ public sealed class HunterController : Component
 		return eye;
 	}
 
-	// Position the shared scene camera at the eye — FIRST PERSON, position + rotation ONLY. No FieldOfView /
-	// render-setting changes, so the camera is left exactly as clean as we found it for the next pawn that drives
-	// it. This is the whole point: one camera, every controller sets only its transform.
+	// Position the shared scene camera at the eye — FIRST PERSON. Transform is written directly; FOV is
+	// declared through MainCamera (which owns the ease) and asserted every frame, so whatever the previous
+	// driver left targeted — the orbit rig runs at GameSettings.OrbitFov — glides back to hunter FOV rather
+	// than sticking. Still no render-setting changes: one camera, left clean for the next pawn that drives it.
 	void DriveCamera( Vector3 eye )
 	{
 		var cam = Scene.Camera;
@@ -294,6 +318,7 @@ public sealed class HunterController : Component
 
 		cam.WorldPosition = eye;
 		cam.WorldRotation = _controller.EyeAngles.ToRotation();
+		MainCamera.Fov = GameSettings.HunterFov;
 	}
 
 	// First person: hide our OWN body so we don't see it but it still casts a shadow, while proxies (other
@@ -363,14 +388,50 @@ public sealed class HunterController : Component
 		if ( !EnableFootsteps || !_controller.IsValid() )
 			return;
 
-		if ( !_controller.IsOnGround )
+		// Jump push-off: the takeoff half of the pair whose landing half the engine's physics thump already
+		// covers. Leaving the ground OPENS a watch; the verdict lands a few frames later when the observed
+		// (interpolated, proxy-safe) transform shows which way we went — up = jump, play; down/stall = a
+		// ledge walk-off, silent. (Step-up teleports move z sharply but never drop grounded, so no false
+		// fires; a grounded flicker on a stair lip just cancels the watch.)
+		bool groundedNow = _controller.IsOnGround;
+		var livePos = _controller.WorldPosition;
+
+		if ( groundedNow )
+			_takeoffSurface = _controller.GroundSurface; // remembered for the push-off, see _takeoffSurface
+
+		if ( _wasGrounded && !groundedNow )
+		{
+			_takeoffWatch = true;
+			_takeoffZ = livePos.z;
+			_sinceTakeoff = 0f;
+		}
+		_wasGrounded = groundedNow;
+
+		if ( _takeoffWatch )
+		{
+			if ( groundedNow || livePos.z - _takeoffZ < -6f || _sinceTakeoff > 0.25f )
+			{
+				_takeoffWatch = false; // re-grounded, falling, or stalled: not a jump
+			}
+			else if ( livePos.z - _takeoffZ > 6f )
+			{
+				_takeoffWatch = false;
+				if ( JumpStepVolume > 0f )
+				{
+					_stepFoot = 1 - _stepFoot;
+					PlayJumpStep();
+				}
+			}
+		}
+
+		if ( !groundedNow )
 		{
 			_stepSeeded = false;
 			_stepAccum = 0f;
 			return;
 		}
 
-		var pos = _controller.WorldPosition;
+		var pos = livePos;
 
 		if ( !_stepSeeded )
 		{
@@ -404,6 +465,27 @@ public sealed class HunterController : Component
 
 		_stepFoot = 1 - _stepFoot;
 		_controller.PlayFootstepSound( pos, volume, _stepFoot );
+	}
+
+	// The jump push-off sound. Mirrors the tail of the engine's PlayFootstepSound (surface sound event →
+	// footstep mixer → FootstepVolume) but sources the surface from _takeoffSurface — the engine method
+	// reads the LIVE GroundSurface, which is already invalid by the time an airborne jump verdict lands,
+	// making it silently no-op mid-air.
+	void PlayJumpStep()
+	{
+		var soundEvent = _takeoffSurface?.SoundCollection is { } collection
+			? (_stepFoot == 0 ? collection.FootLeft : collection.FootRight)
+			: null;
+		if ( soundEvent is null )
+			return;
+
+		var handle = GameObject.PlaySound( soundEvent, 0 );
+		if ( !handle.IsValid() )
+			return;
+
+		handle.FollowParent = false;
+		handle.TargetMixer = _controller.FootstepMixer.GetOrDefault();
+		handle.Volume *= JumpStepVolume * _controller.FootstepVolume;
 	}
 
 	// Run dust: enable the RunPFX emitters only while moving at running speed. Speed is OBSERVED horizontal
@@ -455,14 +537,18 @@ public sealed class HunterController : Component
 
 		if ( _session.IsEditing )
 			FrameFace();
-		else if ( _orbit.IsValid() ) // leaving: remember the view (face-relative) for the next edit session
-			_lastEditView = new Angles( _orbit.Angles.pitch, _orbit.Angles.yaw - FaceYaw(), 0f );
+		else if ( _orbit.IsValid() ) // leaving: remember the view (face-relative), zoom and pan for the next edit session
+			_lastEditView = (
+				new Angles( _orbit.Angles.pitch, _orbit.Angles.yaw - FaceYaw(), 0f ),
+				_orbit.Distance,
+				Rotation.FromYaw( FaceYaw() ).Inverse * (_orbit.Pivot - FaceCenterWorld()) );
 	}
 
-	// The last edit session's view, with yaw stored RELATIVE to the face's yaw — so the restored view stays
-	// glued to the head even if the pawn turned between edits. Null until an edit session has ended: the
-	// very first entry frames from the front.
-	Angles? _lastEditView;
+	// The last edit session's view, zoom and pan, stored RELATIVE to the face (yaw-relative angles; the panned
+	// pivot as an offset from the face centre in the face's yaw frame) — so the restored view stays glued to
+	// the head even if the pawn turned or moved between edits. Null until an edit session has ended: the very
+	// first entry frames from the front at the auto-fit distance, centred.
+	(Angles view, float distance, Vector3 panOffset)? _lastEditView;
 
 	float FaceYaw() => _controller.IsValid() ? _controller.EyeAngles.yaw : WorldRotation.Angles().yaw;
 
@@ -474,18 +560,26 @@ public sealed class HunterController : Component
 		if ( !_orbit.IsValid() )
 			return;
 
-		_orbit.Pivot = FaceCenterWorld();
-		_orbit.Distance = FramingDistance();
-		_orbit.Angles = _lastEditView is { } last
-			? new Angles( last.pitch, FaceYaw() + last.yaw, 0f )
-			: new Angles( EditCameraPitch, FaceYaw() + 180f, 0f ); // +180: stand in front, look back at the face
+		if ( _lastEditView is { } last )
+		{
+			_orbit.Pivot = FaceCenterWorld() + Rotation.FromYaw( FaceYaw() ) * last.panOffset;
+			_orbit.Distance = last.distance;
+			_orbit.Angles = new Angles( last.view.pitch, FaceYaw() + last.view.yaw, 0f );
+		}
+		else
+		{
+			_orbit.Pivot = FaceCenterWorld();
+			_orbit.Distance = FramingDistance();
+			_orbit.Angles = new Angles( EditCameraPitch, FaceYaw() + 180f, 0f ); // +180: stand in front, look back at the face
+		}
 	}
 
 	// Distance that fits the head's bounding sphere in the frame with EditFramingMargin breathing room, derived
-	// from the camera's FOV — so any size of head opens at the same apparent size instead of a hardcoded guess.
-	// Standard fit-sphere math: a sphere of radius r is tangent to the view cone at distance r / sin(halfFov).
-	// CameraComponent.FieldOfView is the VERTICAL fov (the tighter axis on a wide screen), so fitting against it
-	// guarantees the head fits horizontally too. Falls back to a fixed distance if bounds/camera aren't ready.
+	// from the FOV edit mode settles at (GameSettings.OrbitFov) — NOT the live camera, which at edit entry is
+	// still easing away from the hunter's first-person FOV and would over-frame. Standard fit-sphere math: a
+	// sphere of radius r is tangent to the view cone at distance r / sin(halfFov). The FOV is the VERTICAL fov
+	// (the tighter axis on a wide screen), so fitting against it guarantees the head fits horizontally too.
+	// Falls back to a fixed distance if bounds aren't ready.
 	float FramingDistance()
 	{
 		const float fallback = 60f;
@@ -498,7 +592,7 @@ public sealed class HunterController : Component
 		if ( radius <= 0.01f )
 			return fallback;
 
-		float halfFov = (Scene.Camera.IsValid() ? Scene.Camera.FieldOfView : 60f).DegreeToRadian() * 0.5f;
+		float halfFov = GameSettings.OrbitFov.DegreeToRadian() * 0.5f;
 		float sin = MathF.Sin( halfFov );
 		if ( sin <= 0.001f )
 			return fallback;
@@ -528,6 +622,10 @@ public sealed class HunterController : Component
 
 		_nextShot = ShootCooldown;
 
+		// Every machine plays the bang (the RPC also runs locally). The EVENT is what's broadcast — each
+		// machine plays its own prefab-authored ShootSound, so no asset reference crosses the wire.
+		BroadcastShotSound();
+
 		var tr = Scene.Trace
 			.Ray( from, from + dir * Range )
 			.IgnoreGameObjectHierarchy( GameObject )
@@ -548,6 +646,26 @@ public sealed class HunterController : Component
 			RoundManager.Current.ReportPropHit( hider.GameObject );
 		else if ( DebugGameMode.Current.IsValid() )
 			DebugGameMode.Current.ReportPropHit( hider.GameObject );
+	}
+
+	// The gunshot, on every machine, from the shooter's pawn. Detached from the pawn so the tail of the
+	// sound stays where the shot happened instead of chasing a sprinting hunter. The SHOOTER's own copy
+	// plays flat 2D (SpacialBlend 0): spatializing your own shot against your own head panned/attenuated
+	// it oddly — the classic FPS split is punchy 2D for the local player, positioned 3D for everyone else.
+	[Rpc.Broadcast]
+	void BroadcastShotSound()
+	{
+		if ( ShootSound is null )
+			return;
+
+		var handle = GameObject.PlaySound( ShootSound, 0 );
+		if ( !handle.IsValid() )
+			return;
+
+		handle.FollowParent = false;
+
+		if ( !IsProxy )
+			handle.SpacialBlend = 0f;
 	}
 
 	// Walk up from the traced object to the pawn root that carries the HiderController (the collider we hit is the
