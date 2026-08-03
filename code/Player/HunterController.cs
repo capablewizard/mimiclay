@@ -31,6 +31,27 @@ public sealed class HunterController : Component
 	/// a gunshot is public information, props tracking hunters by ear included.</summary>
 	[Property, Group( "Weapon" )] public SoundEvent ShootSound { get; set; }
 
+	/// <summary>Radius (world units) of the CENTRAL pellet's crater — a subtractive sphere appended to the
+	/// top of the hit sculpture's brush stack, on every machine. Scatter pellets carve at 45–80% of this.
+	/// 0 = shots don't carve.</summary>
+	[Property, Group( "Weapon" ), Range( 0f, 16f )] public float CarveRadius { get; set; } = 6f;
+
+	/// <summary>Pellets per shot. The FIRST always flies straight down the crosshair at full size and is the
+	/// only one that counts for catching props (random scatter must never decide a catch); the rest scatter
+	/// inside <see cref="CarveScatter"/> with varied smaller craters. 1 = the old single carve.</summary>
+	[Property, Group( "Weapon" ), Range( 1, 8 )] public int CarvePellets { get; set; } = 4;
+
+	/// <summary>Scatter cone half-angle (degrees) for the non-central pellets.</summary>
+	[Property, Group( "Weapon" ), Range( 0f, 10f )] public float CarveScatter { get; set; } = 2.5f;
+
+	/// <summary>Smooth-subtract blend of the carve crater — 0 is a hard-edged bite, higher melts the rim
+	/// into the surrounding clay.</summary>
+	[Property, Group( "Weapon" ), Range( 0f, 8f )] public float CarveBlend { get; set; } = 1.5f;
+
+	/// <summary>Tint of the carved crater walls (a subtract brush's colour paints the surface it exposes) —
+	/// darker than the clay reads as scorched/fresh-cut material.</summary>
+	[Property, Group( "Weapon" )] public Color CarveColor { get; set; } = new( 0.42f, 0.26f, 0.2f );
+
 	// Owner-side gate: the next moment a shot is allowed.
 	TimeUntil _nextShot;
 
@@ -618,7 +639,8 @@ public sealed class HunterController : Component
 		if ( !_controller.IsValid() )
 			return;
 
-		var dir = _controller.EyeAngles.ToRotation().Forward;
+		var aimRot = _controller.EyeAngles.ToRotation();
+		var dir = aimRot.Forward;
 
 		_nextShot = ShootCooldown;
 
@@ -626,26 +648,143 @@ public sealed class HunterController : Component
 		// machine plays its own prefab-authored ShootSound, so no asset reference crosses the wire.
 		BroadcastShotSound();
 
-		var tr = Scene.Trace
-			.Ray( from, from + dir * Range )
-			.IgnoreGameObjectHierarchy( GameObject )
-			.Run();
+		// CENTRAL pellet: exactly the crosshair ray, full carve size, and the ONLY pellet that counts for
+		// catching props — hit registration must never depend on a random scatter roll.
+		var tr = TraceShot( from, dir );
+		if ( tr.Hit )
+		{
+			// Cosmetic carve on ANY sdf surface the shot lands on (decoys, world props, disguises — a live
+			// prop that's about to pop just doesn't get to enjoy its crater). Before the hit report, so
+			// wrong guesses leave visible evidence in the clay.
+			TryCarve( tr, dir, CarveRadius );
 
-		if ( !tr.Hit )
+			// A hit on a prop pawn (its disguise collider belongs to a HiderController up the hierarchy) is
+			// reported to the host, which validates the phase + that it's a live prop, then pops it and
+			// converts that player to a hunter. Anything else is just map geometry. [Rpc.Host] routes it.
+			// With no round running, a DebugGameMode scene handles the hit instead (the prop just pops).
+			var hider = FindHider( tr.GameObject );
+			if ( hider.IsValid() )
+			{
+				if ( RoundManager.Current.IsValid() )
+					RoundManager.Current.ReportPropHit( hider.GameObject );
+				else if ( DebugGameMode.Current.IsValid() )
+					DebugGameMode.Current.ReportPropHit( hider.GameObject );
+			}
+		}
+
+		// SCATTER pellets: purely cosmetic buckshot — random directions inside the CarveScatter cone, each
+		// carving a smaller crater. The shooter rolls the randomness and broadcasts concrete positions and
+		// radii, so every machine ends up with the identical formation without any seed syncing.
+		for ( int i = 1; i < CarvePellets; i++ )
+		{
+			// Uniform disc sample in angle space (sqrt for area-uniform), rotated into the aim frame.
+			float ang = Game.Random.Float( 0f, MathF.Tau );
+			float off = MathF.Sqrt( Game.Random.Float( 0f, 1f ) ) * CarveScatter;
+			var pelletDir = (aimRot * Rotation.From( new Angles(
+				MathF.Sin( ang ) * off, MathF.Cos( ang ) * off, 0f ) )).Forward;
+
+			var ptr = TraceShot( from, pelletDir );
+			if ( ptr.Hit )
+				TryCarve( ptr, pelletDir, CarveRadius * Game.Random.Float( 0.45f, 0.8f ) );
+		}
+	}
+
+	SceneTraceResult TraceShot( Vector3 from, Vector3 dir ) => Scene.Trace
+		.Ray( from, from + dir * Range )
+		.IgnoreGameObjectHierarchy( GameObject )
+		.Run();
+
+	// ── Shot carving ─────────────────────────────────────────────────────────────────────────────────
+	// A shot that lands on an SDF surface appends a subtractive sphere to the TOP of that sculpture's brush
+	// stack (applied after everything below it — a true carve out of the union), then rebuilds. Applied on
+	// EVERY machine via broadcast so the world stays consistent; for a synced disguise the owner's Committed
+	// republish then makes the carve durable/authoritative (late joiners of synced sculptures get it too).
+	//
+	// Addressing across machines is the subtle part: a disguise/head is a RUNTIME clone with a different
+	// GameObject id on every machine, so the RPC can't reference it directly — it references the NETWORKED
+	// pawn root instead, and each machine re-resolves the pawn's own sculpture locally. Scene-placed
+	// sculptures (decoys, world props) share their scene-file ids on every machine, so they pass directly.
+	void TryCarve( SceneTraceResult tr, Vector3 dir, float radius )
+	{
+		if ( radius <= 0.1f )
 			return;
 
-		// A hit on a prop pawn (its disguise collider belongs to a HiderController up the hierarchy) is reported to
-		// the host, which validates the phase + that it's a live prop, then pops it and converts that player to a
-		// hunter. Anything else is just map geometry. The call is [Rpc.Host] so it routes to the host from here.
-		// With no round running, a DebugGameMode scene handles the hit instead (no phases — the prop just pops).
-		var hider = FindHider( tr.GameObject );
-		if ( !hider.IsValid() )
+		// Walk up from the hit collider: the first sculpture found is the carve target; if the chain tops
+		// out in a pawn controller, the PAWN is the network-safe address for it.
+		var go = tr.GameObject;
+		SdfSculpture sculpt = null;
+		GameObject anchor = null;
+		while ( go.IsValid() )
+		{
+			if ( sculpt is null )
+			{
+				var s = go.Components.Get<SdfSculpture>();
+				if ( s.IsValid() )
+					sculpt = s;
+			}
+
+			if ( go.Components.Get<HiderController>().IsValid() || go.Components.Get<HunterController>().IsValid() )
+			{
+				anchor = go;
+				break;
+			}
+
+			go = go.Parent;
+		}
+
+		if ( sculpt is null || !sculpt.IsValid() )
+			return;
+		anchor ??= sculpt.GameObject;
+
+		// Centre pushed a little INTO the surface along the shot for a meatier bite than a surface-tangent
+		// hemisphere. LOCAL space, so pawn interpolation between send and receive can't smear the crater.
+		var local = sculpt.WorldTransform.PointToLocal( tr.EndPosition + dir * ( radius * 0.35f ) );
+		BroadcastCarve( anchor, local, radius );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastCarve( GameObject anchor, Vector3 localPos, float radius )
+	{
+		var sculpt = ResolveCarveSculpture( anchor );
+		if ( !sculpt.IsValid() || sculpt.Brushes is null )
 			return;
 
-		if ( RoundManager.Current.IsValid() )
-			RoundManager.Current.ReportPropHit( hider.GameObject );
-		else if ( DebugGameMode.Current.IsValid() )
-			DebugGameMode.Current.ReportPropHit( hider.GameObject );
+		// Past the packer cap brushes silently don't pack — the raymarch would diverge from mesh/collision
+		// with no warning. A missing crater beats an inconsistent one.
+		if ( sculpt.Brushes.Count >= SdfBrushPacker.MaxBrushes )
+			return;
+
+		sculpt.Brushes.Add( new SdfBrush
+		{
+			Shape = SdfShape.Sphere,
+			Operation = SdfOperation.Subtract,
+			Position = localPos,
+			Size = radius,
+			Blend = CarveBlend,
+			Color = CarveColor,
+		} );
+
+		// Full rebuild: mesh LODs, field redispatch, and Committed — which re-solidifies the collider
+		// (the carve-aware path keeps hollows passable) and, on a synced disguise's owner, republishes.
+		sculpt.Rebuild();
+	}
+
+	// The pawn-anchor → sculpture mapping, mirrored on every machine: a hider pawn carves its disguise, a
+	// hunter pawn its face, anything else is a scene sculpture addressed directly.
+	static SdfSculpture ResolveCarveSculpture( GameObject anchor )
+	{
+		if ( !anchor.IsValid() )
+			return null;
+
+		var hider = anchor.Components.Get<HiderController>();
+		if ( hider.IsValid() )
+			return hider.DisguiseSculpture;
+
+		var hunter = anchor.Components.Get<HunterController>();
+		if ( hunter.IsValid() )
+			return hunter.Face;
+
+		return anchor.Components.Get<SdfSculpture>();
 	}
 
 	// The gunshot, on every machine, from the shooter's pawn. Detached from the pawn so the tail of the
