@@ -39,6 +39,7 @@ public sealed class RuntimeBrushGizmo
 	bool _interactive;  // false while the orbit camera owns the mouse (alt) — draw, but don't interact
 	bool _pressed;      // Attack1 edge this frame (interactive only)
 	bool _down;         // Attack1 held this frame (interactive only)
+	bool _pressed2;     // Attack2 edge this frame (interactive only) — deletes a hovered spline point
 
 	// Hover resolution + drag state.
 	string _hover;
@@ -82,6 +83,7 @@ public sealed class RuntimeBrushGizmo
 		_interactive = allowInteract && !Input.Down( "Walk" ) && !PauseMenu.IsOpen;
 		_pressed = _interactive && Input.Pressed( "Attack1" );
 		_down = _interactive && Input.Down( "Attack1" );
+		_pressed2 = _interactive && Input.Pressed( "Attack2" );
 
 		// Release the drag on a real button-up (even while alt is held).
 		if ( _active is not null && !Input.Down( "Attack1" ) )
@@ -284,11 +286,8 @@ public sealed class RuntimeBrushGizmo
 			{
 				var c = tx.PointToWorld( new Vector3( pts[i].x, pts[i].y, pts[i].z ) );
 				Hover( $"ptMove{i}", RayPointDist( _ray, c, out float dm ), dm, W( c, _style.SplinePointRadius * gs ) + GrabPad( c ) );
-				if ( brush.SplinePerPointRadius ) // radius dots only in per-point mode (else the HUD Size slider drives all)
-				{
-					var rp = c + _sRight * pts[i].w;
-					Hover( $"ptRad{i}", RayPointDist( _ray, rp, out float dr ), dr, W( rp, _style.SplinePointRadius * _style.SplineRadiusDotScale * gs ) + GrabPad( rp ) );
-				}
+				if ( brush.SplinePerPointRadius ) // radius circles only in per-point mode (else the HUD Size slider drives all)
+					HoverRing( $"ptRad{i}", c, (_camPos - c).Normal, pts[i].w, default, false );
 			}
 		}
 
@@ -374,8 +373,15 @@ public sealed class RuntimeBrushGizmo
 		}
 
 		UploadMesh( scene, DrawHash( brush ) );
+		if ( _splineMeshStale ) // a mid-pass point delete drew stale geometry — force a re-upload next frame
+		{
+			_lastDrawHash = 0;
+			_splineMeshStale = false;
+		}
 		return changed;
 	}
+
+	bool _splineMeshStale; // set when a point is deleted AFTER the curve ribbon was already emitted this frame
 
 	// One continuous welded ribbon along the curve polyline — like DrawRing, consecutive samples SHARE their
 	// two edge vertices, so the segments butt together gap-free with no end caps. Replaces drawing each span as
@@ -418,6 +424,20 @@ public sealed class RuntimeBrushGizmo
 		float dotR = W( c, _style.SplinePointRadius * gs );
 		Disc( c, hot ? dotR * _style.HotScale : dotR, Tint( hot ? Color.White : _style.SplineLineColor, name ) );
 
+		// Right-click deletes this control point — but never below 2 (the tube needs a span). Dropping under
+		// 3 can't stay a ring, so un-loop too. Hover is cleared so nothing reads the stale point name.
+		if ( _pressed2 && _hover == name && brush.Points.Count > 2 )
+		{
+			brush.Points.RemoveAt( i );
+			if ( brush.Points.Count < 3 )
+				brush.SplineClosed = false;
+			_hover = null;
+			// This frame's mesh was emitted from the PRE-delete points but gets stamped with the post-delete
+			// hash — mark it stale so next frame re-uploads instead of matching the hash and keeping the old curve.
+			_splineMeshStale = true;
+			return true;
+		}
+
 		if ( _pressed && _hover == name && new Plane( c, n ).TryTrace( _ray, out var hit0, true ) )
 		{
 			_active = name;
@@ -441,9 +461,11 @@ public sealed class RuntimeBrushGizmo
 		bool hot = IsHot( name );
 		var pt = brush.Points[i];
 		var c = tx.PointToWorld( new Vector3( pt.x, pt.y, pt.z ) );
-		var rp = c + _sRight * pt.w; // rim dot, screen-right
-		float dotR = W( rp, _style.SplinePointRadius * _style.SplineRadiusDotScale * gs );
-		Disc( rp, hot ? dotR * _style.HotScale : dotR, Tint( hot ? Color.Lerp( _style.SplineRadiusColor, Color.White, 0.4f ) : _style.SplineRadiusColor, name ) );
+
+		// Camera-facing circle AT the point's radius — the circle IS the size readout. Highlighted like the
+		// rotation rings (brighter + thicker while hot); grab and drag toward/away from the centre to scale.
+		var toCam = (_camPos - c).Normal;
+		DrawRing( c, toCam, pt.w, _style.RingThickness( hot ), Tint( Highlight( _style.SplineRadiusColor, hot ), name ), toCam, false );
 
 		if ( _pressed && _hover == name && new Plane( c, n ).TryTrace( _ray, out _, true ) )
 		{

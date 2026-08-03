@@ -36,6 +36,8 @@ public static class SdfIcons
 		SdfShape.Cylinder => "/ui/shapeicons/shape_cylinder_large.png",
 		SdfShape.Cone => "/ui/shapeicons/shape_cone_large.png",
 		SdfShape.Extruded => "/ui/shapeicons/shape_prism_large.png",
+		SdfShape.Text => "/ui/shapeicons/shape_text_large.png",
+		SdfShape.Spline => "/ui/shapeicons/shape_spline_large.png",
 		_ => "/ui/shapeicons/shape_sphere_large.png",
 	};
 
@@ -50,6 +52,8 @@ public static class SdfIcons
 		SdfShape.Cylinder => "/ui/shapeicons/icon_cylinder_small.png",
 		SdfShape.Cone => "/ui/shapeicons/icon_cone_small.png",
 		SdfShape.Extruded => "/ui/shapeicons/icon_prism_small.png",
+		SdfShape.Text => "/ui/shapeicons/icon_text_small.png",
+		SdfShape.Spline => "/ui/shapeicons/icon_spline_small.png",
 		_ => "/ui/shapeicons/icon_sphere_small.png",
 	};
 
@@ -58,8 +62,11 @@ public static class SdfIcons
 	public const string Hidden = "visibility_off";
 	public const string Add = "add";
 	public const string Subtract = "remove";
-	public const string Symmetry = "crop_free"; // corner brackets, like the reference
+	public const string Symmetry = "flip"; // a shape mirrored across a dashed line
 	public const string Delete = "delete";
 	public const string Duplicate = "content_copy";
+	public const string ResetRotation = "rotate_left"; // arrow circling back — the "Rotate" reset tool
+	public const string Copy = "content_copy";
+	public const string Paste = "content_paste";
 	public const string DragHandle = "drag_indicator"; // the ":::" grip shown at the left of a draggable row
 }

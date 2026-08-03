@@ -425,12 +425,6 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 		// sideways from where earlier brushes were moved to).
 		var pos = Brushes.Count > 0 ? new Vector3( 0f, 0f, Brushes[^1].Position.z + 16f ) : Vector3.Zero;
 
-		// The flat-profile shapes (text, extruded cross-sections) spawn FACING FORWARD instead of lying flat:
-		// this cyclic-permutation rotation maps local X→world Y, local Y→world Z (profile "up" = up), and
-		// local Z (the extrusion normal) → world X (the sculpture's forward). Identity would leave the
-		// profile face-up on the ground.
-		bool facesForward = shape is SdfShape.Text or SdfShape.Extruded;
-
 		// Text sizing: the quad is locked to the glyph slot's 2:1 aspect (a uniform slot→world mapping —
 		// anything else stretches the glyphs) and much shallower than the solid shapes (plaque-like).
 		var size = shape switch
@@ -445,7 +439,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 			Shape = shape,
 			Operation = operation,
 			Position = pos,
-			Rotation = facesForward ? new Rotation( 0.5f, 0.5f, 0.5f, 0.5f ) : Rotation.Identity,
+			Rotation = SpawnRotation( shape ),
 			Size = size,
 			// A spline starts as a short 3-point tube centred on the stack position; each point is then
 			// dragged/sized by its own dots. (xyz = sculpture-local position, w = radius.)
@@ -455,4 +449,12 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 		Rebuild();
 		return true;
 	}
+
+	/// <summary>The rotation a freshly added brush of this shape gets — also what the "Rotate" reset tool
+	/// restores. The flat-profile shapes (text, extruded cross-sections) spawn FACING FORWARD instead of
+	/// lying flat: a cyclic-permutation rotation mapping local X→world Y, local Y→world Z (profile "up" =
+	/// up), and local Z (the extrusion normal) → world X (the sculpture's forward). Identity would leave
+	/// the profile face-up on the ground.</summary>
+	public static Rotation SpawnRotation( SdfShape shape )
+		=> shape is SdfShape.Text or SdfShape.Extruded ? new Rotation( 0.5f, 0.5f, 0.5f, 0.5f ) : Rotation.Identity;
 }

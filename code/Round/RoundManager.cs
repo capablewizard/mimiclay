@@ -562,9 +562,11 @@ public sealed class RoundManager : Component, IRoundContext
 
 	// ── Stubs to flesh out next ──────────────────────────────────────────────────────────────────────────────
 	// Reveal flash: surviving props pulse with the outline shader so spectators can see where they were hiding.
+	// The steady outline half already works — RoundOutlineSystem shows surviving props' outlines to everyone
+	// during Reveal (and gates them owner-only the rest of the round). This stub is just the PULSE on top.
 	void FlashSurvivingProps()
 	{
-		// TODO: enable the outline/flash effect on every pawn whose roster row is an Alive prop.
+		// TODO: pulse the reveal outline (width/colour animation) on every pawn whose roster row is an Alive prop.
 	}
 
 	// ── Roster upkeep ────────────────────────────────────────────────────────────────────────────────────────

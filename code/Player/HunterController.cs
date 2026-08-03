@@ -348,21 +348,30 @@ public sealed class HunterController : Component
 
 		if ( _session.IsEditing )
 			FrameFace();
+		else if ( _orbit.IsValid() ) // leaving: remember the view (face-relative) for the next edit session
+			_lastEditView = new Angles( _orbit.Angles.pitch, _orbit.Angles.yaw - FaceYaw(), 0f );
 	}
 
-	// Park the orbit camera in FRONT of the face looking back at it: position it along the head's facing
-	// direction (where the front of the face points) and aim back the opposite way. Must run AFTER the session
+	// The last edit session's view, with yaw stored RELATIVE to the face's yaw — so the restored view stays
+	// glued to the head even if the pawn turned between edits. Null until an edit session has ended: the
+	// very first entry frames from the front.
+	Angles? _lastEditView;
+
+	float FaceYaw() => _controller.IsValid() ? _controller.EyeAngles.yaw : WorldRotation.Angles().yaw;
+
+	// Park the orbit camera on the face: the FIRST entry frames it from the front (along the head's facing,
+	// aiming back at it); later entries restore wherever you last left the view. Must run AFTER the session
 	// enables the camera, since OrbitCameraController.OnEnabled seeds pivot/angles from the (first-person) view.
 	void FrameFace()
 	{
 		if ( !_orbit.IsValid() )
 			return;
 
-		float faceYaw = _controller.IsValid() ? _controller.EyeAngles.yaw : WorldRotation.Angles().yaw;
-
 		_orbit.Pivot = FaceCenterWorld();
 		_orbit.Distance = FramingDistance();
-		_orbit.Angles = new Angles( EditCameraPitch, faceYaw + 180f, 0f ); // +180: stand in front, look back at the face
+		_orbit.Angles = _lastEditView is { } last
+			? new Angles( last.pitch, FaceYaw() + last.yaw, 0f )
+			: new Angles( EditCameraPitch, FaceYaw() + 180f, 0f ); // +180: stand in front, look back at the face
 	}
 
 	// Distance that fits the head's bounding sphere in the frame with EditFramingMargin breathing room, derived

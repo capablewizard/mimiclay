@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Mimiclay;
 
@@ -316,17 +317,31 @@ public sealed class SculptEditSession : Component
 		Target.Rebuild();
 	}
 
-	/// <summary>Toggle symmetry on a brush (the symmetry button): clears all axes if any are on, else turns
-	/// on left/right (X) mirroring — the usual one. Per-axis control still lives in the Symmetry section.</summary>
+	// Each brush's axis combo from the last time the layer-row toggle turned its symmetry OFF, so turning
+	// it back on restores that combo instead of defaulting to X. Keyed by brush reference (survives
+	// reorders); entries for deleted brushes are just harmless orphans.
+	readonly Dictionary<SdfBrush, (bool X, bool Y, bool Z)> _mirrorMemory = new();
+
+	/// <summary>Toggle symmetry on a brush (the symmetry button): clears all axes if any are on, else
+	/// restores the combo it had when last toggled off (left/right X for a brush with no history).
+	/// Per-axis control still lives in the Symmetry section.</summary>
 	public void ToggleSymmetry( int index )
 	{
 		if ( BrushAt( index ) is not { } b )
 			return;
 
-		bool any = b.MirrorX || b.MirrorY || b.MirrorZ;
-		b.MirrorX = b.MirrorY = b.MirrorZ = false;
-		if ( !any )
-			b.MirrorX = true;
+		if ( b.MirrorX || b.MirrorY || b.MirrorZ )
+		{
+			_mirrorMemory[b] = (b.MirrorX, b.MirrorY, b.MirrorZ);
+			b.MirrorX = b.MirrorY = b.MirrorZ = false;
+		}
+		else
+		{
+			var m = _mirrorMemory.TryGetValue( b, out var saved ) ? saved : (X: true, Y: false, Z: false);
+			b.MirrorX = m.X;
+			b.MirrorY = m.Y;
+			b.MirrorZ = m.Z;
+		}
 
 		Target.Rebuild();
 	}
@@ -359,6 +374,17 @@ public sealed class SculptEditSession : Component
 		int i = Selected;
 		b.Insert( i + 1, b[i].Copy() );
 		Selected = i + 1;
+		Target.Rebuild();
+	}
+
+	/// <summary>Reset the selected brush's rotation to its shape's spawn orientation (the "Rotate" tool
+	/// button) and rebuild — identity for most shapes, face-forward for the flat-profile ones.</summary>
+	public void ResetRotationSelected()
+	{
+		if ( BrushAt( Selected ) is not { } b )
+			return;
+
+		b.Rotation = SdfSculpture.SpawnRotation( b.Shape );
 		Target.Rebuild();
 	}
 

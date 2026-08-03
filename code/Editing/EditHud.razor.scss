@@ -107,7 +107,7 @@
 
 	.shape-grid {
 		flex-direction: row;
-		flex-wrap: wrap;
+		flex-wrap: nowrap; // one row along the top — wider than the panel column, which is click-through anyway
 		gap: 10px;
 	}
 
@@ -117,10 +117,11 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 10px;
-		width: 92px;
-		height: 104px; // slightly taller than wide, matching the reference
-		padding: 14px 10px; // even padding on all sides
+		gap: 5px;
+		flex-shrink: 0; // keep full size in the nowrap row instead of squeezing into the panel width
+		width: 82px;
+		height: 90px; // slightly taller than wide, matching the reference
+		padding: 7px 5px; // even padding on all sides
 		border-radius: 22px; // surface (fill/outline/shadow) comes from .paper-card
 		cursor: pointer;
 		transition: transform 0.1s ease, background-color 0.1s ease;
@@ -237,8 +238,8 @@
 		// Hidden brush: dim the eye.
 		.eye.off .icon { color: rgba( 58, 44, 26, 0.3 ); }
 
-		// Symmetry active: orange.
-		.sym.on .icon { color: $craft-orange; }
+		// Symmetry active: green (same as the + op symbol). Inactive stays the default dark ink.
+		.sym.on .icon { color: $craft-green; }
 
 		// Bin hover: red.
 		.bin:hover {
@@ -251,7 +252,6 @@
 			background-color: $craft-orange;
 
 			.iconbtn:hover { background-color: rgba( 44, 36, 24, 0.15 ); }
-			.sym.on .icon { color: $paper-ink; }
 		}
 	}
 
@@ -269,6 +269,10 @@
 		font-weight: 800;
 		box-shadow: $shadow-float;
 		cursor: pointer;
+
+		// Caps on the LABEL spans only — never the whole chip: the icon divs hold lowercase ligature
+		// names ("loop"), and text-transform inherits, which would break them into literal text.
+		span { text-transform: uppercase; }
 		transition: transform 0.1s ease, background-color 0.1s ease;
 
 		&:hover { transform: translateY( -2px ); background-color: #fff; }
@@ -330,6 +334,15 @@
 		.clay-slider {
 			width: 100%;
 			.label { width: 58px; }
+		}
+
+		// Copy / Paste material chips under the sliders. Paste is dimmed until something has been copied.
+		.mat-clipboard {
+			flex-direction: row;
+			gap: 8px;
+			width: 100%;
+
+			.chip.disabled { opacity: 0.45; pointer-events: none; }
 		}
 	}
 
@@ -412,27 +425,39 @@
 		gap: 8px;
 		pointer-events: all;
 
-		// Cross-section picker for the extruded "Shape" brush: a row of small icon chips under the sliders,
-		// reusing the paper chip look (orange = the active profile).
+		// Small chips riding under the sliders (extruded profile picker, spline Loop, per-point toggle) —
+		// the paper chip look at slider scale (orange = active).
+		.chip.mini {
+			padding: 8px 0;
+			gap: 6px;
+
+			.icon { font-size: 22px; color: $paper-ink; }
+
+			// Sizing for any chip that carries a short label next to its glyph (none currently — the
+			// spline chips went icon-only — but the style stays for future labelled chips).
+			span { font-size: 13px; }
+
+			// Loop needs 3+ points to be a ring — until then the chip is visibly parked.
+			&.disabled {
+				opacity: 0.45;
+				pointer-events: none;
+			}
+		}
+
+		// Cross-section picker / Loop: a row of chips under the sliders.
 		.xsection-row {
 			flex-direction: row;
 			gap: 8px;
+		}
 
-			.chip.mini {
-				padding: 8px 0;
-				gap: 6px;
+		// A slider with an icon-only chip riding beside it (spline Curve+Loop, Size+per-point): the slider
+		// stretches, the chip keeps a fixed square-ish footprint.
+		.slider-row {
+			flex-direction: row;
+			gap: 8px;
 
-				.icon { font-size: 22px; color: $paper-ink; }
-
-				// Spline chips carry a short label next to the glyph (Loop / Per Point).
-				span { font-size: 13px; }
-
-				// Loop needs 3+ points to be a ring — until then the chip is visibly parked.
-				&.disabled {
-					opacity: 0.45;
-					pointer-events: none;
-				}
-			}
+			.clay-slider { flex-grow: 1; }
+			.chip.mini { flex-grow: 0; width: 44px; }
 		}
 
 		// Text brush: the in-place string editor, a paper pill matching the sliders.
@@ -450,6 +475,7 @@
 				flex-grow: 1;
 				font-size: 16px;
 				font-weight: 700;
+				text-transform: uppercase; // match the sculpt — the baked text SDF is caps-only (SdfTextSdf)
 				color: $paper-ink;
 				background-color: rgba( 44, 36, 24, 0.08 ); // recessed like the slider groove
 				border-radius: 10px;
@@ -466,6 +492,20 @@
 		gap: 10px;
 		padding: 8px 14px;
 		border-radius: $radius-pill; // surface (fill/outline/shadow) comes from .paper-card
+
+		// Parked (e.g. spline Size while per-point mode drives the radii from the 3D dots): only the
+		// interactive blue parts (fill + knob) go grey — the pill and label stay fully legible.
+		// The .track-hit override matters: it sets pointer-events:all, which would defeat none on the root.
+		// Selectors go THROUGH .track so they outrank the base `.clay-slider .track .fill` rules below
+		// (same class count would tie, and the later base rule would win).
+		&.disabled {
+			pointer-events: none;
+
+			// Opaque desaturated grey-brown (30% ink flattened onto the cream tile) — translucency here
+			// let the fill show through the knob.
+			.track .fill, .track .knob { background-color: #b1a89d; }
+			.track-hit { pointer-events: none; cursor: default; }
+		}
 
 		.label {
 			flex-shrink: 0;

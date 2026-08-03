@@ -22,13 +22,16 @@
 *@
 
 <root class="round-hud">
-	@* TEMP DEBUG — concealment state. Remove once infection prep is working. *@
-	<div style="position: absolute; top: 90px; left: 24px; flex-direction: column; color: #ffcc00; font-family: Consolas; font-size: 18px; text-shadow: 0px 1px 2px black;">
-		<div>host=@DbgHost  isActive=@Networking.IsActive</div>
-		<div>phase=@Phase</div>
-		<div>mode=@DbgMode</div>
-		<div>pawns(self/proxy)=@DbgSelfPawns/@DbgProxyPawns</div>
-	</div>
+	@* Debug overlay — networking/round/pawn state. Off by default; toggle with `mimiclay_debug_hud` in console. *@
+	@if ( DebugHud )
+	{
+		<div style="position: absolute; top: 90px; left: 24px; flex-direction: column; color: #ffcc00; font-family: Consolas; font-size: 18px; text-shadow: 0px 1px 2px black;">
+			<div>host=@DbgHost  isActive=@Networking.IsActive</div>
+			<div>phase=@Phase</div>
+			<div>mode=@DbgMode</div>
+			<div>pawns(self/proxy)=@DbgSelfPawns/@DbgProxyPawns</div>
+		</div>
+	}
 
 	<div class="top-centre">
 		@* Header above the clock ONLY in the lobby (LOBBY / STARTING GAME). In a round there's no header — the
@@ -212,6 +215,10 @@
 	}
 
 	// TEMP DEBUG helpers — concealment ground-truth readout.
+	/// <summary>Shows the yellow state overlay (networking / phase / pawn counts). Console: `mimiclay_debug_hud true`.</summary>
+	[ConVar( "mimiclay_debug_hud" )]
+	public static bool DebugHud { get; set; }
+
 	bool DbgHost => Networking.IsHost;
 	string DbgMode => RoundManager.Current.IsValid() ? RoundManager.Current.Settings.Mode.ToString() : "(no manager)";
 	int DbgSelfPawns => Scene.GetAllComponents<HiderController>().Count( c => c.IsValid() && !c.IsProxy )
@@ -222,5 +229,5 @@
 	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole, so they're covered.
 	protected override int BuildHash()
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
-			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns ) );
+			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud ) );
 }

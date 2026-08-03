@@ -83,10 +83,11 @@
 					<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
 						<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
 					</div>
-					<div class="chip @(ShowBounds ? "on" : "")" @onclick=@(() => ShowBounds = !ShowBounds)>
-						<div class="icon">radio_button_unchecked</div><span>Bounds</span>
+					<div class="chip action" @onclick=@(() => Session.ResetRotationSelected())>
+						<div class="icon">@SdfIcons.ResetRotation</div><span>Reset</span>
 					</div>
 				</div>
+				<div class="section-title"><span>Symmetry</span><div class="icon">@SdfIcons.Symmetry</div></div>
 				<div class="shape-grid">
 					<div class="chip @(Brush.MirrorX ? "on" : "")" @onclick=@(() => ToggleMirror( 0 ))>X</div>
 					<div class="chip @(Brush.MirrorY ? "on" : "")" @onclick=@(() => ToggleMirror( 1 ))>Y</div>
@@ -148,6 +149,14 @@
 					OnInput=@((float v) => SetMetallic( v )) OnCommit=@CommitEdit />
 				<ClaySlider Label="Rough" Value=@(pfb?.Roughness ?? 1f) Min=@(0f) Max=@(1f)
 					OnInput=@((float v) => SetRoughness( v )) OnCommit=@CommitEdit />
+				<div class="mat-clipboard">
+					<div class="chip action" @onclick=@CopyMaterial>
+						<div class="icon">@SdfIcons.Copy</div><span>Copy</span>
+					</div>
+					<div class="chip action @(_materialClipboard.HasValue ? "" : "disabled")" @onclick=@PasteMaterial>
+						<div class="icon">@SdfIcons.Paste</div><span>Paste</span>
+					</div>
+				</div>
 			</div>
 		}
 
@@ -185,23 +194,21 @@
 				   cone) add Slice as a third slider. *@
 				@if ( isSpline )
 				{
-					<ClaySlider Label="Curve" Value=@curveVal Min=@(0f) Max=@(1f)
-						OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
-					@* Uniform size mode: one slider drives every control point's radius. Per-point mode swaps
-					   it for the 3D radius dots (the linear_scale chip below toggles between them). *@
-					@if ( !splinePerPoint )
-					{
-						<ClaySlider Label="Size" Value=@splineSizeVal Min=@(1f) Max=@SdfBrush.MaxSplineRadius
-							OnInput=@((float v) => SetSplineSize( v )) OnCommit=@CommitEdit />
-					}
-					@* Loop (close the ring; needs 3+ points) and per-point-size chips — same paper style as the
-					   extruded profile picker. These used to be 3D handles / dots on the gizmo. *@
-					<div class="xsection-row">
+					@* Curve slider with the Loop chip riding beside it (close the ring; needs 3+ points). *@
+					<div class="slider-row">
+						<ClaySlider Label="Curve" Value=@curveVal Min=@(0f) Max=@(1f)
+							OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
 						<div class="chip mini @(fb?.SplineClosed == true ? "on" : "") @(canLoop ? "" : "disabled")" @onclick=@(() => ToggleSplineClosed())>
-							<div class="icon">loop</div><span>Loop</span>
+							<div class="icon">loop</div>
 						</div>
+					</div>
+					@* Uniform size: one slider drives every control point's radius. The icon chip beside it
+					   toggles per-point mode (3D radius circles), which greys the slider out while it's on. *@
+					<div class="slider-row">
+						<ClaySlider Disabled=@splinePerPoint Label="Size" Value=@splineSizeVal Min=@(1f) Max=@SdfBrush.MaxSplineRadius
+							OnInput=@((float v) => SetSplineSize( v )) OnCommit=@CommitEdit />
 						<div class="chip mini @(splinePerPoint ? "on" : "")" @onclick=@(() => ToggleSplinePerPoint())>
-							<div class="icon">linear_scale</div><span>Per Point</span>
+							<div class="icon">linear_scale</div>
 						</div>
 					</div>
 				}
@@ -260,7 +267,8 @@
 	   click are ray + raw-input (not UI events), so this doesn't block selecting the line or inserting a point. *@
 	@if ( Session?.HoveringSplineLine ?? false )
 	{
-		<div class="add-point-cursor" @onmousedown=@(() => Session?.InsertHoveredSplinePoint())></div>
+		@* LEFT button only — onmousedown fires for every button, and right-click means delete-a-point, not add. *@
+		<div class="add-point-cursor" @onmousedown=@(( PanelEvent e ) => { if ( e is MousePanelEvent m && m.MouseButton == MouseButtons.Left ) Session?.InsertHoveredSplinePoint(); })></div>
 	}
 
 	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during a drag). *@
@@ -808,6 +816,28 @@
 		Session?.PreviewChanged();
 	}
 
+	// The copied material (colour + metal/rough). Static on purpose: one clipboard for the whole game, so a
+	// material copied from one brush/sculpt can be pasted onto another (and it survives selection changes).
+	static (Color Color, float Metallic, float Roughness)? _materialClipboard;
+
+	void CopyMaterial()
+	{
+		if ( Brush is null )
+			return;
+		_materialClipboard = (Brush.Color, Brush.Metallic, Brush.Roughness);
+	}
+
+	void PasteMaterial()
+	{
+		if ( Brush is null || _materialClipboard is not { } m )
+			return;
+		Brush.Color = m.Color;
+		Brush.Metallic = m.Metallic;
+		Brush.Roughness = m.Roughness;
+		Session?.PreviewChanged();
+		CommitEdit();
+	}
+
 	// Swatch background: a flat colour, or a diagonal dark→light→dark sheen for metallic materials. The
 	// sheen maths live in ClayLook so the layer-row icons render the same metal; the palette's inspector
 	// tunables are passed through as overrides.
@@ -1060,6 +1090,7 @@
 		hc.Add( PickerGap );
 		hc.Add( UseShapeBounds );
 		hc.Add( ClayColorPicker.Dragging ); // raise/drop the drag-capture overlay for wheel scrubs too
+		hc.Add( _materialClipboard.HasValue ); // un-dims the Paste chip after the first Copy
 		hc.Add( manip );
 		hc.Add( SwatchSize );
 		hc.Add( SwatchSpacing );

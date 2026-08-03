@@ -31,6 +31,10 @@
 	/// <summary>Response curve applied along the track: value = Min + range · frac^Curve. 1 = linear; &gt;1
 	/// stretches the low end across more of the track (finer control over small values) and compresses the top.</summary>
 	[Parameter] public float Curve { get; set; } = 1f;
+	/// <summary>Parked: the blue fill/knob grey out (via the .disabled class) and input is ignored, but the
+	/// pill and label stay fully legible — e.g. the spline Size slider while per-point mode is on.</summary>
+	[Parameter] public bool Disabled { get; set; }
+
 	/// <summary>Fires with the new value (in Min..Max) as the user presses / drags.</summary>
 	[Parameter] public Action<float> OnInput { get; set; }
 
@@ -70,9 +74,17 @@
 	// which desyncs the knob from the cursor and gets worse as the window shrinks. No knob inset either: frac is
 	// the raw fraction, so the knob centre (positioned at frac × width by the CSS) sits exactly on the cursor —
 	// 1:1 the whole way. The knob just overhangs the track ends by its radius at 0% / 100%.
+	// Keep the .disabled class in lockstep with the parameter (a class attribute on the component tag
+	// doesn't reach the panel, so the component applies it itself).
+	public override void Tick()
+	{
+		base.Tick();
+		SetClass( "disabled", Disabled );
+	}
+
 	void ApplyFromCursor()
 	{
-		if ( Track is null )
+		if ( Track is null || Disabled )
 			return;
 
 		float localX = Track.MousePosition.x; // relative to the track, in screen px (same space as Box.Rect)
@@ -101,6 +113,8 @@
 	protected override void OnMouseDown( MousePanelEvent e )
 	{
 		base.OnMouseDown( e );
+		if ( Disabled )
+			return;
 		Pressed = true;
 		ApplyFromCursor();
 	}
@@ -127,5 +141,5 @@
 	}
 
 	// Re-render when the inbound value or range changes (the gizmo / another control can move blend/round too).
-	protected override int BuildHash() => HashCode.Combine( Label, Value, Min, Max, Curve );
+	protected override int BuildHash() => HashCode.Combine( Label, Value, Min, Max, Curve, Disabled );
 }

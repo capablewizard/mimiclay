@@ -83,6 +83,14 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	/// pass (which DOF affects).</summary>
 	[Property] public bool IgnoreDepthOfField { get; set; }
 
+	/// <summary>Runtime hide gate: true = draw nothing, but the component stays ENABLED — it keeps
+	/// ticking and stays findable through Scene.GetAllComponents (which only enumerates enabled
+	/// components, so a gate that disabled the component could never find it again to re-show it).
+	/// The highlight counterpart of <see cref="SdfRaymarchRenderer.RenderHidden"/>; set per machine
+	/// by whoever owns the visibility rules (see RoundOutlineSystem). Not serialized — author
+	/// persistent state with <see cref="Component.Enabled"/> instead.</summary>
+	public bool Hidden { get; set; }
+
 	/// <summary>Track the plasticine displacement lumps on members that have Displace on, so the
 	/// line hugs the LUMPY silhouette instead of the smooth baked one (the noise is not in the
 	/// field — the main shader adds it per pixel, and so does the highlight when this is on).
@@ -235,7 +243,7 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 				ready.Add( r );
 		}
 
-		bool show = (wantsOutline || wantsFill) && ready.Count > 0;
+		bool show = !Hidden && (wantsOutline || wantsFill) && ready.Count > 0;
 		if ( !show )
 		{
 			HideVisual();
