@@ -81,12 +81,14 @@ public sealed class RuntimeBrushGizmo
 		// Still draws, but won't hover/grab when the cursor is over the UI, the orbit camera owns the mouse, or the
 		// pause menu is open.
 		_interactive = allowInteract && !Input.Down( "Walk" ) && !PauseMenu.IsOpen;
+		// A drag born from the HUD's add-point panel (insert-and-place) never sees Attack1 — the UI swallows
+		// the whole click gesture — so _uiDrag stands in for the held button until the panel's mouseup ends it.
 		_pressed = _interactive && Input.Pressed( "Attack1" );
-		_down = _interactive && Input.Down( "Attack1" );
+		_down = (_interactive && Input.Down( "Attack1" )) || _uiDrag;
 		_pressed2 = _interactive && Input.Pressed( "Attack2" );
 
 		// Release the drag on a real button-up (even while alt is held).
-		if ( _active is not null && !Input.Down( "Attack1" ) )
+		if ( _active is not null && !Input.Down( "Attack1" ) && !_uiDrag )
 			_active = null;
 
 		// A spline is a chain of control points, not a single transform — each point gets a move dot and a
@@ -267,7 +269,38 @@ public sealed class RuntimeBrushGizmo
 
 		int idx = Math.Clamp( _splineInsertIndex, 0, brush.Points.Count );
 		brush.Points.Insert( idx, _splineInsertPoint );
+
+		// The insert click is also the start of a move drag: grab the new point's handle right away, so
+		// add-and-place is one gesture (SplinePointMove's active-drag path takes over; releasing without
+		// moving just leaves the point where it was born). The UI swallows Attack1 for this whole gesture,
+		// so _uiDrag keeps the grab alive — the HUD panel's mouseup calls EndUiDrag to finish it.
+		// _tx/_cam/_ray are from the last Update — the same frame's state the hover that led here used.
+		var c = _tx.PointToWorld( new Vector3( _splineInsertPoint.x, _splineInsertPoint.y, _splineInsertPoint.z ) );
+		if ( _cam is not null && new Plane( c, -_cam.WorldRotation.Forward ).TryTrace( _ray, out var hit, true ) )
+		{
+			_active = $"ptMove{idx}";
+			_hover = _active;
+			_grabPoint = hit;
+			_grabWorldPos = c;
+			_uiDrag = true;
+		}
+
 		return true;
+	}
+
+	bool _uiDrag; // an insert-and-place drag is running with Attack1 swallowed by the UI (see TryInsertSplinePoint)
+
+	/// <summary>True while an insert-and-place drag (born from the HUD's add-point panel) is running.</summary>
+	public bool IsUiDragging => _uiDrag;
+
+	/// <summary>End the insert-and-place drag — called from the HUD panel's mouseup, the only place the
+	/// gesture's release is visible (the UI swallows the button from raw input for the whole click).</summary>
+	public void EndUiDrag()
+	{
+		if ( !_uiDrag )
+			return;
+		_uiDrag = false;
+		_active = null;
 	}
 
 	bool SplineUpdate( Transform tx, SdfBrush brush, Scene scene )

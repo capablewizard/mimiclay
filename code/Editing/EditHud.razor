@@ -265,10 +265,14 @@
 	   paint a hovered panel's CSS `cursor`. So while hovering a spline line we put up a full-screen pointer-events
 	   zone whose `cursor` the UI shows over the scene. It's only present while hovering, and the gizmo's hover/
 	   click are ray + raw-input (not UI events), so this doesn't block selecting the line or inserting a point. *@
-	@if ( Session?.HoveringSplineLine ?? false )
+	@* Mounted while hovering the line AND for the whole insert-and-place drag that follows — the mousedown's
+	   gesture is UI-swallowed, so this panel's mouseup is the only visible release to end the drag with. *@
+	@if ( ( Session?.HoveringSplineLine ?? false ) || ( Session?.SplinePointUiDragging ?? false ) )
 	{
 		@* LEFT button only — onmousedown fires for every button, and right-click means delete-a-point, not add. *@
-		<div class="add-point-cursor" @onmousedown=@(( PanelEvent e ) => { if ( e is MousePanelEvent m && m.MouseButton == MouseButtons.Left ) Session?.InsertHoveredSplinePoint(); })></div>
+		<div class="add-point-cursor"
+			@onmousedown=@(( PanelEvent e ) => { if ( e is MousePanelEvent m && m.MouseButton == MouseButtons.Left ) Session?.InsertHoveredSplinePoint(); })
+			@onmouseup=@(() => Session?.EndSplinePointUiDrag())></div>
 	}
 
 	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during a drag). *@
@@ -1040,6 +1044,7 @@
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
+		hc.Add( s?.SplinePointUiDragging ?? false ); // keep it mounted through the insert-and-place drag, drop it on release
 		hc.Add( s?.Selected ?? -1 );
 		hc.Add( s?.Target?.Brushes?.Count ?? 0 );
 

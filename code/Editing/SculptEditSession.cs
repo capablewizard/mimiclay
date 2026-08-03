@@ -87,6 +87,14 @@ public sealed class SculptEditSession : Component
 	/// cursor, and a click (handled in the gizmo) inserts a control point there.</summary>
 	public bool HoveringSplineLine => IsEditing && _gizmo.HoveringSplineLine;
 
+	/// <summary>True while the drag born from an add-point click is running. Keeps the HUD's cursor panel
+	/// mounted so its mouseup can end the drag — the UI swallows Attack1 for the whole gesture, so the
+	/// gizmo never sees the release itself.</summary>
+	public bool SplinePointUiDragging => IsEditing && _gizmo.IsUiDragging;
+
+	/// <summary>End the insert-and-place drag (the add-point panel's mouseup).</summary>
+	public void EndSplinePointUiDrag() => _gizmo.EndUiDrag();
+
 	/// <summary>The selected brush's transform gizmo as a screen-space circle (REAL screen px): centred on the
 	/// brush origin with the farthest handle's reach as the radius. The gizmo draws at constant screen size
 	/// (reference px × viewport scale), so the radius is pure 2D maths. The HUD unions this with the shape's
