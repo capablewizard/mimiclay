@@ -1,0 +1,53 @@
+// Viewmodel variant of plasticine.vmat — identical look, but F_TRANSLUCENT opts the shader into the
+// S_TRANSLUCENT lighting variant: the engine treats the surface as not-in-the-depth-buffer, so its
+// shading skips the screen-space passes (SSAO sample; contact-shadow mask) that a depth-squashed
+// overlay viewmodel must not participate in. Blend/depth state are unaffected (the shader guards its
+// own render states) — this is a lighting configuration, not transparency. Used by HunterGun on the
+// first-person gun clone only; keep the look params in sync with plasticine.vmat when tuning clay.
+
+Layer0
+{
+	shader "shaders/sdf_raymarch.shader"
+
+	F_TRANSLUCENT 1
+
+	//---- Curvature ----
+	g_flCurveDark "0.350"
+	g_flCurveLight "0.500"
+	g_flCurveRadius "0.500"
+
+	//---- Displacement ----
+	g_flDispAmp "0.800"
+	g_flDispFreq "0.073"
+
+	//---- Fog ----
+	g_bFogEnabled "1"
+
+	//---- Surface ----
+	g_flMetalness "0.000"
+	g_flNormalStrength "0.850"
+	g_flRoughness "1.900"
+	g_flTriBlend "6.000"
+	g_flTriTile "1.000"
+	g_vTintColor "[1.000000 1.000000 1.000000 0.000000]"
+	TextureColor "materials/plasticine/plasticine_basecolor.png"
+	TextureNormal "materials/plasticine_imperfections_04.png"
+	TextureRoughness "materials/default/default_rough.tga"
+
+	//---- Transmission ----
+	g_flTransAmbient "0.300"
+	g_flTransDeepen "2.537"
+	g_flTransDistortion "0.200"
+	g_flTransFalloff "2.519"
+	g_flTransFromAlbedo "0.900"
+	g_flTransMaxDist "3.000"
+	g_flTransPower "3.954"
+	g_flTransProbe "6.000"
+	g_flTransScale "3.364"
+	g_vTransTint "[1.000000 0.600000 0.478431 0.000000]"
+
+	Attributes
+	{
+		alphatest "1"
+	}
+}

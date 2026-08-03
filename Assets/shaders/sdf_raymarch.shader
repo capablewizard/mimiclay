@@ -13,6 +13,10 @@ HEADER
 FEATURES
 {
 	#include "common/features.hlsl"
+
+	// Viewmodel lighting variant (see S_TRANSLUCENT in PS): materials opt in — the first-person gun's
+	// material sets this so its shading skips the screen-space passes; world props stay opaque.
+	Feature( F_TRANSLUCENT, 0..1, "Translucent" );
 }
 
 MODES
@@ -50,6 +54,22 @@ VS
 
 PS
 {
+	// Viewmodel lighting variant: S_TRANSLUCENT tells the ENGINE's lighting code to treat this surface
+	// as not-being-in-the-depth-buffer — vr_lighting skips the screen-space AO sample (and translucent
+	// practice skips the screen-space shadow terms), which is exactly what an overlay-drawn viewmodel
+	// needs. Selected per MATERIAL via F_TRANSLUCENT (plasticine_viewmodel.vmat); world props keep the
+	// opaque variant. Translucency here is a LIGHTING configuration, NOT a blend mode: the guard
+	// defines below pre-empt the engine's S_TRANSLUCENT defaults (depth write OFF, alpha blending ON —
+	// see sbox_pixel.fxc) so the draw stays opaque and depth-writing in BOTH variants — the same trick
+	// the engine's own glass.shader uses.
+	StaticCombo( S_TRANSLUCENT, F_TRANSLUCENT, Sys( ALL ) );
+
+	#define DEPTH_STATE_ALREADY_SET
+	RenderState( DepthEnable, true );
+	RenderState( DepthFunc, GREATER_EQUAL );
+	RenderState( DepthWriteEnable, true );
+	#define BLEND_MODE_ALREADY_SET 1
+
 	#include "common/pixel.hlsl"
 	#include "common/utils/triplanar.hlsl"
 	#include "common/classes/Depth.hlsl" // scene depth (Hi-Z chain) for occlusion clamping
@@ -752,6 +772,13 @@ PS
 		SdfPixelOutput o;
 		o.vColor = float4( 0, 0, 0, 0 );
 		o.flDepth = 1.0;
+
+	#if ( S_TRANSLUCENT && S_MODE_DEPTH )
+		// Translucent (viewmodel) variant: never in the depth prepass or shadow views — the whole point
+		// is being invisible to the screen-space passes (AO/DoF/contact shadows) that read them.
+		clip( -1 );
+		return o;
+	#endif
 
 		// March BACK faces only. Both faces of the proxy box march the identical ray, so culling
 		// one halves the work; back faces are the robust pick because they exist from any camera

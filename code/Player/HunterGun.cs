@@ -103,6 +103,13 @@ public sealed class HunterGun : Component
 	/// model). The sculpt's barrel runs along its local +y, so the default -90 yaw points it forward.</summary>
 	[Property, Group( "Placement" )] public Angles RotationOffset { get; set; } = new( 0f, -90f, 0f );
 
+	/// <summary>Material override for the VIEW clone's raymarch (world model keeps the prefab's). Point it
+	/// at plasticine_viewmodel.vmat — its F_TRANSLUCENT feature selects the shader's translucent LIGHTING
+	/// variant, whose shading skips the screen-space passes (SSAO sample, contact-shadow mask) that an
+	/// overlay-drawn viewmodel must not sample the world through. Same look otherwise. Leave null to keep
+	/// the shared opaque material (then the sun contact-shadow override below carries the load).</summary>
+	[Property, Group( "Placement" )] public Material ViewMaterial { get; set; }
+
 	/// <summary>While this machine renders the first-person gun, switch the sun's screen-space CONTACT
 	/// shadows off (restored the moment we're not first-person: edit mode, death, pawn teardown). The
 	/// contact-shadow pass marches the depth buffer toward the light, and the viewmodel's depth-squashed
@@ -213,6 +220,11 @@ public sealed class HunterGun : Component
 				{
 					ApplyFieldResolution( _viewSdf, ViewFieldResolution );
 					_viewSdf.ViewLayer = ViewLayerMode;
+
+					// The translucent-lighting material variant, live-swappable for A/B (the renderer
+					// hashes its Material — same reference re-set is free, a change repacks).
+					if ( ViewMaterial is not null )
+						_viewSdf.Material = ViewMaterial;
 				}
 
 				// FOV compensation: scale the FORWARD distance only, by tan(base/2)/tan(live/2). Screen
