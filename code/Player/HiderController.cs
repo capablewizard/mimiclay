@@ -246,6 +246,17 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// the session: the hider's always-on rig above owns the camera for play AND edit. The disguise is a
 		// local clone, so the target is wired here rather than in the prefab.
 		_session = SculptablePawn.AttachEditing( this, _body );
+
+		// Committed fires on discrete edits + gizmo release locally, and on an applied commit on proxies — never
+		// mid-drag — so both sides rebase on the same settled shape states (see RecenterOriginOnShape).
+		if ( _body.IsValid() )
+			_body.Committed += RecenterOriginOnShape;
+	}
+
+	protected override void OnDestroy()
+	{
+		if ( _body.IsValid() )
+			_body.Committed -= RecenterOriginOnShape;
 	}
 
 	protected override void OnUpdate()
@@ -562,6 +573,49 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		bool cameraOnly = alt && (AltHoldOrbits || Input.Down( "Attack1" ));
 		if ( !cameraOnly )
 			_bodyYaw += look.yaw;
+	}
+
+	// ── Origin recentring ─────────────────────────────────────────────────────────────────────────────
+	// Sculpting walks the shape away from the pawn origin in LOCAL space, and the footprint ground-snap then
+	// keeps the SHAPE on the floor — dragging the origin wherever the leftover offset demands, including under
+	// the map (delete the starter sphere beneath a taller build and the origin ends up buried). The origin is
+	// what conversion spawns and yaw rotation use, so on every commit we rebase it back to the shape's feet:
+	// move the pawn to the bounds bottom-centre and counter-shift the disguise child by the exact inverse in
+	// the same frame. The brushes and the disguise's WORLD transform are untouched — the clay never moves on
+	// screen, nothing remeshes, and the camera (which follows the disguise object + shape bounds) sees no
+	// change at all. Proxies only counter-shift the child from their synced brushes (the owner's matching
+	// origin shift arrives via the pawn's transform sync; child transforms don't live-replicate).
+	void RecenterOriginOnShape()
+	{
+		if ( !_body.IsValid() || !Sdf.TryGetBounds( _body.Brushes, out var b ) )
+			return;
+
+		// The shape's feet (bounds bottom-centre) in PAWN space. Purely local — ground contact and slopes never
+		// feed in, so this is zero except right after an edit changed the bounds.
+		var feetLocal = _body.GameObject.LocalTransform.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) );
+		if ( feetLocal.Length < 0.01f )
+			return;
+
+		var worldDelta = WorldTransform.PointToWorld( feetLocal ) - WorldPosition;
+		_body.GameObject.LocalPosition -= feetLocal;
+
+		if ( IsProxy )
+			return;
+
+		WorldPosition += worldDelta;
+		Transform.ClearInterpolation(); // both writes land this exact frame — no one-frame shear on the pawn root
+	}
+
+	/// <summary>World position of the sculpted shape's feet (bounds bottom-centre), computed live from the
+	/// brushes — correct even if a mid-drag edit has left the pawn origin stale. False when there's no shape.</summary>
+	public bool TryGetShapeFeet( out Vector3 feet )
+	{
+		feet = default;
+		if ( !_body.IsValid() || !Sdf.TryGetBounds( _body.Brushes, out var b ) )
+			return false;
+
+		feet = _body.WorldTransform.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) );
+		return true;
 	}
 
 	// ── Disguise body ─────────────────────────────────────────────────────────────────────────────────

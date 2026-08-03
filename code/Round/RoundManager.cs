@@ -327,9 +327,24 @@ public sealed class RoundManager : Component, IRoundContext
 		}
 
 		// Role changed (we were a prop, a hunter found us) → respawn in our new role, right where we stand.
+		// "Where we stand" = the SHAPE's feet, not the raw pawn origin: sculpting can leave the origin buried
+		// under the floor (the commit-time recenter fixes it, but a tag can still land on a stale origin), and a
+		// hunter spawned from a buried origin falls out of the map. The feet are the shape's LOWEST point though,
+		// and on a slope the floor directly under the bounds-centre XY can sit higher than that — so trace down
+		// onto whatever the prop was standing on and spawn exactly there (no drop). No hit within the window =
+		// the prop was airborne when tagged; spawn at the feet and fall naturally.
 		if ( _ownPawnRole != info.Role )
 		{
-			SpawnOwnPawn( info.Role, _ownPawn.WorldTransform, wantNetworked );
+			var at = _ownPawn.WorldTransform;
+			var hider = _ownPawn.Components.Get<HiderController>();
+			if ( hider.IsValid() && hider.TryGetShapeFeet( out var feet ) )
+			{
+				var tr = Scene.Trace.Ray( feet + Vector3.Up * 64f, feet - Vector3.Up * 8f )
+					.IgnoreGameObjectHierarchy( _ownPawn ) // the old pawn's disguise collider is still live — the ray starts above it
+					.Run();
+				at = at.WithPosition( tr.Hit ? tr.HitPosition : feet );
+			}
+			SpawnOwnPawn( info.Role, at, wantNetworked );
 			return;
 		}
 
