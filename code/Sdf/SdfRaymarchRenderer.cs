@@ -3,10 +3,6 @@ using System.Threading.Tasks;
 
 namespace Mimiclay;
 
-/// <summary>How the sibling meshed ModelRenderer is used while raymarching. The raymarch writes
-/// the depth+normals prepass itself (depth sorting, occlusion via DepthClamp, and AO) and — with
-/// <see cref="SdfRaymarchRenderer.SdfShadows"/> on — casts its own shadows too, so the mesh's only
-/// remaining job in the SDF band is the legacy shadow path (SdfShadows off).</summary>
 /// <summary>Render-path candidates for a first-person viewmodel (see <see cref="SdfRaymarchRenderer.ViewLayer"/>).
 /// Debug/experimental while the anti-clip path is proven out — each maps to a different engine mechanism.</summary>
 public enum SdfViewLayer
@@ -22,6 +18,10 @@ public enum SdfViewLayer
 	OverlayFlag,
 }
 
+/// <summary>How the sibling meshed ModelRenderer is used while raymarching. The raymarch writes
+/// the depth+normals prepass itself (depth sorting, hardware occlusion, and AO) and — with
+/// <see cref="SdfRaymarchRenderer.SdfShadows"/> on — casts its own shadows too, so the mesh's only
+/// remaining job in the SDF band is the legacy shadow path (SdfShadows off).</summary>
 public enum SdfMeshMode
 {
 	/// <summary>Invisible shadow caster (ShadowsOnly) while SdfShadows is OFF; fully disabled in the
@@ -256,13 +256,6 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// fewer wasted pixels around their silhouette. Best for round/blobby props; an AABB box can be
 	/// tighter for long/thin props, so toggle off for those.</summary>
 	[Property, Group( "Overdraw" )] public bool TightBounds { get; set; }
-
-	/// <summary>Early-bail the forward march for pixels occluded by something already in the depth
-	/// buffer. Now that the raymarch writes the depth prepass, occlusion is already correct via the
-	/// hardware depth test — this is only a march-cost optimisation, and reading the SDF's own
-	/// marched depth back out of the (Hi-Z) chain causes speckle at silhouettes, so it's OFF by
-	/// default. The real perf path is reconstruct-from-depth (no forward re-march at all).</summary>
-	[Property, Group( "Overdraw" )] public bool DepthClamp { get; set; }
 
 	/// <summary>Lumpy plasticine displacement on the raymarched surface — bends the SILHOUETTE, not
 	/// just the lighting (the meshed LOD is unaffected). Costs extra march steps (the field needs a
@@ -791,10 +784,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		}
 
 		_so.Attributes.Set( "DebugLod", DebugLod ? 1f : 0f );
-		_so.Attributes.SetCombo( "D_OVERDRAW_OPT", OverdrawOptimization ? 1 : 0 );
-		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 ); // runtime uniform, not a combo (a 7th combo crashed the Vfx compiler)
-		_so.Attributes.SetCombo( "D_TIGHT_BOUNDS", TightBounds ? 1 : 0 );
-		_so.Attributes.SetCombo( "D_DEPTH_CLAMP", DepthClamp ? 1 : 0 );
+		// Runtime uniforms, not combos — a 7th combo once crashed the Vfx compiler, and none of these
+		// gate resources or per-step inner-loop cost, so per-draw uniform branches are effectively free.
+		// (D_DEPTH_CLAMP was deleted with its property: nothing shipped used it, and inter-object
+		// occlusion rides the engine depth chain via the prepass.)
+		_so.Attributes.Set( "SdfOverdrawOpt", OverdrawOptimization ? 1 : 0 );
+		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
+		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
 		// Displacement look (amp/freq) and curvature shading are MATERIAL params now — only the combo
 		// toggle lives here.
 		_so.Attributes.SetCombo( "D_DISPLACE", Displace ? 1 : 0 );

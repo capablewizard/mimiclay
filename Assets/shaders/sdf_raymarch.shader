@@ -58,19 +58,10 @@ PS
 
 	RenderState( CullMode, NONE );
 
-	// Overdraw optimisation toggle (runtime-switchable for A/B). When on: skip the redundant
-	// back-face march (the box renders both faces so it survives the camera being inside it),
-	// and use conservative depth so the GPU keeps early-Z and rejects hidden fragments.
-	DynamicCombo( D_OVERDRAW_OPT, 0..1, Sys( All ) );
-
-	// Tight-bounds toggle: bracket the march against a bounding SPHERE proxy (tighter for round
-	// props) instead of the AABB. Off = AABB box (can be tighter for long/thin props).
-	DynamicCombo( D_TIGHT_BOUNDS, 0..1, Sys( All ) );
-
-	// Experimental: clamp the march to the scene depth buffer (occlude against whatever's already
-	// drawn, ~1 frame stale). Fixes the "inside many bounding volumes" crowd case that early-Z
-	// can't. Only works if the depth chain is actually readable in this pass.
-	DynamicCombo( D_DEPTH_CLAMP, 0..1, Sys( All ) );
+	// (D_OVERDRAW_OPT and D_TIGHT_BOUNDS were combos; they're the g_nSdfOverdrawOpt / g_nSdfTightBounds
+	// RUNTIME uniforms now — see the g_nSdfCull note below for why combos are a scarce resource here.
+	// D_DEPTH_CLAMP (software occlusion against the depth chain) was deleted outright: nothing shipped
+	// used it — inter-object occlusion rides the engine depth chain via the prepass.)
 
 	// Plasticine displacement: subtract a low-frequency 3D noise field from the SDF so the
 	// raymarched SILHOUETTE goes lumpy (the meshed LOD is untouched). Gated as a combo so it's
@@ -133,6 +124,11 @@ PS
 	// AO computed from the DISTANCE FIELD itself, which the engine min()s against the neutral screen AO.
 	// Screen-space AO at a viewmodel's REAL depth is unfixable: the world legitimately occludes it there.
 	int       g_nSdfViewmodel   < Attribute( "SdfViewmodel" );  Default( 0 ); >;
+	// Ex-combos, runtime now (variant budget — see the g_nSdfCull note): skip the redundant back-face
+	// march when the box's front faces are on screen, and bracket the march with the bounding SPHERE
+	// (round props) instead of the AABB. Uniform per draw, so the branches are effectively free.
+	int       g_nSdfOverdrawOpt < Attribute( "SdfOverdrawOpt" ); Default( 1 ); >;
+	int       g_nSdfTightBounds < Attribute( "SdfTightBounds" ); Default( 0 ); >;
 	// Adaptive quality (scaled by on-screen size): floors used when the object is small/far, and
 	// the near/far LOD distances measured in BOUNDING-RADII. Defaults keep quality maxed (LOD off).
 	int       g_nMinSteps   < Attribute( "MinSteps" );   Default( 96 ); >;
@@ -666,39 +662,30 @@ PS
 			rd = normalize( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
 		}
 
-		// Bracket the march: a tight bounding sphere (round props) or the bounds AABB.
-	#if ( D_TIGHT_BOUNDS )
-		float3 oc = ro - g_vBoundsCenter;
-		float bb = dot( oc, rd );
-		float cc = dot( oc, oc ) - g_flBoundsRadius * g_flBoundsRadius;
-		float disc = bb * bb - cc;
-		if ( disc < 0.0 )
-			return false;
-		float sq = sqrt( disc );
-		float tEnter = max( -bb - sq, 0.0 );
-		float tExit = -bb + sq;
-	#else
-		float3 t0 = (g_vBoundsMin - ro) / rd;
-		float3 t1 = (g_vBoundsMax - ro) / rd;
-		float3 tsmall = min( t0, t1 );
-		float3 tbig = max( t0, t1 );
-		float tEnter = max( max( max( tsmall.x, tsmall.y ), tsmall.z ), 0.0 );
-		float tExit = min( min( tbig.x, tbig.y ), tbig.z );
-	#endif
-
-	#if ( D_DEPTH_CLAMP && S_MODE_DEPTH == 0 )
-		// FORWARD pass only: occlusion test. The depth buffer holds the nearest surface already
-		// drawn — world/meshed geometry AND other SDF props (the raymarch writes the prepass), so
-		// this is all the SDF-vs-SDF + SDF-vs-world occlusion with no separate buffer. If that
-		// surface is IN FRONT of this object's bounding box (nearer than tEnter) the pixel is fully
-		// occluded -> bail the whole march. We compare against tEnter, NOT the object's own surface:
-		// an object's surface is always >= tEnter, so it can never occlude ITSELF — testing against
-		// its own (Hi-Z-approximate) depth was the speckled noise. The -2 absorbs chain/precision
-		// wobble at box-tangent pixels. Skipped in the prepass (it must write accurate depth).
-		float3 sceneWp = Depth::GetWorldPosition( i.vPositionSs.xy );
-		if ( length( sceneWp - ro ) < tEnter - 2.0 )
-			return false;
-	#endif
+		// Bracket the march: a tight bounding sphere (round props) or the bounds AABB. Runtime-branched
+		// (uniform per draw) — this was the D_TIGHT_BOUNDS combo.
+		float tEnter, tExit;
+		if ( g_nSdfTightBounds != 0 )
+		{
+			float3 oc = ro - g_vBoundsCenter;
+			float bb = dot( oc, rd );
+			float cc = dot( oc, oc ) - g_flBoundsRadius * g_flBoundsRadius;
+			float disc = bb * bb - cc;
+			if ( disc < 0.0 )
+				return false;
+			float sq = sqrt( disc );
+			tEnter = max( -bb - sq, 0.0 );
+			tExit = -bb + sq;
+		}
+		else
+		{
+			float3 t0 = (g_vBoundsMin - ro) / rd;
+			float3 t1 = (g_vBoundsMax - ro) / rd;
+			float3 tsmall = min( t0, t1 );
+			float3 tbig = max( t0, t1 );
+			tEnter = max( max( max( tsmall.x, tsmall.y ), tsmall.z ), 0.0 );
+			tExit = min( min( tbig.x, tbig.y ), tbig.z );
+		}
 
 		if ( tExit < tEnter )
 			return false;
@@ -756,8 +743,8 @@ PS
 	// Plain SV_Depth — NO conservative-depth promise. The promise direction depends on which box
 	// face is rasterised (surface is behind the front faces but IN FRONT of the back faces), so no
 	// single hint is ever valid; a violated hint lets the GPU wrongly early-cull marched pixels
-	// (seen as background punching through the prop). Occlusion is handled in software by
-	// D_DEPTH_CLAMP instead, which needs no hardware early-Z.
+	// (seen as background punching through the prop). Inter-object occlusion rides the engine depth
+	// chain via the prepass instead — no early-Z promise needed.
 	struct SdfPixelOutput { float4 vColor : SV_Target0; float flDepth : SV_Depth; };
 
 	SdfPixelOutput MainPs( PixelInput i, bool isFrontFace : SV_IsFrontFace )
@@ -766,17 +753,15 @@ PS
 		o.vColor = float4( 0, 0, 0, 0 );
 		o.flDepth = 1.0;
 
-	#if ( D_OVERDRAW_OPT )
 		// March BACK faces only. Both faces of the proxy box march the identical ray, so culling
 		// one halves the work; back faces are the robust pick because they exist from any camera
 		// position (front faces near-clip away when the camera enters the box). No inside/outside
-		// special case needed.
-		if ( isFrontFace )
+		// special case needed. Runtime-toggled (was the D_OVERDRAW_OPT combo).
+		if ( g_nSdfOverdrawOpt != 0 && isFrontFace )
 		{
 			clip( -1 );
 			return o;
 		}
-	#endif
 
 		// RenderHidden pawn body: render ONLY into ortho (sun-shadow) views. Every perspective view —
 		// camera forward, camera depth prepass, spot-light shadows — is clipped, so the hidden body

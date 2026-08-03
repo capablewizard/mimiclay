@@ -377,11 +377,11 @@ PS
 
 		// Visible or obscured? Compare against the nearest opaque surface already in the depth
 		// chain. The group wrote its own (camera-nudged) prepass depth, so give it 2 units of
-		// grace — its own surface must not count as "obscuring" its fill (the same margin the main
-		// shader's D_DEPTH_CLAMP uses for chain wobble).
+		// grace — its own surface must not count as "obscuring" its fill (absorbs chain/precision
+		// wobble at silhouettes).
 		//
 		// That fixed grace is NOT enough while a prop is being EDITED: the chain this pass samples
-		// can be a frame stale (see the D_DEPTH_CLAMP note in sdf_raymarch), and a dragged brush
+		// can be a frame stale, and a dragged brush
 		// moves the surface many units per frame — the raw compare then flips visible<->obscured
 		// every frame (colour flicker). So identify self-occlusion through the FIELD instead of a
 		// bigger bias: sample the union AT the occluding point — on (or within a band of) the
