@@ -190,7 +190,7 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "Placement": "Center",
-        "Width": 4
+        "Width": 0
       }
     ],
     "Children": [

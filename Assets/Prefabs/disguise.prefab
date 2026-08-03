@@ -36,6 +36,7 @@
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
+            "SplinePerPointRadius": false,
             "Slice": 0,
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
@@ -93,7 +94,7 @@
         "__guid": "20000001-0000-4000-8000-000000000004",
         "__enabled": true,
         "Flags": 0,
-        "AdaptiveQuality": true,
+        "AdaptiveQuality": false,
         "BrushCulling": true,
         "CullRadii": 80,
         "DebugBounds": false,
@@ -101,8 +102,8 @@
         "DebugLod": false,
         "DebugSwitchState": false,
         "DepthClamp": false,
-        "Displace": false,
-        "DistanceSwitching": true,
+        "Displace": true,
+        "DistanceSwitching": false,
         "Epsilon": 0.18,
         "FarEpsilon": 0.5,
         "FieldCacheOnly": true,
@@ -190,7 +191,57 @@
         "Width": 0
       }
     ],
-    "Children": [],
+    "Children": [
+      {
+        "__guid": "d082af90-ee64-43c0-89a8-a86d587fb355",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Pause HUD",
+        "Position": "0,0,0",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.ScreenPanel",
+            "__guid": "e5520b8a-78c9-42c8-b205-618217b094c7",
+            "__enabled": true,
+            "Flags": 0,
+            "AutoScreenScale": true,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "Opacity": 1,
+            "Scale": 1,
+            "ScaleStrategy": "ConsistentHeight",
+            "TargetCamera": null,
+            "ZIndex": 1000
+          },
+          {
+            "__type": "Mimiclay.PauseMenu",
+            "__guid": "02a3ff74-0f62-493b-822c-e6d24f445f02",
+            "__enabled": true,
+            "Flags": 0,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null
+          }
+        ],
+        "Children": []
+      }
+    ],
     "__properties": {
       "NetworkInterpolation": true,
       "TimeScale": 1,
