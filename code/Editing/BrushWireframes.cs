@@ -108,6 +108,9 @@ public sealed class BrushWireframes
 		for ( int i = 0; i < brushes.Count; i++ )
 		{
 			var b = brushes[i];
+			if ( b.Damage )
+				continue; // shot craters aren't part of the authored sculpt — no wireframe
+
 			_brush = b;
 
 			// Editor styling: cyan additive / red subtractive; opacity by selection state (× the master fade

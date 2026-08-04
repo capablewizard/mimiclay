@@ -520,12 +520,15 @@ public sealed class RoundManager : Component, IRoundContext
 		// All props found ends the round immediately — TickHostPhase picks that up next frame via AliveProps.
 	}
 
-	/// <summary>Host→everyone: burst the caught-prop smoke at <paramref name="position"/>. Cloned LOCALLY per machine
+	/// <summary>Host→everyone: play the found-a-prop sound and burst the caught-prop smoke at
+	/// <paramref name="position"/>. The puff is cloned LOCALLY per machine
 	/// from the scene-placed spawner's prefab (the spawner exists on every machine; this manager's own [Property]s
 	/// wouldn't). Purely cosmetic — losing it (no spawner, prefab unset) loses nothing but the poof.</summary>
 	[Rpc.Broadcast]
 	void PlayCaughtPuff( Vector3 position )
 	{
+		Sound.Play( "sounds/game/success.sound", position );
+
 		var prefab = RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.CaughtPuffPrefab : null;
 		if ( !prefab.IsValid() )
 			return;

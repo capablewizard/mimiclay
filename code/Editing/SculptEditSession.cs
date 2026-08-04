@@ -271,7 +271,7 @@ public sealed class SculptEditSession : Component
 			return;
 
 		if ( Target.AddBrush( shape, operation ) )
-			Selected = Target.Brushes.Count - 1;
+			Selected = Target.AuthoredBrushCount - 1; // the insert lands just below the damage tail, not at the raw end
 	}
 
 	/// <summary>Select a brush by index, or pass a negative index to clear the selection.</summary>
@@ -284,11 +284,12 @@ public sealed class SculptEditSession : Component
 	/// <summary>Clear the selection (gizmo/palette/sliders hide).</summary>
 	public void Deselect() => Selected = -1;
 
-	/// <summary>Remove the selected brush (keeps at least one) and rebuild. Leaves nothing selected.</summary>
+	/// <summary>Remove the selected brush (keeps at least one AUTHORED brush — damage craters don't count
+	/// toward that minimum) and rebuild. Leaves nothing selected.</summary>
 	public void RemoveSelected()
 	{
 		var b = Target.IsValid() ? Target.Brushes : null;
-		if ( Selected < 0 || b is not { Count: > 1 } )
+		if ( Selected < 0 || b is not { Count: > 1 } || Target.AuthoredBrushCount <= 1 )
 			return;
 
 		b.RemoveAt( Math.Clamp( Selected, 0, b.Count - 1 ) );
@@ -770,7 +771,9 @@ public sealed class SculptEditSession : Component
 		var o = invRot * (ray.Position - tx.Position);
 		var d = (invRot * ray.Forward).Normal;
 
-		return Sdf.PickBrush( Target.Brushes, o, d );
+		// Damage brushes (shot craters) aren't editable — a pick landing on one reads as empty space.
+		int picked = Sdf.PickBrush( Target.Brushes, o, d );
+		return picked >= 0 && Target.Brushes[picked].Damage ? -1 : picked;
 	}
 
 	// ── Brush wireframes ─────────────────────────────────────────────────────────────────────────────

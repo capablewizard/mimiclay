@@ -421,9 +421,14 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 			return false;
 		}
 
+		// New authored brushes insert BEFORE the damage tail (shot craters): craters stay the topmost brushes
+		// so they keep carving everything authored, and the edit UI can treat damage as a contiguous tail
+		// (rows/indices line up on the authored prefix).
+		int insert = AuthoredBrushCount;
+
 		// Stack each new brush above the previous one's height, but always centred on XY (so it never drifts
 		// sideways from where earlier brushes were moved to).
-		var pos = Brushes.Count > 0 ? new Vector3( 0f, 0f, Brushes[^1].Position.z + 16f ) : Vector3.Zero;
+		var pos = insert > 0 ? new Vector3( 0f, 0f, Brushes[insert - 1].Position.z + 16f ) : Vector3.Zero;
 
 		// Text sizing: the quad is locked to the glyph slot's 2:1 aspect (a uniform slot→world mapping —
 		// anything else stretches the glyphs) and much shallower than the solid shapes (plaque-like).
@@ -434,7 +439,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 			_ => new Vector3( 12f ),
 		};
 
-		Brushes.Add( new SdfBrush
+		Brushes.Insert( insert, new SdfBrush
 		{
 			Shape = shape,
 			Operation = operation,
@@ -448,6 +453,28 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 
 		Rebuild();
 		return true;
+	}
+
+	/// <summary>Brushes before the DAMAGE tail — the authored sculpt the edit UI shows and edits. Damage
+	/// brushes (shot craters, <see cref="SdfBrush.Damage"/>) are kept contiguous at the END of the list:
+	/// carves append there and <see cref="AddBrush"/> inserts before them, so index i &lt; this count is
+	/// always an authored brush and UI row/index math needs no per-row filtering.</summary>
+	public int AuthoredBrushCount
+	{
+		get
+		{
+			var b = Brushes;
+			if ( b is null )
+				return 0;
+
+			for ( int i = 0; i < b.Count; i++ )
+			{
+				if ( b[i].Damage )
+					return i;
+			}
+
+			return b.Count;
+		}
 	}
 
 	/// <summary>The rotation a freshly added brush of this shape gets — also what the "Rotate" reset tool

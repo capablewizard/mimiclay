@@ -154,6 +154,32 @@ public class SdfBrush
 	/// <summary>Mirror across the sculpture's local XY plane (z=0). See <see cref="MirrorX"/>.</summary>
 	[Property, Group( "Symmetry" )] public bool MirrorZ { get; set; }
 
+	/// <summary>Gameplay DAMAGE brush (a shot's carve crater): real geometry, but not part of the authored
+	/// sculpt — the edit UI (layer stack, wireframes, hover pick) skips it, and newly authored brushes insert
+	/// BELOW the damage tail so craters keep carving them (see <see cref="SdfSculpture.AuthoredBrushCount"/>).
+	/// Serialises with the brush list, so damage syncs and persists like any brush. Not in the content hash —
+	/// it changes nothing about the shape.</summary>
+	[Property, Hide] public bool Damage { get; set; }
+
+	/// <summary>This brush SHRINKS away: after a short grace period it eases down to nothing and is removed
+	/// from the sculpture, freeing its slot (animated by <see cref="SdfShrinkSystem"/>, play mode only).
+	/// Carve craters use it to heal; any authored shape can opt in too.</summary>
+	[Property] public bool Shrinks { get; set; }
+
+	/// <summary>Grace period (seconds) before a <see cref="Shrinks"/> brush starts easing away. Carves roll
+	/// this randomly PER CRATER on the shooter's machine — serialised with the brush, so every machine
+	/// (and the sync) agrees on when each crater heals.</summary>
+	[Property] public float ShrinkDelay { get; set; } = 2f;
+
+	/// <summary>Seconds the ease-to-nothing takes once the grace period ends. Randomised per carve like
+	/// <see cref="ShrinkDelay"/>.</summary>
+	[Property] public float ShrinkDuration { get; set; } = 1.5f;
+
+	// Runtime shrink-animation state (SdfShrinkSystem) — FIELDS, never serialised: a copied or synced brush
+	// restarts its grace period on the receiving machine instead of importing another machine's clock.
+	internal float ShrinkAge;
+	internal (Vector3 Size, float Blend, float Rounding)? ShrinkState;
+
 	/// <summary>A standalone copy (every field is a value type). Used to snapshot brushes before meshing
 	/// on a worker thread, so a main-thread edit can't race the build.</summary>
 	public SdfBrush Copy() => new()
@@ -177,6 +203,10 @@ public class SdfBrush
 		MirrorX = MirrorX,
 		MirrorY = MirrorY,
 		MirrorZ = MirrorZ,
+		Damage = Damage,
+		Shrinks = Shrinks,
+		ShrinkDelay = ShrinkDelay,
+		ShrinkDuration = ShrinkDuration,
 		Points = Points is null ? null : new List<Vector4>( Points ), // deep copy (Vector4 is a value type)
 		Curvature = Curvature,
 		SplineClosed = SplineClosed,

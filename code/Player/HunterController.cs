@@ -52,6 +52,7 @@ public sealed class HunterController : Component
 	/// darker than the clay reads as scorched/fresh-cut material.</summary>
 	[Property, Group( "Weapon" )] public Color CarveColor { get; set; } = new( 0.42f, 0.26f, 0.2f );
 
+
 	// Owner-side gate: the next moment a shot is allowed.
 	TimeUntil _nextShot;
 
@@ -653,10 +654,10 @@ public sealed class HunterController : Component
 		var tr = TraceShot( from, dir );
 		if ( tr.Hit )
 		{
-			// Cosmetic carve on ANY sdf surface the shot lands on (decoys, world props, disguises — a live
-			// prop that's about to pop just doesn't get to enjoy its crater). Before the hit report, so
-			// wrong guesses leave visible evidence in the clay.
-			TryCarve( tr, dir, CarveRadius );
+			// Cosmetic carve on ANY sdf surface the shot lands on (decoys, world props, disguises, faces —
+			// a live prop that's about to pop just doesn't get to enjoy its crater). Before the hit report,
+			// so wrong guesses leave visible evidence in the clay.
+			PelletCarve( from, dir, CarveRadius, tr.Distance );
 
 			// A hit on a prop pawn (its disguise collider belongs to a HiderController up the hierarchy) is
 			// reported to the host, which validates the phase + that it's a live prop, then pops it and
@@ -685,7 +686,7 @@ public sealed class HunterController : Component
 
 			var ptr = TraceShot( from, pelletDir );
 			if ( ptr.Hit )
-				TryCarve( ptr, pelletDir, CarveRadius * Game.Random.Float( 0.45f, 0.8f ) );
+				PelletCarve( from, pelletDir, CarveRadius * Game.Random.Float( 0.45f, 0.8f ), ptr.Distance );
 		}
 	}
 
@@ -693,6 +694,29 @@ public sealed class HunterController : Component
 		.Ray( from, from + dir * Range )
 		.IgnoreGameObjectHierarchy( GameObject )
 		.Run();
+
+	// The GameObject tag on invisible MOVEMENT colliders (the hunter's capsule) that the carve trace sees
+	// through: the capsule fully encloses the sculpted head, so the gameplay trace always stops on it and a
+	// carve aimed at a face would never reach the head's own collider.
+	const string MoveColliderTag = "movecollider";
+
+	// How far past the gameplay hit the carve trace may land and still carve. Covers "the face is a little
+	// behind the capsule surface" without letting a chest shot carve the wall metres behind the pawn.
+	const float CarvePassDepth = 25f;
+
+	// The carve half of one pellet: re-trace ignoring movement capsules (so a face shot reaches the head's
+	// sculpture collider behind the capsule), bounded to just past wherever the gameplay ray stopped.
+	void PelletCarve( Vector3 from, Vector3 dir, float radius, float blockDistance )
+	{
+		var tr = Scene.Trace
+			.Ray( from, from + dir * Range )
+			.IgnoreGameObjectHierarchy( GameObject )
+			.WithoutTags( MoveColliderTag )
+			.Run();
+
+		if ( tr.Hit && tr.Distance <= blockDistance + CarvePassDepth )
+			TryCarve( tr, dir, radius );
+	}
 
 	// ── Shot carving ─────────────────────────────────────────────────────────────────────────────────
 	// A shot that lands on an SDF surface appends a subtractive sphere to the TOP of that sculpture's brush
@@ -732,6 +756,14 @@ public sealed class HunterController : Component
 			go = go.Parent;
 		}
 
+		// Hit a pawn but found no sculpture on the chain: shapes aggregated into the pawn's RIGIDBODY report
+		// the PAWN ROOT as the hit GameObject (the stock controller's own body shape does — the lobby debug
+		// log showed exactly this), so the child-collider walk can't see them. Fall back to the pawn's
+		// canonical sculpture — the same mapping the receiver uses — and let the bounds gate below keep only
+		// hits that actually land near it.
+		if ( sculpt is null && anchor.IsValid() )
+			sculpt = ResolveCarveSculpture( anchor );
+
 		if ( sculpt is null || !sculpt.IsValid() )
 			return;
 		anchor ??= sculpt.GameObject;
@@ -739,11 +771,30 @@ public sealed class HunterController : Component
 		// Centre pushed a little INTO the surface along the shot for a meatier bite than a surface-tangent
 		// hemisphere. LOCAL space, so pawn interpolation between send and receive can't smear the crater.
 		var local = sculpt.WorldTransform.PointToLocal( tr.EndPosition + dir * ( radius * 0.35f ) );
-		BroadcastCarve( anchor, local, radius );
+
+		// Only carve where the sculpture actually IS. A body shot resolved through the pawn fallback maps
+		// far from the head — an invisible crater in empty space would silently burn a brush slot.
+		if ( sculpt.Brushes is { Count: > 0 } && Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
+		{
+			var grown = new BBox( bounds.Mins - radius, bounds.Maxs + radius );
+			if ( !grown.Contains( local ) )
+				return;
+		}
+
+		// Whether (and how fast) this crater heals is the TARGET's policy — a DamageProfile composed beside
+		// its sculpture (gameplay data, kept off the mode-agnostic SDF components; absent = scars persist).
+		// The shooter reads the target's prefab-authored config and rolls the timing HERE, once, shipping
+		// concrete values — every machine must agree on when each crater vanishes, so the randomness can't
+		// be rolled per machine. Staggered, not lockstep.
+		var profile = sculpt.GameObject.Components.Get<DamageProfile>();
+		bool heals = profile.IsValid() && profile.Heals;
+		float delay = heals ? Game.Random.Float( profile.HealDelay.x, profile.HealDelay.y ) : 0f;
+		float duration = heals ? Game.Random.Float( profile.HealDuration.x, profile.HealDuration.y ) : 0f;
+		BroadcastCarve( anchor, local, radius, heals, delay, duration );
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastCarve( GameObject anchor, Vector3 localPos, float radius )
+	void BroadcastCarve( GameObject anchor, Vector3 localPos, float radius, bool shrinks, float shrinkDelay, float shrinkDuration )
 	{
 		var sculpt = ResolveCarveSculpture( anchor );
 		if ( !sculpt.IsValid() || sculpt.Brushes is null )
@@ -762,6 +813,10 @@ public sealed class HunterController : Component
 			Size = radius,
 			Blend = CarveBlend,
 			Color = CarveColor,
+			Damage = true, // edit UI skips it; authored brushes insert below the damage tail
+			Shrinks = shrinks, // the target's HealsDamage, with the shooter's rolled timing
+			ShrinkDelay = shrinkDelay,
+			ShrinkDuration = shrinkDuration,
 		} );
 
 		// Full rebuild: mesh LODs, field redispatch, and Committed — which re-solidifies the collider

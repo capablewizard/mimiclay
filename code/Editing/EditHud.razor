@@ -49,11 +49,14 @@
 			<div class="layers">
 				@{
 					var brushes = Session.Target?.Brushes;
+					// Only the AUTHORED prefix gets rows — the damage tail (shot craters) is invisible to
+					// editing. Damage is contiguous at the end, so row/index math stays exact with this count.
+					var authored = Session.Target?.AuthoredBrushCount ?? 0;
 				}
 				@if ( brushes is not null )
 				{
-					@* Top of the list = last brush (drawn on top of the field). *@
-					@for ( int i = brushes.Count - 1; i >= 0; i-- )
+					@* Top of the list = last authored brush (drawn on top of the field, below any damage). *@
+					@for ( int i = authored - 1; i >= 0; i-- )
 					{
 						var idx = i;
 						var b = brushes[idx];
@@ -397,7 +400,7 @@
 	// row live in the .dragging CSS class (reliable), not inline.
 	string LayerStyle( int idx )
 	{
-		int n = Session?.Target?.Brushes?.Count ?? 0;
+		int n = Session?.Target?.AuthoredBrushCount ?? 0; // rows cover the authored prefix only
 
 		if ( _dragIndex < 0 || n <= 0 )
 			return "transform: translateY( 0px );";
@@ -487,7 +490,7 @@
 	// (offset ≈ 0 → drop back where you started) and always matches the previewed gap.
 	void HandleDragMove( float offsetY )
 	{
-		int n = Session?.Target?.Brushes?.Count ?? 0;
+		int n = Session?.Target?.AuthoredBrushCount ?? 0; // rows cover the authored prefix only
 		if ( n <= 0 || _stride <= 0f )
 		{
 			_dragOffsetY = offsetY;
@@ -1046,7 +1049,7 @@
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
 		hc.Add( s?.SplinePointUiDragging ?? false ); // keep it mounted through the insert-and-place drag, drop it on release
 		hc.Add( s?.Selected ?? -1 );
-		hc.Add( s?.Target?.Brushes?.Count ?? 0 );
+		hc.Add( s?.Target?.AuthoredBrushCount ?? 0 ); // damage-tail changes (a shot landing) don't churn the rows
 
 		// Each row shows per-brush state (shape / op / colour / visibility / symmetry), so fold all of it in
 		// — otherwise toggling a NON-selected row wouldn't re-render its icons.

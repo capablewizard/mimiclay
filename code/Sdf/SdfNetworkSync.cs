@@ -283,6 +283,7 @@ public sealed class SdfNetworkSync : Component
 		if ( full )
 		{
 			StopInterpolation();
+			CarryShrinkState( Target.Brushes, brushes );
 			Target.Brushes = brushes;
 			SetFieldSuppressed( false ); // settled shape → one field dispatch, back to the cached path
 			Target.Rebuild();
@@ -316,6 +317,8 @@ public sealed class SdfNetworkSync : Component
 
 	void SetInterpolationTarget( List<SdfBrush> target )
 	{
+		CarryShrinkState( Target.IsValid() ? Target.Brushes : null, target );
+
 		// Snap when interpolation is off, or when the brush COUNT changes (a brush added/removed mid-drag has
 		// nothing to blend against). Stops any in-flight blend so the next frame doesn't fight the snap.
 		if ( !Interpolate || Target.Brushes is not { } current || current.Count != target.Count )
@@ -363,6 +366,35 @@ public sealed class SdfNetworkSync : Component
 	{
 		_lerpFrom = null;
 		_lerpTo = null;
+	}
+
+	// Carry LOCAL shrink-animation clocks (SdfBrush.ShrinkAge/ShrinkState — runtime fields, deliberately not
+	// serialised) across an incoming list replace, so a new commit (e.g. another shot landing) doesn't reset
+	// every already-healing crater back into its grace period — heals continue instead of pausing. Brushes
+	// are matched by POSITION (stable — only sizes animate); copying ShrinkState (the cached pre-shrink size)
+	// with the age keeps the animation seamless regardless of the mid-animation size the owner serialised.
+	static void CarryShrinkState( List<SdfBrush> from, List<SdfBrush> to )
+	{
+		if ( from is null || to is null )
+			return;
+
+		foreach ( var nb in to )
+		{
+			if ( !nb.Shrinks )
+				continue;
+
+			foreach ( var ob in from )
+			{
+				if ( !ob.Shrinks || ob.ShrinkAge <= 0f || ob.Damage != nb.Damage )
+					continue;
+				if ( ob.Position.Distance( nb.Position ) > 0.01f )
+					continue;
+
+				nb.ShrinkAge = ob.ShrinkAge;
+				nb.ShrinkState = ob.ShrinkState;
+				break;
+			}
+		}
 	}
 
 	static List<SdfBrush> Snapshot( List<SdfBrush> brushes )
