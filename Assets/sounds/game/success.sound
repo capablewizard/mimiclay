@@ -16,36 +16,39 @@
   "OcclusionRadius": 64,
   "DistanceAttenuation": true,
   "Distance": 15000,
-  "Falloff": [
-    {
-      "x": 0,
-      "y": 1,
-      "in": 0,
-      "out": -1.8,
-      "mode": "Mirrored"
-    },
-    {
-      "x": 0.05,
-      "y": 0.22,
-      "in": 3.5,
-      "out": -3.5,
-      "mode": "Mirrored"
-    },
-    {
-      "x": 0.2,
-      "y": 0.04,
-      "in": 0.16,
-      "out": -0.16,
-      "mode": "Mirrored"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "in": 0,
-      "out": 0,
-      "mode": "Mirrored"
-    }
-  ],
+  "Falloff": {
+    "rangey": "0.0631944537,1",
+    "frames": [
+      {
+        "x": 0,
+        "y": 1,
+        "in": 0,
+        "out": -1.8,
+        "mode": "Mirrored"
+      },
+      {
+        "x": 0.05,
+        "y": 0.22075602,
+        "in": 3.5,
+        "out": -3.5,
+        "mode": "Mirrored"
+      },
+      {
+        "x": 0.1993926,
+        "y": 0.024148645,
+        "in": 0.04827561,
+        "out": -0.04827561,
+        "mode": "Mirrored"
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "in": 0,
+        "out": 0,
+        "mode": "Mirrored"
+      }
+    ]
+  },
   "DefaultMixer": {
     "Name": "unknown",
     "Id": "00000000-0000-0000-0000-000000000000"
