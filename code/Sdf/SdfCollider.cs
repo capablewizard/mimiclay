@@ -91,4 +91,26 @@ public sealed class SdfCollider : Component
 			_footPoints = new();
 		}
 	}
+
+	// ── Diagnostics ──────────────────────────────────────────────────────────────────────────────────
+	// Prints what the physics world ACTUALLY enforces for the hunter head: the live headcollider rules
+	// (Ignore = the Collision.config rule is loaded; Collide = the editor is serving a stale cached
+	// config — restart it) and every SdfCollider's effective tag set (what its shapes are stamped with).
+	[ConCmd( "mimi_collision_debug" )]
+	public static void CollisionDebugCmd()
+	{
+		var scene = Game.ActiveScene;
+		if ( !scene.IsValid() )
+			return;
+
+		Log.Info( $"rule headcollider vs world: {scene.PhysicsWorld.GetCollisionRule( "headcollider", "world" )}" );
+		Log.Info( $"rule headcollider vs solid: {scene.PhysicsWorld.GetCollisionRule( "headcollider", "solid" )}" );
+
+		foreach ( var c in scene.GetAllComponents<SdfCollider>() )
+		{
+			var mc = c.GameObject.Components.Get<ModelCollider>();
+			Log.Info( $"  {c.GameObject.Name}: tags=[{string.Join( ",", c.GameObject.Tags.TryGetAll() )}] " +
+				$"collider={(mc.IsValid() && mc.Enabled ? "enabled" : "off")}" );
+		}
+	}
 }

@@ -221,6 +221,14 @@ public sealed class LobbyManager : Component, IRoundContext
 		var s = Settings; s.RevealSeconds = MathF.Max( 1f, seconds ); Settings = s;
 	}
 
+	// Floor of 5s (not the 1s the phase timers use): the taunt repeats for every prop for the whole hunt, and
+	// per-second whistling would be pure noise spam.
+	public void SetTauntSeconds( float seconds )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = Settings; s.TauntSeconds = MathF.Max( 5f, seconds ); Settings = s;
+	}
+
 	// ── Launch ─────────────────────────────────────────────────────────────────────────────────────────────────
 	// Host-only. Resolve the map, stamp the round settings + nominated hunters into session data (so they survive
 	// the scene change), then change scene into the map where RoundManager reads them back.

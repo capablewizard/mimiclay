@@ -194,6 +194,11 @@ public sealed class HunterController : Component
 		// apply). Passing the orbit rig makes the session enable/disable the camera around edit mode.
 		_session = SculptablePawn.AttachEditing( this, Face, _orbit );
 
+		// Persistent appearance: bind the session to the shared head slot, so the face auto-loads your saved
+		// head on spawn (that's what carries it across scenes — every machine spawns its pawn fresh) and saves
+		// it back when you leave edit mode. The menu sculpt head shares the slot; see SculptEditSession.PersistSlot.
+		_session.PersistSlot = SculptLibrary.HeadSlot;
+
 		// Run dust: cache the emitters we gate by speed (see UpdateRunEffect). EverythingInSelf so a re-cache
 		// still finds them after we've disabled them; they start enabled in the prefab, so force the initial
 		// off state — the pawn spawns standing still.
@@ -697,7 +702,11 @@ public sealed class HunterController : Component
 
 	// The GameObject tag on invisible MOVEMENT colliders (the hunter's capsule) that the carve trace sees
 	// through: the capsule fully encloses the sculpted head, so the gameplay trace always stops on it and a
-	// carve aimed at a face would never reach the head's own collider.
+	// carve aimed at a face would never reach the head's own collider. The head's collider is the inverse:
+	// tagged "headcollider" with a default-Ignore collision rule (ProjectSettings/Collision.config), so it
+	// never physically collides with anything — it exists ONLY for these traces, which see it because plain
+	// scene traces don't apply collision rules (only WithCollisionRules opts in; the engine PlayerController's
+	// movement traces do, so movement ignores heads too).
 	const string MoveColliderTag = "movecollider";
 
 	// How far past the gameplay hit the carve trace may land and still carve. Covers "the face is a little

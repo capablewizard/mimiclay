@@ -21,6 +21,12 @@ public static class SculptLibrary
 	/// <summary>Folder (under the game's local data dir) where sculptures live.</summary>
 	public const string Folder = "sculpts";
 
+	/// <summary>Reserved slot the player's persistent head appearance lives under: auto-loaded onto the hunter's
+	/// face (and the menu sculpt head) at spawn, saved back on edit exit — see <see cref="SculptEditSession.PersistSlot"/>.
+	/// The leading underscore marks it reserved: names starting with '_' are hidden from <see cref="List"/>, so
+	/// slot files never show up beside the player's named saves in a save-browser UI.</summary>
+	public const string HeadSlot = "_head";
+
 	// JSON under the hood; a custom extension lets FindFile filter cleanly and keeps these out of the way of
 	// any other data files.
 	const string Extension = ".sculpt";
@@ -98,6 +104,14 @@ public static class SculptLibrary
 			if ( entry?.Brushes is not { Count: > 0 } )
 				return null;
 
+			// Saves are player-editable files — cap the brush count like SdfNetworkSync does on the wire, so a
+			// hand-grown list can't blow past what the packer/raymarcher handle. Treated as corrupt, not truncated.
+			if ( entry.Brushes.Count > SdfBrushPacker.MaxBrushes )
+			{
+				Log.Warning( $"SculptLibrary: '{name}' has {entry.Brushes.Count} brushes (cap {SdfBrushPacker.MaxBrushes}) — ignoring it." );
+				return null;
+			}
+
 			entry.Name ??= name;
 			return entry;
 		}
@@ -139,6 +153,7 @@ public static class SculptLibrary
 		return FileSystem.Data
 			.FindFile( Folder, $"*{Extension}" )
 			.Select( StripExtension )
+			.Where( n => !n.StartsWith( '_' ) ) // reserved slots (HeadSlot) aren't part of the named library
 			.OrderBy( n => n, StringComparer.OrdinalIgnoreCase )
 			.ToList();
 	}

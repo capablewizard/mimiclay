@@ -74,6 +74,15 @@
 					</div>
 
 					<div class="setting-row">
+						<div class="setting-name"><div class="mi">campaign</div><span>Taunt Timer</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddTaunt( -5f ))>remove</div>
+							<div class="step-value">@Secs( S.TauntSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddTaunt( 5f ))>add</div>
+						</div>
+					</div>
+
+					<div class="setting-row">
 						<div class="setting-name"><div class="mi">visibility</div><span>Reveal Time</span></div>
 						<div class="stepper">
 							<div class="step-btn" @onclick=@(() => AddReveal( -5f ))>remove</div>
@@ -207,6 +216,7 @@
 	void AddHunters( int d ) => LobbyManager.Current?.SetHunterCount( (int)S.HunterCount + d );
 	void AddHide( float d ) => LobbyManager.Current?.SetHideSeconds( S.HideSeconds + d );
 	void AddHunt( float d ) => LobbyManager.Current?.SetHuntSeconds( S.HuntSeconds + d );
+	void AddTaunt( float d ) => LobbyManager.Current?.SetTauntSeconds( S.TauntSeconds + d );
 	void AddReveal( float d ) => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d );
 
 	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
@@ -227,5 +237,7 @@
 	}
 
 	protected override int BuildHash()
-		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount, S.HideSeconds, S.HuntSeconds, S.RevealSeconds, _picked, LobbyPlayerCount );
+		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
+			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.RevealSeconds ),
+			_picked, LobbyPlayerCount );
 }

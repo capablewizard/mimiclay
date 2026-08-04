@@ -511,7 +511,7 @@
         "Position": "0,0,62.510994",
         "Rotation": "0,0,0,1",
         "Scale": "1,1,1",
-        "Tags": "",
+        "Tags": "headcollider",
         "Enabled": true,
         "NetworkMode": 2,
         "NetworkFlags": 0,

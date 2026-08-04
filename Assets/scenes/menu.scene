@@ -143,6 +143,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OrbitCamera": null,
+              "PersistSlot": "_head",
               "ShowGizmo": true,
               "ShowShadowProxy": false,
               "ShowWireframes": true,

@@ -28,6 +28,16 @@ public sealed class SculptEditSession : Component
 	/// self-activate.</summary>
 	[Property] public bool StartActive { get; set; }
 
+	/// <summary>Optional persistence slot (a <see cref="SculptLibrary"/> name — <see cref="SculptLibrary.HeadSlot"/>
+	/// for the hunter face + menu head). When set, the target's brushes auto-load from the slot when the session
+	/// starts, and while editing every commit saves them back (see <see cref="HookPersistSlot"/> for why per-commit
+	/// beats save-on-exit). That's what makes an appearance persist across scenes and game sessions: every fresh
+	/// pawn re-loads it on spawn. Owner-only on a networked pawn — proxies get the shape through
+	/// <see cref="SdfNetworkSync"/>, never from their own disk. Loads apply BRUSHES only: the target keeps its
+	/// authored Resolution/FlipFaces, so a slot written by a different host (menu head vs. hunter prefab) can't
+	/// override tuned build settings. Null/empty = no persistence (the hider's disguise session).</summary>
+	[Property] public string PersistSlot { get; set; }
+
 	/// <summary>While editing, pull the main camera's depth of field in so the focus sits just behind the
 	/// edited object (it stays sharp, the background blurs). Restored on exit.</summary>
 	[Property, Group( "Depth of Field" )] public bool EditDepthOfField { get; set; } = true;
@@ -184,6 +194,8 @@ public sealed class SculptEditSession : Component
 	// target's renderers and the main camera are all ready for SetActive's HUD spawn + DoF setup.
 	protected override void OnStart()
 	{
+		LoadPersistSlot(); // before self-activate, so an always-on session opens already showing the restored shape
+
 		if ( StartActive )
 			SetActive( true );
 	}
@@ -210,6 +222,7 @@ public sealed class SculptEditSession : Component
 			Current = this;
 			EnsureHud(); // the edit system brings its own HUD — no scene setup needed (and works in any game mode)
 			ApplyEditDof();
+			HookPersistSlot(); // save the slot on every commit while editing (see HookPersistSlot for why)
 		}
 		else if ( Current == this )
 		{
@@ -220,7 +233,8 @@ public sealed class SculptEditSession : Component
 		if ( !active )
 		{
 			if ( _pendingCommit )
-				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit
+				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit (saves the slot too)
+			UnhookPersistSlot();
 			_gizmo.Hide();
 			HideGhosts();
 			RestoreDof();
@@ -243,7 +257,8 @@ public sealed class SculptEditSession : Component
 	protected override void OnDisabled()
 	{
 		if ( _pendingCommit )
-			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown
+			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown (saves the slot too)
+		UnhookPersistSlot();
 		_gizmo.Hide();
 		HideGhosts();
 		_wireframes.Hide();
@@ -502,6 +517,61 @@ public sealed class SculptEditSession : Component
 		Selected = -1; // the loaded brushes are a different set — never keep a stale index into the old list
 		Target.Rebuild();
 		return true;
+	}
+
+	// Persistence slot (see PersistSlot): restore the saved appearance onto the target at session start. Brushes
+	// only — unlike Load(), the target's authored Resolution/FlipFaces stand, so the hunter prefab and the menu
+	// head each keep their own tuned build settings whichever of them wrote the slot. No save yet (or a corrupt
+	// one — SculptLibrary returns null) → silently keep the authored default shape.
+	void LoadPersistSlot()
+	{
+		if ( string.IsNullOrWhiteSpace( PersistSlot ) || IsProxy || !Target.IsValid() )
+			return;
+
+		var entry = SculptLibrary.Load( PersistSlot );
+		if ( entry is null )
+			return;
+
+		Target.Brushes = entry.Brushes;
+		Selected = -1;
+		Target.Rebuild(); // the Committed this fires is what publishes the restored shape on a networked pawn
+	}
+
+	// Write the current shape back to the slot. SculptLibrary refuses an empty brush list, so a shape deleted
+	// down to nothing can't clobber the save — the last real head survives and reloads next spawn.
+	void SavePersistSlot()
+	{
+		if ( string.IsNullOrWhiteSpace( PersistSlot ) || IsProxy || !Target.IsValid() )
+			return;
+
+		SculptLibrary.Save( PersistSlot, Target );
+	}
+
+	bool _persistHooked;
+
+	// While the session is ACTIVE, every commit (gizmo release / discrete edit / debounced HUD gesture) also
+	// rewrites the persist slot, so the on-disk appearance always matches the last committed shape. An exit-only
+	// save isn't enough: menu-scene teardown can destroy the Target before this component's OnDisabled runs, and
+	// an app quit can skip teardown entirely — both would eat the player's edits. Hooked only while editing, so
+	// out-of-edit-mode rebuilds (a carve from being shot) are never baked into the saved appearance; the load
+	// rebuild in OnStart runs before the first activate, so restoring a shape never pointlessly resaves it.
+	void HookPersistSlot()
+	{
+		if ( _persistHooked || string.IsNullOrWhiteSpace( PersistSlot ) || !Target.IsValid() )
+			return;
+
+		Target.Committed += SavePersistSlot;
+		_persistHooked = true;
+	}
+
+	void UnhookPersistSlot()
+	{
+		if ( !_persistHooked )
+			return;
+
+		if ( Target is not null )
+			Target.Committed -= SavePersistSlot; // plain null check: unsubscribe even from a destroyed component
+		_persistHooked = false;
 	}
 
 	// Spawn one shared edit HUD (ScreenPanel + EditHud) the first time anyone edits, so the HUD ships with

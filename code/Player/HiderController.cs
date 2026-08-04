@@ -283,6 +283,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( Input.Pressed( "ToggleWireframes" ) )
 			_session?.ToggleWireframes();
 
+		UpdateTaunts();
+
 		if ( ControlActive && Input.Pressed( "jump" ) )
 			_jumpQueued = true;
 
@@ -294,6 +296,71 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			DrawGroundProbes();
 		if ( DebugCameraPivot )
 			DrawCameraPivot(); // after UpdateCamera, so it shows this frame's pivot (override included)
+	}
+
+	// ── Taunts ────────────────────────────────────────────────────────────────────────────────────────
+	// During the Hunt every surviving prop periodically whistles from wherever it's hiding — the classic
+	// prop-hunt tension dial, tuned by the host (RoundSettings.TauntSeconds). T taunts on demand (and resets
+	// the clock, so a manual whistle buys quiet until the next auto one). Owner-side only: this runs after
+	// OnUpdate's dormant/IsProxy gates, and the sound reaches everyone through the broadcast RPC below. Any
+	// pawn still wearing a HiderController during the Hunt IS a live prop (a found prop respawns as a hunter),
+	// so no per-frame roster lookup is needed.
+
+	const string TauntSoundPath = "sounds/game/tauntwhistyle.sound";
+
+	/// <summary>Extra seconds a manual (T) taunt must wait after ANY taunt, so the key can't be drummed into a
+	/// continuous whistle.</summary>
+	const float ManualTauntCooldown = 2f;
+
+	TimeUntil _nextAutoTaunt;
+	RealTimeSince _sinceTaunt;
+	bool _tauntClockSeeded; // seeded on the first Hunt frame; reset outside the Hunt so a next round re-seeds
+
+	void UpdateTaunts()
+	{
+		var round = RoundManager.Current;
+		if ( !round.IsValid() || round.Phase != RoundPhase.Hunt )
+		{
+			_tauntClockSeeded = false;
+			return;
+		}
+
+		// Same 5s floor as LobbyManager.SetTauntSeconds — also catches a zeroed TauntSeconds from any stale
+		// settings path (e.g. an old serialized struct), which Max(0) would turn into per-frame whistling.
+		float interval = MathF.Max( 5f, round.Settings.TauntSeconds );
+
+		// First Hunt frame: every prop starts its clock at a RANDOM fraction of the interval. All machines flip
+		// into the Hunt within a frame or two of each other, so without this offset the whole lobby would
+		// whistle in chorus every cycle — the random phase is the stagger.
+		if ( !_tauntClockSeeded )
+		{
+			_tauntClockSeeded = true;
+			_sinceTaunt = interval; // a manual taunt is allowed immediately at the whistle-phase start
+			_nextAutoTaunt = Game.Random.Float( 0.3f, 1f ) * interval;
+		}
+
+		if ( Input.Pressed( "Taunt" ) && _sinceTaunt > ManualTauntCooldown )
+			Taunt( interval );
+		else if ( _nextAutoTaunt <= 0f )
+			Taunt( interval );
+	}
+
+	// Fire one taunt and rewind the auto clock — jittered ±15% so two props whose clocks happened to land in
+	// step drift apart again instead of whistling together for the whole hunt.
+	void Taunt( float interval )
+	{
+		_sinceTaunt = 0f;
+		_nextAutoTaunt = interval * Game.Random.Float( 0.85f, 1.15f );
+		BroadcastTaunt();
+	}
+
+	// The whistle, on every machine, from wherever this machine sees the prop (no position argument: proxies
+	// place it from their network-interpolated pawn transform, which is exactly where they see the disguise).
+	// The pawn is networked for the whole Hunt in every mode, so the broadcast always reaches everyone.
+	[Rpc.Broadcast]
+	void BroadcastTaunt()
+	{
+		Sound.Play( TauntSoundPath, WorldPosition + Vector3.Up * 16f );
 	}
 
 	protected override void OnFixedUpdate()

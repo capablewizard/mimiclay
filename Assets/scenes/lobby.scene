@@ -447,6 +447,7 @@
           "DefaultRevealSeconds": 15,
           "DefaultRoundMode": "Infection",
           "DefaultStartCountdownSeconds": 4,
+          "DefaultTauntSeconds": 15,
           "HunterPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/hunter.prefab"
@@ -732,7 +733,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "2ad26054-ba98-4bbb-bf21-d8e036b66b32"
+              "$blob": "f05fb3c4-e576-4e38-8f16-17f00c290e9a"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -788,7 +789,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "79f8c99b-3e5c-4042-9dff-d73fcfd887a3"
+              "$blob": "2319b4e8-0731-4fdc-a0cf-65da1a2d7468"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -844,7 +845,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "c30512c1-6f5a-4497-b0e9-896ec43e8ec7"
+              "$blob": "ab22ff8c-f76c-486f-a949-9a45690a494e"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -900,7 +901,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "cee2b0ab-6e6a-40ae-8c61-89b16d96cd83"
+              "$blob": "6d53a537-1ba0-40a9-a835-3c26bf7c8bb4"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -956,7 +957,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "29611b5e-1aeb-4615-b9e3-eb71238b72ec"
+              "$blob": "96f69664-53a6-48aa-a511-9d3506f32e08"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"

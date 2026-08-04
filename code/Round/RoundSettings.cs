@@ -26,6 +26,11 @@ public struct RoundSettings
 	public float RevealSeconds;
 	public float ConsolidationSeconds;
 
+	/// <summary>How often (seconds) each surviving prop automatically taunts during the Hunt — the whistle every
+	/// hunter hears from the prop's hiding spot. Individual props stagger around this period so the whole lobby
+	/// never whistles in chorus (see <see cref="HiderController"/>).</summary>
+	public float TauntSeconds;
+
 	/// <summary>How many players are made hunters at round start (the rest are props). Clamped to leave ≥1 prop.</summary>
 	public int HunterCount;
 
@@ -41,6 +46,7 @@ public struct RoundSettings
 		HuntSeconds = 180f,
 		RevealSeconds = 6f,
 		ConsolidationSeconds = 12f,
+		TauntSeconds = 15f,
 		HunterCount = 1,
 		MapIdent = MapCatalog.RandomIdent,
 	};
@@ -55,6 +61,7 @@ public struct RoundSettings
 		public const string Hunt = "r.hunt";
 		public const string Reveal = "r.reveal";
 		public const string Cons = "r.cons";
+		public const string Taunt = "r.taunt";
 		public const string Hunters = "r.hn";
 		public const string Map = "r.map";
 	}
@@ -70,6 +77,7 @@ public struct RoundSettings
 		Networking.SetData( Keys.Hunt, Str( HuntSeconds ) );
 		Networking.SetData( Keys.Reveal, Str( RevealSeconds ) );
 		Networking.SetData( Keys.Cons, Str( ConsolidationSeconds ) );
+		Networking.SetData( Keys.Taunt, Str( TauntSeconds ) );
 		Networking.SetData( Keys.Hunters, HunterCount.ToString( CultureInfo.InvariantCulture ) );
 		Networking.SetData( Keys.Map, resolvedMapIdent ?? "" );
 	}
@@ -89,6 +97,7 @@ public struct RoundSettings
 		d.HuntSeconds = Read( Keys.Hunt, d.HuntSeconds );
 		d.RevealSeconds = Read( Keys.Reveal, d.RevealSeconds );
 		d.ConsolidationSeconds = Read( Keys.Cons, d.ConsolidationSeconds );
+		d.TauntSeconds = Read( Keys.Taunt, d.TauntSeconds );
 
 		var hunters = Networking.GetData( Keys.Hunters );
 		if ( int.TryParse( hunters, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n ) )
