@@ -211,9 +211,8 @@ public sealed class RoundManager : Component, IRoundContext
 		if ( to == RoundPhase.Hunt )
 			ReturnOwnHunterToSpawn();
 
-		if ( to == RoundPhase.Reveal )
-			FlashSurvivingProps();
-
+		// (The Reveal outline flash isn't triggered here: RoundOutlineSystem asserts it per machine
+		// every frame from the synced Phase, alongside the outline visibility rules.)
 		IRoundPhaseChanged.Post( x => x.OnRoundPhaseChanged( from, to ) );
 	}
 
@@ -577,15 +576,6 @@ public sealed class RoundManager : Component, IRoundContext
 	// Hunters on the roster. Alive is meaningless for hunters (a converted prop is Role=Hunter, Alive=false), so
 	// this counts rows by role only.
 	int Hunters => Players.Values.Count( p => p.Role == PlayerRole.Hunter );
-
-	// ── Stubs to flesh out next ──────────────────────────────────────────────────────────────────────────────
-	// Reveal flash: surviving props pulse with the outline shader so spectators can see where they were hiding.
-	// The steady outline half already works — RoundOutlineSystem shows surviving props' outlines to everyone
-	// during Reveal (and gates them owner-only the rest of the round). This stub is just the PULSE on top.
-	void FlashSurvivingProps()
-	{
-		// TODO: pulse the reveal outline (width/colour animation) on every pawn whose roster row is an Alive prop.
-	}
 
 	// ── Roster upkeep ────────────────────────────────────────────────────────────────────────────────────────
 	// Host-only. Add late joiners, drop leavers. Pawns aren't tracked here — a leaver's networked pawn is removed by

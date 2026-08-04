@@ -32,7 +32,8 @@ public enum SdfOutlinePlacement
 /// component is needed.
 ///
 /// Targets every <see cref="SdfRaymarchRenderer"/> on this GameObject AND its descendants (like the
-/// engine component's renderer scan), and draws them as ONE COMBINED silhouette: a single
+/// engine component's renderer scan, minus any that opt out via
+/// <see cref="SdfRaymarchRenderer.ExcludeFromHighlight"/>), and draws them as ONE COMBINED silhouette: a single
 /// translucent proxy box re-marches the UNION of the members' baked distance fields
 /// (shaders/sdf_highlight.shader), so a multi-part pawn (hunter head + body) gets one continuous
 /// outline with no interior lines or double-blend where the parts overlap. Rays that hit the union
@@ -90,6 +91,20 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	/// by whoever owns the visibility rules (see RoundOutlineSystem). Not serialized — author
 	/// persistent state with <see cref="Component.Enabled"/> instead.</summary>
 	public bool Hidden { get; set; }
+
+	/// <summary>Runtime look overrides — a non-null slot replaces its authored [Property] counterpart
+	/// for as long as it's set. Same contract as <see cref="Hidden"/>: driven per machine at runtime
+	/// (see <c>SdfOutlineFlash</c>, the Reveal pulse), NEVER serialized — so a network snapshot can
+	/// only ever ship the authored look, and clearing back to null is a perfect restore.</summary>
+	public Color? ColorOverride { get; set; }
+	/// <inheritdoc cref="ColorOverride"/>
+	public Color? ObscuredColorOverride { get; set; }
+	/// <inheritdoc cref="ColorOverride"/>
+	public Color? InsideColorOverride { get; set; }
+	/// <inheritdoc cref="ColorOverride"/>
+	public Color? InsideObscuredColorOverride { get; set; }
+	/// <inheritdoc cref="ColorOverride"/>
+	public float? WidthOverride { get; set; }
 
 	/// <summary>Track the plasticine displacement lumps on members that have Displace on, so the
 	/// line hugs the LUMPY silhouette instead of the smooth baked one (the noise is not in the
@@ -178,7 +193,8 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	// current: each member pings SyncFromRenderer from ITS OnUpdate.
 	void ScanTargets()
 	{
-		var found = Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants ).ToList();
+		var found = Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants )
+			.Where( r => !r.ExcludeFromHighlight ).ToList();
 
 		foreach ( var old in _targets )
 		{
@@ -229,9 +245,16 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 
 	internal void SyncFromRenderer( SdfRaymarchRenderer _ )
 	{
+		// Effective look: authored [Property] values unless a runtime override slot is set.
+		var color = ColorOverride ?? Color;
+		var obscuredColor = ObscuredColorOverride ?? ObscuredColor;
+		var insideColor = InsideColorOverride ?? InsideColor;
+		var insideObscuredColor = InsideObscuredColorOverride ?? InsideObscuredColor;
+		float width = WidthOverride ?? Width;
+
 		// Anything to draw at all? (Fully-transparent colours or zero width = nothing.)
-		bool wantsOutline = Width > 0f && (Color.a > 0f || ObscuredColor.a > 0f);
-		bool wantsFill = InsideColor.a > 0f || InsideObscuredColor.a > 0f;
+		bool wantsOutline = width > 0f && (color.a > 0f || obscuredColor.a > 0f);
+		bool wantsFill = insideColor.a > 0f || insideObscuredColor.a > 0f;
 
 		// Members that can march this frame (field baked, not force-hidden). The rest of the group
 		// joins as it becomes ready — one partial frame at spawn, self-correcting.
@@ -322,17 +345,17 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 		a.Set( "MaxSteps", maxSteps );
 		a.Set( "Epsilon", epsilon );
 
-		a.Set( "OutlineColor", Color );
-		a.Set( "OutlineObscuredColor", ObscuredColor );
-		a.Set( "InsideColor", InsideColor );
-		a.Set( "InsideObscuredColor", InsideObscuredColor );
-		a.Set( "LineWidthPx", Width );
+		a.Set( "OutlineColor", color );
+		a.Set( "OutlineObscuredColor", obscuredColor );
+		a.Set( "InsideColor", insideColor );
+		a.Set( "InsideObscuredColor", insideObscuredColor );
+		a.Set( "LineWidthPx", width );
 		// Placement = how far (px) the shader erodes the union field before marching, which slides
 		// the whole band across the silhouette (see ErodePx in the shader).
 		a.Set( "ErodePx", Placement switch
 		{
-			SdfOutlinePlacement.Inside => Width,
-			SdfOutlinePlacement.Center => Width * 0.5f,
+			SdfOutlinePlacement.Inside => width,
+			SdfOutlinePlacement.Center => width * 0.5f,
 			_ => 0f,
 		} );
 		a.Set( "PixelScale", ComputePixelScale() );

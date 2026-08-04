@@ -1098,6 +1098,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// same-frame coherent.</summary>
 	internal SdfHighlightOutline Highlight;
 
+	/// <summary>Opt out of any ancestor <see cref="SdfHighlightOutline"/>'s target scan. For renderers
+	/// that live under an outlined pawn but aren't part of its silhouette — e.g. the hunter's
+	/// first-person gun clone, an owner-only overlay that would waste one of the shader's few union
+	/// slots (and can evict a real member). Runtime-driven like <see cref="RenderHidden"/>, not a
+	/// [Property].</summary>
+	public bool ExcludeFromHighlight { get; set; }
+
 	/// <summary>Changes whenever the proxy geometry is rebuilt (brushes / transform / bounds mode).</summary>
 	internal int ProxyVersion => _lastHash;
 

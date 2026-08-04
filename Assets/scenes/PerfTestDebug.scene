@@ -238,6 +238,9 @@
           "__guid": "42ff365a-a35f-4d34-a38c-b4bc7813ea30",
           "__enabled": true,
           "Flags": 0,
+          "AuthoredBlurSize": 6.329114,
+          "AuthoredFocalDistance": 704.9367,
+          "AuthoredFocusRange": 616.03375,
           "BlurReferenceHeight": 1080,
           "DepthOfField": {
             "_type": "component",

@@ -67,6 +67,25 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "Target": null
+      },
+      {
+        "__type": "Mimiclay.SdfOutlineFlash",
+        "__guid": "30000001-0000-4000-8000-000000000004",
+        "__enabled": false,
+        "Flags": 0,
+        "FlashColor": "1,0.85,0.3,1",
+        "FlashObscuredColor": "1,0.85,0.3,0.8",
+        "FlashInsideColor": "0,0,0,0",
+        "FlashInsideObscuredColor": "1,0.85,0.3,0.35",
+        "FlashWidth": 5,
+        "Frequency": 1.25,
+        "MinBlend": 0.15,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
       }
     ],
     "Children": [

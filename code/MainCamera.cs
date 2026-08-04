@@ -24,10 +24,25 @@ public sealed class MainCamera : Component
 	/// <summary>The underlying s&amp;box camera, resolved from this GameObject (created if missing).</summary>
 	public CameraComponent Camera { get; private set; }
 
-	/// <summary>The camera's depth-of-field post-process. Assign it in the inspector (authored in the editor
-	/// so we don't impose a default blur); falls back to one on this GameObject if left unset. Don't write
-	/// its fields directly — set the focus targets below and they blend toward them each frame.</summary>
+	/// <summary>The camera's depth-of-field post-process; falls back to one on this GameObject if left unset.
+	/// Don't write its fields directly — set the focus targets below and they blend toward them each frame.
+	/// Don't author the look on it either: author the Authored* properties in this group instead. The
+	/// component's live fields are runtime state (the blur is screen-scaled every frame), and a join
+	/// snapshot ships those live values to new instances — anything seeded from them double-scales the blur
+	/// and can leak the host's edit-session focus onto joiners.</summary>
 	[Property] public DepthOfField DepthOfField { get; set; }
+
+	/// <summary>Authored blur strength, asserted onto the depth of field on every machine at startup.
+	/// This (not the DepthOfField component) is the place to author the scene's DoF look — these
+	/// properties are never mutated at runtime, so they arrive authored on every machine regardless of
+	/// what live state the join snapshot carried.</summary>
+	[Property, Group( "Depth of Field" )] public float AuthoredBlurSize { get; set; } = 6.33f;
+
+	/// <summary>Authored focal distance (world units), asserted on every machine at startup. See <see cref="AuthoredBlurSize"/>.</summary>
+	[Property, Group( "Depth of Field" )] public float AuthoredFocalDistance { get; set; } = 705f;
+
+	/// <summary>Authored focus range (world units), asserted on every machine at startup. See <see cref="AuthoredBlurSize"/>.</summary>
+	[Property, Group( "Depth of Field" )] public float AuthoredFocusRange { get; set; } = 616f;
 
 	/// <summary>Whether to switch the depth-of-field on when this camera awakes. Defaults to true so gameplay
 	/// scenes get the racked-focus look; turn it off on cameras where DoF is a distraction (e.g. the menu).</summary>
@@ -233,14 +248,18 @@ public sealed class MainCamera : Component
 		// Prefer the inspector-assigned one; fall back to whatever's on this GameObject if it was left unset.
 		DepthOfField ??= GameObject.Components.Get<DepthOfField>();
 
-		// Start the targets at the authored values so the first frame doesn't rack away from them.
+		// Assert the authored DoF on this machine, ignoring whatever live values the component woke with.
+		// On a joined instance those are the HOST's live values from the scene snapshot — already
+		// screen-scaled once (and possibly mid-lerp or mid-edit-session) — so seeding from them compounds
+		// the blur scale and inherits the host's transient focus.
 		if ( DepthOfField.IsValid() )
 		{
 			DepthOfField.Enabled = EnableDepthOfFieldOnStart;
 
-			_targetBlurSize = DepthOfField.BlurSize;
-			_targetFocalDistance = DepthOfField.FocalDistance;
-			_targetFocusRange = DepthOfField.FocusRange;
+			_targetBlurSize = AuthoredBlurSize;
+			_targetFocalDistance = AuthoredFocalDistance;
+			_targetFocusRange = AuthoredFocusRange;
+			SnapToTargets();
 		}
 	}
 

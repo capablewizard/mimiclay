@@ -114,15 +114,14 @@ public sealed class HunterGun : Component
 	/// half rate, alternating sides with alternating feet. 2 = double-time, 0.5 = half-time.</summary>
 	[Property, Group( "View Motion" ), Range( 0.25f, 3f )] public float BobFrequency { get; set; } = 1f;
 
-	/// <summary>Hooke stiffness k (per s², mass folded to 1) of the POSITION spring — the gun's world
-	/// position chases its target with F = k·error − c·relativeVelocity. Higher = tighter follow. The
-	/// damping is RELATIVE to the target's motion, so steady running leaves no permanent trail — only
-	/// accelerations (starts, stops, the offset arm swinging through a turn) displace the gun.
-	/// 0 = spring off, rigid attach.</summary>
+	/// <summary>Hooke stiffness k (per s², mass folded to 1) of the RECOIL POSITION spring. Unlike the
+	/// rotation spring this one lives in AIM space and rests at zero — mouse look and movement never
+	/// displace it (no position lag), only <see cref="KickBack"/> impulses do; k/c shape the kick's
+	/// return ride. 0 = position recoil off, rigid attach.</summary>
 	[Property, Group( "View Spring" ), Range( 0f, 2000f )] public float PositionStiffness { get; set; } = 500f;
 
-	/// <summary>Hooke damping c (per s) of the position spring. Critical damping is 2·√k (≈45 at the
-	/// default k=500) — below that the gun overshoots and bounces, above it it oozes into place.</summary>
+	/// <summary>Hooke damping c (per s) of the recoil position spring. Critical damping is 2·√k (≈45 at
+	/// the default k=500) — below that the kick overshoots and bounces, above it it oozes back.</summary>
 	[Property, Group( "View Spring" ), Range( 0f, 100f )] public float PositionDamping { get; set; } = 40f;
 
 	/// <summary>Hooke stiffness k of the ROTATION spring — the gun's orientation chases the aim (the
@@ -134,14 +133,23 @@ public sealed class HunterGun : Component
 	/// the default sits just under for a subtle overshoot.</summary>
 	[Property, Group( "View Spring" ), Range( 0f, 100f )] public float RotationDamping { get; set; } = 30f;
 
-	/// <summary>Overall strength of the POSITION spring's visible effect: the spring simulates exactly as
-	/// tuned (k/c set the character), and this scales how much of the resulting lag is rendered.
-	/// 0 = rigid attach, 1 = the full simulated lag, 2 = exaggerated.</summary>
+	/// <summary>Overall strength of the RECOIL POSITION spring's visible effect: the spring simulates
+	/// exactly as tuned (k/c set the character), and this scales how much of the resulting offset is
+	/// rendered. 0 = rigid attach, 1 = the full simulated kick, 2 = exaggerated.</summary>
 	[Property, Group( "View Spring" ), Range( 0f, 2f )] public float PositionStrength { get; set; } = 1f;
 
 	/// <summary>Overall strength of the ROTATION spring's visible effect — same idea as
 	/// <see cref="PositionStrength"/>: scales the rendered lag angle without touching the dynamics.</summary>
 	[Property, Group( "View Spring" ), Range( 0f, 2f )] public float RotationStrength { get; set; } = 1f;
+
+	/// <summary>Hard cap (world units) on the recoil spring's offset — the sanity clamp that stops an
+	/// extreme tuning leaving the gun across the screen. Recoil throws larger than this get visibly
+	/// flattened; raise it if the kick caps out.</summary>
+	[Property, Group( "View Spring" ), Range( 1f, 100f )] public float MaxPositionLag { get; set; } = 15f;
+
+	/// <summary>Hard cap (degrees) on the sprung gun's rotation lag. Also the recoil ceiling for
+	/// <see cref="KickUp"/>. Keep it under ~90° — the spring's error math assumes small angles.</summary>
+	[Property, Group( "View Spring" ), Range( 5f, 90f )] public float MaxRotationLag { get; set; } = 25f;
 
 	/// <summary>The point the rotation spring pivots around, in the gun PREFAB's local units (auto-scaled
 	/// with <see cref="ViewGunScale"/>, so it stays on the same spot of the gun at any size). Put it at the
@@ -149,6 +157,28 @@ public sealed class HunterGun : Component
 	/// gun hinging about its arbitrary sculpt origin. Zero = the model origin (wherever the sculpt author
 	/// left it). ViewOffset positions this pivot point.</summary>
 	[Property, Group( "View Spring" )] public Vector3 ViewRotationPivot { get; set; }
+
+	/// <summary>Recoil: how far (world units) the viewmodel snaps BACK along the aim per shot — delivered
+	/// as a velocity impulse into the position spring, so the return ride is the spring's own (k/c set the
+	/// character, this sets the throw; the value is the approximate peak travel at critical damping).
+	/// Does nothing while the position spring is rigid (stiffness 0).</summary>
+	[Property, Group( "Recoil" ), Range( 0f, 30f )] public float KickBack { get; set; } = 3f;
+
+	/// <summary>Degrees the viewmodel's muzzle flips UP per shot — an impulse into the rotation spring,
+	/// pivoting around <see cref="ViewRotationPivot"/> (the grip), so it reads as the wrist absorbing the
+	/// shot. Approximate peak angle; <see cref="MaxRotationLag"/> is the ceiling rapid fire stacks into.</summary>
+	[Property, Group( "Recoil" ), Range( 0f, 45f )] public float KickUp { get; set; } = 7f;
+
+	/// <summary>World-model recoil: units the gun jolts back through the hand per shot — what OTHER
+	/// players see (runs on every machine from the shot RPC). Instant hit, exponential recovery.</summary>
+	[Property, Group( "Recoil" ), Range( 0f, 10f )] public float WorldKickBack { get; set; } = 3f;
+
+	/// <summary>World-model recoil: degrees the barrel flips up per shot.</summary>
+	[Property, Group( "Recoil" ), Range( 0f, 30f )] public float WorldKickUp { get; set; } = 10f;
+
+	/// <summary>Recovery rate (per second) of the world-model kick — the jolt decays by ~63% every
+	/// 1/rate seconds. Higher = snappier reset.</summary>
+	[Property, Group( "Recoil" ), Range( 1f, 30f )] public float WorldKickRecover { get; set; } = 8f;
 
 	/// <summary>Material override for the VIEW clone's raymarch (world model keeps the prefab's). Point it
 	/// at plasticine_viewmodel.vmat — its F_TRANSLUCENT feature selects the shader's translucent LIGHTING
@@ -177,21 +207,22 @@ public sealed class HunterGun : Component
 	DirectionalLight _sun;
 	bool _sunOverridden;
 
-	// Viewmodel motion state. The pawn's controller feeds bob speed/grounding. The springs track WORLD
-	// targets (that's what makes lag exist at all — a purely local-space spring settles and never lags);
-	// _targetVel is the finite-difference target velocity the position damping is measured against.
+	// Viewmodel motion state. The pawn's controller feeds bob speed/grounding. The ROTATION spring tracks
+	// the WORLD aim (that's what makes lag exist at all — a purely local-space spring settles and never
+	// lags); the POSITION spring is deliberately the opposite, a local aim-space offset resting at zero,
+	// so look/movement never displace the gun and only recoil impulses animate it.
 	// _motionSeeded false = re-seed on the next first-person frame, so entering first person (spawn,
 	// leaving edit mode) snaps the springs onto their targets instead of twanging across the map.
 	PlayerController _controller;
 	HunterController _hunter; // stride tuning (StepDistance/RunStepDistance) lives here, shared with footsteps
 	float _bobPhase;
 	float _bobBlend;
-	Vector3 _springPos;
-	Vector3 _springVel;
-	Vector3 _lastTarget;
+	Vector3 _recoilPos; // aim-space offset from the rigid mount (x forward, so recoil pushes −x)
+	Vector3 _recoilVel;
 	Rotation _springRot = Rotation.Identity;
 	Vector3 _angVel; // degrees/s, in the spring's local frame (pitch/yaw/roll)
 	bool _motionSeeded;
+	float _worldKick; // world-model recoil envelope, 1 at the shot → 0, decayed in Place
 
 	// The pristine prefab-scale brush list both models derive from, and the scale each model last applied
 	// (0 = never — the first Place() always applies). Deriving from the SOURCE every time (instead of scaling
@@ -234,6 +265,9 @@ public sealed class HunterGun : Component
 		{
 			_viewSdf.SdfShadows = false;
 			_viewSdf.MeshMode = SdfMeshMode.Hidden;
+			// Keep the viewmodel out of the pawn's highlight union: it's an owner-only overlay, not part
+			// of the silhouette, and as a fifth renderer it overflows the outline shader's 4 slots.
+			_viewSdf.ExcludeFromHighlight = true;
 		}
 
 		// Starts hidden everywhere; Place() enables it once this machine is known to be the owner. Ownership
@@ -267,11 +301,14 @@ public sealed class HunterGun : Component
 		}
 
 		// The world gun rides the Shoulder→Hand hierarchy; only its mount needs asserting (per frame so
-		// HandOffset / RotationOffset stay live-tweakable in the editor).
+		// HandOffset / RotationOffset stay live-tweakable in the editor). The recoil jolt rides on top in
+		// HAND space (x forward, so −x drives the gun back through the grip; the pitch is composed BEFORE
+		// the mount rotation so it flips the barrel up around the hand, wherever the sculpt's axes point).
 		if ( _world.IsValid() )
 		{
-			_world.LocalPosition = HandOffset;
-			_world.LocalRotation = RotationOffset.ToRotation();
+			_worldKick = _worldKick < 0.001f ? 0f : _worldKick * MathF.Exp( -WorldKickRecover * MathF.Min( Time.Delta, 0.1f ) );
+			_world.LocalPosition = HandOffset + new Vector3( -WorldKickBack * _worldKick, 0f, 0f );
+			_world.LocalRotation = new Angles( -WorldKickUp * _worldKick, 0f, 0f ).ToRotation() * RotationOffset.ToRotation();
 		}
 
 		if ( _worldSdf.IsValid() )
@@ -297,17 +334,16 @@ public sealed class HunterGun : Component
 						_viewSdf.Material = ViewMaterial;
 				}
 
-				// Spring targets: where a rigid gun would be this frame (bob folds into the position
-				// target, so the springs soften it a touch on the way through — free secondary motion).
-				// The position spring tracks the PIVOT point (grip), and the rotation lag swings the gun
-				// AROUND that sprung pivot — so the hand stays planted while the muzzle sweeps.
+				// The rigid mount (offset + bob), with the recoil spring's aim-space offset riding on
+				// top of the PIVOT point (grip); the rotation lag swings the gun AROUND that pivot —
+				// so the hand stays planted while the muzzle sweeps.
 				var targetPos = eye + aimRot * ( ViewOffset + UpdateBob() );
-				UpdateViewSprings( targetPos, aimRot );
+				UpdateViewSprings( aimRot );
 
-				// Strength scales the RENDERED lag, not the simulation — the spring's character (speed,
-				// bounce) is untouched, only how much of its error shows. Rotation lag scales in angle
-				// space (small + clamped, so per-component scaling is safe).
-				var pivotPos = targetPos + ( _springPos - targetPos ) * PositionStrength;
+				// Strength scales the RENDERED effect, not the simulation — the spring's character
+				// (speed, bounce) is untouched, only how much of its offset shows. Rotation lag scales
+				// in angle space (small + clamped, so per-component scaling is safe).
+				var pivotPos = targetPos + aimRot * ( _recoilPos * PositionStrength );
 				var lagAngles = ( aimRot.Inverse * _springRot ).Angles();
 				var lagRot = aimRot * Rotation.From( new Angles(
 					lagAngles.pitch * RotationStrength,
@@ -323,6 +359,28 @@ public sealed class HunterGun : Component
 				_motionSeeded = false; // next first-person frame re-seeds instead of twanging from stale state
 			}
 		}
+	}
+
+	/// <summary>One shot's recoil — called on EVERY machine from the shot RPC (the camera's own punch is
+	/// separate, HunterController's ShotKick). The world model starts its decaying hand jolt everywhere;
+	/// the viewmodel takes a velocity impulse into its live springs (owner-side only — elsewhere the
+	/// springs are dormant and reseed on the next first-person frame, which would wipe it anyway).</summary>
+	public void Kick()
+	{
+		_worldKick = 1f;
+
+		if ( !_motionSeeded )
+			return;
+
+		// Impulses sized so the PEAK excursion lands near the property value at critical damping
+		// (x(t) = v·t·e^(−ωt) peaks at v/(e·ω), ω = √k) — retuning a spring keeps the throw and only
+		// changes the ride. The position impulse is aim-space −x = straight back at the camera;
+		// negative pitch rate = muzzle up, same convention as the camera punch.
+		if ( PositionStiffness > 0f && KickBack > 0f )
+			_recoilVel += new Vector3( -KickBack * MathF.E * MathF.Sqrt( PositionStiffness ), 0f, 0f );
+
+		if ( RotationStiffness > 0f && KickUp > 0f )
+			_angVel += new Vector3( -KickUp * MathF.E * MathF.Sqrt( RotationStiffness ), 0f, 0f );
 	}
 
 	// Walk bob, as an AIM-SPACE offset added to ViewOffset. Runs only on the owner's first-person frames.
@@ -359,28 +417,24 @@ public sealed class HunterGun : Component
 			MathF.Sin( _bobPhase * 2f ) * 0.45f ) * ( BobAmount * _bobBlend );
 	}
 
-	// The two Hooke springs (F = k·error − c·velocity, mass 1), tracking WORLD-space targets — that's
-	// what makes lag exist: the gun is left behind by real motion and pulled back in. Position damping is
-	// measured against the TARGET's velocity (finite-differenced), so tracking a constant-velocity target
-	// (steady running) settles to zero error — only accelerations displace the gun. Rotation damping is
-	// absolute, so a steady turn holds a steady lag angle (the classic loose-gimbal look). Integrated
-	// semi-implicitly in fixed ≤1/120s substeps: stability is independent of frame rate for any stiffness
-	// the sliders allow.
-	void UpdateViewSprings( Vector3 targetPos, Rotation targetRot )
+	// The two Hooke springs (F = k·error − c·velocity, mass 1). The ROTATION spring tracks the WORLD aim —
+	// that's what makes lag exist: the gun is left behind by real turns and pulled back in; its damping is
+	// absolute, so a steady turn holds a steady lag angle (the classic loose-gimbal look). The POSITION
+	// spring is a LOCAL aim-space offset resting at zero: look/movement can't displace it, only Kick()'s
+	// impulses do, and it just rings back down — pure recoil, no view lag. Integrated semi-implicitly in
+	// fixed ≤1/120s substeps: stability is independent of frame rate for any stiffness the sliders allow.
+	void UpdateViewSprings( Rotation targetRot )
 	{
 		if ( !_motionSeeded )
 		{
 			_motionSeeded = true;
-			_springPos = targetPos;
-			_springVel = Vector3.Zero;
-			_lastTarget = targetPos;
+			_recoilPos = Vector3.Zero;
+			_recoilVel = Vector3.Zero;
 			_springRot = targetRot;
 			_angVel = Vector3.Zero;
 		}
 
 		float frame = MathF.Min( Time.Delta, 0.1f );
-		var targetVel = frame > 0f ? (targetPos - _lastTarget) / frame : Vector3.Zero;
-		_lastTarget = targetPos;
 
 		// Stiffness 0 = that spring is off -> rigid attach.
 		bool posRigid = PositionStiffness <= 0f;
@@ -392,9 +446,8 @@ public sealed class HunterGun : Component
 
 			if ( !posRigid )
 			{
-				_springVel += ( ( targetPos - _springPos ) * PositionStiffness
-					- ( _springVel - targetVel ) * PositionDamping ) * h;
-				_springPos += _springVel * h;
+				_recoilVel -= ( _recoilPos * PositionStiffness + _recoilVel * PositionDamping ) * h;
+				_recoilPos += _recoilVel * h;
 			}
 
 			if ( !rotRigid )
@@ -409,21 +462,20 @@ public sealed class HunterGun : Component
 		}
 
 		if ( posRigid )
-			_springPos = targetPos;
+			_recoilPos = Vector3.Zero;
 		if ( rotRigid )
 			_springRot = targetRot;
 
 		// Sanity bounds: a hitch or an extreme tuning can't leave the gun across the screen or facing
 		// backwards — clamp the ERROR, keep the velocity (the spring still animates from the clamp).
-		var offset = _springPos - targetPos;
-		if ( offset.Length > 15f )
-			_springPos = targetPos + offset.Normal * 15f;
+		if ( _recoilPos.Length > MaxPositionLag )
+			_recoilPos = _recoilPos.Normal * MaxPositionLag;
 
 		var lag = ( targetRot.Inverse * _springRot ).Angles();
 		var lagV = new Vector3( lag.pitch, lag.yaw, lag.roll );
-		if ( lagV.Length > 25f )
+		if ( lagV.Length > MaxRotationLag )
 		{
-			lagV = lagV.Normal * 25f;
+			lagV = lagV.Normal * MaxRotationLag;
 			_springRot = targetRot * Rotation.From( new Angles( lagV.x, lagV.y, lagV.z ) );
 		}
 	}

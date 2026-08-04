@@ -103,6 +103,9 @@
           "__guid": "78cae762-6722-4126-b78e-5cd5b6c371ec",
           "__enabled": true,
           "Flags": 0,
+          "AuthoredBlurSize": 6.329114,
+          "AuthoredFocalDistance": 704.9367,
+          "AuthoredFocusRange": 616.03375,
           "BlurReferenceHeight": 1080,
           "DepthOfField": {
             "_type": "component",
@@ -733,7 +736,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f05fb3c4-e576-4e38-8f16-17f00c290e9a"
+              "$blob": "e92d380e-9eee-4877-8305-f9bb0e34414d"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -789,7 +792,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "2319b4e8-0731-4fdc-a0cf-65da1a2d7468"
+              "$blob": "88b442f8-c198-4c29-96c3-4f212829421d"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -845,7 +848,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "ab22ff8c-f76c-486f-a949-9a45690a494e"
+              "$blob": "a8942cec-25e9-4b70-8bff-22c37d16eaa9"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -901,7 +904,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "6d53a537-1ba0-40a9-a835-3c26bf7c8bb4"
+              "$blob": "aea2c115-2614-456f-bf31-0fd57100b479"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -957,7 +960,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "96f69664-53a6-48aa-a511-9d3506f32e08"
+              "$blob": "061f2ffb-ee80-4f29-9e48-2df4b9653d5e"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"

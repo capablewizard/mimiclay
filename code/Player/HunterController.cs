@@ -52,6 +52,41 @@ public sealed class HunterController : Component
 	/// darker than the clay reads as scorched/fresh-cut material.</summary>
 	[Property, Group( "Weapon" )] public Color CarveColor { get; set; } = new( 0.42f, 0.26f, 0.2f );
 
+	/// <summary>Recoil: degrees the shooter's own view kicks up per shot. Render-only (a CameraEffectSystem
+	/// punch composed into the view, never the camera transform) — the actual aim never moves, so holding
+	/// the crosshair on a prop through the kick still hits. 0 = no kick.</summary>
+	[Property, Group( "Recoil" ), Range( 0f, 10f )] public float ShotKick { get; set; } = 2f;
+
+	/// <summary>Random sideways lean per shot, as a fraction of <see cref="ShotKick"/> — so back-to-back
+	/// shots don't look machined. 0 = dead straight up every time.</summary>
+	[Property, Group( "Recoil" ), Range( 0f, 1f )] public float ShotKickYawJitter { get; set; } = 0.2f;
+
+	/// <summary>Seconds the kick takes to settle back to rest.</summary>
+	[Property, Group( "Recoil" ), Range( 0.05f, 1f )] public float ShotKickTime { get; set; } = 0.25f;
+
+	/// <summary>How springy the return is: ~0.5 kicks up and eases straight back down, 1 overshoots once,
+	/// higher wobbles. (The engine punch oscillates ~1.5× this many times over <see cref="ShotKickTime"/>.)</summary>
+	[Property, Group( "Recoil" ), Range( 0.25f, 3f )] public float ShotKickBounce { get; set; } = 1f;
+
+	/// <summary>Degrees of FOV punch riding the kick — positive widens the view for a blink (reads as the
+	/// gun shoving you back), negative zooms in. 0 = none.</summary>
+	[Property, Group( "Recoil" ), Range( -20f, 20f )] public float ShotKickFov { get; set; } = 0f;
+
+	/// <summary>Range (world units) of the shake OTHER players feel from this gun — full strength at the
+	/// shooter fading to nothing at this distance, on every machine (a gunshot is public information,
+	/// rattling nearby props included). 0 = no shake.</summary>
+	[Property, Group( "Shot Shake" )] public float ShotShakeRadius { get; set; } = 500f;
+
+	/// <summary>Camera throw (world units) of that shake at point blank.</summary>
+	[Property, Group( "Shot Shake" ), Range( 0f, 8f )] public float ShotShakeAmplitude { get; set; } = 2.5f;
+
+	/// <summary>Direction changes per second — low is a slow lurch (distant artillery), high is a sharp
+	/// rattle (gunfire next to your ear).</summary>
+	[Property, Group( "Shot Shake" ), Range( 1f, 100f )] public float ShotShakeFrequency { get; set; } = 40f;
+
+	/// <summary>Seconds the rattle takes to die out.</summary>
+	[Property, Group( "Shot Shake" ), Range( 0.05f, 2f )] public float ShotShakeTime { get; set; } = 0.4f;
+
 
 	// Owner-side gate: the next moment a shot is allowed.
 	TimeUntil _nextShot;
@@ -127,6 +162,11 @@ public sealed class HunterController : Component
 	/// the look direction is visible on remote clients (the capsule body parts are static children of the root).
 	/// Optional — leave unset to skip.</summary>
 	[Property, Group( "Debug" )] public GameObject Eyes { get; set; }
+
+	/// <summary>How far below the eye the head object is parked. The Head's origin is its rotation pivot and sits
+	/// at the NECK (the sculpture's brushes are authored +16 above the origin), so the head pitches around the neck
+	/// rather than its centre. This drop keeps the neck fixed at eye − 16 while the camera eye stays untouched.</summary>
+	[Property, Group( "Debug" )] public float NeckDrop { get; set; } = 16f;
 
 	PlayerController _controller;
 	ModelRenderer[] _bodyRenderers;
@@ -300,7 +340,10 @@ public sealed class HunterController : Component
 		// first person — step at the physics tick rate against the now-gliding camera.
 		if ( Eyes.IsValid() && _controller.IsValid() )
 		{
-			Eyes.WorldPosition = eye;
+			// Parked at the NECK, not the eye: the head sculpture's origin is its neck pivot (brushes authored
+			// +NeckDrop above it), so dropping the object here keeps the head visual where it always was while
+			// pitch swings it around the neck. World-space drop, not eye-relative — the neck is the fixed point.
+			Eyes.WorldPosition = eye + Vector3.Up * -NeckDrop;
 			Eyes.WorldRotation = _controller.EyeAngles.ToRotation();
 		}
 
@@ -650,9 +693,17 @@ public sealed class HunterController : Component
 
 		_nextShot = ShootCooldown;
 
-		// Every machine plays the bang (the RPC also runs locally). The EVENT is what's broadcast — each
-		// machine plays its own prefab-authored ShootSound, so no asset reference crosses the wire.
-		BroadcastShotSound();
+		// Every machine plays the bang and nearby cameras rattle (the RPC also runs locally). The EVENT is
+		// what's broadcast — each machine plays its own prefab-authored ShootSound, so no asset reference
+		// crosses the wire.
+		BroadcastShotEffects();
+
+		// Recoil for the shooter. Owner-side only — proxies feel this shot through the epicenter shake in
+		// the RPC instead.
+		if ( ShotKick > 0f )
+			Scene.Camera?.AddPunch(
+				new Angles( -ShotKick, Game.Random.Float( -ShotKickYawJitter, ShotKickYawJitter ) * ShotKick, 0f ),
+				frequency: ShotKickBounce, duration: ShotKickTime, fovAmplitude: ShotKickFov );
 
 		// CENTRAL pellet: exactly the crosshair ray, full carve size, and the ONLY pellet that counts for
 		// catching props — hit registration must never depend on a random scatter roll.
@@ -695,18 +746,24 @@ public sealed class HunterController : Component
 		}
 	}
 
+	// Both gun rays HitTriggers(): hunter heads are TRIGGER colliders (SdfCollider.BuildAsTrigger — physically
+	// contactless, bullet-visible only), so without it a shot could never land on a face. The WithoutTags guard
+	// keeps actual volume triggers bullet-transparent — any map trigger volume must carry the "trigger" (or
+	// "water") tag or it will eat shots.
 	SceneTraceResult TraceShot( Vector3 from, Vector3 dir ) => Scene.Trace
 		.Ray( from, from + dir * Range )
 		.IgnoreGameObjectHierarchy( GameObject )
+		.HitTriggers()
+		.WithoutTags( "trigger", "water" )
 		.Run();
 
 	// The GameObject tag on invisible MOVEMENT colliders (the hunter's capsule) that the carve trace sees
 	// through: the capsule fully encloses the sculpted head, so the gameplay trace always stops on it and a
-	// carve aimed at a face would never reach the head's own collider. The head's collider is the inverse:
-	// tagged "headcollider" with a default-Ignore collision rule (ProjectSettings/Collision.config), so it
-	// never physically collides with anything — it exists ONLY for these traces, which see it because plain
-	// scene traces don't apply collision rules (only WithCollisionRules opts in; the engine PlayerController's
-	// movement traces do, so movement ignores heads too).
+	// carve aimed at a face would never reach the head's own collider. The head's own collider is the inverse:
+	// a trigger (see SdfCollider.BuildAsTrigger), so it never physically collides with the world or blocks
+	// anyone — it exists ONLY for these traces, which opt in via HitTriggers(). Its "headcollider" tag +
+	// default-Ignore collision rule (ProjectSettings/Collision.config) stay on top of that to suppress even
+	// trigger-touch events as it sweeps through walls and players.
 	const string MoveColliderTag = "movecollider";
 
 	// How far past the gameplay hit the carve trace may land and still carve. Covers "the face is a little
@@ -720,7 +777,8 @@ public sealed class HunterController : Component
 		var tr = Scene.Trace
 			.Ray( from, from + dir * Range )
 			.IgnoreGameObjectHierarchy( GameObject )
-			.WithoutTags( MoveColliderTag )
+			.HitTriggers()
+			.WithoutTags( MoveColliderTag, "trigger", "water" )
 			.Run();
 
 		if ( tr.Hit && tr.Distance <= blockDistance + CarvePassDepth )
@@ -856,8 +914,19 @@ public sealed class HunterController : Component
 	// plays flat 2D (SpacialBlend 0): spatializing your own shot against your own head panned/attenuated
 	// it oddly — the classic FPS split is punchy 2D for the local player, positioned 3D for everyone else.
 	[Rpc.Broadcast]
-	void BroadcastShotSound()
+	void BroadcastShotEffects()
 	{
+		// The gun models buck — the viewmodel through its springs (owner), the world model's hand jolt
+		// (everyone). Lives on the RPC so proxies see remote hunters' guns recoil too.
+		if ( _gun.IsValid() )
+			_gun.Kick();
+
+		// Everyone NEAR the shot feels it, falling off with distance from the shooter — a prop hiding by a
+		// hunter gets rattled. The shooter is excluded (IsProxy): they get the recoil punch in Shoot instead,
+		// and stacking both reads as double vision.
+		if ( IsProxy && ShotShakeRadius > 0f && ShotShakeAmplitude > 0f )
+			CameraEffectSystem.Get( Scene )?.AddShake( WorldPosition, ShotShakeRadius, ShotShakeAmplitude, ShotShakeFrequency, ShotShakeTime );
+
 		if ( ShootSound is null )
 			return;
 

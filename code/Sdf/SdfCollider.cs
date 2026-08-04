@@ -26,6 +26,12 @@ public sealed class SdfCollider : Component
 	/// <see cref="SdfCollisionBuilder.ComputeFootPoints"/> and <see cref="FootPoints"/>.</summary>
 	[Property, Range( 4f, 32f )] public float FootProbeSpacing { get; set; } = 12f;
 
+	/// <summary>Build the collider as a TRIGGER instead of a solid: it generates no physical contacts (never
+	/// blocks or pushes anything), but the gun's rays still hit it because they opt in with HitTriggers().
+	/// The hunter head's mode — its collider exists purely for bullet hit detection. Default off: disguises,
+	/// decoys and world props stay exactly as solid as they look.</summary>
+	[Property] public bool BuildAsTrigger { get; set; }
+
 	// Sculpture-local footprint snapshot (underside contact points), refreshed with the collider. Used by the
 	// player controller for multi-point ground checks. Decoupled from the collider build (see Rebuild) so a
 	// problem computing it can never stop the sculpture from being solid.
@@ -76,6 +82,7 @@ public sealed class SdfCollider : Component
 
 		var collider = GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
+		collider.IsTrigger = BuildAsTrigger;
 		collider.Enabled = model is not null;
 
 		// Footprint snapshot for ground probes — computed AFTER the collider is fully set up, and guarded, so a
@@ -110,7 +117,20 @@ public sealed class SdfCollider : Component
 		{
 			var mc = c.GameObject.Components.Get<ModelCollider>();
 			Log.Info( $"  {c.GameObject.Name}: tags=[{string.Join( ",", c.GameObject.Tags.TryGetAll() )}] " +
-				$"collider={(mc.IsValid() && mc.Enabled ? "enabled" : "off")}" );
+				$"collider={(mc.IsValid() && mc.Enabled ? "enabled" : "off")} " +
+				$"trigger={(mc.IsValid() && mc.IsTrigger)}" );
+		}
+
+		// The native contact filter runs on PHYSICS SHAPE tags, not GameObject tags — dump what each pawn
+		// rigidbody's shapes are actually stamped with, so a tag that never reached the shape shows up here.
+		foreach ( var rb in scene.GetAllComponents<Rigidbody>() )
+		{
+			if ( !rb.PhysicsBody.IsValid() )
+				continue;
+
+			Log.Info( $"  body \"{rb.GameObject.Name}\" ({rb.PhysicsBody.BodyType}):" );
+			foreach ( var shape in rb.PhysicsBody.Shapes )
+				Log.Info( $"    shape tags=[{string.Join( ",", shape.Tags.TryGetAll() )}] trigger={shape.IsTrigger}" );
 		}
 	}
 }
