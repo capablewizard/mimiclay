@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
 
 namespace Mimiclay;
 
@@ -136,7 +139,7 @@ public sealed class SdfNetworkSync : Component
 			return;
 
 		Seq = ++_sendSeq;
-		Data = SdfSculpture.SerializeBrushes( Target.Brushes );
+		Data = Pack( SdfSculpture.SerializeBrushes( Target.Brushes ) );
 		_streamCache = null; // the commit is the new baseline; the next drag re-seeds the diff
 	}
 
@@ -160,7 +163,7 @@ public sealed class SdfNetworkSync : Component
 		if ( _streamCache is null || _streamCache.Count != brushes.Count )
 		{
 			RefreshStreamCache( brushes );
-			Stream( ++_sendSeq, SdfSculpture.SerializeBrushes( brushes ) );
+			Stream( ++_sendSeq, Pack( SdfSculpture.SerializeBrushes( brushes ) ) );
 			return;
 		}
 
@@ -181,14 +184,14 @@ public sealed class SdfNetworkSync : Component
 		// Lots changed at once (a load, a palette applied across brushes) → the full list is cheaper than a delta.
 		if ( changed.Count > Math.Max( 1, brushes.Count / 3 ) )
 		{
-			Stream( ++_sendSeq, SdfSculpture.SerializeBrushes( brushes ) );
+			Stream( ++_sendSeq, Pack( SdfSculpture.SerializeBrushes( brushes ) ) );
 			return;
 		}
 
 		var subset = new List<SdfBrush>( changed.Count );
 		foreach ( var i in changed )
 			subset.Add( brushes[i] );
-		StreamDelta( ++_sendSeq, brushes.Count, string.Join( ',', changed ), SdfSculpture.SerializeBrushes( subset ) );
+		StreamDelta( ++_sendSeq, brushes.Count, string.Join( ',', changed ), Pack( SdfSculpture.SerializeBrushes( subset ) ) );
 	}
 
 	void RefreshStreamCache( List<SdfBrush> brushes )
@@ -223,7 +226,7 @@ public sealed class SdfNetworkSync : Component
 		if ( current is null || current.Count != brushCount )
 			return;
 
-		var subset = SdfSculpture.DeserializeBrushes( data );
+		var subset = SdfSculpture.DeserializeBrushes( Unpack( data ) );
 		if ( subset is null )
 			return;
 
@@ -266,7 +269,7 @@ public sealed class SdfNetworkSync : Component
 		if ( !Target.IsValid() || seq <= _appliedSeq )
 			return;
 
-		var brushes = SdfSculpture.DeserializeBrushes( data );
+		var brushes = SdfSculpture.DeserializeBrushes( Unpack( data ) );
 		if ( brushes is null )
 			return;
 
@@ -368,5 +371,46 @@ public sealed class SdfNetworkSync : Component
 		foreach ( var b in brushes )
 			copy.Add( b.Copy() );
 		return copy;
+	}
+
+	// ── Wire encoding ─────────────────────────────────────────────────────────────────────────────────────
+	// Brush JSON is ~500 bytes/brush, most of it field names repeated per brush — the ideal gzip case — so
+	// every payload this component sends (the [Sync] commit snapshot, live Stream frames, StreamDelta subsets)
+	// is gzip+base64'd: ~4-6× smaller even after base64's 4/3 inflation. This is what made raising the brush
+	// cap to 128 affordable — the commit payload scales linearly with the cap. Wire-format only: .sculpt saves
+	// and everything else keep using SerializeBrushes' plain JSON. Unpack auto-detects a plain-JSON payload
+	// (it starts with '['), so a mixed-version peer or a legacy snapshot still applies.
+	static string Pack( string json )
+	{
+		if ( string.IsNullOrEmpty( json ) )
+			return json;
+
+		var raw = Encoding.UTF8.GetBytes( json );
+		using var ms = new MemoryStream();
+		using ( var gz = new GZipStream( ms, CompressionLevel.Fastest, leaveOpen: true ) )
+			gz.Write( raw, 0, raw.Length );
+		return Convert.ToBase64String( ms.ToArray() );
+	}
+
+	static string Unpack( string data )
+	{
+		if ( string.IsNullOrEmpty( data ) )
+			return data;
+
+		if ( data[0] == '[' )
+			return data; // plain JSON brush list (legacy / mixed-version peer)
+
+		try
+		{
+			var bytes = Convert.FromBase64String( data );
+			using var ms = new MemoryStream( bytes );
+			using var gz = new GZipStream( ms, CompressionMode.Decompress );
+			using var reader = new StreamReader( gz, Encoding.UTF8 );
+			return reader.ReadToEnd();
+		}
+		catch
+		{
+			return null; // malformed payload → callers treat like any bad frame (ignore, keep standing shape)
+		}
 	}
 }

@@ -83,95 +83,7 @@
       "Children": []
     },
     {
-      "__guid": "00344a8c-fa5e-45ae-b12a-10bb781a1dc3",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "2D Skybox",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "skybox",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.SkyBox2D",
-          "__guid": "de79e9e0-5c37-4c54-ac67-bfcdb1d5483b",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "SkyIndirectLighting": true,
-          "SkyMaterial": "materials/skybox/skybox_overcast_01.vmat",
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.EnvmapProbe",
-          "__guid": "f3e304db-baab-4c1a-a4ec-8442585c2d62",
-          "__enabled": false,
-          "Flags": 0,
-          "__version": 1,
-          "BakedTexture": null,
-          "Bounds": {
-            "Mins": "-512,-512,-512",
-            "Maxs": "1465.56128,1864.24036,512"
-          },
-          "DelayBetweenUpdates": 0.1,
-          "Feathering": 0.02,
-          "FrameInterval": 5,
-          "MaxDistance": 512,
-          "Mode": "Realtime",
-          "MultiBounce": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Priority": 0,
-          "Projection": "Sphere",
-          "RenderExcludeTags": "",
-          "Resolution": "Small",
-          "Texture": "textures/cubemaps/default2.vtex",
-          "TintColor": "1,1,1,1",
-          "UpdateStrategy": "OnEnabled",
-          "ZFar": 4096,
-          "ZNear": 16
-        },
-        {
-          "__type": "Sandbox.CubemapFog",
-          "__guid": "907bc83b-0da1-4d17-9716-65d0d161c6e4",
-          "__enabled": true,
-          "Flags": 0,
-          "Blur": 0.5,
-          "EndDistance": 4096.5,
-          "FalloffExponent": 1.7266634,
-          "HeightExponent": 2,
-          "HeightStart": 2000,
-          "HeightWidth": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Sky": "materials/skybox/skybox_overcast_01.vmat",
-          "StartDistance": 87.52665,
-          "Tint": "1,1,1,1"
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
+      "__guid": "cd9038d2-6d9b-4518-b25c-373e9c5276a4",
       "__version": 2,
       "Flags": 0,
       "Name": "Camera",
@@ -188,18 +100,19 @@
       "Components": [
         {
           "__type": "Mimiclay.MainCamera",
-          "__guid": "42ff365a-a35f-4d34-a38c-b4bc7813ea30",
+          "__guid": "78cae762-6722-4126-b78e-5cd5b6c371ec",
           "__enabled": true,
           "Flags": 0,
           "BlurReferenceHeight": 1080,
           "DepthOfField": {
             "_type": "component",
-            "component_id": "30da5074-073e-4be5-9ce7-adc264496667",
-            "go": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
+            "component_id": "0b079224-544b-4d22-91b7-6c88cff8e66e",
+            "go": "cd9038d2-6d9b-4518-b25c-373e9c5276a4",
             "component_type": "DepthOfField"
           },
           "EnableDepthOfFieldOnStart": true,
           "FocusLerpSpeed": 30,
+          "FovLerpSpeed": 0,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -209,13 +122,13 @@
         },
         {
           "__type": "Sandbox.CameraComponent",
-          "__guid": "cf3cbf96-22b6-4be4-a5d0-672a96c17f9f",
+          "__guid": "3ce4e8f8-076c-49b4-aa85-60c1ccce61f9",
           "__enabled": true,
           "Flags": 0,
           "BackgroundColor": "0.40744,0.59419,0.67907,1",
           "ClearFlags": "All",
           "EnablePostProcessing": true,
-          "FieldOfView": 60,
+          "FieldOfView": 90,
           "FovAxis": "Horizontal",
           "IsMainCamera": true,
           "OnComponentDestroy": null,
@@ -234,11 +147,11 @@
           "TargetEye": "None",
           "Viewport": "0,0,1,1",
           "ZFar": 10000,
-          "ZNear": 10
+          "ZNear": 5
         },
         {
           "__type": "Sandbox.Bloom",
-          "__guid": "d73ef723-c888-41d4-802e-f797c79318be",
+          "__guid": "bb5621b5-45fc-4896-be6c-14d43af27227",
           "__enabled": false,
           "Flags": 0,
           "__version": 1,
@@ -257,7 +170,7 @@
         },
         {
           "__type": "Sandbox.Tonemapping",
-          "__guid": "9d76f362-7227-40eb-a189-69353c780c46",
+          "__guid": "96ba25ea-002f-4b8b-b47f-ed295da7276b",
           "__enabled": true,
           "Flags": 0,
           "__version": 3,
@@ -277,7 +190,7 @@
         },
         {
           "__type": "Sandbox.Sharpen",
-          "__guid": "0bffee5e-19f2-41c4-88f9-faefbcce6bf4",
+          "__guid": "5a6dcd1c-e869-475a-a3a4-e6bd3ab8ebfd",
           "__enabled": true,
           "Flags": 0,
           "OnComponentDestroy": null,
@@ -291,7 +204,7 @@
         },
         {
           "__type": "Sandbox.Highlight",
-          "__guid": "31b8ac90-0d7f-472e-8285-bd5ab6f1f806",
+          "__guid": "14aa40b5-acc7-4fa9-91eb-1aef522d56d7",
           "__enabled": true,
           "Flags": 0,
           "OnComponentDestroy": null,
@@ -303,7 +216,7 @@
         },
         {
           "__type": "Sandbox.ChromaticAberration",
-          "__guid": "9056b9b1-e13b-4446-8b3b-a1bfa36b3922",
+          "__guid": "b0ab8f25-4496-451d-aea4-3ee241690abc",
           "__enabled": true,
           "Flags": 0,
           "Offset": "6,2,4",
@@ -317,7 +230,7 @@
         },
         {
           "__type": "Sandbox.ColorAdjustments",
-          "__guid": "98ae7904-8920-49c6-a712-7832342cad6f",
+          "__guid": "a5d2f78d-553b-4ce4-98c0-cbad10635232",
           "__enabled": true,
           "Flags": 0,
           "Blend": 1,
@@ -334,25 +247,25 @@
         },
         {
           "__type": "Sandbox.AmbientOcclusion",
-          "__guid": "e0d6bea7-d835-415a-86cd-0d2a68436e01",
+          "__guid": "71f1f533-2f52-459e-bad0-fb37408d0385",
           "__enabled": true,
           "Flags": 0,
           "__version": 1,
-          "FalloffRange": 0.3,
-          "Intensity": 0.8,
+          "FalloffRange": 0.6957561,
+          "Intensity": 1,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Radius": 100,
+          "Radius": 45,
           "ThinCompensation": 1
         },
         {
           "__type": "Sandbox.DepthOfField",
-          "__guid": "30da5074-073e-4be5-9ce7-adc264496667",
-          "__enabled": true,
+          "__guid": "0b079224-544b-4d22-91b7-6c88cff8e66e",
+          "__enabled": false,
           "Flags": 0,
           "BackBlur": true,
           "BlurSize": 6.329114,
@@ -365,6 +278,94 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "e3349763-9294-4baa-b2fb-c7ab03009c53",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "2D Skybox",
+      "Position": "6.35498047,0,184.734558",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "skybox",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkyBox2D",
+          "__guid": "a99d40cd-2bdb-476b-923d-bf5290363595",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "SkyIndirectLighting": true,
+          "SkyMaterial": "materials/skybox/skybox_day_01.vmat",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.CubemapFog",
+          "__guid": "40ba5d1e-ca76-4f16-ad75-ff19c33f803c",
+          "__enabled": true,
+          "Flags": 0,
+          "Blur": 0,
+          "EndDistance": 6000,
+          "FalloffExponent": 1,
+          "HeightExponent": 2,
+          "HeightStart": 2000,
+          "HeightWidth": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Sky": "materials/skybox/skybox_day_01.vmat",
+          "StartDistance": 800,
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.EnvmapProbe",
+          "__guid": "6f875215-779a-450b-883a-3f7271fa5391",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 1,
+          "BakedTexture": "scenes/lobby_scene_data/envmap/bake_6f875215-779a-450b-883a-3f7271fa5391.vtex",
+          "Bounds": {
+            "Mins": "-1038.05835,-1064.65027,-219.061935",
+            "Maxs": "763.443054,936.406433,332.608093"
+          },
+          "DelayBetweenUpdates": 0.1,
+          "Feathering": 0.02,
+          "FrameInterval": 5,
+          "MaxDistance": 512,
+          "Mode": "Baked",
+          "MultiBounce": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Priority": 0,
+          "Projection": "Sphere",
+          "RenderExcludeTags": "",
+          "Resolution": "Huge",
+          "Texture": "textures/cubemaps/default2.vtex",
+          "TintColor": "1,1,1,1",
+          "UpdateStrategy": "OnEnabled",
+          "ZFar": 4096,
+          "ZNear": 16
         }
       ],
       "Children": []
@@ -731,7 +732,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "fc625f3a-16c4-462f-adb8-2e9219154d58"
+              "$blob": "2ad26054-ba98-4bbb-bf21-d8e036b66b32"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -787,7 +788,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "be7213a9-dcb1-4ec1-8e9f-94a16f491b11"
+              "$blob": "79f8c99b-3e5c-4042-9dff-d73fcfd887a3"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -843,7 +844,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "4a565d98-2ae3-4cf5-82dc-5fe83b6fd2f6"
+              "$blob": "c30512c1-6f5a-4497-b0e9-896ec43e8ec7"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -899,7 +900,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "be3b20b1-7cc9-4679-a010-e22a0ad7efb8"
+              "$blob": "cee2b0ab-6e6a-40ae-8c61-89b16d96cd83"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -955,7 +956,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f5255e32-46e2-405a-81fb-cb0ab24aa04e"
+              "$blob": "29611b5e-1aeb-4615-b9e3-eb71238b72ec"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"

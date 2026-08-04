@@ -397,10 +397,14 @@ public sealed class SdfFieldGpu
 public static class SdfBrushPacker
 {
 	/// <summary>The hard cap on brushes one sculpture can render — the GPU brush texture's size. THE canonical
-	/// limit: <see cref="SdfSculpture.AddBrush"/> refuses past it and <see cref="SdfNetworkSync"/> rejects
-	/// oversized payloads, because a brush past the cap is silently NOT packed — the raymarched shape would
-	/// diverge from the meshed/collision/networked shape with no warning.</summary>
-	public const int MaxBrushes = 64;
+	/// limit: <see cref="SdfSculpture.AddBrush"/> refuses past it, shot carving skips at it, and
+	/// <see cref="SdfNetworkSync"/> rejects oversized payloads, because a brush past the cap is silently NOT
+	/// packed — the raymarched shape would diverge from the meshed/collision/networked shape with no warning.
+	/// Was 64; raised to 128 (headroom for shot carving on sculpted disguises) once the sync payloads were
+	/// gzip'd — the commit snapshot scales linearly with this cap and was the binding constraint. The other
+	/// linear costs (per-edit field/mesh/collider rebuild, the per-pixel colour loop) grow with ACTUAL brush
+	/// count, not the cap, and the per-brush AABB cull keeps small carve spheres cheap.</summary>
+	public const int MaxBrushes = 128;
 
 	/// <summary>Cap on spline control points pooled across all spline brushes of one sculpture (GPU pool size).</summary>
 	public const int MaxSplinePoints = 256;
