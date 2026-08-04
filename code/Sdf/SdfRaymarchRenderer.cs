@@ -102,15 +102,32 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// classify→alloc→fill passes.)</summary>
 	[Property, Group( "Distance Field" )] public bool SparseField { get; set; }
 
-	/// <summary>Runtime override (NOT authored): while true, skip field baking entirely and force the exact
-	/// per-brush analytic march, even if <see cref="UseFieldCache"/> is on. Set by <see cref="SdfNetworkSync"/>
-	/// on PROXIES during a remote live-drag — the per-frame sample interpolation would otherwise re-dispatch the
-	/// full field volume every frame (O(voxels × brushes) per remotely-edited prop, and every hider sculpts at
-	/// once in prep); the analytic loop follows the interpolated brushes for free since the brush data textures
-	/// repack per change anyway. Cleared on commit: the settled shape pays one field dispatch and returns to the
-	/// cached path. The OWNER's own edit session does NOT set this — locally there's only one edited prop, and
-	/// its per-change dispatch is the proven-cheap path. Static scene props never touch it.</summary>
-	public bool SuppressFieldCache { get; set; }
+	/// <summary>Runtime override (NOT authored — a [Property] would leak into network spawn snapshots): scales
+	/// <see cref="FieldResolution"/> for this prop's field bakes. Set below 1 by <see cref="SdfNetworkSync"/> on
+	/// PROXIES during a remote live-drag, where per-frame sample interpolation re-dispatches the field every
+	/// frame — cost scales with the CUBE, so 0.5 makes each dispatch 8× cheaper and a whole prep phase of
+	/// remote sculptors costs about one local edit. Reset to 1 on commit: the settled shape re-bakes once at
+	/// full resolution. The trade while below 1 is transient softness (small brushes melt at coarse voxels)
+	/// that snaps crisp on commit. This replaced the old SuppressFieldCache analytic fallback — the field path
+	/// now stays on for remote drags AND healing craters (SdfShrinkSystem), so the march cost never regresses
+	/// to O(brush count) per pixel.</summary>
+	public float FieldResolutionScale { get; set; } = 1f;
+
+	/// <summary>The resolution actually dispatched: <see cref="FieldResolution"/> × <see cref="FieldResolutionScale"/>,
+	/// floored at the property's own minimum so a tiny scale can't produce a degenerate volume.</summary>
+	int EffectiveFieldResolution => Math.Max( 8, (int)MathF.Round( FieldResolution * Math.Clamp( FieldResolutionScale, 0.05f, 1f ) ) );
+
+	/// <summary>Runtime override (NOT authored), the second live-drag lever beside <see cref="FieldResolutionScale"/>:
+	/// minimum seconds between field re-dispatches while the brushes are changing every frame. 0 (the default,
+	/// and every settled/locally-edited prop) = re-bake on every change. <see cref="SdfNetworkSync"/> sets it on
+	/// PROXIES during a remote live-drag so the bake cadence follows the ~20 Hz sample stream instead of the
+	/// frame rate — between bakes the marched surface holds the last baked shape, so the drag steps at stream
+	/// rate rather than gliding, which is exactly what it looked like before interpolation existed. A first
+	/// bake never waits (no field yet beats a fresh one), and the throttle self-heals: whenever it lapses with
+	/// the hash still stale, the next elapsed frame re-bakes the current shape.</summary>
+	public float FieldRebakeInterval { get; set; }
+
+	RealTimeSince _sinceFieldDispatch; // throttle clock for FieldRebakeInterval
 
 	/// <summary>Scale step count / epsilon down as the object shrinks on screen (a pure-SDF LOD —
 	/// distant props march far cheaper while staying raymarched). Quality floors below.</summary>
@@ -307,8 +324,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	// Live-edit field (Dreams "evaluator / CS of doom"): a per-instance volume re-evaluated on the GPU by a
 	// compute shader whenever the brushes change, so the march stays on D_FIELD_TEX instead of the analytic
-	// per-brush path — with no CPU eval and no upload. SuppressFieldCache skips this entirely (remote drags
-	// march analytically; see the property doc). Null when settled (shared bake).
+	// per-brush path — with no CPU eval and no upload. Remote drags re-dispatch every frame at a reduced
+	// resolution (FieldResolutionScale; see the property doc). Null when settled (shared bake).
 	SdfFieldGpu _fieldGpu;
 	int _lastFieldHash; // (brushes + resolution + sparse) hash of the last GPU dispatch — re-dispatch when it changes
 	bool _fieldOnlyHidden;   // FieldCacheOnly + no field ready this frame -> hide the surface (last-word visibility)
@@ -810,17 +827,22 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// and an edited one updates instantly. The shared CPU bake (SdfFieldBaker) is retired for now (see the note
 		// in that file); it can return later to share one texture across many identical clones if that's worth it.
 		_fieldReady = false;
-		if ( UseFieldCache && !SuppressFieldCache && _curCount > 0 && _curRadius > 0.01f )
+		if ( UseFieldCache && _curCount > 0 && _curRadius > 0.01f )
 		{
 			_fieldGpu ??= new SdfFieldGpu();
-			// Re-dispatch when anything the build depends on changes: the brushes, the resolution, OR the sparse
-			// toggle. Folding the field parameters into the hash means tweaking them in the inspector updates the
-			// field live, instead of only when a brush is moved.
-			int fieldHash = HashCode.Combine( Hash( brushes ), FieldResolution, SparseField );
-			if ( fieldHash != _lastFieldHash || !_fieldGpu.IsValid )
+			// Re-dispatch when anything the build depends on changes: the brushes, the resolution (including its
+			// live-drag scale), OR the sparse toggle. Folding the field parameters into the hash means tweaking
+			// them in the inspector updates the field live, instead of only when a brush is moved.
+			int res = EffectiveFieldResolution;
+			int fieldHash = HashCode.Combine( Hash( brushes ), res, SparseField );
+			if ( (fieldHash != _lastFieldHash || !_fieldGpu.IsValid)
+				&& (!_fieldGpu.IsValid || _sinceFieldDispatch >= FieldRebakeInterval) )
 			{
-				if ( _fieldGpu.Evaluate( brushes, _curLocalMins, _curLocalMaxs, FieldResolution, SparseField ) )
+				if ( _fieldGpu.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, SparseField ) )
+				{
 					_lastFieldHash = fieldHash;
+					_sinceFieldDispatch = 0f;
+				}
 			}
 			if ( _fieldGpu.IsValid )
 			{
@@ -855,7 +877,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// FieldCacheOnly: suppress the analytic march entirely. When the field path is active but nothing's
 		// ready yet (first build in flight), hide the surface this frame rather than revealing the brush loop —
 		// applied as the last word on visibility in OnUpdate/UpdateDistanceSwitch.
-		_fieldOnlyHidden = FieldCacheOnly && UseFieldCache && !SuppressFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
+		_fieldOnlyHidden = FieldCacheOnly && UseFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
 
 		if ( DebugLiveField )
 		{
@@ -863,7 +885,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			var fsz = valid ? (_fieldGpu.Maxs - _fieldGpu.Mins) : Vector3.Zero;
 			var psz = _curMaxs - _curMins;
 			bool ren = _so.IsValid() && _so.RenderingEnabled;
-			string st = $"[SDF live] suppress={SuppressFieldCache} valid={valid} ready={_fieldReady} hidden={_fieldOnlyHidden} render={ren} field={fsz} proxy={psz}";
+			string st = $"[SDF live] resScale={FieldResolutionScale} valid={valid} ready={_fieldReady} hidden={_fieldOnlyHidden} render={ren} field={fsz} proxy={psz}";
 			if ( st != _lastLiveDebug ) { _lastLiveDebug = st; Log.Info( st ); }
 		}
 

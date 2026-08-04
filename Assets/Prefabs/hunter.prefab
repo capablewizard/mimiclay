@@ -239,6 +239,8 @@
         "__enabled": true,
         "Flags": 0,
         "Interpolate": true,
+        "LiveDragBakeInterval": 0.05,
+        "LiveDragFieldScale": 0.5,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,

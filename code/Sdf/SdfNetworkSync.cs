@@ -39,6 +39,22 @@ public sealed class SdfNetworkSync : Component
 	/// instead of snapping. Owner-local authoring is unaffected. Off = snap on every sample.</summary>
 	[Property] public bool Interpolate { get; set; } = true;
 
+	/// <summary>Field-cache resolution multiplier applied on PROXIES while a remote live-drag streams in — the
+	/// interpolated shape re-bakes its field every frame, and bake cost scales with the CUBE of resolution, so
+	/// 0.5 makes each of those bakes 8× cheaper (a whole prep phase of remote sculptors ≈ one local edit).
+	/// Restored to full resolution on commit, so the settled shape is always crisp; the cost of lowering this
+	/// is softness (small brushes melt at coarse voxels) on shapes that are actively being dragged by someone
+	/// else. 1 = bake remote drags at full authored resolution.</summary>
+	[Property, Range( 0.1f, 1f )] public float LiveDragFieldScale { get; set; } = 0.5f;
+
+	/// <summary>The other live-drag bake lever: minimum seconds between field re-bakes on a remotely-dragged
+	/// proxy. The interpolated shape changes every frame, but re-baking faster than samples arrive (~20 Hz)
+	/// buys nothing a viewer can keep — this caps the bake cadence at the stream rate instead of the frame
+	/// rate. The visible trade: the marched surface steps sample-to-sample rather than gliding between them
+	/// (the smoothed brush data still feeds everything non-baked). 0 = re-bake every frame the shape changes.
+	/// Cleared along with the resolution scale on commit.</summary>
+	[Property, Range( 0f, 0.25f )] public float LiveDragBakeInterval { get; set; } = 0.05f;
+
 	/// <summary>The authored shape: the brush list serialised to a string (see <see cref="SdfSculpture.SerializeBrushes"/>).
 	/// <c>[Sync]</c> owner-write so it rebroadcasts on every commit AND ships in the spawn snapshot (late-joiners see
 	/// the current shape); <c>[Change]</c> applies it on proxies.</summary>
@@ -246,7 +262,7 @@ public sealed class SdfNetworkSync : Component
 		_appliedSeq = seq;
 		SetInterpolationTarget( target );
 		Target.RebuildShadowProxy();
-		SetFieldSuppressed( true );
+		SetLiveDragField( true );
 	}
 
 	// [Change] callback for the durable snapshot, fired on every machine the synced value lands on. Only proxies
@@ -285,26 +301,31 @@ public sealed class SdfNetworkSync : Component
 			StopInterpolation();
 			CarryShrinkState( Target.Brushes, brushes );
 			Target.Brushes = brushes;
-			SetFieldSuppressed( false ); // settled shape → one field dispatch, back to the cached path
+			SetLiveDragField( false ); // settled shape → one full-resolution dispatch, back to the crisp field
 			Target.Rebuild();
 		}
 		else
 		{
 			SetInterpolationTarget( brushes );
 			Target.RebuildShadowProxy();
-			SetFieldSuppressed( true );
+			SetLiveDragField( true );
 		}
 	}
 
-	// While a remote drag streams in, force the analytic brush march instead of re-dispatching the GPU field —
-	// per-frame interpolation would otherwise re-bake the entire field volume every frame for every remotely-
-	// edited prop (and prep phase has every hider sculpting at once). See SdfRaymarchRenderer.SuppressFieldCache.
-	void SetFieldSuppressed( bool on )
+	// While a remote drag streams in, drop the field bake to LiveDragFieldScale of authored resolution and cap
+	// its cadence at LiveDragBakeInterval — together they turn "full volume × every frame × every sculpting
+	// hider" into a small bake at stream rate, cheap enough for a whole prep phase at once. (This replaced
+	// suppressing the field entirely and falling back to the analytic per-brush march, whose cost blows up when
+	// a mid-drag prop is close/large on screen — and which dropped the highlight outline, since that marches
+	// baked fields only.)
+	void SetLiveDragField( bool live )
 	{
 		if ( !_raymarcher.IsValid() )
 			_raymarcher = Target.IsValid() ? Target.GameObject.Components.Get<SdfRaymarchRenderer>() : null;
-		if ( _raymarcher.IsValid() )
-			_raymarcher.SuppressFieldCache = on;
+		if ( !_raymarcher.IsValid() )
+			return;
+		_raymarcher.FieldResolutionScale = live ? LiveDragFieldScale : 1f;
+		_raymarcher.FieldRebakeInterval = live ? LiveDragBakeInterval : 0f;
 	}
 
 	// ── Live-drag interpolation (proxy only) ──────────────────────────────────────────────────────────────

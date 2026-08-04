@@ -209,13 +209,16 @@ public sealed class SculptEditSession : Component
 
 		IsEditing = active;
 
-		// Distance-field cache: NOT suppressed for the whole session. OnUpdate suppresses it only while a handle
-		// is actively dragged (instant feedback, no per-edit bakes), and un-suppresses the moment editing settles
-		// or you're just rotating/idle — so even an always-active session (the menu sculpt) caches when not being
-		// edited. Reset to false here so a fresh activate, and any deactivate, starts from the cached state.
+		// Distance-field cache: stays on at full resolution for the whole session (the per-change dispatch for
+		// one locally-edited prop is the proven-cheap path). Reset the live-drag levers here so a fresh
+		// activate, and any deactivate, always starts crisp and unthrottled — SdfNetworkSync lowers them on
+		// PROXIES during remote drags, and an edit session taking over this prop must not inherit them.
 		var rmField = Raymarcher;
 		if ( rmField.IsValid() )
-			rmField.SuppressFieldCache = false;
+		{
+			rmField.FieldResolutionScale = 1f;
+			rmField.FieldRebakeInterval = 0f;
+		}
 
 		if ( active )
 		{
@@ -267,10 +270,13 @@ public sealed class SculptEditSession : Component
 		if ( _proxyDebugActive )
 			ExitProxyDebug();
 
-		// Don't leave the prop stuck on the per-brush path if the session is torn down mid-edit — let it cache.
+		// Don't leave the prop on a lowered/throttled field bake if the session is torn down mid-edit.
 		var rmField = Raymarcher;
 		if ( rmField.IsValid() )
-			rmField.SuppressFieldCache = false;
+		{
+			rmField.FieldResolutionScale = 1f;
+			rmField.FieldRebakeInterval = 0f;
+		}
 
 		if ( Current == this )
 			Current = null;
@@ -741,11 +747,11 @@ public sealed class SculptEditSession : Component
 			&& !ClaySlider.Pressed && !ClayColorPicker.Pressed && !IsManipulating )
 			CommitChanged();
 
-		// Field cache: the GPU field evaluator stays on for the WHOLE active session — it's cheap locally (the
-		// renderer only re-dispatches the compute eval when brushes actually change, and this is the one prop
-		// this machine is editing), so every edit updates instantly with no CPU bake or settle hitch. We do NOT
-		// set SuppressFieldCache here: that flag now belongs to SdfNetworkSync, which suppresses baking on
-		// PROXIES during remote drags (where per-frame interpolation would re-dispatch every frame, per prop).
+		// Field cache: the GPU field evaluator stays on, at full resolution, for the WHOLE active session —
+		// it's cheap locally (the renderer only re-dispatches the compute eval when brushes actually change,
+		// and this is the one prop this machine is editing), so every edit updates instantly with no CPU bake
+		// or settle hitch. FieldResolutionScale belongs to SdfNetworkSync, which lowers it on PROXIES during
+		// remote drags (where per-frame interpolation re-dispatches every frame, per prop).
 	}
 
 	// Debug view: hide the raymarcher (its OnDisabled hands the sibling mesh back to visible) and put the

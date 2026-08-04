@@ -13,11 +13,13 @@ namespace Mimiclay;
 /// synced disguise the owner's final <c>Rebuild → Committed</c> republish makes the removal durable for late
 /// joiners too.
 ///
-/// Animation cost is kept off the field-bake path with the same trick remote drags use: while sizes are
-/// animating, the sculpture's field cache is SUPPRESSED (analytic march reads the live brush data — the
-/// renderer re-hashes it per frame, so no explicit per-frame rebuild call and no Previewed events, meaning
-/// nothing streams). The single full <c>Rebuild</c> happens once, when the last shrinking brush is removed:
-/// mesh, field and collider all heal together. A <see cref="GameObjectSystem"/> like RoundOutlineSystem —
+/// Animation cost: mutating sizes here changes the renderer's brush hash, so the field cache re-dispatches
+/// itself every frame the shrink runs — the same per-change GPU eval a local edit drag pays, for one prop at
+/// a time (no Previewed events fire, so nothing streams). Suppressing the cache instead (the old approach,
+/// borrowed from remote drags) regressed the march to the analytic per-brush path — O(all brushes) per pixel
+/// on a dense sculpted head right in the shooter's face, the game's worst perf drop. The final full
+/// <c>Rebuild</c> still happens once, when the last shrinking brush is removed: mesh and collider heal
+/// together (the field is already current). A <see cref="GameObjectSystem"/> like RoundOutlineSystem —
 /// exists in every scene, no wiring.
 /// </summary>
 public sealed class SdfShrinkSystem : GameObjectSystem
@@ -83,16 +85,10 @@ public sealed class SdfShrinkSystem : GameObjectSystem
 			animating = true;
 		}
 
-		if ( animating )
+		if ( !animating && removed )
 		{
-			// Sizes are moving: the baked field is stale, march analytically off the live brush data.
-			SetSuppressed( sculpt, true );
-		}
-		else if ( removed )
-		{
-			// The LAST shrinking brush just vanished: one full rebuild (mesh, field, collider — the crater
-			// heals physically) and back to the cached-field path. Owner republish rides Committed.
-			SetSuppressed( sculpt, false );
+			// The LAST shrinking brush just vanished: one full rebuild (mesh + collider — the crater heals
+			// physically; the field already tracked every animation frame). Owner republish rides Committed.
 			sculpt.Rebuild();
 
 			// If an edit session is mid-edit on this sculpture, keep its selection index in range (tail
@@ -101,14 +97,7 @@ public sealed class SdfShrinkSystem : GameObjectSystem
 			if ( session.IsValid() && session.Target == sculpt && session.Selected >= brushes.Count )
 				session.Deselect();
 		}
-		// removed && animating: the list already shrank, the analytic march shows it instantly; the full
+		// removed && animating: the list already shrank, the re-dispatched field shows it instantly; the full
 		// rebuild waits until the remaining animations finish (they all end in removal).
-	}
-
-	static void SetSuppressed( SdfSculpture sculpt, bool on )
-	{
-		var rm = sculpt.GameObject.Components.Get<SdfRaymarchRenderer>();
-		if ( rm.IsValid() && rm.SuppressFieldCache != on )
-			rm.SuppressFieldCache = on;
 	}
 }

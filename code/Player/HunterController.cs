@@ -175,6 +175,10 @@ public sealed class HunterController : Component
 	OrbitCameraController _orbit;
 	HunterGun _gun;
 
+	// The pawn's OTHER sculptures (body spheres, the fist) — kept dressed in the face's material, see
+	// MatchBodyMaterialToFace.
+	SdfSculpture[] _bodySculpts;
+
 	// Grounded eye-z smoothing (same treatment as the stock camera path): walking up a step teleports the body
 	// vertically in one physics tick, so the eye z is lerped toward the new height instead of snapping. 0 = unseeded.
 	float _eyez;
@@ -224,6 +228,12 @@ public sealed class HunterController : Component
 		// an orbit camera (idle until edit mode hands it the view) and a SculptEditSession pointed at the face.
 		// Wiring OrbitCamera onto the session is what makes SetActive enable/disable the camera for us.
 		Face ??= ResolveFace();
+
+		// Everything sculpted on the pawn EXCEPT the face (the body spheres and the fist) mirrors the face's
+		// clay — gun clones excluded, the gun keeps its own authored colours.
+		_bodySculpts = Components.GetAll<SdfSculpture>( FindMode.EnabledInSelfAndDescendants )
+			.Where( s => s != Face && !s.GameObject.Tags.Has( HunterGun.CloneTag ) )
+			.ToArray();
 
 		_orbit = Components.GetOrCreate<OrbitCameraController>();
 		_orbit.Enabled = false;       // only live while editing; the session toggles it
@@ -308,6 +318,7 @@ public sealed class HunterController : Component
 		}
 
 		HideOwnBody();
+		MatchBodyMaterialToFace();
 		UpdateFootsteps();
 		UpdateRunEffect();
 
@@ -443,6 +454,47 @@ public sealed class HunterController : Component
 				if ( r.IsValid() )
 					r.RenderHidden = hideOwn;
 			}
+		}
+	}
+
+	// The body and fist are always made of the same clay as the head: every frame, copy the face's FIRST
+	// authored brush's material (colour/metallic/roughness) onto every authored brush of the other pawn
+	// sculptures, rebuilding only when something actually changed (material is baked into the field texture
+	// and mesh vertex colours, so a repack is required — but these sculptures are tiny). Checked per frame
+	// rather than hooked, so every way the face can change is covered: the persist-slot load on spawn, live
+	// palette edits, and network sync on proxies — each machine derives the same body material from the same
+	// synced face brushes. Damage craters keep their scorched CarveColor on both ends: they're skipped as a
+	// source (index 0 can only be one if the head was carved down to nothing) and as a target.
+	void MatchBodyMaterialToFace()
+	{
+		if ( _bodySculpts is not { Length: > 0 } || !Face.IsValid() )
+			return;
+
+		var src = Face.Brushes?.FirstOrDefault( b => !b.Damage );
+		if ( src is null )
+			return;
+
+		foreach ( var sculpt in _bodySculpts )
+		{
+			if ( !sculpt.IsValid() || sculpt.Brushes is null )
+				continue;
+
+			bool changed = false;
+			foreach ( var b in sculpt.Brushes )
+			{
+				if ( b.Damage )
+					continue;
+				if ( b.Color == src.Color && b.Metallic == src.Metallic && b.Roughness == src.Roughness )
+					continue;
+
+				b.Color = src.Color;
+				b.Metallic = src.Metallic;
+				b.Roughness = src.Roughness;
+				changed = true;
+			}
+
+			if ( changed )
+				sculpt.Rebuild();
 		}
 	}
 
