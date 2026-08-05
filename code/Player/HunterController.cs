@@ -31,6 +31,11 @@ public sealed class HunterController : Component
 	/// a gunshot is public information, props tracking hunters by ear included.</summary>
 	[Property, Group( "Weapon" )] public SoundEvent ShootSound { get; set; }
 
+	/// <summary>Played at each crater a pellet carves out of clay (broadcast with the carve, positioned at the
+	/// hole) — one splat per pellet, so a full scatter hit lands as a meaty multi-splat. Scatter pellets play
+	/// quieter with their smaller craters.</summary>
+	[Property, Group( "Weapon" )] public SoundEvent SplatSound { get; set; }
+
 	/// <summary>Radius (world units) of the CENTRAL pellet's crater — a subtractive sphere appended to the
 	/// top of the hit sculpture's brush stack, on every machine. Scatter pellets carve at 45–80% of this.
 	/// 0 = shots don't carve.</summary>
@@ -924,6 +929,10 @@ public sealed class HunterController : Component
 		if ( !sculpt.IsValid() || sculpt.Brushes is null )
 			return;
 
+		// The wet hit, one per crater at the hole itself — before the brush-cap bail, because the pellet
+		// physically hit clay whether or not the crater still fits the stack.
+		PlaySplat( sculpt.WorldTransform.PointToWorld( localPos ), radius );
+
 		// Past the packer cap brushes silently don't pack — the raymarch would diverge from mesh/collision
 		// with no warning. A missing crater beats an inconsistent one.
 		if ( sculpt.Brushes.Count >= SdfBrushPacker.MaxBrushes )
@@ -946,6 +955,19 @@ public sealed class HunterController : Component
 		// Full rebuild: mesh LODs, field redispatch, and Committed — which re-solidifies the collider
 		// (the carve-aware path keeps hollows passable) and, on a synced disguise's owner, republishes.
 		sculpt.Rebuild();
+	}
+
+	// A splat at a crater. Detached point sound — the hole stays where the shot landed even if the prop keeps
+	// moving. Volume rides the crater size, so the central pellet's full-radius hit leads and the smaller
+	// scatter craters layer under it instead of four identical splats stacking into one loud blob.
+	void PlaySplat( Vector3 position, float radius )
+	{
+		if ( SplatSound is null )
+			return;
+
+		var handle = Sound.Play( SplatSound, position );
+		if ( handle.IsValid() )
+			handle.Volume *= MathF.Min( radius / MathF.Max( CarveRadius, 0.1f ), 1f );
 	}
 
 	// The pawn-anchor → sculpture mapping, mirrored on every machine: a hider pawn carves its disguise, a

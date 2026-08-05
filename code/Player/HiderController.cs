@@ -89,7 +89,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 	/// <summary>The disguise the hider sculpts. A prefab so its mesh/SDF renderer + materials are authored in the
 	/// editor (a single source of truth), not duplicated in code.</summary>
-	[Property, Group( "Disguise" )] public string DisguisePrefab { get; set; } = "prefabs/disguise.prefab";
+	[Property, Group( "Disguise" )] public PrefabFile DisguisePrefab { get; set; }
 
 	// Shape networking lives on a reusable SdfNetworkSync component (in the prop prefab), pointed at the disguise
 	// in OnStart. The SDF core + this controller stay networking-agnostic — see SdfNetworkSync.
@@ -721,13 +721,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 	GameObject ClonePrefab()
 	{
-		var prefab = ResourceLibrary.Get<PrefabFile>( DisguisePrefab );
-		if ( prefab is null )
+		if ( DisguisePrefab is null )
 		{
-			Log.Warning( $"Disguise prefab '{DisguisePrefab}' not found — falling back to a bare sculpture." );
+			Log.Warning( "Disguise prefab not set — falling back to a bare sculpture." );
 			return null;
 		}
 
-		return SceneUtility.GetPrefabScene( prefab )?.Clone();
+		return SceneUtility.GetPrefabScene( DisguisePrefab )?.Clone();
 	}
 }

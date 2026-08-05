@@ -42,7 +42,7 @@ public sealed class HunterGun : Component
 	public const string CloneTag = "hunter_gun";
 
 	/// <summary>The gun prefab both models are cloned from (SdfSculpture + raymarch renderer authored there).</summary>
-	[Property] public string GunPrefab { get; set; } = "prefabs/saved/gun.prefab";
+	[Property] public PrefabFile GunPrefab { get; set; }
 
 	/// <summary>World-model scale, applied to its brush data (the sculpt was authored at edit size, ~80 units —
 	/// 2 metres; 0.5 is rifle size against the 72-unit pawn). Live: changing it rebuilds the gun on the spot.</summary>
@@ -184,7 +184,7 @@ public sealed class HunterGun : Component
 	/// VIEW model where that's what's on screen (owner, first person), the WORLD model everywhere else.
 	/// Local and purely cosmetic, same deal as the caught puff: every machine clones its own from the shot
 	/// RPC, nothing is networked. Empty/missing prefab just loses the flash.</summary>
-	[Property, Group( "Effects" )] public string MuzzleFlashPrefab { get; set; } = "prefabs/shotgun_muzzleflash.prefab";
+	[Property, Group( "Effects" )] public PrefabFile MuzzleFlashPrefab { get; set; }
 
 	/// <summary>Size multiplier on the VIEWMODEL's flash only (the world model plays the prefab as authored)
 	/// — the first-person burst often wants to read bigger than a strictly world-accurate one. Applied at
@@ -439,8 +439,7 @@ public sealed class HunterGun : Component
 		if ( !muzzle.IsValid() )
 			return;
 
-		var prefab = ResourceLibrary.Get<PrefabFile>( MuzzleFlashPrefab );
-		var flash = prefab is null ? null : SceneUtility.GetPrefabScene( prefab )?.Clone();
+		var flash = MuzzleFlashPrefab is null ? null : SceneUtility.GetPrefabScene( MuzzleFlashPrefab )?.Clone();
 		if ( !flash.IsValid() )
 			return;
 
@@ -503,10 +502,9 @@ public sealed class HunterGun : Component
 	// wrong but visible, and only reachable with an unreadable prefab AND no muzzle child).
 	Vector3 LoadMuzzleSource()
 	{
-		var prefab = ResourceLibrary.Get<PrefabFile>( GunPrefab );
-		var authored = prefab is null
+		var authored = GunPrefab is null
 			? null
-			: SceneUtility.GetPrefabScene( prefab )?.Children.FirstOrDefault( c => c.Name == "Muzzle" );
+			: SceneUtility.GetPrefabScene( GunPrefab )?.Children.FirstOrDefault( c => c.Name == "Muzzle" );
 
 		if ( authored.IsValid() )
 			return authored.LocalPosition;
@@ -711,10 +709,9 @@ public sealed class HunterGun : Component
 	// where the live brushes are not a usable baseline). Copies, so nothing here can mutate the prefab's data.
 	List<SdfBrush> LoadSourceBrushes()
 	{
-		var prefab = ResourceLibrary.Get<PrefabFile>( GunPrefab );
-		var sculpt = prefab is null
+		var sculpt = GunPrefab is null
 			? null
-			: SceneUtility.GetPrefabScene( prefab )?.GetAllComponents<SdfSculpture>().FirstOrDefault();
+			: SceneUtility.GetPrefabScene( GunPrefab )?.GetAllComponents<SdfSculpture>().FirstOrDefault();
 
 		if ( sculpt is null || sculpt.Brushes is null )
 		{
@@ -725,7 +722,7 @@ public sealed class HunterGun : Component
 			if ( !live.IsValid() || live.Brushes is null )
 				return null;
 
-			Log.Warning( $"Gun prefab '{GunPrefab}' scene unreadable — sourcing brushes from the live clone." );
+			Log.Warning( $"Gun prefab '{GunPrefab?.ResourcePath}' scene unreadable — sourcing brushes from the live clone." );
 			return live.Brushes.Select( b => b.Copy() ).ToList();
 		}
 
@@ -761,14 +758,13 @@ public sealed class HunterGun : Component
 		if ( existing.IsValid() )
 			return existing;
 
-		var prefab = ResourceLibrary.Get<PrefabFile>( GunPrefab );
-		if ( prefab is null )
+		if ( GunPrefab is null )
 		{
-			Log.Warning( $"Gun prefab '{GunPrefab}' not found — hunter gets no gun model." );
+			Log.Warning( "Gun prefab not set — hunter gets no gun model." );
 			return null;
 		}
 
-		var go = SceneUtility.GetPrefabScene( prefab )?.Clone();
+		var go = SceneUtility.GetPrefabScene( GunPrefab )?.Clone();
 		if ( !go.IsValid() )
 			return null;
 

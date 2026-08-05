@@ -1,15 +1,18 @@
+using System;
+
 namespace Mimiclay;
 
 /// <summary>
-/// Blinks every <see cref="SdfHighlightOutline"/> under this GameObject with a flash look — the Reveal
+/// Pulses every <see cref="SdfHighlightOutline"/> under this GameObject with a flash look — the Reveal
 /// "show them off" beacon on surviving prop pawns. Authored DISABLED on the pawn prefab;
 /// <see cref="RoundOutlineSystem"/> enables it per machine while the Reveal is on and disables it after
 /// (the same per-frame assertion it uses for outline visibility).
 ///
-/// While enabled the flash look REPLACES the authored look outright: the flash colours during the ON
-/// half of each cycle, fully transparent during the OFF half — a plain on/off blink. It never blends
-/// with the outline's authored [Property] colours (an early version did, and the prop read as
-/// flashing red→teal as each trough fell back to the disguise's owner-locator glow).
+/// While enabled the flash look REPLACES the authored look outright: a raised-cosine pulse of the
+/// flash colours' OPACITY, from full at each peak down to <see cref="MinBlend"/> at each trough
+/// (0 = fades fully out). It never blends with the outline's authored [Property] colours (an early
+/// version did, and the prop read as flashing red→teal as each trough fell back to the disguise's
+/// owner-locator glow — the pulse must always be flash-colour↔transparent).
 ///
 /// It writes the outlines' runtime OVERRIDE slots each frame
 /// (<see cref="SdfHighlightOutline.ColorOverride"/> et al.) — never their authored [Property] values,
@@ -37,8 +40,12 @@ public sealed class SdfOutlineFlash : Component
 	/// what makes the flash read as a line. 0 = fill-only flash.</summary>
 	[Property, Range( 0f, 16f )] public float FlashWidth { get; set; } = 0f;
 
-	/// <summary>Blinks per second (one ON + one OFF per blink).</summary>
+	/// <summary>Pulses per second.</summary>
 	[Property, Range( 0.1f, 5f )] public float Frequency { get; set; } = 0.75f;
+
+	/// <summary>Pulse floor, 0..1: the fraction of the flash opacity kept at each trough.
+	/// 0 = fades fully to transparent; raise it so the flash never quite disappears.</summary>
+	[Property, Range( 0f, 1f )] public float MinBlend { get; set; } = 0.15f;
 
 	float _enabledAt;
 
@@ -46,15 +53,18 @@ public sealed class SdfOutlineFlash : Component
 
 	protected override void OnUpdate()
 	{
-		// Square wave, ON first so the flash lands the instant the phase flips.
-		bool on = ((Time.Now - _enabledAt) * Frequency) % 1f < 0.5f;
+		// Raised cosine starting AT the peak, so the flash lands the instant the phase flips, then
+		// breathes down toward transparent and back. t scales the flash colours' ALPHA only — the
+		// hue never moves, so the pulse reads as one colour fading, not a colour cycle.
+		float wave = (1f + MathF.Cos( (Time.Now - _enabledAt) * Frequency * MathF.Tau )) * 0.5f;
+		float t = MinBlend + (1f - MinBlend) * wave;
 
 		foreach ( var o in Components.GetAll<SdfHighlightOutline>( FindMode.EnabledInSelfAndDescendants ) )
 		{
-			o.ColorOverride = on ? FlashColor : Color.Transparent;
-			o.ObscuredColorOverride = on ? FlashObscuredColor : Color.Transparent;
-			o.InsideColorOverride = on ? FlashInsideColor : Color.Transparent;
-			o.InsideObscuredColorOverride = on ? FlashInsideObscuredColor : Color.Transparent;
+			o.ColorOverride = FlashColor.WithAlpha( FlashColor.a * t );
+			o.ObscuredColorOverride = FlashObscuredColor.WithAlpha( FlashObscuredColor.a * t );
+			o.InsideColorOverride = FlashInsideColor.WithAlpha( FlashInsideColor.a * t );
+			o.InsideObscuredColorOverride = FlashInsideObscuredColor.WithAlpha( FlashInsideObscuredColor.a * t );
 			o.WidthOverride = FlashWidth;
 		}
 	}

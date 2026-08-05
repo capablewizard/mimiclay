@@ -138,6 +138,7 @@
         "RunStepDistance": 100,
         "ShootCooldown": 0.75,
         "ShootSound": "sounds/game/gunshot.sound",
+        "SplatSound": "sounds/game/splats/splat.sound",
         "ShotKick": 1.5546219,
         "ShotKickBounce": 0.49264705,
         "ShotKickFov": 0,
