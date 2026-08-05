@@ -15,6 +15,25 @@
 	// Material-icon glyph (ligature name → glyph); size + colour are set per context below.
 	.icon { font-family: Material Icons; }
 
+	// Alt-nav view hints, top-right — mirrors the menu's .menu-controls (_menu.scss); keep the two in step.
+	.view-controls {
+		position: absolute;
+		top: $space-sm;
+		right: $space-sm;
+		z-index: 20;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 2px;
+		font-family: Tahoma;
+		font-size: 12px;
+		font-weight: 700;
+		color: $paper-edge;   // near-black ink so the hints read over the bright scene
+		opacity: 0.9;
+		pointer-events: none;
+		text-transform: uppercase;
+		text-align: right;
+	}
+
 	// While alt is held (camera nav) the whole HUD goes inert: every interactive card drops pointer-events so the
 	// camera-driven cursor drift can't hover/drag the layer rows or grab a swatch — AND, crucially, the alt+mouse
 	// buttons fall straight through to the scene so the camera actually receives them (a pointer-events:all surface

@@ -134,21 +134,21 @@ public sealed class LobbyManager : Component, IRoundContext
 	}
 
 	// ── Client → host requests ─────────────────────────────────────────────────────────────────────────────────
-	/// <summary>Caller wants to edit as a hunter (face) or prop (disguise). Re-spawns their lobby pawn in that role.</summary>
+	/// <summary>Caller swaps to the opposite lobby role — hunter ↔ prop — respawning where they stand.</summary>
 	[Rpc.Host]
-	public void RequestEditRole( PlayerRole role )
+	public void RequestSwapRole()
 	{
 		var c = Rpc.Caller;
 		if ( c is null || Launching )
 			return;
-		if ( role is not PlayerRole.Hunter and not PlayerRole.Prop )
-			return;
 
-		var row = Players.TryGetValue( c.Id, out var existing ) ? existing : NewRow( c, role, NextFreeSpawnIndex() );
-		row.Role = role;
+		// Everyone auto-spawns as a hunter in ReconcileConnections, so a missing row (a press racing the first
+		// reconcile) defaults to Hunter — the swap then lands them as a Prop, same as it would a frame later.
+		var row = Players.TryGetValue( c.Id, out var existing ) ? existing : NewRow( c, PlayerRole.Hunter, NextFreeSpawnIndex() );
+		row.Role = row.Role == PlayerRole.Prop ? PlayerRole.Hunter : PlayerRole.Prop;
 		Players[c.Id] = row;
 		_known.Add( c.Id );
-		SpawnPawn( c, role );
+		SpawnPawn( c, row.Role );
 	}
 
 	/// <summary>Caller nominates (or un-nominates) themselves to be a hunter next round.</summary>
@@ -305,12 +305,31 @@ public sealed class LobbyManager : Component, IRoundContext
 
 		var at = lc.SpotAt( Players.TryGetValue( connection.Id, out var row ) ? row.SpawnIndex : 0 );
 
+		// A role swap respawns IN PLACE — where the old pawn stands, not back at the spawn ring. Same buried-origin
+		// guard as RoundManager.EnsureOwnPawn: a sculpted prop's origin can sit under the floor, so ground the new
+		// pawn on the shape's feet (traced down onto whatever it stood on) rather than the raw origin.
+		if ( _pawns.TryGetValue( connection.Id, out var previous ) && previous.IsValid() )
+		{
+			at = previous.WorldTransform;
+			var hider = previous.Components.Get<HiderController>();
+			if ( hider.IsValid() && hider.TryGetShapeFeet( out var feet ) )
+			{
+				var tr = Scene.Trace.Ray( feet + Vector3.Up * 64f, feet - Vector3.Up * 8f )
+					.IgnoreGameObjectHierarchy( previous ) // the old pawn's disguise collider is still live — the ray starts above it
+					.Run();
+				at = at.WithPosition( tr.Hit ? tr.HitPosition : feet );
+			}
+		}
+
 		var pawn = prefab.Clone( at, name: $"Lobby Pawn ({role}) {connection.DisplayName}" );
 		if ( !pawn.IsValid() )
 			return null;
 
-		if ( _pawns.Remove( connection.Id, out var old ) )
-			Retire( old );
+		// The new pawn takes over the old one's exact spot, so the old pawn goes away entirely. Releasing it as
+		// scenery (the Retire path, kept for disconnects) would leave the fresh pawn spawning inside the released
+		// disguise's collider — the solver shoves overlapping hulls apart, sometimes through the floor.
+		if ( _pawns.Remove( connection.Id, out var old ) && old.IsValid() )
+			old.Destroy();
 
 		pawn.NetworkSpawn( connection );
 		_pawns[connection.Id] = pawn;

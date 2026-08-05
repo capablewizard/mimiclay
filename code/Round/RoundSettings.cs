@@ -42,11 +42,11 @@ public struct RoundSettings
 	{
 		Mode = RoundMode.Infection,
 		StartCountdownSeconds = 4f,
-		HideSeconds = 45f,
-		HuntSeconds = 180f,
-		RevealSeconds = 6f,
+		HideSeconds = 90f,
+		HuntSeconds = 210f,
+		RevealSeconds = 30f,
 		ConsolidationSeconds = 12f,
-		TauntSeconds = 15f,
+		TauntSeconds = 35f,
 		HunterCount = 1,
 		MapIdent = MapCatalog.RandomIdent,
 	};

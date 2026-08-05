@@ -149,17 +149,16 @@ public sealed class LobbyController : Component
 
 	// Temporary keyboard driving for the lobby until the full UI lands. Raw keys so they need no input-config
 	// actions. Runs on any machine; the requests are [Rpc.Host] on the manager, so a client's press routes to the
-	// host. The host's G (open the setup panel) is handled by RoundSetup itself. TODO: replace O/P/N with lobby UI
+	// host. The host's G (open the setup panel) is handled by RoundSetup itself. TODO: replace P/N with lobby UI
 	// controls.
-	//   O = edit as Hunter   P = edit as Prop   N = toggle hunt nomination
+	//   P = swap role (hunter ↔ prop)   N = toggle hunt nomination
 	void HandleDebugInput()
 	{
 		var lm = LobbyManager.Current;
 		if ( !lm.IsValid() || !Networking.IsActive || RoundSetup.IsOpen )
 			return;
 
-		if ( Input.Keyboard.Pressed( "O" ) ) lm.RequestEditRole( PlayerRole.Hunter );
-		if ( Input.Keyboard.Pressed( "P" ) ) lm.RequestEditRole( PlayerRole.Prop );
+		if ( Input.Keyboard.Pressed( "P" ) ) lm.RequestSwapRole();
 		if ( Input.Keyboard.Pressed( "N" ) ) lm.ToggleNominate();
 	}
 

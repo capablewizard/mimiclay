@@ -39,6 +39,15 @@ public sealed class RoundManager : Component, IRoundContext
 	/// locked, so players can see their team + get ready without moving. Read by the pawn controllers each frame.</summary>
 	public static bool ControlsLocked => Current.IsValid() && Current.Phase == RoundPhase.Starting;
 
+	/// <summary>True when hunter guns may fire: no round running (lobby / debug scenes), the Hunt is on, or the
+	/// round is over (<see cref="RoundPhase.Consolidation"/> — shots there are harmless fun; the hit report is
+	/// still phase-gated host-side). Read by <see cref="HunterController"/> before each shot. During Hide and
+	/// Reveal the whole shot is suppressed — not just the hit report (<see cref="ReportPropHit"/> already gates
+	/// that) — because the cosmetic pellet carve permanently craters clay that props have no way to heal.</summary>
+	public static bool HuntingAllowed => !Current.IsValid()
+		|| Current.Phase == RoundPhase.Hunt
+		|| Current.Phase == RoundPhase.Consolidation;
+
 	/// <summary>Lobby-data key carrying the chosen hunter connection ids from the lobby into the map scene
 	/// (comma-separated guids). Written by <see cref="LobbyController"/>, read in <see cref="AssignRoles"/>.</summary>
 	public const string HunterIdsKey = "r.hids";

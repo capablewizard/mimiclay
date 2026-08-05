@@ -4,17 +4,22 @@ using System.Threading.Tasks;
 namespace Mimiclay;
 
 /// <summary>Render-path candidates for a first-person viewmodel (see <see cref="SdfRaymarchRenderer.ViewLayer"/>).
-/// Debug/experimental while the anti-clip path is proven out — each maps to a different engine mechanism.</summary>
+/// <see cref="OverlayFlag"/> is the production path; the others are kept as live-tweakable diagnostics.</summary>
 public enum SdfViewLayer
 {
 	/// <summary>Normal game passes — depth-tested against the world (a viewmodel clips into walls).</summary>
 	Normal,
-	/// <summary>Native viewmodel layer (RenderLayer match + ViewModelLayer flag): on top, altered depth.</summary>
+	/// <summary>Native viewmodel layer (RenderLayer match + ViewModelLayer flag): renders invisible here,
+	/// and a dead end — the engine's own BaseCombatWeapon viewmodels don't use this layer either.</summary>
 	Viewmodel,
-	/// <summary>OverlayWithoutDepth layer match: drawn after post-processing with NO depth — pure draw-over.</summary>
+	/// <summary>OverlayWithoutDepth layer match: after post with NO depth — pure draw-over, but no
+	/// GameOverlayLayer flag, so it misses the engine's overlay depth prepass (depth chain sees nothing).</summary>
 	OverlayNoDepth,
-	/// <summary>GameOverlayLayer FLAG (the ModelRenderer RenderOptions.Overlay path — known-live in the modern
-	/// pipeline): after post, but still with scene depth, so it may still clip. Diagnostic.</summary>
+	/// <summary>GameOverlayLayer FLAG (ModelRenderer RenderOptions.Overlay): THE viewmodel path. The engine
+	/// runs a dedicated overlay depth prepass for this flag — before the world prepasses, stencil-claiming
+	/// the object's pixels (bit 0x80) so nearer world depth can't overwrite them. The forward overlay pass
+	/// (after post, scene depth) then wins at REAL depth: no wall clipping, and the depth buffer stays
+	/// honest for screen UI (which depth-tests), contact shadows and screen AO.</summary>
 	OverlayFlag,
 }
 
@@ -766,11 +771,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Flags.CastShadows = SdfShadows;
 		_so.Flags.ExcludeGameLayer = shadowOnly;
 		ApplyViewLayer();
-		// Viewmodel shader behaviour rides any non-Normal view layer: BOTH passes depth-squash toward the
-		// camera (forward: the overlay's scene-depth test can never clip the gun into geometry; prepass:
-		// screen AO sees a depth-isolated near blob and reads ~1 — screen AO at a viewmodel's real depth is
-		// unfixable, the world legitimately occludes it there) and the material AO term switches to the
-		// 5-tap field-computed self-AO, which wins the engine's min() against the neutral screen AO.
+		// Viewmodel shader behaviour rides any non-Normal view layer: the viewmodel-FOV ray warp, plus the
+		// material AO term switching to the 5-tap field-computed self-AO (min()ed with screen AO by the
+		// engine). Depth is REAL in both passes — anti-clip comes from the engine's overlay depth prepass
+		// (OverlayFlag's stencil claim), not from the old near-camera depth squash, whose near blob used
+		// to beat the screen UI's depth test and draw the gun over the HUD.
 		_so.Attributes.Set( "SdfViewmodel", ViewLayer != SdfViewLayer.Normal ? 1 : 0 );
 		_so.Attributes.Set( "SdfVmFovScale", MathF.Max( ViewmodelFovScale, 0.01f ) );
 		_so.Attributes.Set( "SdfShadowOnly", shadowOnly ? 1 : 0 );

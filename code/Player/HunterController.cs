@@ -36,6 +36,11 @@ public sealed class HunterController : Component
 	/// quieter with their smaller craters.</summary>
 	[Property, Group( "Weapon" )] public SoundEvent SplatSound { get; set; }
 
+	/// <summary>Seconds between a pellet landing and its splat — breathing room so the gunshot's crack doesn't
+	/// swallow the wet hits; they read as the clay reacting a beat later. Each pellet adds its own small random
+	/// stagger (up to ~60ms) on top, so a scatter volley patters instead of hitting as one chord.</summary>
+	[Property, Group( "Weapon" ), Range( 0f, 1f )] public float SplatDelay { get; set; } = 0.15f;
+
 	/// <summary>Radius (world units) of the CENTRAL pellet's crater — a subtractive sphere appended to the
 	/// top of the hit sculpture's brush stack, on every machine. Scatter pellets carve at 45–80% of this.
 	/// 0 = shots don't carve.</summary>
@@ -348,10 +353,21 @@ public sealed class HunterController : Component
 
 			// Owner-only: otherwise every machine would shoot when ITS local player clicked, from a remote pawn's
 			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
-			// No shooting while controls are locked (the Starting countdown). The shot leaves from the same eye
-			// the camera sits at, so the trace always matches what the crosshair shows.
-			if ( !locked && Input.Pressed( "attack1" ) && _nextShot <= 0f )
-				Shoot( eye );
+			// No shooting while controls are locked (the Starting countdown) or outside the Hunt — during Hide a
+			// shot would still carve permanent craters into disguises the props can't heal, even though the host
+			// ignores the hit report. A denied press gets a local error blip instead, so the trigger doesn't feel
+			// broken. The shot leaves from the same eye the camera sits at, so the trace always matches what the
+			// crosshair shows.
+			if ( Input.Pressed( "attack1" ) )
+			{
+				if ( !locked && RoundManager.HuntingAllowed )
+				{
+					if ( _nextShot <= 0f )
+						Shoot( eye );
+				}
+				else
+					PlayShotDeniedSound();
+			}
 		}
 
 		// Park the head at the eye, aimed where we're looking — on ALL machines (the eye transform is networked),
@@ -808,6 +824,24 @@ public sealed class HunterController : Component
 		}
 	}
 
+	// UI blip for a trigger pull denied by the round phase (Hide/Reveal). Local feedback only — nothing is
+	// broadcast, so other players never hear a denied click. Played as a raw file (ListenLocal, no world
+	// spatialisation) rather than a SoundEvent asset: it's pure interface feedback, not a world sound.
+	const string ShotDeniedSoundPath = "sounds/kenney/ui/error_005.wav";
+
+	void PlayShotDeniedSound()
+	{
+		var handle = Sound.PlayFile( SoundFile.Load( ShotDeniedSoundPath ) );
+		if ( !handle.IsValid() )
+			return;
+
+		handle.ListenLocal = true;
+		handle.DistanceAttenuation = false;
+		handle.AirAbsorption = false;
+		handle.OcclusionEnabled = false;
+		handle.ReverbEnabled = false;
+	}
+
 	// Both gun rays HitTriggers(): hunter heads are TRIGGER colliders (SdfCollider.BuildAsTrigger — physically
 	// contactless, bullet-visible only), so without it a shot could never land on a face. The WithoutTags guard
 	// keeps actual volume triggers bullet-transparent — any map trigger volume must carry the "trigger" (or
@@ -957,13 +991,20 @@ public sealed class HunterController : Component
 		sculpt.Rebuild();
 	}
 
-	// A splat at a crater. Detached point sound — the hole stays where the shot landed even if the prop keeps
-	// moving. Volume rides the crater size, so the central pellet's full-radius hit leads and the smaller
-	// scatter craters layer under it instead of four identical splats stacking into one loud blob.
-	void PlaySplat( Vector3 position, float radius )
+	// A splat at a crater, SplatDelay (+ a small per-pellet stagger) after the pellet lands, so the gunshot's
+	// crack decays before the wet hits arrive. Detached point sound at the hole's world position — captured
+	// before the wait, so the crater the ear is told about is the one the eye saw carved. Volume rides the
+	// crater size, so the central pellet's full-radius hit leads and the smaller scatter craters layer under
+	// it instead of four identical splats stacking into one loud blob. Component.Task cancels the wait on
+	// pawn teardown — same pattern as the muzzle flash expiry.
+	async void PlaySplat( Vector3 position, float radius )
 	{
 		if ( SplatSound is null )
 			return;
+
+		float delay = SplatDelay + Game.Random.Float( 0f, 0.06f );
+		if ( delay > 0f )
+			await Task.DelaySeconds( delay );
 
 		var handle = Sound.Play( SplatSound, position );
 		if ( handle.IsValid() )

@@ -68,7 +68,9 @@
 		@foreach ( var hint in Hotkeys )
 		{
 			<div class="hotkey">
-				<div class="key">@hint.Key</div>
+				@* Colour inline, not in the scss: the stylesheet's .key colour never reached the glyph in-game
+				   (rendered white despite the rule), and inline wins the cascade unconditionally. *@
+				<div class="key" style="color: #2c2418;">@hint.Key</div>
 				<div class="label">@hint.Label</div>
 			</div>
 		}
@@ -193,11 +195,10 @@
 		{
 			if ( Phase == RoundPhase.Lobby )
 			{
-				yield return new( "O", "Edit as Hunter" );
-				yield return new( "P", "Edit as Prop" );
+				yield return new( "P", LocalRole == PlayerRole.Prop ? "Swap to Hunter" : "Swap to Prop" );
 				yield return new( "N", "Nominate to Hunt" );
 				yield return new( "G", "Set Up Game (Host)" );
-				yield return new( "Q", "Edit Appearance" );
+				yield return new( "Q", "Edit Mode" );
 				yield break;
 			}
 

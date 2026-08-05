@@ -282,8 +282,8 @@ $menu-left: 64px;
 	font-family: Tahoma;
 	font-size: 12px;
 	font-weight: 700;
-	color: $paper-ink;
-	opacity: 0.7;
+	color: $paper-edge;   // near-black ink so the hints read over the bright scene
+	opacity: 0.9;
 	pointer-events: none;
 	text-transform: uppercase;
 	text-align: right;

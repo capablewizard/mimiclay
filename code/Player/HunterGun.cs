@@ -93,11 +93,11 @@ public sealed class HunterGun : Component
 	/// wide-angle distortion; higher pushes toward the camera's natural perspective.</summary>
 	[Property, Group( "Placement" ), Range( 10f, 120f )] public float ViewmodelFov { get; set; } = 54f;
 
-	/// <summary>Which render path the viewmodel draws through — live-tweakable debug switch while the anti-clip
-	/// path is proven out. Normal = game pass (clips into walls, always visible). Viewmodel = native viewmodel
-	/// layer (on top + altered depth — currently renders invisible, under investigation). OverlayNoDepth =
-	/// after post, no depth at all (pure draw-over). OverlayFlag = the known-live ModelRenderer overlay path
-	/// (after post, scene depth — likely still clips; diagnostic).</summary>
+	/// <summary>Which render path the viewmodel draws through. OverlayFlag is the production path: the
+	/// engine's overlay depth prepass stencil-claims the gun's pixels at REAL depth (no wall clipping,
+	/// UI/contact-shadows/AO all see honest depth). The rest are live-tweakable diagnostics — Normal =
+	/// game pass (clips into walls), Viewmodel = native layer (renders invisible, dead end), OverlayNoDepth
+	/// = draw-over with no overlay prepass.</summary>
 	[Property, Group( "Placement" )] public SdfViewLayer ViewLayerMode { get; set; } = SdfViewLayer.Normal;
 
 	/// <summary>Mounting rotation of the gun on its parent (the hand for the world model, the aim for the view
@@ -193,18 +193,19 @@ public sealed class HunterGun : Component
 
 	/// <summary>Material override for the VIEW clone's raymarch (world model keeps the prefab's). Point it
 	/// at plasticine_viewmodel.vmat — its F_TRANSLUCENT feature selects the shader's translucent LIGHTING
-	/// variant, whose shading skips the screen-space passes (SSAO sample, contact-shadow mask) that an
-	/// overlay-drawn viewmodel must not sample the world through. Same look otherwise. Leave null to keep
-	/// the shared opaque material (then the sun contact-shadow override below carries the load).</summary>
+	/// variant, whose shading skips the screen-space passes (SSAO sample, contact-shadow mask) entirely.
+	/// Since the prepass writes the gun's REAL depth, sampling them is legitimate again — this is now an
+	/// A/B knob (skip = flatter but immune to screen-space artifacts), not a correctness requirement.
+	/// Leave null to keep the shared opaque material. Live-swappable.</summary>
 	[Property, Group( "Placement" )] public Material ViewMaterial { get; set; }
 
 	/// <summary>While this machine renders the first-person gun, switch the sun's screen-space CONTACT
-	/// shadows off (restored the moment we're not first-person: edit mode, death, pawn teardown). The
-	/// contact-shadow pass marches the depth buffer toward the light, and the viewmodel's depth-squashed
-	/// near blob (which keeps screen-space AO neutral) reads as a solid occluder there — the gun fully
-	/// self-shadows out of the directional light. Same depth chain feeds both effects, so they can't
-	/// coexist; this trades a subtle world effect, per machine, for a lit gun. Cascade shadows unaffected.</summary>
-	[Property, Group( "Placement" )] public bool DisableSunContactShadows { get; set; } = true;
+	/// shadows off (restored the moment we're not first-person: edit mode, death, pawn teardown).
+	/// Escape hatch from the depth-squash era, when the viewmodel's near-camera depth blob read as a
+	/// solid occluder in the contact-shadow march and self-shadowed the gun out of the directional
+	/// light. The prepass writes the gun's REAL depth now, so contact shadows behave and this should
+	/// stay OFF; flip it back on only if a contact-shadow artifact shows up on the gun.</summary>
+	[Property, Group( "Placement" )] public bool DisableSunContactShadows { get; set; } = false;
 
 	GameObject _world;
 	GameObject _view;
@@ -402,6 +403,17 @@ public sealed class HunterGun : Component
 				_motionSeeded = false; // next first-person frame re-seeds instead of twanging from stale state
 			}
 		}
+
+		// Push the renderers' placement snapshot NOW, with every transform above final. Component OnUpdate
+		// order is hash-set enumeration order, which reshuffles when a pawn is destroyed and respawned (slot
+		// reuse) — so the clone renderers' own update can land BEFORE this placement, packing LAST frame's
+		// transform while the camera (composed after all updates) is current: the gun renders a frame behind
+		// the view. Pushing from here is order-proof; when the renderer's update also runs after us, its own
+		// Refresh sees an unchanged hash and only re-sets attributes.
+		if ( _worldSdf.IsValid() )
+			_worldSdf.Refresh();
+		if ( firstPerson && _viewSdf.IsValid() )
+			_viewSdf.Refresh();
 	}
 
 	/// <summary>One shot's recoil — called on EVERY machine from the shot RPC (the camera's own punch is

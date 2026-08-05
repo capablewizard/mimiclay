@@ -111,11 +111,15 @@
 				font-family: $body-font;
 				font-weight: $body-weight;
 				font-size: 16px;
-				color: $paper-ink;
+				color: $paper-edge;
 				background-color: $paper-top;
 				border: 2px solid $paper-edge;
 				border-radius: $radius-sm;
 				box-shadow: $shadow-edge;
+
+				// The glyph is an implicit child `label` element — hit it directly as well as via inheritance,
+				// since the inherited colour never reached it in-game (rendered white).
+				label { color: $paper-edge; }
 			}
 
 			.label {

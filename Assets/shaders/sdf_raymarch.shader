@@ -161,12 +161,12 @@ PS
 	// body, mirroring ModelRenderer.ShadowsOnly.
 	float     g_flSdfShadowBias < Attribute( "SdfShadowBias" ); Default( 0.0 ); >;
 	int       g_nSdfShadowOnly  < Attribute( "SdfShadowOnly" ); Default( 0 ); >;
-	// Viewmodel (the hunter's first-person gun, drawn via the overlay layer): 1 = depth-squash BOTH passes
-	// toward the camera (forward: the overlay's scene-depth test can never clip it into world geometry;
-	// prepass: screen-space AO sees a tiny near-camera blob depth-isolated from the world, so SSAO reads
-	// ~1 — no wall-AO splotches, no approach/intersection blackening) and swap the material AO for a 5-tap
-	// AO computed from the DISTANCE FIELD itself, which the engine min()s against the neutral screen AO.
-	// Screen-space AO at a viewmodel's REAL depth is unfixable: the world legitimately occludes it there.
+	// Viewmodel (the hunter's first-person gun, drawn via the overlay layer): 1 = viewmodel-FOV warp on,
+	// and the material AO swaps to a 5-tap AO computed from the DISTANCE FIELD itself (the engine min()s
+	// it against screen AO). Depth is REAL in both passes: the engine's overlay depth prepass runs before
+	// the world prepasses and stencil-claims the gun's pixels (bit 0x80), so nearer world depth can never
+	// overwrite them — anti-clip without the old near-camera depth squash, whose near blob used to punch
+	// the gun through the depth-testing screen UI and poison contact shadows/SSAO.
 	int       g_nSdfViewmodel   < Attribute( "SdfViewmodel" );  Default( 0 ); >;
 	// Viewmodel FOV ratio, tan(cameraHalfFov)/tan(viewmodelHalfFov): the VS inflates the proxy's lateral
 	// footprint by this, and MainPs divides it back out of the interpolated position so the marched rays
@@ -503,8 +503,8 @@ PS
 	// 5-tap distance-field ambient occlusion (the classic ladder): step outward along the normal and
 	// compare how much free space the field reports against how far we walked — the shortfall, weighted
 	// toward the near taps, is occlusion. Exact against the object's own geometry and fully screen-space
-	// independent, so it stands in for SSAO on the VIEWMODEL (whose squashed depth makes screen AO read
-	// neutral — screen AO at a viewmodel's real depth is unfixable, the world legitimately occludes it).
+	// independent, so it carries the VIEWMODEL's self-occlusion: screen AO only sees the gun's smooth
+	// outer shell in the depth buffer, this reads the crevices the field actually has.
 	// Tap heights (0.8..4 units) suit gun-scale crevices. 5 field samples, same cost family as curvature.
 	float SdfAO( float3 p, float3 n )
 	{
@@ -860,13 +860,12 @@ PS
 		float3 pd = p;
 		if ( IsOrthoView() )
 			pd += normalize( g_vCameraDirWs ) * g_flSdfShadowBias;
-		// Viewmodel: the prepass depth is squashed toward the camera with the SAME transform as forward —
-		// the depth buffer then holds a tiny near-camera blob whose huge depth gap to every world surface
-		// makes screen-space AO ignore it entirely (its own AO comes from the field instead, in forward).
-		// Coverage still matches the overlay exactly, so the game-pass pixels this culls all get gun colour.
-		// (Shadow/ortho views never see a viewmodel — CastShadows is off — so the squash can't corrupt them.)
-		if ( g_nSdfViewmodel != 0 )
-			pd = g_vCameraPositionWs + ( pd - g_vCameraPositionWs ) * 0.02;
+		// Viewmodel: REAL depth, on purpose. This Depth pass runs in the engine's dedicated OVERLAY
+		// prepass (GameOverlayLayer flag), which runs before the world prepasses and stencil-claims
+		// these pixels (bit 0x80) — nearer world depth can't overwrite them, so the forward overlay
+		// pass wins here at true depth and the gun still never clips into geometry. Real depth also
+		// keeps the depth chain honest for its consumers: screen UI (which depth-tests, and which the
+		// old near-camera squash used to lose against), contact shadows and screen AO.
 		o.vColor = DepthNormals::Output( SdfNormal( p ) );
 		o.flDepth = DepthFromWorld( pd );
 		return o;
@@ -888,17 +887,12 @@ PS
 	#endif
 		float flSurfaceDepth = DepthFromWorld( p - normalize( i.vPositionWithOffsetWs ) * flDepthNudge );
 
-		// Viewmodel: the depth-nudge idea taken to its extreme — project the hit from a point squashed 98%
-		// of the way to the camera, so this depth beats any world surface in whatever depth convention is
-		// active (points inside the near plane clamp to the viewport near bound, which still wins). Squash
-		// the NUDGED point: the prepass wrote the same squash of the un-nudged hit, and depth precision is
-		// at its densest near the camera, so the nudge keeps forward on the winning side of its own prepass
-		// value exactly like the normal path. This makes the overlay a true draw-over instead of scene-clipped.
-		if ( g_nSdfViewmodel != 0 )
-		{
-			float3 pn = p - normalize( i.vPositionWithOffsetWs ) * flDepthNudge;
-			flSurfaceDepth = DepthFromWorld( g_vCameraPositionWs + ( pn - g_vCameraPositionWs ) * 0.02 );
-		}
+		// Viewmodel: no special depth — the ordinary nudged depth above already wins. The overlay
+		// prepass stencil-claimed these pixels at the gun's real depth, world prepasses couldn't
+		// overwrite it, so forward's scene-depth test compares against our OWN prepass value and the
+		// nudge keeps us on the winning side, same as the normal path. (The old 98%-to-camera squash
+		// that lived here drew over walls too, but its near-bound depth also beat the screen UI's
+		// depth test — the gun rendered on top of the HUD.)
 
 		// LOD debug: flat heatmap by quality (red = floor / cheapest, yellow = mid, green = full).
 		if ( g_flDebugLod > 0.5 )
@@ -938,8 +932,9 @@ PS
 		m.Roughness = max( saturate( roughness * g_flRoughness * surf.rough ), 0.08 );
 		m.Metalness = saturate( surf.metal + g_flMetalness );
 
-		// Viewmodel: self-AO computed from the field replaces screen-space AO (which the squashed depth
-		// neutralized to ~1). The engine min()s material AO with screen AO, so this term simply wins.
+		// Viewmodel: self-AO computed from the field. The engine min()s material AO with screen AO —
+		// now that the prepass writes real depth, screen AO contributes real world occlusion too, and
+		// this field term carries the crevice detail the depth buffer's outer shell can't show.
 		if ( g_nSdfViewmodel != 0 )
 			m.AmbientOcclusion = SdfAO( p, baseN );
 

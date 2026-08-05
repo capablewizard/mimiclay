@@ -23,6 +23,18 @@
 
 	@if ( Session is not null && Session.IsEditing )
 	{
+		@* Alt-nav view hints, top-right — the same block the main menu shows. The menu's MainMenuNav renders its
+		   own persistent copy on every page (even outside editing), so this one mounts only where there's no menu
+		   nav: the in-game edit modes (lobby + round, hunter face + prop disguise). *@
+		@if ( MainMenuNav.Instance is null )
+		{
+			<div class="view-controls">
+				<div>Alt + Left-drag · Rotate</div>
+				<div>Alt + Right-drag · Zoom</div>
+				<div>Alt + Middle-drag · Pan</div>
+			</div>
+		}
+
 		@if ( ShowTools || ShowLayers )
 		{
 		<div class="panel left">
