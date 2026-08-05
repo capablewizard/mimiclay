@@ -12,6 +12,14 @@ namespace Mimiclay;
 /// Isolated by design: depends only on <see cref="SdfSculpture"/> + <see cref="OrbitCameraController"/>,
 /// never on players/rounds. A future creative mode reuses it as-is, just with a different host enabling it.
 /// </summary>
+/// <summary>Which tool the edit session is driving: Add = the stamp ghost (place shapes by clicking),
+/// Edit = select-and-gizmo precision editing.</summary>
+public enum SculptTool
+{
+	Add,
+	Edit,
+}
+
 [Title( "Sculpt Edit Session" )]
 [Category( "Mimiclay" )]
 [Icon( "construction" )]
@@ -90,6 +98,140 @@ public sealed class SculptEditSession : Component
 
 	public bool IsEditing { get; private set; }
 
+	/// <summary>Tool the session starts on. Edit preserves the old behaviour for pre-existing hosts (menu
+	/// head toy); the in-round disguise session wants Add — stamping is the primary flow.</summary>
+	[Property] public SculptTool StartTool { get; set; } = SculptTool.Edit;
+
+	/// <summary>The active tool. Add = stamp ghost, Edit = select + gizmo. Q toggles; the HUD toolbar sets it.</summary>
+	public SculptTool Tool { get; private set; } = SculptTool.Edit;
+
+	readonly BrushStampTool _stampTool = new();
+	bool _qWas;     // manual edge detect for the Q tool-toggle (Input.Keyboard only exposes Down)
+	bool _spaceWas; // manual edge detect for the spacebar Add/Carve toggle
+
+	/// <summary>Snap is a HOLD: Shift held = stamp placement snaps to the origin-centred grid and the
+	/// E-rotate scrub snaps to the 45° grid.</summary>
+	public static bool SnapHeld =>
+		Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "shift" );
+
+	/// <summary>Axis constraint BITMASK for every stamp/scrub operation — HOLDS, combinable: X key = bit 1
+	/// (X axis), C = bit 2 (Y axis), Z = bit 4 (Z axis); release for free XYZ. One axis = line constraint,
+	/// two = plane constraint; steering, the RMB depth drag, D-scale and MMB-rotate all honour it. Written
+	/// each frame from the held keys while a session updates. Static: one constraint for the one cursor.</summary>
+	public static int AxisConstraint { get; private set; }
+
+	/// <summary>The mask the geometry actually uses: all three axes held = no constraint at all.</summary>
+	public static int EffectiveAxisMask => AxisConstraint == 7 ? 0 : AxisConstraint;
+
+	/// <summary>Sculpture-local unit axis for a bit index (0/1/2 = X/Y/Z).</summary>
+	public static Vector3 AxisVector( int i ) =>
+		i == 0 ? new Vector3( 1f, 0f, 0f ) : i == 1 ? new Vector3( 0f, 1f, 0f ) : new Vector3( 0f, 0f, 1f );
+
+	/// <summary>True when the mask is exactly one axis, with that axis vector.</summary>
+	public static bool TrySingleAxis( int mask, out Vector3 axis )
+	{
+		axis = default;
+		if ( mask is not (1 or 2 or 4) )
+			return false;
+
+		axis = mask == 1 ? new Vector3( 1f, 0f, 0f ) : mask == 2 ? new Vector3( 0f, 1f, 0f ) : new Vector3( 0f, 0f, 1f );
+		return true;
+	}
+
+	static readonly Color[] AxisColors = { Color.Red, Color.Green, Color.Blue }; // X/Y/Z, matching the gizmo
+
+	/// <summary>The active stamp shape (what the next/current ghost is). The HUD toolbar highlights it.</summary>
+	public SdfShape ActiveShape => _stampTool.Shape;
+
+	/// <summary>The pending stamp ghost brush while the Add tool is live (null otherwise). It IS in
+	/// Target.Brushes — commit paths must not bake it (see <see cref="NotifyChanged"/>'s guard). Membership
+	/// is re-verified so a wholesale brush-list swap (Load) can't leave a stale ghost blocking commits.</summary>
+	public SdfBrush StampBrush
+	{
+		get
+		{
+			if ( !IsEditing || Tool != SculptTool.Add )
+				return null;
+
+			var s = _stampTool.Stamp;
+			return s is not null && Target.IsValid() && Target.Brushes?.Contains( s ) == true ? s : null;
+		}
+	}
+
+	/// <summary>The brush the HUD's palette/sliders/picker edit: the stamp ghost in Add mode, the selected
+	/// brush in Edit mode. Editing the ghost pre-styles the next stamp.</summary>
+	public SdfBrush ActiveBrush => Tool == SculptTool.Add && IsEditing ? _stampTool.Stamp : SelectedBrush;
+
+	/// <summary>True while a hold-key param scrub (A/S/D/E) is running — the HUD captures the mouse and
+	/// draws the frozen-cursor dot at <see cref="BrushScrub.Anchor"/>.</summary>
+	public bool IsScrubbing => BrushScrub.Active != ScrubKind.None;
+
+	/// <summary>The pending stamp's projected screen position (real screen px), for landing the cursor on
+	/// the shape when a frozen-cursor gesture releases. False with no stamp / camera / behind-camera.</summary>
+	public bool TryGetStampScreenPos( out Vector2 px )
+	{
+		px = default;
+		var b = StampBrush;
+		var cam = Scene?.Camera;
+		if ( b is null || cam is null || !Target.IsValid() )
+			return false;
+
+		var world = Target.WorldTransform.PointToWorld( b.Position );
+		if ( Vector3.Dot( world - cam.WorldPosition, cam.WorldRotation.Forward ) <= 0f )
+			return false;
+
+		px = cam.PointToScreenPixels( world );
+		return true;
+	}
+
+	/// <summary>The stamp tool's Add/Carve toggle state (the HUD chips bind to this).</summary>
+	public SdfOperation StampOperation => _stampTool.Operation;
+
+	/// <summary>Set the stamp operation (the HUD's Add/Carve toggle). The live ghost syncs — and previews —
+	/// on the stamp tool's next update.</summary>
+	public void SetStampOperation( SdfOperation op ) => _stampTool.Operation = op;
+
+	/// <summary>The pending stamp ghost riding <paramref name="sculpt"/> (or null). Bounds consumers that
+	/// drive the CAMERA or the PAWN — pivot pin, origin recentre, feet, DoF focus — must exclude it, or the
+	/// view/body chases the cursor while placing. Render/mesh bounds keep including it (the preview surface
+	/// needs the coverage).</summary>
+	public static SdfBrush PendingStamp( SdfSculpture sculpt ) =>
+		Current is { } s && s.Target == sculpt ? s.StampBrush : null;
+
+	/// <summary>Switch tools. Entering Add clears the selection (no gizmo there); leaving Add strips the
+	/// pending ghost and commits the real shape.</summary>
+	public void SetTool( SculptTool tool )
+	{
+		if ( tool == Tool )
+			return;
+
+		Tool = tool;
+
+		if ( tool == SculptTool.Add )
+		{
+			Deselect();
+			_gizmo.Hide();
+			_gizmoAlpha = 0f;
+			_gizmoBrush = null;
+		}
+		else
+		{
+			CancelStamp();
+		}
+	}
+
+	/// <summary>Set the active stamp shape (HUD toolbar / number keys). The live ghost remoulds in place.</summary>
+	public void SetShape( SdfShape shape ) => _stampTool.SetShape( shape );
+
+	// Strip the pending ghost from the brush list. If one was actually removed the surface still shows it,
+	// so run the full commit (NotifyChanged's ghost guard passes — StampBrush is null once cancelled).
+	void CancelStamp()
+	{
+		_stampWire.Hide();
+		if ( _stampTool.Cancel( Target ) )
+			NotifyChanged();
+	}
+
 	/// <summary>True while a gizmo handle is being dragged (so the HUD can fade out of the way).</summary>
 	public bool IsManipulating => _gizmo.IsDragging;
 
@@ -167,6 +309,10 @@ public sealed class SculptEditSession : Component
 	float _ghostAlpha;
 	float _ghostOutAlpha;
 	readonly BrushWireframes _wireframes = new();
+	// Carve-stamp outline: a subtract ghost hovering in empty space is invisible on the live surface, so it
+	// gets its own single-brush wireframe (red, editor-style). Additive stamps draw nothing extra.
+	readonly BrushWireframes _stampWire = new();
+	readonly List<SdfBrush> _stampWireList = new();
 	float _wireAlpha;
 	bool _wireframesOn = false; // off by default; toggled by Tab, but only while edit mode is active
 	int _hoverBrush = -1;      // brush under the cursor while editing (for the wireframe hover highlight)
@@ -194,6 +340,7 @@ public sealed class SculptEditSession : Component
 	// target's renderers and the main camera are all ready for SetActive's HUD spawn + DoF setup.
 	protected override void OnStart()
 	{
+		Tool = StartTool;
 		LoadPersistSlot(); // before self-activate, so an always-on session opens already showing the restored shape
 
 		if ( StartActive )
@@ -235,6 +382,7 @@ public sealed class SculptEditSession : Component
 		// Tear down the rendered gizmo + ghost when leaving edit mode (works whether or not we own a camera).
 		if ( !active )
 		{
+			CancelStamp(); // strip the pending stamp ghost FIRST, so no exit commit can bake it
 			if ( _pendingCommit )
 				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit (saves the slot too)
 			UnhookPersistSlot();
@@ -259,6 +407,7 @@ public sealed class SculptEditSession : Component
 	// SceneWorld, so it must be released explicitly).
 	protected override void OnDisabled()
 	{
+		CancelStamp(); // strip the pending stamp ghost FIRST, so no teardown commit can bake it
 		if ( _pendingCommit )
 			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown (saves the slot too)
 		UnhookPersistSlot();
@@ -315,7 +464,7 @@ public sealed class SculptEditSession : Component
 
 		b.RemoveAt( Math.Clamp( Selected, 0, b.Count - 1 ) );
 		Selected = -1;
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	// ── Per-row layer actions (the icon buttons on each LayerRow) ────────────────────────────────────
@@ -334,7 +483,7 @@ public sealed class SculptEditSession : Component
 			return;
 
 		b.Enabled = !b.Enabled;
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	/// <summary>Flip a brush between additive and subtractive (the +/- button) and rebuild.</summary>
@@ -344,7 +493,7 @@ public sealed class SculptEditSession : Component
 			return;
 
 		b.Operation = b.Operation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add;
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	// Each brush's axis combo from the last time the layer-row toggle turned its symmetry OFF, so turning
@@ -373,7 +522,7 @@ public sealed class SculptEditSession : Component
 			b.MirrorZ = m.Z;
 		}
 
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	/// <summary>Delete a specific brush (the bin button), keeping at least one, and rebuild.</summary>
@@ -389,7 +538,7 @@ public sealed class SculptEditSession : Component
 		if ( Selected == index ) Selected = -1;
 		else if ( Selected > index ) Selected--;
 
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	/// <summary>Duplicate the selected brush: insert an independent copy right above it in the stack — exactly
@@ -404,7 +553,7 @@ public sealed class SculptEditSession : Component
 		int i = Selected;
 		b.Insert( i + 1, b[i].Copy() );
 		Selected = i + 1;
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	/// <summary>Reset the selected brush's rotation to its shape's spawn orientation (the "Rotate" tool
@@ -415,7 +564,7 @@ public sealed class SculptEditSession : Component
 			return;
 
 		b.Rotation = SdfSculpture.SpawnRotation( b.Shape );
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	/// <summary>Reorder the layer list: move the brush at <paramref name="from"/> so it lands at
@@ -444,7 +593,7 @@ public sealed class SculptEditSession : Component
 		if ( ni >= 0 )
 			Selected = ni;
 
-		Target.Rebuild();
+		NotifyChanged();
 	}
 
 	/// <summary>Insert a control point where the cursor is hovering the selected spline's line. Called by the
@@ -465,6 +614,15 @@ public sealed class SculptEditSession : Component
 	/// discrete one-shot edits (palette click, cross-section swap, add/remove/reorder).</summary>
 	public void NotifyChanged()
 	{
+		// A pending stamp ghost is sitting in the brush list — a full commit here would remesh, persist and
+		// network it as if it were real. Downgrade to a live preview; the real commit happens with the stamp
+		// itself (or right after the ghost is cancelled, when this guard passes).
+		if ( StampBrush is not null )
+		{
+			PreviewChanged();
+			return;
+		}
+
 		_pendingCommit = false; // a full commit covers anything previewed before it
 		if ( Target.IsValid() )
 			Target.Rebuild();
@@ -604,11 +762,32 @@ public sealed class SculptEditSession : Component
 
 		var brushes = Target.Brushes;
 
-		// Add shapes (number keys) / remove the last (G). A new shape becomes the selection. UI panel later.
-		if ( Input.Pressed( "Slot1" ) ) AddShape( Target.AddSphere );
-		if ( Input.Pressed( "Slot2" ) ) AddShape( Target.AddBox );
-		if ( Input.Pressed( "Slot3" ) ) AddShape( Target.AddCylinder );
-		if ( Input.Pressed( "Slot4" ) ) AddShape( Target.AddCone );
+		// Q toggles Add/Edit; the number keys jump straight into stamping that shape; G removes the last brush.
+		// (Raw keyboard reads are gated off while a text field has focus — typing must never switch tools.)
+		bool q = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "q" );
+		if ( q && !_qWas )
+			SetTool( Tool == SculptTool.Add ? SculptTool.Edit : SculptTool.Add );
+		_qWas = q;
+
+		// Spacebar flips the stamp between Add and Carve (same state the HUD toggle chips drive).
+		bool space = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "space" );
+		if ( space && !_spaceWas && Tool == SculptTool.Add )
+			SetStampOperation( StampOperation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add );
+		_spaceWas = space;
+
+		// Axis constraints are HOLDS, and they combine: X / C / Z lock the sculpture-local X / Y / Z axes
+		// while held (C for Y so all three sit on the bottom row) — one held = line, two = plane.
+		// Suppressed while typing and under ctrl combos (undo etc.).
+		bool axisKeysLive = Sandbox.UI.InputFocus.Current is null && !Input.Keyboard.Down( "ctrl" );
+		AxisConstraint = !axisKeysLive ? 0
+			: (Input.Keyboard.Down( "x" ) ? 1 : 0)
+			| (Input.Keyboard.Down( "c" ) ? 2 : 0)
+			| (Input.Keyboard.Down( "z" ) ? 4 : 0);
+
+		if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
+		if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
+		if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
+		if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
 		if ( Input.Pressed( "Drop" ) ) RemoveLast();
 
 		if ( brushes is not { Count: > 0 } )
@@ -623,6 +802,16 @@ public sealed class SculptEditSession : Component
 		// Don't let world clicks/picks/gizmo-grabs fall through the HUD (palette or sliders) when over it.
 		bool overUi = EditHud.PointerOverUi;
 
+		// Axis-constraint guide line through the active brush (stamp ghost or selection).
+		DrawAxisGuide( tx );
+
+		// ── Add tool: the stamp ghost owns the frame (no selection / gizmo / hover-pick). ────────────────
+		if ( Tool == SculptTool.Add )
+		{
+			AddToolUpdate( tx, interactive: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen );
+			return;
+		}
+
 		// The gizmo fades in/out with the selection (matching the HUD palette/sliders). While fading out after a
 		// deselect it keeps drawing the LAST brush at falling opacity, then tears down once invisible; it only
 		// hovers/grabs while actually selected. ShowGizmo off (view-only) just fades it out and leaves it gone.
@@ -636,7 +825,7 @@ public sealed class SculptEditSession : Component
 		if ( ShowGizmo && _gizmoBrush is not null && (gizmoTarget > 0f || _gizmoAlpha > 0.01f) )
 		{
 			changed = _gizmo.Update( tx, _gizmoBrush, Scene, Style,
-				allowInteract: Selected >= 0 && !overUi, alpha: _gizmoAlpha );
+				allowInteract: Selected >= 0 && !overUi && !IsScrubbing, alpha: _gizmoAlpha );
 		}
 		else
 		{
@@ -645,6 +834,13 @@ public sealed class SculptEditSession : Component
 			if ( Selected < 0 )
 				_gizmoBrush = null;
 		}
+
+		// Hold-key param scrubs on the selection — the same A/S/D/E scheme the stamp tool uses, so both
+		// modes share one muscle memory. Continuous changes preview; the key release runs the full commit.
+		changed |= BrushScrub.Update( SelectedBrush, tx, Scene.Camera,
+			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsBusy, out bool scrubEnded );
+		if ( scrubEnded )
+			CommitChanged();
 
 		// Arm the spline add-point only once the cursor is over the line with Attack1 RELEASED. The click that
 		// SELECTS a spline holds the button down through the frame the line first becomes hoverable, so it can't
@@ -656,7 +852,7 @@ public sealed class SculptEditSession : Component
 
 		// Hover: the brush under the cursor (skipped while orbiting, over a gizmo handle, or over the UI).
 		// Ghost it if it isn't already the selected one; a click selects it.
-		int hover = (!overUi && !Input.Down( "Walk" ) && !_gizmo.IsBusy) ? PickBrush( tx ) : -1;
+		int hover = (!overUi && !Input.Down( "Walk" ) && !_gizmo.IsBusy && !IsScrubbing) ? PickBrush( tx ) : -1;
 
 		// Fall back to the brush the HUD's layer list is hovering, so mousing a row highlights its shape.
 		// The scene pick wins when valid; this only fills in when the cursor isn't over a 3D brush.
@@ -711,7 +907,7 @@ public sealed class SculptEditSession : Component
 		// A click selects the hovered shape, or clears the selection when it lands on empty space. Gated so it
 		// only fires on a real world click: not over the HUD, not alt-orbiting, and not on a gizmo handle (a
 		// handle grab reads hover<0, so without the IsBusy guard starting a drag would also deselect).
-		if ( Input.Pressed( "Attack1" ) && !overUi && !Input.Down( "Walk" ) && !_gizmo.IsBusy )
+		if ( Input.Pressed( "Attack1" ) && !overUi && !Input.Down( "Walk" ) && !_gizmo.IsBusy && !IsScrubbing )
 			Selected = hover; // hover is -1 on empty space → deselect
 
 		// Debug: render the shadow-proxy mesh AS the visible surface (raymarch + full mesh hidden).
@@ -728,9 +924,10 @@ public sealed class SculptEditSession : Component
 
 		if ( changed )
 		{
-			// While dragging a handle, skip the heavy surface-nets remesh: the raymarcher shows the live
-			// surface, so the meshed model only matters for SHADOWS — use a cheap union-of-primitives proxy.
-			if ( IsManipulating )
+			// While dragging a handle (or running a hold-key scrub), skip the heavy surface-nets remesh: the
+			// raymarcher shows the live surface, so the meshed model only matters for SHADOWS — use a cheap
+			// union-of-primitives proxy. The scrub's key release commits via CommitChanged above.
+			if ( IsManipulating || IsScrubbing )
 				Target.RebuildShadowProxy();
 			else
 				Target.Rebuild();
@@ -813,23 +1010,116 @@ public sealed class SculptEditSession : Component
 		_ghostAlpha = _ghostOutAlpha = 0f;
 	}
 
-	void AddShape( Action add )
+	// The axis guide through the active brush (stamp ghost or selection): ALL three sculpture-local axes
+	// draw as a faint short tripod at all times (so you can see which way X/Y/Z run before committing to a
+	// key), and a HELD axis swaps to the long bright line — two held read as the constraint plane's axes.
+	// Overlay pass, so it stays readable through the clay.
+	void DrawAxisGuide( Transform tx )
 	{
-		int before = Target.Brushes?.Count ?? 0;
-		add();
-		if ( (Target.Brushes?.Count ?? 0) > before )
-			Selected = Target.Brushes.Count - 1; // select the brush we just added (a cap-refused add changes nothing)
+		var cam = Scene?.Camera;
+		if ( cam is null || ActiveBrush is not { } b )
+			return;
+
+		int mask = EffectiveAxisMask;
+		var c = tx.PointToWorld( b.Position );
+		const float HintReach = 120f;
+		const float ActiveReach = 400f;
+
+		// DebugOverlay lines are a fixed 1px — thickness comes from drawing each guide as a bundle of
+		// parallel lines offset perpendicular to the view, the offset scaled by camera distance so the
+		// width reads roughly constant on screen.
+		float step = MathF.Max( 0.02f, (cam.WorldPosition - c).Length * 0.0012f );
+
+		for ( int i = 0; i < 3; i++ )
+		{
+			bool held = (mask & (1 << i)) != 0;
+			float reach = held ? ActiveReach : HintReach;
+			var dir = (tx.Rotation * AxisVector( i )).Normal;
+			var col = AxisColors[i].WithAlpha( held ? 0.5f : 0.12f );
+
+			var perp = Vector3.Cross( dir, (cam.WorldPosition - c).Normal );
+			if ( perp.LengthSquared < 1e-4f )
+				perp = Vector3.Cross( dir, cam.WorldRotation.Up );
+			perp = perp.Normal;
+
+			int half = held ? 2 : 1; // held = ~5px, hint = ~3px
+			for ( int k = -half; k <= half; k++ )
+			{
+				var off = perp * (k * step);
+				DebugOverlay.Line( c - dir * reach + off, c + dir * reach + off, col, overlay: true );
+			}
+		}
+	}
+
+	// Number-key shape hotkeys: jump straight into stamping that shape (switching tools if needed).
+	void HotkeyShape( SdfShape shape )
+	{
+		SetTool( SculptTool.Add );
+		SetShape( shape );
+	}
+
+	// ── Add tool (stamp ghost) ───────────────────────────────────────────────────────────────────────
+
+	void AddToolUpdate( Transform tx, bool interactive )
+	{
+		// No selection UI in add mode: gizmo down instantly, hover cross-fade state cleared — the incoming
+		// hover ghost slot is reused as the stamp's translucent shell.
+		_gizmo.Hide();
+		_gizmoAlpha = 0f;
+		_gizmoBrush = null;
+		_hoverBrush = -1;
+		_ghostOut.Hide();
+		_ghostOutBrush = null;
+		_ghostOutAlpha = 0f;
+
+		_ghost.Hide();
+		_ghostBrush = null;
+		_ghostAlpha = 0f;
+
+		bool changed = _stampTool.Update( Target, Scene, interactive, out bool committed );
+
+		// No overlay for an additive stamp — the live surface IS the preview. A carve stamp is the exception:
+		// hovering empty space it removes nothing, so it'd be invisible — give it the red editor wireframe.
+		var stamp = StampBrush;
+		if ( stamp is not null && stamp.Operation == SdfOperation.Subtract )
+		{
+			_stampWireList.Clear();
+			_stampWireList.Add( stamp );
+			_stampWire.Draw( _stampWireList, tx, Scene, Scene.Camera,
+				selected: 0, hovered: -1, masterAlpha: 0.9f, Style.OutlineThickness, WireframeDepthBias );
+		}
+		else
+		{
+			_stampWire.Hide();
+		}
+
+		if ( committed )
+			NotifyChanged(); // the stamp is real now (StampBrush is null until the next ghost spawns) → full commit
+		else if ( changed )
+			Target.RebuildShadowProxy(); // live preview: the raymarcher reads the brushes; shadows + net stream follow
 	}
 
 	void RemoveLast()
 	{
 		var brushes = Target.Brushes;
-		if ( brushes is not { Count: > 1 } ) // keep at least one brush so there's always something to edit
+		if ( brushes is null )
 			return;
 
-		brushes.RemoveAt( brushes.Count - 1 );
-		Selected = brushes.Count - 1;
-		Target.Rebuild();
+		// Never remove the pending stamp ghost, and keep at least one real brush to edit.
+		var ghost = StampBrush;
+		if ( brushes.Count - (ghost is not null ? 1 : 0) <= 1 )
+			return;
+
+		for ( int i = brushes.Count - 1; i >= 0; i-- )
+		{
+			if ( brushes[i] == ghost )
+				continue;
+			brushes.RemoveAt( i );
+			break;
+		}
+
+		Selected = ghost is null ? brushes.Count - 1 : -1;
+		NotifyChanged();
 	}
 
 	// Sphere-trace the field along the cursor ray and return the brush owning the surface point (or -1).
@@ -948,7 +1238,8 @@ public sealed class SculptEditSession : Component
 
 	Vector3 FocusPoint()
 	{
-		if ( Target.IsValid() && Sdf.TryGetBounds( Target.Brushes, out var bounds ) )
+		// Exclude the pending stamp ghost — the DoF focus must not chase the cursor while placing.
+		if ( Target.IsValid() && Sdf.TryGetBounds( Target.Brushes, out var bounds, StampBrush ) )
 			return Target.WorldTransform.PointToWorld( bounds.Center );
 
 		return Target.IsValid() ? Target.WorldPosition : WorldPosition;

@@ -39,7 +39,7 @@ public sealed class BrushGhost
 
 		// World-space mesh — depends only on the brush + its sculpture transform, not the camera. Skip the
 		// rebuild when nothing visible changed (mirror flags included, so toggling symmetry refreshes).
-		int mirror = (brush.MirrorX ? 1 : 0) | (brush.MirrorY ? 2 : 0) | (brush.MirrorZ ? 4 : 0);
+		int mirror = (brush.EffectiveMirrorX ? 1 : 0) | (brush.EffectiveMirrorY ? 2 : 0) | (brush.EffectiveMirrorZ ? 4 : 0);
 		int hash = HashCode.Combine( (int)brush.Shape, brush.Size, brush.Position, brush.Rotation, color,
 			sculptTx.Position, sculptTx.Rotation, mirror );
 		hash = HashCode.Combine( hash, (int)brush.CrossSection, brush.Slice ); // profile swap / slice drag rebuilds the ghost
@@ -82,7 +82,7 @@ public sealed class BrushGhost
 		// Mesh the primitive once per mirror sign combination: the identity (1,1,1) base shape plus a
 		// reflection across each enabled sculpture-origin plane. The gizmo shader is two-sided, so a
 		// reflected (winding-flipped) copy renders fine.
-		int nx = brush.MirrorX ? 1 : 0, ny = brush.MirrorY ? 1 : 0, nz = brush.MirrorZ ? 1 : 0;
+		int nx = brush.EffectiveMirrorX ? 1 : 0, ny = brush.EffectiveMirrorY ? 1 : 0, nz = brush.EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= nx; sx++ )
 		for ( int sy = 0; sy <= ny; sy++ )
 		for ( int sz = 0; sz <= nz; sz++ )

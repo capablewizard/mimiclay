@@ -467,7 +467,9 @@ public static class SdfBrushPacker
 			data[o + 16] = b.Shape == SdfShape.Spline ? (b.SplineClosed ? 1f : 0f) : b.Rounding;
 			data[o + 17] = b.Metallic;
 			data[o + 18] = b.Roughness;
-			data[o + 19] = (b.MirrorX ? 1 : 0) | (b.MirrorY ? 2 : 0) | (b.MirrorZ ? 4 : 0);
+			// Effective flags (symmetry deadzone): pack-time is the single gate for BOTH GPU shader copies,
+			// so a centre-hugging brush loses its mirror everywhere without touching shader code.
+			data[o + 19] = (b.EffectiveMirrorX ? 1 : 0) | (b.EffectiveMirrorY ? 2 : 0) | (b.EffectiveMirrorZ ? 4 : 0);
 
 			BrushWorldAabb( b, tx, out var wmn, out var wmx );
 			data[o + 20] = wmn.x; data[o + 21] = wmn.y; data[o + 22] = wmn.z;
@@ -517,7 +519,7 @@ public static class SdfBrushPacker
 
 		var mn = new Vector3( float.MaxValue );
 		var mx = new Vector3( float.MinValue );
-		int nx = b.MirrorX ? 1 : 0, ny = b.MirrorY ? 1 : 0, nz = b.MirrorZ ? 1 : 0;
+		int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= nx; sx++ )
 			for ( int sy = 0; sy <= ny; sy++ )
 				for ( int sz = 0; sz <= nz; sz++ )

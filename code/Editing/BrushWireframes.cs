@@ -81,7 +81,7 @@ public sealed class BrushWireframes
 			hc.Add( b.Rotation );
 			hc.Add( b.Size );
 			hc.Add( b.Slice ); // slice moves the cut edge in the wire
-			hc.Add( b.MirrorX ); hc.Add( b.MirrorY ); hc.Add( b.MirrorZ );
+			hc.Add( b.EffectiveMirrorX ); hc.Add( b.EffectiveMirrorY ); hc.Add( b.EffectiveMirrorZ );
 			if ( b.Points is { } pts )
 			{
 				hc.Add( pts.Count );
@@ -120,7 +120,7 @@ public sealed class BrushWireframes
 			_col = baseCol.WithAlpha( stateAlpha * masterAlpha );
 
 			// One copy per mirror-sign combination (identity + reflection across each enabled plane).
-			int nx = b.MirrorX ? 1 : 0, ny = b.MirrorY ? 1 : 0, nz = b.MirrorZ ? 1 : 0;
+			int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
 			for ( int sx = 0; sx <= nx; sx++ )
 			for ( int sy = 0; sy <= ny; sy++ )
 			for ( int sz = 0; sz <= nz; sz++ )

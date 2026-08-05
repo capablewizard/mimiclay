@@ -151,6 +151,25 @@ public class SdfBrush
 	/// <summary>Mirror across the sculpture's local XZ plane (y=0). See <see cref="MirrorX"/>.</summary>
 	[Property, Group( "Symmetry" )] public bool MirrorY { get; set; }
 
+	// ── Symmetry deadzone ────────────────────────────────────────────────────────────────────────────
+	// A mirrored brush hugging its mirror plane produces a near-identical overlapping copy — a doubled,
+	// inflated blend right at the centre — so the mirror auto-disables per axis while the brush sits within
+	// a small fraction (5%) of its own size of that plane. The user's toggle (MirrorX etc.) is untouched: slide the
+	// brush off-centre and the mirror comes back. EVERY geometry evaluator (CPU distance, GPU packer,
+	// ghost, wireframes, bounds, collision) must read the Effective* flags, or surfaces disagree; UI state
+	// (layer-row icons, symmetry chips, copy/lerp, change hashes) keeps reading the raw toggles. Splines
+	// are exempt: their geometry lives in Points, so Position says nothing about where the tube is.
+
+	const float MirrorDeadzoneFrac = 0.05f;
+	float MirrorDeadzone => MathF.Max( 1f, MathF.Max( Size.x, MathF.Max( Size.y, Size.z ) ) * MirrorDeadzoneFrac );
+
+	/// <summary>X mirror as the geometry sees it: the user's toggle, auto-disabled while the brush hugs the plane.</summary>
+	public bool EffectiveMirrorX => MirrorX && (Shape == SdfShape.Spline || MathF.Abs( Position.x ) > MirrorDeadzone);
+	/// <summary>Y mirror as the geometry sees it. See <see cref="EffectiveMirrorX"/>.</summary>
+	public bool EffectiveMirrorY => MirrorY && (Shape == SdfShape.Spline || MathF.Abs( Position.y ) > MirrorDeadzone);
+	/// <summary>Z mirror as the geometry sees it. See <see cref="EffectiveMirrorX"/>.</summary>
+	public bool EffectiveMirrorZ => MirrorZ && (Shape == SdfShape.Spline || MathF.Abs( Position.z ) > MirrorDeadzone);
+
 	/// <summary>Mirror across the sculpture's local XY plane (z=0). See <see cref="MirrorX"/>.</summary>
 	[Property, Group( "Symmetry" )] public bool MirrorZ { get; set; }
 
@@ -330,14 +349,14 @@ public class SdfBrush
 	{
 		float d = PrimitiveDistance( p );
 
-		if ( !MirrorX && !MirrorY && !MirrorZ )
+		if ( !EffectiveMirrorX && !EffectiveMirrorY && !EffectiveMirrorZ )
 			return d;
 
 		// Mirror symmetry: union the primitive with its reflection across each enabled sculpture-origin
 		// plane. Enumerate every sign combination of the enabled axes — 1 extra copy for one axis, 3 for
 		// two, 7 for three — so e.g. X+Y gives true quadrant symmetry (all four corners), not just two
 		// halves. The seam fuses with the brush's own Blend (smooth-min), exactly like the rest of the field.
-		int nx = MirrorX ? 1 : 0, ny = MirrorY ? 1 : 0, nz = MirrorZ ? 1 : 0;
+		int nx = EffectiveMirrorX ? 1 : 0, ny = EffectiveMirrorY ? 1 : 0, nz = EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= nx; sx++ )
 			for ( int sy = 0; sy <= ny; sy++ )
 				for ( int sz = 0; sz <= nz; sz++ )
@@ -625,7 +644,7 @@ public class SdfBrush
 	{
 		var c = Position + Rotation * LocalCentre; // the shape's true centre (base-pivot cone sits above Position)
 		int n = 0;
-		int nx = MirrorX ? 1 : 0, ny = MirrorY ? 1 : 0, nz = MirrorZ ? 1 : 0;
+		int nx = EffectiveMirrorX ? 1 : 0, ny = EffectiveMirrorY ? 1 : 0, nz = EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= nx; sx++ )
 			for ( int sy = 0; sy <= ny; sy++ )
 				for ( int sz = 0; sz <= nz; sz++ )
@@ -1327,8 +1346,11 @@ public static class Sdf
 		return g.LengthSquared > 0.0001f ? g.Normal : Vector3.Up;
 	}
 
-	/// <summary>World-space box that encloses every additive brush (plus blend).</summary>
-	public static bool TryGetBounds( List<SdfBrush> brushes, out BBox bounds )
+	/// <summary>World-space box that encloses every additive brush (plus blend). <paramref name="exclude"/>
+	/// skips one brush — camera/pawn consumers pass the pending stamp ghost (see
+	/// <see cref="SculptEditSession.PendingStamp"/>) so the view and body never chase the cursor while a
+	/// stamp is being placed; render/mesh consumers leave it null (the preview surface needs coverage).</summary>
+	public static bool TryGetBounds( List<SdfBrush> brushes, out BBox bounds, SdfBrush exclude = null )
 	{
 		bounds = default;
 		bool any = false;
@@ -1336,14 +1358,14 @@ public static class Sdf
 
 		foreach ( var b in brushes )
 		{
-			if ( !b.Enabled || b.Operation != SdfOperation.Add )
+			if ( b == exclude || !b.Enabled || b.Operation != SdfOperation.Add )
 				continue;
 
 			b.LocalBounds( out var lo0, out var hi0 );
 
 			// Union the local AABB and a reflected copy across each enabled mirror plane. Reflecting an
 			// axis-aligned box across a coordinate plane just swaps that axis's min/max (and negates them).
-			int nx = b.MirrorX ? 1 : 0, ny = b.MirrorY ? 1 : 0, nz = b.MirrorZ ? 1 : 0;
+			int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
 			for ( int sx = 0; sx <= nx; sx++ )
 				for ( int sy = 0; sy <= ny; sy++ )
 					for ( int sz = 0; sz <= nz; sz++ )

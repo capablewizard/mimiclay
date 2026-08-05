@@ -597,7 +597,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// the BODY'S LOCAL frame: the local bounds centre only changes when the sculpt is edited, so walking
 		// AND turning feed through raw (camera stays glued while moving/rotating) and only edits ease in
 		// softly. Recomputed per frame; cleared when toggled off so the rig falls back to plain follow.
-		if ( CenterPivotOnShape && _body.IsValid() && Sdf.TryGetBounds( _body.Brushes, out var b ) )
+		if ( CenterPivotOnShape && _body.IsValid() && Sdf.TryGetBounds( _body.Brushes, out var b, SculptEditSession.PendingStamp( _body ) ) )
 		{
 			var targetLocal = new Vector2( b.Center.x, b.Center.y );
 			_pivotOffsetXY = _pivotOffsetXY is { } current
@@ -663,7 +663,9 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// origin shift arrives via the pawn's transform sync; child transforms don't live-replicate).
 	void RecenterOriginOnShape()
 	{
-		if ( !_body.IsValid() || !Sdf.TryGetBounds( _body.Brushes, out var b ) )
+		// The pending stamp ghost is excluded: the pivot-pin HARD RULE (the shape must never move on its own)
+		// extends here — a ghost riding the cursor must not shift the origin until it's actually committed.
+		if ( !_body.IsValid() || !Sdf.TryGetBounds( _body.Brushes, out var b, SculptEditSession.PendingStamp( _body ) ) )
 			return;
 
 		// The shape's feet (bounds bottom-centre) in PAWN space. Purely local — ground contact and slopes never
@@ -687,7 +689,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	public bool TryGetShapeFeet( out Vector3 feet )
 	{
 		feet = default;
-		if ( !_body.IsValid() || !Sdf.TryGetBounds( _body.Brushes, out var b ) )
+		if ( !_body.IsValid() || !Sdf.TryGetBounds( _body.Brushes, out var b, SculptEditSession.PendingStamp( _body ) ) )
 			return false;
 
 		feet = _body.WorldTransform.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) );

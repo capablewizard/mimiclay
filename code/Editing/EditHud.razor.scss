@@ -130,6 +130,66 @@
 		gap: 10px;
 	}
 
+	// Add/Edit tool toggle — a pair of paper chips at the top of the left column (orange = active tool).
+	.tool-toggle {
+		flex-direction: row;
+		gap: 10px;
+
+		.chip {
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
+
+			.icon { font-size: 20px; color: $craft-blue; }
+			span { font-size: 15px; }
+		}
+
+		.chip.on .icon { color: $paper-ink; }
+	}
+
+	// Carve chip goes red when active (matches the subtract wireframe / layer-row minus), not orange.
+	.op-toggle .chip.carve.on {
+		background-color: $craft-red;
+
+		.icon { color: $paper-ink; }
+	}
+
+	// The active stamp shape in add mode — same orange the selected layer row / on-chips use.
+	.shape-tile.active {
+		background-color: $craft-orange;
+
+		&:hover { background-color: $craft-orange-hi; }
+	}
+
+	// Add-tool hint strip, bottom-centre: the hold-key scheme at a glance. Display-only.
+	.hint-strip {
+		position: absolute;
+		bottom: 12px;
+		left: 0;
+		width: 100%;
+		flex-direction: row;
+		justify-content: center;
+		gap: 18px;
+		pointer-events: none;
+		font-family: Tahoma;
+		font-size: 12px;
+		font-weight: 700;
+		text-transform: uppercase;
+		color: $paper-edge;
+		opacity: 0.9;
+
+		.hint {
+			flex-direction: row;
+			align-items: center;
+			gap: 5px;
+
+			.key { color: $craft-blue; }
+
+			// Active toggle (snap on): orange, matching the toolbar's on-chips.
+			&.hot { color: $craft-orange; .key { color: $craft-orange; } }
+		}
+	}
+
 	// "Add a shape" tile: a chunky floating cream paper card with a blue shape icon + label.
 	.shape-tile {
 		pointer-events: all;
@@ -467,6 +527,24 @@
 		.xsection-row {
 			flex-direction: row;
 			gap: 8px;
+		}
+
+		// Axis-constraint readout above the sliders (scroll wheel cycles it). Display-only chips — the
+		// active one lights in its gizmo axis colour (XYZ = orange, X = red, Y = green, Z = blue).
+		.axis-row {
+			flex-direction: row;
+			gap: 8px;
+
+			.chip.axis {
+				pointer-events: none; // not pressable — the wheel is the control
+				font-size: 14px;
+				cursor: default;
+
+				&.a0.on { background-color: $craft-orange; }
+				&.a1.on { background-color: $craft-red; }
+				&.a2.on { background-color: $craft-green; }
+				&.a3.on { background-color: $craft-blue; }
+			}
 		}
 
 		// A slider with an icon-only chip riding beside it (spline Curve+Loop, Size+per-point): the slider

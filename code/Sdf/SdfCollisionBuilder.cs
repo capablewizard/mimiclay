@@ -110,7 +110,7 @@ public static class SdfCollisionBuilder
 				}
 
 				b.BuildSplineSweep( sweep, SplineSweepSpacing );
-				int snx = b.MirrorX ? 1 : 0, sny = b.MirrorY ? 1 : 0, snz = b.MirrorZ ? 1 : 0;
+				int snx = b.EffectiveMirrorX ? 1 : 0, sny = b.EffectiveMirrorY ? 1 : 0, snz = b.EffectiveMirrorZ ? 1 : 0;
 				for ( int sx = 0; sx <= snx; sx++ )
 				for ( int sy = 0; sy <= sny; sy++ )
 				for ( int sz = 0; sz <= snz; sz++ )
@@ -164,7 +164,7 @@ public static class SdfCollisionBuilder
 			if ( pts.Count < 4 )
 				continue;
 
-			int nx = b.MirrorX ? 1 : 0, ny = b.MirrorY ? 1 : 0, nz = b.MirrorZ ? 1 : 0;
+			int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
 			for ( int sx = 0; sx <= nx; sx++ )
 			for ( int sy = 0; sy <= ny; sy++ )
 			for ( int sz = 0; sz <= nz; sz++ )
@@ -194,7 +194,7 @@ public static class SdfCollisionBuilder
 
 		float sz = MathF.Max( MathF.Abs( b.Size.z ), 0.5f );
 		bool any = false;
-		int nx = b.MirrorX ? 1 : 0, ny = b.MirrorY ? 1 : 0, nz = b.MirrorZ ? 1 : 0;
+		int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= nx; sx++ )
 		for ( int sy = 0; sy <= ny; sy++ )
 		for ( int szn = 0; szn <= nz; szn++ )
@@ -255,7 +255,7 @@ public static class SdfCollisionBuilder
 			}
 			var baseLo = plo;
 			var baseHi = phi;
-			int mx = b.MirrorX ? 1 : 0, my = b.MirrorY ? 1 : 0, mz = b.MirrorZ ? 1 : 0;
+			int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
 			for ( int sx = 0; sx <= mx; sx++ )
 			for ( int sy = 0; sy <= my; sy++ )
 			for ( int sz = 0; sz <= mz; sz++ )
@@ -352,7 +352,7 @@ public static class SdfCollisionBuilder
 		var solid = new bool[nx * ny * nz];
 		bool any = false;
 
-		int mx = b.MirrorX ? 1 : 0, my = b.MirrorY ? 1 : 0, mz = b.MirrorZ ? 1 : 0;
+		int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= mx; sx++ )
 		for ( int sy = 0; sy <= my; sy++ )
 		for ( int sz = 0; sz <= mz; sz++ )
@@ -442,7 +442,7 @@ public static class SdfCollisionBuilder
 		bool any = false;
 		var near = new List<SdfBrush>( 4 ); // carvers whose AABB reaches the current sphere
 
-		int mx = b.MirrorX ? 1 : 0, my = b.MirrorY ? 1 : 0, mz = b.MirrorZ ? 1 : 0;
+		int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= mx; sx++ )
 		for ( int sy = 0; sy <= my; sy++ )
 		for ( int sz = 0; sz <= mz; sz++ )
@@ -1099,7 +1099,7 @@ public static class SdfCollisionBuilder
 		if ( b.Shape == SdfShape.Spline )
 		{
 			b.BuildSplineSweep( sweep, SplineSweepSpacing );
-			int mx = b.MirrorX ? 1 : 0, my = b.MirrorY ? 1 : 0, mz = b.MirrorZ ? 1 : 0;
+			int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
 			for ( int sx = 0; sx <= mx; sx++ )
 			for ( int sy = 0; sy <= my; sy++ )
 			for ( int sz = 0; sz <= mz; sz++ )
@@ -1112,7 +1112,7 @@ public static class SdfCollisionBuilder
 		}
 
 		LocalPoints( b, tmp );
-		int nx = b.MirrorX ? 1 : 0, ny = b.MirrorY ? 1 : 0, nz = b.MirrorZ ? 1 : 0;
+		int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= nx; sx++ )
 		for ( int sy = 0; sy <= ny; sy++ )
 		for ( int sz = 0; sz <= nz; sz++ )

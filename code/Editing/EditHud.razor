@@ -1,4 +1,5 @@
 @using System
+@using System.Collections.Generic
 @using System.Globalization
 @using Sandbox
 @using Sandbox.UI
@@ -35,23 +36,68 @@
 			</div>
 		}
 
+		@* Add-tool hint strip, bottom-centre: the whole stamp scheme at a glance. The scale hint live-updates
+		   with the tapped axis lock while a D-scrub runs. *@
+		@if ( Session.Tool == SculptTool.Add )
+		{
+			<div class="hint-strip">
+				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : "stamp")</span></div>
+				<div class="hint"><span class="key">Space</span><span>add / carve</span></div>
+				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
+				<div class="hint"><span class="key">RMB</span><span>scale</span></div>
+				<div class="hint"><span class="key">MMB</span><span>rotate</span></div>
+				<div class="hint"><span class="key">X / C / Z</span><span>axis lock</span></div>
+				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
+				<div class="hint"><span class="key">A</span><span>blend</span></div>
+				<div class="hint"><span class="key">S</span><span>round</span></div>
+				<div class="hint"><span class="key">Q</span><span>edit tool</span></div>
+			</div>
+		}
+
 		@if ( ShowTools || ShowLayers )
 		{
-		<div class="panel left">
+		<div class="panel left" @ref="LeftPanel">
 			@if ( ShowTools )
 			{
-			<div class="section-title"><div class="icon">auto_awesome</div><span>Add Shape</span></div>
+			<div class="section-title"><div class="icon">construction</div><span>Tool</span></div>
+
+			@* Add = the stamp ghost (place shapes by clicking), Edit = select + gizmo. Q toggles too. *@
+			<div class="tool-toggle">
+				<div class="chip @(Session.Tool == SculptTool.Add ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Add ))>
+					<div class="icon">add_circle</div><span>Add</span>
+				</div>
+				<div class="chip @(Session.Tool == SculptTool.Edit ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Edit ))>
+					<div class="icon">open_with</div><span>Edit</span>
+				</div>
+			</div>
+
+			<div class="section-title"><div class="icon">auto_awesome</div><span>@(Session.Tool == SculptTool.Add ? "Shape" : "Add Shape")</span></div>
 
 			<div class="shape-grid">
-				@foreach ( var entry in AddShapes )
+				@foreach ( var entry in VisibleShapes )
 				{
 					var shape = entry.Shape;
-					<div class="paper-card shape-tile" @onclick=@(() => Session.Add( shape ))>
+					var active = Session.Tool == SculptTool.Add && Session.ActiveShape == shape;
+					<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => ShapeClicked( shape ))>
 						<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
 						<span class="label">@entry.Label</span>
 					</div>
 				}
 			</div>
+
+			@* Add/Carve toggle — whether a stamp adds material or carves it away. The ghost previews the
+			   carve live (red wireframe + the surface eating away where it overlaps). *@
+			@if ( Session.Tool == SculptTool.Add )
+			{
+				<div class="tool-toggle op-toggle">
+					<div class="chip @(Session.StampOperation == SdfOperation.Add ? "on" : "")" @onclick=@(() => Session.SetStampOperation( SdfOperation.Add ))>
+						<div class="icon">add</div><span>Add</span>
+					</div>
+					<div class="chip carve @(Session.StampOperation == SdfOperation.Subtract ? "on" : "")" @onclick=@(() => Session.SetStampOperation( SdfOperation.Subtract ))>
+						<div class="icon">remove</div><span>Carve</span>
+					</div>
+				</div>
+			}
 			}
 
 			@if ( ShowLayers )
@@ -72,6 +118,8 @@
 					{
 						var idx = i;
 						var b = brushes[idx];
+						if ( b == Session.StampBrush )
+							continue; // the pending stamp ghost isn't a real layer yet — no row
 						<LayerRow @key=@b class=@(LayerClass( idx )) style=@(LayerStyle( idx ))
 							Index=@idx Shape=@b.Shape Operation=@b.Operation Color=@b.Color
 							Enabled=@b.Enabled SymmetryOn=@(b.MirrorX || b.MirrorY || b.MirrorZ)
@@ -92,7 +140,11 @@
 		   panel so the left column's full height is free for the layer stack. *@
 		@if ( ShowTools && Brush is not null )
 		{
-			<div class="panel right">
+			<div class="panel right" @ref="RightPanel">
+				@* Duplicate/Reset act on the SELECTION, so they're edit-tool-only; symmetry below also
+				   works on the stamp ghost (mirrored stamping). *@
+				@if ( Session.Tool == SculptTool.Edit )
+				{
 				<div class="section-title"><span>Tools</span><div class="icon">auto_awesome</div></div>
 				<div class="shape-grid">
 					<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
@@ -102,6 +154,7 @@
 						<div class="icon">@SdfIcons.ResetRotation</div><span>Reset</span>
 					</div>
 				</div>
+				}
 				<div class="section-title"><span>Symmetry</span><div class="icon">@SdfIcons.Symmetry</div></div>
 				<div class="shape-grid">
 					<div class="chip @(Brush.MirrorX ? "on" : "")" @onclick=@(() => ToggleMirror( 0 ))>X</div>
@@ -202,6 +255,15 @@
 			var splineSizeVal = fb?.Points is { Count: > 0 } sp ? sp[0].w : 10f; // uniform mode keeps all radii equal — point 0 IS the value
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
 			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @(SliderWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+				@* Axis-constraint readout (hold X / C / Z, combinable): XYZ = free, one axis lit = line
+				   lock, two = plane lock. Display-only — the held keys are the control. *@
+				@{ var axisMask = SculptEditSession.EffectiveAxisMask; }
+				<div class="axis-row">
+					<div class="chip mini axis a0 @(axisMask == 0 ? "on" : "")">XYZ</div>
+					<div class="chip mini axis a1 @((axisMask & 1) != 0 ? "on" : "")">X</div>
+					<div class="chip mini axis a2 @((axisMask & 2) != 0 ? "on" : "")">Y</div>
+					<div class="chip mini axis a3 @((axisMask & 4) != 0 ? "on" : "")">Z</div>
+				</div>
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
@@ -290,8 +352,9 @@
 			@onmouseup=@(() => Session?.EndSplinePointUiDrag())></div>
 	}
 
-	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during a drag). *@
-	@if ( AltNav.Dragging && Session is not null && Session.IsEditing )
+	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during an
+	   alt-nav drag or a hold param scrub). *@
+	@if ( (AltNav.Dragging || (Session?.IsScrubbing ?? false)) && Session is not null && Session.IsEditing )
 	{
 		<div class="alt-cursor" style=@AltCursorStyle()></div>
 	}
@@ -301,7 +364,39 @@
 @code
 {
 	static SculptEditSession Session => SculptEditSession.Current;
-	SdfBrush Brush => Session?.SelectedBrush;
+
+	// The brush the panels edit: the SELECTED brush in edit mode, the STAMP GHOST in add mode (palette /
+	// sliders / symmetry pre-style the next stamp). Identical to SelectedBrush when the edit tool is up.
+	SdfBrush Brush => Session?.ActiveBrush;
+
+	// Shapes the toolbar offers for the CURRENT tool: stamping excludes Spline (its authoring flow is
+	// bespoke — chained control points, not a stamp — and stays an edit-mode add for now).
+	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes
+	{
+		get
+		{
+			foreach ( var e in AddShapes )
+			{
+				if ( Session?.Tool == SculptTool.Add && e.Shape == SdfShape.Spline )
+					continue;
+				yield return e;
+			}
+		}
+	}
+
+	// Toolbar click: in add mode it re-moulds the stamp ghost; in edit mode it keeps the old stack-add
+	// (which is also how a spline is created).
+	void ShapeClicked( SdfShape shape )
+	{
+		if ( Session is null )
+			return;
+
+		if ( Session.Tool == SculptTool.Add )
+			Session.SetShape( shape );
+		else
+			Session.Add( shape );
+	}
+
 
 	// True while alt is held in edit mode (Maya camera nav). Read from the camera controller (a regular component
 	// where Input.Down reads reliably — it doesn't from UI panel code). While set, the HUD goes pointer-events:none
@@ -357,6 +452,8 @@
 	Panel PalettePanel { get; set; }
 	Panel SliderStackPanel { get; set; }
 	Panel PickerPanel { get; set; }
+	Panel LeftPanel { get; set; }
+	Panel RightPanel { get; set; }
 
 	// Retained state so the palette + sliders can fade OUT after a deselect (a mount/unmount can't animate, so the
 	// panels stay rendered and just drop opacity). _fadeBrush is the last selected brush — its colour/values fill
@@ -376,10 +473,14 @@
 	/// <summary>True while the cursor is over the colour wheel / metal / rough picker column — same gate.</summary>
 	public static bool PointerOverPicker { get; private set; }
 
+	/// <summary>True while the cursor is over the left toolbar/layers column or the right tools panel. Matters
+	/// far more with the stamp tool — a toolbar click must never also stamp a shape into the world.</summary>
+	public static bool PointerOverPanels { get; private set; }
+
 	/// <summary>Cursor is over any interactive HUD card that should swallow world clicks/picks/gizmo-grabs — or a
 	/// slider is pressed/scrubbing, so a drag that drifts off the thin track still can't highlight world shapes.</summary>
 	public static bool PointerOverUi => PointerOverPalette || PointerOverSliders || PointerOverPicker
-		|| ClaySlider.Pressed || ClayColorPicker.Pressed;
+		|| PointerOverPanels || ClaySlider.Pressed || ClayColorPicker.Pressed;
 
 	// Hovered swatch index, set from the cells' mouse-over/out. Drives the inline hover scale (see markup).
 	int _hoverIndex = -1;
@@ -447,7 +548,14 @@
 	string AltCursorStyle()
 	{
 		float scale = Panel?.ScaleFromScreen ?? 1f;
-		var a = AltNav.Anchor;
+		// With a stamp ghost up, the drawn dot RIDES THE SHAPE through the gesture — the world moves while
+		// the cursor is locked to the ghost, so a screen-frozen dot reads as wrong. Without a stamp (edit
+		// mode), each frozen-cursor gesture pins the dot at its own start point as before.
+		Vector2 a;
+		if ( Session is { } s && s.TryGetStampScreenPos( out var stampPx ) )
+			a = stampPx;
+		else
+			a = AltNav.Dragging ? AltNav.Anchor : BrushScrub.Anchor;
 		float size = 64f * scale;
 		float x = a.x * scale - size * 0.5f;
 		float y = a.y * scale - size * 0.5f;
@@ -542,20 +650,30 @@
 		PointerOverPalette = PalettePanel?.HasHovered ?? false;
 		PointerOverSliders = SliderStackPanel?.HasHovered ?? false;
 		PointerOverPicker = PickerPanel?.HasHovered ?? false;
+		PointerOverPanels = (LeftPanel?.HasHovered ?? false) || (RightPanel?.HasHovered ?? false);
 
 		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
 		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.
 		if ( !(Session?.IsEditing ?? false) )
 			SculptEditSession.UiHoverBrush = -1;
 
-		// While an alt-nav drag is in progress, capture the mouse on the HUD root. This hands the nav clean
-		// relative-mode Mouse.Delta and hides the real cursor (we draw the dot) WITHOUT switching to game
-		// mouse-state — so the UI still gets the button release and won't stay stuck "mouse-down" (which would
-		// start a phantom layer drag the moment you hover a row after orbiting). See AltNav.
-		bool wantCapture = AltNav.Dragging && (Session?.IsEditing ?? false);
+		// While an alt-nav drag OR a hold-key param scrub is in progress, capture the mouse on the HUD root.
+		// This hands them clean relative-mode Mouse.Delta and hides the real cursor (we draw the dot) WITHOUT
+		// switching to game mouse-state — so the UI still gets the button release and won't stay stuck
+		// "mouse-down" (which would start a phantom layer drag the moment you hover a row after orbiting).
+		bool wantCapture = (AltNav.Dragging || (Session?.IsScrubbing ?? false)) && (Session?.IsEditing ?? false);
 		bool hasCapture = Panel?.HasMouseCapture ?? false;
 		if ( wantCapture != hasCapture )
+		{
 			Panel?.SetMouseCapture( wantCapture );
+
+			// Releasing a frozen-cursor gesture with a stamp ghost up: the camera (or gesture) may have moved
+			// the shape's on-screen position while the cursor was hidden — land the cursor exactly on the
+			// shape at the release, so it reappears already there instead of visibly snapping over a frame
+			// later. (Doing it at the release point kills the component-update-order race.)
+			if ( !wantCapture && Session is { } s && s.TryGetStampScreenPos( out var stampPx ) )
+				Mouse.Position = stampPx;
+		}
 
 		// Over a selected spline's line → request the add-point cursor (a click inserts a control point there).
 		// Routed through AltNav (the single writer of Mouse.CursorType each frame) — setting Mouse.CursorType
@@ -968,6 +1086,18 @@
 	// overlapping the swatches.
 	Vector2? PalettePos()
 	{
+		// Add mode docks the palette to the RIGHT SCREEN EDGE (the ghost tracks the cursor, so anything
+		// anchored to it would chase the mouse). The picker column keeps its usual slot to the palette's right.
+		if ( Session?.Tool == SculptTool.Add )
+		{
+			float sc = Panel?.ScaleFromScreen ?? 1f;
+			const float m = 16f;
+			float pickerReserve = ShowPicker ? PickerSize + PickerGap : 0f;
+			return new Vector2(
+				MathF.Max( m, Screen.Width * sc - PaletteWidth - pickerReserve - m ),
+				MathF.Max( m, (Screen.Height * sc - PaletteHeight) * 0.5f ) );
+		}
+
 		if ( !AnchorScreenSphere( out var centre, out var radius ) )
 			return null;
 
@@ -988,6 +1118,18 @@
 	// with it. Takes the palette's slot (and centres on the bounding circle) when the palette is hidden.
 	Vector2? PickerPos()
 	{
+		// Add mode: docked to the right of the docked palette, vertically centred with it.
+		if ( Session?.Tool == SculptTool.Add )
+		{
+			if ( PalettePos() is not { } dp )
+				return null;
+
+			float sc = Panel?.ScaleFromScreen ?? 1f;
+			return new Vector2(
+				dp.x + PaletteWidth + PickerGap,
+				Math.Clamp( (Screen.Height * sc - PickerStackHeight) * 0.5f, 16f, MathF.Max( 16f, Screen.Height * sc - PickerStackHeight - 16f ) ) );
+		}
+
 		if ( !AnchorScreenSphere( out var centre, out var radius ) )
 			return null;
 
@@ -1015,6 +1157,19 @@
 	// on a big/zoomed-in shape they ride up against the bottom edge instead of falling off it.
 	Vector2? SliderPos()
 	{
+		// Add mode: docked bottom-centre, above the hint strip — the sliders become the live READOUT for the
+		// A/S hold-key scrubs (which is why they must not chase the cursor-tracked ghost).
+		if ( Session?.Tool == SculptTool.Add )
+		{
+			float sc = Panel?.ScaleFromScreen ?? 1f;
+			float sh = SliderStackHeight;
+			if ( SliderStackPanel is { } dsp && dsp.Box.Rect.Height > 0f )
+				sh = dsp.Box.Rect.Height * sc;
+			return new Vector2(
+				MathF.Max( 8f, (Screen.Width * sc - SliderWidth) * 0.5f ),
+				MathF.Max( 8f, Screen.Height * sc - sh - 64f ) );
+		}
+
 		if ( !AnchorScreenSphere( out var centre, out var radius ) )
 			return null;
 
@@ -1060,6 +1215,22 @@
 		hc.Add( ShowPicker );
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
 		hc.Add( s?.SplinePointUiDragging ?? false ); // keep it mounted through the insert-and-place drag, drop it on release
+		hc.Add( (int)(s?.Tool ?? SculptTool.Edit) );          // tool toggle highlight + add-mode layout swap
+		hc.Add( (int)(s?.ActiveShape ?? SdfShape.Sphere) );   // active stamp-shape tile highlight
+		hc.Add( (int)(s?.StampOperation ?? SdfOperation.Add) ); // Add/Carve chip highlight + LMB hint label
+		hc.Add( s?.StampBrush is not null );                  // ghost row skip + panel visibility
+		hc.Add( s?.IsScrubbing ?? false );                    // scrub dot + capture
+		hc.Add( SculptEditSession.AxisConstraint );          // axis-constraint chip highlight
+
+		// While a frozen-cursor gesture runs with a stamp up, the dot rides the shape — fold its projected
+		// position in so the dot re-renders as the camera moves it across the screen.
+		if ( s is not null && (AltNav.Dragging || s.IsScrubbing)
+			&& s.TryGetStampScreenPos( out var stampDotPx ) )
+		{
+			hc.Add( (int)stampDotPx.x );
+			hc.Add( (int)stampDotPx.y );
+		}
+		hc.Add( (int)BrushScrub.Active );
 		hc.Add( s?.Selected ?? -1 );
 		hc.Add( s?.Target?.AuthoredBrushCount ?? 0 ); // damage-tail changes (a shot landing) don't churn the rows
 

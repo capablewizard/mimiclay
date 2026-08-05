@@ -732,7 +732,7 @@ public sealed class HunterController : Component
 	{
 		const float fallback = 60f;
 
-		if ( !Face.IsValid() || !Sdf.TryGetBounds( Face.Brushes, out var bounds ) )
+		if ( !Face.IsValid() || !Sdf.TryGetBounds( Face.Brushes, out var bounds, SculptEditSession.PendingStamp( Face ) ) )
 			return fallback;
 
 		// Bounding-sphere radius = half the box diagonal, in world units.
@@ -752,7 +752,7 @@ public sealed class HunterController : Component
 	// rather than its pivot at the neck. Falls back to the object/eye position if bounds aren't available yet.
 	Vector3 FaceCenterWorld()
 	{
-		if ( Face.IsValid() && Sdf.TryGetBounds( Face.Brushes, out var bounds ) )
+		if ( Face.IsValid() && Sdf.TryGetBounds( Face.Brushes, out var bounds, SculptEditSession.PendingStamp( Face ) ) )
 			return Face.WorldTransform.PointToWorld( bounds.Center );
 
 		if ( Face.IsValid() )
