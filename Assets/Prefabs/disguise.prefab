@@ -48,6 +48,10 @@
             "MirrorX": false,
             "MirrorY": false,
             "MirrorZ": false,
+            "Damage": false,
+            "Shrinks": false,
+            "ShrinkDelay": 2,
+            "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
             "BoundingRadius": 25.5
           }
@@ -101,7 +105,6 @@
         "DebugLiveField": false,
         "DebugLod": false,
         "DebugSwitchState": false,
-        "DepthClamp": false,
         "Displace": true,
         "DistanceSwitching": false,
         "Epsilon": 0.18,
@@ -137,6 +140,7 @@
         "__guid": "20000001-0000-4000-8000-000000000005",
         "__enabled": true,
         "Flags": 0,
+        "BuildAsTrigger": false,
         "FootProbeSpacing": 6,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,

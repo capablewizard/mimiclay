@@ -23,14 +23,28 @@
 	    names never show to anyone — that's the hiding.
 	  • Teams — you see your own team only (hunters see hunters, props see props).
 	No RoundManager (debug scenes, lobby) falls back to the Infection rule.
+
+	Voice indicators live here too, since this is the pawn's full-screen owner-only overlay:
+	  • A speaker icon on a plate while that player's voice is playing (PlayerVoice.IsSpeaking — playback-driven,
+	    so it works for any proxy). Icons only ever appear on plates that render at all, so a hidden infection
+	    prop's speech reveals it by EAR (the 3D voice), never by UI.
+	  • A fixed mic icon bottom-centre while OUR OWN mic is transmitting (IsRecording is owner-only truth).
 *@
 
 <root class="player-nameplates">
 	@foreach ( var p in _plates )
 	{
 		<div class="plate" style=@PlateStyle( p ) @key=@p.PawnId>
+			@if ( p.Speaking )
+			{
+				<i class="speaker" style=@NameStyle()>volume_up</i>
+			}
 			<div class="name" style=@NameStyle()>@p.Name</div>
 		</div>
+	}
+	@if ( SelfMicLive )
+	{
+		<i class="self-mic">mic</i>
 	}
 </root>
 
@@ -48,8 +62,9 @@
 	const float BaseNameSize = 18f;
 
 	// One drawn label: which pawn it belongs to (@key, so the razor diff tracks plates across frames), the name,
-	// and the projected screen position as viewport fractions (resolution-independent — see PlateStyle).
-	readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen );
+	// the projected screen position as viewport fractions (resolution-independent — see PlateStyle), and whether
+	// that player's voice is currently playing (drives the speaker icon).
+	readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen, bool Speaking );
 
 	readonly List<Plate> _plates = new();
 
@@ -64,6 +79,16 @@
 	// Gate LIVE, not in OnStart — a pawn runs OnStart on the owning client before ownership replicates, so an
 	// early IsProxy read is stale (same reasoning as HunterCrosshair).
 	bool IsOwnHud => (Hunter.IsValid() && !Hunter.IsProxy) || (Hider.IsValid() && !Hider.IsProxy);
+
+	// OUR pawn's voice, for the self-mic indicator. IsRecording = the mic is genuinely open and capturing right
+	// now (it already folds in push-to-talk state and the user's voip_mode preference — a disabled/undepressed
+	// mic never records). Owner-only truth, but this panel only draws on the owning pawn anyway.
+	PlayerVoice _ownVoice;
+	PlayerVoice OwnVoice => _ownVoice.IsValid() ? _ownVoice
+		: _ownVoice = Hunter.IsValid() ? Hunter.Components.Get<PlayerVoice>()
+		: Hider.IsValid() ? Hider.Components.Get<PlayerVoice>() : null;
+
+	bool SelfMicLive => IsOwnHud && OwnVoice.IsValid() && OwnVoice.IsRecording;
 
 	// Our team, straight from which pawn prefab this HUD belongs to.
 	PlayerRole LocalRole => Hunter.IsValid() ? PlayerRole.Hunter : Hider.IsValid() ? PlayerRole.Prop : PlayerRole.Unassigned;
@@ -95,7 +120,8 @@
 			if ( behind || screen.x < -0.05f || screen.x > 1.05f || screen.y < -0.05f || screen.y > 1.05f )
 				continue;
 
-			_plates.Add( new Plate( pawn.Id, name, screen ) );
+			var voice = pawn.Components.Get<PlayerVoice>();
+			_plates.Add( new Plate( pawn.Id, name, screen, voice.IsValid() && voice.IsSpeaking ) );
 		}
 
 		// Stable order so the razor diff matches plates by @key, not by enumeration luck.
@@ -185,11 +211,13 @@
 	{
 		var hash = new HashCode();
 		hash.Add( NameplateScale ); // live-tunable in the editor — re-render when it changes
+		hash.Add( SelfMicLive );
 		foreach ( var p in _plates )
 		{
 			hash.Add( p.PawnId );
 			hash.Add( p.Name );
 			hash.Add( p.Screen );
+			hash.Add( p.Speaking );
 		}
 		return hash.ToHashCode();
 	}

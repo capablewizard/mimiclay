@@ -202,6 +202,11 @@ public sealed class HunterController : Component
 		_controller.UseCameraControls = false;
 
 		Components.GetOrCreate<Sandbox.Movement.MoveModeWalk>();
+
+		// Voice chat rides the pawn. Created in OnAwake so the owner has it BEFORE NetworkSpawn — it ships in
+		// the spawn snapshot and proxies receive the same component (the engine's voice RPC needs that shared
+		// identity). On a proxy the snapshot copy already exists and GetOrCreate just adopts it.
+		Components.GetOrCreate<PlayerVoice>();
 	}
 
 	protected override void OnStart()

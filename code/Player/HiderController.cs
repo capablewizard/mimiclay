@@ -200,6 +200,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		// Seed look from however the pawn was spawned, flattened (no starting pitch/roll).
 		EyeAngles = WorldRotation.Angles() with { pitch = 0f, roll = 0f };
+
+		// Voice chat rides the pawn — OnAwake so the owner has it before NetworkSpawn and it ships in the spawn
+		// snapshot with a shared identity (see HunterController.OnAwake). A concealed infection-prep pawn isn't
+		// networked yet, so a hiding prop's voice reaches nobody until Hunt puts the pawn on the wire.
+		Components.GetOrCreate<PlayerVoice>();
 	}
 
 	protected override void OnStart()

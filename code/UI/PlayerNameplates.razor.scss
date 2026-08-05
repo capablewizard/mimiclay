@@ -29,5 +29,37 @@
 			text-shadow: $scene-shadow;
 			white-space: nowrap;
 		}
+
+		// Speaker icon while that player's voice is playing — same scene treatment as the name (font-size comes
+		// inline from the razor so it scales with the text), pulsing so it reads "live" without any per-frame
+		// amplitude plumbing. Absolutely positioned OFF the plate's left edge so appearing/disappearing never
+		// changes the plate's width — the name stays put, centred over the head.
+		.speaker {
+			position: absolute;
+			right: 100%;
+			margin-right: $space-xs;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
+			animation: speaker-pulse 0.9s ease-in-out infinite;
+		}
 	}
+
+	// Our own mic-is-live indicator, fixed bottom-centre. Green = transmitting (additive/positive accent), with
+	// the scene drop shadow since it floats straight over the 3D view.
+	.self-mic {
+		position: absolute;
+		bottom: 48px;
+		left: 50%;
+		transform: translateX( -50% );
+		font-size: 28px;
+		color: $craft-green;
+		text-shadow: $scene-shadow;
+		animation: speaker-pulse 0.9s ease-in-out infinite;
+	}
+}
+
+@keyframes speaker-pulse {
+	0%   { opacity: 0.55; }
+	50%  { opacity: 1; }
+	100% { opacity: 0.55; }
 }

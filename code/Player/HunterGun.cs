@@ -180,6 +180,17 @@ public sealed class HunterGun : Component
 	/// 1/rate seconds. Higher = snappier reset.</summary>
 	[Property, Group( "Recoil" ), Range( 1f, 30f )] public float WorldKickRecover { get; set; } = 8f;
 
+	/// <summary>The muzzle-flash prefab, cloned at the gun's authored "Muzzle" point on every shot — on the
+	/// VIEW model where that's what's on screen (owner, first person), the WORLD model everywhere else.
+	/// Local and purely cosmetic, same deal as the caught puff: every machine clones its own from the shot
+	/// RPC, nothing is networked. Empty/missing prefab just loses the flash.</summary>
+	[Property, Group( "Effects" )] public string MuzzleFlashPrefab { get; set; } = "prefabs/shotgun_muzzleflash.prefab";
+
+	/// <summary>Size multiplier on the VIEWMODEL's flash only (the world model plays the prefab as authored)
+	/// — the first-person burst often wants to read bigger than a strictly world-accurate one. Applied at
+	/// spawn, per shot, so it's live-tweakable between shots.</summary>
+	[Property, Group( "Effects" ), Range( 0.25f, 4f )] public float ViewFlashScale { get; set; } = 1f;
+
 	/// <summary>Material override for the VIEW clone's raymarch (world model keeps the prefab's). Point it
 	/// at plasticine_viewmodel.vmat — its F_TRANSLUCENT feature selects the shader's translucent LIGHTING
 	/// variant, whose shading skips the screen-space passes (SSAO sample, contact-shadow mask) that an
@@ -201,6 +212,21 @@ public sealed class HunterGun : Component
 	SdfRaymarchRenderer _viewSdf;
 	SdfSculpture _worldSculpt;
 	SdfSculpture _viewSculpt;
+
+	// Each clone's "Muzzle" child (authored in the gun prefab; optional — an older gun sculpt without one
+	// just has no flash), plus the PREFAB-authored local position it's re-derived from. Pristine for the
+	// same reason as _source: the gun scales by scaling BRUSH data, not the GameObject, so the muzzle point
+	// must be repinned to the live scale in Place — and a snapshot-received clone arrives with the owner's
+	// scale already applied, making its live LocalPosition an unusable baseline.
+	GameObject _worldMuzzle;
+	GameObject _viewMuzzle;
+	Vector3 _muzzleSource;
+
+	// The last eye/aim/mode Place ran with — Kick (fired from the shot RPC, outside the placement call) uses
+	// these to pick which model's muzzle flashes and to aim the burst along the shot.
+	Vector3 _lastEye;
+	Rotation _lastAim = Rotation.Identity;
+	bool _lastFirstPerson;
 
 	// The sun whose ContactShadows we override while first-person, and whether we currently hold an
 	// override (only ever restore a value WE changed — if the scene authored them off, stay hands-off).
@@ -257,6 +283,10 @@ public sealed class HunterGun : Component
 
 		_source = LoadSourceBrushes();
 
+		_worldMuzzle = FindMuzzle( _world );
+		_viewMuzzle = FindMuzzle( _view );
+		_muzzleSource = LoadMuzzleSource();
+
 		// Viewmodel: no shadow of any kind — SdfShadows off stops the raymarch casting, MeshMode.Hidden stops
 		// the legacy shadows-only sibling mesh taking over the job. Applied to snapshot-received clones too
 		// (idempotent), since the owner's instance streams with these already set but a fresh one doesn't.
@@ -292,6 +322,11 @@ public sealed class HunterGun : Component
 
 		var aimRot = aim.ToRotation();
 
+		// What Kick's muzzle flash spawns from (see SpawnMuzzleFlash — the shot RPC lands between frames).
+		_lastEye = eye;
+		_lastAim = aimRot;
+		_lastFirstPerson = firstPerson;
+
 		// The arm: pin the shoulder to the body (yaw-only swing so it stays at the pawn's side), rotate it with
 		// the FULL aim. The hand — and the gun parented under it — arcs around this pivot like an arm would.
 		if ( Shoulder.IsValid() )
@@ -316,6 +351,14 @@ public sealed class HunterGun : Component
 			_worldSdf.RenderHidden = firstPerson;
 			ApplyFieldResolution( _worldSdf, WorldFieldResolution );
 		}
+
+		// Repin the muzzle points to the live scales (per frame, so the scale sliders stay live): the brush
+		// data scales, the GameObject hierarchy doesn't, so the authored Muzzle child would otherwise sit at
+		// full prefab-scale distance off the end of a half-scale barrel.
+		if ( _worldMuzzle.IsValid() )
+			_worldMuzzle.LocalPosition = _muzzleSource * WorldGunScale;
+		if ( _viewMuzzle.IsValid() && firstPerson )
+			_viewMuzzle.LocalPosition = _muzzleSource * ViewGunScale;
 
 		if ( _view.IsValid() )
 		{
@@ -369,6 +412,9 @@ public sealed class HunterGun : Component
 	{
 		_worldKick = 1f;
 
+		// Before the seeded gate: proxies never seed the view springs, but their world gun still flashes.
+		SpawnMuzzleFlash();
+
 		if ( !_motionSeeded )
 			return;
 
@@ -381,6 +427,94 @@ public sealed class HunterGun : Component
 
 		if ( RotationStiffness > 0f && KickUp > 0f )
 			_angVel += new Vector3( -KickUp * MathF.E * MathF.Sqrt( RotationStiffness ), 0f, 0f );
+	}
+
+	// One flash clone per shot at the gun's Muzzle point — the VIEW model's where that's what's on screen
+	// (owner, first person), the WORLD model's everywhere else (proxies, and the owner in edit mode).
+	// Parented to the gun clone so the burst rides the recoil jolt for its short life; oriented along the
+	// shot so the prefab's cone emitters (which emit along their object's forward) spray downrange.
+	void SpawnMuzzleFlash()
+	{
+		var muzzle = _lastFirstPerson ? _viewMuzzle : _worldMuzzle;
+		if ( !muzzle.IsValid() )
+			return;
+
+		var prefab = ResourceLibrary.Get<PrefabFile>( MuzzleFlashPrefab );
+		var flash = prefab is null ? null : SceneUtility.GetPrefabScene( prefab )?.Clone();
+		if ( !flash.IsValid() )
+			return;
+
+		flash.Parent = muzzle;
+		flash.Tags.Add( CloneTag ); // same skip-tag as the gun clones, so pawn-wide sweeps never adopt it
+		flash.WorldPosition = MuzzleFlashPosition( muzzle );
+		flash.WorldRotation = _lastAim;
+
+		if ( _lastFirstPerson && !ViewFlashScale.AlmostEqual( 1f ) )
+			ScaleFlash( flash, ViewFlashScale );
+
+		ExpireFlash( flash );
+	}
+
+	// Particle SIZES are world-unit values that ignore transform scale (the sim writes p.Size straight from
+	// the effect's Scale parameter), so a bare GameObject scale only grows the flash's GEOMETRY — emitter
+	// offsets, cone shapes, local-space travel. Do both: transform scale for the geometry, and each sprite
+	// renderer's render multiplier for the sprites themselves.
+	static void ScaleFlash( GameObject flash, float s )
+	{
+		flash.LocalScale = s;
+
+		foreach ( var r in flash.Components.GetAll<ParticleSpriteRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+			r.Scale *= s;
+	}
+
+	// Where the flash must spawn to sit on the ON-SCREEN barrel tip. The world model renders at its true
+	// position, and so does the viewmodel in the Normal layer — but in any other layer the raymarch shader
+	// re-projects the gun into ViewmodelFov's projection (lateral offsets from the eye scaled by FovScale).
+	// A world-space particle doesn't get that warp, so apply the same one here or the flash lands visibly
+	// off the muzzle. Matches the shader's gate exactly (warp only when the viewmodel flag is set).
+	Vector3 MuzzleFlashPosition( GameObject muzzle )
+	{
+		var pos = muzzle.WorldPosition;
+		if ( !_lastFirstPerson || ViewLayerMode == SdfViewLayer.Normal )
+			return pos;
+
+		var rel = _lastAim.Inverse * ( pos - _lastEye );
+		float s = FovScale();
+		return _lastEye + _lastAim * new Vector3( rel.x, rel.y * s, rel.z * s );
+	}
+
+	// The flash is a one-shot (the smoke tail lives ~2s) and GameObject has no delayed destroy — retire the
+	// clone once every particle is long dead, same as the caught puff. Component.Task cancels this on pawn
+	// teardown, and the clone hangs under the gun hierarchy, so it dies with the pawn either way.
+	async void ExpireFlash( GameObject flash )
+	{
+		await Task.DelaySeconds( 2.5f );
+		if ( flash.IsValid() )
+			flash.Destroy();
+	}
+
+	// A clone's authored "Muzzle" child — a direct child of the gun prefab's root, cloned along with it.
+	static GameObject FindMuzzle( GameObject clone ) =>
+		clone.IsValid() ? clone.Children.FirstOrDefault( c => c.Name == "Muzzle" ) : null;
+
+	// The muzzle point's PREFAB-authored local position, read from the prefab scene like LoadSourceBrushes —
+	// see _muzzleSource for why the live clone's value can't be the baseline. Falls back to the live child
+	// (fresh clones still carry the authored value before the first Place), else zero (flash at the grip —
+	// wrong but visible, and only reachable with an unreadable prefab AND no muzzle child).
+	Vector3 LoadMuzzleSource()
+	{
+		var prefab = ResourceLibrary.Get<PrefabFile>( GunPrefab );
+		var authored = prefab is null
+			? null
+			: SceneUtility.GetPrefabScene( prefab )?.Children.FirstOrDefault( c => c.Name == "Muzzle" );
+
+		if ( authored.IsValid() )
+			return authored.LocalPosition;
+
+		if ( _worldMuzzle.IsValid() )
+			return _worldMuzzle.LocalPosition;
+
+		return _viewMuzzle.IsValid() ? _viewMuzzle.LocalPosition : Vector3.Zero;
 	}
 
 	// Walk bob, as an AIM-SPACE offset added to ViewOffset. Runs only on the owner's first-person frames.
