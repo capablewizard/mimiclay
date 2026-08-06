@@ -11,6 +11,9 @@ namespace Mimiclay;
 public sealed class BrushWireframes
 {
 	const int Seg = 20;              // segments per ring
+	const int SplineRails = 4;       // longitudinal lines running the length of a spline tube
+	const int SplineRingsPerSpan = 2; // cross-section rings per control-point span on a curved spline
+	const int CapArcSeg = 5;         // segments per meridian over a rounded end cap
 	const float Pad = 1.04f;         // match BrushGhost: sit a touch outside the surface (no z-fight)
 	static readonly float Tau = MathF.PI * 2f;
 
@@ -26,7 +29,11 @@ public sealed class BrushWireframes
 	Transform _sculptTx;
 	Vector3 _sign = Vector3.One;
 	Color _col;
-	readonly List<Vector4> _curve = new(); // reused buffer for the spline centre-line polyline
+	readonly List<Vector4> _curve = new();   // reused buffer for the spline centre-line polyline
+	readonly List<Vector4> _frames = new();  // per-sample tube frame: centre (xyz) + radius (w)
+	readonly List<Vector3> _splineT = new(); // …its tangent, and the parallel-transported cross-section axes
+	readonly List<Vector3> _splineU = new();
+	readonly List<Vector3> _splineV = new();
 	Vector3 _camPos;
 	float _wpp;          // world units per screen pixel (at unit distance)
 	float _thicknessPx;  // line thickness in screen pixels (matches editor OutlineThickness)
@@ -146,30 +153,190 @@ public sealed class BrushWireframes
 		}
 	}
 
-	// Spline wireframe: the centre polyline plus three axis circles at each control point. Points are in
-	// sculpture space (not the brush frame), so these use WorldPt/EdgeWorld directly instead of ToWorld.
+	// Spline wireframe: the tube's SURFACE, drawn Blender-style — SplineRails longitudinal lines running
+	// along the sweep plus cross-section rings at regular subdivision, with a hemispherical dome closing each
+	// open end. Points are in sculpture space (not the brush frame), so these use WorldPt/EdgeWorld directly
+	// instead of ToWorld.
 	void SplineWire( SdfBrush b )
 	{
 		var pts = b.Points;
 		if ( pts is not { Count: > 0 } )
 			return;
 
-		// Centre line follows the drawn curve (tessellated when curved); rings stay on the control points.
-		b.BuildSplinePolyline( _curve );
-		for ( int i = 0; i < _curve.Count - 1; i++ )
-			EdgeWorld( WorldPt( new Vector3( _curve[i].x, _curve[i].y, _curve[i].z ) ),
-				WorldPt( new Vector3( _curve[i + 1].x, _curve[i + 1].y, _curve[i + 1].z ) ) );
-
-		var ux = new Vector3( 1, 0, 0 );
-		var uy = new Vector3( 0, 1, 0 );
-		var uz = new Vector3( 0, 0, 1 );
-		foreach ( var pt in pts )
+		// A lone control point is just a sphere — no sweep to run rails along, so keep the axis rings.
+		if ( pts.Count == 1 )
 		{
-			var c = new Vector3( pt.x, pt.y, pt.z );
-			float r = pt.w * Pad;
-			RingWorld( c, r, ux, uy );
-			RingWorld( c, r, ux, uz );
-			RingWorld( c, r, uy, uz );
+			var c0 = new Vector3( pts[0].x, pts[0].y, pts[0].z );
+			float r0 = pts[0].w * Pad;
+			RingWorld( c0, r0, new Vector3( 1, 0, 0 ), new Vector3( 0, 1, 0 ) );
+			RingWorld( c0, r0, new Vector3( 1, 0, 0 ), new Vector3( 0, 0, 1 ) );
+			RingWorld( c0, r0, new Vector3( 0, 1, 0 ), new Vector3( 0, 0, 1 ) );
+			return;
+		}
+
+		b.BuildSplinePolyline( _curve );
+		bool closed = b.IsSplineLoop;
+		if ( !BuildSplineFrames( closed ) )
+			return;
+
+		int m = _frames.Count;
+		int spans = closed ? m : m - 1; // closed: the wrap-around span (last sample → first) too
+
+		// Longitudinal rails: one continuous line per frame angle, following the tube all the way along.
+		for ( int j = 0; j < SplineRails; j++ )
+		{
+			float a = j / (float)SplineRails * Tau;
+			var prev = SplineSurfacePt( 0, a );
+			for ( int i = 1; i <= spans; i++ )
+			{
+				var cur = SplineSurfacePt( i % m, a );
+				EdgeWorld( prev, cur );
+				prev = cur;
+			}
+		}
+
+		// Cross-section rings. Straight splines only have a sample per control point, so ring every one;
+		// curved ones are tessellated SplineTessellation-per-span, so stride down to SplineRingsPerSpan.
+		int stride = b.Curvature <= 1e-4f
+			? 1
+			: Math.Max( 1, SdfBrush.SplineTessellation / SplineRingsPerSpan );
+		for ( int i = 0; i < m; i += stride )
+			SplineRing( i );
+
+		// Open ends are rounded in the field (the tube is a chain of rounded cones), so cap them with a dome
+		// rather than letting the rails stop dead on a flat disc.
+		if ( !closed )
+		{
+			if ( (m - 1) % stride != 0 )
+				SplineRing( m - 1 ); // the far seam ring, when the stride doesn't land on it
+			SplineCap( 0, -_splineT[0] );
+			SplineCap( m - 1, _splineT[m - 1] );
+		}
+	}
+
+	// Hemispherical end cap: each rail continues over the dome as a meridian converging on the pole. No
+	// latitude rings — the seam ring already reads as the tube's last cross-section.
+	void SplineCap( int i, Vector3 outward )
+	{
+		var f = _frames[i];
+		float r = f.w * Pad;
+		var c = CurvePos( f );
+		var u = _splineU[i];
+		var v = _splineV[i];
+
+		// `a` around the tube (0 = the first rail, so the meridians line up with them), `phi` up to the pole.
+		Vector3 Dome( float a, float phi ) => WorldPt( c
+			+ (u * MathF.Cos( a ) + v * MathF.Sin( a )) * (r * MathF.Cos( phi ))
+			+ outward * (r * MathF.Sin( phi )) );
+
+		for ( int j = 0; j < SplineRails; j++ )
+		{
+			float a = j / (float)SplineRails * Tau;
+			var prev = Dome( a, 0f );
+			for ( int k = 1; k <= CapArcSeg; k++ )
+			{
+				var cur = Dome( a, k / (float)CapArcSeg * (MathF.PI * 0.5f) );
+				EdgeWorld( prev, cur );
+				prev = cur;
+			}
+		}
+	}
+
+	// Parallel-transported frames along the polyline in _curve — one orthonormal (u,v) pair per sample, so
+	// the rails sweep the tube without twisting. Returns false if the curve degenerates to a single point.
+	bool BuildSplineFrames( bool closed )
+	{
+		_frames.Clear();
+		_splineT.Clear();
+		_splineU.Clear();
+		_splineV.Clear();
+
+		int m = _curve.Count;
+		// A closed polyline ends back on its first point — drop the duplicate so the wrap span isn't zero-length.
+		if ( closed && m > 1 && (CurvePos( _curve[m - 1] ) - CurvePos( _curve[0] )).Length < 0.001f )
+			m--;
+		if ( m < 2 )
+			return false;
+
+		for ( int i = 0; i < m; i++ )
+			_frames.Add( _curve[i] );
+
+		// Tangents: central difference, wrapping when closed and one-sided at open ends.
+		for ( int i = 0; i < m; i++ )
+		{
+			int prev = i > 0 ? i - 1 : (closed ? m - 1 : 0);
+			int next = i < m - 1 ? i + 1 : (closed ? 0 : m - 1);
+			var t = CurvePos( _frames[next] ) - CurvePos( _frames[prev] );
+			_splineT.Add( t.Length < 1e-5f
+				? (i > 0 ? _splineT[i - 1] : Vector3.Forward) // coincident samples: carry the last tangent
+				: t.Normal );
+		}
+
+		var u0 = Vector3.Cross( _splineT[0], MathF.Abs( _splineT[0].z ) < 0.9f ? Vector3.Up : Vector3.Forward ).Normal;
+		_splineU.Add( u0 );
+		_splineV.Add( Vector3.Cross( _splineT[0], u0 ).Normal );
+		for ( int i = 1; i < m; i++ )
+		{
+			var u = Transport( _splineU[i - 1], _splineT[i - 1], _splineT[i] );
+			_splineU.Add( u );
+			_splineV.Add( Vector3.Cross( _splineT[i], u ).Normal );
+		}
+
+		if ( closed )
+		{
+			// Transport once more across the seam and measure how far the frame drifted (the transport's
+			// holonomy), then unwind it evenly around the loop so each rail rejoins itself instead of stepping.
+			var back = Transport( _splineU[m - 1], _splineT[m - 1], _splineT[0] );
+			float drift = MathF.Atan2( Vector3.Dot( Vector3.Cross( _splineU[0], back ), _splineT[0] ),
+				Vector3.Dot( _splineU[0], back ) );
+			for ( int i = 1; i < m; i++ )
+			{
+				float a = -drift * i / m;
+				var u = _splineU[i] * MathF.Cos( a ) + _splineV[i] * MathF.Sin( a );
+				_splineU[i] = u;
+				_splineV[i] = Vector3.Cross( _splineT[i], u ).Normal;
+			}
+		}
+
+		return true;
+	}
+
+	// Rotate `u` by the minimal rotation taking tangent t0 onto t1, then re-orthogonalise (stops the frame
+	// drifting off the tangent plane over a long curve).
+	static Vector3 Transport( Vector3 u, Vector3 t0, Vector3 t1 )
+	{
+		var axis = Vector3.Cross( t0, t1 );
+		float s = axis.Length;
+		if ( s > 1e-6f )
+		{
+			float deg = MathF.Atan2( s, Vector3.Dot( t0, t1 ) ) * (180f / MathF.PI);
+			u = Rotation.FromAxis( axis / s, deg ) * u;
+		}
+		u -= t1 * Vector3.Dot( u, t1 );
+		return u.Length > 1e-5f
+			? u.Normal
+			: Vector3.Cross( t1, MathF.Abs( t1.z ) < 0.9f ? Vector3.Up : Vector3.Forward ).Normal; // 180° flip
+	}
+
+	static Vector3 CurvePos( Vector4 v ) => new( v.x, v.y, v.z );
+
+	// Point on the tube surface at sample `i`, `a` radians around its frame → world.
+	Vector3 SplineSurfacePt( int i, float a )
+	{
+		var f = _frames[i];
+		float r = f.w * Pad;
+		return WorldPt( CurvePos( f ) + _splineU[i] * (r * MathF.Cos( a )) + _splineV[i] * (r * MathF.Sin( a )) );
+	}
+
+	// The cross-section circle at sample `i` (also the flat end cap on an open spline's first/last sample).
+	void SplineRing( int i )
+	{
+		var prev = SplineSurfacePt( i, 0f );
+		for ( int k = 1; k <= Seg; k++ )
+		{
+			var cur = SplineSurfacePt( i, k / (float)Seg * Tau );
+			EdgeWorld( prev, cur );
+			prev = cur;
 		}
 	}
 
