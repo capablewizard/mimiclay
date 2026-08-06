@@ -63,6 +63,10 @@
 		}
 	</div>
 
+	@* Hidden while sculpt-editing: the edit HUD owns the screen (and its own hint strip) — the lobby/round
+	   hotkey hints ("Swap to Hunter", "Set Up Game"…) are noise there. *@
+	@if ( SculptEditSession.Current?.IsEditing != true )
+	{
 	<div class="hotkeys">
 		<div class="hotkeys-title">Controls</div>
 		@foreach ( var hint in Hotkeys )
@@ -75,11 +79,13 @@
 			</div>
 		}
 	</div>
+	}
 
-	@if ( ShowModeCard )
+	@if ( ShowModeCard && SculptEditSession.Current?.IsEditing != true )
 	{
 		@* Bottom-right: the active game mode + its blurb. Appears once Start is pressed and persists for the whole
-		   round. Title is a static WobbleText (per-letter clay emboss, like the phase header). *@
+		   round. Title is a static WobbleText (per-letter clay emboss, like the phase header). Hidden while
+		   sculpt-editing — the edit HUD's colour stack owns the bottom-right corner. *@
 		<div class="mode-card">
 			<WobbleText Text=@ModeLabel class="mode-title" @key=@ModeLabel />
 			<div class="mode-blurb">@ModeDescription</div>
@@ -230,5 +236,6 @@
 	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole, so they're covered.
 	protected override int BuildHash()
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
-			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud ) );
+			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
+				SculptEditSession.Current?.IsEditing ?? false ) ); // hotkey hints hide while sculpt-editing
 }

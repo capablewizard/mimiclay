@@ -114,31 +114,6 @@ public sealed class SculptEditSession : Component
 	public static bool SnapHeld =>
 		Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "shift" );
 
-	/// <summary>Axis constraint BITMASK for every stamp/scrub operation — HOLDS, combinable: X key = bit 1
-	/// (X axis), C = bit 2 (Y axis), Z = bit 4 (Z axis); release for free XYZ. One axis = line constraint,
-	/// two = plane constraint; steering, the RMB depth drag, D-scale and MMB-rotate all honour it. Written
-	/// each frame from the held keys while a session updates. Static: one constraint for the one cursor.</summary>
-	public static int AxisConstraint { get; private set; }
-
-	/// <summary>The mask the geometry actually uses: all three axes held = no constraint at all.</summary>
-	public static int EffectiveAxisMask => AxisConstraint == 7 ? 0 : AxisConstraint;
-
-	/// <summary>Sculpture-local unit axis for a bit index (0/1/2 = X/Y/Z).</summary>
-	public static Vector3 AxisVector( int i ) =>
-		i == 0 ? new Vector3( 1f, 0f, 0f ) : i == 1 ? new Vector3( 0f, 1f, 0f ) : new Vector3( 0f, 0f, 1f );
-
-	/// <summary>True when the mask is exactly one axis, with that axis vector.</summary>
-	public static bool TrySingleAxis( int mask, out Vector3 axis )
-	{
-		axis = default;
-		if ( mask is not (1 or 2 or 4) )
-			return false;
-
-		axis = mask == 1 ? new Vector3( 1f, 0f, 0f ) : mask == 2 ? new Vector3( 0f, 1f, 0f ) : new Vector3( 0f, 0f, 1f );
-		return true;
-	}
-
-	static readonly Color[] AxisColors = { Color.Red, Color.Green, Color.Blue }; // X/Y/Z, matching the gizmo
 
 	/// <summary>The active stamp shape (what the next/current ghost is). The HUD toolbar highlights it.</summary>
 	public SdfShape ActiveShape => _stampTool.Shape;
@@ -444,6 +419,33 @@ public sealed class SculptEditSession : Component
 			Selected = Target.AuthoredBrushCount - 1; // the insert lands just below the damage tail, not at the raw end
 	}
 
+	/// <summary>Convert the selected brush to a different primitive IN PLACE — position, size, material,
+	/// blend and symmetry all carry over; only the shape swaps (shape is a brush property, like colour).
+	/// Splines are excluded both ways (their geometry lives in control points, not a transform). Converting
+	/// TO text bakes the glyph field and adopts the glyph slot's fixed 2:1 aspect from the current height
+	/// (anything else stretches the letters).</summary>
+	public void ConvertSelectedShape( SdfShape shape )
+	{
+		if ( SelectedBrush is not { } b || b.Shape == shape )
+			return;
+		if ( b.Shape == SdfShape.Spline || shape == SdfShape.Spline )
+			return;
+
+		b.Shape = shape;
+		b.Points = null;
+
+		if ( shape == SdfShape.Text )
+		{
+			b.TextData = SdfTextSdf.Get( b.Text, b.Font );
+			float yv = MathF.Max( b.Size.y, 1f );
+			b.Size = new Vector3( yv * (SdfTextData.Width / (float)SdfTextData.Height), yv, MathF.Min( b.Size.z, 4f ) );
+		}
+
+		// Different shapes cap rounding differently (a star's erosion limit << a box's inscribed radius).
+		b.Rounding = Math.Clamp( b.Rounding, 0.75f, b.MaxRounding() );
+		NotifyChanged();
+	}
+
 	/// <summary>Select a brush by index, or pass a negative index to clear the selection.</summary>
 	public void Select( int index )
 	{
@@ -522,6 +524,7 @@ public sealed class SculptEditSession : Component
 			b.MirrorZ = m.Z;
 		}
 
+		b.SnapToMirrorPlanes(); // symmetry turned on near the plane = "centre this" — magnetize now
 		NotifyChanged();
 	}
 
@@ -775,15 +778,6 @@ public sealed class SculptEditSession : Component
 			SetStampOperation( StampOperation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add );
 		_spaceWas = space;
 
-		// Axis constraints are HOLDS, and they combine: X / C / Z lock the sculpture-local X / Y / Z axes
-		// while held (C for Y so all three sit on the bottom row) — one held = line, two = plane.
-		// Suppressed while typing and under ctrl combos (undo etc.).
-		bool axisKeysLive = Sandbox.UI.InputFocus.Current is null && !Input.Keyboard.Down( "ctrl" );
-		AxisConstraint = !axisKeysLive ? 0
-			: (Input.Keyboard.Down( "x" ) ? 1 : 0)
-			| (Input.Keyboard.Down( "c" ) ? 2 : 0)
-			| (Input.Keyboard.Down( "z" ) ? 4 : 0);
-
 		if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
 		if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
 		if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
@@ -801,9 +795,6 @@ public sealed class SculptEditSession : Component
 
 		// Don't let world clicks/picks/gizmo-grabs fall through the HUD (palette or sliders) when over it.
 		bool overUi = EditHud.PointerOverUi;
-
-		// Axis-constraint guide line through the active brush (stamp ghost or selection).
-		DrawAxisGuide( tx );
 
 		// ── Add tool: the stamp ghost owns the frame (no selection / gizmo / hover-pick). ────────────────
 		if ( Tool == SculptTool.Add )
@@ -904,6 +895,20 @@ public sealed class SculptEditSession : Component
 		if ( _ghostOutAlpha <= 0f )
 			_ghostOutBrush = null;
 
+		// A selected CARVE brush has no surface of its own (it's a hole) — draw its red wireframe so you
+		// can see what you're moving. Same single-brush wire the carve stamp uses.
+		if ( SelectedBrush is { Operation: SdfOperation.Subtract } carveSel )
+		{
+			_stampWireList.Clear();
+			_stampWireList.Add( carveSel );
+			_stampWire.Draw( _stampWireList, tx, Scene, Scene.Camera,
+				selected: 0, hovered: -1, masterAlpha: 0.9f, Style.OutlineThickness, WireframeDepthBias );
+		}
+		else
+		{
+			_stampWire.Hide();
+		}
+
 		// A click selects the hovered shape, or clears the selection when it lands on empty space. Gated so it
 		// only fires on a real world click: not over the HUD, not alt-orbiting, and not on a gizmo handle (a
 		// handle grab reads hover<0, so without the IsBusy guard starting a drag would also deselect).
@@ -921,6 +926,11 @@ public sealed class SculptEditSession : Component
 		}
 		if ( _proxyDebugActive )
 			ExitProxyDebug();
+
+		// Magnetic centre snap: a mirrored brush moved (gizmo drag) or resized (scrub) into the symmetry
+		// deadzone physically centres on the plane instead of just quietly losing its mirror copy.
+		if ( changed )
+			SelectedBrush?.SnapToMirrorPlanes();
 
 		if ( changed )
 		{
@@ -1010,47 +1020,6 @@ public sealed class SculptEditSession : Component
 		_ghostAlpha = _ghostOutAlpha = 0f;
 	}
 
-	// The axis guide through the active brush (stamp ghost or selection): ALL three sculpture-local axes
-	// draw as a faint short tripod at all times (so you can see which way X/Y/Z run before committing to a
-	// key), and a HELD axis swaps to the long bright line — two held read as the constraint plane's axes.
-	// Overlay pass, so it stays readable through the clay.
-	void DrawAxisGuide( Transform tx )
-	{
-		var cam = Scene?.Camera;
-		if ( cam is null || ActiveBrush is not { } b )
-			return;
-
-		int mask = EffectiveAxisMask;
-		var c = tx.PointToWorld( b.Position );
-		const float HintReach = 120f;
-		const float ActiveReach = 400f;
-
-		// DebugOverlay lines are a fixed 1px — thickness comes from drawing each guide as a bundle of
-		// parallel lines offset perpendicular to the view, the offset scaled by camera distance so the
-		// width reads roughly constant on screen.
-		float step = MathF.Max( 0.02f, (cam.WorldPosition - c).Length * 0.0012f );
-
-		for ( int i = 0; i < 3; i++ )
-		{
-			bool held = (mask & (1 << i)) != 0;
-			float reach = held ? ActiveReach : HintReach;
-			var dir = (tx.Rotation * AxisVector( i )).Normal;
-			var col = AxisColors[i].WithAlpha( held ? 0.5f : 0.12f );
-
-			var perp = Vector3.Cross( dir, (cam.WorldPosition - c).Normal );
-			if ( perp.LengthSquared < 1e-4f )
-				perp = Vector3.Cross( dir, cam.WorldRotation.Up );
-			perp = perp.Normal;
-
-			int half = held ? 2 : 1; // held = ~5px, hint = ~3px
-			for ( int k = -half; k <= half; k++ )
-			{
-				var off = perp * (k * step);
-				DebugOverlay.Line( c - dir * reach + off, c + dir * reach + off, col, overlay: true );
-			}
-		}
-	}
-
 	// Number-key shape hotkeys: jump straight into stamping that shape (switching tools if needed).
 	void HotkeyShape( SdfShape shape )
 	{
@@ -1094,9 +1063,21 @@ public sealed class SculptEditSession : Component
 		}
 
 		if ( committed )
+		{
 			NotifyChanged(); // the stamp is real now (StampBrush is null until the next ghost spawns) → full commit
+
+			// Place-then-tweak: a stamp drops you straight into the EDIT tool with the new brush selected,
+			// gizmo up. Back to Add via Q, a shape tile, or a number key.
+			var placed = _stampTool.LastCommitted;
+			SetTool( SculptTool.Edit );
+			int idx = placed is not null ? (Target.Brushes?.IndexOf( placed ) ?? -1) : -1;
+			if ( idx >= 0 )
+				Selected = idx;
+		}
 		else if ( changed )
+		{
 			Target.RebuildShadowProxy(); // live preview: the raymarcher reads the brushes; shadows + net stream follow
+		}
 	}
 
 	void RemoveLast()

@@ -24,84 +24,53 @@
 
 	@if ( Session is not null && Session.IsEditing )
 	{
-		@* Alt-nav view hints, top-right — the same block the main menu shows. The menu's MainMenuNav renders its
-		   own persistent copy on every page (even outside editing), so this one mounts only where there's no menu
-		   nav: the in-game edit modes (lobby + round, hunter face + prop disguise). *@
-		@if ( MainMenuNav.Instance is null )
-		{
-			<div class="view-controls">
-				<div>Alt + Left-drag · Rotate</div>
-				<div>Alt + Right-drag · Zoom</div>
-				<div>Alt + Middle-drag · Pan</div>
-			</div>
-		}
+		@* (The alt-nav view hints that used to sit top-right are gone — the picker column lives there now,
+		   and the alt gestures are covered by muscle memory / the menu's own copy.) *@
 
-		@* Add-tool hint strip, bottom-centre: the whole stamp scheme at a glance. The scale hint live-updates
-		   with the tapped axis lock while a D-scrub runs. *@
-		@if ( Session.Tool == SculptTool.Add )
-		{
-			<div class="hint-strip">
+		@* Hotkey hint strip, bottom-centre — contextual: the stamp scheme while placing, the selection
+		   scheme while editing. The S/D labels live-update with the active shape. *@
+		<div class="hint-strip">
+			@if ( Session.Tool == SculptTool.Add )
+			{
 				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : "stamp")</span></div>
 				<div class="hint"><span class="key">Space</span><span>add / carve</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
 				<div class="hint"><span class="key">RMB</span><span>scale</span></div>
 				<div class="hint"><span class="key">MMB</span><span>rotate</span></div>
-				<div class="hint"><span class="key">X / C / Z</span><span>axis lock</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
 				<div class="hint"><span class="key">A</span><span>blend</span></div>
-				<div class="hint"><span class="key">S</span><span>round</span></div>
-				<div class="hint"><span class="key">Q</span><span>edit tool</span></div>
-			</div>
-		}
+				<div class="hint"><span class="key">S</span><span>@(SecondSliderName)</span></div>
+				@if ( WildcardName is { } wc )
+				{
+					<div class="hint"><span class="key">D</span><span>@wc</span></div>
+				}
+				<div class="hint"><span class="key">1-4</span><span>shape</span></div>
+				<div class="hint"><span class="key">Esc</span><span>cancel</span></div>
+			}
+			else
+			{
+				<div class="hint"><span class="key">LMB</span><span>select</span></div>
+				@if ( Session.SelectedBrush is not null )
+				{
+					<div class="hint"><span class="key">RMB</span><span>scale</span></div>
+					<div class="hint"><span class="key">MMB</span><span>rotate</span></div>
+					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
+					<div class="hint"><span class="key">A</span><span>blend</span></div>
+					<div class="hint"><span class="key">S</span><span>@(SecondSliderName)</span></div>
+					@if ( WildcardName is { } wc )
+					{
+						<div class="hint"><span class="key">D</span><span>@wc</span></div>
+					}
+				}
+				<div class="hint"><span class="key">Q</span><span>add shape</span></div>
+			}
+		</div>
 
-		@if ( ShowTools || ShowLayers )
+		@* The left column is just the layer stack now — shape choice moved to the bottom dock (it's a
+		   property of the brush, not a tool), and the Add/Edit mode toggle is gone entirely. *@
+		@if ( ShowLayers )
 		{
 		<div class="panel left" @ref="LeftPanel">
-			@if ( ShowTools )
-			{
-			<div class="section-title"><div class="icon">construction</div><span>Tool</span></div>
-
-			@* Add = the stamp ghost (place shapes by clicking), Edit = select + gizmo. Q toggles too. *@
-			<div class="tool-toggle">
-				<div class="chip @(Session.Tool == SculptTool.Add ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Add ))>
-					<div class="icon">add_circle</div><span>Add</span>
-				</div>
-				<div class="chip @(Session.Tool == SculptTool.Edit ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Edit ))>
-					<div class="icon">open_with</div><span>Edit</span>
-				</div>
-			</div>
-
-			<div class="section-title"><div class="icon">auto_awesome</div><span>@(Session.Tool == SculptTool.Add ? "Shape" : "Add Shape")</span></div>
-
-			<div class="shape-grid">
-				@foreach ( var entry in VisibleShapes )
-				{
-					var shape = entry.Shape;
-					var active = Session.Tool == SculptTool.Add && Session.ActiveShape == shape;
-					<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => ShapeClicked( shape ))>
-						<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
-						<span class="label">@entry.Label</span>
-					</div>
-				}
-			</div>
-
-			@* Add/Carve toggle — whether a stamp adds material or carves it away. The ghost previews the
-			   carve live (red wireframe + the surface eating away where it overlaps). *@
-			@if ( Session.Tool == SculptTool.Add )
-			{
-				<div class="tool-toggle op-toggle">
-					<div class="chip @(Session.StampOperation == SdfOperation.Add ? "on" : "")" @onclick=@(() => Session.SetStampOperation( SdfOperation.Add ))>
-						<div class="icon">add</div><span>Add</span>
-					</div>
-					<div class="chip carve @(Session.StampOperation == SdfOperation.Subtract ? "on" : "")" @onclick=@(() => Session.SetStampOperation( SdfOperation.Subtract ))>
-						<div class="icon">remove</div><span>Carve</span>
-					</div>
-				</div>
-			}
-			}
-
-			@if ( ShowLayers )
-			{
 			<div class="section-title"><div class="icon">layers</div><span>Shapes</span></div>
 
 			<div class="layers">
@@ -130,7 +99,6 @@
 					}
 				}
 			</div>
-			}
 
 		</div>
 		}
@@ -138,29 +106,36 @@
 		@* Per-axis symmetry for the selected brush. The row's symmetry button is a quick on/off (X);
 		   this section picks which axes when you want quadrant/octant mirroring. Lives in its own right-hand
 		   panel so the left column's full height is free for the layer stack. *@
-		@if ( ShowTools && Brush is not null )
+		@if ( ShowTools )
 		{
 			<div class="panel right" @ref="RightPanel">
-				@* Duplicate/Reset act on the SELECTION, so they're edit-tool-only; symmetry below also
-				   works on the stamp ghost (mirrored stamping). *@
-				@if ( Session.Tool == SculptTool.Edit )
-				{
 				<div class="section-title"><span>Tools</span><div class="icon">auto_awesome</div></div>
 				<div class="shape-grid">
-					<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
-						<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
+					@* Add Shape = pick up a stamp of the last-used shape (lights up while one is held).
+					   With nothing selected this is the on-screen entry point — the shape dock is hidden then. *@
+					<div class="chip action @(Session.Tool == SculptTool.Add ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Add ))>
+						<div class="icon">add_circle</div><span>Add Shape</span>
 					</div>
-					<div class="chip action" @onclick=@(() => Session.ResetRotationSelected())>
-						<div class="icon">@SdfIcons.ResetRotation</div><span>Reset</span>
-					</div>
+					@* Duplicate/Reset act on the SELECTION, so they're selection-only. *@
+					@if ( Session.Tool == SculptTool.Edit && Brush is not null )
+					{
+						<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
+							<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
+						</div>
+						<div class="chip action" @onclick=@(() => Session.ResetRotationSelected())>
+							<div class="icon">@SdfIcons.ResetRotation</div><span>Reset</span>
+						</div>
+					}
 				</div>
-				}
+				@if ( Brush is not null )
+				{
 				<div class="section-title"><span>Symmetry</span><div class="icon">@SdfIcons.Symmetry</div></div>
 				<div class="shape-grid">
 					<div class="chip @(Brush.MirrorX ? "on" : "")" @onclick=@(() => ToggleMirror( 0 ))>X</div>
 					<div class="chip @(Brush.MirrorY ? "on" : "")" @onclick=@(() => ToggleMirror( 1 ))>Y</div>
 					<div class="chip @(Brush.MirrorZ ? "on" : "")" @onclick=@(() => ToggleMirror( 2 ))>Z</div>
 				</div>
+				}
 			</div>
 		}
 
@@ -254,16 +229,7 @@
 			var splinePerPoint = fb?.SplinePerPointRadius ?? false;
 			var splineSizeVal = fb?.Points is { Count: > 0 } sp ? sp[0].w : 10f; // uniform mode keeps all radii equal — point 0 IS the value
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
-			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @(SliderWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
-				@* Axis-constraint readout (hold X / C / Z, combinable): XYZ = free, one axis lit = line
-				   lock, two = plane lock. Display-only — the held keys are the control. *@
-				@{ var axisMask = SculptEditSession.EffectiveAxisMask; }
-				<div class="axis-row">
-					<div class="chip mini axis a0 @(axisMask == 0 ? "on" : "")">XYZ</div>
-					<div class="chip mini axis a1 @((axisMask & 1) != 0 ? "on" : "")">X</div>
-					<div class="chip mini axis a2 @((axisMask & 2) != 0 ? "on" : "")">Y</div>
-					<div class="chip mini axis a3 @((axisMask & 4) != 0 ? "on" : "")">Z</div>
-				</div>
+			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
@@ -323,6 +289,33 @@
 				}
 			</div>
 		}
+
+		@* Shape row — docked above the sliders, because shape is a PROPERTY of the brush, not a tool:
+		   with a stamp held it re-moulds the ghost, with a selection it converts the brush in place.
+		   Hidden with no active brush — the Tools panel's "Add Shape" button (or Q / number keys) is the
+		   entry point then. *@
+		@if ( ShowTools && Brush is not null )
+		{
+			var shapeDockPos = ShapeDockPos();
+			if ( shapeDockPos.HasValue )
+				_shapeDockPos = shapeDockPos.Value;
+
+			<div @ref="ShapeDockPanel" class="shape-dock" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px;">
+				<div class="shape-grid">
+					@foreach ( var entry in VisibleShapes )
+					{
+						var shape = entry.Shape;
+						var active = Brush?.Shape == shape;
+						<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => ShapeClicked( shape ))>
+							<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
+							<span class="label">@entry.Label</span>
+						</div>
+					}
+				</div>
+				@* (No Add/Carve chips — spacebar toggles the op, and the 3D preview + red carve wireframe
+				   already make the mode obvious.) *@
+			</div>
+		}
 	}
 
 	@* Bounding-sphere silhouette of the selected shape (Bounds toggle in Tools). A flat circle is the sphere's
@@ -369,33 +362,53 @@
 	// sliders / symmetry pre-style the next stamp). Identical to SelectedBrush when the edit tool is up.
 	SdfBrush Brush => Session?.ActiveBrush;
 
-	// Shapes the toolbar offers for the CURRENT tool: stamping excludes Spline (its authoring flow is
-	// bespoke — chained control points, not a stamp — and stays an edit-mode add for now).
+	// The shape row's shapes. Spline is excluded entirely for now (not stampable, not convertible — its
+	// bespoke authoring flow gets designed later; unreachable is accepted).
 	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes
 	{
 		get
 		{
 			foreach ( var e in AddShapes )
 			{
-				if ( Session?.Tool == SculptTool.Add && e.Shape == SdfShape.Spline )
+				if ( e.Shape == SdfShape.Spline )
 					continue;
 				yield return e;
 			}
 		}
 	}
 
-	// Toolbar click: in add mode it re-moulds the stamp ghost; in edit mode it keeps the old stack-add
-	// (which is also how a spline is created).
+	// Shape-row click — shape is a brush PROPERTY, so the verb depends on the current subject:
+	// stamp held → re-mould the ghost; brush selected → convert it in place; nothing → pick up a new stamp.
 	void ShapeClicked( SdfShape shape )
 	{
 		if ( Session is null )
 			return;
 
 		if ( Session.Tool == SculptTool.Add )
+		{
 			Session.SetShape( shape );
-		else
-			Session.Add( shape );
+			return;
+		}
+
+		if ( Session.SelectedBrush is not null )
+		{
+			Session.ConvertSelectedShape( shape );
+			return;
+		}
+
+		Session.SetTool( SculptTool.Add );
+		Session.SetShape( shape );
 	}
+
+	// Hint-strip labels for the shape-dependent scrubs: S = the second slider, D = the wildcard third.
+	string SecondSliderName => Brush?.Shape == SdfShape.Spline ? "curve" : "round";
+	string WildcardName => Brush?.Shape switch
+	{
+		SdfShape.Sphere or SdfShape.Cone => "slice",
+		SdfShape.Extruded => "profile",
+		SdfShape.Spline => "size",
+		_ => null,
+	};
 
 
 	// True while alt is held in edit mode (Maya camera nav). Read from the camera controller (a regular component
@@ -454,6 +467,28 @@
 	Panel PickerPanel { get; set; }
 	Panel LeftPanel { get; set; }
 	Panel RightPanel { get; set; }
+	Panel ShapeDockPanel { get; set; }
+	Vector2 _shapeDockPos;
+
+	// The shape row sits centred, directly above the slider stack (measured sizes; estimates pre-layout).
+	Vector2? ShapeDockPos()
+	{
+		float sc = Panel?.ScaleFromScreen ?? 1f;
+		float w = 480f, h = 100f;
+		if ( ShapeDockPanel is { } sd && sd.Box.Rect.Width > 0f )
+		{
+			w = sd.Box.Rect.Width * sc;
+			h = sd.Box.Rect.Height * sc;
+		}
+
+		float slidersTop = Screen.Height * sc - SliderStackHeight - 64f;
+		if ( SliderPos() is { } sl )
+			slidersTop = sl.y;
+
+		return new Vector2(
+			MathF.Max( 8f, (Screen.Width * sc - w) * 0.5f ),
+			MathF.Max( 8f, slidersTop - h - 12f ) );
+	}
 
 	// Retained state so the palette + sliders can fade OUT after a deselect (a mount/unmount can't animate, so the
 	// panels stay rendered and just drop opacity). _fadeBrush is the last selected brush — its colour/values fill
@@ -650,7 +685,8 @@
 		PointerOverPalette = PalettePanel?.HasHovered ?? false;
 		PointerOverSliders = SliderStackPanel?.HasHovered ?? false;
 		PointerOverPicker = PickerPanel?.HasHovered ?? false;
-		PointerOverPanels = (LeftPanel?.HasHovered ?? false) || (RightPanel?.HasHovered ?? false);
+		PointerOverPanels = (LeftPanel?.HasHovered ?? false) || (RightPanel?.HasHovered ?? false)
+			|| (ShapeDockPanel?.HasHovered ?? false);
 
 		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
 		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.
@@ -690,7 +726,7 @@
 	[Property, Group( "Palette" )] public float SwatchSize { get; set; } = 30f;
 	[Property, Group( "Palette" )] public float SwatchSpacing { get; set; } = 5f;
 	[Property, Group( "Palette" )] public float SwatchRoundness { get; set; } = 14f;
-	[Property, Group( "Palette" )] public int Columns { get; set; } = 6;
+	[Property, Group( "Palette" )] public int Columns { get; set; } = 4;
 
 	/// <summary>Gap between the shape's bounding circle and the palette to its right (design px — scales with
 	/// the screen). It's added BEYOND the projected radius, so it's a small margin, not the full offset.</summary>
@@ -914,6 +950,7 @@
 			default: Brush.MirrorZ = !Brush.MirrorZ; break;
 		}
 
+		Brush.SnapToMirrorPlanes(); // symmetry turned on near the plane = "centre this" — magnetize now
 		Session?.NotifyChanged();
 	}
 
@@ -1084,113 +1121,62 @@
 	// gap beyond the silhouette. Clamped so the palette AND the picker column to its right both stay on
 	// screen — the palette gives ground early so the wheel never has to choose between the screen edge and
 	// overlapping the swatches.
+	// Both tools dock the panels to the screen edges now (nothing anchors to the shape — the ghost tracks
+	// the cursor in add mode, and a stable home beats chasing the selection in edit mode). The colour stack
+	// is anchored to the BOTTOM-RIGHT — picker column (wheel / metal / rough / copy-paste) on top, palette
+	// beneath it, palette flush with the bottom — so it sits in the exact same place in Add and Edit and
+	// clear of the top-right Tools/Symmetry panel.
 	Vector2? PalettePos()
 	{
-		// Add mode docks the palette to the RIGHT SCREEN EDGE (the ghost tracks the cursor, so anything
-		// anchored to it would chase the mouse). The picker column keeps its usual slot to the palette's right.
-		if ( Session?.Tool == SculptTool.Add )
-		{
-			float sc = Panel?.ScaleFromScreen ?? 1f;
-			const float m = 16f;
-			float pickerReserve = ShowPicker ? PickerSize + PickerGap : 0f;
-			return new Vector2(
-				MathF.Max( m, Screen.Width * sc - PaletteWidth - pickerReserve - m ),
-				MathF.Max( m, (Screen.Height * sc - PaletteHeight) * 0.5f ) );
-		}
-
-		if ( !AnchorScreenSphere( out var centre, out var radius ) )
-			return null;
-
-		float scale = Panel?.ScaleFromScreen ?? 1f;
-		float x = centre.x + radius + DistanceFromGizmo;
-		float y = centre.y - PaletteHeight * 0.5f;
-
-		const float margin = 8f;
-		float reserve = ShowPicker ? PickerSize + PickerGap : 0f;
-		float screenW = Screen.Width * scale;
-		float screenH = Screen.Height * scale;
-		x = Math.Clamp( x, margin, MathF.Max( margin, screenW - PaletteWidth - reserve - margin ) );
-		y = Math.Clamp( y, margin, MathF.Max( margin, screenH - PaletteHeight - margin ) );
-		return new Vector2( x, y );
+		float sc = Panel?.ScaleFromScreen ?? 1f;
+		const float m = 16f;
+		return new Vector2(
+			MathF.Max( m, Screen.Width * sc - PaletteWidth - m ),
+			MathF.Max( m, Screen.Height * sc - PaletteHeight - m ) );
 	}
 
 	// Picker column (colour wheel + metal/rough sliders): just off the RIGHT of the palette, top-aligned
 	// with it. Takes the palette's slot (and centres on the bounding circle) when the palette is hidden.
+	// The picker column: right edge, sitting directly ABOVE the bottom-anchored palette (its rendered
+	// height is measured — the estimate misses the copy/paste row). Without the palette it takes the
+	// bottom-right corner itself.
 	Vector2? PickerPos()
 	{
-		// Add mode: docked to the right of the docked palette, vertically centred with it.
-		if ( Session?.Tool == SculptTool.Add )
-		{
-			if ( PalettePos() is not { } dp )
-				return null;
+		float sc = Panel?.ScaleFromScreen ?? 1f;
+		const float m = 16f;
 
-			float sc = Panel?.ScaleFromScreen ?? 1f;
-			return new Vector2(
-				dp.x + PaletteWidth + PickerGap,
-				Math.Clamp( (Screen.Height * sc - PickerStackHeight) * 0.5f, 16f, MathF.Max( 16f, Screen.Height * sc - PickerStackHeight - 16f ) ) );
-		}
+		float ph = PickerStackHeight;
+		if ( PickerPanel is { } pp && pp.Box.Rect.Height > 0f )
+			ph = pp.Box.Rect.Height * sc;
 
-		if ( !AnchorScreenSphere( out var centre, out var radius ) )
-			return null;
-
-		float scale = Panel?.ScaleFromScreen ?? 1f;
-		float x = centre.x + radius + DistanceFromGizmo;
-		float y = centre.y - PickerStackHeight * 0.5f;
-		float minX = 8f;
+		float bottom = Screen.Height * sc - m;
 		if ( ShowPalette && PalettePos() is { } pal )
-		{
-			// Overlapping the swatches is worse than running off the screen edge, so the palette's right
-			// edge (plus the gap) is a hard floor the screen clamp below can't pull the wheel back over.
-			x = minX = pal.x + PaletteWidth + PickerGap;
-			y = pal.y;
-		}
+			bottom = pal.y - PickerGap;
 
-		const float margin = 8f;
-		float screenW = Screen.Width * scale;
-		float screenH = Screen.Height * scale;
-		x = Math.Clamp( x, minX, MathF.Max( minX, screenW - PickerSize - margin ) );
-		y = Math.Clamp( y, margin, MathF.Max( margin, screenH - PickerStackHeight - margin ) );
-		return new Vector2( x, y );
+		return new Vector2(
+			MathF.Max( m, Screen.Width * sc - PickerSize - m ),
+			MathF.Max( m, bottom - ph ) );
 	}
 
 	// Sliders: under the BOTTOM of the anchor circle, horizontally centred on it. Clamped to the screen, so
 	// on a big/zoomed-in shape they ride up against the bottom edge instead of falling off it.
+	// The blend/round/etc. sliders: ONE horizontal strip docked bottom-centre, above the hint strip — a
+	// stable home and the live READOUT for the A/S/D hold scrubs. Width and height are measured (the
+	// slider count and the profile/text rows vary by shape); estimates cover the pre-first-layout frame.
 	Vector2? SliderPos()
 	{
-		// Add mode: docked bottom-centre, above the hint strip — the sliders become the live READOUT for the
-		// A/S hold-key scrubs (which is why they must not chase the cursor-tracked ghost).
-		if ( Session?.Tool == SculptTool.Add )
+		float sc = Panel?.ScaleFromScreen ?? 1f;
+		float sw = SliderWidth * 2f;
+		float sh = 52f;
+		if ( SliderStackPanel is { } sp && sp.Box.Rect.Width > 0f )
 		{
-			float sc = Panel?.ScaleFromScreen ?? 1f;
-			float sh = SliderStackHeight;
-			if ( SliderStackPanel is { } dsp && dsp.Box.Rect.Height > 0f )
-				sh = dsp.Box.Rect.Height * sc;
-			return new Vector2(
-				MathF.Max( 8f, (Screen.Width * sc - SliderWidth) * 0.5f ),
-				MathF.Max( 8f, Screen.Height * sc - sh - 64f ) );
+			sw = sp.Box.Rect.Width * sc;
+			sh = sp.Box.Rect.Height * sc;
 		}
 
-		if ( !AnchorScreenSphere( out var centre, out var radius ) )
-			return null;
-
-		float scale = Panel?.ScaleFromScreen ?? 1f;
-		float x = centre.x - SliderWidth * 0.5f;
-		float y = centre.y + radius + SliderDropFromGizmo;
-
-		// The stack's real height varies (two or three sliders, plus the extruded profile row), so measure
-		// the rendered panel for the bottom-of-screen clamp — the fixed SliderStackHeight would let a taller
-		// stack clip off the bottom. Box.Rect is physical screen px (×scale → logical, like everything here);
-		// the property stays as the pre-first-layout fallback.
-		float stackH = SliderStackHeight;
-		if ( SliderStackPanel is { } sp && sp.Box.Rect.Height > 0f )
-			stackH = sp.Box.Rect.Height * scale;
-
-		const float margin = 8f;
-		float screenW = Screen.Width * scale;
-		float screenH = Screen.Height * scale;
-		x = Math.Clamp( x, margin, MathF.Max( margin, screenW - SliderWidth - margin ) );
-		y = Math.Clamp( y, margin, MathF.Max( margin, screenH - stackH - margin ) );
-		return new Vector2( x, y );
+		return new Vector2(
+			MathF.Max( 8f, (Screen.Width * sc - sw) * 0.5f ),
+			MathF.Max( 8f, Screen.Height * sc - sh - 40f ) );
 	}
 
 	// Re-render when the session/selection/brush state or the gizmo's screen position changes (so the palette
@@ -1220,7 +1206,12 @@
 		hc.Add( (int)(s?.StampOperation ?? SdfOperation.Add) ); // Add/Carve chip highlight + LMB hint label
 		hc.Add( s?.StampBrush is not null );                  // ghost row skip + panel visibility
 		hc.Add( s?.IsScrubbing ?? false );                    // scrub dot + capture
-		hc.Add( SculptEditSession.AxisConstraint );          // axis-constraint chip highlight
+		// Hash the FRESHLY COMPUTED dock positions, not the stored fields — the stored ones only change
+		// during a render, so hashing them can never trigger the re-render that re-centres the strips
+		// after their measured size changes (2 vs 3 sliders left the row misaligned until something else
+		// happened to redraw).
+		if ( ShapeDockPos() is { } sdp ) { hc.Add( (int)sdp.x ); hc.Add( (int)sdp.y ); }
+		if ( SliderPos() is { } slp ) { hc.Add( (int)slp.x ); hc.Add( (int)slp.y ); }
 
 		// While a frozen-cursor gesture runs with a stamp up, the dot rides the shape — fold its projected
 		// position in so the dot re-renders as the camera moves it across the screen.

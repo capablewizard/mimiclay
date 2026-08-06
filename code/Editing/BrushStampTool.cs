@@ -65,14 +65,6 @@ public sealed class BrushStampTool
 	Vector2? _warpPending;
 	int _warpFrames;
 
-	// Single-axis cursor-lock echo detection. The per-frame warp is floored to whole pixels by the engine,
-	// so steering from the warped position lands the ghost slightly elsewhere → new warp → new error — a
-	// systematic sub-pixel feedback that drives the ghost along the axis on its own (worse the more the
-	// axis is foreshortened on screen). Cure: remember the last TWO warp targets (writes land async) and
-	// treat a cursor read sitting exactly on one of them as our own echo — hold the ghost still; only a
-	// read that differs (real user movement, ≥1px) steers.
-	Vector2? _axisLock, _axisLockPrev;
-
 	// Camera-glide cursor pin state. A commit changes the sculpt bounds, which starts the designed camera
 	// eases (pivot recentre glide, origin recentre) — seconds of slow motion during which the camera lock
 	// would pin the cursor with per-frame warps, eating the user's input ("cursor stuck after stamping").
@@ -82,8 +74,14 @@ public sealed class BrushStampTool
 	bool _camLockBroken;
 	Vector2? _camLockPx;
 
-	/// <summary>World units one scroll-wheel notch pushes/pulls the ghost (wheel-up = away).</summary>
-	public float DepthStep { get; set; } = 8f;
+	/// <summary>Scroll depth speed as a fraction of the ghost's largest Size dimension per notch — big
+	/// shapes travel further per notch, small ones move finely. A sixteenth of the default 16-sphere = 1
+	/// unit per notch — very fine control; spin the wheel for distance.</summary>
+	public float DepthStepFrac { get; set; } = 0.0625f;
+
+	/// <summary>Clamp on the per-notch depth step (world units), so extreme shapes stay controllable.</summary>
+	public float DepthStepMin { get; set; } = 0.5f;
+	public float DepthStepMax { get; set; } = 32f;
 
 	/// <summary>Grid cell size for shift-snapped placement (sculpture-local units). The grid is centred on
 	/// the sculpture origin, so 0,0,0 — the symmetry planes — is always on-grid.</summary>
@@ -113,7 +111,6 @@ public sealed class BrushStampTool
 		_camSeen = false; // stale camera baseline must not read as "camera moved" (and warp) on re-entry
 		_resyncCursor = _resyncArmed = false;
 		_warpPending = null;
-		_axisLock = _axisLockPrev = null;
 		_camLockBroken = false;
 		_camLockPx = null;
 		return b is not null && target.IsValid() && (target.Brushes?.Remove( b ) ?? false);
@@ -252,10 +249,14 @@ public sealed class BrushStampTool
 		return changed;
 	}
 
+	/// <summary>The brush the most recent commit produced — the session selects it for place-then-tweak.</summary>
+	public SdfBrush LastCommitted { get; private set; }
+
 	// The release turns the ghost INTO the sculpt: it just stays in the list. Remember it as the template so
 	// the next ghost matches, and let Update spawn that next ghost on the following frame.
 	void Commit()
 	{
+		LastCommitted = _stamp;
 		_template = _stamp.Copy();
 		_stamp = null;
 		_holding = false;
@@ -280,7 +281,6 @@ public sealed class BrushStampTool
 		}
 
 		Vector3 pos;
-		int mask = SculptEditSession.EffectiveAxisMask;
 		{
 			// A frozen-cursor gesture (camera move / scrub) just ended: warp the OS cursor exactly onto the
 			// shape, so steering resumes FROM the ghost and nothing ever snaps. Staged across two frames so
@@ -317,72 +317,24 @@ public sealed class BrushStampTool
 					return false;
 			}
 
-			// Scroll wheel = push/pull: move the anchor along the view ray (or the single held constraint
-			// axis) — wheel-up pushes away. The steered position recomputes from the moved anchor below,
-			// staying under the cursor by construction (free/plane) or via the axis warp (single axis).
+			// Scroll wheel = push/pull: move the anchor along the view ray — wheel-up pushes away. The
+			// per-notch step scales with the ghost's size (half its largest dimension, clamped), so a
+			// pebble nudges finely and a boulder actually travels. The steered position recomputes from
+			// the moved anchor below, staying under the cursor by construction.
 			float wheel = Input.MouseWheel.y;
-			bool wheelMoved = wheel != 0f;
-			if ( wheelMoved )
-				_anchor += (SculptEditSession.TrySingleAxis( mask, out var wheelAxis ) ? wheelAxis : d) * wheel * DepthStep;
-
-			if ( SculptEditSession.TrySingleAxis( mask, out var e ) )
+			if ( wheel != 0f )
 			{
-				// Single-axis steering: the ghost slides only along the sculpture-local axis line through
-				// the anchor — the position on the line closest to the cursor ray. The cursor itself is
-				// then WARPED onto that (unsnapped) point, so it visibly rides the axis and releasing the
-				// constraint can't snap the ghost. Steering only runs on REAL cursor movement: a read
-				// sitting exactly on one of our recent warp targets is our own echo (see _axisLock) and
-				// must hold still, or the pixel-floored warps feed back into self-propelled drift.
-				var mp = Mouse.Position;
-				bool echo = (_axisLock is { } l0 && (mp - l0).LengthSquared < 0.25f)
-					|| (_axisLockPrev is { } l1 && (mp - l1).LengthSquared < 0.25f);
-
-				// Echo (or a wheel-depth step, which already moved the anchor) → don't steer from the
-				// cursor; real movement → slide along the axis to the closest point to the new ray.
-				pos = (echo || wheelMoved) ? _anchor : _anchor + e * ClosestAxisT( _anchor, e, o, d );
-
-				// Re-warp whenever the ghost may have left the cursor (steered, or wheel-moved).
-				if ( !echo || wheelMoved )
-				{
-					var world = tx.PointToWorld( pos );
-					if ( Vector3.Dot( world - cam.WorldPosition, cam.WorldRotation.Forward ) > 0f )
-					{
-						// Mirror the engine setter's floor+clamp exactly, so the echo check sees the same
-						// integer pixel a later read returns.
-						var px = cam.PointToScreenPixels( world );
-						px.x = Math.Clamp( MathF.Floor( px.x ), 0f, Screen.Width - 1 );
-						px.y = Math.Clamp( MathF.Floor( px.y ), 0f, Screen.Height - 1 );
-						Mouse.Position = px;
-						_axisLockPrev = _axisLock;
-						_axisLock = px;
-					}
-				}
+				float maxDim = MathF.Max( _stamp.Size.x, MathF.Max( _stamp.Size.y, _stamp.Size.z ) );
+				float step = Math.Clamp( maxDim * DepthStepFrac, DepthStepMin, DepthStepMax );
+				_anchor += d * wheel * step;
 			}
-			else if ( mask != 0 )
-			{
-				_axisLock = _axisLockPrev = null;
-				// Two-axis (plane) steering: intersect the cursor ray with the plane spanned by the two
-				// held axes through the anchor. The result sits ON the cursor ray, so the cursor needs no
-				// warp — releasing the constraint resumes seamlessly by construction.
-				int i0 = (mask & 1) != 0 ? 0 : 1;
-				int i1 = (mask & 4) != 0 ? 2 : 1;
-				var n = Vector3.Cross( SculptEditSession.AxisVector( i0 ), SculptEditSession.AxisVector( i1 ) ).Normal;
-				float denom = Vector3.Dot( d, n );
-				pos = MathF.Abs( denom ) > 1e-4f
-					? o + d * (Vector3.Dot( _anchor - o, n ) / denom)
-					: _anchor; // plane edge-on to the view: hold position
-			}
-			else
-			{
-				_axisLock = _axisLockPrev = null;
 
-				// Steer by intersecting the cursor ray with the camera-parallel plane through the anchor.
-				// The depth lives on the WORLD-space anchor, not at a camera distance — so zooming or
-				// orbiting the camera never drags the ghost along; only steering moves it.
-				float denom = Vector3.Dot( d, fwd );
-				float t = denom > 1e-4f ? Vector3.Dot( _anchor - o, fwd ) / denom : -1f;
-				pos = t >= 8f ? o + d * t : _anchor; // degenerate / camera zoomed past the plane: hold position
-			}
+			// Steer by intersecting the cursor ray with the camera-parallel plane through the anchor.
+			// The depth lives on the WORLD-space anchor, not at a camera distance — so zooming or
+			// orbiting the camera never drags the ghost along; only steering moves it.
+			float denom = Vector3.Dot( d, fwd );
+			float t = denom > 1e-4f ? Vector3.Dot( _anchor - o, fwd ) / denom : -1f;
+			pos = t >= 8f ? o + d * t : _anchor; // degenerate / camera zoomed past the plane: hold position
 			_anchor = pos;
 		}
 
@@ -395,11 +347,10 @@ public sealed class BrushStampTool
 				MathF.Round( pos.y / GridStep ) * GridStep,
 				MathF.Round( pos.z / GridStep ) * GridStep );
 
-		if ( (pos - _stamp.Position).LengthSquared < 0.0001f )
-			return false;
-
+		var old = _stamp.Position;
 		_stamp.Position = pos;
-		return true;
+		_stamp.SnapToMirrorPlanes(); // mirrored ghost entering the deadzone magnetizes to the plane
+		return (_stamp.Position - old).LengthSquared >= 0.0001f;
 	}
 
 	SdfBrush NewStamp()
@@ -423,19 +374,6 @@ public sealed class BrushStampTool
 		return b;
 	}
 
-	// Closest point on the axis line (origin + axis·t) to a ray, returned as t — the gizmo's move-axis math.
-	static float ClosestAxisT( Vector3 origin, Vector3 axis, Vector3 ro, Vector3 rd )
-	{
-		var w0 = origin - ro;
-		float b = Vector3.Dot( axis, rd );
-		float dd = Vector3.Dot( axis, w0 );
-		float ee = Vector3.Dot( rd, w0 );
-		float denom = 1f - b * b;
-		if ( MathF.Abs( denom ) < 1e-5f )
-			return -dd;
-		return (b * ee - dd) / denom;
-	}
-
 	// Same per-shape spawn sizes AddBrush uses, so a stamped shape matches a stack-added one.
 	static Vector3 SpawnSize( SdfShape shape ) => shape switch
 	{
@@ -450,15 +388,15 @@ public enum ScrubKind
 	None,
 	Blend,
 	Round,
+	Wildcard, // the per-shape third slider: slice / profile / spline size
 	Scale,
 	Rotate,
 }
 
 /// <summary>
-/// Hold parameter scrubbing, Blender-modal-style: hold A (blend), S (round), RIGHT CLICK (scale) or the
-/// MIDDLE MOUSE BUTTON (rotate) and move the mouse. The held axis constraint (<see cref="SculptEditSession.AxisConstraint"/>,
-/// X/C/Z keys) shapes scale and rotate: constrained scale drives the held Size components, constrained rotate spins
-/// about that sculpture-local axis; Shift held snaps the rotate to the SnapDeg grid. Shared by BOTH tools — the stamp
+/// Hold parameter scrubbing, Blender-modal-style: hold A / S / D (the slider stack in order — blend, round,
+/// then the per-shape wildcard: slice, profile, spline size), RIGHT CLICK (uniform scale) or the MIDDLE
+/// MOUSE BUTTON (rotate) and move the mouse. Shift held snaps the rotate to the SnapDeg grid. Shared by BOTH tools — the stamp
 /// ghost in add mode and the selected brush in edit mode — so the whole scheme is learned once. One scrub
 /// runs at a time, game-wide (static), matching the one-cursor reality; the HUD reads
 /// <see cref="Active"/>/<see cref="Anchor"/> to capture the mouse and draw the frozen-cursor dot.
@@ -473,17 +411,28 @@ public static class BrushScrub
 	public static Vector2 Anchor { get; private set; }
 
 	// Manual edge detection (Input.Keyboard exposes Down only).
-	static bool _aWas, _sWas, _dWas, _eWas;
+	static bool _aWas, _sWas, _dWas, _scaleWas, _rotWas;
 
 	// The rotate scrub's continuous (unsnapped) orientation, sculpture-local. The mouse always drives THIS;
-	// shift only changes what gets applied to the brush (the grid-snapped version of it). _grabRot is the
-	// orientation at gesture start — a mid-gesture constraint change restarts the accumulation from it.
+	// shift only changes what gets applied to the brush (the grid-snapped version of it).
 	static Rotation _rawRot = Rotation.Identity;
-	static Rotation _grabRot = Rotation.Identity;
-	static int _rotMask; // the constraint mask the current rotate accumulation was built under
+
+	// Wildcard profile-cycling accumulator (Extruded: the profile steps once per ProfileStepPx of travel).
+	static float _wildAccum;
+	static readonly SdfCrossSection[] ProfileCycle =
+	{
+		SdfCrossSection.Triangle,
+		SdfCrossSection.Star,
+		SdfCrossSection.Pentagon,
+		SdfCrossSection.Hexagon,
+	};
 
 	const float BlendPerPx = 0.06f;   // MaxBlend (15) across ~250 px
 	const float RoundPerPx = 0.15f;
+	const float CurvePerPx = 0.005f;  // spline curvature 0..1 across ~200 px
+	const float SlicePerPx = 0.0035f; // MaxSlice (0.95) across ~270 px
+	const float SplineSizePerPx = 0.08f;
+	const float ProfileStepPx = 80f;
 	const float ScaleHalfDoublePx = 240f; // px of mouse travel that doubles the size
 	const float DegPerPx = 0.4f;
 	const float SnapDeg = 22.5f; // half-steps between the 45s — 0 / 22.5 / 45 / 67.5 / 90…
@@ -496,15 +445,17 @@ public static class BrushScrub
 		ended = false;
 
 		// A focused text field (the Text brush's entry) owns the keyboard — typing must never scrub.
+		// A/S/D scrub the slider stack in order: blend, round (curve on a spline), then the per-shape
+		// wildcard (slice / profile / spline size). Scale rides RIGHT CLICK, rotate the MIDDLE MOUSE
+		// BUTTON (both without alt — alt+RMB/MMB are the camera dolly and pan).
 		bool typing = Sandbox.UI.InputFocus.Current is not null;
 		bool a = !typing && Input.Keyboard.Down( "a" );
 		bool s = !typing && Input.Keyboard.Down( "s" );
-		// Scale rides RIGHT CLICK, rotate the MIDDLE MOUSE BUTTON (both without alt — alt+RMB/MMB are the
-		// camera dolly and pan).
-		bool d = Input.Down( "Attack2" ) && !Input.Down( "Walk" );
-		bool e = Input.Down( "CameraPan" ) && !Input.Down( "Walk" );
-		bool aP = a && !_aWas, sP = s && !_sWas, dP = d && !_dWas, eP = e && !_eWas;
-		_aWas = a; _sWas = s; _dWas = d; _eWas = e;
+		bool d = !typing && Input.Keyboard.Down( "d" );
+		bool scale = Input.Down( "Attack2" ) && !Input.Down( "Walk" );
+		bool rot = Input.Down( "CameraPan" ) && !Input.Down( "Walk" );
+		bool aP = a && !_aWas, sP = s && !_sWas, dP = d && !_dWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
+		_aWas = a; _sWas = s; _dWas = d; _scaleWas = scale; _rotWas = rot;
 
 		if ( b is null || cam is null || (!allow && Active == ScrubKind.None) )
 		{
@@ -518,8 +469,9 @@ public static class BrushScrub
 		{
 			if ( aP ) Begin( ScrubKind.Blend, b );
 			else if ( sP ) Begin( ScrubKind.Round, b );
-			else if ( dP ) Begin( ScrubKind.Scale, b );
-			else if ( eP ) Begin( ScrubKind.Rotate, b );
+			else if ( dP ) Begin( ScrubKind.Wildcard, b );
+			else if ( scaleP ) Begin( ScrubKind.Scale, b );
+			else if ( rotP ) Begin( ScrubKind.Rotate, b );
 		}
 
 		if ( Active == ScrubKind.None )
@@ -530,8 +482,9 @@ public static class BrushScrub
 		{
 			ScrubKind.Blend => a,
 			ScrubKind.Round => s,
-			ScrubKind.Scale => d,
-			ScrubKind.Rotate => e,
+			ScrubKind.Wildcard => d,
+			ScrubKind.Scale => scale,
+			ScrubKind.Rotate => rot,
 			_ => false,
 		};
 		if ( !stillHeld )
@@ -552,77 +505,76 @@ public static class BrushScrub
 				return true;
 
 			case ScrubKind.Round:
-				b.Rounding = Math.Clamp( b.Rounding + delta.x * RoundPerPx, 0.75f, b.MaxRounding() );
+				// The second slider: rounding for the solids, curvature for a spline (its stack swaps the
+				// Round slider for Curve).
+				if ( b.Shape == SdfShape.Spline )
+					b.Curvature = Math.Clamp( b.Curvature + delta.x * CurvePerPx, 0f, 1f );
+				else
+					b.Rounding = Math.Clamp( b.Rounding + delta.x * RoundPerPx, 0.75f, b.MaxRounding() );
 				return true;
+
+			case ScrubKind.Wildcard:
+				// The per-shape third slider: slice for the sliceable solids, the profile for the extruded
+				// "Shape" brush (steps through them as you scrub), uniform tube size for a spline. Shapes
+				// with no third parameter (box, cylinder, text) just do nothing.
+				switch ( b.Shape )
+				{
+					case SdfShape.Sphere or SdfShape.Cone:
+						b.Slice = Math.Clamp( b.Slice + delta.x * SlicePerPx, 0f, SdfBrush.MaxSlice );
+						return true;
+
+					case SdfShape.Extruded:
+					{
+						_wildAccum += delta.x;
+						int steps = (int)(_wildAccum / ProfileStepPx);
+						if ( steps == 0 )
+							return false;
+						_wildAccum -= steps * ProfileStepPx;
+
+						int cur = Array.IndexOf( ProfileCycle, b.CrossSection );
+						if ( cur < 0 )
+							cur = 0;
+						b.CrossSection = ProfileCycle[((cur + steps) % ProfileCycle.Length + ProfileCycle.Length) % ProfileCycle.Length];
+						// Profiles have different rounding caps (star << hexagon) — keep the value honest.
+						b.Rounding = Math.Clamp( b.Rounding, 0.75f, b.MaxRounding() );
+						return true;
+					}
+
+					case SdfShape.Spline:
+					{
+						if ( b.Points is not { Count: > 0 } pts )
+							return false;
+						float r = Math.Clamp( pts[0].w + delta.x * SplineSizePerPx, 1f, SdfBrush.MaxSplineRadius );
+						for ( int i = 0; i < pts.Count; i++ )
+							pts[i] = new Vector4( pts[i].x, pts[i].y, pts[i].z, r );
+						return true;
+					}
+
+					default:
+						return false;
+				}
 
 			case ScrubKind.Scale:
 			{
-				// The held axis constraint picks the components: free = uniform, else only the held axes
-				// scale (one = stretch along it, two = grow the plane's dimensions together). The
-				// constraint (and the guide line) are SCULPTURE axes, but Size lives in the brush's
-				// ROTATED local frame — so each held sculpture axis is mapped into the brush's frame and
-				// the dominant local component it lands on is what scales. That keeps "hold Z = grows the
-				// way the blue line points" true for rotated brushes (and the flat shapes, whose spawn
-				// rotation remaps the axes entirely).
-				int mask = SculptEditSession.EffectiveAxisMask;
-				int localMask = 0;
-				if ( mask == 0 )
-				{
-					localMask = 7; // free = uniform
-				}
-				else
-				{
-					var inv = b.Rotation.Inverse;
-					for ( int i = 0; i < 3; i++ )
-					{
-						if ( (mask & (1 << i)) == 0 )
-							continue;
-
-						var ls = inv * SculptEditSession.AxisVector( i );
-						float ax = MathF.Abs( ls.x ), ay = MathF.Abs( ls.y ), az = MathF.Abs( ls.z );
-						localMask |= ax >= ay && ax >= az ? 1 : ay >= az ? 2 : 4;
-					}
-				}
-
 				float factor = MathF.Pow( 2f, delta.x / ScaleHalfDoublePx );
 				float floor = b.Shape == SdfShape.Text ? 0.6f : 1f; // same floor the gizmo's scale handles use
-				var size = b.Size;
-				if ( (localMask & 1) != 0 ) size = size.WithX( MathF.Max( floor, size.x * factor ) );
-				if ( (localMask & 2) != 0 ) size = size.WithY( MathF.Max( floor, size.y * factor ) );
-				if ( (localMask & 4) != 0 ) size = size.WithZ( MathF.Max( floor, size.z * factor ) );
-				b.Size = size;
+				b.Size = new Vector3(
+					MathF.Max( floor, b.Size.x * factor ),
+					MathF.Max( floor, b.Size.y * factor ),
+					MathF.Max( floor, b.Size.z * factor ) );
 				return true;
 			}
 
 			case ScrubKind.Rotate:
 			{
-				// Unconstrained: mouse X = yaw about the camera's up, mouse Y = pitch about its right —
-				// gmod-familiar. With a single-axis constraint held, mouse X spins about that
-				// SCULPTURE-LOCAL axis only. Pressing/releasing a constraint MID-GESTURE restarts the
-				// accumulation from the orientation the gesture BEGAN with — you asked for "the initial
-				// rotation, spun about this axis", not "wherever the free spin had wandered to, plus more".
+				// Mouse X = yaw about the camera's up, mouse Y = pitch about its right — gmod-familiar.
 				// The motion accumulates on the RAW orientation; Shift held applies it snapped ABSOLUTELY
-				// to the 45° grid in the sculpture's frame (local Euler rounded) — a brush at 8° lands on
-				// the grid steps (0/22.5/45…), never 8°+step. Releasing Shift returns to the raw value.
-				int mask = SculptEditSession.EffectiveAxisMask;
-				if ( mask != _rotMask )
-				{
-					_rotMask = mask;
-					_rawRot = _grabRot; // constraint changed mid-gesture: restart from the grab orientation
-				}
-
+				// to the grid in the sculpture's frame (local Euler rounded) — a brush at 8° lands on the
+				// grid steps (0/22.5/45…), never 8°+step. Releasing Shift returns to the raw value.
 				var worldRaw = sculptTx.Rotation * _rawRot;
-				if ( SculptEditSession.TrySingleAxis( mask, out var rotAxis ) )
-				{
-					var axis = (sculptTx.Rotation * rotAxis).Normal;
-					worldRaw = Rotation.FromAxis( axis, -delta.x * DegPerPx ) * worldRaw;
-				}
-				else
-				{
-					worldRaw = Rotation.FromAxis( cam.WorldRotation.Up, -delta.x * DegPerPx )
-						* Rotation.FromAxis( cam.WorldRotation.Right, -delta.y * DegPerPx )
-						* worldRaw;
-				}
+				worldRaw = Rotation.FromAxis( cam.WorldRotation.Up, -delta.x * DegPerPx )
+					* Rotation.FromAxis( cam.WorldRotation.Right, -delta.y * DegPerPx )
+					* worldRaw;
 				_rawRot = sculptTx.Rotation.Inverse * worldRaw;
 
 				var applied = SculptEditSession.SnapHeld ? SnapToGrid( _rawRot, SnapDeg ) : _rawRot;
@@ -653,7 +605,6 @@ public static class BrushScrub
 		Active = kind;
 		Anchor = Mouse.Position;
 		_rawRot = b.Rotation; // rotate scrub: continuous motion accumulates from the brush's current orientation
-		_grabRot = b.Rotation;
-		_rotMask = SculptEditSession.EffectiveAxisMask;
+		_wildAccum = 0f;
 	}
 }

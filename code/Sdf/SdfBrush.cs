@@ -170,6 +170,27 @@ public class SdfBrush
 	/// <summary>Z mirror as the geometry sees it. See <see cref="EffectiveMirrorX"/>.</summary>
 	public bool EffectiveMirrorZ => MirrorZ && (Shape == SdfShape.Spline || MathF.Abs( Position.z ) > MirrorDeadzone);
 
+	/// <summary>Magnetic centre snap: any MIRRORED axis whose position falls inside the symmetry deadzone
+	/// is pulled to exactly 0 — entering the deadzone means "I want this centred", so the brush physically
+	/// centres on the plane instead of just quietly losing its mirror copy. Call after any edit that moves
+	/// the brush (stamp placement, gizmo drags, symmetry toggles). Returns true if the position changed.</summary>
+	public bool SnapToMirrorPlanes()
+	{
+		if ( Shape == SdfShape.Spline ) // spline geometry lives in Points — Position says nothing
+			return false;
+
+		float dz = MirrorDeadzone;
+		var p = Position;
+		bool moved = false;
+		if ( MirrorX && p.x != 0f && MathF.Abs( p.x ) <= dz ) { p.x = 0f; moved = true; }
+		if ( MirrorY && p.y != 0f && MathF.Abs( p.y ) <= dz ) { p.y = 0f; moved = true; }
+		if ( MirrorZ && p.z != 0f && MathF.Abs( p.z ) <= dz ) { p.z = 0f; moved = true; }
+
+		if ( moved )
+			Position = p;
+		return moved;
+	}
+
 	/// <summary>Mirror across the sculpture's local XY plane (z=0). See <see cref="MirrorX"/>.</summary>
 	[Property, Group( "Symmetry" )] public bool MirrorZ { get; set; }
 
