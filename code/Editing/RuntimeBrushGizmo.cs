@@ -116,9 +116,12 @@ public sealed class RuntimeBrushGizmo
 		if ( _interactive )
 			ResolveHover( center, axes, ringR, tIn, tOut, dotReach, dotR );
 
-		// PASS 2 — emit geometry + run the active drag.
+		// PASS 2 — emit geometry + run the active drag. The trackball disc goes FIRST: the overlay shader
+		// has no depth test, so mesh order is draw order — everything else paints over it.
 		BeginMesh();
 		bool changed = false;
+
+		if ( _style.ShowRotation ) changed |= Trackball( tx, brush, center, ringR );
 
 		for ( int i = 0; i < 3; i++ )
 		{
@@ -165,8 +168,10 @@ public sealed class RuntimeBrushGizmo
 
 	// The screen-relative handles (screen-move, screen-rotate, uniform-scale) overlap the per-axis handles at
 	// the gizmo centre. Give them a higher hover tier so they win the click even when an axis line/ring passes
-	// nearer the camera underneath them.
+	// nearer the camera underneath them. The trackball disc sits BELOW everything — it's the fallback when
+	// no real handle is hovered.
 	const int PriorityScreen = 1;
+	const int PriorityTrackball = -1;
 
 	void ResolveHover( Vector3 center, Vector3[] axes, float ringR, float tIn, float tOut, float dotReach, float dotR )
 	{
@@ -193,6 +198,15 @@ public sealed class RuntimeBrushGizmo
 				float d = RayPointDist( _ray, sq, out float depth );
 				Hover( $"plane{i}", d, depth, tOut * _style.PlaneScale + GrabPad( center ) );
 			}
+		}
+
+		if ( _style.ShowRotation )
+		{
+			// Blender's inner trackball: the whole disc inside the rotation rings free-rotates in all three
+			// axes. Exact radius, NO GrabPad, and priority -1 — every real handle outranks it, so it only
+			// claims the click when nothing else is under the cursor.
+			float dBall = RayPointDist( _ray, center, out float ballDepth );
+			Hover( "trackball", dBall, ballDepth, ringR, PriorityTrackball );
 		}
 
 		if ( _style.ShowScreenRotation )
@@ -563,6 +577,44 @@ public sealed class RuntimeBrushGizmo
 		{
 			float t = ClosestAxisT( c, axis, _ray );
 			SetAxisSize( brush, i, MathF.Max( ScaleFloor( brush ), _grabHalf + (t - _grabT) ) );
+			return true;
+		}
+
+		return false;
+	}
+
+	// Blender-style trackball: the disc inside the rotation rings. Invisible until hovered (then a faint
+	// white fill), and dragging free-rotates about the SCREEN axes — mouse X spins about the camera's up,
+	// mouse Y about its right — so the shape tumbles under the cursor in all three axes at once.
+	Vector2 _trackPx; // last frame's cursor position during a trackball drag (the drag is delta-driven)
+	const float TrackballDegPerPx = 0.4f;
+
+	bool Trackball( Transform tx, SdfBrush brush, Vector3 c, float radius )
+	{
+		string name = "trackball";
+		bool hot = IsHot( name );
+
+		if ( hot )
+			Disc( c, radius, Tint( Color.White.WithAlpha( _active == name ? 0.2f : 0.12f ), name ), 40 );
+
+		if ( _pressed && _hover == name )
+		{
+			_active = name;
+			_trackPx = Mouse.Position;
+		}
+
+		if ( _active == name && _down )
+		{
+			var d = Mouse.Position - _trackPx;
+			_trackPx = Mouse.Position;
+			if ( d.LengthSquared < 0.0001f )
+				return false;
+
+			var worldRot = tx.Rotation * brush.Rotation;
+			worldRot = Rotation.FromAxis( _cam.WorldRotation.Up, d.x * TrackballDegPerPx )
+				* Rotation.FromAxis( _cam.WorldRotation.Right, d.y * TrackballDegPerPx )
+				* worldRot;
+			brush.Rotation = tx.Rotation.Inverse * worldRot;
 			return true;
 		}
 

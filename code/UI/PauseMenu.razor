@@ -60,8 +60,8 @@
 			// One Escape = one intent, resolved here because this is the single Escape consumer (component
 			// update order vs. the edit session is arbitrary): close the pause menu if it's open; else
 			// cancel a held stamp (drop back to plain editing); else open the pause menu.
-			if ( !_open && SculptEditSession.Current is { IsEditing: true, Tool: SculptTool.Add } placing )
-				placing.SetTool( SculptTool.Edit );
+			if ( !_open && SculptEditSession.Current is { IsEditing: true, Tool: SculptTool.Sculpt } placing )
+				placing.SetTool( SculptTool.Gizmo );
 			else
 				SetOpen( !_open );
 		}

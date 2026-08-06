@@ -26,7 +26,9 @@
 
 	// Ownership is gated LIVE, not in OnStart — same reason as HunterController.OnUpdate: a host-spawned pawn
 	// runs OnStart on the owning client before ownership replicates, so an early IsProxy read is stale.
-	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode;
+	// Hidden during a third-person alt-orbit too: the camera is off the aim axis, so a centre dot would lie
+	// about where a shot lands.
+	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting;
 
 	protected override int BuildHash() => Visible ? 1 : 0;
 }

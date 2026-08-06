@@ -96,6 +96,7 @@
 
 		&.right {
 			right: $panel-inset;
+			width: 190px; // one consistent column width, shared with the colour wheel + palette below it
 			animation: edit-hud-slide-right 0.18s ease-out;
 
 			// Right-aligned section header (label sits against the right edge, icon trails it).
@@ -130,14 +131,26 @@
 		gap: 10px;
 	}
 
+	// The Tools panel's vertical button list — full-width chips stacked, so the top button (Add Shape)
+	// never moves as selection-only tools appear beneath it.
+	.tool-list {
+		flex-direction: column;
+		gap: 10px;
+
+		.chip { width: 100%; }
+	}
+
 	// The shape dock: the shape tile row, centred above the slider stack (left/top from code). The
-	// container is click-through; the tiles inside opt back in.
+	// container is click-through; the tiles inside opt back in — except while the dock is faded out
+	// (gizmo manipulation), when they must not catch invisible clicks.
 	.shape-dock {
 		position: absolute;
 		flex-direction: column;
 		align-items: center;
 		gap: 10px;
 		pointer-events: none;
+
+		&.hidden .shape-tile { pointer-events: none; }
 	}
 
 	// The active stamp shape in add mode — same orange the selected layer row / on-chips use.
@@ -495,6 +508,28 @@
 		// In the horizontal strip every item is a fixed-width pill matching the sliders — including the
 		// extruded "Shape" brush's profile chip row, whose chips flex to share that width evenly.
 		> .clay-slider, .slider-row, .text-row, .xsection-row { width: 250px; flex-shrink: 0; }
+
+		// Add/Carve toggle chip at the strip's head — green while adding, red while carving, cream text.
+		// Fixed width so the strip doesn't shift as the label changes between Add and Carve.
+		.op-chip {
+			width: 80px;
+			flex-grow: 0;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+			padding: 10px 0;
+			background-color: $craft-green;
+
+			span { font-size: 15px; color: $paper-tile; }
+
+			&:hover { background-color: $craft-green; }
+
+			&.carve {
+				background-color: $craft-red;
+
+				&:hover { background-color: $craft-red; }
+			}
+		}
 
 		// Small chips riding under the sliders (extruded profile picker, spline Loop, per-point toggle) —
 		// the paper chip look at slider scale (orange = active).

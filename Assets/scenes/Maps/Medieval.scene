@@ -661,7 +661,6 @@
           "Flags": 0,
           "AddPointCursor": "cursor-add",
           "BlendCurve": 2.5,
-          "Columns": 4,
           "DistanceFromGizmo": 0,
           "EditTransparency": 0,
           "FadeTime": 0.12,

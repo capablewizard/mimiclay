@@ -9,7 +9,8 @@
       "PowerShell($f = \"D:\\\\SteamLibrary\\\\steamapps\\\\common\\\\sbox\\\\logs\\\\sbox-dev.log\"; $lines = Get-Content $f; $recent = $lines | Where-Object { $_ -match '^2026/07/12 17:' }; Write-Output \"lines from 17:xx: $\\($recent.Count\\)\"; $recent | Select-String -Pattern \"joined|left|connecting|connected|disconnect|TcpChannel|yielding|Exception|Play|instance|Building|snapshot\" | Select-Object -First 50 | ForEach-Object { $_.Line })",
       "PowerShell(dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\Editor\\\\mimiclay.editor.csproj\" -v q --nologo)",
       "PowerShell($f = \"D:\\\\SteamLibrary\\\\steamapps\\\\common\\\\sbox\\\\logs\\\\sbox-dev.log\"; \\(Get-Content $f | Select-Object -Last 25\\) | ForEach-Object { Write-Output $_ })",
-      "PowerShell($f = \"D:\\\\SteamLibrary\\\\steamapps\\\\common\\\\sbox\\\\logs\\\\sbox.log\"; \\(Get-Content $f | Select-String -Pattern \"17:1[4-9]\" | Select-Object -Last 30\\) | ForEach-Object { $_.Line })"
+      "PowerShell($f = \"D:\\\\SteamLibrary\\\\steamapps\\\\common\\\\sbox\\\\logs\\\\sbox.log\"; \\(Get-Content $f | Select-String -Pattern \"17:1[4-9]\" | Select-Object -Last 30\\) | ForEach-Object { $_.Line })",
+      "PowerShell(dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -v q 2>&1)"
     ]
   }
 }

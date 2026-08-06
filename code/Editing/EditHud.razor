@@ -30,21 +30,22 @@
 		@* Hotkey hint strip, bottom-centre — contextual: the stamp scheme while placing, the selection
 		   scheme while editing. The S/D labels live-update with the active shape. *@
 		<div class="hint-strip">
-			@if ( Session.Tool == SculptTool.Add )
+			@if ( Session.Tool == SculptTool.Sculpt )
 			{
 				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : "stamp")</span></div>
-				<div class="hint"><span class="key">Space</span><span>add / carve</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
 				<div class="hint"><span class="key">RMB</span><span>scale</span></div>
-				<div class="hint"><span class="key">MMB</span><span>rotate</span></div>
+				<div class="hint"><span class="key">E</span><span>rotate</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-				<div class="hint"><span class="key">A</span><span>blend</span></div>
-				<div class="hint"><span class="key">S</span><span>@(SecondSliderName)</span></div>
+				<div class="hint"><span class="key">A</span><span>add / carve</span></div>
+				<div class="hint"><span class="key">S</span><span>blend</span></div>
+				<div class="hint"><span class="key">D</span><span>@(SecondSliderName)</span></div>
 				@if ( WildcardName is { } wc )
 				{
-					<div class="hint"><span class="key">D</span><span>@wc</span></div>
+					<div class="hint"><span class="key">F</span><span>@wc</span></div>
 				}
-				<div class="hint"><span class="key">1-4</span><span>shape</span></div>
+				<div class="hint"><span class="key">1-6</span><span>shape</span></div>
+				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
 				<div class="hint"><span class="key">Esc</span><span>cancel</span></div>
 			}
 			else
@@ -52,17 +53,21 @@
 				<div class="hint"><span class="key">LMB</span><span>select</span></div>
 				@if ( Session.SelectedBrush is not null )
 				{
+					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
 					<div class="hint"><span class="key">RMB</span><span>scale</span></div>
-					<div class="hint"><span class="key">MMB</span><span>rotate</span></div>
+					<div class="hint"><span class="key">E</span><span>rotate</span></div>
 					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-					<div class="hint"><span class="key">A</span><span>blend</span></div>
-					<div class="hint"><span class="key">S</span><span>@(SecondSliderName)</span></div>
+					<div class="hint"><span class="key">A</span><span>add / carve</span></div>
+					<div class="hint"><span class="key">S</span><span>blend</span></div>
+					<div class="hint"><span class="key">D</span><span>@(SecondSliderName)</span></div>
 					@if ( WildcardName is { } wc )
 					{
-						<div class="hint"><span class="key">D</span><span>@wc</span></div>
+						<div class="hint"><span class="key">F</span><span>@wc</span></div>
 					}
+					<div class="hint"><span class="key">1-6</span><span>shape</span></div>
 				}
-				<div class="hint"><span class="key">Q</span><span>add shape</span></div>
+				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
+				<div class="hint"><span class="key">Q</span><span>done</span></div>
 			}
 		</div>
 
@@ -110,14 +115,13 @@
 		{
 			<div class="panel right" @ref="RightPanel">
 				<div class="section-title"><span>Tools</span><div class="icon">auto_awesome</div></div>
-				<div class="shape-grid">
-					@* Add Shape = pick up a stamp of the last-used shape (lights up while one is held).
-					   With nothing selected this is the on-screen entry point — the shape dock is hidden then. *@
-					<div class="chip action @(Session.Tool == SculptTool.Add ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Add ))>
+				@* Vertical list: Add Shape keeps the SAME spot whatever the state; the selection-only tools
+				   grow downward beneath it instead of shoving it sideways. *@
+				<div class="tool-list">
+					<div class="chip action @(Session.Tool == SculptTool.Sculpt ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Sculpt ))>
 						<div class="icon">add_circle</div><span>Add Shape</span>
 					</div>
-					@* Duplicate/Reset act on the SELECTION, so they're selection-only. *@
-					@if ( Session.Tool == SculptTool.Edit && Brush is not null )
+					@if ( Session.Tool == SculptTool.Gizmo && Brush is not null )
 					{
 						<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
 							<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
@@ -168,7 +172,7 @@
 						@onclick=@(() => ApplyMaterial( m ))
 						@onmouseover=@(() => _hoverIndex = idx)
 						@onmouseout=@(() => { if ( _hoverIndex == idx ) _hoverIndex = -1; })>
-						<div class="swatch" style="width: @((int)SwatchSize)px; height: @((int)SwatchSize)px; border-radius: @((int)SwatchRoundness)px; @SwatchBorder( m, sel ) @SwatchBg( m ) transform: scale(@(sc.ToString( "0.##", CultureInfo.InvariantCulture )));"></div>
+						<div class="swatch" style="width: @((int)SwatchVisual)px; height: @((int)SwatchVisual)px; border-radius: @((int)SwatchRoundness)px; @SwatchBorder( m, sel ) @SwatchBg( m ) transform: scale(@(sc.ToString( "0.##", CultureInfo.InvariantCulture )));"></div>
 					</div>
 				}
 			</div>
@@ -230,6 +234,11 @@
 			var splineSizeVal = fb?.Points is { Count: > 0 } sp ? sp[0].w : 10f; // uniform mode keeps all radii equal — point 0 IS the value
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
 			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+				@* Add/Carve toggle for the active brush (ghost or selection) — same flip Space does. *@
+				@{ var opCarve = (fb?.Operation ?? SdfOperation.Add) == SdfOperation.Subtract; }
+				<div class="chip op-chip @(opCarve ? "carve" : "")" @onclick=@ToggleActiveOperation>
+					<span>@(opCarve ? "Carve" : "Add")</span>
+				</div>
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
@@ -300,7 +309,10 @@
 			if ( shapeDockPos.HasValue )
 				_shapeDockPos = shapeDockPos.Value;
 
-			<div @ref="ShapeDockPanel" class="shape-dock" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px;">
+			@* Fades out with the sliders while a gizmo handle is manipulated, so the view stays clear. The
+			   "hidden" class also drops the tiles' pointer-events (the container is always click-through). *@
+			var dockOpacity = Session.IsManipulating ? EditTransparency : 1f;
+			<div @ref="ShapeDockPanel" class="shape-dock @(dockOpacity <= 0.01f ? "hidden" : "")" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px; opacity: @(dockOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				<div class="shape-grid">
 					@foreach ( var entry in VisibleShapes )
 					{
@@ -384,7 +396,7 @@
 		if ( Session is null )
 			return;
 
-		if ( Session.Tool == SculptTool.Add )
+		if ( Session.Tool == SculptTool.Sculpt )
 		{
 			Session.SetShape( shape );
 			return;
@@ -396,8 +408,21 @@
 			return;
 		}
 
-		Session.SetTool( SculptTool.Add );
+		Session.SetTool( SculptTool.Sculpt );
 		Session.SetShape( shape );
+	}
+
+	// The strip's Add/Carve chip: flip the active brush's operation — the stamp's in sculpt mode, the
+	// selected brush's in gizmo mode (identical to the spacebar toggle).
+	void ToggleActiveOperation()
+	{
+		if ( Session is null )
+			return;
+
+		if ( Session.Tool == SculptTool.Sculpt )
+			Session.SetStampOperation( Session.StampOperation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add );
+		else if ( Session.Selected >= 0 )
+			Session.ToggleOperation( Session.Selected );
 	}
 
 	// Hint-strip labels for the shape-dependent scrubs: S = the second slider, D = the wildcard third.
@@ -723,10 +748,16 @@
 	[Property, Group( "Cursors" )] public string AddPointCursor { get; set; } = "pointer";
 
 	// --- Palette tuning (live-editable: select the runtime "Edit HUD" object in play mode) ---
+	/// <summary>SUPERSEDED for sizing: swatches now fill PickerSize/Columns cells so the palette matches the
+	/// wheel's width. Kept so scene-serialized values still deserialize.</summary>
 	[Property, Group( "Palette" )] public float SwatchSize { get; set; } = 30f;
 	[Property, Group( "Palette" )] public float SwatchSpacing { get; set; } = 5f;
 	[Property, Group( "Palette" )] public float SwatchRoundness { get; set; } = 14f;
-	[Property, Group( "Palette" )] public int Columns { get; set; } = 4;
+
+	// Fixed palette layout: 5 columns of the shared 190px column width (smaller swatches, shorter palette —
+	// it was overlapping the Tools/Symmetry panel at 4). Was a scene-tweakable property during layout
+	// iteration; the layout is settled, so it's code-owned now.
+	const int Columns = 5;
 
 	/// <summary>Gap between the shape's bounding circle and the palette to its right (design px — scales with
 	/// the screen). It's added BEYOND the projected radius, so it's a small margin, not the full offset.</summary>
@@ -912,12 +943,14 @@
 	/// <summary>Outline opacity.</summary>
 	[Property, Group( "Outline" ), Range( 0f, 1f )] public float OutlineOpacity { get; set; } = 0.5f;
 
-	// Hit-cell size = swatch + spacing, so cells tile edge-to-edge (no dead gaps); the visual swatch is
-	// centred inside with the spacing as the surrounding margin. CellPx is the single integer logical-px value
-	// used for BOTH the cells and the container width, so they can never disagree (a fractional Cell would make
-	// (int)(Columns*Cell) ≠ Columns*(int)Cell and silently drop a column).
-	float Cell => SwatchSize + SwatchSpacing;
+	// The colour column shares ONE width — PickerSize, the wheel's — so the palette's edges line up with
+	// the wheel and sliders above it: the cells divide that width evenly and the visual swatch fills the
+	// cell minus the spacing (SwatchSize no longer drives sizing). CellPx is the single integer logical-px
+	// value used for BOTH the cells and the container width, so they can never disagree (a fractional Cell
+	// would make (int)(Columns*Cell) ≠ Columns*(int)Cell and silently drop a column).
+	float Cell => PickerSize / MathF.Max( 1, Columns );
 	int CellPx => (int)Cell;
+	float SwatchVisual => MathF.Max( 8f, CellPx - SwatchSpacing );
 
 	// Container width = the columns of cells PLUS a hair of slack so flex-wrap never drops a column. At an exact
 	// fit (width == Columns*cell) the renderer rounds each cell to whole PHYSICAL px and the rounded sum can land
@@ -1129,7 +1162,7 @@
 	Vector2? PalettePos()
 	{
 		float sc = Panel?.ScaleFromScreen ?? 1f;
-		const float m = 16f;
+		const float m = 24f; // matches $panel-inset, so the whole right column shares one edge
 		return new Vector2(
 			MathF.Max( m, Screen.Width * sc - PaletteWidth - m ),
 			MathF.Max( m, Screen.Height * sc - PaletteHeight - m ) );
@@ -1143,7 +1176,7 @@
 	Vector2? PickerPos()
 	{
 		float sc = Panel?.ScaleFromScreen ?? 1f;
-		const float m = 16f;
+		const float m = 24f; // matches $panel-inset, so the whole right column shares one edge
 
 		float ph = PickerStackHeight;
 		if ( PickerPanel is { } pp && pp.Box.Rect.Height > 0f )
@@ -1201,7 +1234,7 @@
 		hc.Add( ShowPicker );
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
 		hc.Add( s?.SplinePointUiDragging ?? false ); // keep it mounted through the insert-and-place drag, drop it on release
-		hc.Add( (int)(s?.Tool ?? SculptTool.Edit) );          // tool toggle highlight + add-mode layout swap
+		hc.Add( (int)(s?.Tool ?? SculptTool.Gizmo) );          // tool toggle highlight + add-mode layout swap
 		hc.Add( (int)(s?.ActiveShape ?? SdfShape.Sphere) );   // active stamp-shape tile highlight
 		hc.Add( (int)(s?.StampOperation ?? SdfOperation.Add) ); // Add/Carve chip highlight + LMB hint label
 		hc.Add( s?.StampBrush is not null );                  // ghost row skip + panel visibility
@@ -1277,7 +1310,6 @@
 		hc.Add( SwatchSize );
 		hc.Add( SwatchSpacing );
 		hc.Add( SwatchRoundness );
-		hc.Add( Columns );
 		hc.Add( DistanceFromGizmo );
 		hc.Add( SliderWidth );           // so inspector tweaks to the slider tunables re-render live
 		hc.Add( BlendCurve );

@@ -12,12 +12,13 @@ namespace Mimiclay;
 /// Isolated by design: depends only on <see cref="SdfSculpture"/> + <see cref="OrbitCameraController"/>,
 /// never on players/rounds. A future creative mode reuses it as-is, just with a different host enabling it.
 /// </summary>
-/// <summary>Which tool the edit session is driving: Add = the stamp ghost (place shapes by clicking),
-/// Edit = select-and-gizmo precision editing.</summary>
+/// <summary>Which tool EDIT MODE (the whole session, toggled by the pawn's Edit action) is driving:
+/// SCULPT MODE = the stamp ghost (add shapes by clicking), GIZMO MODE = select-and-edit with the
+/// transform gizmo. Terminology: "edit mode" always means the session; sculpt/gizmo are its tools.</summary>
 public enum SculptTool
 {
-	Add,
-	Edit,
+	Sculpt,
+	Gizmo,
 }
 
 [Title( "Sculpt Edit Session" )]
@@ -98,16 +99,16 @@ public sealed class SculptEditSession : Component
 
 	public bool IsEditing { get; private set; }
 
-	/// <summary>Tool the session starts on. Edit preserves the old behaviour for pre-existing hosts (menu
-	/// head toy); the in-round disguise session wants Add — stamping is the primary flow.</summary>
-	[Property] public SculptTool StartTool { get; set; } = SculptTool.Edit;
+	/// <summary>Tool edit mode opens on, every time it's entered (never wherever the last session left
+	/// off). Gizmo is the neutral home; sculpt mode is entered explicitly via Add Shape / tiles / keys.</summary>
+	[Property] public SculptTool StartTool { get; set; } = SculptTool.Gizmo;
 
-	/// <summary>The active tool. Add = stamp ghost, Edit = select + gizmo. Q toggles; the HUD toolbar sets it.</summary>
-	public SculptTool Tool { get; private set; } = SculptTool.Edit;
+	/// <summary>The active tool: SCULPT mode = stamp ghost, GIZMO mode = select + gizmo. Set by the HUD
+	/// (Add Shape button, shape tiles), number keys, Esc (cancel sculpt) and the auto-switch on stamping.</summary>
+	public SculptTool Tool { get; private set; } = SculptTool.Gizmo;
 
 	readonly BrushStampTool _stampTool = new();
-	bool _qWas;     // manual edge detect for the Q tool-toggle (Input.Keyboard only exposes Down)
-	bool _spaceWas; // manual edge detect for the spacebar Add/Carve toggle
+	bool _opKeyWas; // manual edge detect for the A add/carve toggle
 
 	/// <summary>Snap is a HOLD: Shift held = stamp placement snaps to the origin-centred grid and the
 	/// E-rotate scrub snaps to the 45° grid.</summary>
@@ -125,7 +126,7 @@ public sealed class SculptEditSession : Component
 	{
 		get
 		{
-			if ( !IsEditing || Tool != SculptTool.Add )
+			if ( !IsEditing || Tool != SculptTool.Sculpt )
 				return null;
 
 			var s = _stampTool.Stamp;
@@ -135,7 +136,7 @@ public sealed class SculptEditSession : Component
 
 	/// <summary>The brush the HUD's palette/sliders/picker edit: the stamp ghost in Add mode, the selected
 	/// brush in Edit mode. Editing the ghost pre-styles the next stamp.</summary>
-	public SdfBrush ActiveBrush => Tool == SculptTool.Add && IsEditing ? _stampTool.Stamp : SelectedBrush;
+	public SdfBrush ActiveBrush => Tool == SculptTool.Sculpt && IsEditing ? _stampTool.Stamp : SelectedBrush;
 
 	/// <summary>True while a hold-key param scrub (A/S/D/E) is running — the HUD captures the mouse and
 	/// draws the frozen-cursor dot at <see cref="BrushScrub.Anchor"/>.</summary>
@@ -182,7 +183,7 @@ public sealed class SculptEditSession : Component
 
 		Tool = tool;
 
-		if ( tool == SculptTool.Add )
+		if ( tool == SculptTool.Sculpt )
 		{
 			Deselect();
 			_gizmo.Hide();
@@ -345,6 +346,8 @@ public sealed class SculptEditSession : Component
 		if ( active )
 		{
 			Current = this;
+			SetTool( StartTool ); // edit mode always OPENS on its starting tool (gizmo, normally) — never
+			                      // wherever a previous session happened to leave off (e.g. mid-placement)
 			EnsureHud(); // the edit system brings its own HUD — no scene setup needed (and works in any game mode)
 			ApplyEditDof();
 			HookPersistSlot(); // save the slot on every commit while editing (see HookPersistSlot for why)
@@ -431,15 +434,37 @@ public sealed class SculptEditSession : Component
 		if ( b.Shape == SdfShape.Spline || shape == SdfShape.Spline )
 			return;
 
+		// Keep the shape's world-space VOLUME CENTRE fixed across the swap. LocalCentre is each shape's
+		// centre offset from its pivot — zero for the centred shapes, +Size.z for the base-pivoted cone —
+		// so removing the old offset and adding the new one makes cylinder↔cone occupy the SAME space
+		// (the cone's base lands on the old bottom) instead of jumping by a half-height.
+		var oldCentre = b.Rotation * b.LocalCentre;
+		bool fromText = b.Shape == SdfShape.Text;
+
 		b.Shape = shape;
 		b.Points = null;
 
 		if ( shape == SdfShape.Text )
 		{
+			// Remember the solid's scale so converting back restores it exactly; the text itself takes its
+			// own aspect-locked plaque size (glyph slot is 2:1 — anything else distorts the letters), with
+			// the letter height taken from the source's Y. Orientation is deliberately untouched.
+			_preTextSize[b] = b.Size;
 			b.TextData = SdfTextSdf.Get( b.Text, b.Font );
 			float yv = MathF.Max( b.Size.y, 1f );
 			b.Size = new Vector3( yv * (SdfTextData.Width / (float)SdfTextData.Height), yv, MathF.Min( b.Size.z, 4f ) );
 		}
+		else if ( fromText )
+		{
+			// Leaving text: restore the remembered pre-text scale (the round trip keeps the solid exactly
+			// as it was); a brush BORN as text has nothing to restore, so it gets a clean uniform size at
+			// the letters' height. Orientation is preserved in both directions.
+			b.Size = _preTextSize.TryGetValue( b, out var remembered )
+				? remembered
+				: new Vector3( MathF.Max( b.Size.y, 1f ) );
+		}
+
+		b.Position += oldCentre - b.Rotation * b.LocalCentre;
 
 		// Different shapes cap rounding differently (a star's erosion limit << a box's inscribed radius).
 		b.Rounding = Math.Clamp( b.Rounding, 0.75f, b.MaxRounding() );
@@ -502,6 +527,11 @@ public sealed class SculptEditSession : Component
 	// it back on restores that combo instead of defaulting to X. Keyed by brush reference (survives
 	// reorders); entries for deleted brushes are just harmless orphans.
 	readonly Dictionary<SdfBrush, (bool X, bool Y, bool Z)> _mirrorMemory = new();
+
+	// Each brush's Size from the last time it was converted TO text, so converting back to a solid restores
+	// its exact scale (the text plaque's aspect-locked Size would otherwise leak into the solid). Same
+	// reference-keyed orphan-tolerant pattern as _mirrorMemory.
+	readonly Dictionary<SdfBrush, Vector3> _preTextSize = new();
 
 	/// <summary>Toggle symmetry on a brush (the symmetry button): clears all axes if any are on, else
 	/// restores the combo it had when last toggled off (left/right X for a brush with no history).
@@ -765,23 +795,27 @@ public sealed class SculptEditSession : Component
 
 		var brushes = Target.Brushes;
 
-		// Q toggles Add/Edit; the number keys jump straight into stamping that shape; G removes the last brush.
-		// (Raw keyboard reads are gated off while a text field has focus — typing must never switch tools.)
-		bool q = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "q" );
-		if ( q && !_qWas )
-			SetTool( Tool == SculptTool.Add ? SculptTool.Edit : SculptTool.Add );
-		_qWas = q;
+		// (Q is NOT handled here: it's the pawn's Edit action — enter/exit EDIT MODE as a whole. Sculpt
+		// mode is entered via the Add Shape button / shape tiles / number keys, and left via Esc/stamping.)
 
-		// Spacebar flips the stamp between Add and Carve (same state the HUD toggle chips drive).
-		bool space = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "space" );
-		if ( space && !_spaceWas && Tool == SculptTool.Add )
-			SetStampOperation( StampOperation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add );
-		_spaceWas = space;
+		// A flips add/carve — the head of the A/S/D/F "edit keys" row, matching the strip's chip order
+		// (op · blend · round · wildcard). Stamp's op in sculpt mode, the SELECTED brush's in gizmo mode.
+		bool opKey = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "a" );
+		if ( opKey && !_opKeyWas )
+		{
+			if ( Tool == SculptTool.Sculpt )
+				SetStampOperation( StampOperation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add );
+			else if ( Selected >= 0 )
+				ToggleOperation( Selected );
+		}
+		_opKeyWas = opKey;
 
 		if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
 		if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
 		if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
 		if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
+		if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
+		if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Text );
 		if ( Input.Pressed( "Drop" ) ) RemoveLast();
 
 		if ( brushes is not { Count: > 0 } )
@@ -796,10 +830,10 @@ public sealed class SculptEditSession : Component
 		// Don't let world clicks/picks/gizmo-grabs fall through the HUD (palette or sliders) when over it.
 		bool overUi = EditHud.PointerOverUi;
 
-		// ── Add tool: the stamp ghost owns the frame (no selection / gizmo / hover-pick). ────────────────
-		if ( Tool == SculptTool.Add )
+		// ── Sculpt mode: the stamp ghost owns the frame (no selection / gizmo / hover-pick). ─────────────
+		if ( Tool == SculptTool.Sculpt )
 		{
-			AddToolUpdate( tx, interactive: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen );
+			SculptToolUpdate( tx, interactive: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen );
 			return;
 		}
 
@@ -828,10 +862,26 @@ public sealed class SculptEditSession : Component
 
 		// Hold-key param scrubs on the selection — the same A/S/D/E scheme the stamp tool uses, so both
 		// modes share one muscle memory. Continuous changes preview; the key release runs the full commit.
+		// Gated on IsDragging, NOT IsBusy: merely HOVERING a gizmo handle (which covers most of the shape)
+		// must not eat the scrub keys — only an actual handle drag owns the mouse.
 		changed |= BrushScrub.Update( SelectedBrush, tx, Scene.Camera,
-			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsBusy, out bool scrubEnded );
+			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsDragging, out bool scrubEnded );
 		if ( scrubEnded )
 			CommitChanged();
+
+		// Scroll = push/pull the SELECTED brush along the view direction — the same size-scaled depth
+		// control the stamp ghost has (wheel-up = away). Each notch previews; the debounce backstop below
+		// runs the one full commit once the scrolling goes quiet.
+		float pushWheel = Input.MouseWheel.y;
+		if ( pushWheel != 0f && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
+			&& BrushScrub.Active == ScrubKind.None && SelectedBrush is { } pushB && Scene.Camera is { } pushCam )
+		{
+			var world = tx.PointToWorld( pushB.Position );
+			var dir = (tx.Rotation.Inverse * (world - pushCam.WorldPosition)).Normal;
+			pushB.Position += dir * pushWheel * _stampTool.AcceleratedDepthStepFor( pushB, (world - pushCam.WorldPosition).Length );
+			pushB.SnapToMirrorPlanes();
+			PreviewChanged();
+		}
 
 		// Arm the spline add-point only once the cursor is over the line with Attack1 RELEASED. The click that
 		// SELECTS a spline holds the button down through the frame the line first becomes hoverable, so it can't
@@ -1020,16 +1070,29 @@ public sealed class SculptEditSession : Component
 		_ghostAlpha = _ghostOutAlpha = 0f;
 	}
 
-	// Number-key shape hotkeys: jump straight into stamping that shape (switching tools if needed).
+	// Number-key shape hotkeys — identical semantics to clicking a shape tile: re-mould the held stamp,
+	// CONVERT the selection in place, or (with nothing selected) pick up a stamp of that shape.
 	void HotkeyShape( SdfShape shape )
 	{
-		SetTool( SculptTool.Add );
+		if ( Tool == SculptTool.Sculpt )
+		{
+			SetShape( shape );
+			return;
+		}
+
+		if ( SelectedBrush is not null )
+		{
+			ConvertSelectedShape( shape );
+			return;
+		}
+
+		SetTool( SculptTool.Sculpt );
 		SetShape( shape );
 	}
 
-	// ── Add tool (stamp ghost) ───────────────────────────────────────────────────────────────────────
+	// ── Sculpt mode (stamp ghost) ────────────────────────────────────────────────────────────────────
 
-	void AddToolUpdate( Transform tx, bool interactive )
+	void SculptToolUpdate( Transform tx, bool interactive )
 	{
 		// No selection UI in add mode: gizmo down instantly, hover cross-fade state cleared — the incoming
 		// hover ghost slot is reused as the stamp's translucent shell.
@@ -1069,7 +1132,7 @@ public sealed class SculptEditSession : Component
 			// Place-then-tweak: a stamp drops you straight into the EDIT tool with the new brush selected,
 			// gizmo up. Back to Add via Q, a shape tile, or a number key.
 			var placed = _stampTool.LastCommitted;
-			SetTool( SculptTool.Edit );
+			SetTool( SculptTool.Gizmo );
 			int idx = placed is not null ? (Target.Brushes?.IndexOf( placed ) ?? -1) : -1;
 			if ( idx >= 0 )
 				Selected = idx;

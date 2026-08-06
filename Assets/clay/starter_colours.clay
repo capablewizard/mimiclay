@@ -61,12 +61,6 @@
       "Roughness": 0.5
     },
     {
-      "Name": "Lime",
-      "Color": "0.5,0.75,0.3,1",
-      "Metalness": 0,
-      "Roughness": 0.5
-    },
-    {
       "Name": "Emerald",
       "Color": "0.15,0.6,0.42,1",
       "Metalness": 0,

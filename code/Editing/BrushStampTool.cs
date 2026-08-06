@@ -75,13 +75,49 @@ public sealed class BrushStampTool
 	Vector2? _camLockPx;
 
 	/// <summary>Scroll depth speed as a fraction of the ghost's largest Size dimension per notch — big
-	/// shapes travel further per notch, small ones move finely. A sixteenth of the default 16-sphere = 1
-	/// unit per notch — very fine control; spin the wheel for distance.</summary>
-	public float DepthStepFrac { get; set; } = 0.0625f;
+	/// shapes travel further per notch, small ones move finely. Half of the default 16-sphere = 8 units
+	/// per notch (the acceleration + camera-distance factors multiply on top).</summary>
+	public float DepthStepFrac { get; set; } = 2f;
 
 	/// <summary>Clamp on the per-notch depth step (world units), so extreme shapes stay controllable.</summary>
 	public float DepthStepMin { get; set; } = 0.5f;
 	public float DepthStepMax { get; set; } = 32f;
+
+	/// <summary>The per-notch scroll depth step for a brush — a fraction of its largest dimension,
+	/// clamped. Shared by the ghost's placement and gizmo mode's push/pull on the selection.</summary>
+	public float DepthStepFor( SdfBrush b ) =>
+		Math.Clamp( MathF.Max( b.Size.x, MathF.Max( b.Size.y, b.Size.z ) ) * DepthStepFrac, DepthStepMin, DepthStepMax );
+
+	/// <summary>Ceiling on the scroll-acceleration multiplier (a fast spin ramps toward this).</summary>
+	public float DepthAccelMax { get; set; } = 8f;
+
+	// Scroll acceleration: deliberate, spaced notches stay at the fine base step; notches arriving within
+	// AccelWindow of each other multiply the step up (toward DepthAccelMax), so a fast spin covers real
+	// distance. This is how OS scrolling / CAD wheel zoom square fine control with long travel.
+	float _accel = 1f;
+	RealTimeSince _sinceWheel = 999f;
+	const float AccelWindow = 0.15f;
+	const float AccelGrowth = 1.4f;
+
+	/// <summary>Camera distance (world units) at which the depth step is exactly the base step; nearer
+	/// scales it down (fine work while zoomed in), farther scales it up (coarse moves from afar).</summary>
+	public float DepthDistanceRef { get; set; } = 200f;
+
+	/// <summary>Clamp on the camera-distance scale factor.</summary>
+	public float DepthDistanceScaleMin { get; set; } = 0.25f;
+	public float DepthDistanceScaleMax { get; set; } = 4f;
+
+	/// <summary>The accelerated, camera-distance-scaled depth step — call once per frame that actually
+	/// consumed a wheel event, passing the camera→brush distance. Shared state, so ghost placement and
+	/// gizmo push/pull behave identically: zoomed in = fine, zoomed out = coarse, spinning = faster.</summary>
+	public float AcceleratedDepthStepFor( SdfBrush b, float camDist )
+	{
+		_accel = _sinceWheel < AccelWindow ? MathF.Min( DepthAccelMax, _accel * AccelGrowth ) : 1f;
+		_sinceWheel = 0f;
+
+		float distScale = Math.Clamp( camDist / MathF.Max( 1f, DepthDistanceRef ), DepthDistanceScaleMin, DepthDistanceScaleMax );
+		return DepthStepFor( b ) * _accel * distScale;
+	}
 
 	/// <summary>Grid cell size for shift-snapped placement (sculpture-local units). The grid is centred on
 	/// the sculpture origin, so 0,0,0 — the symmetry planes — is always on-grid.</summary>
@@ -272,11 +308,15 @@ public sealed class BrushStampTool
 		var d = (invRot * ray.Forward).Normal;
 		var fwd = (invRot * cam.WorldRotation.Forward).Normal;
 
-		// Seed the anchor once: where the ray passes closest to the sculpture origin, so the first ghost
-		// appears in the middle of the working area rather than at some arbitrary depth.
+		// Seed the anchor once: at the SCULPTURE's bounds centre (sans the ghost), so the first ghost
+		// appears on the model — the old ray-closest-approach seed degenerated to "8 units from the
+		// camera" whenever the cursor ray happened to point away from the origin. Ray fallback only when
+		// there are no bounds to centre on.
 		if ( !_seeded )
 		{
-			_anchor = o + d * MathF.Max( 8f, Vector3.Dot( -o, d ) );
+			_anchor = Sdf.TryGetBounds( target.Brushes, out var bb, _stamp )
+				? bb.Center
+				: o + d * MathF.Max( 8f, Vector3.Dot( -o, d ) );
 			_seeded = true;
 		}
 
@@ -324,9 +364,8 @@ public sealed class BrushStampTool
 			float wheel = Input.MouseWheel.y;
 			if ( wheel != 0f )
 			{
-				float maxDim = MathF.Max( _stamp.Size.x, MathF.Max( _stamp.Size.y, _stamp.Size.z ) );
-				float step = Math.Clamp( maxDim * DepthStepFrac, DepthStepMin, DepthStepMax );
-				_anchor += d * wheel * step;
+				float camDist = (tx.PointToWorld( _stamp.Position ) - cam.WorldPosition).Length;
+				_anchor += d * wheel * AcceleratedDepthStepFor( _stamp, camDist );
 			}
 
 			// Steer by intersecting the cursor ray with the camera-parallel plane through the anchor.
@@ -394,9 +433,9 @@ public enum ScrubKind
 }
 
 /// <summary>
-/// Hold parameter scrubbing, Blender-modal-style: hold A / S / D (the slider stack in order — blend, round,
-/// then the per-shape wildcard: slice, profile, spline size), RIGHT CLICK (uniform scale) or the MIDDLE
-/// MOUSE BUTTON (rotate) and move the mouse. Shift held snaps the rotate to the SnapDeg grid. Shared by BOTH tools — the stamp
+/// Hold parameter scrubbing, Blender-modal-style: hold S / D / F (the slider stack in order — blend, round,
+/// then the per-shape wildcard: slice, profile, spline size; A ahead of them TAPS add/carve, so the whole
+/// edit row sits on A-S-D-F), RIGHT CLICK (uniform scale) or E (rotate, gmod-style) and move the mouse. Shift held snaps the rotate to the SnapDeg grid. Shared by BOTH tools — the stamp
 /// ghost in add mode and the selected brush in edit mode — so the whole scheme is learned once. One scrub
 /// runs at a time, game-wide (static), matching the one-cursor reality; the HUD reads
 /// <see cref="Active"/>/<see cref="Anchor"/> to capture the mouse and draw the frozen-cursor dot.
@@ -445,17 +484,19 @@ public static class BrushScrub
 		ended = false;
 
 		// A focused text field (the Text brush's entry) owns the keyboard — typing must never scrub.
-		// A/S/D scrub the slider stack in order: blend, round (curve on a spline), then the per-shape
-		// wildcard (slice / profile / spline size). Scale rides RIGHT CLICK, rotate the MIDDLE MOUSE
-		// BUTTON (both without alt — alt+RMB/MMB are the camera dolly and pan).
+		// S/D/F scrub the slider stack in order: blend, round (curve on a spline), then the per-shape
+		// wildcard (slice / profile / spline size) — A ahead of them taps add/carve, so the whole edit row
+		// sits on A-S-D-F. E rotates (gmod-style); scale rides RIGHT CLICK (without alt — alt+RMB is the
+		// camera dolly).
 		bool typing = Sandbox.UI.InputFocus.Current is not null;
-		bool a = !typing && Input.Keyboard.Down( "a" );
-		bool s = !typing && Input.Keyboard.Down( "s" );
-		bool d = !typing && Input.Keyboard.Down( "d" );
+		bool blendKey = !typing && Input.Keyboard.Down( "s" );
+		bool roundKey = !typing && Input.Keyboard.Down( "d" );
+		bool wildKey = !typing && Input.Keyboard.Down( "f" );
 		bool scale = Input.Down( "Attack2" ) && !Input.Down( "Walk" );
-		bool rot = Input.Down( "CameraPan" ) && !Input.Down( "Walk" );
-		bool aP = a && !_aWas, sP = s && !_sWas, dP = d && !_dWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
-		_aWas = a; _sWas = s; _dWas = d; _scaleWas = scale; _rotWas = rot;
+		bool rot = !typing && Input.Keyboard.Down( "e" );
+		bool blendP = blendKey && !_aWas, roundP = roundKey && !_sWas, wildP = wildKey && !_dWas,
+			scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
+		_aWas = blendKey; _sWas = roundKey; _dWas = wildKey; _scaleWas = scale; _rotWas = rot;
 
 		if ( b is null || cam is null || (!allow && Active == ScrubKind.None) )
 		{
@@ -467,9 +508,9 @@ public static class BrushScrub
 		// Start on the key's press edge (one scrub at a time; the first claim wins).
 		if ( Active == ScrubKind.None && allow )
 		{
-			if ( aP ) Begin( ScrubKind.Blend, b );
-			else if ( sP ) Begin( ScrubKind.Round, b );
-			else if ( dP ) Begin( ScrubKind.Wildcard, b );
+			if ( blendP ) Begin( ScrubKind.Blend, b );
+			else if ( roundP ) Begin( ScrubKind.Round, b );
+			else if ( wildP ) Begin( ScrubKind.Wildcard, b );
 			else if ( scaleP ) Begin( ScrubKind.Scale, b );
 			else if ( rotP ) Begin( ScrubKind.Rotate, b );
 		}
@@ -480,9 +521,9 @@ public static class BrushScrub
 		// End when the owning key lifts.
 		bool stillHeld = Active switch
 		{
-			ScrubKind.Blend => a,
-			ScrubKind.Round => s,
-			ScrubKind.Wildcard => d,
+			ScrubKind.Blend => blendKey,
+			ScrubKind.Round => roundKey,
+			ScrubKind.Wildcard => wildKey,
 			ScrubKind.Scale => scale,
 			ScrubKind.Rotate => rot,
 			_ => false,
