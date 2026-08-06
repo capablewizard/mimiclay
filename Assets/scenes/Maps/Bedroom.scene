@@ -1075,7 +1075,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0b2bdc2c-3bc6-425a-a46b-a99ee0eb0b64"
+                  "$blob": "4f7203bd-b33e-4a74-afe0-5f0aae3ab5a7"
                 },
                 "Materials": [
                   "materials/wood/floor/wooden_floor_a.vmat"
@@ -1131,7 +1131,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c3b01586-260f-4bb3-ba22-1bf80fdd46fb"
+                  "$blob": "848700c4-1268-4b20-945e-e6bb0abaf15f"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1187,7 +1187,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3b712c7b-1b95-4348-9e2d-43a331681c57"
+                  "$blob": "89b2885d-56f7-4236-98a3-fbc277845f7a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1243,7 +1243,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "cee39754-a3de-40b9-a9ef-0cb016db87bc"
+                  "$blob": "0078df3d-2726-4701-b77b-ef0bd53fe67c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1299,7 +1299,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4498c7ee-d32e-48a1-843a-7477c3aa49b8"
+                  "$blob": "2f348f52-f41e-4965-b7bb-41aa3023bea6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1355,7 +1355,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4dc55f85-cc37-491b-974e-d46d13a9d762"
+                  "$blob": "14c08388-d642-4084-b9bf-8763cb44c543"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1411,7 +1411,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3031f1a8-a472-4747-93ca-c76a3f3a5ce0"
+                  "$blob": "8ef4d0b0-10a7-4a95-b3e5-d52588258436"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1467,7 +1467,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eeb87d5d-2611-49ce-8de9-0f63c1961788"
+                  "$blob": "861323a4-0b73-47e6-90f7-87914f9a2e1b"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1523,7 +1523,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "80b3bbc8-575f-48ab-afc0-23b916a02a95"
+                  "$blob": "f88bd857-1160-4f8a-939c-9868fabd3840"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1579,7 +1579,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c82e7cdb-38e3-40cb-a2d4-540543b5682a"
+                  "$blob": "603ec045-57b9-455b-8b25-0aefbfbb3aec"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1635,7 +1635,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "76a74272-93fe-47bc-9256-4239b4a1568f"
+                  "$blob": "ff181209-4819-4608-ae8a-6026adc5f167"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1691,7 +1691,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5729f3d7-ed87-4110-9a16-1c8a35ceb0ea"
+                  "$blob": "13ecfd34-a648-4e8e-bd79-4c2248ca4d2d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1747,7 +1747,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7cd73c3d-2fc8-44bf-9c69-630ed00fc61d"
+                  "$blob": "eff52715-0731-418a-8cfa-e4df75097a3d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1803,7 +1803,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "bb2d7e77-be6b-49e3-820e-9033946d74ec"
+                  "$blob": "8fc017ef-1256-48a3-989e-7fa8e890a1a0"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1859,7 +1859,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "568d6f2b-5265-4b0c-9d20-66d54addc3b0"
+                  "$blob": "66dc9e94-8ec1-493c-8920-e7d3df93df7c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1915,7 +1915,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "716f4062-e2d1-417f-a5cf-645196638e72"
+                  "$blob": "2ecc8595-e87b-4b85-89c6-9b1c41f1ded1"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -1971,7 +1971,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4da8483e-7959-487c-9ea8-5dce5326ae86"
+                  "$blob": "c54b9366-e035-4424-9cb0-265b8540ab81"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2027,7 +2027,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e350577d-2665-43ba-ac0a-0093a4f975aa"
+                  "$blob": "7906a4c5-e4f3-47a7-a570-9e62deed1d65"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2083,7 +2083,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9165a157-9369-491c-b2fd-817c994f09d8"
+                  "$blob": "1d08a2f7-10c8-49f2-b070-82fb7d701cd4"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2139,7 +2139,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "65bb6f0e-c300-4808-9873-1c2670c84e3a"
+                  "$blob": "265a1b6a-50e3-4217-aad0-fd3afed43bb6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2195,7 +2195,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2093face-3006-47ca-8cb4-6ed2b72b70ec"
+                  "$blob": "b4195b44-852f-4742-a7ce-b90f9640b4be"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2251,7 +2251,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c8538767-db04-4e06-a416-28d8c146c139"
+                  "$blob": "85950d88-ef99-4304-8b13-bba96c358d92"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2307,7 +2307,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "69c6139d-b483-4924-b019-6875bf59ace1"
+                  "$blob": "f1ce8fbe-cad2-4d2a-abc1-625f91692c31"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2363,7 +2363,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "97a69d3b-5325-4308-936c-0efca9d032ed"
+                  "$blob": "a41f7dda-e341-4d51-a5ff-5218dc651442"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2419,7 +2419,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5ec88059-f53b-4ffc-b800-9f8ad6a2f84e"
+                  "$blob": "87edcdf6-2b70-44d7-b51d-63bfca811462"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2475,7 +2475,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "83cb098b-e047-44b0-a505-069dea72238a"
+                  "$blob": "66f3ec2d-7876-41c5-a9b7-07a341ef388c"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2531,7 +2531,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4ad42b3c-b19a-429c-9caa-cf89b0d17091"
+                  "$blob": "2ad807d5-b81c-41e5-8b85-96627c982e42"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2587,7 +2587,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a73760ae-02e8-4489-8f8b-e6876e999315"
+                  "$blob": "bdeb0d36-4891-481d-9722-beadb7ca71ef"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2643,7 +2643,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f42bab45-9d2c-4944-b22f-2646099d0b0c"
+                  "$blob": "bc5ece8e-d082-441e-895e-c23773c8406d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2699,7 +2699,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "98cadd73-318b-4e92-b383-d682110a6510"
+                  "$blob": "0910940c-cf68-4f13-ba4b-edd46e9cab78"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2755,7 +2755,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f953b06b-1475-457d-b05b-667b25e0c147"
+                  "$blob": "43866128-3015-4830-9cd1-22bfed07f784"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2811,7 +2811,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ed486417-6b8a-409d-9775-f501bd3bce37"
+                  "$blob": "c22f3dcd-1f1b-4f27-9eb0-b63896ba3c5b"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2867,7 +2867,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8acf446b-2fbc-4a14-bdb8-913f68a05ae6"
+                  "$blob": "df4852c1-7d13-4ee9-a4af-bbafadd0b5fa"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2923,7 +2923,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6e38033e-8741-440e-80b1-dfd6eee04d93"
+                  "$blob": "a3580534-ef68-4fb5-b3c0-62c69bf929cd"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -2979,7 +2979,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4f6aa028-d8b9-4099-a123-52fd1e6dd29c"
+                  "$blob": "2511a65a-4c00-4645-aedd-7d056b37b749"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3035,7 +3035,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "479e5308-767f-4afb-a6df-5661768c3435"
+                  "$blob": "40748e0c-1f22-4a6b-ac8d-0beb49dde1db"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3091,7 +3091,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b0e9046f-763e-4fd5-a057-d81177bde040"
+                  "$blob": "f4b79d6d-7c3c-4ef2-96ec-a71bc1ec2440"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3147,7 +3147,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0988d5e3-6c66-4368-827a-0dd0ba980129"
+                  "$blob": "505045b3-9bd0-446e-9e89-084200126d4b"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3203,7 +3203,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a2562f21-0887-431b-a81f-e3013ca0bf82"
+                  "$blob": "7cf1f7f5-9428-4b91-97f9-5a22e31fefb2"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3259,7 +3259,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eaabbeff-bfb8-4ac4-a8f7-63907e849f82"
+                  "$blob": "e52d7723-d4cd-4992-9cca-4262b465d5c4"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3315,7 +3315,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f8ad69f1-0e2c-4d97-9dd2-2e32914047d3"
+                  "$blob": "dcb8028e-fec9-4103-a87a-1b6be389f2fb"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3371,7 +3371,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1e0dfcbb-4d01-4592-8399-d904b067acbd"
+                  "$blob": "d46d601f-0faf-4b14-8af0-e4cfb020ef05"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3427,7 +3427,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9470950d-503d-40c1-b346-0323793a9237"
+                  "$blob": "fd15d187-215b-4ab9-9e4f-ee96eafac798"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3483,7 +3483,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3fd3025d-846c-4859-97a7-e8a1fbb9a864"
+                  "$blob": "7269f8d5-ea75-434c-b791-1d5630c1ca4f"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3539,7 +3539,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d3b528b5-7420-42a7-a523-2063bb0ef8cc"
+                  "$blob": "22934b2e-f6dd-4749-9ab8-61d096ced0cb"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3595,7 +3595,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "949638a9-6c52-43ed-b135-45374db5b09b"
+                  "$blob": "1d8ca6fd-73e8-40c4-bf47-c1717640fdff"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -3651,7 +3651,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d4ccc7c5-2c38-4242-aa38-8ef6b365b1f0"
+                  "$blob": "4c76e413-ce88-487b-9f53-7eb2ce24f72a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat"
@@ -4008,6 +4008,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4057,6 +4060,9 @@
                 "Roughness": 1,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4106,6 +4112,9 @@
                 "Roughness": 1,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4155,6 +4164,9 @@
                 "Roughness": 1,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4272,6 +4284,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4329,6 +4344,9 @@
                 "Roughness": 1,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4454,6 +4472,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4486,6 +4507,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4518,6 +4542,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4550,6 +4577,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4582,6 +4612,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4614,6 +4647,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4646,6 +4682,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4678,6 +4717,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4710,6 +4752,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4742,6 +4787,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4774,6 +4822,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4806,6 +4857,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4838,6 +4892,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4870,6 +4927,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4902,6 +4962,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4934,6 +4997,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4966,6 +5032,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -4998,6 +5067,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5030,6 +5102,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5062,6 +5137,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5094,6 +5172,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5126,6 +5207,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5158,6 +5242,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5190,6 +5277,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5222,6 +5312,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5254,6 +5347,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5286,6 +5382,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5318,6 +5417,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5350,6 +5452,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5382,6 +5487,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5414,6 +5522,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5446,6 +5557,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5478,6 +5592,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5815,6 +5932,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5847,6 +5967,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5879,6 +6002,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5911,6 +6037,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5943,6 +6072,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -5975,6 +6107,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6007,6 +6142,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6039,6 +6177,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6071,6 +6212,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6103,6 +6247,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6135,6 +6282,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": true,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6167,6 +6317,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6199,6 +6352,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6231,6 +6387,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6263,6 +6422,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6380,6 +6542,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6412,6 +6577,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6444,6 +6612,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": true,
                 "MirrorZ": true,
                 "Damage": false,
                 "Shrinks": false,
@@ -6476,6 +6647,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": true,
                 "MirrorZ": true,
                 "Damage": false,
                 "Shrinks": false,
@@ -6508,6 +6682,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6540,6 +6717,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": true,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6572,6 +6752,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6689,6 +6872,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6721,6 +6907,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6753,6 +6942,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": true,
                 "MirrorZ": true,
                 "Damage": false,
                 "Shrinks": false,
@@ -6785,6 +6977,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": true,
                 "MirrorZ": true,
                 "Damage": false,
                 "Shrinks": false,
@@ -6817,6 +7012,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6849,6 +7047,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": true,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6881,6 +7082,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -6998,6 +7202,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7030,6 +7237,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7062,6 +7272,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7094,6 +7307,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7126,6 +7342,9 @@
                 "Roughness": 0.5,
                 "MirrorX": true,
                 "MirrorY": false,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7158,6 +7377,9 @@
                 "Roughness": 0.5,
                 "MirrorX": true,
                 "MirrorY": false,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7190,6 +7412,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7222,6 +7447,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7254,6 +7482,9 @@
                 "Roughness": 0.5,
                 "MirrorX": true,
                 "MirrorY": false,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7286,6 +7517,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7647,6 +7881,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7679,6 +7916,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7711,6 +7951,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7743,6 +7986,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7775,6 +8021,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7900,6 +8149,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7932,6 +8184,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7964,6 +8219,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -7996,6 +8254,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8028,6 +8289,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8324,6 +8588,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8356,6 +8623,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8391,6 +8661,9 @@
                 "Roughness": 0.5,
                 "MirrorX": true,
                 "MirrorY": true,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8423,6 +8696,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8455,6 +8731,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8529,7 +8808,7 @@
               "Rotation": "-2.98023224E-08,0.898377597,-2.98023224E-08,0.439223945",
               "Scale": "1,1,1",
               "Tags": "light_spot,light,light_point",
-              "Enabled": true,
+              "Enabled": false,
               "NetworkMode": 2,
               "NetworkFlags": 0,
               "NetworkOrphaned": 0,
@@ -8633,6 +8912,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8665,6 +8947,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8697,6 +8982,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8729,6 +9017,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8761,6 +9052,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8793,6 +9087,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8825,6 +9122,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8857,6 +9157,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8889,6 +9192,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8927,6 +9233,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8959,6 +9268,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -8991,6 +9303,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9023,6 +9338,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9055,6 +9373,9 @@
                 "Roughness": 0.4,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9087,6 +9408,9 @@
                 "Roughness": 0.4,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9189,6 +9513,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9305,6 +9632,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9337,6 +9667,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9369,6 +9702,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9401,6 +9737,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9433,6 +9772,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9465,6 +9807,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9497,6 +9842,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9529,6 +9877,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9561,6 +9912,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9731,6 +10085,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -9968,6 +10325,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10084,6 +10444,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10116,6 +10479,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10148,6 +10514,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10180,6 +10549,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10212,6 +10584,9 @@
                 "Roughness": 0.34444445,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10244,6 +10619,9 @@
                 "Roughness": 1,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10276,6 +10654,9 @@
                 "Roughness": 1,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10316,6 +10697,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10765,6 +11149,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10797,6 +11184,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10829,6 +11219,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10938,6 +11331,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -10970,6 +11366,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11002,6 +11401,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11111,6 +11513,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11143,6 +11548,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11175,6 +11583,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11284,6 +11695,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11316,6 +11730,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11348,6 +11765,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11449,6 +11869,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11481,6 +11904,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11513,6 +11939,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11622,6 +12051,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11654,6 +12086,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11686,6 +12121,9 @@
                 "Roughness": 0.5,
                 "MirrorX": false,
                 "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
                 "MirrorZ": false,
                 "Damage": false,
                 "Shrinks": false,
@@ -11891,7 +12329,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "824fdb00-7bd5-48e2-b84c-f1fc5e070218"
+              "$blob": "7b02b7ef-82ce-4193-a0a5-b379eec3dbb6"
             },
             "Materials": [
               "materials/wood/floor/wooden_floor_a.vmat"

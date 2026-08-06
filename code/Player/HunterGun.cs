@@ -254,6 +254,18 @@ public sealed class HunterGun : Component
 	Vector3 _handRestPos; // the Hand's authored local pose, re-read while no kick is active (see Place)
 	Rotation _handRestRot = Rotation.Identity;
 
+	/// <summary>The Hand's AUTHORED local pose, published by the owner and serialized so it rides into spawn
+	/// snapshots. Not for hand-editing — it exists so a client joining mid-recoil can tell the difference between
+	/// the pose the hand rests at and the kicked one it happened to arrive in. See <see cref="Place"/>.</summary>
+	[Property, Hide] public Vector3 HandRestPosition { get; set; }
+
+	/// <inheritdoc cref="HandRestPosition"/>
+	[Property, Hide] public Rotation HandRestRotation { get; set; } = Rotation.Identity;
+
+	/// <summary>Whether <see cref="HandRestPosition"/> has been published yet — a plain "is this trustworthy",
+	/// since a zero pose is indistinguishable from an unset one.</summary>
+	[Property, Hide] public bool HandRestSaved { get; set; }
+
 	// The pristine prefab-scale brush list both models derive from, and the scale each model last applied
 	// (0 = never — the first Place() always applies). Deriving from the SOURCE every time (instead of scaling
 	// the live brushes in place) is what makes the scales freely re-tweakable: no compounding, no baseline
@@ -346,14 +358,35 @@ public sealed class HunterGun : Component
 		// The recoil jolt moves the HAND, not the gun — the whole hand (and anything else attached to it)
 		// snaps back through the shoulder frame and flips up around the hand pivot, with the gun riding
 		// along rigid in the grip. Shoulder space has x forward, so −x drives the hand straight back along
-		// the aim. The hand's authored pose stays live-tweakable in the editor: while no kick is active the
-		// rest pose is re-read from the live transform every frame, so the writes are identity between shots
-		// and only the short recoil ride composes on top of a frozen rest.
+		// the aim.
+		//
+		// The OWNER re-reads the rest pose from the live transform whenever no kick is riding, which is what
+		// keeps the authored pose live-tweakable in the editor — and PUBLISHES it, because a proxy can't safely
+		// do the same. A spawn snapshot ships the owner's live component state, so a client joining mid-recoil
+		// receives the Hand already kicked; sampling that would enshrine the recoil pose as rest and leave that
+		// player's gun stuck high forever. _worldKick is a plain field and starts at 0 on a fresh proxy, so it
+		// can't be used to detect the case either. Proxies therefore take the authored pose from the snapshot
+		// and never sample what they happened to arrive holding.
 		_worldKick = _worldKick < 0.001f ? 0f : _worldKick * MathF.Exp( -WorldKickRecover * MathF.Min( Time.Delta, 0.1f ) );
 		if ( Hand.IsValid() )
 		{
-			if ( _worldKick <= 0f )
+			if ( !IsProxy && _worldKick <= 0f )
 			{
+				_handRestPos = Hand.LocalPosition;
+				_handRestRot = Hand.LocalRotation;
+				HandRestPosition = _handRestPos;
+				HandRestRotation = _handRestRot;
+				HandRestSaved = true;
+			}
+			else if ( HandRestSaved )
+			{
+				_handRestPos = HandRestPosition;
+				_handRestRot = HandRestRotation;
+			}
+			else if ( _worldKick <= 0f )
+			{
+				// Nothing published yet (a proxy that arrived before the owner's first placement). Best effort
+				// from the live pose, which is right as long as they aren't mid-recoil — the old behaviour.
 				_handRestPos = Hand.LocalPosition;
 				_handRestRot = Hand.LocalRotation;
 			}

@@ -1070,17 +1070,37 @@ public sealed class HunterController : Component
 		float vz = _controller.Velocity.z;
 		float jumpSpeed = MathF.Max( _controller.JumpSpeed, 1f );
 
+		// Publish only when the pawn actually HAS a network identity. During Hide the round system deliberately
+		// keeps pawns off the network to conceal players, so broadcasting from one spams every receiver with
+		// "Unknown GameObject ... for RPC" — they have no object to resolve it against. (The engine's own
+		// PlayerController.OnJumped does exactly this and logs the same line, which is the tell that the pawn,
+		// not the RPC, is what's unresolvable.) Off the network there's nobody to tell anyway, so apply straight
+		// to ourselves and skip the wire.
+		bool networked = GameObject.Network.Active;
+
 		if ( airborne && !_wasAirborne )
 		{
 			// Left the ground. Scaled by how hard we pushed off, so walking off a ledge doesn't kick at all.
-			BroadcastLaunch( MathF.Max( vz, 0f ) / jumpSpeed );
+			float launch = MathF.Max( vz, 0f ) / jumpSpeed;
+
+			if ( networked )
+				BroadcastLaunch( launch );
+			else
+				ApplyLaunch( launch );
+
 			_fallSpeed = 0f;
 		}
 		else if ( !airborne && _wasAirborne )
 		{
 			// Landed. Uses the fastest descent we saw while falling, NOT the velocity now — the collision has
 			// already killed that by the frame we register as grounded, which would read every landing as soft.
-			BroadcastLand( MathF.Min( _fallSpeed / jumpSpeed, 2f ) );
+			float impact = MathF.Min( _fallSpeed / jumpSpeed, 2f );
+
+			if ( networked )
+				BroadcastLand( impact );
+			else
+				ApplyLand( impact );
+
 			_fallSpeed = 0f;
 		}
 
@@ -1090,10 +1110,12 @@ public sealed class HunterController : Component
 		_wasAirborne = airborne;
 	}
 
+	[Rpc.Broadcast] void BroadcastLaunch( float launch ) => ApplyLaunch( launch );
+	[Rpc.Broadcast] void BroadcastLand( float impact ) => ApplyLand( impact );
+
 	// Launch. An impulse of distance × rate peaks at roughly `distance` world units, so the properties read as
 	// actual travel rather than as an opaque force.
-	[Rpc.Broadcast]
-	void BroadcastLaunch( float launch )
+	void ApplyLaunch( float launch )
 	{
 		_jumpLagVelocity -= JumpLagDistance * MathF.Max( JumpSpringRate, 0.01f ) * launch;
 	}
@@ -1101,8 +1123,7 @@ public sealed class HunterController : Component
 	// Impact. The crouch scaling is applied per-machine rather than baked into the broadcast: IsDucking is synced,
 	// so every machine's duck spring already agrees, and keeping it local means the payload stays a plain "how
 	// hard did they hit" that can't go stale in flight.
-	[Rpc.Broadcast]
-	void BroadcastLand( float impact )
+	void ApplyLand( float impact )
 	{
 		float w = MathF.Max( JumpSpringRate, 0.01f );
 
