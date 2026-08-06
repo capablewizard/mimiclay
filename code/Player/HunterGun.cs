@@ -314,9 +314,11 @@ public sealed class HunterGun : Component
 	/// frame on every machine, AFTER it has placed the camera, with the same smoothed eye.
 	/// <paramref name="firstPerson"/> is true only on the owning machine outside edit mode: the viewmodel shows
 	/// and the world model self-hides (shadows-only), mirroring the body treatment.
-	/// <paramref name="armLift"/> raises the ARM only (world up, world model), leaving the viewmodel on the eye:
-	/// crouching drops the eye further than the chest does, and the arm hangs off the chest, not the head.</summary>
-	public void Place( Vector3 eye, Angles aim, bool firstPerson, float armLift = 0f )
+	/// <paramref name="armOffset"/> displaces the ARM only (world space, world model), leaving the viewmodel on
+	/// the eye. It carries everything the body does that the view deliberately doesn't: the crouch lift (the eye
+	/// drops further than the chest, and the arm hangs off the chest), the jump's launch trail, and the walk bob.
+	/// The viewmodel keeps its own bob and springs, so nothing here double-counts.</summary>
+	public void Place( Vector3 eye, Angles aim, bool firstPerson, Vector3 armOffset = default )
 	{
 		// Scale-on-change, so the properties are live while playing. The world model on every machine; the
 		// viewmodel only where it's shown (proxies never enable theirs — no point building it).
@@ -337,7 +339,7 @@ public sealed class HunterGun : Component
 		// the FULL aim. The hand — and the gun parented under it — arcs around this pivot like an arm would.
 		if ( Shoulder.IsValid() )
 		{
-			Shoulder.WorldPosition = eye + Vector3.Up * armLift + Rotation.FromYaw( aim.yaw ) * ShoulderOffset;
+			Shoulder.WorldPosition = eye + armOffset + Rotation.FromYaw( aim.yaw ) * ShoulderOffset;
 			Shoulder.WorldRotation = aimRot;
 		}
 

@@ -422,6 +422,7 @@ public sealed class HunterController : Component
 		// frame, so they have to be current before any of them run.
 		UpdateDuckSpring();
 		UpdateJumpSpring();
+		UpdateHeadBob();
 
 		HideOwnBody();
 		UpdateHeadCollider();
@@ -594,6 +595,23 @@ public sealed class HunterController : Component
 	float _landSquash;
 	float _landSquashVelocity;
 
+	/// <summary>Strength of the walk bob, in world units of travel at full run. The gun arm gets the full motion,
+	/// sway included; the head gets the vertical only. The camera never takes any of it — see
+	/// <see cref="UpdateHeadBob"/> — so this is purely something you watch on your own body in third person and
+	/// on other players. 0 = off.</summary>
+	[Property, Group( "Head Bob" ), Range( 0f, 8f )] public float HeadBobAmount { get; set; } = 1.5f;
+
+	/// <summary>Bob cadence multiplier. 1 = exactly one bounce per footstep at any speed, sharing the footstep
+	/// sounds' stride clock, so the body and the audio tick together. 2 = double-time, 0.5 = half.</summary>
+	[Property, Group( "Head Bob" ), Range( 0.25f, 3f )] public float HeadBobFrequency { get; set; } = 1f;
+
+	// Walk bob. The ARM takes the full thing in aim space (y lateral, z vertical); the HEAD takes the vertical
+	// only. Same phase and blend, so they're one motion with the sway filtered out of the head. See UpdateHeadBob.
+	Vector3 _armBob;
+	float _headBob;
+	float _bobPhase;
+	float _bobBlend;
+
 	/// <summary>How far the torso flattens when ducked, as a fraction of its authored height. 0 = no squash.</summary>
 	[Property, Group( "Ducking" ), Range( 0f, 0.9f )] public float DuckSquash { get; set; } = 0.35f;
 
@@ -719,12 +737,18 @@ public sealed class HunterController : Component
 		// the head step at the physics tick rate against the now-gliding camera. The landing dip is already baked
 		// into that eye, so head and camera ride it together; the LAUNCH trail is added here instead, which is
 		// what lets you watch the head lag behind on takeoff without the view doing the same.
+		// Walk bob, taken by the head and the arm but never by the eye. The arm's sway is aim-space, converted
+		// yaw-only so looking up and down can't tip it out of the horizontal — matching how ShoulderOffset is
+		// applied. The head's is straight up/down and needs no conversion at all.
+		var armBob = Rotation.FromYaw( visualAim.yaw ) * _armBob;
+		var headBob = Vector3.Up * _headBob;
+
 		if ( Eyes.IsValid() && _controller.IsValid() )
 		{
 			// Parked at the NECK, not the eye: the head sculpture's origin is its neck pivot (brushes authored
 			// +NeckDrop above it), so dropping the object here keeps the head visual where it always was while
 			// pitch swings it around the neck. World-space drop, not eye-relative — the neck is the fixed point.
-			Eyes.WorldPosition = eye + Vector3.Up * (HeadOnlyDip - NeckDrop);
+			Eyes.WorldPosition = eye + Vector3.Up * (HeadOnlyDip - NeckDrop) + headBob;
 			Eyes.WorldRotation = visualAim.ToRotation();
 		}
 
@@ -737,15 +761,16 @@ public sealed class HunterController : Component
 		// the difference keeps the gun planted on the shoulder it's supposed to be attached to. Exactly zero at
 		// DuckChestFollow = 1 (arm and chest drop together) and while standing. The viewmodel stays on the real
 		// eye, since in first person there's no body for it to disagree with.
-		// The arm needs no landing term — the eye already carries that — but it does take the launch trail, so the
-		// gun stays in the hand of a body the view has left behind rather than snapping up with the camera.
+		// The arm needs no landing term — the eye already carries that — but it does take the launch trail and the
+		// walk bob, so the gun rides the body the view has left behind rather than snapping to the camera.
 		if ( _gun.IsValid() && _controller.IsValid() )
 		{
 			float armLift = (_controller.BodyHeight - _controller.DuckedHeight)
 				* _duckVisual * (1f - DuckChestFollow)
 				+ HeadOnlyDip;
 
-			_gun.Place( eye, visualAim, !IsProxy && !EditMode && !GameSettings.HunterThirdPerson, armLift );
+			_gun.Place( eye, visualAim, !IsProxy && !EditMode && !GameSettings.HunterThirdPerson,
+				Vector3.Up * armLift + armBob );
 		}
 	}
 
@@ -889,6 +914,46 @@ public sealed class HunterController : Component
 	// placement sites, the same way the duck's arm lift is, so the visuals follow the body through the whole arc
 	// while the view only answers the landing.
 	float HeadOnlyDip => _jumpLag * JumpChestFollow * JumpHeadFollow;
+
+	// Walk bob for the HEAD and the gun arm — never for the eye, so the camera stays dead still while your body
+	// bounces along under it. The viewmodel is placed from the eye and runs its own bob (HunterGun.UpdateBob), so
+	// it neither loses that nor double-counts this one.
+	//
+	// The ARM takes the full bob, sway included — a gun swinging across as you walk is part of the look, and it's
+	// the same motion the viewmodel makes. The HEAD takes the vertical component ONLY: side to side, it read as
+	// the head wandering off the spine rather than as a body walking.
+	//
+	// The cadence matches the viewmodel's: the phase advances π per stride, and the stride is the same
+	// speed-blended StepDistance→RunStepDistance the footstep sounds use, so head, gun and audio all tick one
+	// clock. The doubled phase is what puts one bounce on EVERY footfall — at plain phase it would dip once per
+	// pair of steps, which reads as a limp. The clock lives HERE rather than in HunterGun because the gun's only
+	// advances on the owner's first-person frames — the head has to bob in third person and on every proxy.
+	//
+	// Amplitude blends in and out with speed and drops to nothing airborne: a jump glides, it doesn't drum.
+	void UpdateHeadBob()
+	{
+		if ( !_controller.IsValid() )
+			return;
+
+		float dt = MathF.Min( Time.Delta, 0.05f );
+		float speed = _controller.Velocity.WithZ( 0f ).Length;
+		float run = MathF.Max( _controller.RunSpeed, 1f );
+
+		float target = _controller.IsOnGround ? MathF.Min( speed / run, 1f ) : 0f;
+		_bobBlend = _bobBlend.LerpTo( target, 1f - MathF.Exp( -8f * dt ) );
+
+		float stride = MathF.Max( speed.Remap( _controller.WalkSpeed, run, StepDistance, RunStepDistance ), 1f );
+		_bobPhase += MathF.PI * (speed * dt / stride) * HeadBobFrequency;
+
+		// The viewmodel's own 0.6 / 0.45 split, kept so the arm matches the gun in hand and the head's vertical
+		// is unchanged by having the sway filtered out of it.
+		float scale = HeadBobAmount * _bobBlend;
+		float lateral = MathF.Sin( _bobPhase ) * 0.6f;
+		float vertical = MathF.Sin( _bobPhase * 2f ) * 0.45f;
+
+		_armBob = new Vector3( 0f, lateral, vertical ) * scale;
+		_headBob = vertical * scale;
+	}
 
 	// Vertical follow-through: the body has weight, so it trails when you launch and compresses when you land,
 	// then springs back onto the pawn. Only the BODY — the head is written straight to the eye and the camera is

@@ -130,6 +130,8 @@
           "component_type": "SdfSculpture"
         },
         "FirstPersonLandDip": true,
+        "HeadBobAmount": 3,
+        "HeadBobFrequency": 1,
         "JumpChestFollow": 0.19327731,
         "JumpHeadFollow": 2,
         "JumpLagDistance": 20,
