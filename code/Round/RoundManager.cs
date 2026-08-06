@@ -325,7 +325,7 @@ public sealed class RoundManager : Component, IRoundContext
 			return;
 		}
 
-		var wantNetworked = WantNetworked();
+		var wantNetworked = WantNetworked( info.Role );
 
 		// No pawn yet → spawn at our assigned spot.
 		if ( !_ownPawn.IsValid() )
@@ -362,12 +362,28 @@ public sealed class RoundManager : Component, IRoundContext
 			PublishOwnPawn();
 	}
 
-	// Infection conceals during prep, so our pawn stays off the network until the hunt; every other mode (and any
-	// non-networked solo test) publishes as soon as it spawns. A pawn that's never networked is simply invisible to
-	// everyone else — which is exactly the concealment we want during prep.
-	bool WantNetworked()
+	// Infection conceals during prep. PROPS do it by staying off the network entirely until the hunt — a pawn that
+	// was never networked is simply invisible to everyone else, and unlike any rendering trick it cannot be leaked
+	// by a shadow, a sound, or a modified client. That's the concealment that actually matters, since finding props
+	// is the game.
+	//
+	// HUNTERS ride the wire from the start and are concealed by rendering instead (see HuntersConcealed). They need
+	// to be networked for the same reason props need not to be: hunters roam during Hide, and an unnetworked pawn
+	// can't be shown to its own team later, can't be shot the instant Hunt begins, and — the tell that led here —
+	// makes the engine's own PlayerController.OnJumped broadcast unresolvable on every other machine.
+	bool WantNetworked( PlayerRole role )
 		=> Networking.IsActive
-		&& (Settings.Mode != RoundMode.Infection || Phase is RoundPhase.Hunt or RoundPhase.Reveal or RoundPhase.Consolidation);
+		&& (Settings.Mode != RoundMode.Infection
+			|| role == PlayerRole.Hunter
+			|| Phase is RoundPhase.Hunt or RoundPhase.Reveal or RoundPhase.Consolidation);
+
+	/// <summary>True while a hunter pawn must be invisible and intangible to everyone but its owner: Infection's
+	/// prep phases, where hunters are on the network (so the round can talk about them) but must not be seen,
+	/// bumped into or shot. Read per-frame by <see cref="HunterController"/> on every machine — concealment is
+	/// per-machine rendering/collision state, never networked.</summary>
+	public static bool HuntersConcealed => Current.IsValid()
+		&& Current.Settings.Mode == RoundMode.Infection
+		&& Current.Phase is RoundPhase.Starting or RoundPhase.Hide;
 
 	// Our spawn transform: our assigned spot for our current role.
 	Transform SpotFor( PlayerInfo info )

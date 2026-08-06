@@ -337,6 +337,13 @@ public sealed class HunterController : Component
 		// _bodyObject is populated.
 		_bodySculpt = _bodyObject.IsValid() ? _bodyObject.Components.Get<SdfSculpture>() : null;
 
+		// Everything concealment blanks out — see UpdateConcealment. Resolved by name after the pivot exists, and
+		// deliberately as OBJECTS: concealment switches whole branches off rather than flipping renderer flags.
+		_collidersObject = GameObject.Children.FirstOrDefault( c => c.Name == "Colliders" );
+		_armObject = _gun.IsValid() && _gun.Shoulder.IsValid()
+			? _gun.Shoulder
+			: GameObject.Children.FirstOrDefault( c => c.Name == "Shoulder" );
+
 		// Everything sculpted on the pawn EXCEPT the face (the body spheres and the fist) mirrors the face's
 		// clay — gun clones excluded, the gun keeps its own authored colours.
 		_bodySculpts = Components.GetAll<SdfSculpture>( FindMode.EnabledInSelfAndDescendants )
@@ -446,6 +453,7 @@ public sealed class HunterController : Component
 		UpdateJumpSpring();
 		UpdateHeadBob();
 
+		UpdateConcealment();
 		HideOwnBody();
 		UpdateHeadCollider();
 		UpdateBodyDeform();
@@ -505,6 +513,16 @@ public sealed class HunterController : Component
 
 	// The head's bullet-hit collider — enabled on proxies only, see UpdateHeadCollider.
 	SdfCollider _headCollider;
+
+	// The branches concealment switches off wholesale — see UpdateConcealment.
+	GameObject _collidersObject;
+	GameObject _armObject;
+
+	/// <summary>True when this pawn is concealed FROM US: someone else's hunter during Infection prep. Everything
+	/// that could give them away reads this one flag — visuals and colliders (<see cref="UpdateConcealment"/>),
+	/// footsteps, shot effects, and the nameplate — so there's a single answer to "can we know they're there".
+	/// Never true for our own pawn: concealment is about what OTHER machines perceive.</summary>
+	public bool Concealed => IsProxy && RoundManager.HuntersConcealed;
 
 	// The body, resolved once so EnsureVisualPivot can move it under the pivot.
 	GameObject _bodyObject;
@@ -1412,6 +1430,39 @@ public sealed class HunterController : Component
 		}
 	}
 
+	// Infection prep: a hunter is ON the network (so the round can address it, so the engine's own RPCs resolve,
+	// and so it can be revealed or shot the instant the Hunt starts) but must not be seen, heard of, or bumped
+	// into by anyone else. This is what makes that true, asserted every frame on every machine — concealment is
+	// per-machine state and is never networked, so a proxy is never trusted to have arrived in the right one.
+	//
+	// It switches whole OBJECTS off rather than flipping renderer flags, and that distinction is the reason the
+	// first attempt at this leaked: RenderHidden on an SdfRaymarchRenderer means SHADOWS-ONLY, and so does
+	// ModelRenderer.ShadowsOnly — a hunter "hidden" that way still drags a shadow across the floor in plain
+	// sight. Disabling the branch takes the renderers, their shadows, the colliders and the particles together,
+	// and costs nothing while concealed (no field bakes, no placement, no physics shapes).
+	//
+	// NOT yet covered: sound. Footsteps and gunshots are played per-machine by proxies and will still be audible
+	// through a concealed hunter — that's the next piece.
+	void UpdateConcealment()
+	{
+		bool conceal = Concealed;
+
+		// Asserted unconditionally, not on change. GameObject.Enabled is serialized, so a spawn snapshot or a
+		// network refresh can hand a proxy the owner's (enabled) state at any moment — a "only when it changes"
+		// guard would decide it had already applied concealment and never restore it. Writing a bool to the value
+		// it already holds is a no-op, which is why HideOwnBody does the same thing.
+		SetBranch( VisualPivot );      // head + body
+		SetBranch( _armObject );       // shoulder → hand → world gun
+		SetBranch( _collidersObject ); // move capsule + body box
+		SetBranch( RunEffect );        // run dust
+
+		void SetBranch( GameObject go )
+		{
+			if ( go.IsValid() && go.Enabled == conceal )
+				go.Enabled = !conceal;
+		}
+	}
+
 	// The head's hit collider — PROXIES ONLY, and the reason for that is the jitter that took this whole hunt.
 	//
 	// SdfCollider builds a sibling ModelCollider (a trigger — it blocks nothing; the gun's rays reach it via
@@ -1546,6 +1597,18 @@ public sealed class HunterController : Component
 	{
 		if ( !EnableFootsteps || !_controller.IsValid() )
 			return;
+
+		// A concealed hunter is silent to us. Reset the stride state rather than just skipping the play call:
+		// the accumulator banks distance, so a hunter that walked the map through Hide would otherwise let go a
+		// burst of steps the instant the Hunt reveals them. Their OWN machine still hears their footsteps
+		// normally — this only silences the copy we're watching.
+		if ( Concealed )
+		{
+			_stepSeeded = false;
+			_stepAccum = 0f;
+			_takeoffWatch = false;
+			return;
+		}
 
 		// Jump push-off: the takeoff half of the pair whose landing half the engine's physics thump already
 		// covers. Leaving the ground OPENS a watch; the verdict lands a few frames later when the observed
@@ -2181,6 +2244,14 @@ public sealed class HunterController : Component
 	[Rpc.Broadcast]
 	void BroadcastShotEffects()
 	{
+		// A concealed hunter's shot leaves no trace on OUR machine — no bang, no muzzle flash, no screen shake.
+		// Hunting is already blocked during Hide so this shouldn't fire today, but a silent invisible shooter is
+		// the one thing that would give the whole concealment away for free, and it costs one line to make the
+		// suppression a property of the pawn rather than of the phase gate happening to hold. The shooter's own
+		// machine is unaffected — Concealed is never true for our own pawn.
+		if ( Concealed )
+			return;
+
 		// The gun models buck — the viewmodel through its springs (owner), the world model's hand jolt
 		// (everyone). Lives on the RPC so proxies see remote hunters' guns recoil too.
 		if ( _gun.IsValid() )

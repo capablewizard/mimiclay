@@ -13,8 +13,9 @@
 	a pawn does; only the OWNING pawn's copy draws anything (a proxy's copy renders nothing — same live gate as
 	HunterCrosshair, because ownership replicates after OnStart).
 
-	Everything shown is networked state: pawns are enumerated from the scene's networked proxies (a concealed
-	infection-prep pawn is simply not on the wire, so its name can't leak), the role IS the replicated pawn type
+	Everything shown is networked state: pawns are enumerated from the scene's networked proxies (a hidden PROP is
+	simply not on the wire, so its name can't leak; a concealed HUNTER is networked but filtered by
+	HunterController.Concealed — see ProxyPawns), the role IS the replicated pawn type
 	(HunterController vs HiderController — more truthful than the roster row, and it works in debug scenes too),
 	and the name comes from the round's [Sync]'d roster, falling back to the pawn's Network.Owner display name.
 
@@ -129,11 +130,16 @@
 	}
 
 	// Every OTHER player's pawn in the scene, with its role read from the pawn type. Proxies only — our own pawn
-	// never gets a plate, and a pawn that isn't networked yet (infection concealment) doesn't exist here at all.
+	// never gets a plate.
+	//
+	// PROPS conceal by never being networked, so a hidden one doesn't exist here at all and its name cannot leak.
+	// HUNTERS are networked throughout (the round needs to address them, and their own RPCs have to resolve) and
+	// conceal by rendering instead — so they ARE enumerable during prep and have to be filtered explicitly. That
+	// asymmetry is deliberate; the two roles hide by different means.
 	IEnumerable<(GameObject Pawn, PlayerRole Role)> ProxyPawns()
 	{
 		foreach ( var h in Scene.GetAllComponents<HunterController>() )
-			if ( h.IsValid() && h.IsProxy )
+			if ( h.IsValid() && h.IsProxy && !h.Concealed )
 				yield return (h.GameObject, PlayerRole.Hunter);
 
 		foreach ( var h in Scene.GetAllComponents<HiderController>() )
