@@ -97,16 +97,23 @@
 	// reliable than polling Input.Down, which the codebase notes doesn't read cleanly from UI panel code.
 	public override bool WantsDrag => true;
 
+	// The slider that owns the running gesture, held instead of a bare bool so the flags below CANNOT latch.
+	// Both end events are delivered to the panel, so a slider deleted mid-press never sees either — and the
+	// stack rebuilds its sliders whenever the selection or its shape changes, deleting them under the cursor.
+	// A latched Pressed reads as "pointer over UI" forever, which kills world picking and every gizmo handle.
+	static ClaySlider _presser;
+	static bool _dragging;
+
 	/// <summary>True from press to release on ANY ClaySlider (OnMouseDown → OnDragEnd/OnClick). The edit session
 	/// reads this to suppress world hover/picks for the whole gesture — including the frame between leaving the
 	/// track and the drag actually starting, which would otherwise flash a highlight. Cleared on the gesture's
 	/// real end events, NOT OnMouseUp (the engine fires that when a press becomes a drag) or Input.Down (reads
-	/// false while a UI drag captures the mouse).</summary>
-	public static bool Pressed { get; private set; }
+	/// false while a UI drag captures the mouse) — and self-heals if the owning slider is deleted mid-gesture.</summary>
+	public static bool Pressed => _presser is { IsValid: true, IsDeleting: false };
 
 	/// <summary>True only while actually dragging (OnDragStart → OnDragEnd). Drives the HUD's full-screen capture
 	/// overlay, which keeps the native drag alive once the cursor leaves the thin track.</summary>
-	public static bool Dragging { get; private set; }
+	public static bool Dragging => _dragging && Pressed;
 
 	// Press jumps the value to the cursor straight away (and seeds the drag if it becomes one). Mark Pressed now
 	// so picks are suppressed from this very frame — before any drag threshold is crossed.
@@ -115,12 +122,13 @@
 		base.OnMouseDown( e );
 		if ( Disabled )
 			return;
-		Pressed = true;
+		_presser = this;
+		_dragging = false; // a previous owner deleted mid-drag never cleared it
 		ApplyFromCursor();
 	}
 
 	// Drag begins: raise the capture overlay (keeps the native drag alive off the track) for the gesture.
-	protected override void OnDragStart( DragEvent e ) => Dragging = true;
+	protected override void OnDragStart( DragEvent e ) => _dragging = true;
 
 	// Continuous scrub while dragging (fires every move between OnDragStart and OnDragEnd).
 	protected override void OnDrag( DragEvent e ) => ApplyFromCursor();
@@ -129,15 +137,24 @@
 	// fires reliably even when you let go out over the 3D scene.
 	protected override void OnDragEnd( DragEvent e )
 	{
-		Pressed = Dragging = false;
+		EndGesture();
 		OnCommit?.Invoke();
 	}
 
 	// Press-release without a drag (a plain click on the track): no OnDragEnd fires, so clear the press here.
 	protected override void OnClick( MousePanelEvent e )
 	{
-		Pressed = false;
+		EndGesture();
 		OnCommit?.Invoke();
+	}
+
+	// Only the owner may end the gesture — a sibling slider's click must not cancel a drag running on this one.
+	void EndGesture()
+	{
+		if ( _presser != this )
+			return;
+		_presser = null;
+		_dragging = false;
 	}
 
 	// Re-render when the inbound value or range changes (the gizmo / another control can move blend/round too).

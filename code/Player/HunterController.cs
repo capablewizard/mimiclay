@@ -195,6 +195,19 @@ public sealed class HunterController : Component
 	/// jumps, and this glides the pawn across it. Higher = tighter tracking, lower = lazier. 0 = no easing.</summary>
 	[Property, Group( "Third Person" ), Range( 0f, 30f )] public float AimEaseRate { get; set; } = 10f;
 
+	/// <summary>How far IN FRONT of the pawn the crosshair trace begins, in world units along the camera ray.
+	/// Everything between the camera and this point is ignored, which is what stops a column you're walking past
+	/// — one the boom's pull-in never sees, since the boom and the crosshair are different lines — from becoming
+	/// a convergence target BEHIND you and spinning the pawn round to aim at its own camera. Also bounds the
+	/// convergence angle, since the eye-to-target distance can no longer shrink toward zero: bigger = tamer
+	/// swings but a longer dead zone in front of you where the crosshair isn't literally honest.</summary>
+	[Property, Group( "Third Person" ), Range( 0f, 300f )] public float ConvergeMinAhead { get; set; } = 60f;
+
+	/// <summary>Hard cap (degrees) on how far convergence may swing the aim off the eye forward — shot and
+	/// visuals alike. The backstop for geometry the above doesn't anticipate; with a sane
+	/// <see cref="ConvergeMinAhead"/> it should rarely engage at all. 180 = uncapped.</summary>
+	[Property, Group( "Third Person" ), Range( 0f, 180f )] public float MaxConvergeAngle { get; set; } = 25f;
+
 	/// <summary>Debug "eyes" marker (a child pivot) parked at the eye and aimed where we're looking each frame, so
 	/// the look direction is visible on remote clients (the capsule body parts are static children of the root).
 	/// Optional — leave unset to skip.</summary>
@@ -1829,24 +1842,35 @@ public sealed class HunterController : Component
 		var camPos = cam.WorldPosition;
 		var camDir = cam.WorldRotation.Forward;
 
+		// Start the crosshair trace at the PAWN's depth along the camera ray, never at the lens. Anything nearer
+		// than the pawn cannot be shot — the pawn is standing in front of it — so converging on it would aim the
+		// shot, and swing the pawn, BACKWARDS at our own camera (and the resulting yaw flip through EulerAngles
+		// reads as the character spinning on the spot). The boom's own pull-in does NOT prevent this: it traces
+		// eye→camera, while the crosshair is camera→forward, and those two lines sit a ThirdPersonShoulder apart
+		// — so a column can miss the boom entirely and still land on the centre ray at point-blank range, which
+		// is exactly what walking past a pillar does.
+		//
+		// ConvergeMinAhead pushes the start clear of the pawn as well, which is what bounds the swing: the eye-to
+		// -target vector can't get shorter than that, so the natural convergence angle is capped near
+		// atan(shoulder / ConvergeMinAhead) instead of running to 90° as the target closes in.
+		float start = MathF.Max( Vector3.Dot( eye - camPos, camDir ) + ConvergeMinAhead, 0f );
+		var rayStart = camPos + camDir * start;
+
 		// Our own hierarchy ignored — in third person the pawn is directly in front of the lens and would
 		// otherwise swallow every crosshair ray. Other filters match TraceShot, so the crosshair converges on
 		// exactly the set of things a shot can hit.
 		var look = Scene.Trace
-			.Ray( camPos, camPos + camDir * Range )
+			.Ray( rayStart, rayStart + camDir * Range )
 			.IgnoreGameObjectHierarchy( GameObject )
 			.HitTriggers()
 			.WithoutTags( "trigger", "water" )
 			.Run();
 
-		// Distance from the CAMERA — only ever used to find the point under the crosshair. Everything about how
-		// far away that point is, for fading purposes, has to be measured from the eye instead (see below).
-		float camDist = look.Hit ? look.Distance : Range;
-		var to = camPos + camDir * camDist - eye;
+		var to = ( look.Hit ? look.EndPosition : rayStart + camDir * Range ) - eye;
 
-		// Degenerate: the crosshair landed on top of the muzzle (something pressed against the lens). There's no
-		// sane direction to converge on, so keep the eye ray rather than fire somewhere arbitrary.
-		_aimDir = to.Length < 1f ? eyeRot.Forward : to.Normal;
+		// Degenerate: nothing sane to converge on. Keep the eye ray rather than aim somewhere arbitrary.
+		// ClampConvergence is the backstop for any geometry that still manages an absurd swing.
+		_aimDir = to.Length < 1f ? eyeRot.Forward : ClampConvergence( to.Normal, eyeRot.Forward );
 
 		// Near fade: ramps 0 (target at the muzzle) → 1 (target at ConvergeFade and anything beyond it, with no
 		// upper limit). Smoothstepped, whose zero derivative at both ends is what keeps it from kinking as it
@@ -1864,6 +1888,29 @@ public sealed class HunterController : Component
 		w = w * w * ( 3f - 2f * w );
 
 		_visualAimDir = EaseVisualAim( Vector3.Lerp( eyeRot.Forward, _aimDir, w ).Normal );
+	}
+
+	// Hard cap on how far convergence may swing the aim off the eye forward — the safety net for geometry nobody
+	// predicted, bounding every pathological case regardless of cause. With the trace starting ConvergeMinAhead
+	// in front of the pawn the natural swing is already well under this, so it should rarely engage; when it
+	// does, the direction is rotated back onto the edge of the cone rather than snapped to the forward, so it
+	// clamps smoothly instead of popping.
+	Vector3 ClampConvergence( Vector3 dir, Vector3 forward )
+	{
+		if ( MaxConvergeAngle >= 180f )
+			return dir;
+
+		float angle = MathF.Acos( Vector3.Dot( dir, forward ).Clamp( -1f, 1f ) ).RadianToDegree();
+		if ( angle <= MaxConvergeAngle )
+			return dir;
+
+		// Rotate the forward toward dir by exactly the cap, about the axis the two share. Right-hand rule, so
+		// the sign carries us toward dir rather than away from it.
+		var axis = Vector3.Cross( forward, dir );
+		if ( axis.LengthSquared < 0.000001f )
+			return forward; // exactly parallel or antiparallel — no plane to rotate in
+
+		return Rotation.FromAxis( axis.Normal, MaxConvergeAngle ) * forward;
 	}
 
 	// Exponential ease of the visual aim toward its target — frame-rate independent, and the reason a crosshair

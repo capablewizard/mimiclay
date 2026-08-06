@@ -67,13 +67,19 @@
 	enum Zone { None, Ring, Ball }
 	Zone _zone;
 
+	// Owner-tracked rather than a bare bool, for the same reason as ClaySlider: the end events are delivered
+	// to the panel, so a picker deleted mid-press (the column unmounts with the selection) would latch these
+	// on forever — and a latched Pressed reads as "pointer over UI", killing world picks and the gizmo.
+	static ClayColorPicker _presser;
+	static bool _dragging;
+
 	/// <summary>True from press to release on ANY picker — same world-pick suppression contract as
 	/// <see cref="ClaySlider.Pressed"/>.</summary>
-	public static bool Pressed { get; private set; }
+	public static bool Pressed => _presser is { IsValid: true, IsDeleting: false };
 
 	/// <summary>True only while actually dragging — drives the HUD's full-screen capture overlay, same as
 	/// <see cref="ClaySlider.Dragging"/>.</summary>
-	public static bool Dragging { get; private set; }
+	public static bool Dragging => _dragging && Pressed;
 
 	public ClayColorPicker()
 	{
@@ -121,27 +127,36 @@
 		base.OnMouseDown( e );
 		var n = Normalized();
 		_zone = n.Length < HitSplit ? Zone.Ball : Zone.Ring; // zone locks for the whole gesture
-		Pressed = true;
+		_presser = this;
+		_dragging = false; // a previous owner deleted mid-drag never cleared it
 		Apply( n );
 	}
 
-	protected override void OnDragStart( DragEvent e ) => Dragging = true;
+	protected override void OnDragStart( DragEvent e ) => _dragging = true;
 
 	protected override void OnDrag( DragEvent e ) => Apply( Normalized() );
 
 	protected override void OnDragEnd( DragEvent e )
 	{
-		Pressed = Dragging = false;
-		_zone = Zone.None;
+		EndGesture();
 		OnCommit?.Invoke();
 	}
 
 	// Press-release without a drag: no OnDragEnd fires, so clear the press here (mirrors ClaySlider).
 	protected override void OnClick( MousePanelEvent e )
 	{
-		Pressed = false;
-		_zone = Zone.None;
+		EndGesture();
 		OnCommit?.Invoke();
+	}
+
+	// Only the owner may end the gesture — another picker's click must not cancel a drag running on this one.
+	void EndGesture()
+	{
+		if ( _presser != this )
+			return;
+		_presser = null;
+		_dragging = false;
+		_zone = Zone.None;
 	}
 
 	// Cursor in wheel space: centre (0,0), edge radius 1. MousePosition and Box.Rect are BOTH real screen px

@@ -549,6 +549,18 @@
 	public static bool PointerOverUi => PointerOverPalette || PointerOverSliders || PointerOverPicker
 		|| PointerOverPanels || ClaySlider.Pressed || ClayColorPicker.Pressed;
 
+	// Is the cursor over this card RIGHT NOW? HasHovered alone can't answer that: it's a stored pseudo-class
+	// bit, and the engine only clears it by walking UP from the previously-hovered panel — so a button that
+	// deletes its own panel (the Delete chip, a layer row's bin) detaches before that walk runs and leaves the
+	// enclosing card's Hover bit latched ON forever. That latched bit reads as "pointer over UI" for the rest
+	// of the session, which kills world picking AND every gizmo handle while the layer list keeps working.
+	// So: keep HasHovered (it carries the pointer-events/visibility rules — click-through while alt-navving,
+	// the opacity-0 palette with no selection) but AND it with a live hit test, which a latch can't survive.
+	// IsValid/IsDeleting cover the other half: a @ref left pointing at a deleted panel (the shape dock unmounts
+	// with the selection) keeps its bit set too, and a deleted panel has no YogaNode.
+	static bool Over( Panel p ) =>
+		p is { IsValid: true, IsDeleting: false } && p.HasHovered && p.IsInside( Mouse.Position );
+
 	// Hovered swatch index, set from the cells' mouse-over/out. Drives the inline hover scale (see markup).
 	int _hoverIndex = -1;
 
@@ -714,11 +726,11 @@
 		base.OnUpdate();
 		// The session reads these to stop world clicks/picks falling through the palette or slider stack. (During
 		// alt-nav both panels go pointer-events:none, so HasHovered reads false and can't spuriously block picks.)
-		PointerOverPalette = PalettePanel?.HasHovered ?? false;
-		PointerOverSliders = SliderStackPanel?.HasHovered ?? false;
-		PointerOverPicker = PickerPanel?.HasHovered ?? false;
-		PointerOverPanels = (LeftPanel?.HasHovered ?? false) || (RightPanel?.HasHovered ?? false)
-			|| (ShapeDockPanel?.HasHovered ?? false);
+		// Read through Over(), never HasHovered directly — see Over() for the latched-hover trap.
+		PointerOverPalette = Over( PalettePanel );
+		PointerOverSliders = Over( SliderStackPanel );
+		PointerOverPicker = Over( PickerPanel );
+		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel );
 
 		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
 		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.
