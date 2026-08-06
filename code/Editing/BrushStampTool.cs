@@ -610,7 +610,7 @@ public sealed class BrushStampTool
 		var b = _template is not null ? _template.Copy() : new SdfBrush
 		{
 			Size = SpawnSize( Shape ),
-			Blend = 6f,
+			Blend = 2f, // a third of SdfBrush's own default — stamps want a much tighter seam
 		};
 
 		// The scale carries across shapes here too: picking a new shape between stamps re-creates the ghost
