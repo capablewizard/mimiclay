@@ -404,9 +404,9 @@
 			return;
 		}
 
-		// A spline can't be converted to or from (its geometry is control points, not a transform), so its
-		// tile always means "place a new one" — everything else converts the selection in place.
-		if ( Session.SelectedBrush is { } sel && shape != SdfShape.Spline && sel.Shape != SdfShape.Spline )
+		// A tile always converts the selection in place — splines included (to one = a 2-point tube filling
+		// the same box; from one = the solid takes the curve's bounds).
+		if ( Session.SelectedBrush is not null )
 		{
 			Session.ConvertSelectedShape( shape );
 			return;

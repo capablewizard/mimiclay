@@ -440,8 +440,6 @@ public sealed class SculptEditSession : Component
 	{
 		if ( SelectedBrush is not { } b || b.Shape == shape )
 			return;
-		if ( b.Shape == SdfShape.Spline || shape == SdfShape.Spline )
-			return;
 
 		// Keep the shape's world-space VOLUME CENTRE fixed across the swap. LocalCentre is each shape's
 		// centre offset from its pivot — zero for the centred shapes, +Size.z for the base-pivoted cone —
@@ -450,15 +448,70 @@ public sealed class SculptEditSession : Component
 		var oldCentre = b.Rotation * b.LocalCentre;
 		bool fromText = b.Shape == SdfShape.Text;
 
+		// TO a spline: rebuild the solid as a 2-point tube filling the same box (see SplineFromSolid).
+		if ( shape == SdfShape.Spline )
+		{
+			// Remember the TRUE original solid (before any normalisation below) for the trip back.
+			_preSplineSolid[b] = (b.Shape, b.Size, b.Rotation);
+
+			// Text first has to stop being text. Its Size is an aspect-locked plaque and its extents are
+			// the ink rect — sweeping THOSE gives a rod whose axis, length and thickness all depend on the
+			// string, which is why text→spline disagreed with text→cylinder→spline. Every other text
+			// conversion normalises the plaque away first; do exactly the same here (same uniform
+			// letter-height size, same remembered pre-text size if it had one) and then sweep the
+			// normalised solid. The result is identical to going via a cylinder by hand.
+			if ( b.Shape == SdfShape.Text )
+			{
+				b.Shape = SdfShape.Cylinder;
+				b.Size = _preTextSize.TryGetValue( b, out var preText )
+					? preText
+					: new Vector3( MathF.Max( b.Size.y, 1f ) );
+			}
+
+			SplineFromSolid( b );
+			NotifyChanged();
+			return;
+		}
+
+		// FROM a spline: a curve has no transform to inherit. A brush that WAS a solid gets its exact Size
+		// and Rotation back (the tube is deliberately thinner than the solid, so re-deriving them from its
+		// bounds would shrink the shape a little more on every round trip); a chain-placed spline, with
+		// nothing to restore, takes the curve's bounding box at the shape's spawn orientation. Either way
+		// the position comes from the curve's CURRENT centre, so moving the spline moves the solid — and
+		// for an untouched round trip that centre is exactly where the solid's was.
+		if ( b.Shape == SdfShape.Spline )
+		{
+			b.LocalBounds( out var mn, out var mx, includeBlend: false );
+			if ( _preSplineSolid.TryGetValue( b, out var mem ) )
+			{
+				b.Size = mem.Size;
+				b.Rotation = mem.Rotation;
+				// The remembered solid was TEXT: its Size is an aspect-locked plaque, nonsense for any
+				// other solid — flag it so the leaving-text normalisation below runs, exactly as it would
+				// converting straight out of text.
+				fromText = mem.Shape == SdfShape.Text;
+			}
+			else
+			{
+				b.Rotation = SdfSculpture.SpawnRotation( shape );
+				b.Size = Vector3.Max( (mx - mn) * 0.5f, new Vector3( 1f ) );
+			}
+			b.Position = (mn + mx) * 0.5f;
+			b.SplineClosed = false;
+		}
+
 		b.Shape = shape;
 		b.Points = null;
 
 		if ( shape == SdfShape.Text )
 		{
-			// Remember the solid's scale so converting back restores it exactly; the text itself takes its
+			// Remember the SOLID's scale so converting back restores it exactly; the text itself takes its
 			// own aspect-locked plaque size (glyph slot is 2:1 — anything else distorts the letters), with
 			// the letter height taken from the source's Y. Orientation is deliberately untouched.
-			_preTextSize[b] = b.Size;
+			// (fromText here means we came back via a spline that was text — the size we're holding is
+			// already a plaque, so recording it would overwrite the real solid size with a text one.)
+			if ( !fromText )
+				_preTextSize[b] = b.Size;
 			b.TextData = SdfTextSdf.Get( b.Text, b.Font );
 			float yv = MathF.Max( b.Size.y, 1f );
 			b.Size = new Vector3( yv * (SdfTextData.Width / (float)SdfTextData.Height), yv, MathF.Min( b.Size.z, 4f ) );
@@ -478,6 +531,54 @@ public sealed class SculptEditSession : Component
 		// Different shapes cap rounding differently (a star's erosion limit << a box's inscribed radius).
 		b.Rounding = Math.Clamp( b.Rounding, 0.75f, b.MaxRounding() );
 		NotifyChanged();
+	}
+
+	// Rebuild a solid brush as a 2-point spline occupying the same space: a control point at each EXTREME
+	// of the sweep axis (a cone's base centre and its apex) and a radius HALF what would fill the
+	// cross-section — a deliberately thinner noodle, since a full-fat tube reads as "nothing happened" on
+	// a cylinder. Points are SCULPTURE-space, so the brush's own transform is folded in here; afterwards
+	// the transform is inert for the spline, which is why the caller remembers the solid's Size + Rotation
+	// for the trip back. TEXT never reaches here as text — the caller normalises it to a plain solid
+	// first, since plaque proportions make the sweep string-dependent.
+	void SplineFromSolid( SdfBrush b )
+	{
+		var ext = b.AabbExtents( Rotation.Identity, includeBlend: false ); // local half-extents, per shape
+		var centre = b.LocalCentre; // base-pivot cone sits above the origin
+
+		// Which axis carries the sweep. The shapes SWEPT along their own local Z (cylinder, cone, extruded)
+		// always run the tube down that axis — a squat cylinder's natural axis is still Z even when it
+		// isn't the longest extent, and a point at each end cap is what reads as "the same shape". Text
+		// runs along the string. Only box/sphere, which have no intrinsic axis, use the longest extent.
+		// Text is local X too — ALWAYS, never by proportion vote: a short string's ink is narrow
+		// (ContentWidthFrac floors at 0.05) but stays full letter height, so "longest extent" flips the rod
+		// upright THROUGH the letters. The reading direction is the only sensible sweep.
+		int axis = b.Shape switch
+		{
+			SdfShape.Cylinder or SdfShape.Cone or SdfShape.Extruded => 2,
+			SdfShape.Text => 0,
+			_ => ext.x >= ext.y && ext.x >= ext.z ? 0 : (ext.y >= ext.z ? 1 : 2),
+		};
+
+		float half = MathF.Max( axis == 0 ? ext.x : axis == 1 ? ext.y : ext.z, 0.5f );
+
+		// Thickness comes from the two cross-section extents — except for text, whose Z is a shallow
+		// plaque depth that would thin the rod to spaghetti; use its other IN-PLANE extent instead.
+		float crossA = axis == 0 ? ext.y : ext.x;
+		float crossB = b.Shape == SdfShape.Text ? crossA : (axis == 2 ? ext.y : ext.z);
+
+		float radius = Math.Clamp( MathF.Min( crossA, crossB ) * 0.5f, 1f, SdfBrush.MaxSplineRadius );
+		var dir = axis == 0 ? new Vector3( 1f, 0f, 0f ) : axis == 1 ? new Vector3( 0f, 1f, 0f ) : new Vector3( 0f, 0f, 1f );
+
+		Vector4 ToSculpture( Vector3 local )
+		{
+			var s = b.Position + b.Rotation * local;
+			return new Vector4( s.x, s.y, s.z, radius );
+		}
+
+		b.Shape = SdfShape.Spline;
+		b.SplineClosed = false;
+		b.SplinePerPointRadius = true;
+		b.Points = new List<Vector4> { ToSculpture( centre - dir * half ), ToSculpture( centre + dir * half ) };
 	}
 
 	/// <summary>Select a brush by index, or pass a negative index to clear the selection.</summary>
@@ -541,6 +642,11 @@ public sealed class SculptEditSession : Component
 	// its exact scale (the text plaque's aspect-locked Size would otherwise leak into the solid). Same
 	// reference-keyed orphan-tolerant pattern as _mirrorMemory.
 	readonly Dictionary<SdfBrush, Vector3> _preTextSize = new();
+
+	// Each brush's Size + Rotation from the last time it was converted TO a spline, so converting back
+	// restores the solid exactly. Deriving them from the tube instead would compound: the spline is
+	// deliberately half the cross-section, so every round trip would halve the shape again.
+	readonly Dictionary<SdfBrush, (SdfShape Shape, Vector3 Size, Rotation Rotation)> _preSplineSolid = new();
 
 	/// <summary>Toggle symmetry on a brush (the symmetry button): clears all axes if any are on, else
 	/// restores the combo it had when last toggled off (left/right X for a brush with no history).
