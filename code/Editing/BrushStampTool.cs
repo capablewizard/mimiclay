@@ -252,12 +252,33 @@ public sealed class BrushStampTool
 		if ( _stamp is null )
 			return;
 
+		// Carry the SCALE across the swap — resize a sphere then pick box and you get a box that size, not
+		// a fresh default. Orientation still resets, so the flat shapes (text/extruded) come up facing you.
+		var from = _stamp.Shape;
 		_stamp.Shape = shape;
-		_stamp.Size = SpawnSize( shape );
+		_stamp.Size = ResizeForShape( _stamp.Size, from, shape );
 		_stamp.Rotation = SdfSculpture.SpawnRotation( shape );
+		_stamp.Rounding = Math.Clamp( _stamp.Rounding, 0.75f, _stamp.MaxRounding() ); // caps differ per shape
 		_stamp.SplineClosed = false;
 		// A spline ghost carries its live points (chain + preview, rebuilt each frame); anything else has none.
 		_stamp.Points = shape == SdfShape.Spline ? new List<Vector4>() : null;
+	}
+
+	// Carry a brush's scale from one shape to another. Every solid reads Size as half-extents, so it
+	// transfers straight across; text is the exception both ways — its plaque is aspect-locked to the glyph
+	// slot (anything else distorts the letters) and those proportions make a nonsense solid coming back.
+	static Vector3 ResizeForShape( Vector3 size, SdfShape from, SdfShape to )
+	{
+		if ( to == from )
+			return size;
+
+		if ( to == SdfShape.Text )
+		{
+			float yv = MathF.Max( size.y, 1f );
+			return new Vector3( yv * (SdfTextData.Width / (float)SdfTextData.Height), yv, MathF.Min( size.z, 4f ) );
+		}
+
+		return from == SdfShape.Text ? new Vector3( MathF.Max( size.y, 1f ) ) : size;
 	}
 
 	/// <summary>Strip the pending ghost from the target's brush list (tool switch / session exit). Returns
@@ -589,11 +610,19 @@ public sealed class BrushStampTool
 			Blend = 6f,
 		};
 
+		// The scale carries across shapes here too: picking a new shape between stamps re-creates the ghost
+		// from the template, and losing the size there would undo the swap-keeps-scale rule above.
 		b.Shape = Shape;
-		if ( _template is null || _template.Shape != Shape )
+		if ( _template is null )
 		{
 			b.Size = SpawnSize( Shape );
 			b.Rotation = SdfSculpture.SpawnRotation( Shape );
+		}
+		else
+		{
+			b.Size = ResizeForShape( _template.Size, _template.Shape, Shape );
+			if ( _template.Shape != Shape )
+				b.Rotation = SdfSculpture.SpawnRotation( Shape );
 		}
 		b.Operation = Operation;
 		b.SplineClosed = false;
@@ -602,12 +631,14 @@ public sealed class BrushStampTool
 		return b;
 	}
 
-	// Same per-shape spawn sizes AddBrush uses, so a stamped shape matches a stack-added one.
+	// Spawn size for the FIRST stamp of a session (after that the scale carries across shapes and stamps).
+	// Half the old values — those matched AddBrush's stack-added defaults, which read as too chunky when
+	// you're placing by hand.
 	static Vector3 SpawnSize( SdfShape shape ) => shape switch
 	{
-		SdfShape.Sphere => new Vector3( 16f ),
-		SdfShape.Text => new Vector3( 24f, 12f, 4f ),
-		_ => new Vector3( 12f ),
+		SdfShape.Sphere => new Vector3( 8f ),
+		SdfShape.Text => new Vector3( 12f, 6f, 2f ),
+		_ => new Vector3( 6f ),
 	};
 }
 
