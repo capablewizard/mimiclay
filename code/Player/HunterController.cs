@@ -529,16 +529,23 @@ public sealed class HunterController : Component
 	/// 1 moves the whole torso as one piece and there's no stretch at all.</summary>
 	[Property, Group( "Jump" ), Range( 0f, 1f )] public float JumpChestFollow { get; set; } = 0.25f;
 
-	/// <summary>How far the CHEST dips on landing, in world units — its own distance rather than a share of the
-	/// belly's, since the two want to be tuned against each other rather than locked in proportion. Keep it well
-	/// under <see cref="LandDipDistance"/> so the belly still compresses up into it; 0 holds the chest perfectly
-	/// still and puts the whole impact into the belly.</summary>
-	[Property, Group( "Jump" ), Range( 0f, 24f )] public float LandChestDipDistance { get; set; } = 3f;
+	/// <summary>How far the CHEST dips on landing, in world units — its own distance, independent of both the
+	/// belly's and the head's. Defaults to 0: the chest sits an impact out and the belly compresses up into it,
+	/// which reads as the impact travelling through the soft part. Raising it drives the chest down on top of
+	/// whatever the crouch has already done to it, so keep it modest.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 24f )] public float LandChestDipDistance { get; set; }
 
-	/// <summary>How much of the chest's LANDING dip the head, the gun arm and the camera ride along with. Under 1
-	/// the neck compresses on impact — the head absorbs part of the hit rather than being driven straight down
-	/// with the chest.</summary>
-	[Property, Group( "Jump" ), Range( 0f, 1f )] public float LandHeadFollow { get; set; } = 0.5f;
+	/// <summary>How far the HEAD — and with it the gun arm and the camera — dips on landing, in world units. Its
+	/// own distance rather than a share of the chest's, so the two are independent: you can hold the chest
+	/// perfectly still (<see cref="LandChestDipDistance"/> = 0) and still have the impact land in the view.
+	/// Whatever gap this opens against the chest reads as the neck compressing.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 24f )] public float LandHeadDipDistance { get; set; } = 1.5f;
+
+	/// <summary>How much of that head dip survives when you land fully CROUCHED, as a fraction of the standing
+	/// amount. A folded body has already absorbed part of the impact, so a view answering it as hard as a
+	/// standing landing reads as too much. 1 makes crouched landings hit the view exactly as standing ones do;
+	/// 0 removes the head dip from them entirely. Eased by how crouched you actually are.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 1f )] public float LandCrouchHeadAmount { get; set; } = 0.5f;
 
 	/// <summary>Let the landing dip move the FIRST PERSON view. Off, the impact plays out on the body and the
 	/// world model exactly as before and only the view sits still — nothing else changes, so it's purely a taste
@@ -577,6 +584,8 @@ public sealed class HunterController : Component
 	float _landLagVelocity;
 	float _landChestLag;
 	float _landChestLagVelocity;
+	float _landHeadDip;
+	float _landHeadDipVelocity;
 	float _fallSpeed;
 	bool _wasAirborne;
 
@@ -857,24 +866,29 @@ public sealed class HunterController : Component
 	// through the whole tuck while the body visibly pulls up into it. Zero on the ground.
 	float AirTuckOffset => _airLift * (1f - _duckVisual);
 
-	// Where the CHEST sits relative to rest, kept as its two halves so the head can take a different share of
-	// each — launch and impact are different motions and want to be felt differently.
-	float ChestJumpOffset => _jumpLag * JumpChestFollow;
-	float ChestLandOffset => _landChestLag;
-	float ChestOffset => ChestJumpOffset + ChestLandOffset;
-
-	// What the EYE takes — and with it the camera, the shot origin, and everything else placed from the eye.
-	// LANDING ONLY, on purpose: an impact dip sells the weight, but dipping the view on the launch fights the
-	// leap and makes a jump feel sluggish rather than snappy, so the takeoff is deliberately kept off the camera.
+	// ── Where each part sits, vertically, relative to rest ───────────────────────────────────────────────────
 	//
-	// The BODY doesn't read this: the belly and chest take the jump through their own brush offsets, and pulling
-	// the pivot down as well would move them twice.
-	float EyeDip => ChestLandOffset * LandHeadFollow;
+	// Three things move: the BELLY (bottom brush), the CHEST (top brush) and the HEAD (which carries the gun arm,
+	// and the camera with it). The two events driving them work differently on purpose:
+	//
+	//   LAUNCH  — one motion propagating down a body being yanked upward, so the chest and head take SHARES of
+	//             the belly's trail. Tuning the launch is then a single distance plus how far up it reaches.
+	//   LANDING — the floor stops each part on its own terms, so each gets its own DISTANCE. That independence is
+	//             the point: any one can be zeroed without disturbing the others.
+	//
+	// The camera takes the landing only. Everything else about which part reads which value lives here — the
+	// placement code just asks for the offset it needs.
+	float BellyOffset => _jumpLag + _landLag;
+	float ChestOffset => _jumpLag * JumpChestFollow + _landChestLag;
 
-	// What the head and the gun arm take ON TOP of the eye — the launch trail the camera sits out. Applied at
-	// their own placement sites, exactly the way the duck's arm lift already works, so the visuals can follow the
-	// chest through the whole arc while the view only answers the landing.
-	float HeadOnlyDip => ChestJumpOffset * JumpHeadFollow;
+	// The eye's share — camera, shot origin, and anything else placed from the eye. LANDING ONLY: an impact dip
+	// sells the weight, but dipping the view on the launch fights the leap and makes a jump feel sluggish.
+	float EyeDip => _landHeadDip;
+
+	// What the head and gun arm take ON TOP of the eye: the launch trail the camera sits out. Applied at their own
+	// placement sites, the same way the duck's arm lift is, so the visuals follow the body through the whole arc
+	// while the view only answers the landing.
+	float HeadOnlyDip => _jumpLag * JumpChestFollow * JumpHeadFollow;
 
 	// Vertical follow-through: the body has weight, so it trails when you launch and compresses when you land,
 	// then springs back onto the pawn. Only the BODY — the head is written straight to the eye and the camera is
@@ -914,10 +928,28 @@ public sealed class HunterController : Component
 			// already killed that by the frame we register as grounded, which would read every landing as soft.
 			float impact = MathF.Min( _fallSpeed / jumpSpeed, 2f );
 
-			// The DIP is a velocity kick: the body carries its momentum through the impact and swings past. Belly
-			// and chest get their own, so the gap between them is a tuned difference rather than a fixed ratio.
+			// The CHEST alone gets scaled back by how CROUCHED we are. It's the one part the duck has already
+			// driven down — by DuckChestFollow of the full duck delta — so a landing dip stacks on top of that and
+			// puts it through the floor. A body folded that far down has genuinely spent its compression travel.
+			// Nothing else wants this: the belly rides the pivot at standing height whatever the crouch is doing,
+			// and the head has the whole eye height of clearance under it, so both dip at full strength crouched
+			// or not. (Scaling everything by the crouch was the first cut, and it silently killed the head dip on
+			// any landing you were holding crouch through.)
+			float crouch = _duckVisual.Clamp( 0f, 1f );
+			float chestImpact = impact * (1f - crouch);
+
+			// The head keeps its dip when crouched, but eased off — a folded body has taken some of the impact
+			// already, so a view answering it as hard as a standing landing reads as too much. See
+			// LandCrouchHeadAmount; at 1 this is a no-op and crouched landings hit the view exactly as standing
+			// ones do.
+			float headImpact = impact * MathX.Lerp( 1f, LandCrouchHeadAmount, crouch );
+
+			// The DIP is a velocity kick: the body carries its momentum through the impact and swings past. Belly,
+			// chest and head each get their OWN distance — no part is a share of another, so any one of them can be
+			// zeroed without disturbing the rest.
 			_landLagVelocity -= LandDipDistance * w * impact;
-			_landChestLagVelocity -= LandChestDipDistance * w * impact;
+			_landChestLagVelocity -= LandChestDipDistance * w * chestImpact;
+			_landHeadDipVelocity -= LandHeadDipDistance * w * headImpact;
 
 			// The SQUASH is set directly instead, because an impact squash is hardest at the moment of contact
 			// and recovers from there — a velocity kick would ramp it in and peak it partway through the bounce,
@@ -944,6 +976,7 @@ public sealed class HunterController : Component
 		Settle( ref _jumpLag, ref _jumpLagVelocity, w, JumpSpringDamping );
 		Settle( ref _landLag, ref _landLagVelocity, w, JumpSpringDamping );
 		Settle( ref _landChestLag, ref _landChestLagVelocity, w, JumpSpringDamping );
+		Settle( ref _landHeadDip, ref _landHeadDipVelocity, w, JumpSpringDamping );
 		Settle( ref _landSquash, ref _landSquashVelocity, MathF.Max( LandSquashRate, 0.01f ), LandSquashDamping );
 
 		void Settle( ref float value, ref float velocity, float rate, float damping )
@@ -1103,7 +1136,7 @@ public sealed class HunterController : Component
 		//
 		// The belly takes both impulses in full; the chest takes its own share of each, and by default none at
 		// all of the landing — so an impact squashes the belly up into a chest that stays put.
-		float lag = _jumpLag + _landLag;
+		float lag = BellyOffset;
 		float chestLag = ChestOffset;
 		float landAmount = _landSquash;
 
@@ -1114,6 +1147,7 @@ public sealed class HunterController : Component
 		bool lagIdle = MathF.Abs( _jumpLag ) < 0.01f && MathF.Abs( _jumpLagVelocity ) < 0.01f
 			&& MathF.Abs( _landLag ) < 0.01f && MathF.Abs( _landLagVelocity ) < 0.01f
 			&& MathF.Abs( _landChestLag ) < 0.01f && MathF.Abs( _landChestLagVelocity ) < 0.01f
+			&& MathF.Abs( _landHeadDip ) < 0.01f && MathF.Abs( _landHeadDipVelocity ) < 0.01f
 			&& MathF.Abs( _landSquash ) < 0.001f && MathF.Abs( _landSquashVelocity ) < 0.001f;
 
 		if ( duckIdle && lagIdle )
