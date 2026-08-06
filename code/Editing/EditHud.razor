@@ -126,8 +126,8 @@
 						<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
 							<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
 						</div>
-						<div class="chip action" @onclick=@(() => Session.ResetRotationSelected())>
-							<div class="icon">@SdfIcons.ResetRotation</div><span>Reset</span>
+						<div class="chip action danger" @onclick=@(() => Session.RemoveSelected())>
+							<div class="icon">delete</div><span>Delete</span>
 						</div>
 					}
 				</div>

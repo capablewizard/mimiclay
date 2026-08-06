@@ -138,6 +138,16 @@
 		gap: 10px;
 
 		.chip { width: 100%; }
+
+		// Delete: red accents, like the layer rows' bin button.
+		.chip.danger {
+			.icon { color: $craft-red; }
+
+			&:hover {
+				background-color: rgba( $craft-red, 0.16 );
+				span { color: $craft-red; }
+			}
+		}
 	}
 
 	// The shape dock: the shape tile row, centred above the slider stack (left/top from code). The

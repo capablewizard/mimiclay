@@ -77,7 +77,7 @@ public sealed class BrushStampTool
 	/// <summary>Scroll depth speed as a fraction of the ghost's largest Size dimension per notch — big
 	/// shapes travel further per notch, small ones move finely. Half of the default 16-sphere = 8 units
 	/// per notch (the acceleration + camera-distance factors multiply on top).</summary>
-	public float DepthStepFrac { get; set; } = 2f;
+	public float DepthStepFrac { get; set; } = 0.5f;
 
 	/// <summary>Clamp on the per-notch depth step (world units), so extreme shapes stay controllable.</summary>
 	public float DepthStepMin { get; set; } = 0.5f;

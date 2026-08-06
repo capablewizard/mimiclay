@@ -170,16 +170,30 @@ public sealed class HunterController : Component
 	[Property, Group( "Edit" )] public float EditCameraPitch { get; set; } = 10f;
 
 	/// <summary>Boom length of the third-person camera (world units behind the eye). The camera stays aim-locked
-	/// — same eye angles, shots still leave from the eye — so third person is purely a view change.</summary>
+	/// — same eye angles — so third person is purely a view change. Shots still LEAVE from the eye, but they aim
+	/// at whatever the crosshair is over (see <see cref="ResolveAim"/>), so the boom offsets below are free to
+	/// be whatever frames best without pulling the pellets off the dot.</summary>
 	[Property, Group( "Third Person" ), Range( 40f, 300f )] public float ThirdPersonDistance { get; set; } = 100f;
 
 	/// <summary>Sideways offset of the boom, positive = over the RIGHT shoulder — so your own head doesn't sit
-	/// exactly on the crosshair line. Shots still trace from the eye, so at very close range the crosshair sits
-	/// a hair right of where the pellet lands; the offset is kept small so it never reads as a miss.</summary>
+	/// exactly on the crosshair line.</summary>
 	[Property, Group( "Third Person" ), Range( -48f, 48f )] public float ThirdPersonShoulder { get; set; } = 20f;
 
 	/// <summary>Vertical offset of the boom above the eye.</summary>
 	[Property, Group( "Third Person" ), Range( -32f, 64f )] public float ThirdPersonRise { get; set; } = 8f;
+
+	/// <summary>Crosshair distance over which the pawn's VISUALS fade INTO convergence: at this distance and
+	/// beyond they point exactly where the pellet goes, smoothstepping down to plain aim-parallel as the target
+	/// approaches the muzzle. There's no upper limit — convergence is full for everything past this. Shots still
+	/// converge exactly at every range (see <see cref="ResolveAim"/>); the fade exists purely to stop the gun and
+	/// head swinging hard inward when you aim at something right in front of you, where the convergence angle is
+	/// at its steepest and reads worst. 0 = no fade, always fully converged.</summary>
+	[Property, Group( "Third Person" ), Range( 0f, 1000f )] public float ConvergeFade { get; set; } = 400f;
+
+	/// <summary>How fast the visual aim eases toward its target (per second, exponential). This is what stops
+	/// the gun snapping when the crosshair crosses between a near object and a far one — the convergence angle
+	/// jumps, and this glides the pawn across it. Higher = tighter tracking, lower = lazier. 0 = no easing.</summary>
+	[Property, Group( "Third Person" ), Range( 0f, 30f )] public float AimEaseRate { get; set; } = 10f;
 
 	/// <summary>Debug "eyes" marker (a child pivot) parked at the eye and aimed where we're looking each frame, so
 	/// the look direction is visible on remote clients (the capsule body parts are static children of the root).
@@ -205,6 +219,15 @@ public sealed class HunterController : Component
 	// Grounded eye-z smoothing (same treatment as the stock camera path): walking up a step teleports the body
 	// vertically in one physics tick, so the eye z is lerped toward the new height instead of snapping. 0 = unseeded.
 	float _eyez;
+
+	// This frame's aim, in its two forms — both written by ResolveAim (see it for why third person can't just use
+	// the eye forward, and why the shot and the visuals don't share one direction). _aimDir is the exact
+	// crosshair ray the SHOT takes; _visualAimDir is the eased, near-faded one the head and gun POINT along.
+	// Zero = never resolved (any proxy, and the frames before the first owner update), and every reader falls
+	// back to the raw eye angles. Deliberately NOT cleared while alt-orbiting or editing: both freeze the aim, so
+	// holding the last resolved values keeps the pawn still instead of snapping it back to parallel.
+	Vector3 _aimDir;
+	Vector3 _visualAimDir;
 
 	// Internal: the crosshair HUD (HunterCrosshair) reads this to hide the dot while sculpting.
 	internal bool EditMode => _session?.IsEditing ?? false;
@@ -279,6 +302,19 @@ public sealed class HunterController : Component
 		// Wiring OrbitCamera onto the session is what makes SetActive enable/disable the camera for us.
 		Face ??= ResolveFace();
 
+		// Move the head + body off the physics root onto a written pivot — see PlaceVisualPivot. After Face is
+		// resolved (Eyes/Face are the same object) and before anything caches renderers, so the sweeps below
+		// still find them: they stay under this pawn, one level deeper.
+		EnsureVisualPivot();
+
+		// The head's bullet-hit collider, gated to proxies every frame — see UpdateHeadCollider for why ours has
+		// to be off. Resolved from the face's object (Eyes and Face are the same GameObject).
+		_headCollider = Face.IsValid() ? Face.GameObject.Components.Get<SdfCollider>() : null;
+
+		// The torso sculpture the duck squashes — see UpdateBodyDeform. Resolved after EnsureVisualPivot so
+		// _bodyObject is populated.
+		_bodySculpt = _bodyObject.IsValid() ? _bodyObject.Components.Get<SdfSculpture>() : null;
+
 		// Everything sculpted on the pawn EXCEPT the face (the body spheres and the fist) mirrors the face's
 		// clay — gun clones excluded, the gun keeps its own authored colours.
 		_bodySculpts = Components.GetAll<SdfSculpture>( FindMode.EnabledInSelfAndDescendants )
@@ -314,17 +350,20 @@ public sealed class HunterController : Component
 			e.Enabled = false;
 	}
 
-	// The sculpture face-edit mode targets: the authored Face, else a child named "Head" carrying a sculpture,
-	// else the first sculpture anywhere under the pawn (so a bare/renamed setup still finds something to edit).
-	// Gun clones carry sculptures too — filtered by tag so the fallback can't hand you the gun to face-edit.
+	// The sculpture face-edit mode targets: the authored Face, else one on an object named "Head", else the first
+	// sculpture anywhere under the pawn (so a bare/renamed setup still finds something to edit). Gun clones carry
+	// sculptures too — filtered by tag so the fallback can't hand you the gun to face-edit.
+	//
+	// Searched at ANY depth, not just direct children: the head hangs off the Visuals pivot now (see
+	// EnsureVisualPivot), and a direct-children lookup would miss it and quietly hand back the BODY instead —
+	// the first sculpture it happened to find — leaving you sculpting the wrong part of yourself.
 	SdfSculpture ResolveFace()
 	{
-		var head = GameObject.Children.FirstOrDefault( c => c.Name == "Head" );
-		var onHead = head.IsValid() ? head.Components.Get<SdfSculpture>( FindMode.EnabledInSelfAndDescendants ) : null;
-		return onHead.IsValid()
-			? onHead
-			: Components.GetAll<SdfSculpture>( FindMode.EnabledInSelfAndDescendants )
-				.FirstOrDefault( s => !s.GameObject.Tags.Has( HunterGun.CloneTag ) );
+		var sculpts = Components.GetAll<SdfSculpture>( FindMode.EnabledInSelfAndDescendants )
+			.Where( s => !s.GameObject.Tags.Has( HunterGun.CloneTag ) )
+			.ToArray();
+
+		return sculpts.FirstOrDefault( s => s.GameObject.Name == "Head" ) ?? sculpts.FirstOrDefault();
 	}
 
 	protected override void OnUpdate()
@@ -379,7 +418,14 @@ public sealed class HunterController : Component
 			}
 		}
 
+		// Advance the springs FIRST — the head drop, the pivot height and the torso squash all read them this
+		// frame, so they have to be current before any of them run.
+		UpdateDuckSpring();
+		UpdateJumpSpring();
+
 		HideOwnBody();
+		UpdateHeadCollider();
+		UpdateBodyDeform();
 		MatchBodyMaterialToFace();
 		UpdateFootsteps();
 		UpdateRunEffect();
@@ -398,13 +444,21 @@ public sealed class HunterController : Component
 
 			DriveCamera( eye );
 
+			// Resolve the aim for this frame — read below by both the shot and the head/gun placement. Must come
+			// after DriveCamera: it reads the camera pose the crosshair is drawn over. Skipped while alt-orbiting,
+			// which freezes the aim and swings the camera off it: re-running would converge the pawn onto the
+			// ORBIT's crosshair and drag its head around with the gesture, and zeroing would snap it back to
+			// parallel the instant you grabbed alt. Holding the last values leaves it exactly where it was.
+			if ( !_altOrbiting )
+				ResolveAim( eye );
+
 			// Owner-only: otherwise every machine would shoot when ITS local player clicked, from a remote pawn's
 			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
 			// No shooting while controls are locked (the Starting countdown) or outside the Hunt — during Hide a
 			// shot would still carve permanent craters into disguises the props can't heal, even though the host
 			// ignores the hit report. A denied press gets a local error blip instead, so the trigger doesn't feel
-			// broken. The shot leaves from the same eye the camera sits at, so the trace always matches what the
-			// crosshair shows. During an alt-orbit the trigger is swallowed entirely (no blip): alt+mouse is a
+			// broken. The shot leaves from the eye along _aimDir, which is converged onto the crosshair, so the
+			// trace always matches what the dot shows. During an alt-orbit the trigger is swallowed (no blip): alt+mouse is a
 			// camera gesture here — same as the hider — and the aim is frozen off-camera, so a shot would land
 			// somewhere the hidden crosshair can't show.
 			if ( Input.Pressed( "attack1" ) && !_altOrbiting )
@@ -419,26 +473,271 @@ public sealed class HunterController : Component
 			}
 		}
 
-		// Park the head at the eye, aimed where we're looking — on ALL machines (the eye transform is networked),
-		// so remote hunters' heads track their aim too. (Eyes is wired to the sculpted Head in hunter.prefab.)
-		// MUST be placed from the same smoothed eye as the camera: positioning it from the controller's cached
-		// EyePosition (stamped raw during fixed update) made the head — visible only as its raymarched shadow in
-		// first person — step at the physics tick rate against the now-gliding camera.
+		ComposePawn( eye );
+	}
+
+	/// <summary>Pivot the pawn's VISUALS hang off. Found by name ("Visuals") or created; the head and body are
+	/// reparented under it at start. See <see cref="PlaceVisualPivot"/>.</summary>
+	[Property, Group( "Debug" )] public GameObject VisualPivot { get; set; }
+
+	// The head's bullet-hit collider — enabled on proxies only, see UpdateHeadCollider.
+	SdfCollider _headCollider;
+
+	// The body, resolved once so EnsureVisualPivot can move it under the pivot.
+	GameObject _bodyObject;
+
+	// Smoothed eye height with the duck taken OUT — what the visual pivot rides. See SmoothedEyePosition.
+	float _standZ;
+
+	/// <summary>Stiffness of the duck spring, in radians/sec — higher snaps down faster. Drives the head drop and
+	/// the torso squash together.</summary>
+	[Property, Group( "Ducking" ), Range( 4f, 40f )] public float DuckSpringRate { get; set; } = 16f;
+
+	/// <summary>Damping of the duck spring. 1 = no overshoot at all, lower = more bounce as it settles and more
+	/// rebound on standing up. Around 0.6 gives a slight, weighty spring.</summary>
+	[Property, Group( "Ducking" ), Range( 0.2f, 1f )] public float DuckSpringDamping { get; set; } = 0.6f;
+
+	// The duck springs: _duckSpring drives the EYE height (snapped while airborne — the engine compensates the
+	// root there), _duckVisual drives the torso squash, the chest drop and the mid-air tuck (always springs).
+	// Identical on the ground; they only diverge in the air. See UpdateDuckSpring.
+	float _duckSpring;
+	float _duckVelocity;
+	float _duckVisual;
+	float _duckVisualVelocity;
+
+	// The engine's instant mid-air lift, banked so the tuck can be eased in rather than teleported. See
+	// UpdateDuckSpring / AirTuckOffset.
+	float _airLift;
+	bool _wasDucking;
+
+	/// <summary>How far the body trails below the pawn on a full-speed jump, in world units. It springs back up
+	/// to catch you — the body having weight rather than being welded to your feet. 0 disables it.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 32f )] public float JumpLagDistance { get; set; } = 8f;
+
+	/// <summary>How far the body dips on landing, in world units, at an impact as fast as a full jump. Scales
+	/// with how hard you actually hit, so a small hop barely registers and a long drop lands heavy.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 48f )] public float LandDipDistance { get; set; } = 12f;
+
+	/// <summary>Stiffness of the jump/land spring, in radians/sec — higher catches up faster.</summary>
+	[Property, Group( "Jump" ), Range( 4f, 40f )] public float JumpSpringRate { get; set; } = 13f;
+
+	/// <summary>Damping of the jump/land spring. Lower = more wobble as it settles.</summary>
+	[Property, Group( "Jump" ), Range( 0.2f, 1f )] public float JumpSpringDamping { get; set; } = 0.45f;
+
+	/// <summary>How much of the LAUNCH follow-through the chest takes, against the belly taking all of it. The
+	/// difference between the two is the stretch: 0 pins the chest to the head for the most exaggerated pull,
+	/// 1 moves the whole torso as one piece and there's no stretch at all.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 1f )] public float JumpChestFollow { get; set; } = 0.25f;
+
+	/// <summary>How far the CHEST dips on landing, in world units — its own distance rather than a share of the
+	/// belly's, since the two want to be tuned against each other rather than locked in proportion. Keep it well
+	/// under <see cref="LandDipDistance"/> so the belly still compresses up into it; 0 holds the chest perfectly
+	/// still and puts the whole impact into the belly.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 24f )] public float LandChestDipDistance { get; set; } = 3f;
+
+	/// <summary>How much of the chest's LANDING dip the head, the gun arm and the camera ride along with. Under 1
+	/// the neck compresses on impact — the head absorbs part of the hit rather than being driven straight down
+	/// with the chest.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 1f )] public float LandHeadFollow { get; set; } = 0.5f;
+
+	/// <summary>Let the landing dip move the FIRST PERSON view. Off, the impact plays out on the body and the
+	/// world model exactly as before and only the view sits still — nothing else changes, so it's purely a taste
+	/// call. Third person always takes the dip regardless: there you can see the landing, and a view that ignored
+	/// it would read as disconnected. The launch trail never touches the camera either way.</summary>
+	[Property, Group( "Jump" )] public bool FirstPersonLandDip { get; set; } = true;
+
+	/// <summary>The same, for the chest's LAUNCH trail — but the CAMERA sits this one out entirely, so it moves the
+	/// head and the gun arm only. That's the point: you watch your own head lag behind on takeoff while the view
+	/// stays snappy, where a dipping camera would fight the leap. Defaults to 1, since off the ground everything
+	/// above the belly tends to move as one and the stretch happens below it. Sits DOWNSTREAM of
+	/// <see cref="JumpChestFollow"/>, so raise that first if the takeoff needs more travel overall.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 1f )] public float JumpHeadFollow { get; set; } = 1f;
+
+	/// <summary>How far the BELLY flattens at a full-strength landing, as a fraction of its authored height. The
+	/// chest is never squashed by this — the impact travels up through the soft part of the body.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 0.9f )] public float LandSquash { get; set; } = 0.3f;
+
+	/// <summary>How far the belly spreads sideways as it takes a landing — squash-and-stretch, as a fraction of
+	/// its authored width.</summary>
+	[Property, Group( "Jump" ), Range( 0f, 0.9f )] public float LandBulge { get; set; } = 0.15f;
+
+	/// <summary>Stiffness of the landing SQUASH, separate from the dip's. Lower holds the blob longer — the
+	/// squash starts at full and only decays, so at the dip's rate it would vanish almost on arrival.</summary>
+	[Property, Group( "Jump" ), Range( 2f, 30f )] public float LandSquashRate { get; set; } = 7f;
+
+	/// <summary>Damping of the landing squash. Well under 1 lets it wobble past flat into a stretch and back a
+	/// couple of times before settling, which is what reads as soft clay rather than a rigid pop.</summary>
+	[Property, Group( "Jump" ), Range( 0.15f, 1f )] public float LandSquashDamping { get; set; } = 0.35f;
+
+	// Vertical follow-through offsets for the body, in world units (negative = below rest). Launch and landing
+	// are tracked separately so the chest can take a different share of each — see UpdateJumpSpring.
+	float _jumpLag;
+	float _jumpLagVelocity;
+	float _landLag;
+	float _landLagVelocity;
+	float _landChestLag;
+	float _landChestLagVelocity;
+	float _fallSpeed;
+	bool _wasAirborne;
+
+	// The landing squash, in impact units (1 = landing as fast as a full jump). Set outright at contact and
+	// sprung back to 0, so it hits hardest the instant you touch down — see UpdateJumpSpring.
+	float _landSquash;
+	float _landSquashVelocity;
+
+	/// <summary>How far the torso flattens when ducked, as a fraction of its authored height. 0 = no squash.</summary>
+	[Property, Group( "Ducking" ), Range( 0f, 0.9f )] public float DuckSquash { get; set; } = 0.35f;
+
+	/// <summary>How far the torso spreads sideways as it flattens — the squash-and-stretch bulge, as a fraction
+	/// of its authored width. 0 = it just gets shorter.</summary>
+	[Property, Group( "Ducking" ), Range( 0f, 0.9f )] public float DuckBulge { get; set; } = 0.15f;
+
+	/// <summary>How much of the duck's eye drop the chest follows down. 1 = exactly as far as the head.</summary>
+	[Property, Group( "Ducking" ), Range( 0f, 1f )] public float DuckChestFollow { get; set; } = 1f;
+
+	// The torso sculpture we deform when ducking, plus its authored brush poses — see UpdateBodyDeform.
+	SdfSculpture _bodySculpt;
+	(SdfBrush Brush, Vector3 Pos, Vector3 Size)[] _bodyRest;
+	bool _deformApplied;
+
+	// One place the pawn's visuals hang off, so the head and body share a single anchor instead of each deriving
+	// their own from the pawn root. It makes the visual hierarchy mirror the gun's (pawn → Shoulder → Hand → gun),
+	// which is easier to reason about — it is NOT what fixed the jitter; that was the head's collider, see
+	// UpdateHeadCollider.
+	//
+	// YAW ONLY: the body turns to face where you look, while pitch stays out of it so looking up and down doesn't
+	// tip the torso over. The head is unaffected either way — it writes its own full aim in world space, so it
+	// keeps pitching around the neck on top of whatever this does.
+	//
+	// The height deliberately IGNORES THE DUCK: it rides _standZ, the eye height with the crouch taken out (see
+	// SmoothedEyePosition). Crouching drops the eye, and the body — which simply rides this pivot — would sink
+	// with it, but the body used to hang off the pawn root, which doesn't move vertically when you duck, so it
+	// never did. The head still drops, because it's placed from the real ducked eye, and the torso answers by
+	// deforming instead (UpdateBodyDeform). The gun arm is left alone on purpose — it's eye-relative so that
+	// crouching carries it down (see HunterGun.ShoulderOffset).
+	void PlaceVisualPivot( Vector3 eye, Angles visualAim )
+	{
+		if ( !VisualPivot.IsValid() || !_controller.IsValid() )
+			return;
+
+		// Minus the unspent mid-air lift, so a jump-crouch eases the body up into the tuck instead of teleporting
+		// it (see AirTuckOffset). Zero on the ground, where _standZ alone is the answer. The jump follow-through
+		// deliberately does NOT live here — it's applied per-brush so the chest and belly can take different
+		// amounts of it and stretch apart (see UpdateBodyDeform).
+		VisualPivot.WorldPosition = eye.WithZ( _standZ - AirTuckOffset );
+		VisualPivot.WorldRotation = Rotation.FromYaw( visualAim.yaw );
+	}
+
+	// Build the pivot and move the head + body under it. Runs on every machine (each spawns its own pawn), and
+	// is idempotent — a child already under the pivot is left alone, so a proxy that received the reparented
+	// hierarchy in its spawn snapshot doesn't shuffle it again.
+	void EnsureVisualPivot()
+	{
+		VisualPivot ??= GameObject.Children.FirstOrDefault( c => c.Name == "Visuals" )
+			?? new GameObject( true, "Visuals" );
+
+		if ( VisualPivot.Parent != GameObject )
+			VisualPivot.Parent = GameObject;
+
+		// The head is wired through Eyes (it's also the Face sculpture). The body may sit under the pawn root or
+		// already under the pivot, depending on how the prefab is authored — look in both places.
+		_bodyObject ??= VisualPivot.Children.FirstOrDefault( c => c.Name == "Body" )
+			?? GameObject.Children.FirstOrDefault( c => c.Name == "Body" );
+
+		// Capture the AUTHORED world poses before touching anything. The pivot's authored position is cosmetic —
+		// PlaceVisualPivot parks it at the eye every frame — so seeding it below drags anything ALREADY parented
+		// under it (the prefab-authored case) away from where it was authored. Restoring these afterwards keeps
+		// both cases identical: whatever pose the prefab shows is the pose you get.
+		var headWorld = Eyes.IsValid() ? Eyes.WorldTransform : global::Transform.Zero;
+		var bodyWorld = _bodyObject.IsValid() ? _bodyObject.WorldTransform : global::Transform.Zero;
+
+		// Seed the pivot at the pose it will actually hold, so the offsets measured below are the RUNTIME ones —
+		// seed it anywhere else (the origin, the pawn's feet, wherever the prefab parks it) and the body would
+		// sit at that wrong offset forever, since nothing writes the body's transform after this. BodyHeight, not
+		// CurrentHeight: the pivot holds the STANDING height whether or not we happen to spawn ducked.
+		//
+		// Rotation stays identity here even though PlaceVisualPivot applies yaw — that's what makes the body's
+		// measured local rotation come out as its AUTHORED one, so at runtime it ends up facing the look yaw
+		// (plus any offset the prefab gave it) rather than being permanently skewed by the yaw we spawned at.
+		if ( _controller.IsValid() )
+		{
+			VisualPivot.WorldPosition = _controller.WorldPosition
+				+ Vector3.Up * (_controller.BodyHeight - _controller.EyeDistanceFromTop);
+			VisualPivot.WorldRotation = Rotation.Identity;
+		}
+
+		Adopt( Eyes, headWorld );
+		Adopt( _bodyObject, bodyWorld );
+
+		// Parent under the pivot if it isn't already, then restore the authored world pose EITHER WAY, so the
+		// local offset comes out relative to the pivot's runtime pose rather than its authored one.
+		void Adopt( GameObject go, global::Transform world )
+		{
+			if ( !go.IsValid() || go == VisualPivot )
+				return;
+
+			if ( go.Parent != VisualPivot )
+				go.Parent = VisualPivot;
+
+			go.WorldTransform = world;
+		}
+	}
+
+	// Place everything that hangs off the eye — head, body and gun — from ONE eye, on every machine (the eye
+	// transform is networked, so remote hunters' heads and guns track their aim too).
+	void ComposePawn( Vector3 eye )
+	{
+		// The angles the pawn's VISUALS point along this frame. In first person — and on every proxy — that IS the
+		// eye angles; in third person it's the eased, near-faded convergence, so your own gun and head track what
+		// you're aiming at rather than running parallel to it, offset by the boom's shoulder/rise. Roll-free via
+		// EulerAngles, matching the eye-angles convention. Edit mode never reaches ResolveAim, so it just holds
+		// whatever was last resolved — and the eye angles are frozen there too, so nothing drifts apart.
+		//
+		// Deliberately LOCAL: other machines keep rendering this hunter along its networked EyeAngles, since the
+		// convergence depends on OUR boom, which they can't know. Nothing gameplay-facing rides on it — shots at
+		// this hunter are registered on the SHOOTER's machine against their own proxy copy of it, whose head
+		// collider is placed from those same raw eye angles.
+		var visualAim = !_controller.IsValid() ? default
+			: _visualAimDir.LengthSquared > 0.5f ? _visualAimDir.EulerAngles
+			: _controller.EyeAngles;
+
+		// The pivot the head and body hang off — placed BEFORE them, since they ride it. The body needs nothing
+		// more than this: its facing and height both come from the pivot.
+		PlaceVisualPivot( eye, visualAim );
+
+		// Park the head at the eye, aimed where we're looking. MUST be placed from the same smoothed eye as the
+		// camera: positioning it from the controller's cached EyePosition (stamped raw during fixed update) made
+		// the head step at the physics tick rate against the now-gliding camera. The landing dip is already baked
+		// into that eye, so head and camera ride it together; the LAUNCH trail is added here instead, which is
+		// what lets you watch the head lag behind on takeoff without the view doing the same.
 		if ( Eyes.IsValid() && _controller.IsValid() )
 		{
 			// Parked at the NECK, not the eye: the head sculpture's origin is its neck pivot (brushes authored
 			// +NeckDrop above it), so dropping the object here keeps the head visual where it always was while
 			// pitch swings it around the neck. World-space drop, not eye-relative — the neck is the fixed point.
-			Eyes.WorldPosition = eye + Vector3.Up * -NeckDrop;
-			Eyes.WorldRotation = _controller.EyeAngles.ToRotation();
+			Eyes.WorldPosition = eye + Vector3.Up * (HeadOnlyDip - NeckDrop);
+			Eyes.WorldRotation = visualAim.ToRotation();
 		}
 
 		// Gun display, from the SAME smoothed eye (and after DriveCamera, so the viewmodel can never lag the
 		// camera by a frame). Runs on every machine — proxies swing the arm/world model from the networked eye
 		// transform; firstPerson gates the viewmodel to the owning machine outside edit mode AND third person
 		// (there you see your own world-model gun on the arm, exactly what proxies see).
+		// The arm hangs off the CHEST, not the head. ShoulderOffset is eye-relative, so it would otherwise drop
+		// the full duck with the eye while the chest only follows DuckChestFollow of it — lifting the arm back by
+		// the difference keeps the gun planted on the shoulder it's supposed to be attached to. Exactly zero at
+		// DuckChestFollow = 1 (arm and chest drop together) and while standing. The viewmodel stays on the real
+		// eye, since in first person there's no body for it to disagree with.
+		// The arm needs no landing term — the eye already carries that — but it does take the launch trail, so the
+		// gun stays in the hand of a body the view has left behind rather than snapping up with the camera.
 		if ( _gun.IsValid() && _controller.IsValid() )
-			_gun.Place( eye, _controller.EyeAngles, !IsProxy && !EditMode && !GameSettings.HunterThirdPerson );
+		{
+			float armLift = (_controller.BodyHeight - _controller.DuckedHeight)
+				* _duckVisual * (1f - DuckChestFollow)
+				+ HeadOnlyDip;
+
+			_gun.Place( eye, visualAim, !IsProxy && !EditMode && !GameSettings.HunterThirdPerson, armLift );
+		}
 	}
 
 	// The eye everything visual hangs off this frame, computed LIVE — never read _controller.EyePosition for
@@ -450,17 +749,208 @@ public sealed class HunterController : Component
 	//
 	// Grounded step smoothing (same as the stock camera path): stepping up moves the body vertically in one
 	// tick, so glide the eye z toward it rather than snapping. Airborne follows raw so jumps/falls stay 1:1.
-	// Advances _eyez — call exactly once per frame (OnUpdate does), and use the returned eye everywhere.
+	// Advances _eyez and _standZ — call exactly once per frame (OnUpdate does), and use the results everywhere.
 	Vector3 SmoothedEyePosition()
 	{
+		// Height comes from the duck SPRING, not the instantaneous CurrentHeight, so crouching eases down and
+		// settles with a little overshoot instead of stepping. UpdateDuckSpring snaps it while airborne, which
+		// keeps the engine's mid-air duck exact — that one raises the root by the same delta to hold the head
+		// still, so a height that eased there instead would drift the view.
+		float height = _controller.BodyHeight
+			- (_controller.BodyHeight - _controller.DuckedHeight) * _duckSpring;
+
 		var eye = _controller.WorldPosition
-			+ Vector3.Up * (_controller.CurrentHeight - _controller.EyeDistanceFromTop);
+			+ Vector3.Up * (height - _controller.EyeDistanceFromTop);
 
 		if ( !_controller.IsAirborne && _eyez != 0f )
 			eye.z = _eyez.LerpTo( eye.z, Time.Delta * 50f );
 		_eyez = eye.z;
 
+		// The landing dip rides on top — the camera takes it just like it takes the duck, and so does everything
+		// else placed from the eye. The LAUNCH trail is not in here; the head and arm add that themselves, so the
+		// view stays snappy off the ground while the head visibly lags behind it. Added AFTER the step smoothing
+		// and deliberately NOT stored in _eyez: that field is the stair-glide state, and feeding a spring through
+		// it would both damp the impact and leave it filtering its own output.
+		eye.z += EyeDip;
+
+		// The same eye WITHOUT the duck — the height the visual pivot rides, so the body holds its standing
+		// height while the head dips (see PlaceVisualPivot). Smoothed identically so steps glide for it too.
+		// Tracked separately rather than added back as a correction: any mismatch between the two would show up
+		// as the body bobbing against the head, and a spring makes that far easier to get wrong than a lerp did.
+		float stand = _controller.WorldPosition.z
+			+ (_controller.BodyHeight - _controller.EyeDistanceFromTop);
+
+		if ( !_controller.IsAirborne && _standZ != 0f )
+			stand = _standZ.LerpTo( stand, Time.Delta * 50f );
+		_standZ = stand;
+
 		return eye;
+	}
+
+	// Advance the duck spring — ONE value, driving the camera/head drop, the torso squash and (by its absence)
+	// the pivot's standing height, so nothing can drift apart. A plain lerp reads mechanical: it decelerates into
+	// the target and stops dead. This is a damped harmonic spring, so crouching drops with weight and settles
+	// with a small overshoot, and standing up carries a little rebound past neutral — which the squash turns into
+	// a brief stretch, since a negative spring value inverts its flatten/spread terms.
+	//
+	// Semi-implicit Euler with a clamped timestep: stable at these rates even through a frame spike, and the
+	// value is clamped so a pathological stiffness can't fling the torso inside out. Snapped instantly while
+	// airborne, matching how the eye smoothing has always treated jumps — the engine's mid-air duck moves the
+	// root to compensate, and springing against that would fight it.
+	void UpdateDuckSpring()
+	{
+		if ( !_controller.IsValid() )
+			return;
+
+		bool ducking = _controller.IsDucking;
+		bool airborne = _controller.IsAirborne;
+		float target = ducking ? 1f : 0f;
+		float delta = _controller.BodyHeight - _controller.DuckedHeight;
+		float dt = MathF.Min( Time.Delta, 0.05f );
+
+		// Crouching MID-AIR is a different move: the engine raises the whole pawn by the duck delta at the same
+		// instant the height shrinks, so your head holds still and your feet tuck up (PlayerController.UpdateDucking).
+		// Catch that transition and bank the lift, so the pivot can cancel it and then ease it back in — that's
+		// what turns an instant teleport into a visible tuck. Un-ducking mid-air is refused by the engine, so
+		// there is no reverse case to handle.
+		if ( ducking && !_wasDucking && airborne )
+			_airLift = delta;
+		_wasDucking = ducking;
+
+		// Back on the ground the tuck no longer means anything — the body holds standing height and the chest
+		// drops with the head instead. Fade the banked lift rather than dropping it, so landing mid-tuck (or
+		// standing up straight after) transitions instead of popping.
+		if ( !airborne )
+			_airLift = _airLift.LerpTo( 0f, dt * MathF.Max( DuckSpringRate, 0.01f ) );
+
+		// The EYE's spring has to snap while airborne. The root has already jumped up by the full delta, so a
+		// height that eased down instead of matching it instantly would pop the camera up and glide it back.
+		if ( airborne )
+		{
+			_duckSpring = target;
+			_duckVelocity = 0f;
+		}
+		else
+		{
+			Spring( ref _duckSpring, ref _duckVelocity, target, dt );
+		}
+
+		// The VISUAL spring always runs, airborne included — it drives the torso squash, the chest drop and (via
+		// _airLift) the body's rise into the tuck. Grounded it integrates identically to the eye's spring, so the
+		// head and chest stay welded; only in the air do the two deliberately diverge.
+		Spring( ref _duckVisual, ref _duckVisualVelocity, target, dt );
+
+		void Spring( ref float value, ref float velocity, float to, float step )
+		{
+			float w = MathF.Max( DuckSpringRate, 0.01f );
+			velocity += (w * w * (to - value) - 2f * DuckSpringDamping * w * velocity) * step;
+			value = (value + velocity * step).Clamp( -0.5f, 1.5f );
+		}
+	}
+
+	// How much to pull the visual pivot back DOWN from where the pawn root now sits — the unspent part of the
+	// engine's mid-air lift. It starts at the full delta (cancelling the instant jump, so the body doesn't
+	// teleport) and reaches zero as the visual spring completes, letting the body rise into the tuck.
+	//
+	// Deliberately complementary to the chest's drop, which is the same delta times the same spring: as the pivot
+	// rises by the lift, the chest sinks within it by exactly as much, so the chest stays welded to the head
+	// through the whole tuck while the body visibly pulls up into it. Zero on the ground.
+	float AirTuckOffset => _airLift * (1f - _duckVisual);
+
+	// Where the CHEST sits relative to rest, kept as its two halves so the head can take a different share of
+	// each — launch and impact are different motions and want to be felt differently.
+	float ChestJumpOffset => _jumpLag * JumpChestFollow;
+	float ChestLandOffset => _landChestLag;
+	float ChestOffset => ChestJumpOffset + ChestLandOffset;
+
+	// What the EYE takes — and with it the camera, the shot origin, and everything else placed from the eye.
+	// LANDING ONLY, on purpose: an impact dip sells the weight, but dipping the view on the launch fights the
+	// leap and makes a jump feel sluggish rather than snappy, so the takeoff is deliberately kept off the camera.
+	//
+	// The BODY doesn't read this: the belly and chest take the jump through their own brush offsets, and pulling
+	// the pivot down as well would move them twice.
+	float EyeDip => ChestLandOffset * LandHeadFollow;
+
+	// What the head and the gun arm take ON TOP of the eye — the launch trail the camera sits out. Applied at
+	// their own placement sites, exactly the way the duck's arm lift already works, so the visuals can follow the
+	// chest through the whole arc while the view only answers the landing.
+	float HeadOnlyDip => ChestJumpOffset * JumpHeadFollow;
+
+	// Vertical follow-through: the body has weight, so it trails when you launch and compresses when you land,
+	// then springs back onto the pawn. Only the BODY — the head is written straight to the eye and the camera is
+	// the eye, so neither can ever wobble; a jump that bounced the view would be nauseating rather than juicy.
+	//
+	// Driven off IsAirborne transitions read locally, so it runs identically on every machine (proxies categorize
+	// ground too) without a byte of networking — the engine's OnJumped/OnLanded events are owner-only and would
+	// have left remote hunters stiff. Never gate this kind of transition on same-frame INTERPOLATED motion: on
+	// the frame the flag flips, the interpolated transform hasn't moved yet. PlayerController.Velocity is the
+	// tick-fresh body velocity, which is the whole point of reading it rather than differencing positions.
+	void UpdateJumpSpring()
+	{
+		if ( !_controller.IsValid() )
+			return;
+
+		bool airborne = _controller.IsAirborne;
+		float vz = _controller.Velocity.z;
+		float jumpSpeed = MathF.Max( _controller.JumpSpeed, 1f );
+		float w = MathF.Max( JumpSpringRate, 0.01f );
+
+		// Launch and landing ride SEPARATE springs, identical in stiffness and damping. Not for the physics — one
+		// spring would sum them fine — but so the chest can take a share of the launch while sitting the landing
+		// out completely. Once both impulses are in the same value there is no way to tell afterwards how much of
+		// it came from which, so the split has to happen here.
+		//
+		// An impulse of distance × w peaks at roughly `distance` world units, so the properties above read as the
+		// actual travel rather than as an opaque force.
+		if ( airborne && !_wasAirborne )
+		{
+			// Left the ground. Scaled by how hard we pushed off, so walking off a ledge doesn't kick at all.
+			_jumpLagVelocity -= JumpLagDistance * w * (MathF.Max( vz, 0f ) / jumpSpeed);
+			_fallSpeed = 0f;
+		}
+		else if ( !airborne && _wasAirborne )
+		{
+			// Landed. Uses the fastest descent we saw while falling, NOT the velocity now — the collision has
+			// already killed that by the frame we register as grounded, which would read every landing as soft.
+			float impact = MathF.Min( _fallSpeed / jumpSpeed, 2f );
+
+			// The DIP is a velocity kick: the body carries its momentum through the impact and swings past. Belly
+			// and chest get their own, so the gap between them is a tuned difference rather than a fixed ratio.
+			_landLagVelocity -= LandDipDistance * w * impact;
+			_landChestLagVelocity -= LandChestDipDistance * w * impact;
+
+			// The SQUASH is set directly instead, because an impact squash is hardest at the moment of contact
+			// and recovers from there — a velocity kick would ramp it in and peak it partway through the bounce,
+			// which is the opposite shape. Starting at the value also means it actually REACHES it: a kick only
+			// peaks at ~64% of nominal at this damping, so LandSquash was quietly worth two thirds of its number.
+			_landSquash = impact;
+			_landSquashVelocity = 0f;
+
+			_fallSpeed = 0f;
+		}
+
+		if ( airborne )
+			_fallSpeed = MathF.Max( _fallSpeed, MathF.Max( -vz, 0f ) );
+
+		_wasAirborne = airborne;
+
+		float dt = MathF.Min( Time.Delta, 0.05f );
+
+		// The two POSITION springs share the jump settings. The SQUASH gets its own, slower pair, because the
+		// two start differently and would otherwise read as different speeds at identical settings: a velocity
+		// kick has to travel out to its peak and back, so the dip's excursion takes time, while the squash starts
+		// AT its peak and only decays — at the dip's rate it vanishes almost as fast as it appears. Slower and
+		// looser here gives the clay some wobble on the way back instead of snapping flat.
+		Settle( ref _jumpLag, ref _jumpLagVelocity, w, JumpSpringDamping );
+		Settle( ref _landLag, ref _landLagVelocity, w, JumpSpringDamping );
+		Settle( ref _landChestLag, ref _landChestLagVelocity, w, JumpSpringDamping );
+		Settle( ref _landSquash, ref _landSquashVelocity, MathF.Max( LandSquashRate, 0.01f ), LandSquashDamping );
+
+		void Settle( ref float value, ref float velocity, float rate, float damping )
+		{
+			velocity += (rate * rate * (0f - value) - 2f * damping * rate * velocity) * dt;
+			value = (value + velocity * dt).Clamp( -64f, 64f );
+		}
 	}
 
 	// Advance the third-person alt-orbit gesture. Seeded from the live aim on the frame alt is grabbed, so
@@ -508,7 +998,8 @@ public sealed class HunterController : Component
 
 	// Position the shared scene camera — at the eye in first person, or on an over-the-shoulder boom behind
 	// it in third person (GameSettings.HunterThirdPerson). The rotation is the eye angles EITHER WAY: third
-	// person only moves the viewpoint, never the aim, so shots keep leaving from the eye along the crosshair.
+	// person only moves the viewpoint, never the aim, so shots keep leaving from the eye — converged onto the
+	// crosshair, which off the boom is no longer the eye forward (see ResolveAim).
 	// The boom pulls in when geometry blocks it (same trace as the orbit rig's boom) so it can't see through
 	// walls. Transform is written directly; FOV is declared through MainCamera (which owns the ease) and
 	// asserted every frame, so whatever the previous driver left targeted — the orbit rig runs at
@@ -519,6 +1010,14 @@ public sealed class HunterController : Component
 		var cam = Scene.Camera;
 		if ( !cam.IsValid() )
 			return;
+
+		// First person can opt out of the landing dip: the body animation still plays in full, the view just
+		// doesn't ride it. Third person always takes it — there you're watching the character land, and a view
+		// that ignored an impact it can plainly see would read as disconnected. Removed here rather than left out
+		// of the eye entirely, because the eye also places the head and the gun on EVERY machine, and a proxy's
+		// visuals must not depend on whichever camera mode the local player happens to be in.
+		if ( !GameSettings.HunterThirdPerson && !FirstPersonLandDip )
+			eye.z -= EyeDip;
 
 		// Boom orientation: the aim, unless an alt-orbit has swung the camera off it (third person only —
 		// _altOrbiting can't be true in first person). The camera ROTATION rides the same angles, so the
@@ -553,6 +1052,160 @@ public sealed class HunterController : Component
 		cam.WorldPosition = pos;
 		cam.WorldRotation = rot;
 		MainCamera.Fov = GameSettings.HunterFov;
+	}
+
+	// Deform the torso — the crouch squash and the jump/land stretch, both written into the same brushes.
+	//
+	// DUCK: the pivot deliberately holds the standing height while the head drops from the real ducked eye (see
+	// PlaceVisualPivot), which alone would leave the head sinking into a body still standing at full height — so
+	// the sculpture deforms instead: the chest rides down with the head and everything below it flattens and
+	// spreads to take up the difference.
+	//
+	// JUMP: the chest takes a small fraction of the follow-through and the belly takes all of it, so the two pull
+	// apart on launch and compress together on landing. Doing it per-brush rather than on the pivot is what makes
+	// it a stretch instead of the whole character sliding down rigidly.
+	//
+	// The brushes are mutated DIRECTLY and Rebuild() is deliberately never called — exactly how SdfShrinkSystem
+	// animates healing craters. The renderer notices through its brush hash and re-dispatches the field, while
+	// Committed stays silent, so nothing republishes over the network or rebuilds a collider. Every machine runs
+	// this from its own read of the synced IsDucking, so proxies squash in step without a byte being sent.
+	void UpdateBodyDeform()
+	{
+		if ( !_controller.IsValid() || !_bodySculpt.IsValid() )
+			return;
+
+		var brushes = _bodySculpt.Brushes;
+		if ( brushes is not { Count: > 0 } )
+			return;
+
+		// Authored brushes only, captured once. Carve craters (Damage) are skipped on purpose: they appear and
+		// heal away at runtime, and measuring a rest pose against a list whose size changes would let the squash
+		// compound on itself. A crater therefore stays put on the surface it was shot into while we deform —
+		// they're transient and shallow, so it reads fine.
+		_bodyRest ??= brushes.Where( b => !b.Damage )
+			.Select( b => (Brush: b, Pos: b.Position, Size: b.Size) )
+			.ToArray();
+
+		if ( _bodyRest.Length == 0 )
+			return;
+
+		// Driven by the shared VISUAL spring, so the torso deforms in exact lockstep with the chest rather than
+		// trailing it — and inherits its overshoot for free: past 1 the squash goes slightly deeper than the pose
+		// calls for, and the negative rebound on standing up inverts the terms into a brief stretch. This is the
+		// spring that keeps running in mid-air, so a jump-crouch squashes as it tucks.
+		float duck = _duckVisual;
+
+		// The jump/land follow-through, applied to the BRUSHES rather than the pivot (see UpdateJumpSpring for the
+		// springs), so the chest and the belly can take different amounts of it — the same split DuckChestFollow
+		// gives the crouch. The difference is the whole effect: the belly trails, the chest barely does, and the
+		// blend between them necks out so the body reads as STRETCHING off the launch and compressing into the
+		// landing. Moving the pivot instead just slid the character down as one rigid piece.
+		//
+		// The belly takes both impulses in full; the chest takes its own share of each, and by default none at
+		// all of the landing — so an impact squashes the belly up into a chest that stays put.
+		float lag = _jumpLag + _landLag;
+		float chestLag = ChestOffset;
+		float landAmount = _landSquash;
+
+		// Settled: nothing to do, but only after one final pass has written the authored values back EXACTLY. A
+		// spring never lands precisely on zero, and we must not leave the torso a hair squashed or a hair sunk.
+		// BOTH springs have to be idle — the duck can be at rest while a landing is still ringing out.
+		bool duckIdle = MathF.Abs( duck ) < 0.001f && MathF.Abs( _duckVisualVelocity ) < 0.001f;
+		bool lagIdle = MathF.Abs( _jumpLag ) < 0.01f && MathF.Abs( _jumpLagVelocity ) < 0.01f
+			&& MathF.Abs( _landLag ) < 0.01f && MathF.Abs( _landLagVelocity ) < 0.01f
+			&& MathF.Abs( _landChestLag ) < 0.01f && MathF.Abs( _landChestLagVelocity ) < 0.01f
+			&& MathF.Abs( _landSquash ) < 0.001f && MathF.Abs( _landSquashVelocity ) < 0.001f;
+
+		if ( duckIdle && lagIdle )
+		{
+			if ( !_deformApplied )
+				return;
+
+			duck = 0f;
+			lag = 0f;
+			chestLag = 0f;
+			landAmount = 0f;
+			_deformApplied = false;
+		}
+		else
+		{
+			_deformApplied = true;
+		}
+
+		// The chest is simply the highest authored brush; everything under it is torso to flatten.
+		int chest = 0;
+		for ( int i = 1; i < _bodyRest.Length; i++ )
+		{
+			if ( _bodyRest[i].Pos.z > _bodyRest[chest].Pos.z )
+				chest = i;
+		}
+
+		// Brush positions are sculpture-LOCAL, but the pivot only ever yaws, so local up is still world up and
+		// the drop needs no conversion. (It would if the body object were ever pitched or non-uniformly scaled.)
+		// The chest's drop. In the air this is what cancels the pivot's rise (AirTuckOffset is the same delta
+		// times the same spring, inverted), keeping the chest welded to the head while the body pulls up.
+		float drop = (_controller.BodyHeight - _controller.DuckedHeight) * DuckChestFollow * duck;
+		float flatten = MathF.Max( 1f - DuckSquash * duck, 0.05f );
+		float spread = MathF.Max( 1f + DuckBulge * duck, 0.05f );
+
+		// The landing's own squash, BELLY ONLY — the impact travels up through the soft part while the chest
+		// keeps its shape. Read straight off its own spring rather than derived from the dip, so LandSquash means
+		// exactly what it says at a full-jump landing and is independent of however the dip is tuned. The rebound
+		// carries it past zero, which inverts the terms into a brief stretch as the body recovers.
+		float landFlatten = MathF.Max( 1f - LandSquash * landAmount, 0.05f );
+		float landSpread = MathF.Max( 1f + LandBulge * landAmount, 0.05f );
+
+		for ( int i = 0; i < _bodyRest.Length; i++ )
+		{
+			var (brush, restPos, restSize) = _bodyRest[i];
+			if ( brush is null )
+				continue;
+
+			if ( i == chest )
+			{
+				// The chest rides down with the head on a duck, keeping its shape — it reads as the shoulders
+				// dropping rather than the chest itself deflating. On a jump it takes only its share of the
+				// follow-through, so it stays near the head while the belly falls away from it.
+				brush.Position = restPos + Vector3.Up * (chestLag - drop);
+				brush.Size = restSize;
+				continue;
+			}
+
+			// The belly takes the follow-through in full. The gap this opens against the chest is the stretch.
+			// Duck and landing squash compose multiplicatively, so crouching as you land compounds rather than
+			// one overwriting the other.
+			brush.Position = restPos + Vector3.Up * lag;
+			brush.Size = new Vector3(
+				restSize.x * spread * landSpread,
+				restSize.y * spread * landSpread,
+				restSize.z * flatten * landFlatten );
+		}
+	}
+
+	// The head's hit collider — PROXIES ONLY, and the reason for that is the jitter that took this whole hunt.
+	//
+	// SdfCollider builds a sibling ModelCollider (a trigger — it blocks nothing; the gun's rays reach it via
+	// HitTriggers) purely so bullets can hit a face. But a Collider binds to its nearest ancestor Rigidbody,
+	// which is the pawn root — so that mesh shape is a shape ON our physics body, and since the head is
+	// re-placed every frame we were moving a shape on a live, simulating body every frame while the movement
+	// controller's Reground/TryStep traced against it. The result was a pawn that jittered while moving, which
+	// is why deleting the head cured the BODY: it was never a rendering problem at all.
+	//
+	// We don't need it on our own pawn. Shots at this hunter are registered on the SHOOTER's machine against
+	// THEIR proxy copy of us (see the visualAim note in ComposePawn), our own shot trace ignores our own
+	// hierarchy, and so does the camera boom. Proxies keep it and are unaffected: a proxy's rigidbody doesn't
+	// simulate, it's driven straight from the networked transform, so shapes moving on it perturb nothing.
+	//
+	// Asserted live every frame on EVERY machine rather than once at start, for two reasons: ownership resolves
+	// after OnStart, and a spawn snapshot ships the owner's live component state — so a proxy can arrive with
+	// this already disabled and would otherwise stay unhittable. Guarded so it's a no-op once settled.
+	void UpdateHeadCollider()
+	{
+		if ( !_headCollider.IsValid() )
+			return;
+
+		if ( _headCollider.Enabled != IsProxy )
+			_headCollider.Enabled = IsProxy;
 	}
 
 	// First person: hide our OWN body so we don't see it but it still casts a shadow, while proxies (other
@@ -894,8 +1547,13 @@ public sealed class HunterController : Component
 		if ( !_controller.IsValid() )
 			return;
 
-		var aimRot = _controller.EyeAngles.ToRotation();
-		var dir = aimRot.Forward;
+		// Where the shot goes: this frame's resolved aim (_aimDir), which in third person is the converged
+		// crosshair ray, NOT the eye forward — the same direction the gun and head were just pointed at, so the
+		// pellet always leaves along the visible barrel. The scatter cone is rebuilt around it, keeping the eye's
+		// up so the disc sample stays upright (better conditioned than world up at steep pitch).
+		var eyeRot = _controller.EyeAngles.ToRotation();
+		var dir = _aimDir.LengthSquared > 0.5f ? _aimDir : eyeRot.Forward;
+		var aimRot = Rotation.LookAt( dir, eyeRot.Up );
 
 		_nextShot = ShootCooldown;
 
@@ -968,6 +1626,90 @@ public sealed class HunterController : Component
 		handle.AirAbsorption = false;
 		handle.OcclusionEnabled = false;
 		handle.ReverbEnabled = false;
+	}
+
+	// Resolve this frame's aim into its two forms: _aimDir, the EXACT direction a shot must travel to land under
+	// the crosshair, and _visualAimDir, the eased and near-faded direction the head and gun POINT along.
+	//
+	// The crosshair is dead screen centre, so the ray the player is aiming is the CAMERA's centre ray. In first
+	// person the camera sits exactly on the shot origin, so the eye forward already IS that ray — nothing to
+	// converge. In third person the camera is out on its boom (back along the aim, over the shoulder, risen), and
+	// its centre ray runs PARALLEL to the eye forward, displaced by the shoulder/rise. A shot along the eye
+	// forward therefore lands a fixed ~20 units to the side of the dot at EVERY range — which subtends a bigger
+	// and bigger on-screen error the closer the target is. So converge: trace the real crosshair ray from the
+	// camera to find the point being pointed at, and aim from the eye at that point.
+	//
+	// The two forms exist because convergence is most NEEDED and most UGLY at the same place — up close, where
+	// the swing angle is largest. Accuracy can't be traded away there (that's the whole bug), so the SHOT stays
+	// exactly converged at all ranges and only the VISUALS relax: they fade back toward parallel as the target
+	// gets near (ConvergeFade) and ease over time (AimEaseRate) so sweeping across a foreground object and the
+	// far wall glides instead of snapping. Past ConvergeFade the two are the same direction, at any range.
+	void ResolveAim( Vector3 eye )
+	{
+		var eyeRot = _controller.EyeAngles.ToRotation();
+		var cam = Scene.Camera;
+
+		// Gated so this stays safe wherever it's called from: HunterThirdPerson is a LOCAL setting, so a proxy
+		// pawn on a third-person player's machine must never converge on THAT player's camera — it would swing a
+		// remote hunter's head around with our own view.
+		if ( IsProxy || !GameSettings.HunterThirdPerson || !cam.IsValid() )
+		{
+			// Nothing to converge — and critically, nothing to EASE either. Zeroing the visual aim drops the
+			// head and gun back onto the raw live EyeAngles, exactly as they were before any of this existed;
+			// running them through EaseVisualAim here instead put a ~10/s lag on the first-person viewmodel
+			// (which then fed its own rotation spring on top) and made the gun feel like it was wading.
+			// Zero also re-seeds the ease, so the next third-person frame snaps rather than swinging in — right,
+			// since toggling the view teleports the camera anyway.
+			_aimDir = eyeRot.Forward;
+			_visualAimDir = Vector3.Zero;
+			return;
+		}
+
+		// Read AFTER DriveCamera, which OnUpdate runs immediately before this from the same eye — so it's exactly
+		// the pose the crosshair is about to be drawn over, boom pull-in included.
+		var camPos = cam.WorldPosition;
+		var camDir = cam.WorldRotation.Forward;
+
+		// Our own hierarchy ignored — in third person the pawn is directly in front of the lens and would
+		// otherwise swallow every crosshair ray. Other filters match TraceShot, so the crosshair converges on
+		// exactly the set of things a shot can hit.
+		var look = Scene.Trace
+			.Ray( camPos, camPos + camDir * Range )
+			.IgnoreGameObjectHierarchy( GameObject )
+			.HitTriggers()
+			.WithoutTags( "trigger", "water" )
+			.Run();
+
+		float dist = look.Hit ? look.Distance : Range;
+		var to = camPos + camDir * dist - eye;
+
+		// Degenerate: the crosshair landed on top of the muzzle (something pressed against the lens). There's no
+		// sane direction to converge on, so keep the eye ray rather than fire somewhere arbitrary.
+		_aimDir = to.Length < 1f ? eyeRot.Forward : to.Normal;
+
+		// Near fade: ramps 0 (target at the muzzle) → 1 (target at ConvergeFade and anything beyond it, with no
+		// upper limit). Smoothstepped, whose zero derivative at both ends is what keeps it from kinking as it
+		// arrives at full convergence.
+		float w = ConvergeFade <= 0f ? 1f : ( dist / ConvergeFade ).Clamp( 0f, 1f );
+		w = w * w * ( 3f - 2f * w );
+
+		_visualAimDir = EaseVisualAim( Vector3.Lerp( eyeRot.Forward, _aimDir, w ).Normal );
+	}
+
+	// Exponential ease of the visual aim toward its target — frame-rate independent, and the reason a crosshair
+	// jumping between a foreground prop and the far wall swings the gun smoothly instead of snapping. Unseeded
+	// (zero) snaps straight to the target, so spawning and leaving edit mode don't swing in from nowhere.
+	Vector3 EaseVisualAim( Vector3 target )
+	{
+		if ( _visualAimDir.LengthSquared < 0.5f || AimEaseRate <= 0f )
+			return target;
+
+		var eased = Vector3.Lerp( _visualAimDir, target,
+			1f - MathF.Exp( -AimEaseRate * MathF.Min( Time.Delta, 0.1f ) ) );
+
+		// Only ever near-antipodal directions can cancel here, which the eye-pitch clamp rules out — but a
+		// zero-length normal would blow up the placement, so fall back to the target.
+		return eased.LengthSquared < 0.0001f ? target : eased.Normal;
 	}
 
 	// Both gun rays HitTriggers(): hunter heads are TRIGGER colliders (SdfCollider.BuildAsTrigger — physically

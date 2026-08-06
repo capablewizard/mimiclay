@@ -10,7 +10,9 @@
       "PowerShell(dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\Editor\\\\mimiclay.editor.csproj\" -v q --nologo)",
       "PowerShell($f = \"D:\\\\SteamLibrary\\\\steamapps\\\\common\\\\sbox\\\\logs\\\\sbox-dev.log\"; \\(Get-Content $f | Select-Object -Last 25\\) | ForEach-Object { Write-Output $_ })",
       "PowerShell($f = \"D:\\\\SteamLibrary\\\\steamapps\\\\common\\\\sbox\\\\logs\\\\sbox.log\"; \\(Get-Content $f | Select-String -Pattern \"17:1[4-9]\" | Select-Object -Last 30\\) | ForEach-Object { $_.Line })",
-      "PowerShell(dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -v q 2>&1)"
+      "PowerShell(dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -v q 2>&1)",
+      "PowerShell($out = \"C:\\\\Users\\\\haydn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--SBox-Projects-mimiclay\\\\e7fc6d3f-60b6-4faa-8f73-95c22c34cede\\\\scratchpad\\\\build\\\\\"; dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -p:OutputPath=$out -p:DocumentationFile= --nologo -v m)",
+      "PowerShell($out = \"C:\\\\Users\\\\haydn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--SBox-Projects-mimiclay\\\\e7fc6d3f-60b6-4faa-8f73-95c22c34cede\\\\scratchpad\\\\build\\\\\"; dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -p:OutputPath=$out --nologo -v m)"
     ]
   }
 }

@@ -169,11 +169,12 @@ public sealed class HunterGun : Component
 	/// shot. Approximate peak angle; <see cref="MaxRotationLag"/> is the ceiling rapid fire stacks into.</summary>
 	[Property, Group( "Recoil" ), Range( 0f, 45f )] public float KickUp { get; set; } = 7f;
 
-	/// <summary>World-model recoil: units the gun jolts back through the hand per shot — what OTHER
-	/// players see (runs on every machine from the shot RPC). Instant hit, exponential recovery.</summary>
+	/// <summary>World-model recoil: units the HAND (gun and all) jolts back along the aim per shot — what
+	/// OTHER players see (runs on every machine from the shot RPC). Instant hit, exponential recovery.</summary>
 	[Property, Group( "Recoil" ), Range( 0f, 10f )] public float WorldKickBack { get; set; } = 3f;
 
-	/// <summary>World-model recoil: degrees the barrel flips up per shot.</summary>
+	/// <summary>World-model recoil: degrees the hand flips up per shot (pivoting at the wrist — the
+	/// <see cref="Hand"/> point — so the barrel sweeps up around the grip).</summary>
 	[Property, Group( "Recoil" ), Range( 0f, 30f )] public float WorldKickUp { get; set; } = 10f;
 
 	/// <summary>Recovery rate (per second) of the world-model kick — the jolt decays by ~63% every
@@ -250,6 +251,8 @@ public sealed class HunterGun : Component
 	Vector3 _angVel; // degrees/s, in the spring's local frame (pitch/yaw/roll)
 	bool _motionSeeded;
 	float _worldKick; // world-model recoil envelope, 1 at the shot → 0, decayed in Place
+	Vector3 _handRestPos; // the Hand's authored local pose, re-read while no kick is active (see Place)
+	Rotation _handRestRot = Rotation.Identity;
 
 	// The pristine prefab-scale brush list both models derive from, and the scale each model last applied
 	// (0 = never — the first Place() always applies). Deriving from the SOURCE every time (instead of scaling
@@ -310,8 +313,10 @@ public sealed class HunterGun : Component
 	/// <summary>Drive the arm and viewmodel off the given eye — called by <see cref="HunterController"/> every
 	/// frame on every machine, AFTER it has placed the camera, with the same smoothed eye.
 	/// <paramref name="firstPerson"/> is true only on the owning machine outside edit mode: the viewmodel shows
-	/// and the world model self-hides (shadows-only), mirroring the body treatment.</summary>
-	public void Place( Vector3 eye, Angles aim, bool firstPerson )
+	/// and the world model self-hides (shadows-only), mirroring the body treatment.
+	/// <paramref name="armLift"/> raises the ARM only (world up, world model), leaving the viewmodel on the eye:
+	/// crouching drops the eye further than the chest does, and the arm hangs off the chest, not the head.</summary>
+	public void Place( Vector3 eye, Angles aim, bool firstPerson, float armLift = 0f )
 	{
 		// Scale-on-change, so the properties are live while playing. The world model on every machine; the
 		// viewmodel only where it's shown (proxies never enable theirs — no point building it).
@@ -332,19 +337,35 @@ public sealed class HunterGun : Component
 		// the FULL aim. The hand — and the gun parented under it — arcs around this pivot like an arm would.
 		if ( Shoulder.IsValid() )
 		{
-			Shoulder.WorldPosition = eye + Rotation.FromYaw( aim.yaw ) * ShoulderOffset;
+			Shoulder.WorldPosition = eye + Vector3.Up * armLift + Rotation.FromYaw( aim.yaw ) * ShoulderOffset;
 			Shoulder.WorldRotation = aimRot;
 		}
 
+		// The recoil jolt moves the HAND, not the gun — the whole hand (and anything else attached to it)
+		// snaps back through the shoulder frame and flips up around the hand pivot, with the gun riding
+		// along rigid in the grip. Shoulder space has x forward, so −x drives the hand straight back along
+		// the aim. The hand's authored pose stays live-tweakable in the editor: while no kick is active the
+		// rest pose is re-read from the live transform every frame, so the writes are identity between shots
+		// and only the short recoil ride composes on top of a frozen rest.
+		_worldKick = _worldKick < 0.001f ? 0f : _worldKick * MathF.Exp( -WorldKickRecover * MathF.Min( Time.Delta, 0.1f ) );
+		if ( Hand.IsValid() )
+		{
+			if ( _worldKick <= 0f )
+			{
+				_handRestPos = Hand.LocalPosition;
+				_handRestRot = Hand.LocalRotation;
+			}
+
+			Hand.LocalPosition = _handRestPos + new Vector3( -WorldKickBack * _worldKick, 0f, 0f );
+			Hand.LocalRotation = new Angles( -WorldKickUp * _worldKick, 0f, 0f ).ToRotation() * _handRestRot;
+		}
+
 		// The world gun rides the Shoulder→Hand hierarchy; only its mount needs asserting (per frame so
-		// HandOffset / RotationOffset stay live-tweakable in the editor). The recoil jolt rides on top in
-		// HAND space (x forward, so −x drives the gun back through the grip; the pitch is composed BEFORE
-		// the mount rotation so it flips the barrel up around the hand, wherever the sculpt's axes point).
+		// HandOffset / RotationOffset stay live-tweakable in the editor).
 		if ( _world.IsValid() )
 		{
-			_worldKick = _worldKick < 0.001f ? 0f : _worldKick * MathF.Exp( -WorldKickRecover * MathF.Min( Time.Delta, 0.1f ) );
-			_world.LocalPosition = HandOffset + new Vector3( -WorldKickBack * _worldKick, 0f, 0f );
-			_world.LocalRotation = new Angles( -WorldKickUp * _worldKick, 0f, 0f ).ToRotation() * RotationOffset.ToRotation();
+			_world.LocalPosition = HandOffset;
+			_world.LocalRotation = RotationOffset.ToRotation();
 		}
 
 		if ( _worldSdf.IsValid() )
