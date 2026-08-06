@@ -605,6 +605,19 @@ public sealed class HunterController : Component
 	/// sounds' stride clock, so the body and the audio tick together. 2 = double-time, 0.5 = half.</summary>
 	[Property, Group( "Head Bob" ), Range( 0.25f, 3f )] public float HeadBobFrequency { get; set; } = 1f;
 
+	/// <summary>How far the hand swings FORWARD and BACK, relative to its sideways sway. 1 = as much fore-aft as
+	/// lateral, which traces a round arc; 0 = sway only. Real arm swing is mostly this axis, so it's the one to
+	/// lean on if the walk looks stiff — though the gun is held out in front, so a large value pumps it toward
+	/// and away from the camera more than an empty hand would.</summary>
+	[Property, Group( "Head Bob" ), Range( 0f, 2f )] public float HandBobForward { get; set; } = 0.6f;
+
+	/// <summary>How far the HAND's bob runs behind the head's, in footsteps. The head is the one kept locked to
+	/// the step clock — a head dipping is your weight arriving on a foot, so that's what has to land with the
+	/// step sound — and the hand drifts off it, the way arms swing in counterpoint to legs rather than in
+	/// lockstep. A real time shift, so the sway and the bounce both move together by the same amount. 0 = welded
+	/// to the head (which is the mechanical-looking one), 1 = a whole step behind, which is back in sync.</summary>
+	[Property, Group( "Head Bob" ), Range( 0f, 1f )] public float HandBobOffset { get; set; } = 0.25f;
+
 	// Walk bob. The ARM takes the full thing in aim space (y lateral, z vertical); the HEAD takes the vertical
 	// only. Same phase and blend, so they're one motion with the sway filtered out of the head. See UpdateHeadBob.
 	Vector3 _armBob;
@@ -948,11 +961,24 @@ public sealed class HunterController : Component
 		// The viewmodel's own 0.6 / 0.45 split, kept so the arm matches the gun in hand and the head's vertical
 		// is unchanged by having the sway filtered out of it.
 		float scale = HeadBobAmount * _bobBlend;
-		float lateral = MathF.Sin( _bobPhase ) * 0.6f;
-		float vertical = MathF.Sin( _bobPhase * 2f ) * 0.45f;
 
-		_armBob = new Vector3( 0f, lateral, vertical ) * scale;
-		_headBob = vertical * scale;
+		// The hand runs on the same clock, offset in TIME. The phase advances π per step, so adding
+		// HandBobOffset·π shifts the hand by that fraction of a footstep — and because the shift is applied to
+		// the phase itself, the sway and the bounce both move by the same amount of time even though they run at
+		// different rates. Offsetting the two components separately would have skewed the hand's own motion
+		// against itself instead of delaying it.
+		float handPhase = _bobPhase + HandBobOffset * MathF.PI;
+
+		// Fore-aft swing on COS while the sway runs on sin — a quarter cycle apart, so the hand traces a flat
+		// ellipse through the horizontal instead of shearing back and forth along one diagonal line. Both run at
+		// step rate (one full push-pull per pair of steps), which is the real gait: an arm goes forward with the
+		// opposite leg and back with its own, so the cycle is two footfalls, not one.
+		_armBob = new Vector3(
+			MathF.Cos( handPhase ) * 0.6f * HandBobForward,
+			MathF.Sin( handPhase ) * 0.6f,
+			MathF.Sin( handPhase * 2f ) * 0.45f ) * scale;
+
+		_headBob = MathF.Sin( _bobPhase * 2f ) * 0.45f * scale;
 	}
 
 	// Vertical follow-through: the body has weight, so it trails when you launch and compresses when you land,
@@ -1779,8 +1805,10 @@ public sealed class HunterController : Component
 			.WithoutTags( "trigger", "water" )
 			.Run();
 
-		float dist = look.Hit ? look.Distance : Range;
-		var to = camPos + camDir * dist - eye;
+		// Distance from the CAMERA — only ever used to find the point under the crosshair. Everything about how
+		// far away that point is, for fading purposes, has to be measured from the eye instead (see below).
+		float camDist = look.Hit ? look.Distance : Range;
+		var to = camPos + camDir * camDist - eye;
 
 		// Degenerate: the crosshair landed on top of the muzzle (something pressed against the lens). There's no
 		// sane direction to converge on, so keep the eye ray rather than fire somewhere arbitrary.
@@ -1789,7 +1817,16 @@ public sealed class HunterController : Component
 		// Near fade: ramps 0 (target at the muzzle) → 1 (target at ConvergeFade and anything beyond it, with no
 		// upper limit). Smoothstepped, whose zero derivative at both ends is what keeps it from kinking as it
 		// arrives at full convergence.
-		float w = ConvergeFade <= 0f ? 1f : ( dist / ConvergeFade ).Clamp( 0f, 1f );
+		//
+		// Measured from the EYE, not from the camera. In aim space the eye-to-target vector is
+		// (D, -shoulder, rise) where D is the eye's distance to the target and the lateral offset stays fixed at
+		// the shoulder width however close you get — so the swing is atan(shoulder / D), which is 45° at 20 units
+		// and runs to 90° as you close in. That angle is governed by D alone. Fading on the CAMERA's distance
+		// added the whole boom length to every reading (~100 units), so walking up to a wall reported ~105 and
+		// faded as though the target were mid-range, leaving a sizeable share of a near-90° swing applied — the
+		// pawn turning to face along its own shoulder as it approached anything.
+		float eyeDist = to.Length;
+		float w = ConvergeFade <= 0f ? 1f : ( eyeDist / ConvergeFade ).Clamp( 0f, 1f );
 		w = w * w * ( 3f - 2f * w );
 
 		_visualAimDir = EaseVisualAim( Vector3.Lerp( eyeRot.Forward, _aimDir, w ).Normal );

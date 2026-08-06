@@ -94,7 +94,10 @@ public class SdfBrush
 	/// point's <c>w</c>). ON = every control point keeps its own radius dot in the 3D view; OFF (the default) =
 	/// the radius dots hide and the HUD shows one Size slider that drives every point's radius together.
 	/// Toggling it off folds varied radii to their average (the slider has to show a single number).</summary>
-	[Property, Group( "Spline" )] public bool SplinePerPointRadius { get; set; }
+	/// <summary>VESTIGIAL: radii are always per-point now — every control point carries its own and is
+	/// resized by its 3D ring in the gizmo. The old uniform-Size slider and per-point toggle are gone from
+	/// the HUD; nothing reads this any more. Kept so scene/save data still deserializes.</summary>
+	[Property, Group( "Spline" ), Hide] public bool SplinePerPointRadius { get; set; }
 
 	/// <summary>Cap for the HUD's uniform spline Size slider (per-point radius dot drags stay unbounded).</summary>
 	public const float MaxSplineRadius = 32f;

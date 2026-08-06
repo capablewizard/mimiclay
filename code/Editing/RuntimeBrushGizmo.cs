@@ -149,7 +149,7 @@ public sealed class RuntimeBrushGizmo
 		{
 			foreach ( var pt in pts )
 				h = HashCode.Combine( h, pt );
-			h = HashCode.Combine( h, b.Curvature, b.SplineClosed, b.SplinePerPointRadius ); // per-point mode shows/hides the radius dots
+			h = HashCode.Combine( h, b.Curvature, b.SplineClosed );
 		}
 		return HashCode.Combine( h, _hover, _active, _style.VisualHash(), (int)(_masterAlpha * 100) );
 	}
@@ -333,8 +333,9 @@ public sealed class RuntimeBrushGizmo
 			{
 				var c = tx.PointToWorld( new Vector3( pts[i].x, pts[i].y, pts[i].z ) );
 				Hover( $"ptMove{i}", RayPointDist( _ray, c, out float dm ), dm, W( c, _style.SplinePointRadius * gs ) + GrabPad( c ) );
-				if ( brush.SplinePerPointRadius ) // radius circles only in per-point mode (else the HUD Size slider drives all)
-					HoverRing( $"ptRad{i}", c, (_camPos - c).Normal, pts[i].w, default, false );
+				// Every point carries its own radius — the 3D ring is the ONLY size control now (the HUD's
+				// uniform Size slider + per-point toggle are gone).
+				HoverRing( $"ptRad{i}", c, (_camPos - c).Normal, pts[i].w, default, false );
 			}
 		}
 
@@ -410,8 +411,7 @@ public sealed class RuntimeBrushGizmo
 			for ( int i = 0; i < pts.Count; i++ )
 			{
 				changed |= SplinePointMove( tx, brush, i, gs, n );
-				if ( brush.SplinePerPointRadius )
-					changed |= SplinePointRadius( tx, brush, i, gs, n );
+				changed |= SplinePointRadius( tx, brush, i, gs, n );
 			}
 
 			// Close-loop and per-point-radius are HUD chips now (next to the sliders), not 3D handles.

@@ -123,18 +123,141 @@ public sealed class BrushStampTool
 	/// the sculpture origin, so 0,0,0 — the symmetry planes — is always on-grid.</summary>
 	public float GridStep { get; set; } = 8f;
 
+	// ── Spline chain placement ───────────────────────────────────────────────────────────────────────
+	// A spline isn't one stamp, it's a CHAIN: each click drops a control point (a sphere at the cursor,
+	// sized by the RMB scale scrub) and the ghost previews the tube through the points placed so far plus
+	// the one under the cursor. A right-click TAP or Enter finishes it — that's the frame the brush is
+	// really committed. Steering the cursor near the first point snaps to it and closes the loop.
+
+	readonly List<Vector4> _chain = new(); // control points committed so far (sculpture-local xyz + radius w)
+	bool _chainLoop;                       // the preview point is snapped onto point 0 → finishing closes the ring
+	float _rmbTravel;                      // mouse travel while RMB held — separates a "tap" (finish) from a scale drag
+	bool _rmbWas;
+
+	/// <summary>True while a spline chain is being placed (the ghost is a partial curve, not a stamp).</summary>
+	public bool IsChaining => Shape == SdfShape.Spline && _stamp is not null;
+
+	/// <summary>Control points placed so far in the current chain (0 when not chaining).</summary>
+	public int ChainCount => _chain.Count;
+
+	/// <summary>True while the cursor is snapped onto the chain's first point — finishing here closes the loop.</summary>
+	public bool ChainWillLoop => _chainLoop;
+
+	Vector3 _chainPreview; // where the chain's live point sits (== point 0 while loop-snapped)
+
+	/// <summary>The ghost's sculpture-local position for camera/cursor purposes: a spline lives in its
+	/// points, so use the live point under the cursor rather than the (unused) brush Position.</summary>
+	public Vector3 StampLocalPos =>
+		_stamp is null ? Vector3.Zero
+		: _stamp.Shape == SdfShape.Spline ? _chainPreview
+		: _stamp.Position;
+
+	// How close (as a multiple of the first point's radius) the cursor must come to point 0 to snap + loop.
+	const float LoopSnapScale = 1.1f;
+
+	// Rebuild the ghost's point list = committed chain + the live preview point at `pos`, snapping onto the
+	// first point (and arming the loop) when the cursor comes close enough. Returns true if anything moved.
+	bool UpdateChainGhost( Vector3 pos )
+	{
+		float radius = Math.Clamp( _stamp.Size.x, 1f, SdfBrush.MaxSplineRadius );
+
+		// Loop snap: needs 3+ committed points to be a ring at all.
+		_chainLoop = false;
+		if ( _chain.Count >= 3 )
+		{
+			var first = new Vector3( _chain[0].x, _chain[0].y, _chain[0].z );
+			if ( (pos - first).Length <= MathF.Max( 4f, _chain[0].w * LoopSnapScale ) )
+			{
+				pos = first;
+				radius = _chain[0].w;
+				_chainLoop = true;
+			}
+		}
+
+		var pts = _stamp.Points ??= new List<Vector4>();
+		var preview = new Vector4( pos.x, pos.y, pos.z, radius );
+		_chainPreview = pos;
+
+		// Snapped onto point 0: show the ring CLOSED and drop the preview entirely — appending it would
+		// duplicate point 0 and leave a zero-length span in the loop.
+		int want = _chainLoop ? _chain.Count : _chain.Count + 1;
+		bool same = pts.Count == want && _stamp.SplineClosed == _chainLoop
+			&& (_chainLoop || pts[^1] == preview);
+		if ( same )
+			return false;
+
+		pts.Clear();
+		pts.AddRange( _chain );
+		if ( !_chainLoop )
+			pts.Add( preview );
+		_stamp.SplineClosed = _chainLoop;
+		return true;
+	}
+
+	// A click during a chain: drop the preview point into the chain. Landing on the loop snap finishes the
+	// spline instead (the ring is closed by definition).
+	bool AddChainPoint()
+	{
+		if ( _stamp?.Points is not { Count: > 0 } pts )
+			return false;
+
+		if ( _chainLoop )
+			return true; // closing click — the caller finishes; the ring is already the full chain
+
+		_chain.Add( pts[^1] );
+		return false;
+	}
+
+	// Finish the chain: a spline needs 2+ points, so a shorter chain is abandoned (the ghost is stripped by
+	// the caller). Returns true when a real spline was committed.
+	bool FinishChain()
+	{
+		if ( _stamp is null )
+			return false;
+
+		var pts = _stamp.Points;
+		if ( _chain.Count < 2 || pts is null )
+			return false;
+
+		// Drop the trailing preview point (it's not a placed point) unless we're closing the ring, where it
+		// coincides with point 0 and is redundant either way.
+		pts.Clear();
+		pts.AddRange( _chain );
+		_stamp.SplineClosed = _chainLoop && _chain.Count >= 3;
+		_stamp.SplinePerPointRadius = true; // vestigial flag — radii are always per-point now (see SdfBrush)
+
+		LastCommitted = _stamp;
+		_template = _stamp.Copy();
+		_stamp = null;
+		_holding = false;
+		_chain.Clear();
+		_chainLoop = false;
+		return true;
+	}
+
 	/// <summary>Set the active stamp shape. A live ghost is remoulded in place (shape + that shape's spawn
 	/// size/rotation, keeping material/blend), so the toolbar feels instant.</summary>
 	public void SetShape( SdfShape shape )
 	{
+		bool wasSpline = Shape == SdfShape.Spline;
 		Shape = shape;
+
+		// Switching away from (or re-picking) a spline abandons any half-placed chain.
+		if ( wasSpline || shape == SdfShape.Spline )
+		{
+			_chain.Clear();
+			_chainLoop = false;
+		}
+
 		if ( _stamp is null )
 			return;
 
 		_stamp.Shape = shape;
 		_stamp.Size = SpawnSize( shape );
 		_stamp.Rotation = SdfSculpture.SpawnRotation( shape );
-		_stamp.Points = null; // stamping never carries spline points (splines aren't stampable)
+		_stamp.SplineClosed = false;
+		// A spline ghost carries its live points (chain + preview, rebuilt each frame); anything else has none.
+		_stamp.Points = shape == SdfShape.Spline ? new List<Vector4>() : null;
 	}
 
 	/// <summary>Strip the pending ghost from the target's brush list (tool switch / session exit). Returns
@@ -149,6 +272,8 @@ public sealed class BrushStampTool
 		_warpPending = null;
 		_camLockBroken = false;
 		_camLockPx = null;
+		_chain.Clear();   // a half-placed spline chain dies with the ghost
+		_chainLoop = false;
 		return b is not null && target.IsValid() && (target.Brushes?.Remove( b ) ?? false);
 	}
 
@@ -207,6 +332,20 @@ public sealed class BrushStampTool
 		// itself is the commit), so the end signal is ignored.
 		changed |= BrushScrub.Update( _stamp, tx, cam, interactive, out _ );
 
+		// The scale scrub drives Size, but a spline's thickness lives in its point radii — mirror it onto
+		// the preview point live, so the sphere under the cursor visibly resizes as you drag.
+		if ( Shape == SdfShape.Spline && BrushScrub.Active == ScrubKind.Scale
+			&& _stamp.Points is { Count: > 0 } livePts )
+		{
+			float r = Math.Clamp( _stamp.Size.x, 1f, SdfBrush.MaxSplineRadius );
+			var lp = livePts[^1];
+			if ( MathF.Abs( lp.w - r ) > 0.0001f )
+			{
+				livePts[^1] = new Vector4( lp.x, lp.y, lp.z, r );
+				changed = true;
+			}
+		}
+
 		if ( camMoved || BrushScrub.Active != ScrubKind.None )
 		{
 			if ( BrushScrub.Active != ScrubKind.None || AltNav.Dragging )
@@ -242,7 +381,7 @@ public sealed class BrushStampTool
 					_resyncCursor = true;
 					_resyncArmed = false;
 
-					var world = tx.PointToWorld( _stamp.Position );
+					var world = tx.PointToWorld( StampLocalPos );
 					if ( Vector3.Dot( world - cam.WorldPosition, cam.WorldRotation.Forward ) > 0f )
 					{
 						// Mirror the engine setter's floor+clamp so the break check sees the same pixel.
@@ -272,18 +411,62 @@ public sealed class BrushStampTool
 
 			if ( _holding && !Input.Down( "Attack1" ) )
 			{
-				Commit();
-				committed = true;
+				_holding = false;
+				if ( Shape == SdfShape.Spline )
+				{
+					// Chain click: drop a control point — or finish, if it landed on the loop snap.
+					if ( AddChainPoint() )
+						committed = FinishChain();
+					changed = true;
+				}
+				else
+				{
+					Commit();
+					committed = true;
+				}
+			}
+
+			// Spline chains finish on a right-click TAP or Enter. A tap is separated from the RMB scale
+			// scrub by accumulated travel — hold and drag to size the point, click and release to finish.
+			if ( Shape == SdfShape.Spline && !committed )
+			{
+				bool rmb = Input.Down( "Attack2" );
+				if ( rmb && !_rmbWas )
+					_rmbTravel = 0f;
+				else if ( rmb )
+					_rmbTravel += Mouse.Delta.Length;
+
+				bool rmbTap = !rmb && _rmbWas && _rmbTravel < 6f;
+				_rmbWas = rmb;
+
+				// An unknown key name resolves to BUTTON_CODE_INVALID (false), never throws — so asking for
+				// both spellings is safe.
+				bool enterTap = Sandbox.UI.InputFocus.Current is null
+					&& (Input.Keyboard.Pressed( "enter" ) || Input.Keyboard.Pressed( "return" ));
+
+				if ( rmbTap || enterTap )
+				{
+					committed = FinishChain();
+					changed = true;
+					// Too short to be a curve — the caller's cancel path strips the abandoned ghost.
+					if ( !committed )
+						Abandon = true;
+				}
 			}
 		}
 		else
 		{
 			// The gesture drifted into UI/alt-nav — drop it without stamping.
 			_holding = false;
+			_rmbWas = false;
 		}
 
 		return changed;
 	}
+
+	/// <summary>Set when a spline chain was finished with too few points to be a curve — the session strips
+	/// the ghost and drops back to gizmo mode instead of committing anything. Cleared by the reader.</summary>
+	public bool Abandon { get; set; }
 
 	/// <summary>The brush the most recent commit produced — the session selects it for place-then-tweak.</summary>
 	public SdfBrush LastCommitted { get; private set; }
@@ -334,14 +517,14 @@ public sealed class BrushStampTool
 			if ( _resyncArmed )
 			{
 				_resyncArmed = false;
-				var world = tx.PointToWorld( _stamp.Position );
+				var world = tx.PointToWorld( StampLocalPos );
 				if ( Vector3.Dot( world - cam.WorldPosition, cam.WorldRotation.Forward ) > 0f )
 				{
 					var px = cam.PointToScreenPixels( world );
 					Mouse.Position = px;
 					_warpPending = px; // verify the write actually landed before steering resumes
 					_warpFrames = 0;
-					_anchor = _stamp.Position; // re-anchor on the applied (possibly snapped) position
+					_anchor = StampLocalPos; // re-anchor on the applied (possibly snapped) position
 				}
 				return false; // steer once the warp is confirmed
 			}
@@ -386,6 +569,11 @@ public sealed class BrushStampTool
 				MathF.Round( pos.y / GridStep ) * GridStep,
 				MathF.Round( pos.z / GridStep ) * GridStep );
 
+		// A spline lives in its points, not its transform: steer the PREVIEW point (the sphere under the
+		// cursor) and leave Position alone.
+		if ( _stamp.Shape == SdfShape.Spline )
+			return UpdateChainGhost( pos );
+
 		var old = _stamp.Position;
 		_stamp.Position = pos;
 		_stamp.SnapToMirrorPlanes(); // mirrored ghost entering the deadzone magnetizes to the plane
@@ -408,7 +596,8 @@ public sealed class BrushStampTool
 			b.Rotation = SdfSculpture.SpawnRotation( Shape );
 		}
 		b.Operation = Operation;
-		b.Points = null;
+		b.SplineClosed = false;
+		b.Points = Shape == SdfShape.Spline ? new List<Vector4>() : null;
 		b.Damage = false;
 		return b;
 	}
@@ -546,8 +735,8 @@ public static class BrushScrub
 				return true;
 
 			case ScrubKind.Round:
-				// The second slider: rounding for the solids, curvature for a spline (its stack swaps the
-				// Round slider for Curve).
+				// The second slider: rounding for the solids, curvature/smoothness for a spline — a curve
+				// has no roundness, so smoothness takes that slot in BOTH modes.
 				if ( b.Shape == SdfShape.Spline )
 					b.Curvature = Math.Clamp( b.Curvature + delta.x * CurvePerPx, 0f, 1f );
 				else
@@ -583,6 +772,12 @@ public static class BrushScrub
 
 					case SdfShape.Spline:
 					{
+						// Smoothness lives on the Round slot for splines; the wildcard is the uniform tube
+						// size — which only exists in gizmo mode (while PLACING, each point is sized as you
+						// drop it, so a uniform slider would fight that).
+						if ( SculptEditSession.Current?.Tool == SculptTool.Sculpt )
+							return false;
+
 						if ( b.Points is not { Count: > 0 } pts )
 							return false;
 						float r = Math.Clamp( pts[0].w + delta.x * SplineSizePerPx, 1f, SdfBrush.MaxSplineRadius );

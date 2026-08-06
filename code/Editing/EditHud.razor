@@ -30,7 +30,21 @@
 		@* Hotkey hint strip, bottom-centre — contextual: the stamp scheme while placing, the selection
 		   scheme while editing. The S/D labels live-update with the active shape. *@
 		<div class="hint-strip">
-			@if ( Session.Tool == SculptTool.Sculpt )
+			@if ( Session.Tool == SculptTool.Sculpt && Session.ActiveShape == SdfShape.Spline )
+			{
+				@* Chain placement has its own verbs: click points along the curve, right-click/Enter ends it. *@
+				<div class="hint"><span class="key">LMB</span><span>@(Session.ChainWillLoop ? "close loop" : "add point")</span></div>
+				<div class="hint"><span class="key">RMB / Enter</span><span>finish</span></div>
+				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
+				<div class="hint"><span class="key">RMB drag</span><span>point size</span></div>
+				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
+				<div class="hint"><span class="key">A</span><span>add / carve</span></div>
+				<div class="hint"><span class="key">S</span><span>blend</span></div>
+				<div class="hint"><span class="key">D</span><span>smooth</span></div>
+				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
+				<div class="hint"><span class="key">Esc</span><span>cancel</span></div>
+			}
+			else if ( Session.Tool == SculptTool.Sculpt )
 			{
 				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : "stamp")</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
@@ -44,7 +58,7 @@
 				{
 					<div class="hint"><span class="key">F</span><span>@wc</span></div>
 				}
-				<div class="hint"><span class="key">1-6</span><span>shape</span></div>
+				<div class="hint"><span class="key">1-7</span><span>shape</span></div>
 				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
 				<div class="hint"><span class="key">Esc</span><span>cancel</span></div>
 			}
@@ -64,7 +78,7 @@
 					{
 						<div class="hint"><span class="key">F</span><span>@wc</span></div>
 					}
-					<div class="hint"><span class="key">1-6</span><span>shape</span></div>
+					<div class="hint"><span class="key">1-7</span><span>shape</span></div>
 				}
 				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
 				<div class="hint"><span class="key">Q</span><span>done</span></div>
@@ -230,8 +244,6 @@
 			var xsVal = fb?.CrossSection ?? SdfCrossSection.Triangle;
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
-			var splinePerPoint = fb?.SplinePerPointRadius ?? false;
-			var splineSizeVal = fb?.Points is { Count: > 0 } sp ? sp[0].w : 10f; // uniform mode keeps all radii equal — point 0 IS the value
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
 			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				@* Add/Carve toggle for the active brush (ghost or selection) — same flip Space does. *@
@@ -244,23 +256,24 @@
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
 				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
 				   cone) add Slice as a third slider. *@
-				@if ( isSpline )
+				@if ( isSpline && Session.Tool == SculptTool.Sculpt )
 				{
-					@* Curve slider with the Loop chip riding beside it (close the ring; needs 3+ points). *@
+					@* While PLACING: just smoothness. Each point's size is set as you place it (RMB drag),
+					   and the loop closes itself by snapping to the first point — so the uniform Size
+					   slider and the Loop chip would both fight the flow. *@
+					<ClaySlider Label="Smooth" Value=@curveVal Min=@(0f) Max=@(1f)
+						OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
+				}
+				else if ( isSpline )
+				{
+					@* Curve slider with the Loop chip riding beside it (close the ring; needs 3+ points).
+					   No Size slider / per-point toggle: every point carries its own radius (set as it was
+					   placed) and is resized by its 3D radius ring, so a uniform slider would flatten them. *@
 					<div class="slider-row">
 						<ClaySlider Label="Curve" Value=@curveVal Min=@(0f) Max=@(1f)
 							OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
 						<div class="chip mini @(fb?.SplineClosed == true ? "on" : "") @(canLoop ? "" : "disabled")" @onclick=@(() => ToggleSplineClosed())>
 							<div class="icon">loop</div>
-						</div>
-					</div>
-					@* Uniform size: one slider drives every control point's radius. The icon chip beside it
-					   toggles per-point mode (3D radius circles), which greys the slider out while it's on. *@
-					<div class="slider-row">
-						<ClaySlider Disabled=@splinePerPoint Label="Size" Value=@splineSizeVal Min=@(1f) Max=@SdfBrush.MaxSplineRadius
-							OnInput=@((float v) => SetSplineSize( v )) OnCommit=@CommitEdit />
-						<div class="chip mini @(splinePerPoint ? "on" : "")" @onclick=@(() => ToggleSplinePerPoint())>
-							<div class="icon">linear_scale</div>
 						</div>
 					</div>
 				}
@@ -374,20 +387,9 @@
 	// sliders / symmetry pre-style the next stamp). Identical to SelectedBrush when the edit tool is up.
 	SdfBrush Brush => Session?.ActiveBrush;
 
-	// The shape row's shapes. Spline is excluded entirely for now (not stampable, not convertible — its
-	// bespoke authoring flow gets designed later; unreachable is accepted).
-	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes
-	{
-		get
-		{
-			foreach ( var e in AddShapes )
-			{
-				if ( e.Shape == SdfShape.Spline )
-					continue;
-				yield return e;
-			}
-		}
-	}
+	// The shape row's shapes — all of them; a spline is placed as a CHAIN of points rather than one stamp,
+	// but it's picked from the same row.
+	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes => AddShapes;
 
 	// Shape-row click — shape is a brush PROPERTY, so the verb depends on the current subject:
 	// stamp held → re-mould the ghost; brush selected → convert it in place; nothing → pick up a new stamp.
@@ -402,7 +404,9 @@
 			return;
 		}
 
-		if ( Session.SelectedBrush is not null )
+		// A spline can't be converted to or from (its geometry is control points, not a transform), so its
+		// tile always means "place a new one" — everything else converts the selection in place.
+		if ( Session.SelectedBrush is { } sel && shape != SdfShape.Spline && sel.Shape != SdfShape.Spline )
 		{
 			Session.ConvertSelectedShape( shape );
 			return;
@@ -425,13 +429,16 @@
 			Session.ToggleOperation( Session.Selected );
 	}
 
-	// Hint-strip labels for the shape-dependent scrubs: S = the second slider, D = the wildcard third.
-	string SecondSliderName => Brush?.Shape == SdfShape.Spline ? "curve" : "round";
+	// Hint-strip labels for the shape-dependent scrubs: D = the second slider, F = the wildcard third.
+	// A spline being PLACED has neither a Round nor a Size slot — just smoothness on the wildcard.
+	bool PlacingSpline => Session?.Tool == SculptTool.Sculpt && Brush?.Shape == SdfShape.Spline;
+
+	string SecondSliderName => Brush?.Shape == SdfShape.Spline ? (PlacingSpline ? "smooth" : "curve") : "round";
 	string WildcardName => Brush?.Shape switch
 	{
 		SdfShape.Sphere or SdfShape.Cone => "slice",
 		SdfShape.Extruded => "profile",
-		SdfShape.Spline => "size",
+		SdfShape.Spline => PlacingSpline ? null : "size", // placing: each point is sized as it's dropped
 		_ => null,
 	};
 
@@ -831,47 +838,12 @@
 		Session?.PreviewChanged();
 	}
 
-	// Uniform spline size: the one slider drives every control point's radius together (per-point mode
-	// swaps this slider for the 3D radius dots).
-	void SetSplineSize( float v )
-	{
-		var pts = Brush?.Points;
-		if ( pts is not { Count: > 0 } )
-			return;
-		float r = Math.Clamp( v, 1f, SdfBrush.MaxSplineRadius );
-		for ( int i = 0; i < pts.Count; i++ )
-			pts[i] = new Vector4( pts[i].x, pts[i].y, pts[i].z, r );
-		Session?.PreviewChanged();
-	}
-
 	// Close/open the spline ring (the old gizmo gap-midpoint handle, now a chip). Needs 3+ points to be a ring.
 	void ToggleSplineClosed()
 	{
 		if ( Brush is null || Brush.Points is not { Count: >= 3 } )
 			return;
 		Brush.SplineClosed = !Brush.SplineClosed;
-		Session?.NotifyChanged();
-	}
-
-	// Swap between per-point radius dots and the uniform Size slider. Going TO uniform folds varied radii to
-	// their average — the slider has to show (and honestly control) a single number. Going to per-point keeps
-	// the current radii as-is, so the dots pick up exactly where the slider left them.
-	void ToggleSplinePerPoint()
-	{
-		var b = Brush;
-		if ( b?.Points is not { Count: > 0 } pts )
-			return;
-
-		b.SplinePerPointRadius = !b.SplinePerPointRadius;
-		if ( !b.SplinePerPointRadius )
-		{
-			float avg = 0f;
-			foreach ( var pt in pts )
-				avg += pt.w;
-			avg = Math.Clamp( avg / pts.Count, 1f, SdfBrush.MaxSplineRadius );
-			for ( int i = 0; i < pts.Count; i++ )
-				pts[i] = new Vector4( pts[i].x, pts[i].y, pts[i].z, avg );
-		}
 		Session?.NotifyChanged();
 	}
 
@@ -1237,6 +1209,7 @@
 		hc.Add( (int)(s?.Tool ?? SculptTool.Gizmo) );          // tool toggle highlight + add-mode layout swap
 		hc.Add( (int)(s?.ActiveShape ?? SdfShape.Sphere) );   // active stamp-shape tile highlight
 		hc.Add( (int)(s?.StampOperation ?? SdfOperation.Add) ); // Add/Carve chip highlight + LMB hint label
+		hc.Add( s?.ChainWillLoop ?? false );                   // spline LMB hint flips to "close loop"
 		hc.Add( s?.StampBrush is not null );                  // ghost row skip + panel visibility
 		hc.Add( s?.IsScrubbing ?? false );                    // scrub dot + capture
 		// Hash the FRESHLY COMPUTED dock positions, not the stored fields — the stored ones only change
@@ -1286,7 +1259,6 @@
 		hc.Add( b?.Slice ?? 0f );      // drives the slice slider's fill (sphere/cone)
 		hc.Add( b?.Curvature ?? 0f );  // drives the spline curvature slider's fill
 		hc.Add( b?.SplineClosed ?? false );         // highlights the Loop chip
-		hc.Add( b?.SplinePerPointRadius ?? false ); // highlights the Per Point chip + swaps slider/dots
 		hc.Add( b?.Points is { Count: > 0 } bp ? bp[0].w : 0f ); // drives the uniform Size slider's fill
 		hc.Add( b?.Points?.Count ?? 0 );            // enables/disables the Loop chip (3+ points)
 		hc.Add( (int)(b?.Shape ?? SdfShape.Sphere) ); // show/hide the curvature slider (spline only)

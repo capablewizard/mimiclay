@@ -152,13 +152,22 @@ public sealed class SculptEditSession : Component
 		if ( b is null || cam is null || !Target.IsValid() )
 			return false;
 
-		var world = Target.WorldTransform.PointToWorld( b.Position );
+		// A spline's shape lives in its points, so use the one under the cursor, not the brush transform.
+		var local = b.Shape == SdfShape.Spline && b.Points is { Count: > 0 } pts
+			? new Vector3( pts[^1].x, pts[^1].y, pts[^1].z )
+			: b.Position;
+
+		var world = Target.WorldTransform.PointToWorld( local );
 		if ( Vector3.Dot( world - cam.WorldPosition, cam.WorldRotation.Forward ) <= 0f )
 			return false;
 
 		px = cam.PointToScreenPixels( world );
 		return true;
 	}
+
+	/// <summary>True while the cursor is snapped onto a spline chain's first point — the next click closes
+	/// the loop and finishes the curve (drives the HUD's LMB hint).</summary>
+	public bool ChainWillLoop => IsEditing && Tool == SculptTool.Sculpt && _stampTool.ChainWillLoop;
 
 	/// <summary>The stamp tool's Add/Carve toggle state (the HUD chips bind to this).</summary>
 	public SdfOperation StampOperation => _stampTool.Operation;
@@ -810,12 +819,14 @@ public sealed class SculptEditSession : Component
 		}
 		_opKeyWas = opKey;
 
+		// Number keys follow the shape row left-to-right, so the tile order IS the hotkey order.
 		if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
 		if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
 		if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
 		if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
 		if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
-		if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Text );
+		if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
+		if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
 		if ( Input.Pressed( "Drop" ) ) RemoveLast();
 
 		if ( brushes is not { Count: > 0 } )
@@ -1123,6 +1134,14 @@ public sealed class SculptEditSession : Component
 		else
 		{
 			_stampWire.Hide();
+		}
+
+		// A spline chain finished with too few points to be a curve — strip the ghost, no commit.
+		if ( _stampTool.Abandon )
+		{
+			_stampTool.Abandon = false;
+			SetTool( SculptTool.Gizmo );
+			return;
 		}
 
 		if ( committed )

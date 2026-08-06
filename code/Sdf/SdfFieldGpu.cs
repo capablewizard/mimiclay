@@ -428,6 +428,14 @@ public static class SdfBrushPacker
 			if ( !b.Enabled )
 				continue;
 
+			// A spline with NO control points has nothing to evaluate — and the shaders' spline loop runs
+			// zero iterations, leaving an uninitialised distance that reads as "surface everywhere" (one
+			// frame of garbage field). Skip it entirely: an empty spline contributes nothing, which is what
+			// the CPU path already does. The stamp tool's spline ghost is born empty for a frame or two
+			// before its first point is steered into place.
+			if ( b.Shape == SdfShape.Spline && (b.Points?.Count ?? 0) == 0 )
+				continue;
+
 			var pos = tx.PointToWorld( b.Position );
 			var rot = tx.Rotation * b.Rotation;
 			int o = written * texelsPerBrush * 4;
