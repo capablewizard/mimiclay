@@ -309,7 +309,16 @@ public sealed class HunterController : Component
 
 		// The head's bullet-hit collider, gated to proxies every frame — see UpdateHeadCollider for why ours has
 		// to be off. Resolved from the face's object (Eyes and Face are the same GameObject).
-		_headCollider = Face.IsValid() ? Face.GameObject.Components.Get<SdfCollider>() : null;
+		//
+		// includeDisabled MATTERS. Components.Get<T>() skips disabled components by default, and this one very
+		// often ARRIVES disabled: the owner turns its own off, and a spawn snapshot ships the owner's live
+		// component state (see [[snapshot-carries-live-state]]). Looking it up enabled-only returned null on
+		// every proxy built from such a snapshot, so UpdateHeadCollider early-returned forever and that player
+		// could never be shot in the head. It hit the HOST hardest — their pawn is alive longest, so it's always
+		// in the disabled state by the time a late joiner receives it.
+		_headCollider = Face.IsValid()
+			? Face.GameObject.Components.Get<SdfCollider>( includeDisabled: true )
+			: null;
 
 		// The torso sculpture the duck squashes — see UpdateBodyDeform. Resolved after EnsureVisualPivot so
 		// _bodyObject is populated.
