@@ -5,8 +5,14 @@ namespace Mimiclay;
 
 /// <summary>
 /// Builds a CHEAP collision <see cref="Model"/> from a brush list — convex shapes only, because the disguise
-/// rides a DYNAMIC <see cref="Rigidbody"/> and concave mesh collision is static/keyframed-only. Two paths per
-/// additive brush (subtractive brushes are never solid themselves):
+/// rides a DYNAMIC <see cref="Rigidbody"/> and concave mesh collision is static/keyframed-only.
+///
+/// Detail brushes are gated out first: an additive brush under <see cref="MinBrushExtent"/> on EVERY axis of
+/// its local bounding box (an eye, a button, a stud) gets no collider at all — it can only add shapes for the
+/// body to snag on. All three axes must be small, so a thin plate stays solid. If EVERYTHING is that small the
+/// gate turns off wholesale, or a marble-sized prop would have no collider and fall through the world.
+///
+/// Then two paths per surviving additive brush (subtractive brushes are never solid themselves):
 ///
 ///  • Untouched by subtracts → one convex shape per primitive: a sphere (round), swept spheres (spline) or a
 ///    small convex hull (box/cylinder/cone/prism/ellipsoid), mirror-symmetry copies included.
@@ -45,6 +51,11 @@ public static class SdfCollisionBuilder
 	                                       // sphere trades its exact primitive for voxels
 	const int SplineSphereCells = 5;       // per-axis grid for ONE voxelised swept sphere (cell = 2r/5)
 
+	// Detail gate (see EffectiveMinExtent): an additive brush whose local bounding box is under this on EVERY
+	// axis is decoration — an eye, a button, a stud — and contributes no collider. All three axes must be
+	// small, so a thin plate (100×100×2) is still a surface you can stand on and stays solid.
+	const float MinBrushExtent = 10f;
+
 	/// <summary>One mirror copy that <see cref="Build"/> swapped to carved voxel boxes, recorded so
 	/// <see cref="ComputeFootPoints"/> can place ground probes on the ACTUAL emitted collider instead of the
 	/// smooth carved field it approximates — the two disagree by up to a voxel (the occupancy biases), which
@@ -80,12 +91,15 @@ public static class SdfCollisionBuilder
 		var sweep = new List<Vector4>( 64 ); // reused swept-sphere buffer (spline brushes)
 		var carvers = new List<SdfBrush>( 4 );                      // subtracts that can hollow the current brush
 		var carverBounds = new List<(Vector3 lo, Vector3 hi)>( 4 ); // their sculpture-space AABBs (all copies)
+		float minExtent = EffectiveMinExtent( brushes );
 
 		for ( int bi = 0; bi < brushes.Count; bi++ )
 		{
 			var b = brushes[bi];
 			if ( !b.Enabled || b.Operation != SdfOperation.Add )
 				continue; // hidden or subtractive — contributes no solid volume
+			if ( TooSmall( b, minExtent, pts, sweep ) )
+				continue; // decoration — no shape, and ComputeFootPoints skips it identically
 
 			// Subtracts that can hollow THIS brush — only ones AFTER it in the list (see the class summary for
 			// the ordering rule), pre-filtered by AABB overlap. Text is exempt: glyph strokes are thinner than
@@ -629,6 +643,65 @@ public static class SdfCollisionBuilder
 		return true;
 	}
 
+	// The detail gate's threshold for THIS brush list — MinBrushExtent normally, or 0 (gate off) when every
+	// additive brush is under it. Without that fallback a genuinely tiny prop (a marble, a die, a single sculpt
+	// dot) would build no collider at all and fall through the world. Both Build and ComputeFootPoints call
+	// this and get the same answer, so the probes can never be placed on a brush the collider discarded.
+	static float EffectiveMinExtent( List<SdfBrush> brushes )
+	{
+		var pts = new List<Vector3>( 32 );
+		var sweep = new List<Vector4>( 64 );
+
+		foreach ( var b in brushes )
+		{
+			if ( !b.Enabled || b.Operation != SdfOperation.Add )
+				continue;
+			if ( !TooSmall( b, MinBrushExtent, pts, sweep ) )
+				return MinBrushExtent; // something substantial survives — safe to drop the details
+		}
+
+		return 0f; // it's ALL detail: the whole shape is the prop, collide with every bit of it
+	}
+
+	// Is this additive brush pure decoration — under minExtent on all three axes of its LOCAL bounding box?
+	// Local, not sculpture-space: a rotated 8³ cube is still an 8³ cube. Splines are measured over their swept
+	// spheres (Position/Size mean nothing there), so a long thin tube — a handle, an antenna — stays solid
+	// while a stray squiggle doesn't.
+	static bool TooSmall( SdfBrush b, float minExtent, List<Vector3> pts, List<Vector4> sweep )
+	{
+		if ( minExtent <= 0f )
+			return false;
+
+		Vector3 lo = new( float.MaxValue ), hi = new( float.MinValue );
+		if ( b.Shape == SdfShape.Spline )
+		{
+			b.BuildSplineSweep( sweep, SplineSweepSpacing );
+			if ( sweep.Count == 0 )
+				return true;
+			foreach ( var pt in sweep )
+			{
+				var c = new Vector3( pt.x, pt.y, pt.z );
+				var r = new Vector3( MathF.Max( pt.w, 0.5f ) );
+				lo = Vector3.Min( lo, c - r );
+				hi = Vector3.Max( hi, c + r );
+			}
+		}
+		else
+		{
+			LocalPoints( b, pts );
+			if ( pts.Count < 4 )
+				return true; // degenerate — Build would emit nothing for it anyway
+			foreach ( var lp in pts )
+			{
+				lo = Vector3.Min( lo, lp );
+				hi = Vector3.Max( hi, lp );
+			}
+		}
+
+		var span = hi - lo;
+		return span.x < minExtent && span.y < minExtent && span.z < minExtent;
+	}
+
 	static bool IsUniform( Vector3 s )
 	{
 		float m = MathF.Max( s.x, MathF.Max( s.y, s.z ) );
@@ -781,6 +854,7 @@ public static class SdfCollisionBuilder
 		var copyRects = new List<(Vector2 lo, Vector2 hi)>( 4 );    // their sculpture-space XY footprints
 		var cornerProbes = new List<Vector3>( 32 );                 // voxel-box contact corners, gathered per brush
 		Span<Vector3> centres = stackalloc Vector3[8];
+		float minExtent = EffectiveMinExtent( brushes ); // the SAME gate Build applied — see EffectiveMinExtent
 
 		int start = 0; // dedup only within the current brush (overlapping brushes may legitimately both probe)
 		void Add( Vector3 p )
@@ -799,6 +873,8 @@ public static class SdfCollisionBuilder
 			var b = brushes[bi];
 			if ( !b.Enabled || b.Operation != SdfOperation.Add )
 				continue;
+			if ( TooSmall( b, minExtent, tmp, sweep ) )
+				continue; // Build emitted no collider here — probing it would hover the body on nothing
 
 			BrushVertices( b, verts, tmp, sweep, centres );
 			if ( verts.Count == 0 )

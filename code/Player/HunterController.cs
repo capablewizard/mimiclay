@@ -994,79 +994,31 @@ public sealed class HunterController : Component
 	// then springs back onto the pawn. Only the BODY — the head is written straight to the eye and the camera is
 	// the eye, so neither can ever wobble; a jump that bounced the view would be nauseating rather than juicy.
 	//
-	// Driven off IsAirborne transitions read locally, so it runs identically on every machine (proxies categorize
-	// ground too) without a byte of networking — the engine's OnJumped/OnLanded events are owner-only and would
-	// have left remote hunters stiff. Never gate this kind of transition on same-frame INTERPOLATED motion: on
-	// the frame the flag flips, the interpolated transform hasn't moved yet. PlayerController.Velocity is the
-	// tick-fresh body velocity, which is the whole point of reading it rather than differencing positions.
+	// The EVENTS are detected owner-side and broadcast; only the springs run everywhere. A proxy's physics is a
+	// reconstruction, not a simulation: its rigidbody doesn't simulate, so Body.Velocity is a synthesized chase
+	// value from _body.Move() following the interpolated network transform, and its ground state is re-traced
+	// against a lagged position. Detecting locally therefore gave every remote player a different jump — a short
+	// hop's airborne window can be smoothed away entirely (no animation at all), and when it did register, the
+	// velocity at that instant bore no relation to the real launch or impact speed.
+	//
+	// The duck gets away with local computation because IsDucking is [Sync]ed STATE and the spring converges onto
+	// it. Launch and landing are one-shot IMPULSES, so a missed or mis-scaled one is permanent for that event —
+	// which is exactly what "inconsistent on remote clients" looked like. Same shape as BroadcastShotEffects:
+	// the owner measures from its own real physics, everyone plays the identical animation.
+	//
+	// Never gate this kind of transition on same-frame INTERPOLATED motion: on the frame the flag flips, the
+	// interpolated transform hasn't moved yet. PlayerController.Velocity is the tick-fresh body velocity, which
+	// is the whole point of reading it rather than differencing positions.
 	void UpdateJumpSpring()
 	{
 		if ( !_controller.IsValid() )
 			return;
 
-		bool airborne = _controller.IsAirborne;
-		float vz = _controller.Velocity.z;
-		float jumpSpeed = MathF.Max( _controller.JumpSpeed, 1f );
-		float w = MathF.Max( JumpSpringRate, 0.01f );
-
-		// Launch and landing ride SEPARATE springs, identical in stiffness and damping. Not for the physics — one
-		// spring would sum them fine — but so the chest can take a share of the launch while sitting the landing
-		// out completely. Once both impulses are in the same value there is no way to tell afterwards how much of
-		// it came from which, so the split has to happen here.
-		//
-		// An impulse of distance × w peaks at roughly `distance` world units, so the properties above read as the
-		// actual travel rather than as an opaque force.
-		if ( airborne && !_wasAirborne )
-		{
-			// Left the ground. Scaled by how hard we pushed off, so walking off a ledge doesn't kick at all.
-			_jumpLagVelocity -= JumpLagDistance * w * (MathF.Max( vz, 0f ) / jumpSpeed);
-			_fallSpeed = 0f;
-		}
-		else if ( !airborne && _wasAirborne )
-		{
-			// Landed. Uses the fastest descent we saw while falling, NOT the velocity now — the collision has
-			// already killed that by the frame we register as grounded, which would read every landing as soft.
-			float impact = MathF.Min( _fallSpeed / jumpSpeed, 2f );
-
-			// The CHEST alone gets scaled back by how CROUCHED we are. It's the one part the duck has already
-			// driven down — by DuckChestFollow of the full duck delta — so a landing dip stacks on top of that and
-			// puts it through the floor. A body folded that far down has genuinely spent its compression travel.
-			// Nothing else wants this: the belly rides the pivot at standing height whatever the crouch is doing,
-			// and the head has the whole eye height of clearance under it, so both dip at full strength crouched
-			// or not. (Scaling everything by the crouch was the first cut, and it silently killed the head dip on
-			// any landing you were holding crouch through.)
-			float crouch = _duckVisual.Clamp( 0f, 1f );
-			float chestImpact = impact * (1f - crouch);
-
-			// The head keeps its dip when crouched, but eased off — a folded body has taken some of the impact
-			// already, so a view answering it as hard as a standing landing reads as too much. See
-			// LandCrouchHeadAmount; at 1 this is a no-op and crouched landings hit the view exactly as standing
-			// ones do.
-			float headImpact = impact * MathX.Lerp( 1f, LandCrouchHeadAmount, crouch );
-
-			// The DIP is a velocity kick: the body carries its momentum through the impact and swings past. Belly,
-			// chest and head each get their OWN distance — no part is a share of another, so any one of them can be
-			// zeroed without disturbing the rest.
-			_landLagVelocity -= LandDipDistance * w * impact;
-			_landChestLagVelocity -= LandChestDipDistance * w * chestImpact;
-			_landHeadDipVelocity -= LandHeadDipDistance * w * headImpact;
-
-			// The SQUASH is set directly instead, because an impact squash is hardest at the moment of contact
-			// and recovers from there — a velocity kick would ramp it in and peak it partway through the bounce,
-			// which is the opposite shape. Starting at the value also means it actually REACHES it: a kick only
-			// peaks at ~64% of nominal at this damping, so LandSquash was quietly worth two thirds of its number.
-			_landSquash = impact;
-			_landSquashVelocity = 0f;
-
-			_fallSpeed = 0f;
-		}
-
-		if ( airborne )
-			_fallSpeed = MathF.Max( _fallSpeed, MathF.Max( -vz, 0f ) );
-
-		_wasAirborne = airborne;
+		if ( !IsProxy )
+			DetectJumpEvents();
 
 		float dt = MathF.Min( Time.Delta, 0.05f );
+		float w = MathF.Max( JumpSpringRate, 0.01f );
 
 		// The two POSITION springs share the jump settings. The SQUASH gets its own, slower pair, because the
 		// two start differently and would otherwise read as different speeds at identical settings: a velocity
@@ -1084,6 +1036,79 @@ public sealed class HunterController : Component
 			velocity += (rate * rate * (0f - value) - 2f * damping * rate * velocity) * dt;
 			value = (value + velocity * dt).Clamp( -64f, 64f );
 		}
+	}
+
+	// Owner-side only: watch the ground transitions on real physics and publish the STRENGTH of each event, so
+	// every machine drives the same animation from the same number instead of each guessing from its own
+	// reconstruction of our movement. Both strengths are normalised against JumpSpeed, so they're just "how hard,
+	// relative to a full jump" — nothing about our tuning has to match across machines for them to agree.
+	void DetectJumpEvents()
+	{
+		bool airborne = _controller.IsAirborne;
+		float vz = _controller.Velocity.z;
+		float jumpSpeed = MathF.Max( _controller.JumpSpeed, 1f );
+
+		if ( airborne && !_wasAirborne )
+		{
+			// Left the ground. Scaled by how hard we pushed off, so walking off a ledge doesn't kick at all.
+			BroadcastLaunch( MathF.Max( vz, 0f ) / jumpSpeed );
+			_fallSpeed = 0f;
+		}
+		else if ( !airborne && _wasAirborne )
+		{
+			// Landed. Uses the fastest descent we saw while falling, NOT the velocity now — the collision has
+			// already killed that by the frame we register as grounded, which would read every landing as soft.
+			BroadcastLand( MathF.Min( _fallSpeed / jumpSpeed, 2f ) );
+			_fallSpeed = 0f;
+		}
+
+		if ( airborne )
+			_fallSpeed = MathF.Max( _fallSpeed, MathF.Max( -vz, 0f ) );
+
+		_wasAirborne = airborne;
+	}
+
+	// Launch. An impulse of distance × rate peaks at roughly `distance` world units, so the properties read as
+	// actual travel rather than as an opaque force.
+	[Rpc.Broadcast]
+	void BroadcastLaunch( float launch )
+	{
+		_jumpLagVelocity -= JumpLagDistance * MathF.Max( JumpSpringRate, 0.01f ) * launch;
+	}
+
+	// Impact. The crouch scaling is applied per-machine rather than baked into the broadcast: IsDucking is synced,
+	// so every machine's duck spring already agrees, and keeping it local means the payload stays a plain "how
+	// hard did they hit" that can't go stale in flight.
+	[Rpc.Broadcast]
+	void BroadcastLand( float impact )
+	{
+		float w = MathF.Max( JumpSpringRate, 0.01f );
+
+		// The CHEST alone gets scaled back by how CROUCHED we are. It's the one part the duck has already driven
+		// down — by DuckChestFollow of the full duck delta — so a landing dip stacks on top of that and puts it
+		// through the floor. A body folded that far down has genuinely spent its compression travel. Nothing else
+		// wants this: the belly rides the pivot at standing height whatever the crouch is doing, and the head has
+		// the whole eye height of clearance under it. (Scaling everything by the crouch was the first cut, and it
+		// silently killed the head dip on any landing you were holding crouch through.)
+		float crouch = _duckVisual.Clamp( 0f, 1f );
+
+		// The head keeps its dip when crouched, but eased off — a folded body has taken some of the impact
+		// already, so a view answering it as hard as a standing landing reads as too much.
+		float headImpact = impact * MathX.Lerp( 1f, LandCrouchHeadAmount, crouch );
+
+		// The DIP is a velocity kick: the body carries its momentum through the impact and swings past. Belly,
+		// chest and head each get their OWN distance — no part is a share of another, so any one of them can be
+		// zeroed without disturbing the rest.
+		_landLagVelocity -= LandDipDistance * w * impact;
+		_landChestLagVelocity -= LandChestDipDistance * w * impact * (1f - crouch);
+		_landHeadDipVelocity -= LandHeadDipDistance * w * headImpact;
+
+		// The SQUASH is set directly instead, because an impact squash is hardest at the moment of contact and
+		// recovers from there — a velocity kick would ramp it in and peak it partway through the bounce, which is
+		// the opposite shape. Starting at the value also means it actually REACHES it: a kick only peaks at ~64%
+		// of nominal at this damping, so LandSquash was quietly worth two thirds of its number.
+		_landSquash = impact;
+		_landSquashVelocity = 0f;
 	}
 
 	// Advance the third-person alt-orbit gesture. Seeded from the live aim on the frame alt is grabbed, so
