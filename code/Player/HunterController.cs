@@ -657,6 +657,15 @@ public sealed class HunterController : Component
 	/// <summary>How much of the duck's eye drop the chest follows down. 1 = exactly as far as the head.</summary>
 	[Property, Group( "Ducking" ), Range( 0f, 1f )] public float DuckChestFollow { get; set; } = 1f;
 
+	/// <summary>The body's AUTHORED brush pose, captured on the owner's first frame and serialized so it rides
+	/// into spawn snapshots. Not for hand-editing — it exists so a client joining mid-animation can tell the
+	/// difference between the shape the body is meant to be and the squashed one it happened to arrive in. See
+	/// <see cref="UpdateBodyDeform"/>.</summary>
+	[Property, Hide] public List<Vector3> BodyRestPositions { get; set; }
+
+	/// <inheritdoc cref="BodyRestPositions"/>
+	[Property, Hide] public List<Vector3> BodyRestSizes { get; set; }
+
 	// The torso sculpture we deform when ducking, plus its authored brush poses — see UpdateBodyDeform.
 	SdfSculpture _bodySculpt;
 	(SdfBrush Brush, Vector3 Pos, Vector3 Size)[] _bodyRest;
@@ -1253,9 +1262,37 @@ public sealed class HunterController : Component
 		// heal away at runtime, and measuring a rest pose against a list whose size changes would let the squash
 		// compound on itself. A crater therefore stays put on the surface it was shot into while we deform —
 		// they're transient and shallow, so it reads fine.
-		_bodyRest ??= brushes.Where( b => !b.Damage )
-			.Select( b => (Brush: b, Pos: b.Position, Size: b.Size) )
-			.ToArray();
+		//
+		// The rest pose is SERIALIZED (BodyRestPositions/Sizes), and that is not optional. This animation works by
+		// mutating the brushes in place, and a spawn snapshot ships the owner's LIVE component state — brushes
+		// included. A client joining while the host was mid-landing therefore received an already-squashed
+		// sculpture, captured THAT as its rest pose, and left that player permanently folded into the floor.
+		// Carrying the authored pose in the snapshot alongside the deformed brushes gives the proxy the one thing
+		// it can't otherwise recover, and it restores itself on its first pass. Same principle as HunterGun's
+		// pristine _source list: never let a deformed value become the baseline you deform from.
+		if ( _bodyRest is null )
+		{
+			var authored = brushes.Where( b => !b.Damage ).ToArray();
+
+			bool saved = BodyRestPositions is not null && BodyRestPositions.Count == authored.Length
+				&& BodyRestSizes is not null && BodyRestSizes.Count == authored.Length;
+
+			if ( !saved )
+			{
+				// First run on the owning machine, before anything has had a chance to deform: these ARE the
+				// authored values. (Springs start at zero and this runs on the pawn's first frame.)
+				BodyRestPositions = authored.Select( b => b.Position ).ToList();
+				BodyRestSizes = authored.Select( b => b.Size ).ToList();
+			}
+
+			_bodyRest = new (SdfBrush, Vector3, Vector3)[authored.Length];
+			for ( int i = 0; i < authored.Length; i++ )
+				_bodyRest[i] = (authored[i], BodyRestPositions[i], BodyRestSizes[i]);
+
+			// Force one restoring write even though the springs are idle, so a proxy that arrived deformed snaps
+			// back to the authored pose instead of sitting in it until the next jump.
+			_deformApplied = true;
+		}
 
 		if ( _bodyRest.Length == 0 )
 			return;
