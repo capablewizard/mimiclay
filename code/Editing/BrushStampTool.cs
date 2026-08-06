@@ -86,7 +86,12 @@ public sealed class BrushStampTool
 	/// <summary>The per-notch scroll depth step for a brush — a fraction of its largest dimension,
 	/// clamped. Shared by the ghost's placement and gizmo mode's push/pull on the selection.</summary>
 	public float DepthStepFor( SdfBrush b ) =>
-		Math.Clamp( MathF.Max( b.Size.x, MathF.Max( b.Size.y, b.Size.z ) ) * DepthStepFrac, DepthStepMin, DepthStepMax );
+		DepthStepFor( MathF.Max( b.Size.x, MathF.Max( b.Size.y, b.Size.z ) ) );
+
+	/// <summary>As <see cref="DepthStepFor(SdfBrush)"/>, from a raw size reference — a spline has no
+	/// meaningful Size, so its callers pass the fattest control-point radius instead.</summary>
+	public float DepthStepFor( float sizeRef ) =>
+		Math.Clamp( sizeRef * DepthStepFrac, DepthStepMin, DepthStepMax );
 
 	/// <summary>Ceiling on the scroll-acceleration multiplier (a fast spin ramps toward this).</summary>
 	public float DepthAccelMax { get; set; } = 8f;
@@ -110,13 +115,17 @@ public sealed class BrushStampTool
 	/// <summary>The accelerated, camera-distance-scaled depth step — call once per frame that actually
 	/// consumed a wheel event, passing the camera→brush distance. Shared state, so ghost placement and
 	/// gizmo push/pull behave identically: zoomed in = fine, zoomed out = coarse, spinning = faster.</summary>
-	public float AcceleratedDepthStepFor( SdfBrush b, float camDist )
+	public float AcceleratedDepthStepFor( SdfBrush b, float camDist ) =>
+		AcceleratedDepthStep( MathF.Max( b.Size.x, MathF.Max( b.Size.y, b.Size.z ) ), camDist );
+
+	/// <summary>As above, from a raw size reference (a spline passes its fattest point radius).</summary>
+	public float AcceleratedDepthStep( float sizeRef, float camDist )
 	{
 		_accel = _sinceWheel < AccelWindow ? MathF.Min( DepthAccelMax, _accel * AccelGrowth ) : 1f;
 		_sinceWheel = 0f;
 
 		float distScale = Math.Clamp( camDist / MathF.Max( 1f, DepthDistanceRef ), DepthDistanceScaleMin, DepthDistanceScaleMax );
-		return DepthStepFor( b ) * _accel * distScale;
+		return DepthStepFor( sizeRef ) * _accel * distScale;
 	}
 
 	/// <summary>Grid cell size for shift-snapped placement (sculpture-local units). The grid is centred on
@@ -131,8 +140,7 @@ public sealed class BrushStampTool
 
 	readonly List<Vector4> _chain = new(); // control points committed so far (sculpture-local xyz + radius w)
 	bool _chainLoop;                       // the preview point is snapped onto point 0 → finishing closes the ring
-	float _rmbTravel;                      // mouse travel while RMB held — separates a "tap" (finish) from a scale drag
-	bool _rmbWas;
+	bool _enterWas;                        // manual edge detect for the Enter finish key
 
 	/// <summary>True while a spline chain is being placed (the ghost is a partial curve, not a stamp).</summary>
 	public bool IsChaining => Shape == SdfShape.Spline && _stamp is not null;
@@ -447,31 +455,27 @@ public sealed class BrushStampTool
 				}
 			}
 
-			// Spline chains finish on a right-click TAP or Enter. A tap is separated from the RMB scale
-			// scrub by accumulated travel — hold and drag to size the point, click and release to finish.
-			if ( Shape == SdfShape.Spline && !committed )
+			// A right-click TAP (as opposed to an RMB scale DRAG — see BrushScrub.ScaleTapped) steps back
+			// out of placing: it finishes a spline chain, or drops the pending stamp and returns to gizmo
+			// mode. Enter finishes a chain too — manual edge detection on Down, since Keyboard.Pressed
+			// doesn't fire reliably here (an unknown key name resolves to invalid/false, never throws).
+			bool enter = Sandbox.UI.InputFocus.Current is null
+				&& (Input.Keyboard.Down( "enter" ) || Input.Keyboard.Down( "return" ));
+			bool enterTap = enter && !_enterWas;
+			_enterWas = enter;
+
+			if ( !committed && (BrushScrub.ScaleTapped || enterTap) )
 			{
-				bool rmb = Input.Down( "Attack2" );
-				if ( rmb && !_rmbWas )
-					_rmbTravel = 0f;
-				else if ( rmb )
-					_rmbTravel += Mouse.Delta.Length;
-
-				bool rmbTap = !rmb && _rmbWas && _rmbTravel < 6f;
-				_rmbWas = rmb;
-
-				// An unknown key name resolves to BUTTON_CODE_INVALID (false), never throws — so asking for
-				// both spellings is safe.
-				bool enterTap = Sandbox.UI.InputFocus.Current is null
-					&& (Input.Keyboard.Pressed( "enter" ) || Input.Keyboard.Pressed( "return" ));
-
-				if ( rmbTap || enterTap )
+				if ( Shape == SdfShape.Spline )
 				{
 					committed = FinishChain();
 					changed = true;
-					// Too short to be a curve — the caller's cancel path strips the abandoned ghost.
 					if ( !committed )
-						Abandon = true;
+						Abandon = true; // too short to be a curve — the caller strips the ghost
+				}
+				else if ( BrushScrub.ScaleTapped )
+				{
+					Abandon = true; // plain right-click = done placing
 				}
 			}
 		}
@@ -479,7 +483,6 @@ public sealed class BrushStampTool
 		{
 			// The gesture drifted into UI/alt-nav — drop it without stamping.
 			_holding = false;
-			_rmbWas = false;
 		}
 
 		return changed;
@@ -628,6 +631,16 @@ public sealed class BrushStampTool
 		b.SplineClosed = false;
 		b.Points = Shape == SdfShape.Spline ? new List<Vector4>() : null;
 		b.Damage = false;
+
+		// Wear the current material — whatever the user last picked, on any brush (see LastMaterial). The
+		// template usually already matches; this covers colouring an EXISTING shape and then adding one.
+		if ( SculptEditSession.LastMaterial is { } mat )
+		{
+			b.Color = mat.Color;
+			b.Metallic = mat.Metallic;
+			b.Roughness = mat.Roughness;
+		}
+
 		return b;
 	}
 
@@ -669,6 +682,14 @@ public static class BrushScrub
 	/// mouse is captured.</summary>
 	public static Vector2 Anchor { get; private set; }
 
+	/// <summary>True on the frame a SCALE scrub ended without the mouse really moving — a right-click TAP
+	/// rather than a drag. Both tools use it as the "step back" gesture: leave sculpt mode / finish a
+	/// spline chain / deselect. Living here keeps one definition of tap-vs-drag for the shared button.</summary>
+	public static bool ScaleTapped { get; private set; }
+
+	static float _travel; // mouse movement accumulated during the running scrub
+	const float TapTravelPx = 6f;
+
 	// Manual edge detection (Input.Keyboard exposes Down only).
 	static bool _aWas, _sWas, _dWas, _scaleWas, _rotWas;
 
@@ -702,6 +723,7 @@ public static class BrushScrub
 	public static bool Update( SdfBrush b, Transform sculptTx, CameraComponent cam, bool allow, out bool ended )
 	{
 		ended = false;
+		ScaleTapped = false; // one-frame signal; cleared before every early-out below
 
 		// A focused text field (the Text brush's entry) owns the keyboard — typing must never scrub.
 		// S/D/F scrub the slider stack in order: blend, round (curve on a spline), then the per-shape
@@ -750,12 +772,15 @@ public static class BrushScrub
 		};
 		if ( !stillHeld )
 		{
+			// A scale scrub that never really moved was a right-click TAP, not a drag (see ScaleTapped).
+			ScaleTapped = Active == ScrubKind.Scale && _travel < TapTravelPx;
 			Active = ScrubKind.None;
 			ended = true;
 			return false;
 		}
 
 		var delta = Mouse.Delta;
+		_travel += delta.Length;
 		if ( delta.LengthSquared < 0.0001f )
 			return false;
 
@@ -873,5 +898,6 @@ public static class BrushScrub
 		Anchor = Mouse.Position;
 		_rawRot = b.Rotation; // rotate scrub: continuous motion accumulates from the brush's current orientation
 		_wildAccum = 0f;
+		_travel = 0f;
 	}
 }

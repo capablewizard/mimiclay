@@ -60,6 +60,11 @@ public sealed class RuntimeBrushGizmo
 
 	public bool IsBusy => _hover is not null || _active is not null;
 
+	/// <summary>True from the moment a right-click deleted a spline control point until that button is
+	/// released. The session's right-click-to-deselect must skip such a click — the gizmo already used it,
+	/// and the delete clears the hover, so hover state alone can't tell you afterwards.</summary>
+	public bool RightClickConsumed { get; private set; }
+
 	/// <summary>True while a handle is actively being dragged.</summary>
 	public bool IsDragging => _active is not null;
 
@@ -86,15 +91,26 @@ public sealed class RuntimeBrushGizmo
 		_pressed = _interactive && Input.Pressed( "Attack1" );
 		_down = (_interactive && Input.Down( "Attack1" )) || _uiDrag;
 		_pressed2 = _interactive && Input.Pressed( "Attack2" );
+		// Clear on the NEXT press, not on release: the deselect this guards fires on the RELEASE frame
+		// (that's when a tap is known to be a tap), so clearing there would unlatch a frame too early and
+		// the point-delete click would deselect after all. Each new right-click starts fresh.
+		if ( Input.Pressed( "Attack2" ) )
+			RightClickConsumed = false;
 
-		// Release the drag on a real button-up (even while alt is held).
+		// Release the drag on a real button-up (even while alt is held). A spline endpoint released on the
+		// loop snap merges into a closed ring — done here, before _active is cleared, so the dragged index
+		// is still known.
+		bool merged = false;
 		if ( _active is not null && !Input.Down( "Attack1" ) && !_uiDrag )
+		{
+			merged = TryCloseSplineLoop( brush );
 			_active = null;
+		}
 
 		// A spline is a chain of control points, not a single transform — each point gets a move dot and a
 		// radius dot instead of the full gizmo. Self-contained hover/draw/drag pass.
 		if ( brush.Shape == SdfShape.Spline )
-			return SplineUpdate( tx, brush, scene );
+			return SplineUpdate( tx, brush, scene ) | merged;
 
 		var center = tx.PointToWorld( brush.Position );
 		var rot = tx.Rotation * brush.Rotation;
@@ -162,6 +178,7 @@ public sealed class RuntimeBrushGizmo
 		_lastDrawHash = 0;
 		_hover = null;   // a hidden gizmo isn't busy — clear so IsBusy can't read stale-true and block world picks
 		_active = null;
+		_splineLoopSnap = false; // a drag torn down mid-snap must not merge when some later drag releases
 	}
 
 	// ── hover pass ──────────────────────────────────────────────────────────────────────────────────
@@ -410,7 +427,15 @@ public sealed class RuntimeBrushGizmo
 
 			for ( int i = 0; i < pts.Count; i++ )
 			{
+				// A right-click inside SplinePointMove DELETES point i, shrinking the list under us — the
+				// radius handle would then index a point that's gone (out of range on the last one) and
+				// every later index has shifted. Bail out for this frame; the delete already cleared the
+				// hover and flagged the mesh stale, so next frame redraws cleanly from the new list.
+				int before = pts.Count;
 				changed |= SplinePointMove( tx, brush, i, gs, n );
+				if ( pts.Count != before )
+					break;
+
 				changed |= SplinePointRadius( tx, brush, i, gs, n );
 			}
 
@@ -429,6 +454,34 @@ public sealed class RuntimeBrushGizmo
 	}
 
 	bool _splineMeshStale; // set when a point is deleted AFTER the curve ribbon was already emitted this frame
+
+	// End-to-end loop snap while dragging a control point: the dragged endpoint is sitting on the other
+	// endpoint, and releasing there merges them into a closed ring. Mirrors the stamp tool's chain snap.
+	bool _splineLoopSnap;
+	int _splineLoopIndex;
+	const float LoopSnapScale = 1.1f; // multiple of the target point's radius that counts as "touching"
+
+	/// <summary>True while a dragged spline endpoint is snapped onto the other end — releasing closes the
+	/// ring. Lets the HUD say so.</summary>
+	public bool SplineWillLoop => _splineLoopSnap;
+
+	// Release landed on the snap: drop the now-duplicate dragged point and close the curve. Returns true
+	// when the shape changed. Called before _active is cleared, so the index is still meaningful.
+	bool TryCloseSplineLoop( SdfBrush brush )
+	{
+		// Only a POINT-MOVE drag can arm this; a radius drag releasing must never merge on a stale flag.
+		if ( !_splineLoopSnap || _active is null || !_active.StartsWith( "ptMove" ) )
+			return false;
+
+		_splineLoopSnap = false;
+		if ( brush?.Points is not { Count: >= 4 } pts || _splineLoopIndex < 0 || _splineLoopIndex >= pts.Count )
+			return false;
+
+		pts.RemoveAt( _splineLoopIndex );
+		brush.SplineClosed = true;
+		_hover = null; // the removed point's handle name must not linger as hovered
+		return true;
+	}
 
 	// One continuous welded ribbon along the curve polyline — like DrawRing, consecutive samples SHARE their
 	// two edge vertices, so the segments butt together gap-free with no end caps. Replaces drawing each span as
@@ -475,6 +528,7 @@ public sealed class RuntimeBrushGizmo
 		// 3 can't stay a ring, so un-loop too. Hover is cleared so nothing reads the stale point name.
 		if ( _pressed2 && _hover == name && brush.Points.Count > 2 )
 		{
+			RightClickConsumed = true; // this click was a point delete — it must not also deselect
 			brush.Points.RemoveAt( i );
 			if ( brush.Points.Count < 3 )
 				brush.SplineClosed = false;
@@ -492,11 +546,43 @@ public sealed class RuntimeBrushGizmo
 			_grabWorldPos = c;
 		}
 
-		if ( _active == name && _down && new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
+		if ( _active == name )
 		{
-			var local = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
-			brush.Points[i] = new Vector4( local.x, local.y, local.z, brush.Points[i].w ); // keep radius
-			return true;
+			// Scroll while dragging pushes/pulls the point along the VIEW RAY. Both drag anchors shift by
+			// the same amount along the view, which keeps the accumulated cursor delta intact and moves the
+			// drag plane to the new depth — so the point stays under the cursor as it travels, exactly like
+			// the stamp ghost's scroll-depth. Step scales with the point's own radius.
+			float wheel = Input.MouseWheel.y;
+			if ( wheel != 0f )
+			{
+				var push = _cam.WorldRotation.Forward * (wheel * MathF.Max( 1f, brush.Points[i].w ) * 0.5f);
+				_grabWorldPos += push;
+				_grabPoint += push;
+			}
+
+			if ( _down && new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
+			{
+				var local = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
+
+				// Loop snap, the same gesture sculpt mode's chain has: drag one END of an open curve onto
+				// the other and it sticks there. Releasing merges them into a closed ring (see
+				// TryCloseSplineLoop). Needs 4+ points so 3 — a real ring — survive the merge.
+				_splineLoopSnap = false;
+				if ( !brush.SplineClosed && brush.Points.Count >= 4 && (i == 0 || i == brush.Points.Count - 1) )
+				{
+					var other = brush.Points[i == 0 ? ^1 : 0];
+					var otherLocal = new Vector3( other.x, other.y, other.z );
+					if ( (local - otherLocal).Length <= MathF.Max( 4f, other.w * LoopSnapScale ) )
+					{
+						local = otherLocal;
+						_splineLoopSnap = true;
+						_splineLoopIndex = i;
+					}
+				}
+
+				brush.Points[i] = new Vector4( local.x, local.y, local.z, brush.Points[i].w ); // keep radius
+				return true;
+			}
 		}
 
 		return false;

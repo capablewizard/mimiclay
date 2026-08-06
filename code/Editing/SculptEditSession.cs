@@ -109,6 +109,7 @@ public sealed class SculptEditSession : Component
 
 	readonly BrushStampTool _stampTool = new();
 	bool _opKeyWas; // manual edge detect for the A add/carve toggle
+	bool _delWas;   // …and for the Delete key
 
 	/// <summary>Snap is a HOLD: Shift held = stamp placement snaps to the origin-centred grid and the
 	/// E-rotate scrub snaps to the 45° grid.</summary>
@@ -168,6 +169,23 @@ public sealed class SculptEditSession : Component
 	/// <summary>True while the cursor is snapped onto a spline chain's first point — the next click closes
 	/// the loop and finishes the curve (drives the HUD's LMB hint).</summary>
 	public bool ChainWillLoop => IsEditing && Tool == SculptTool.Sculpt && _stampTool.ChainWillLoop;
+
+	/// <summary>True while a dragged spline endpoint is snapped onto the other end in gizmo mode —
+	/// releasing merges them into a closed ring.</summary>
+	public bool SplineWillLoop => IsEditing && Tool == SculptTool.Gizmo && _gizmo.SplineWillLoop;
+
+	/// <summary>The material the user last applied to anything — palette click, colour wheel, metal/rough
+	/// scrub, paste, or the last committed stamp. New shapes are born wearing it, so picking gold and then
+	/// adding a shape gives a gold shape. Static: one "current colour" for the session, like a paint
+	/// program's active swatch. Null until the first pick, where shapes keep their own defaults.</summary>
+	public static (Color Color, float Metallic, float Roughness)? LastMaterial { get; private set; }
+
+	/// <summary>Record a brush's material as the current one (call after any user-driven material edit).</summary>
+	public static void RememberMaterial( SdfBrush b )
+	{
+		if ( b is not null )
+			LastMaterial = (b.Color, b.Metallic, b.Roughness);
+	}
 
 	/// <summary>The stamp tool's Add/Carve toggle state (the HUD chips bind to this).</summary>
 	public SdfOperation StampOperation => _stampTool.Operation;
@@ -933,6 +951,16 @@ public sealed class SculptEditSession : Component
 		if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
 		if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
 		if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+
+		// Delete removes the selected brush (gizmo mode only — in sculpt mode the pending ghost isn't a
+		// real shape yet, and Esc/right-click is how you drop that). Manual edge detection on Down, like
+		// the other keys here: Keyboard.Pressed doesn't fire reliably in this context. Both spellings are
+		// asked for since an unknown key name just resolves to invalid (false), never throws.
+		bool del = Sandbox.UI.InputFocus.Current is null
+			&& (Input.Keyboard.Down( "delete" ) || Input.Keyboard.Down( "del" ));
+		if ( del && !_delWas && Tool == SculptTool.Gizmo )
+			RemoveSelected();
+		_delWas = del;
 		if ( Input.Pressed( "Drop" ) ) RemoveLast();
 
 		if ( brushes is not { Count: > 0 } )
@@ -986,17 +1014,42 @@ public sealed class SculptEditSession : Component
 		if ( scrubEnded )
 			CommitChanged();
 
+		// A right-click TAP (not a scale drag) clears the selection — the same "step back" gesture that
+		// leaves sculpt mode. Skipped when the gizmo used that click to delete a spline control point.
+		if ( BrushScrub.ScaleTapped && !_gizmo.RightClickConsumed )
+			Deselect();
+
 		// Scroll = push/pull the SELECTED brush along the view direction — the same size-scaled depth
 		// control the stamp ghost has (wheel-up = away). Each notch previews; the debounce backstop below
 		// runs the one full commit once the scrolling goes quiet.
+		// (Skipped while a gizmo handle is being dragged — the drag owns the wheel there; a spline point
+		// drag consumes it to push that single point along the view ray.)
 		float pushWheel = Input.MouseWheel.y;
 		if ( pushWheel != 0f && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
-			&& BrushScrub.Active == ScrubKind.None && SelectedBrush is { } pushB && Scene.Camera is { } pushCam )
+			&& BrushScrub.Active == ScrubKind.None && !_gizmo.IsDragging
+			&& SelectedBrush is { } pushB && Scene.Camera is { } pushCam )
 		{
-			var world = tx.PointToWorld( pushB.Position );
-			var dir = (tx.Rotation.Inverse * (world - pushCam.WorldPosition)).Normal;
-			pushB.Position += dir * pushWheel * _stampTool.AcceleratedDepthStepFor( pushB, (world - pushCam.WorldPosition).Length );
-			pushB.SnapToMirrorPlanes();
+			// A spline's transform is inert (its geometry lives in the control points), so pushing Position
+			// would do nothing visible — shift every point instead, measured from the curve's centre.
+			bool spline = pushB.Shape == SdfShape.Spline && pushB.Points is { Count: > 0 };
+			var local = spline ? SplineCentre( pushB ) : pushB.Position;
+			var world = tx.PointToWorld( local );
+			var toCam = world - pushCam.WorldPosition;
+			var dir = (tx.Rotation.Inverse * toCam).Normal;
+			var offset = dir * pushWheel * _stampTool.AcceleratedDepthStep( DepthSizeRef( pushB ), toCam.Length );
+
+			if ( spline )
+			{
+				var pts = pushB.Points;
+				for ( int i = 0; i < pts.Count; i++ )
+					pts[i] = new Vector4( pts[i].x + offset.x, pts[i].y + offset.y, pts[i].z + offset.z, pts[i].w );
+			}
+			else
+			{
+				pushB.Position += offset;
+				pushB.SnapToMirrorPlanes();
+			}
+
 			PreviewChanged();
 		}
 
@@ -1185,6 +1238,25 @@ public sealed class SculptEditSession : Component
 		_ghostOut.Hide();
 		_ghostBrush = _ghostOutBrush = null;
 		_ghostAlpha = _ghostOutAlpha = 0f;
+	}
+
+	// The curve's centre in sculpture space (its control points already live there).
+	static Vector3 SplineCentre( SdfBrush b )
+	{
+		b.LocalBounds( out var mn, out var mx, includeBlend: false );
+		return (mn + mx) * 0.5f;
+	}
+
+	// What the scroll-depth step scales off: a solid's largest dimension, or a spline's fattest point.
+	static float DepthSizeRef( SdfBrush b )
+	{
+		if ( b.Shape != SdfShape.Spline || b.Points is not { Count: > 0 } pts )
+			return MathF.Max( b.Size.x, MathF.Max( b.Size.y, b.Size.z ) );
+
+		float r = 0f;
+		foreach ( var p in pts )
+			r = MathF.Max( r, p.w );
+		return r;
 	}
 
 	// Number-key shape hotkeys — identical semantics to clicking a shape tile: re-mould the held stamp,

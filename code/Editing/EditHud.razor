@@ -34,7 +34,7 @@
 			{
 				@* Chain placement has its own verbs: click points along the curve, right-click/Enter ends it. *@
 				<div class="hint"><span class="key">LMB</span><span>@(Session.ChainWillLoop ? "close loop" : "add point")</span></div>
-				<div class="hint"><span class="key">RMB / Enter</span><span>finish</span></div>
+				<div class="hint"><span class="key">RMB tap / Enter</span><span>finish</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
 				<div class="hint"><span class="key">RMB drag</span><span>point size</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
@@ -48,7 +48,7 @@
 			{
 				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : "stamp")</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-				<div class="hint"><span class="key">RMB</span><span>scale</span></div>
+				<div class="hint"><span class="key">RMB</span><span>drag scale · tap done</span></div>
 				<div class="hint"><span class="key">E</span><span>rotate</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
 				<div class="hint"><span class="key">A</span><span>add / carve</span></div>
@@ -64,11 +64,15 @@
 			}
 			else
 			{
+				@if ( Session.SplineWillLoop )
+				{
+					<div class="hint hot"><span class="key">Release</span><span>close loop</span></div>
+				}
 				<div class="hint"><span class="key">LMB</span><span>select</span></div>
 				@if ( Session.SelectedBrush is not null )
 				{
 					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-					<div class="hint"><span class="key">RMB</span><span>scale</span></div>
+					<div class="hint"><span class="key">RMB</span><span>drag scale · tap deselect</span></div>
 					<div class="hint"><span class="key">E</span><span>rotate</span></div>
 					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
 					<div class="hint"><span class="key">A</span><span>add / carve</span></div>
@@ -79,6 +83,7 @@
 						<div class="hint"><span class="key">F</span><span>@wc</span></div>
 					}
 					<div class="hint"><span class="key">1-7</span><span>shape</span></div>
+					<div class="hint"><span class="key">Del</span><span>delete</span></div>
 				}
 				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
 				<div class="hint"><span class="key">Q</span><span>done</span></div>
@@ -132,8 +137,11 @@
 				@* Vertical list: Add Shape keeps the SAME spot whatever the state; the selection-only tools
 				   grow downward beneath it instead of shoving it sideways. *@
 				<div class="tool-list">
-					<div class="chip action @(Session.Tool == SculptTool.Sculpt ? "on" : "")" @onclick=@(() => Session.SetTool( SculptTool.Sculpt ))>
-						<div class="icon">add_circle</div><span>Add Shape</span>
+					@* Toggles placing on/off — while a stamp is held it's the way back to plain editing
+					   (same as a right-click or Esc). *@
+					@{ var placing = Session.Tool == SculptTool.Sculpt; }
+					<div class="chip action @(placing ? "on" : "")" @onclick=@(() => Session.SetTool( placing ? SculptTool.Gizmo : SculptTool.Sculpt ))>
+						<div class="icon">@(placing ? "check_circle" : "add_circle")</div><span>@(placing ? "Done" : "Add Shape")</span>
 					</div>
 					@if ( Session.Tool == SculptTool.Gizmo && Brush is not null )
 					{
@@ -978,16 +986,19 @@
 			return;
 
 		m.ApplyTo( Brush );
+		SculptEditSession.RememberMaterial( Brush ); // becomes the material new shapes are born with
 		Session?.NotifyChanged();
 	}
 
 	// Apply colour-wheel / metal / rough edits from the picker column straight onto the selected brush.
 	// These scrub continuously, so they PREVIEW; the control's OnCommit fires the full commit on release.
+	// Each also updates the remembered "current material" (see SculptEditSession.LastMaterial).
 	void SetColor( Color c )
 	{
 		if ( Brush is null )
 			return;
 		Brush.Color = c.WithAlpha( 1f );
+		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 	}
 
@@ -996,6 +1007,7 @@
 		if ( Brush is null )
 			return;
 		Brush.Metallic = Math.Clamp( v, 0f, 1f );
+		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 	}
 
@@ -1004,6 +1016,7 @@
 		if ( Brush is null )
 			return;
 		Brush.Roughness = Math.Clamp( v, 0f, 1f );
+		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 	}
 
@@ -1025,6 +1038,7 @@
 		Brush.Color = m.Color;
 		Brush.Metallic = m.Metallic;
 		Brush.Roughness = m.Roughness;
+		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 		CommitEdit();
 	}
@@ -1224,6 +1238,8 @@
 		hc.Add( s?.ChainWillLoop ?? false );                   // spline LMB hint flips to "close loop"
 		hc.Add( s?.StampBrush is not null );                  // ghost row skip + panel visibility
 		hc.Add( s?.IsScrubbing ?? false );                    // scrub dot + capture
+		hc.Add( s?.ChainWillLoop ?? false );                  // "close loop" hints, both modes
+		hc.Add( s?.SplineWillLoop ?? false );
 		// Hash the FRESHLY COMPUTED dock positions, not the stored fields — the stored ones only change
 		// during a render, so hashing them can never trigger the re-render that re-centres the strips
 		// after their measured size changes (2 vs 3 sliders left the row misaligned until something else
