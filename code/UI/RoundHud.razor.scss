@@ -8,6 +8,42 @@
 	width: 100%; height: 100%;
 	pointer-events: none;
 
+	// ── Thumbnail bisect (mimiclay_debug_thumb) ─────────────────────────────────────────────────────────────
+	// Deliberately the dumbest styling that can work: the panel is a normal flex child at a fixed size, with
+	// no absolute positioning, no transform and no overflow clipping — all three of which the real pips use.
+	// The magenta border draws the panel's layout box, so a visible empty square means "laid out, rendered
+	// nothing" and no square at all means "the panel isn't being laid out".
+	.thumb-test {
+		position: absolute;
+		top: 0; left: 0;
+		width: 100%; height: 100%;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+
+		.thumb-test-cell {
+			flex-direction: column;
+			align-items: center;
+			margin: $space-sm;
+		}
+
+		.thumb-test-panel {
+			width: 256px;
+			height: 256px;
+			border: 2px solid #ff00ff;
+		}
+
+		.thumb-test-label {
+			margin-top: $space-xs;
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 16px;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
+		}
+	}
+
 	// ── Top-centre: phase name + big timer + role chip ──────────────────────────────────────────────────────
 	.top-centre {
 		position: absolute;
@@ -52,13 +88,14 @@
 			.rail-left  { justify-content: flex-end; }
 			.rail-right { justify-content: flex-start; }
 
+			// Bigger than the original 44px on purpose: the thumbnail now renders at exactly this size, so the
+			// pip's size IS its resolution. See .pip-render below for why supersampling went away.
 			.pip {
-				width: 44px;
-				height: 44px;
+				width: 56px;
+				height: 56px;
 				margin: 3px;
 				align-items: center;
 				justify-content: center;
-				overflow: hidden;   // clips the oversized (supersampled) thumbnail render below
 			}
 
 			// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop" until
@@ -88,18 +125,21 @@
 					}
 				}
 
-				// Supersampled. A ScenePanel renders at its LAYOUT size, so a 44px panel gives a 44px render —
-				// and a raymarched surface has no anti-aliasing of its own, so at that size the silhouette
-				// crawls. Instead lay it out at the full 256px icon resolution and scale the result down into
-				// the pip. Scale must stay 44/256 = 0.171875 to match .pip's size.
+				// Deliberately the same shape as the proven-working debug cells (mimiclay_debug_thumb): a plain
+				// flex child at an explicit size, with no absolute positioning, no transform and no clipping.
+				//
+				// It used to lay out at 256px and scale down, to supersample away the aliasing a raymarched
+				// silhouette gets at icon size. That cost three separate bugs and never rendered: absolute
+				// children escaping to the screen root, transform-origin being silently ignored (s&box always
+				// scales about the centre), and — still unresolved — whether overflow clips before or after the
+				// transform. None of it was worth the aliasing it bought.
+				//
+				// So the render is 1:1 with the pip now, and the pip got bigger to compensate. If supersampling
+				// comes back, verify the clip/transform order FIRST — that's the one that can't be reasoned out
+				// from the style code.
 				.pip-render {
-					position: absolute;
-					left: 0;
-					top: 0;
-					width: 256px;
-					height: 256px;
-					transform: scale( 0.171875 );
-					transform-origin: top left;
+					width: 56px;
+					height: 56px;
 				}
 			}
 

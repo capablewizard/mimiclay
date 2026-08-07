@@ -39,6 +39,15 @@ sealed class SdfStagePost
 	/// <summary>Whether anything would actually draw — the stage skips creating the pass object if not.</summary>
 	public bool Any => TonemapMode > 0 || SharpenStrength > 0f || ColorEnabled;
 
+	/// <summary>
+	/// Kill switch for the whole chain: `mimiclay_thumb_post false`. This pass grabs the frame buffer and blits
+	/// over it, so if it misbehaves in a given render path the thumbnail goes black or transparent rather than
+	/// merely looking wrong — turning it off is the fastest way to tell that apart from a stage problem.
+	/// Checked per render, so it takes effect immediately on a live thumbnail.
+	/// </summary>
+	[ConVar( "mimiclay_thumb_post" )]
+	public static bool Enabled { get; set; } = true;
+
 	static Material _tonemapMaterial;
 	static Material _sharpenMaterial;
 	static Material _colorMaterial;
@@ -50,6 +59,9 @@ sealed class SdfStagePost
 	/// <summary>Run the chain. Called from the stage's overlay scene object, inside its render scope.</summary>
 	public void Render()
 	{
+		if ( !Enabled )
+			return;
+
 		// Order matches the components' render stages: Tonemapping (6500), then AfterPostProcess with
 		// Sharpen at order 1 and ColorAdjustments at 3000.
 		if ( TonemapMode > 0 )

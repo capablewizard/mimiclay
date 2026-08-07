@@ -30,6 +30,37 @@
 			<div>phase=@Phase</div>
 			<div>mode=@DbgMode</div>
 			<div>pawns(self/proxy)=@DbgSelfPawns/@DbgProxyPawns</div>
+			@* Thumbnail tally. tally = is the rail drawn at all; faces = hunter pawns whose Face sculpt resolved
+			   right now (how many portraits CAN draw); cached = how many we've ever resolved. If faces is 0 the
+			   problem is pawn/face lookup; if it's 2 and you still see no portraits, it's the panel or its CSS. *@
+			<div>tally=@ShowTally hunters=@HunterCount props=@PropsLeft faces=@FaceSignal cached=@_faceCache.Count</div>
+		</div>
+	}
+
+	@* THUMBNAIL BISECT — `mimiclay_debug_thumb true`. One SdfThumbnail per player in the game, with the plainest
+	   styling that can work: no absolute positioning, no transform, no overflow clipping (all three of which the
+	   real pips depend on). The magenta border draws each panel's LAYOUT BOX, so "not laid out" reads differently
+	   from "laid out but rendered nothing".
+
+	   Several panels at once is the point: that's the case the HUD actually hits, and each one owns a whole
+	   SceneWorld. Anyone whose face we can't resolve falls back to a plain sphere so there's always something to
+	   draw — a blank cell then means the RENDER failed, not the lookup. *@
+	@if ( DebugThumb )
+	{
+		<div class="thumb-test">
+			@foreach ( var player in DebugPlayers )
+			{
+				var face = FaceOf( player.Connection );
+
+				<div class="thumb-test-cell">
+					@* Not Live: these render on change like the real pips do. Re-rendering every panel's scene
+					   every frame was only there so a console toggle showed up immediately, and SdfThumbnail
+					   now watches mimiclay_thumb_post itself. Set Live=@true here if you need a live view.
+					   Source wins when it's valid, so Brushes is only the fallback for an unresolved player. *@
+					<SdfThumbnail Source=@face Brushes=@DebugHeadBrushes class="thumb-test-panel" @key=@player.Connection />
+					<div class="thumb-test-label">@player.Name@(face.IsValid() ? "" : " (no face — sphere)")</div>
+				</div>
+			}
 		</div>
 	}
 
@@ -72,13 +103,13 @@
 					{
 						@foreach ( var hunter in ShownHunters )
 						{
-							var face = FaceBrushesOf( hunter.Connection );
-							if ( face is { Count: > 0 } )
+							var face = FaceOf( hunter.Connection );
+							if ( face.IsValid() )
 							{
 								@* Keyed by connection so the razor rebuild (this panel re-renders every second as
 								   the clock ticks) REUSES the panel. A new panel means a new SceneWorld. *@
 								<div class="pip hunter-pip">
-									<SdfThumbnail Brushes=@face class="pip-render" @key=@hunter.Connection />
+									<SdfThumbnail Source=@face class="pip-render" @key=@hunter.Connection />
 								</div>
 							}
 							else
@@ -204,9 +235,16 @@
 		: Enumerable.Empty<PlayerInfo>();
 	int HiddenHunters => Math.Max( 0, HunterCount - MaxPips );
 
-	// The face brushes for a roster row, or null if this machine has no pawn for them. Not deep-copied — the
-	// thumbnail's stage copies before it stages anything.
-	List<SdfBrush> FaceBrushesOf( Guid connection )
+	// Last face we managed to resolve per player. Losing a face for even ONE frame used to swap the razor branch
+	// from portrait to generic glyph, which deletes the SdfThumbnail panel — and with it a whole SceneWorld, to be
+	// rebuilt from scratch the moment the pawn came back. That churn is what a thumbnail "flashing up for a second"
+	// looks like. A pawn blinking out is never a reason to forget whose face it was, so we don't.
+	readonly Dictionary<Guid, SdfSculpture> _faceCache = new();
+
+	// The face SCULPTURE for a roster row, or null if this machine has never had a pawn for them. Handing over
+	// the sculpture rather than its brushes is what lets the thumbnail update on commit instead of following a
+	// live drag — see SdfThumbnail.Source.
+	SdfSculpture FaceOf( Guid connection )
 	{
 		foreach ( var h in Scene.GetAllComponents<HunterController>() )
 		{
@@ -215,11 +253,17 @@
 
 			// A pawn that hasn't gone on the wire yet has no Network.Owner — if it isn't a proxy, it's ours.
 			var owner = h.GameObject.Network.Owner?.Id ?? (h.IsProxy ? (Guid?)null : Connection.Local?.Id);
-			if ( owner == connection )
-				return h.Face.Brushes;
+			if ( owner != connection )
+				continue;
+
+			if ( h.Face.Brushes is { Count: > 0 } )
+				_faceCache[connection] = h.Face;
+
+			break;
 		}
 
-		return null;
+		var cached = _faceCache.GetValueOrDefault( connection );
+		return cached.IsValid() ? cached : null;
 	}
 
 	// How many hunter faces this machine can currently resolve. Folded into BuildHash so a pawn spawning (or its
@@ -323,6 +367,40 @@
 	[ConVar( "mimiclay_debug_hud" )]
 	public static bool DebugHud { get; set; }
 
+	/// <summary>Draws one large centred <see cref="SdfThumbnail"/> with plain styling, to isolate whether the
+	/// thumbnail panel can render at all. Console: `mimiclay_debug_thumb true`.</summary>
+	[ConVar( "mimiclay_debug_thumb" )]
+	public static bool DebugThumb { get; set; }
+
+	// Everyone the game knows about, from whichever manager is live, in a stable order (NetDictionary
+	// enumeration isn't). Falls back to a single synthetic row so the bisect still draws something when there's
+	// no roster at all — solo, or before roles are assigned.
+	IEnumerable<PlayerInfo> DebugPlayers
+	{
+		get
+		{
+			var roster = RoundManager.Current.IsValid() ? RoundManager.Current.Players.Values
+				: LobbyManager.Current.IsValid() ? LobbyManager.Current.Players.Values
+				: null;
+
+			if ( roster is null )
+				return new[] { new PlayerInfo { Name = "(no roster)" } };
+
+			var rows = roster.OrderBy( p => p.Connection ).ToList();
+			return rows.Count > 0 ? rows : new List<PlayerInfo> { new() { Name = "(empty roster)" } };
+		}
+	}
+
+	int DebugPlayerCount => DebugThumb ? DebugPlayers.Count() : 0;
+
+	List<SdfBrush> _debugHead;
+
+	// Your own saved head, read straight off the slot so this works in the lobby with no pawn spawned. Falls back
+	// to a single sphere: the test is "can this panel draw anything", which shouldn't depend on having sculpted.
+	List<SdfBrush> DebugHeadBrushes =>
+		_debugHead ??= SculptLibrary.Load( SculptLibrary.HeadSlot )?.Brushes
+			?? new List<SdfBrush> { new SdfBrush { Shape = SdfShape.Sphere, Size = 24f } };
+
 	bool DbgHost => Networking.IsHost;
 	string DbgMode => RoundManager.Current.IsValid() ? RoundManager.Current.Settings.Mode.ToString() : "(no manager)";
 	int DbgSelfPawns => Scene.GetAllComponents<HiderController>().Count( c => c.IsValid() && !c.IsProxy )
@@ -335,5 +413,5 @@
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false ), // hotkey hints hide while sculpt-editing
-			HashCode.Combine( ShowTally, PropsLeft, HunterCount, FaceSignal ) );
+			HashCode.Combine( ShowTally, PropsLeft, HunterCount, FaceSignal, _faceCache.Count, DebugThumb, DebugPlayerCount ) );
 }

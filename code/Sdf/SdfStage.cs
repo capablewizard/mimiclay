@@ -358,26 +358,29 @@ public sealed class SdfStage : IDisposable
 			return false;
 
 		if ( brushes is not { Count: > 0 } )
-		{
-			if ( _brushHash == 0 )
-				return false;
+			return Clear();
 
-			_brushHash = 0;
-			_sculpt.Brushes = new List<SdfBrush>();
-			_renderer.ForceRefresh();
-			return true;
-		}
+		// Portraits are of the AUTHORED sculpt only — never the damage craters a prop accumulates from being
+		// shot. Damage brushes are appended after the authored ones (SdfSculpture.AuthoredBrushCount leans on
+		// the same invariant), so the portrait is the prefix before the first one.
+		//
+		// Hashing the prefix rather than the whole list matters as much as the filtering: it means a gunshot
+		// can't change the hash at all, so it doesn't merely render the same picture again — it costs no
+		// re-render in the first place.
+		var authored = AuthoredCount( brushes );
+		if ( authored == 0 )
+			return Clear();
 
 		// Resolution/flip are fixed on the stage, so the brush list is the only content that can vary.
-		var hash = SdfSculpture.ContentHash( brushes, _sculpt.Resolution, false );
+		var hash = SdfSculpture.ContentHashPrefix( brushes, authored, _sculpt.Resolution, false );
 		if ( hash == _brushHash )
 			return false;
 
 		_brushHash = hash;
 
-		var copy = new List<SdfBrush>( brushes.Count );
-		foreach ( var b in brushes )
-			copy.Add( b.Copy() );
+		var copy = new List<SdfBrush>( authored );
+		for ( var i = 0; i < authored; i++ )
+			copy.Add( brushes[i].Copy() );
 
 		_sculpt.Brushes = copy;
 		_renderer.ForceRefresh();
@@ -386,6 +389,30 @@ public sealed class SdfStage : IDisposable
 			? bb
 			: BBox.FromPositionAndSize( Vector3.Zero, 16f );
 
+		return true;
+	}
+
+	/// <summary>Number of authored brushes — everything before the first damage crater.</summary>
+	static int AuthoredCount( List<SdfBrush> brushes )
+	{
+		for ( var i = 0; i < brushes.Count; i++ )
+		{
+			if ( brushes[i].Damage )
+				return i;
+		}
+
+		return brushes.Count;
+	}
+
+	/// <summary>Empty the stage. Returns whether anything actually changed.</summary>
+	bool Clear()
+	{
+		if ( _brushHash == 0 )
+			return false;
+
+		_brushHash = 0;
+		_sculpt.Brushes = new List<SdfBrush>();
+		_renderer.ForceRefresh();
 		return true;
 	}
 
@@ -403,20 +430,55 @@ public sealed class SdfStage : IDisposable
 			return;
 
 		var centre = Bounds.Center;
-		// Half-diagonal, so the fit holds at every yaw rather than only the one the bounds were measured at.
+		// Bounding-SPHERE radius. Still what the lights scale against — that's about the prop's physical size,
+		// which shouldn't change with the camera angle — but no longer what the camera fits to.
 		var subjectRadius = MathF.Max( Bounds.Size.Length * 0.5f, 1f );
-		var fitRadius = subjectRadius * (margin ?? _margin);
 
-		var f = fov ?? _fov;
+		var f = MathF.Max( fov ?? _fov, 1f );
 		var rot = (pose ?? _pose).ToRotation();
-		var dist = fitRadius / MathF.Tan( f * MathF.PI / 360f ); // f/2, degrees -> radians
+		var m = MathF.Max( margin ?? _margin, 0.01f );
+
+		// Fit the subject as a SPHERE whose radius is the largest half-extent of the bounds.
+		//
+		// Two wrong answers came before this one, both too conservative in the same direction. Fitting the
+		// bounding sphere by its half-DIAGONAL treats a ball of radius r as radius r*sqrt(3) and fills barely
+		// half the frame. Fitting the bounding BOX corner-by-corner is exactly right for a box, but a clay prop
+		// doesn't occupy its corners — and it's the corners that set the distance, so a round head still lost
+		// about a third of the frame to background.
+		//
+		// The largest half-extent is the honest radius for a rounded form that fills its box, which is what
+		// these props are. A genuinely cubic subject viewed corner-on could graze the frame edge; that's what
+		// Margin is for, and 1.2 leaves plenty.
+		//
+		// sin, not tan: a sphere of radius r is tangent to the frustum at distance r / sin(halfFov). Using tan
+		// puts it slightly too close and clips the silhouette.
+		var extent = MathF.Max( Bounds.Size.x, MathF.Max( Bounds.Size.y, Bounds.Size.z ) ) * 0.5f;
+		var dist = MathF.Max( extent, 1f ) * m / MathF.Sin( f * MathF.PI / 360f );
+
+		// Depth range of the actual box along the view, for the near/far planes.
+		var nearest = float.MaxValue;
+		var furthest = float.MinValue;
+
+		for ( var i = 0; i < 8; i++ )
+		{
+			var corner = new Vector3(
+				(i & 1) != 0 ? Bounds.Maxs.x : Bounds.Mins.x,
+				(i & 2) != 0 ? Bounds.Maxs.y : Bounds.Mins.y,
+				(i & 4) != 0 ? Bounds.Maxs.z : Bounds.Mins.z ) - centre;
+
+			var forward = Vector3.Dot( corner, rot.Forward );
+			nearest = MathF.Min( nearest, forward );
+			furthest = MathF.Max( furthest, forward );
+		}
 
 		camera.World = World;
 		camera.FieldOfView = f;
 		camera.Position = centre - rot.Forward * dist;
 		camera.Rotation = rot;
-		camera.ZNear = MathF.Max( 0.5f, dist - fitRadius * 2f );
-		camera.ZFar = dist + fitRadius * 4f;
+		// Bracket the box itself, with a subject-sized pad so displacement pushing the silhouette out past the
+		// SDF bounds can't get clipped by the near/far planes.
+		camera.ZNear = MathF.Max( 0.5f, dist + nearest - subjectRadius );
+		camera.ZFar = dist + furthest + subjectRadius * 2f;
 		camera.BackgroundColor = Color.Transparent;
 		camera.AmbientLightColor = _ambient;
 
@@ -436,7 +498,7 @@ public sealed class SdfStage : IDisposable
 		// range is sized for a whole map — which on a stage this small leaves the prop covering a handful of
 		// shadow-map texels, blocky enough to read as a bias problem. Reaching just past the subject's far side
 		// puts the entire map on the thing we're photographing.
-		var shadowRange = _shadowDistance > 0f ? _shadowDistance : dist + fitRadius * 2f;
+		var shadowRange = _shadowDistance > 0f ? _shadowDistance : dist + subjectRadius * 2f;
 
 		foreach ( var light in _cascadeLights )
 			light.SetCascadeDistanceScale( shadowRange );

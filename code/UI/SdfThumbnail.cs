@@ -22,7 +22,32 @@ namespace Mimiclay;
 /// </summary>
 public sealed class SdfThumbnail : ScenePanel
 {
-	/// <summary>The sculpt to show. Read-only to us — the stage deep-copies before staging anything.</summary>
+	/// <summary>
+	/// The live sculpture to portray. Preferred over <see cref="Brushes"/>, because it lets us re-read only on
+	/// COMMIT: a sculpture mutates its brush list continuously while someone drags a handle (that's the
+	/// Previewed path), and polling the list can't tell that apart from a finished edit. Watching Committed
+	/// means the portrait updates a step at a time as they sculpt, rather than animating along with them.
+	/// </summary>
+	public SdfSculpture Source
+	{
+		get => _source;
+		set
+		{
+			if ( _source == value )
+				return;
+
+			Unhook();
+			_source = value;
+			Hook();
+
+			// A brand new source hasn't committed anything yet, so take its current state now or the thumbnail
+			// would sit empty until the player next edited their face.
+			_syncPending = true;
+		}
+	}
+
+	/// <summary>A static brush list to show when there's no <see cref="Source"/> — saved sculpts, the debug
+	/// fallback sphere. Polled by content hash, since nothing can be mid-edit.</summary>
 	public List<SdfBrush> Brushes { get; set; }
 
 	// All three are OVERRIDES. Left null (the default) the rig prefab's camera and margin win, which is the
@@ -37,14 +62,23 @@ public sealed class SdfThumbnail : ScenePanel
 	/// <summary>Padding override around the prop's bounding sphere. 1 = touching the frame edge.</summary>
 	public float? Margin { get; set; }
 
+	/// <summary>Re-render every frame rather than only when the sculpt changes. Costs a full scene render per
+	/// frame, so it's for debugging — but it means a console toggle shows up immediately instead of waiting for
+	/// something to invalidate the thumbnail.</summary>
+	public bool Live { get; set; }
+
 	/// <summary>True once a sculpt has actually been staged — the caller's cue to stop showing its fallback
 	/// icon. False while Brushes is empty or the stage hasn't come up yet.</summary>
 	public bool HasSubject { get; private set; }
+
+	SdfSculpture _source;
+	bool _syncPending;
 
 	SdfStage _stage;
 	Angles? _framedPose;
 	float? _framedFov, _framedMargin;
 	bool _framed;
+	bool _postEnabled = SdfStagePost.Enabled;
 
 	public SdfThumbnail()
 	{
@@ -53,7 +87,12 @@ public sealed class SdfThumbnail : ScenePanel
 
 	public override void Tick()
 	{
-		if ( Brushes is not { Count: > 0 } )
+		RenderOnce = !Live;
+
+		var live = _source.IsValid();
+		var brushes = live ? _source.Brushes : Brushes;
+
+		if ( brushes is not { Count: > 0 } )
 		{
 			HasSubject = false;
 			// Keep the stage alive through an empty frame — a hunter's pawn can flicker out of the scene between
@@ -83,8 +122,23 @@ public sealed class SdfThumbnail : ScenePanel
 			_framed = false; // force a Frame() below
 		}
 
-		// Both of these are hash/no-op guarded, so this is cheap on the frames where nothing moved.
-		var changed = _stage.SetBrushes( Brushes );
+		// With a live Source we only re-read on commit; a static list has nothing that can be mid-edit, so it's
+		// polled by content hash (which is itself a no-op when nothing moved).
+		var changed = false;
+
+		if ( !live || _syncPending )
+		{
+			_syncPending = false;
+			changed = _stage.SetBrushes( brushes );
+		}
+
+		// Toggling mimiclay_thumb_post changes what a render produces but nothing about the sculpt, so without
+		// this a render-on-change thumbnail would keep showing the old one and the switch would look broken.
+		if ( _postEnabled != SdfStagePost.Enabled )
+		{
+			_postEnabled = SdfStagePost.Enabled;
+			changed = true;
+		}
 
 		if ( changed || !_framed || _framedFov != Fov || _framedMargin != Margin || _framedPose != Pose )
 		{
@@ -116,8 +170,25 @@ public sealed class SdfThumbnail : ScenePanel
 		base.OnDeleted();
 	}
 
+	void Hook()
+	{
+		if ( _source.IsValid() )
+			_source.Committed += OnSourceCommitted;
+	}
+
+	void Unhook()
+	{
+		if ( _source.IsValid() )
+			_source.Committed -= OnSourceCommitted;
+	}
+
+	void OnSourceCommitted() => _syncPending = true;
+
 	void DisposeStage()
 	{
+		Unhook();
+		_source = null;
+
 		_stage?.Dispose();
 		_stage = null;
 	}
