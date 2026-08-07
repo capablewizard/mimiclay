@@ -233,6 +233,20 @@ PS
 	float g_flDispAmp  < Default( 0.35 ); Range( 0.0, 4.0 );  UiGroup( "Displacement,12/10" ); >;
 	float g_flDispFreq < Default( 0.25 ); Range( 0.01, 2.0 ); UiGroup( "Displacement,12/20" ); >;
 
+	// Claymation boil (see Displacement below). Pushed per-object by SdfRaymarchRenderer from the
+	// prop's OWN ClayBoil component — it's opt-in per GameObject, not a scene-wide look, because a
+	// whole room boiling at once reads as an unstable picture rather than as handmade props.
+	// ALL DEFAULT TO 0 = still. That matters: these are what a prop with NO ClayBoil renders with, so
+	// a non-zero default here would silently boil every prop in the game.
+	float g_flBoilFps       < Attribute( "BoilFps" );       Default( 0.0 ); >; // ticks/sec; 0 = boil off
+	float g_flBoilJitter    < Attribute( "BoilJitter" );    Default( 0.0 ); >; // offset per tick, noise CELLS
+	float g_flBoilAmpJitter < Attribute( "BoilAmpJitter" ); Default( 0.0 ); >; // +/- lump-depth wobble per tick
+	float g_flBoilSeed      < Attribute( "BoilSeed" );      Default( 0.0 ); >; // per-prop, so props don't lockstep
+	// Surface-detail boil: shifts the triplanar sample point so the fingerprints/imperfections in the
+	// normal map re-form each tick too. Measured in texture REPEATS. Shading-only (once at the hit),
+	// so unlike the displacement boil it costs no march steps and needs no step-safety adjustment.
+	float g_flBoilTexJitter < Attribute( "BoilTexJitter" ); Default( 0.0 ); >;
+
 	// Curvature shading: the field's Laplacian at the hit approximates surface curvature — negative in
 	// crevices, positive on ridges. Crevices darken the diffuse (grime in the clay seams), ridges lighten
 	// it (worn-edge highlight). Radius = the feature size it responds to (world units); both strengths at
@@ -344,17 +358,84 @@ PS
 			f.z );
 	}
 
+	// A per-tick random offset in noise-cell units, centred on 0. Fed a QUANTISED tick, so it holds
+	// its value for a whole tick and then jumps — that discrete hold-then-pop is the whole effect.
+	float3 BoilOffset( float tick )
+	{
+		return float3( hash13( float3( tick, 17.13, 3.71 ) ),
+		               hash13( float3( tick, 53.77, 8.29 ) ),
+		               hash13( float3( tick, 91.31, 5.13 ) ) ) - 0.5;
+	}
+
+	// Per-tick offset for the triplanar surface maps, returned in MODEL-SPACE INCHES.
+	//
+	// Expressed in texture REPEATS and converted here, so the dial is independent of g_flTriTile —
+	// Tex2DTriplanar scales position by tile/39.3701, so a fixed inch offset would mean a totally
+	// different amount of detail change at tile 2 vs tile 32. Same reasoning as the displacement
+	// boil living in noise cells.
+	//
+	// The two regimes are worth knowing, because they look different: well under one repeat the
+	// texture SLIDES (detail keeps its identity and crawls), around/above one repeat it lands on
+	// uncorrelated texels and the detail genuinely RE-FORMS. Re-forming is the honest claymation
+	// read — the animator's fingers really do land somewhere new between frames — but at 12 ticks a
+	// second it also fizzes and gives TAA nothing to track. The default sits in between.
+	float3 BoilTexOffset()
+	{
+		if ( g_flBoilFps <= 0.0 || g_flBoilTexJitter <= 0.0 )
+			return 0.0;
+
+		float tick = fmod( floor( g_flTime * g_flBoilFps ), 1024.0 ) + g_flBoilSeed;
+		// Salted away from the lump offsets so the fine detail re-forms on its own schedule instead
+		// of sliding in lockstep with the silhouette (which reads as the whole prop swimming).
+		return BoilOffset( tick + 307.0 ) * g_flBoilTexJitter * ( 39.3701 / max( g_flTriTile, 0.001 ) );
+	}
+
 	// Signed displacement (centred on 0): big lump + a half-scale octave for an uneven, hand-pressed
 	// feel. Deliberately LOW frequency — fine grain is left to the triplanar normal map, and fine
 	// displacement would just alias against the SdfNormal finite-difference epsilon (0.05) anyway.
 	// Takes the LOCAL point (like the triplanar surface), so the lumps are locked to the prop and
 	// move/rotate with it instead of the prop sliding through a fixed world-space noise field. The
 	// transform is rigid, so the field's gradient magnitude (the L safety factor below) is unchanged.
+	//
+	// CLAYMATION BOIL: the sample point is nudged by a new random offset each TICK (12/sec = animating
+	// "on twos" at 24fps), so the lumps re-form in discrete steps like a re-pressed clay model instead
+	// of sitting perfectly still. Three things make it read right rather than read as a bug:
+	//
+	//  * floor() of a pure g_flTime expression, so the tick is IDENTICAL in the depth prepass, the
+	//    colour pass, every shadow view and sdf_highlight within one frame. That agreement is not
+	//    optional — SdfNormal finite-differences this same field and the shadow views re-march it, so
+	//    a per-pass mismatch cracks the silhouette and floats the shadow off the prop.
+	//  * the offset is added AFTER the freq multiply (i.e. in noise-cell units), so retuning DispFreq
+	//    doesn't silently retune the boil strength.
+	//  * the two octaves get DIFFERENT offsets. A shared offset translates the whole lump field
+	//    sideways, which reads as the prop swimming; separate offsets make the lumps re-form in place.
+	//
+	// BoilFps 0 makes this an exact no-op (both offsets 0, amp untouched) — identical to boil off.
 	float Displacement( float3 lp )
 	{
 		float3 x = lp * g_flDispFreq;
-		float n = vnoise( x ) * 0.67 + vnoise( x * 2.03 + 11.7 ) * 0.33; // ~[0,1]
-		return (n * 2.0 - 1.0) * g_flDispAmp;
+		float3 b0 = 0.0, b1 = 0.0;
+		float  amp = g_flDispAmp;
+
+		if ( g_flBoilFps > 0.0 )
+		{
+			// The tick is GLOBAL (real stop-motion advances every model on the same frame); only the
+			// seed is per-prop, so a room full of props boils together but not identically.
+			// WRAPPED to 1024 ticks (~85s at 12fps): g_flTime is seconds since level load, so an
+			// unwrapped tick reaches five figures in a long match and hash13's frac() runs out of
+			// float32 mantissa — the boil would quietly slow down and then freeze. An 85-second
+			// repeat in a sub-pixel jitter is not something anyone can see.
+			float tick = fmod( floor( g_flTime * g_flBoilFps ), 1024.0 ) + g_flBoilSeed;
+			b0 = BoilOffset( tick )         * g_flBoilJitter;
+			b1 = BoilOffset( tick + 101.0 ) * g_flBoilJitter * 2.7; // fine octave rolls harder
+			// Per-tick lump-depth wobble: the surface reading slightly deeper/shallower frame to
+			// frame is the cheaper half of the effect. Bounded by BoilAmpJitter — the step-safety L
+			// below uses that bound, not this instantaneous value.
+			amp *= 1.0 + ( hash13( float3( tick, 7.77, 1.23 ) ) - 0.5 ) * g_flBoilAmpJitter;
+		}
+
+		float n = vnoise( x + b0 ) * 0.67 + vnoise( x * 2.03 + 11.7 + b1 ) * 0.33; // ~[0,1]
+		return (n * 2.0 - 1.0) * amp;
 	}
 
 	// Combined field at WORLD point p: fold once into the prop's LOCAL frame — where the brushes are
@@ -763,7 +844,10 @@ PS
 		// AND grow the step budget by the same (1+L) so grazing/silhouette rays still converge instead
 		// of running out of steps (= edge misses). L ~= Amp*Freq*4 (the noise's max slope), so at
 		// Amp=0 this is exactly a no-op: stepScale 1, budget unchanged -> identical to displace OFF.
-		float L   = g_flDispAmp * g_flDispFreq * 4.0;
+		// The boil's per-tick amp wobble can push amp above g_flDispAmp, so size L from the WORST
+		// case (+half of BoilAmpJitter) — a per-tick L would understep on the ticks that wobble up,
+		// which shows as edge misses that flicker in time with the boil.
+		float L   = g_flDispAmp * ( 1.0 + max( g_flBoilAmpJitter, 0.0 ) * 0.5 ) * g_flDispFreq * 4.0;
 		stepScale *= 1.0 / (1.0 + L);
 		maxSteps  = (int)( maxSteps * min( 1.0 + L, 2.0 ) ); // cap the budget growth so cost stays bounded
 	#endif
@@ -913,7 +997,12 @@ PS
 		// world-space 3D texture. Albedo/roughness are space-agnostic; the normal map is projected in
 		// model space then rotated back to world (below) since lighting needs a world normal. This is
 		// the SAME model frame the meshed LOD uses (vPositionOs), so the two stay aligned on switch.
-		float3 modelP = WorldToModelPos( p );
+		// The boil offset goes on the SHARED sample point, so albedo, roughness and normal all shift
+		// together and stay registered — a plasticine imperfection is a colour AND a shape, and
+		// jittering only the normal map would peel the fingerprint off its own smudge.
+		// modelP feeds nothing but these three samples (SdfShade/SdfAO/SdfCurvature all work from
+		// world p), so this can't disturb the geometry.
+		float3 modelP = WorldToModelPos( p ) + BoilTexOffset();
 		float3 modelN = normalize( WorldToModelDir( baseN ) );
 
 		float3 albedo = Tex2DTriplanar( g_tAlbedo, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).rgb;

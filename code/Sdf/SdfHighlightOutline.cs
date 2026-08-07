@@ -360,6 +360,8 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 		} );
 		a.Set( "PixelScale", ComputePixelScale() );
 
+		// (Claymation boil is per-member now, pushed into each slot by ApplyHighlightAttributes.)
+
 		// Each member's field bindings + model fold into its shader slot.
 		for ( int slot = 0; slot < ready.Count; slot++ )
 			ready[slot].ApplyHighlightAttributes( _so, slot, MatchDisplacement );

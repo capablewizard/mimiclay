@@ -105,12 +105,15 @@
         "__enabled": true,
         "Flags": 0,
         "AimEaseRate": 10,
+        "BodyRestPositions": null,
+        "BodyRestSizes": null,
         "CarveBlend": 2,
         "CarveColor": "1,0.7098,0.6,1",
         "CarvePellets": 4,
         "CarveRadius": 12.840336,
         "CarveScatter": 2.5,
         "ConvergeFade": 100,
+        "ConvergeMinAhead": 60,
         "DuckBulge": 0.75,
         "DuckChestFollow": 0.75,
         "DuckSpringDamping": 0.4,
@@ -148,6 +151,7 @@
         "LandSquash": 0,
         "LandSquashDamping": 0.7392857,
         "LandSquashRate": 7,
+        "MaxConvergeAngle": 25,
         "NeckDrop": 16,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
@@ -194,6 +198,9 @@
           "go": "40000001-0000-4000-8000-000000000023"
         },
         "HandOffset": "1.21333265,3.72000265,1.6266619",
+        "HandRestPosition": "0,0,0",
+        "HandRestRotation": "0,0,0,1",
+        "HandRestSaved": false,
         "KickBack": 30,
         "KickUp": 35,
         "MaxPositionLag": 100,
@@ -291,7 +298,7 @@
         "IgnoreDepthOfField": true,
         "InsideColor": "0,0,0,0",
         "InsideObscuredColor": "0.52558,0.20045,0.20045,0.53",
-        "MatchDisplacement": false,
+        "MatchDisplacement": true,
         "ObscuredColor": "0,0,0,0.4",
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
@@ -494,6 +501,22 @@
                 "TightBounds": false,
                 "Transmission": true,
                 "UseFieldCache": true
+              },
+              {
+                "__type": "Mimiclay.ClayBoil",
+                "__guid": "e0258673-31d5-4c41-bfb2-e39e48f8ff85",
+                "__enabled": true,
+                "Flags": 0,
+                "AmpJitter": 1,
+                "Fps": 4,
+                "Jitter": 0.4,
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "TextureJitter": 0.02
               }
             ],
             "Children": []
@@ -1451,6 +1474,22 @@
                 "OnComponentFixedUpdate": null,
                 "OnComponentStart": null,
                 "OnComponentUpdate": null
+              },
+              {
+                "__type": "Mimiclay.ClayBoil",
+                "__guid": "6763f927-c0c1-47a5-8fc9-993d46d4eec4",
+                "__enabled": true,
+                "Flags": 0,
+                "AmpJitter": 1,
+                "Fps": 4,
+                "Jitter": 0.4,
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "TextureJitter": 0.02
               }
             ],
             "Children": []
@@ -1628,6 +1667,22 @@
                 "TightBounds": false,
                 "Transmission": true,
                 "UseFieldCache": true
+              },
+              {
+                "__type": "Mimiclay.ClayBoil",
+                "__guid": "09dc7926-7151-4d1a-b4ed-c51e5bc11401",
+                "__enabled": true,
+                "Flags": 0,
+                "AmpJitter": 1,
+                "Fps": 4,
+                "Jitter": 0.4,
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "TextureJitter": 0.02
               }
             ],
             "Children": []

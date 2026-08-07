@@ -618,11 +618,22 @@ public sealed class RoundManager : Component, IRoundContext
 		}
 	}
 
-	int AliveProps => Players.Values.Count( p => p.Role == PlayerRole.Prop && p.Alive );
+	/// <summary>Props still hiding — the ones no hunter has found yet. The win-check counts these, and the HUD
+	/// draws one icon per survivor. The roster is the only truth here: in Infection, props stay off the network
+	/// until the Hunt, so counting pawns in the scene under-reports on every machine but the host's.</summary>
+	public int AliveProps => Players.Values.Count( p => p.Role == PlayerRole.Prop && p.Alive );
 
 	// Hunters on the roster. Alive is meaningless for hunters (a converted prop is Role=Hunter, Alive=false), so
 	// this counts rows by role only.
-	int Hunters => Players.Values.Count( p => p.Role == PlayerRole.Hunter );
+	public int Hunters => Players.Values.Count( p => p.Role == PlayerRole.Hunter );
+
+	/// <summary>The hunter rows in a STABLE order. NetDictionary enumeration order isn't guaranteed, so anything
+	/// drawing one element per hunter has to sort or the row reshuffles between frames (and, for the HUD's
+	/// per-hunter thumbnails, throws away a SceneWorld every time it does).</summary>
+	public List<PlayerInfo> HunterRoster => Players.Values
+		.Where( p => p.Role == PlayerRole.Hunter )
+		.OrderBy( p => p.Connection )
+		.ToList();
 
 	// ── Roster upkeep ────────────────────────────────────────────────────────────────────────────────────────
 	// Host-only. Add late joiners, drop leavers. Pawns aren't tracked here — a leaver's networked pawn is removed by

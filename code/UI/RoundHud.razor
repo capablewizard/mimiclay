@@ -48,7 +48,51 @@
 		}
 		else
 		{
-			<div class="timer">@TimerText</div>
+			@* The clock and its two rails. Fixed-width rails keep the timer dead centre on screen however many
+			   icons either side is carrying. Left = props still hiding, right = the hunters after them. *@
+			<div class="clock-row">
+				<div class="rail rail-left">
+					@if ( ShowTally )
+					{
+						@for ( var i = 0; i < ShownProps; i++ )
+						{
+							<div class="pip prop-pip"></div>
+						}
+						@if ( HiddenProps > 0 )
+						{
+							<div class="pip-more">+@HiddenProps</div>
+						}
+					}
+				</div>
+
+				<div class="timer">@TimerText</div>
+
+				<div class="rail rail-right">
+					@if ( ShowTally )
+					{
+						@foreach ( var hunter in ShownHunters )
+						{
+							var face = FaceBrushesOf( hunter.Connection );
+							if ( face is { Count: > 0 } )
+							{
+								@* Keyed by connection so the razor rebuild (this panel re-renders every second as
+								   the clock ticks) REUSES the panel. A new panel means a new SceneWorld. *@
+								<div class="pip hunter-pip">
+									<SdfThumbnail Brushes=@face class="pip-render" @key=@hunter.Connection />
+								</div>
+							}
+							else
+							{
+								<div class="pip hunter-pip generic"><div class="mi">person</div></div>
+							}
+						}
+						@if ( HiddenHunters > 0 )
+						{
+							<div class="pip-more">+@HiddenHunters</div>
+						}
+					}
+				</div>
+			</div>
 
 			@if ( Phase != RoundPhase.Lobby )
 			{
@@ -137,6 +181,59 @@
 			var m = (int)(t / 60f);
 			var s = (int)(t % 60f);
 			return $"{m}:{s:00}";
+		}
+	}
+
+	// ── The tally either side of the clock ─────────────────────────────────────────────────────────────────────
+	// Left: one pip per prop still hiding. Right: one per hunter, showing that hunter's actual sculpted head where
+	// we can resolve it (SdfThumbnail renders it live off an offscreen SdfStage) and a generic glyph where we
+	// can't — a remote player's face brushes aren't replicated, so only pawns this machine has get a portrait.
+	const int MaxPips = 8;
+
+	// Roles only exist from Starting onward, and Consolidation has its own results readout.
+	bool ShowTally => RoundManager.Current.IsValid()
+		&& Phase is RoundPhase.Starting or RoundPhase.Hide or RoundPhase.Hunt or RoundPhase.Reveal;
+
+	int PropsLeft => RoundManager.Current.IsValid() ? RoundManager.Current.AliveProps : 0;
+	int ShownProps => Math.Min( PropsLeft, MaxPips );
+	int HiddenProps => Math.Max( 0, PropsLeft - MaxPips );
+
+	int HunterCount => RoundManager.Current.IsValid() ? RoundManager.Current.Hunters : 0;
+	IEnumerable<PlayerInfo> ShownHunters => RoundManager.Current.IsValid()
+		? RoundManager.Current.HunterRoster.Take( MaxPips )
+		: Enumerable.Empty<PlayerInfo>();
+	int HiddenHunters => Math.Max( 0, HunterCount - MaxPips );
+
+	// The face brushes for a roster row, or null if this machine has no pawn for them. Not deep-copied — the
+	// thumbnail's stage copies before it stages anything.
+	List<SdfBrush> FaceBrushesOf( Guid connection )
+	{
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+		{
+			if ( !h.IsValid() || !h.Face.IsValid() )
+				continue;
+
+			// A pawn that hasn't gone on the wire yet has no Network.Owner — if it isn't a proxy, it's ours.
+			var owner = h.GameObject.Network.Owner?.Id ?? (h.IsProxy ? (Guid?)null : Connection.Local?.Id);
+			if ( owner == connection )
+				return h.Face.Brushes;
+		}
+
+		return null;
+	}
+
+	// How many hunter faces this machine can currently resolve. Folded into BuildHash so a pawn spawning (or its
+	// sculpt arriving) triggers a re-render — otherwise the portraits would stay on the generic glyph until some
+	// unrelated change happened to force one.
+	int FaceSignal
+	{
+		get
+		{
+			var n = 0;
+			foreach ( var h in Scene.GetAllComponents<HunterController>() )
+				if ( h.IsValid() && h.Face.IsValid() && h.Face.Brushes is { Count: > 0 } )
+					n++;
+			return n;
 		}
 	}
 
@@ -237,5 +334,6 @@
 	protected override int BuildHash()
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
-				SculptEditSession.Current?.IsEditing ?? false ) ); // hotkey hints hide while sculpt-editing
+				SculptEditSession.Current?.IsEditing ?? false ), // hotkey hints hide while sculpt-editing
+			HashCode.Combine( ShowTally, PropsLeft, HunterCount, FaceSignal ) );
 }

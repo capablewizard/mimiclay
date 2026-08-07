@@ -211,6 +211,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// like <see cref="RenderHidden"/> — not a [Property].</summary>
 	public SdfViewLayer ViewLayer { get; set; } = SdfViewLayer.Normal;
 
+	/// <summary>Render into a SceneWorld other than the scene's own. The component still lives in — and ticks
+	/// with — the real scene (that's the only place a Component runs), but its scene object is created in this
+	/// world instead, so the game camera cannot see it at any position and only that world's lights reach it.
+	/// This is the hook the offscreen thumbnail stage (<see cref="SdfStage"/>) hangs off. Null = the scene's own
+	/// world, which is every normal prop. Not a [Property] — it's a code-only handle.</summary>
+	public SceneWorld TargetWorld { get; set; }
+
+	SceneWorld RenderWorld => TargetWorld ?? Scene.SceneWorld;
+
 	/// <summary>Viewmodel FOV ratio — tan(cameraHalfFov)/tan(viewmodelHalfFov). The shader warps the proxy's
 	/// raster footprint by this and unwarps per pixel, so the marched rays belong to the VIEWMODEL's own
 	/// projection: camera FOV and gun FOV are fully independent. 1 = render in the camera's projection.
@@ -290,6 +299,16 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// safety understep), so it's a toggle. The LOOK (lump depth/density) is tuned on the MATERIAL,
 	/// alongside the transmission and curvature-shading params.</summary>
 	[Property, Group( "Displacement" )] public bool Displace { get; set; }
+
+	/// <summary>This prop's offset into the claymation boil (see <see cref="ClayBoil"/>). The boil
+	/// TICK is global — real stop-motion advances every model on the same frame — so only the random
+	/// offset varies per prop, otherwise a room full of props visibly re-forms in lockstep.
+	/// Derived from GameObject.Id, NOT the transform: a position-derived seed would re-roll the boil
+	/// pattern as the prop moved. The irrational multiplier keeps seeds off the integer tick grid, so
+	/// two props can't share a sequence by landing a whole number apart. Kept under 64 to stay in the
+	/// range where the shader's frac()-based hash has mantissa left (the tick is wrapped for the same
+	/// reason) — a big seed reads as "all props share one offset" once precision runs out.</summary>
+	private float BoilSeed => ( ( GameObject.Id.GetHashCode() & 0xFFFF ) * 0.6180339887f ) % 64f;
 
 	/// <summary>Subsurface / back-scatter lighting — thin parts glow when back-lit (foliage, skin,
 	/// ears). Thickness is read from the SDF itself, so it's cheap (runs once after the hit, not per
@@ -670,6 +689,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			ApplyMeshMode();
 
 		EnsureResources();
+
+		// A SceneObject belongs to the world it was constructed in, so a TargetWorld swap can't be patched onto
+		// the live one — drop it and let the block below rebuild it in the new world.
+		if ( _so.IsValid() && _so.World != RenderWorld )
+		{
+			_so.Delete();
+			_so = null;
+		}
+
 		var tx = WorldTransform;
 
 		// Rebuild geometry + packed brush data only when the brushes / transform change. UseFieldCache is in
@@ -744,7 +772,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			}
 			else
 			{
-				_so = new SceneObject( Scene.SceneWorld, model );
+				_so = new SceneObject( RenderWorld, model );
 				// Per-object attributes (BrushData/Bounds/Count) don't survive batching, so two
 				// SDF objects sharing the material would collapse into one draw and hide together.
 				_so.Batchable = false;
@@ -823,6 +851,17 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// Displacement look (amp/freq) and curvature shading are MATERIAL params now — only the combo
 		// toggle lives here.
 		_so.Attributes.SetCombo( "D_DISPLACE", Displace ? 1 : 0 );
+
+		// Claymation boil — OPT-IN per prop: only a GameObject carrying an enabled ClayBoil boils.
+		// The else branch is not optional; see ClayBoil.ApplyOff (attributes persist, so a removed or
+		// disabled component would otherwise leave the prop boiling forever). Pushed every frame so
+		// live tuning, and adding/removing the component in play mode, both take effect immediately.
+		var boil = GameObject.Components.Get<ClayBoil>(); // self-only + enabled-only
+		if ( boil is not null )
+			boil.Apply( _so.Attributes );
+		else
+			ClayBoil.ApplyOff( _so.Attributes );
+		_so.Attributes.Set( "BoilSeed", BoilSeed );
 
 		// Transmission look (tint, strength, thickness) lives on the material; this just gates the combo.
 		_so.Attributes.SetCombo( "D_TRANSMISSION", Transmission ? 1 : 0 );
@@ -1186,6 +1225,18 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		}
 		a.Set( $"DispAmp{slot}", dispAmp );
 		a.Set( $"DispFreq{slot}", dispFreq );
+
+		// The boil offsets the displacement noise per tick, so the outline needs this member's boil
+		// to track the lumpy edge — a mismatch slides the band off the silhouette by the jitter
+		// amount, every tick. PER-SLOT, not shared: boil is opt-in per GameObject now, so a group can
+		// legitimately mix a boiling member with a still one (hunter head + body), and one shared set
+		// of values would be wrong for at least one of them.
+		var boil = matchDisplacement && Displace ? GameObject.Components.Get<ClayBoil>() : null;
+		if ( boil is not null )
+			boil.Apply( a, slot.ToString() );
+		else
+			ClayBoil.ApplyOff( a, slot.ToString() );
+		a.Set( $"BoilSeed{slot}", BoilSeed );
 
 		a.Set( $"FieldTex{slot}", _fieldGpu.Texture );
 		a.Set( $"FieldMin{slot}", _fieldGpu.Mins );

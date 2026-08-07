@@ -17,6 +17,14 @@ public class SavedSculptsWindow : BaseWindow
 {
 	Layout _listLayout;
 
+	/// <summary>Render resolution for each row's thumbnail — the icon size the whole system targets. Kept above
+	/// the display size so the downsample in <see cref="PixmapView"/> has headroom on a scaled display.</summary>
+	const int ThumbnailSize = 256;
+
+	/// <summary>How big those rows actually draw. Smaller than the render, deliberately: judging lighting wants
+	/// detail, but a full 256px row would only fit three sculpts on screen.</summary>
+	const int ThumbnailDisplaySize = 128;
+
 	[Menu( "Editor", "Mimiclay/Saved Sculpts…", "view_in_ar" )]
 	public static void OpenWindow()
 	{
@@ -36,7 +44,7 @@ public class SavedSculptsWindow : BaseWindow
 	{
 		WindowTitle = "Saved Sculpts";
 		SetWindowIcon( "view_in_ar" );
-		Size = new Vector2( 440, 480 );
+		Size = new Vector2( 560, 560 );
 
 		Layout = Layout.Column();
 		Layout.Margin = 8;
@@ -63,7 +71,14 @@ public class SavedSculptsWindow : BaseWindow
 		_listLayout.Clear( true );
 
 		var names = SculptLibrary.List();
-		if ( names.Count == 0 )
+
+		// The head slot is filtered out of List() (leading underscore = reserved), but it's the one sculpt every
+		// player has — pin it on top so there's always something here to look at.
+		var hasHead = SculptLibrary.Exists( SculptLibrary.HeadSlot );
+		if ( hasHead )
+			AddRow( SculptLibrary.HeadSlot, "(your head)", canDelete: false );
+
+		if ( names.Count == 0 && !hasHead )
 		{
 			_listLayout.Add( new Label.Body( "No saved sculptures yet.\nSave one in-game with  mimi_sculpt_save <name>." ) );
 			_listLayout.AddStretchCell();
@@ -71,18 +86,29 @@ public class SavedSculptsWindow : BaseWindow
 		}
 
 		foreach ( var name in names )
-		{
-			var n = name; // capture per row for the button lambdas
-
-			var row = _listLayout.Add( Layout.Row() );
-			row.Spacing = 4;
-			row.Add( new Label( n ), 1 );
-			row.Add( new Button( "Prefab", "deployed_code" ) { ToolTip = "Export to a .prefab asset", Clicked = () => ExportPrefab( n ) } );
-			row.Add( new Button( "Scene", "add_box" ) { ToolTip = "Add to the current scene", Clicked = () => AddToScene( n ) } );
-			row.Add( new Button( "Delete", "delete" ) { ToolTip = "Delete this save", Clicked = () => Delete( n ) } );
-		}
+			AddRow( name, name, canDelete: true );
 
 		_listLayout.AddStretchCell();
+	}
+
+	void AddRow( string name, string label, bool canDelete )
+	{
+		var n = name; // capture per row for the button lambdas
+
+		var row = _listLayout.Add( Layout.Row() );
+		row.Spacing = 4;
+
+		// Rendered through SdfStage — the same offscreen stage the in-game HUD thumbnails use, so this is the
+		// ground truth for tuning thumbnail_stage.prefab: edit the rig, save, hit Refresh here.
+		// Rendered at the full icon resolution and shown smaller, so it's supersampled rather than aliased.
+		row.Add( new PixmapView { FixedSize = ThumbnailDisplaySize, Pixmap = SdfThumbnailRender.RenderSaved( n, ThumbnailSize ) } );
+
+		row.Add( new Label( label ), 1 );
+		row.Add( new Button( "Prefab", "deployed_code" ) { ToolTip = "Export to a .prefab asset", Clicked = () => ExportPrefab( n ) } );
+		row.Add( new Button( "Scene", "add_box" ) { ToolTip = "Add to the current scene", Clicked = () => AddToScene( n ) } );
+
+		if ( canDelete )
+			row.Add( new Button( "Delete", "delete" ) { ToolTip = "Delete this save", Clicked = () => Delete( n ) } );
 	}
 
 	static void ExportPrefab( string name )

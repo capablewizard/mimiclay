@@ -32,12 +32,93 @@
 			}
 		}
 
+		// The clock and its two tally rails. The rails are FIXED width and equal, which is what keeps the timer
+		// itself centred on screen — sizing them to their contents would shove the clock sideways as props get
+		// found. Each rail packs its icons toward the clock and wraps outward when there are a lot of them.
+		.clock-row {
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+			margin-top: -8px;   // the pull-up the timer used to carry — on the ROW, so the rails ride with it
+
+			.rail {
+				width: 260px;
+				flex-shrink: 0;
+				flex-direction: row;
+				align-items: center;
+				flex-wrap: wrap;
+			}
+
+			.rail-left  { justify-content: flex-end; }
+			.rail-right { justify-content: flex-start; }
+
+			.pip {
+				width: 44px;
+				height: 44px;
+				margin: 3px;
+				align-items: center;
+				justify-content: center;
+				overflow: hidden;   // clips the oversized (supersampled) thumbnail render below
+			}
+
+			// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop" until
+			// these become real per-prop thumbnails.
+			.prop-pip {
+				background-image: url( "/ui/shapeicons/shape_sphere_large.png" );
+				background-size: contain;
+				background-repeat: no-repeat;
+				background-position: center;
+			}
+
+			// Hunters. The portrait variant is an SdfThumbnail rendering that hunter's own sculpted head; the
+			// generic variant is the fallback for a hunter whose pawn this machine doesn't have.
+			.hunter-pip {
+				border-radius: $radius-pill;
+
+				&.generic {
+					background-color: $craft-red;
+					box-shadow: $shadow-edge;
+
+					.mi {
+						font-family: "Material Icons";
+						text-transform: none;    // both resets are mandatory or the ligature breaks
+						letter-spacing: 0;
+						font-size: 30px;
+						color: $scene-text;
+					}
+				}
+
+				// Supersampled. A ScenePanel renders at its LAYOUT size, so a 44px panel gives a 44px render —
+				// and a raymarched surface has no anti-aliasing of its own, so at that size the silhouette
+				// crawls. Instead lay it out at the full 256px icon resolution and scale the result down into
+				// the pip. Scale must stay 44/256 = 0.171875 to match .pip's size.
+				.pip-render {
+					position: absolute;
+					left: 0;
+					top: 0;
+					width: 256px;
+					height: 256px;
+					transform: scale( 0.171875 );
+					transform-origin: top left;
+				}
+			}
+
+			// Overflow marker when a big lobby runs past the pip cap.
+			.pip-more {
+				margin: 3px;
+				font-family: $header-font;
+				font-size: 22px;
+				color: $scene-text;
+				text-shadow: $scene-shadow;
+				align-items: center;
+			}
+		}
+
 		.timer {
 			font-family: $header-font;
 			font-size: 72px;
 			color: $scene-text;
 			text-shadow: $scene-shadow;
-			margin-top: -8px;
 		}
 
 		// Context line under the clock during a round (e.g. "Time Left") — smaller than the timer.
