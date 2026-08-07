@@ -30,6 +30,14 @@ $card-edge:  rgba(44, 36, 24, 0.384);   // softer card outline
 $paper-ink:      #5e4e38;                 // dark brown text / icons on paper (also SdfStagePost.DefaultInk)
 $paper-ink-soft: rgba( 58, 44, 26, 0.5 ); // muted ink (grips, hints)
 
+// --- Layout reservations -----------------------------------------------------
+// The centre corridor that stays clear of the sculpt tool's edge panels, so a centre-anchored HUD element can
+// be on screen at the same time as the edit UI without ever colliding with it. EditHud's panels are full
+// height at both edges — 330px on the left, 190px on the right, each at $panel-inset — so the symmetric safe
+// width is the screen minus twice the WIDER side. Sized for 1080p; s&box SCSS has no arithmetic, so if that
+// left panel changes width this has to be recomputed by hand.
+$hud-centre-safe: 1200px;
+
 // --- Craft accents -----------------------------------------------------------
 $craft-orange:    #f0a836;   // primary action + selection
 $craft-orange-hi: #f8bf5c;   // its hover

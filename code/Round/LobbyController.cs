@@ -142,6 +142,7 @@ public sealed class LobbyController : Component
 			return;
 
 		var go = new GameObject( true, "Round Setup HUD" );
+		go.Flags |= GameObjectFlags.NotSaved; // runtime-only: never let this end up serialised into an asset
 		var screen = go.Components.Create<Sandbox.ScreenPanel>();
 		screen.ZIndex = 500;
 		go.Components.Create<RoundSetup>();

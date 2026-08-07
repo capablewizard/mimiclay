@@ -917,6 +917,17 @@ public sealed class RoundManager : Component, IRoundContext
 		.OrderBy( p => p.Connection )
 		.ToList();
 
+	/// <summary>The surviving prop rows, same stable ordering as <see cref="HunterRoster"/>.
+	/// <para>
+	/// Naming these in the HUD gives nothing away: it says WHO is still hiding, never which object they are.
+	/// And in Infection it isn't even new information — the lobby lists everyone, and a caught prop reappears
+	/// by name on the hunter side, so the survivors are just everyone minus the hunters shown.
+	/// </para></summary>
+	public List<PlayerInfo> PropRoster => Players.Values
+		.Where( p => p.Role == PlayerRole.Prop && p.Alive )
+		.OrderBy( p => p.Connection )
+		.ToList();
+
 	// ── Roster upkeep ────────────────────────────────────────────────────────────────────────────────────────
 	// Host-only. Add late joiners, drop leavers. Pawns aren't tracked here — a leaver's networked pawn is removed by
 	// its NetworkOrphaned.Destroy, and a joiner spawns their own pawn via EnsureOwnPawn once they have a row.

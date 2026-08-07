@@ -1,4 +1,5 @@
 @using System
+@using System.Linq
 @using Sandbox
 @using Sandbox.UI
 @namespace Mimiclay
@@ -48,6 +49,42 @@
 	/// the menu while paused — the edit HUD drops pointer-events (so its buttons don't hover behind the overlay),
 	/// the orbit camera stops reading nav, and PauseMenuSystem forces the cursor visible.</summary>
 	public static bool IsOpen { get; private set; }
+
+	/// <summary>The one live pause menu, or null. PauseMenuSystem spawns one when this is empty.</summary>
+	public static PauseMenu Current { get; private set; }
+
+	// There can only be one. Everything about this menu is global — the Escape consumer, IsOpen, the cursor force —
+	// so a second instance fights the first: both read Escape, both write IsOpen, and either one's OnDestroy used to
+	// unpause the game. Copies used to arrive in bulk (a stale HUD baked into the pawn/prop/gun/thumbnail prefabs
+	// gave every clone its own), so self-destructing here is the safety net that made that self-healing rather than
+	// a slow leak of ScreenPanels. Enforced at the component, not by a scene scan, so it costs nothing.
+	protected override void OnAwake()
+	{
+		base.OnAwake();
+
+		if ( Current.IsValid() && Current != this )
+		{
+			Log.Warning( $"PauseMenu: a second instance appeared on '{GameObject.Name}' — destroying it. " +
+				"If this repeats, something is serialising the runtime Pause HUD into an asset." );
+			DestroySurplus();
+			return;
+		}
+
+		Current = this;
+	}
+
+	// Take the host object with us when it exists only to carry this menu (our own spawned "Pause HUD": a
+	// ScreenPanel and us, nothing else) — otherwise a dead root panel would be left behind on every clone.
+	void DestroySurplus()
+	{
+		var hostIsOurs = !GameObject.Children.Any()
+			&& GameObject.Components.GetAll( FindMode.EverythingInSelf ).All( c => c == this || c is ScreenPanel );
+
+		if ( hostIsOurs )
+			GameObject.Destroy();
+		else
+			Destroy();
+	}
 
 	protected override void OnUpdate()
 	{
@@ -127,10 +164,16 @@
 		StateHasChanged();
 	}
 
-	// If we're torn down while open (ExitToMenu / scene change), clear the static so it never sticks "paused".
+	// If we're torn down while open (ExitToMenu / scene change), clear the statics so nothing sticks "paused".
+	// Guarded on being the live instance: a surplus copy tearing itself down in OnAwake must not unpause the game.
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
+
+		if ( Current != this )
+			return;
+
+		Current = null;
 		IsOpen = false;
 	}
 

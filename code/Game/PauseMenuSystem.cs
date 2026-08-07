@@ -10,14 +10,17 @@ namespace Mimiclay;
 ///
 /// Skipped in the front-end menu scene (which has its own <see cref="MainMenu"/>) — that scene navigates with the
 /// footer Back/Quit, it doesn't want an in-game pause overlay.
+///
+/// TWO HARD RULES, both learned the hard way — the HUD got baked into ten scenes and prefabs, so every pawn, prop,
+/// gun and thumbnail rig cloned its own pause menu:
+///   1. Never spawn in an editor scene. Stage.StartUpdate is signalled from Scene.SharedTick, which EditorTick
+///      calls too — so without the <see cref="Scene.IsEditor"/> guard, merely OPENING a scene or prefab in the
+///      editor drops a "Pause HUD" object into it, and the next save writes it to disk.
+///   2. Flag the object <see cref="GameObjectFlags.NotSaved"/>. Belt to rule 1's braces: a runtime-only object
+///      should never be serialisable into an asset, whatever ticks it.
 /// </summary>
 public sealed class PauseMenuSystem : GameObjectSystem
 {
-	// The HUD we spawned. We key off "is it still alive" rather than a one-shot flag — Game.ChangeScene (the
-	// host/join handoff) can reuse the Scene and keep this system instance, so a permanent flag set in the menu
-	// scene would stick and we'd never spawn once gameplay loads. Re-evaluating each frame is robust to that.
-	PauseMenu _hud;
-
 	public PauseMenuSystem( Scene scene ) : base( scene )
 	{
 		// StartUpdate runs in the scene tick (so PauseMenu.OnUpdate can consume Escape before the menu DLL's
@@ -46,8 +49,15 @@ public sealed class PauseMenuSystem : GameObjectSystem
 		if ( Scene is null )
 			return;
 
-		// Already spawned and alive — the common case; cheap early-out.
-		if ( _hud.IsValid() )
+		// Editing, not playing — see rule 1 on the class. Nothing we create here would ever be wanted, and
+		// anything we DID create could be saved into whatever asset is open.
+		if ( Scene.IsEditor )
+			return;
+
+		// Already spawned and alive — the common case. PauseMenu keeps this static itself (and enforces that it's
+		// the only one), so the check is O(1): no per-frame scene scan, and it's re-evaluated rather than latched,
+		// which matters because Game.ChangeScene reuses the Scene and keeps this system instance.
+		if ( PauseMenu.Current.IsValid() )
 			return;
 
 		// Front-end menu scene → no pause overlay (it navigates with the footer Back/Quit). Re-checked each frame,
@@ -55,16 +65,12 @@ public sealed class PauseMenuSystem : GameObjectSystem
 		if ( Scene.GetAllComponents<MainMenu>().Any() )
 			return;
 
-		// Someone else already made one (e.g. a future scene-placed HUD) — adopt it.
-		_hud = Scene.GetAllComponents<PauseMenu>().FirstOrDefault();
-		if ( _hud.IsValid() )
-			return;
-
 		var go = new GameObject( true, "Pause HUD" );
+		go.Flags |= GameObjectFlags.NotSaved | GameObjectFlags.NotNetworked; // rule 2 — runtime only, ours only
 		// Above the edit HUD's ScreenPanel (default ZIndex 100) so the blur + buttons cover everything, and the
 		// backdrop captures input ahead of it while paused.
 		var screen = go.Components.Create<ScreenPanel>();
 		screen.ZIndex = 1000;
-		_hud = go.Components.Create<PauseMenu>();
+		go.Components.Create<PauseMenu>();
 	}
 }

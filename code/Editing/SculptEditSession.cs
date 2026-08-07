@@ -1084,6 +1084,7 @@ public sealed class SculptEditSession : Component
 			return;
 
 		var go = new GameObject( true, "Edit HUD" );
+		go.Flags |= GameObjectFlags.NotSaved; // runtime-only: never let this end up serialised into an asset
 		go.Components.Create<ScreenPanel>();
 		go.Components.Create<EditHud>();
 	}

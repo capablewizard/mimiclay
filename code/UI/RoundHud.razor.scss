@@ -1,10 +1,27 @@
 @import "/UI/_theme.scss";
 
-// Tally icon size, in one place because three rules have to agree on it: the pip box, the image inside it, and
-// how wide the rails need to be to fit a sensible number per row. SdfIcon derives its render resolution from
-// whatever this ends up as, so there's nothing else to keep in step.
-$pip-size: 112px;
-$rail-width: 380px;
+// Roster icon size, in one place because several rules have to agree on it: the pip box, the image inside it,
+// the fallback glyph, the divider's height, and how wide each side needs to be to fit a sensible number per
+// row. SdfIcon derives its render resolution from whatever this ends up as, so nothing else needs keeping in
+// step.
+// Sized so a full side fits ONE line. The row is [side | clock | side] inside $hud-centre-safe (1200px), the
+// clock takes ~190px of that, and the sides split the rest — so each gets ~505px. At 70px per cell (icon + its
+// 6px of margin) that's seven across before it wraps, which covers a normal lobby.
+$pip-size: 64px;
+
+// HARD width for the whole clock COLUMN — timer, caption, role chip and anything added under them. Fixing the
+// column rather than the timer is what stops the layout caring how wide any of that text is: the digits are
+// proportional so "1:30" and "0:59" don't measure the same, and the sides split whatever this column doesn't
+// take, so a content-sized column nudges every icon sideways once a second.
+//
+// Wide enough for the phase caption ("Until Hunt Begins") on one line. Anything that overruns spills
+// symmetrically rather than clipping, and crucially without moving any icons, since the box can't grow — so
+// overrunning is a cosmetic call, not a layout one.
+$clock-col-width: 150px;
+
+// The idle lobby's status line stands in for the clock and needs far more room than a timer. Matches the
+// max-width on .lobby-status so the column is sized to what actually renders.
+$lobby-status-width: 640px;
 
 // The main player HUD. Clay-craft tokens from _theme.scss so it retunes from one place. Pure readout — never
 // steals the cursor.
@@ -88,30 +105,89 @@ $rail-width: 380px;
 			}
 		}
 
-		// The clock and its two tally rails. The rails are FIXED width and equal, which is what keeps the timer
-		// itself centred on screen — sizing them to their contents would shove the clock sideways as props get
-		// found. Each rail packs its icons toward the clock and wraps outward when there are a lot of them.
-		.clock-row {
+		// ── Three columns: props | clock | hunters ──────────────────────────────────────────────────────────
+		// Each column is its OWN vertical stack, so anything belonging to one side grows downward inside it
+		// without disturbing the other two — per-prop whistle timers under the left, the caption and role chip
+		// under the clock. Capped at the corridor that clears the sculpt tool's edge panels, so this can stay
+		// on screen during an edit session without ever running into them. See $hud-centre-safe.
+		.hud-columns {
+			width: 100%;
+			max-width: $hud-centre-safe;
 			flex-direction: row;
-			align-items: center;
+			// Tops, not centres: the columns are different heights and will diverge further as each grows, and
+			// centring would slide the clock up and down as the others gained rows.
+			align-items: flex-start;
 			justify-content: center;
-			margin-top: -8px;   // the pull-up the timer used to carry — on the ROW, so the rails ride with it
 
-			.rail {
-				width: $rail-width;
-				flex-shrink: 0;
-				flex-direction: row;
+			.hud-col {
+				flex-direction: column;
 				align-items: center;
+			}
+
+			// Equal halves, always — that is the ONLY thing that keeps the clock on screen centre. Sizing each
+			// to its own contents packs a lopsided round more tightly, but it moves the clock off centre, and
+			// the clock is the anchor the whole HUD is read against.
+			//
+			// The cost is paid in icon size instead: $pip-size is set so a full side fits one line inside its
+			// half of the corridor. Past that the icons wrap downward, which flex-start absorbs.
+			.col-props,
+			.col-hunters {
+				flex-grow: 1;
+				flex-basis: 0;
+			}
+
+			// FIXED width, and that's the whole job: everything stacked under the clock — a long caption, the
+			// role chip — is centred inside this box and can never widen it, so the rosters either side never
+			// get shoved outward. Its margins are the gap the two groups face each other across.
+			.col-clock {
+				width: $clock-col-width;
+				flex-shrink: 0;
+				margin-left: $space-md;
+				margin-right: $space-md;
+
+				// The idle lobby's status line replaces the clock entirely and needs far more room. The sides
+				// are flex-grow, so they simply give it up and the column stays centred.
+				&.wide { width: $lobby-status-width; }
+			}
+
+			// The icons inside a side column: a row that wraps, packed toward the clock so the two groups read
+			// as facing each other across it.
+			.roster-icons {
+				width: 100%;
+				flex-direction: row;
+				align-items: flex-start;
 				flex-wrap: wrap;
 			}
 
-			.rail-left  { justify-content: flex-end; }
-			.rail-right { justify-content: flex-start; }
+			.col-props .roster-icons   { justify-content: flex-end; }
+			.col-hunters .roster-icons { justify-content: flex-start; }
+
+			// Icon plus its name. The margin lives here rather than on .pip so the name is inside the spacing
+			// and can't crowd the neighbouring cell.
+			.pip-cell {
+				flex-direction: column;
+				align-items: center;
+				margin: 3px;
+			}
+
+			// Clipped to the icon's width so a long Steam name can't widen the cell and reflow the whole row.
+			.pip-name {
+				max-width: $pip-size;
+				margin-top: 2px;
+				font-family: $body-font;
+				font-weight: $body-weight;
+				font-size: 13px;
+				color: $scene-text;
+				text-shadow: $scene-shadow;
+				text-align: center;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
 
 			.pip {
 				width: $pip-size;
 				height: $pip-size;
-				margin: 3px;
 				align-items: center;
 				justify-content: center;
 			}
@@ -138,7 +214,7 @@ $rail-width: 380px;
 						font-family: "Material Icons";
 						text-transform: none;    // both resets are mandatory or the ligature breaks
 						letter-spacing: 0;
-						font-size: 60px;   // scaled with $pip-size so the fallback glyph still fills its pill
+						font-size: 34px;   // scaled with $pip-size so the fallback glyph still fills its pill
 						color: $scene-text;
 					}
 				}
@@ -166,15 +242,38 @@ $rail-width: 380px;
 			}
 		}
 
+		// No width of its own any more — it hugs its digits and the fixed-width column centres it, which is
+		// both simpler and free of the dead space a box wider than its text was showing.
 		.timer {
+			// Pull up to align the DIGITS with the tops of the icons, not the text's box. A label's box is a
+			// line box: it includes the font's ascent and leading above the cap height, and digits have no
+			// ascenders, so at 72px there's a visible empty band before anything draws. The icons have no such
+			// band — their box is the image. Purely optical, so tune by eye if the font or size changes.
+			margin-top: -14px;
 			font-family: $header-font;
 			font-size: 72px;
 			color: $scene-text;
 			text-shadow: $scene-shadow;
 		}
 
-		// Context line under the clock during a round (e.g. "Time Left") — smaller than the timer.
+		// Context line under the clock during a round (e.g. "Until Hunt Begins") — smaller than the timer.
+		//
+		// Stays INSIDE the clock column: full-width box so it can't widen the column, and a caption too long for
+		// one line wraps onto the next rather than overhanging into the rosters. Each line is centred, so
+		// "UNTIL HUNT BEGINS" stacks tidily instead of ragging left.
+		//
+		// Where it breaks is a function of $clock-col-width — widen the column a little to pull a three-line
+		// caption back onto two.
+		//
+		// Centring needs BOTH properties, at two different levels. The text is an implicit `label` child that
+		// shrinks to its longest line, so justify-content centres that whole block inside the full-width panel
+		// (without it the block hugs the left edge), and text-align on the label centres each line within the
+		// block. Either one alone leaves it looking left-aligned.
 		.clock-caption {
+			width: 100%;
+			justify-content: center;
+			text-align: center;
+			label { text-align: center; }
 			font-family: $header-font;
 			font-size: 26px;
 			color: $scene-text;

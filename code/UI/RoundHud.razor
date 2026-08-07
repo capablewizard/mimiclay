@@ -77,70 +77,103 @@
 			<WobbleText Text=@PhaseLabel class="phase-name" @key=@PhaseLabel />
 		}
 
-		@if ( ShowLobbyStatus )
-		{
-			@* Idle lobby (before the host starts): the jittering status line stands in for the timer entirely. *@
-			<WobbleText Text=@LobbyStatus class="lobby-status auto" Strength=@WobbleText.JitterStrength.Soft @key=@LobbyStatus />
-		}
-		else
-		{
-			@* The clock and its two rails. Fixed-width rails keep the timer dead centre on screen however many
-			   icons either side is carrying. Left = props still hiding, right = the hunters after them. *@
-			<div class="clock-row">
-				<div class="rail rail-left">
-					@if ( ShowTally )
+		@* THREE columns: props | clock | hunters. Each owns its own vertical stack, so anything that belongs to
+		   one side grows DOWNWARD inside it without disturbing the other two — per-prop whistle timers under the
+		   left, the phase caption under the clock, and whatever the hunters end up needing.
+		   In the lobby there's no props/hunters split to make, so the server is dealt evenly either side. *@
+		<div class="hud-columns">
+			<div class="hud-col col-props">
+				<div class="roster-icons">
+					@if ( ShowRoster )
 					{
-						@for ( var i = 0; i < ShownProps; i++ )
+						@if ( HiddenLeft > 0 )
 						{
-							<div class="pip prop-pip"></div>
+							<div class="pip-more">+@HiddenLeft</div>
 						}
-						@if ( HiddenProps > 0 )
+						@foreach ( var player in RosterLeft )
 						{
-							<div class="pip-more">+@HiddenProps</div>
-						}
-					}
-				</div>
+							@* In a round the left side is PROPS: named, but with an anonymous clay blob rather than
+							   a portrait. The name says who's still hiding; the icon never says which object. *@
+							var face = Phase == RoundPhase.Lobby ? FaceOf( player.Connection ) : null;
 
-				<div class="timer">@TimerText</div>
-
-				<div class="rail rail-right">
-					@if ( ShowTally )
-					{
-						@foreach ( var hunter in ShownHunters )
-						{
-							var face = FaceOf( hunter.Connection );
-							if ( face.IsValid() )
-							{
-								@* Keyed by connection so the razor rebuild (this panel re-renders every second as
-								   the clock ticks) REUSES the panel. A new panel means a new SceneWorld. *@
-								<div class="pip hunter-pip">
-									<SdfIcon Key=@hunter.Connection Source=@face OutlineWidth=@PipOutline class="pip-render" />
-								</div>
-							}
-							else
-							{
-								<div class="pip hunter-pip generic"><div class="mi">person</div></div>
-							}
-						}
-						@if ( HiddenHunters > 0 )
-						{
-							<div class="pip-more">+@HiddenHunters</div>
+							<div class="pip-cell">
+								@if ( Phase != RoundPhase.Lobby )
+								{
+									<div class="pip prop-pip"></div>
+								}
+								else if ( face.IsValid() )
+								{
+									<div class="pip hunter-pip">
+										<SdfIcon Key=@player.Connection Source=@face OutlineWidth=@PipOutline class="pip-render" />
+									</div>
+								}
+								else
+								{
+									<div class="pip hunter-pip generic"><div class="mi">person</div></div>
+								}
+								<div class="pip-name">@player.Name</div>
+							</div>
 						}
 					}
 				</div>
 			</div>
 
-			@if ( Phase != RoundPhase.Lobby )
-			{
-				@* Round context, under the clock (replaces the phase header). *@
-				<div class="clock-caption">@ClockCaption</div>
-
-				@if ( LocalRole is PlayerRole.Hunter or PlayerRole.Prop )
+			@* Fixed width, so nothing stacked underneath — a long caption, a role chip — can widen this column
+			   and shove the two rosters outward. That's what keeps the clock nailed to screen centre. *@
+			<div class="hud-col col-clock @(ShowLobbyStatus ? "wide" : "")">
+				@if ( ShowLobbyStatus )
 				{
-					<div class="role-chip role-@(LocalRole.ToString().ToLower())">@LocalRole.ToString().ToUpper()</div>
+					@* Idle lobby (before the host starts): the jittering status line stands in for the timer. *@
+					<WobbleText Text=@LobbyStatus class="lobby-status auto" Strength=@WobbleText.JitterStrength.Soft @key=@LobbyStatus />
 				}
-			}
-		}
+				else
+				{
+					<div class="timer">@TimerText</div>
+
+					@if ( Phase != RoundPhase.Lobby )
+					{
+						<div class="clock-caption">@ClockCaption</div>
+
+						@if ( LocalRole is PlayerRole.Hunter or PlayerRole.Prop )
+						{
+							<div class="role-chip role-@(LocalRole.ToString().ToLower())">@LocalRole.ToString().ToUpper()</div>
+						}
+					}
+				}
+			</div>
+
+			<div class="hud-col col-hunters">
+				<div class="roster-icons">
+					@if ( ShowRoster )
+					{
+						@foreach ( var player in RosterRight )
+						{
+							var face = FaceOf( player.Connection );
+
+							<div class="pip-cell">
+								@if ( face.IsValid() )
+								{
+									@* Keyed by connection so the razor rebuild (this panel re-renders every second as
+									   the clock ticks) REUSES the panel. A new panel means a new SceneWorld. *@
+									<div class="pip hunter-pip">
+										<SdfIcon Key=@player.Connection Source=@face OutlineWidth=@PipOutline class="pip-render" />
+									</div>
+								}
+								else
+								{
+									<div class="pip hunter-pip generic"><div class="mi">person</div></div>
+								}
+								<div class="pip-name">@player.Name</div>
+							</div>
+						}
+						@if ( HiddenRight > 0 )
+						{
+							<div class="pip-more">+@HiddenRight</div>
+						}
+					}
+				</div>
+			</div>
+		</div>
 	</div>
 
 	@* Hidden while sculpt-editing: the edit HUD owns the screen (and its own hint strip) — the lobby/round
@@ -192,8 +225,14 @@
 		_ => "",
 	};
 
-	// The caption shown UNDER the clock during a round (the phase header is gone there). Tells you what the timer is
-	// counting toward.
+	// The caption shown UNDER the clock during a round (the phase header is gone there) — so in a round this IS
+	// the phase label, not just a gloss on the timer.
+	//
+	// Written to be ROLE-NEUTRAL: one caption serves hunters and props alike, so it describes what the clock is
+	// counting toward rather than what you personally are doing. "Hiding" would be plainly wrong for a hunter.
+	//
+	// Free to be longer than the clock column is wide: it wraps onto a second line inside the column rather
+	// than widening it or overhanging the rosters. Prefer wording that breaks tidily across two lines.
 	string ClockCaption => Phase switch
 	{
 		RoundPhase.Starting => "Get Ready",
@@ -237,7 +276,9 @@
 		&& Phase is RoundPhase.Starting or RoundPhase.Hide or RoundPhase.Hunt or RoundPhase.Reveal;
 
 	int PropsLeft => RoundManager.Current.IsValid() ? RoundManager.Current.AliveProps : 0;
-	int ShownProps => Math.Min( PropsLeft, MaxPips );
+	IEnumerable<PlayerInfo> ShownProps => RoundManager.Current.IsValid()
+		? RoundManager.Current.PropRoster.Take( MaxPips )
+		: Enumerable.Empty<PlayerInfo>();
 	int HiddenProps => Math.Max( 0, PropsLeft - MaxPips );
 
 	int HunterCount => RoundManager.Current.IsValid() ? RoundManager.Current.Hunters : 0;
@@ -245,6 +286,42 @@
 		? RoundManager.Current.HunterRoster.Take( MaxPips )
 		: Enumerable.Empty<PlayerInfo>();
 	int HiddenHunters => Math.Max( 0, HunterCount - MaxPips );
+
+	// ── Lobby roster ───────────────────────────────────────────────────────────────────────────────────────
+	// Everyone in the server, before roles exist. Twice the per-side cap, since there's no split to balance —
+	// one row for the whole lobby rather than two competing for width.
+	int LobbyCap => MaxPips * 2;
+
+	int LobbyPlayerCount => LobbyManager.Current.IsValid() ? LobbyManager.Current.Players.Count : 0;
+
+	IEnumerable<PlayerInfo> LobbyRoster => LobbyManager.Current.IsValid()
+		? LobbyManager.Current.Players.Values.OrderBy( p => p.Connection ).Take( LobbyCap )
+		: Enumerable.Empty<PlayerInfo>();
+
+	int HiddenLobbyPlayers => Math.Max( 0, LobbyPlayerCount - LobbyCap );
+
+	// The row is worth drawing whenever there's anyone to put in it — the whole server in the lobby, or the
+	// two sides once a round has assigned roles.
+	bool ShowRoster => Phase == RoundPhase.Lobby ? LobbyPlayerCount > 0 : ShowTally;
+
+	// ── What sits either side of the clock ─────────────────────────────────────────────────────────────────
+	// A round has a natural split (props hiding | hunters seeking). The lobby doesn't, so the server is dealt
+	// evenly — the extra player goes LEFT on an odd count, so the left side is never the shorter one and the
+	// clock doesn't drift right as people join.
+	int LobbyShown => Math.Min( LobbyPlayerCount, LobbyCap );
+	int LobbyLeftCount => (LobbyShown + 1) / 2;
+
+	IEnumerable<PlayerInfo> RosterLeft => Phase == RoundPhase.Lobby
+		? LobbyRoster.Take( LobbyLeftCount )
+		: ShownProps;
+
+	IEnumerable<PlayerInfo> RosterRight => Phase == RoundPhase.Lobby
+		? LobbyRoster.Skip( LobbyLeftCount )
+		: ShownHunters;
+
+	// Overflow markers sit on the OUTSIDE of each group, so the counts stay next to the clock.
+	int HiddenLeft => Phase == RoundPhase.Lobby ? HiddenLobbyPlayers : HiddenProps;
+	int HiddenRight => Phase == RoundPhase.Lobby ? 0 : HiddenHunters;
 
 	// Last face we managed to resolve per player. Losing a face for even ONE frame used to swap the razor branch
 	// from portrait to generic glyph, which deletes the SdfThumbnail panel — and with it a whole SceneWorld, to be
@@ -426,5 +503,8 @@
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false ), // hotkey hints hide while sculpt-editing
-			HashCode.Combine( ShowTally, PropsLeft, HunterCount, FaceSignal, _faceCache.Count, DebugThumb, DebugPlayerCount ) );
+			HashCode.Combine( ShowTally, PropsLeft, HunterCount, FaceSignal, _faceCache.Count, DebugThumb, DebugPlayerCount ),
+			// Lobby roster: nothing else in the hash moves when someone joins or leaves the lobby, so without
+			// this the row would sit stale until the next unrelated rebuild.
+			HashCode.Combine( ShowRoster, LobbyPlayerCount ) );
 }
