@@ -25,9 +25,16 @@ namespace Mimiclay;
 public sealed class HiderController : Component, IGameObjectNetworkEvents
 {
 	// ── Movement ──────────────────────────────────────────────────────────────────────────────────────
+	// Speeds are deliberately the HUNTER's numbers — the stock PlayerController defaults the hunter prefab runs on
+	// (WalkSpeed 110 / RunSpeed 320 / DuckedSpeed 70 / JumpSpeed 300). A prop that moved slower than the thing
+	// chasing it can never break a chase, and the two pawns are the same game: keep them in step, and if the balance
+	// wants props slower, do it deliberately here rather than by them having drifted apart.
 	[Property, Group( "Movement" )] public float WalkSpeed { get; set; } = 110f;
-	[Property, Group( "Movement" )] public float RunSpeed { get; set; } = 200f;
-	[Property, Group( "Movement" )] public float CrouchSpeed { get; set; } = 60f;
+	[Property, Group( "Movement" )] public float RunSpeed { get; set; } = 320f;
+	[Property, Group( "Movement" )] public float CrouchSpeed { get; set; } = 70f;
+
+	/// <summary>Launch speed of a jump (u/s) — the hunter's JumpSpeed, against the same 800 rise gravity, so both
+	/// pawns clear exactly the same height (~56u).</summary>
 	[Property, Group( "Movement" )] public float JumpPower { get; set; } = 300f;
 
 	/// <summary>Upward gravity while rising — tuned so the jump arc up feels right. We integrate gravity
@@ -39,8 +46,13 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	[Property, Group( "Movement" )] public float FallGravityMult { get; set; } = 1.9f;
 
 	/// <summary>How quickly horizontal velocity chases the input target on the ground (per second, exponential).
-	/// Higher = snappier starts/stops; this also serves as the "friction" (input zero decays velocity to zero).</summary>
-	[Property, Group( "Movement" )] public float GroundControl { get; set; } = 12f;
+	/// Higher = snappier starts/stops; this also serves as the "friction" (input zero decays velocity to zero).
+	/// The hunter has effectively NO ramp — the stock controller's AddVelocity adds several times the wish per tick
+	/// and clamps, so it hits full speed within a tick or two and brakes on a damping of 10 — which is what made
+	/// props feel sluggish next to it even at matched top speeds: they spent a quarter-second getting there. 30
+	/// reaches 95% in ~0.1s, close enough to read as instant while still easing the body into motion rather than
+	/// stepping its velocity (this drives a Rigidbody through contacts, not a swept character).</summary>
+	[Property, Group( "Movement" )] public float GroundControl { get; set; } = 30f;
 
 	/// <summary>Weaker horizontal control while airborne, so a jump keeps most of its momentum.</summary>
 	[Property, Group( "Movement" )] public float AirControl { get; set; } = 2.5f;
@@ -402,8 +414,15 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( controlled )
 		{
 			float speed = IsCrouching ? CrouchSpeed : (Input.Down( "run" ) ? RunSpeed : WalkSpeed);
+
+			// CLAMP, don't normalize — exactly what the stock controller does with the same input (see
+			// MoveMode.UpdateMove). Raw AnalogMove is per-axis, so holding two keys gives a vector of length √2 and
+			// diagonals ran 41% faster than straight lines; clamping caps the magnitude at 1 while leaving a
+			// part-deflected analog stick free to ask for less than full speed.
+			var move = Input.AnalogMove.ClampLength( 1f );
+
 			// WASD is in local space; orient it by yaw only so look-up doesn't slow you down.
-			wish = Rotation.FromYaw( MoveYaw ) * Input.AnalogMove * speed;
+			wish = Rotation.FromYaw( MoveYaw ) * move * speed;
 		}
 
 		var vel = Body.Velocity;

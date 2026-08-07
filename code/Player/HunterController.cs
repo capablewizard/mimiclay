@@ -834,6 +834,31 @@ public sealed class HunterController : Component
 			_gun.Place( eye, visualAim, !IsProxy && !EditMode && !GameSettings.HunterThirdPerson,
 				Vector3.Up * armLift + armBob );
 		}
+
+		// Push the renderers' placement snapshot NOW, with every transform above final — exactly what
+		// HunterGun.Place already does for the gun clones, and for the same reason.
+		//
+		// An SdfRaymarchRenderer is PULL-based: it bakes the world transform into its scene object during its own
+		// OnUpdate and never revisits it that frame. Component update order is hash-set enumeration order, which
+		// reshuffles when a pawn is destroyed and respawned (slot reuse — a prop→hunter swap), so after a swap the
+		// renderers can land BEFORE this placement and capture whatever the transform happened to be then.
+		//
+		// Normally that's just a frame of staleness. It becomes visible on a MID-AIR DUCK: the engine raises the
+		// whole pawn by the duck delta in one tick to hold your head still, the pivot follows instantly as its
+		// child, and PlaceVisualPivot cancels it back out here — so a renderer that captured before us packs the
+		// uncancelled +22 and draws the body a body-height too high for exactly one frame. Pushing from here is
+		// order-proof; when a renderer's own update does run after us, its hash is unchanged and it does nothing.
+		// Skipped entirely while concealed: there's nothing to show, and Refresh() would rebuild the scene object
+		// on a branch UpdateConcealment has switched off — handing a hidden hunter its surface back. r.Active
+		// covers the same ground per-renderer for any other reason one might be off.
+		if ( _sdfRenderers is not null && !Concealed )
+		{
+			foreach ( var r in _sdfRenderers )
+			{
+				if ( r.IsValid() && r.Active )
+					r.Refresh();
+			}
+		}
 	}
 
 	// The eye everything visual hangs off this frame, computed LIVE — never read _controller.EyePosition for
