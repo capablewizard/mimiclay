@@ -137,9 +137,17 @@
 				@* Vertical list: Add Shape keeps the SAME spot whatever the state; the selection-only tools
 				   grow downward beneath it instead of shoving it sideways. *@
 				<div class="tool-list">
-					@* Undo / redo share the top row, so Add Shape below keeps the fixed home it's meant to.
-					   Dimmed (and inert) at the ends of the history rather than hidden — a button that
-					   vanishes when you run out of steps reads as a bug. *@
+					@* Toggles placing on/off — while a stamp is held it's the way back to plain editing
+					   (same as a right-click or Esc). Stays the top button: it's the one users reach for
+					   without looking. *@
+					@{ var placing = Session.Tool == SculptTool.Sculpt; }
+					<div class="chip action @(placing ? "on" : "")" @onclick=@(() => Session.SetTool( placing ? SculptTool.Gizmo : SculptTool.Sculpt ))>
+						<div class="icon">@(placing ? "check_circle" : "add_circle")</div><span>@(placing ? "Done" : "Add Shape")</span>
+					</div>
+
+					@* Undo / redo pair up on one row directly under Add Shape, so both keep a fixed home and
+					   the selection-only tools still grow downward beneath them. Dimmed (and inert) at the
+					   ends of the history rather than hidden — a button that vanishes reads as a bug. *@
 					<div class="undo-row">
 						<div class="chip action @(Session.CanUndo ? "" : "disabled")" @onclick=@(() => Session.Undo())>
 							<div class="icon">@SdfIcons.Undo</div><span>Undo</span>
@@ -147,13 +155,6 @@
 						<div class="chip action @(Session.CanRedo ? "" : "disabled")" @onclick=@(() => Session.Redo())>
 							<div class="icon">@SdfIcons.Redo</div><span>Redo</span>
 						</div>
-					</div>
-
-					@* Toggles placing on/off — while a stamp is held it's the way back to plain editing
-					   (same as a right-click or Esc). *@
-					@{ var placing = Session.Tool == SculptTool.Sculpt; }
-					<div class="chip action @(placing ? "on" : "")" @onclick=@(() => Session.SetTool( placing ? SculptTool.Gizmo : SculptTool.Sculpt ))>
-						<div class="icon">@(placing ? "check_circle" : "add_circle")</div><span>@(placing ? "Done" : "Add Shape")</span>
 					</div>
 					@if ( Session.Tool == SculptTool.Gizmo && Brush is not null )
 					{
