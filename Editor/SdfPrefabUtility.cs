@@ -16,15 +16,28 @@ namespace Editor;
 /// <c>.sdfmesh</c> <see cref="SdfBakeUtility"/> bake.
 ///
 /// The prefab is built by cloning the shipped <c>disguise.prefab</c> as a TEMPLATE (so the exported prop keeps
-/// the tuned raymarch renderer, shadow model, colliders and material) and swapping in the sculpture's brushes —
-/// then stripping the disguise's runtime-only children (the pause HUD) and re-GUIDing so it's a standalone
-/// asset, not a copy that aliases the template.
+/// the tuned raymarch renderer, shadow model, collision and material) and swapping in the sculpture's brushes —
+/// then stripping the disguise's runtime-only children (the pause HUD) and the components that only make sense
+/// on a PAWN (see <see cref="StrippedTypes"/>), and re-GUIDing so it's a standalone asset, not a copy that
+/// aliases the template.
 /// </summary>
 public static class SdfPrefabUtility
 {
 	// Under the project's Assets root. Case-insensitive on Windows, so this resolves the existing "Prefabs/".
 	const string TemplateRelPath = "prefabs/disguise.prefab";
 	static readonly string[] OutputRelDir = { "prefabs", "saved" };
+
+	/// <summary>Components carried by the disguise template that must NOT survive onto an exported scene prop.
+	/// <c>ModelCollider</c> because the template's is a snapshot of a play session (it serialises a stale
+	/// <c>sbox_procedural_model.vmdl</c> reference that has nothing to do with this shape) — the surviving
+	/// <see cref="SdfCollider"/> builds a correct one for the exported brushes at runtime, so the prop is still
+	/// solid. <c>SdfHighlightOutline</c> because the outline is a gameplay affordance owned by
+	/// <c>RoundOutlineSystem</c>, not something a piece of scenery should carry.</summary>
+	static readonly string[] StrippedTypes =
+	{
+		"Sandbox.ModelCollider",
+		"Mimiclay.SdfHighlightOutline",
+	};
 
 	/// <summary>Export a live sculpture (route A: sculpted in an editor play session). Names the prefab after
 	/// the sculpture's GameObject, matching the bake tool.</summary>
@@ -124,6 +137,12 @@ public static class SdfPrefabUtility
 		var safe = SanitizeName( name );
 		rootObject["Name"] = safe;
 		rootObject["Children"] = new JsonArray();
+
+		// ...and drop the components a scene prop shouldn't inherit from the disguise template.
+		foreach ( var node in components
+			.Where( c => c is JsonObject && StrippedTypes.Contains( (string)c["__type"] ) )
+			.ToList() )
+			components.Remove( node );
 
 		// Fresh GUIDs so this prefab is a standalone asset, not one that aliases the template's object identities.
 		RemapGuids( root );
