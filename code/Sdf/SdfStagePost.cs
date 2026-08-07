@@ -36,8 +36,12 @@ sealed class SdfStagePost
 	public float Brightness = 1f;
 	public float Contrast = 1f;
 
+	// Ink outline. Width <= 0 = skip.
+	public Color OutlineColor = new( 0.173f, 0.141f, 0.094f );
+	public float OutlineWidth;
+
 	/// <summary>Whether anything would actually draw — the stage skips creating the pass object if not.</summary>
-	public bool Any => TonemapMode > 0 || SharpenStrength > 0f || ColorEnabled;
+	public bool Any => TonemapMode > 0 || SharpenStrength > 0f || ColorEnabled || OutlineWidth > 0f;
 
 	/// <summary>
 	/// Kill switch for the whole chain: `mimiclay_thumb_post false`. This pass grabs the frame buffer and blits
@@ -51,12 +55,29 @@ sealed class SdfStagePost
 	static Material _tonemapMaterial;
 	static Material _sharpenMaterial;
 	static Material _colorMaterial;
+	static Material _outlineMaterial;
 
 	// Our own bag rather than Graphics.Attributes, so a stage render can't leak state into whatever else is
 	// drawing this frame.
 	readonly RenderAttributes _attributes = new();
 
 	/// <summary>Run the chain. Called from the stage's overlay scene object, inside its render scope.</summary>
+	/// <summary>
+	/// Load every shader the chain can blit. MUST be called from the main thread: <see cref="Render"/> runs on
+	/// the RENDER thread and <c>Material.Create</c> asserts main-thread, so loading lazily down there throws
+	/// (and <c>SceneCustomObject</c> swallows it into the log, leaving the whole chain silently dead).
+	///
+	/// Loads all four regardless of which are currently switched on — they're process-wide statics, so it's a
+	/// one-off cost, and tying it to the flags would just mean a config change could reintroduce the crash.
+	/// </summary>
+	public static void EnsureMaterials()
+	{
+		_tonemapMaterial ??= Material.FromShader( "shaders/tonemapping/tonemapping.shader" );
+		_sharpenMaterial ??= Material.FromShader( "shaders/postprocess/pp_sharpen.shader" );
+		_colorMaterial ??= Material.FromShader( "shaders/postprocess/pp_color.shader" );
+		_outlineMaterial ??= Material.FromShader( "shaders/sdf_thumbnail_outline.shader" );
+	}
+
 	public void Render()
 	{
 		if ( !Enabled )
@@ -64,9 +85,9 @@ sealed class SdfStagePost
 
 		// Order matches the components' render stages: Tonemapping (6500), then AfterPostProcess with
 		// Sharpen at order 1 and ColorAdjustments at 3000.
+		// Materials are loaded up-front by EnsureMaterials — never create one here, see its remarks.
 		if ( TonemapMode > 0 )
 		{
-			_tonemapMaterial ??= Material.FromShader( "shaders/tonemapping/tonemapping.shader" );
 			if ( _tonemapMaterial is not null )
 			{
 				Graphics.GrabFrameTexture( "ColorBuffer", _attributes, Graphics.DownsampleMethod.None );
@@ -78,7 +99,6 @@ sealed class SdfStagePost
 
 		if ( SharpenStrength > 0f )
 		{
-			_sharpenMaterial ??= Material.FromShader( "shaders/postprocess/pp_sharpen.shader" );
 			if ( _sharpenMaterial is not null )
 			{
 				Graphics.GrabFrameTexture( "ColorBuffer", _attributes, Graphics.DownsampleMethod.None );
@@ -90,7 +110,6 @@ sealed class SdfStagePost
 
 		if ( ColorEnabled )
 		{
-			_colorMaterial ??= Material.FromShader( "shaders/postprocess/pp_color.shader" );
 			if ( _colorMaterial is not null )
 			{
 				Graphics.GrabFrameTexture( "ColorBuffer", _attributes, Graphics.DownsampleMethod.None );
@@ -102,6 +121,19 @@ sealed class SdfStagePost
 				Graphics.Blit( _colorMaterial, _attributes );
 			}
 		}
+
+		// LAST, deliberately — after tonemapping and colour grading, so the ink lands as the exact colour it was
+		// authored as rather than whatever the grade would have turned it into.
+		if ( OutlineWidth > 0f )
+		{
+			if ( _outlineMaterial is not null )
+			{
+				Graphics.GrabFrameTexture( "ColorBuffer", _attributes, Graphics.DownsampleMethod.None );
+				_attributes.Set( "OutlineColor", new Vector3( OutlineColor.r, OutlineColor.g, OutlineColor.b ) );
+				_attributes.Set( "OutlineWidth", OutlineWidth );
+				Graphics.Blit( _outlineMaterial, _attributes );
+			}
+		}
 	}
 
 	/// <summary>Mirror the post-process components authored on the rig prefab's camera.</summary>
@@ -109,6 +141,14 @@ sealed class SdfStagePost
 	{
 		if ( !rigRoot.IsValid() )
 			return;
+
+		// The outline isn't an engine effect — it's ours, so it's configured on the rig component rather than by
+		// dropping a post-process component on the camera.
+		if ( rigRoot.GetAllComponents<SdfStageRig>().FirstOrDefault() is { } rig )
+		{
+			OutlineColor = rig.OutlineColor;
+			OutlineWidth = rig.OutlineWidth;
+		}
 
 		if ( rigRoot.GetAllComponents<Tonemapping>().FirstOrDefault() is { } tonemap )
 		{

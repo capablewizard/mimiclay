@@ -84,6 +84,20 @@ public sealed class SdfStageRig : Component, Component.ExecuteInEditor
 	/// <summary>Padding around the subject's bounding sphere. 1 = it touches the frame edge.</summary>
 	[Property, Range( 1f, 2f )] public float Margin { get; set; } = 1.2f;
 
+	/// <summary>Ink colour for the outline. Defaults to the UI theme's <c>$paper-edge</c> (#2c2418), the same
+	/// dark ink the paper cards outline with.</summary>
+	[Property, Group( "Outline" )] public Color OutlineColor { get; set; } = new( 0.173f, 0.141f, 0.094f );
+
+	/// <summary>
+	/// Outline thickness as a FRACTION of the image, so it stays the same visual weight at any resolution — a
+	/// 56px HUD pip and a 256px library thumbnail get the same look. 0 turns it off.
+	/// <para>
+	/// It grows OUTWARD from the subject, so it needs somewhere to grow: at <see cref="Margin"/> 1.0 the prop
+	/// touches the frame edge and the outline gets clipped. Leave a little headroom, ~1.05.
+	/// </para>
+	/// </summary>
+	[Property, Group( "Outline" ), Range( 0f, 0.08f )] public float OutlineWidth { get; set; } = 0.02f;
+
 	/// <summary>The subject size this rig's light positions were authored against. See the class summary.</summary>
 	[Property] public float ReferenceRadius { get; set; } = 32f;
 }

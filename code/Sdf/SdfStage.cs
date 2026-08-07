@@ -284,6 +284,10 @@ public sealed class SdfStage : IDisposable
 		if ( !_post.Any )
 			return;
 
+		// We're on the main thread here (stage construction); the render callback below is not, and that's the
+		// only place materials could otherwise get loaded.
+		SdfStagePost.EnsureMaterials();
+
 		_postObject = new SceneCustomObject( World )
 		{
 			// Grabbing the frame buffer needs the engine to keep a copy available for this object.

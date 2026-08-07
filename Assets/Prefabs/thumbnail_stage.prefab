@@ -32,6 +32,8 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
+        "OutlineColor": "0.173,0.141,0.094,1",
+        "OutlineWidth": 0.01,
         "ReferenceRadius": 32,
         "SdfShadowBias": 0.001,
         "SdfShadows": true,
