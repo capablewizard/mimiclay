@@ -37,17 +37,31 @@ public struct RoundSettings
 	/// <summary>The chosen map's <c>ResourcePath</c> (a <see cref="MapResource"/>), or <see cref="MapCatalog.RandomIdent"/>.</summary>
 	public string MapIdent;
 
+	// Sensible opening values — short hide, longer hunt, brief reveal/consolidation, one hunter. Held as CONSTS
+	// rather than written straight into Default below so that inspector properties elsewhere can seed themselves
+	// from the same numbers (see RoundManagerSpawner's rules override). s&box bakes a [Property]'s initializer
+	// into a generated attribute, and an attribute argument has to be a constant expression — a `Default.HideSeconds`
+	// read is not one, and fails to compile. One place to change a default, no drift.
+	public const RoundMode DefaultMode = RoundMode.Infection;
+	public const float DefaultStartCountdownSeconds = 4f;
+	public const float DefaultHideSeconds = 90f;
+	public const float DefaultHuntSeconds = 210f;
+	public const float DefaultRevealSeconds = 30f;
+	public const float DefaultConsolidationSeconds = 12f;
+	public const float DefaultTauntSeconds = 35f;
+	public const int DefaultHunterCount = 1;
+
 	/// <summary>Sensible opening values — short hide, longer hunt, brief reveal/consolidation, one hunter.</summary>
 	public static RoundSettings Default => new()
 	{
-		Mode = RoundMode.Infection,
-		StartCountdownSeconds = 4f,
-		HideSeconds = 90f,
-		HuntSeconds = 210f,
-		RevealSeconds = 30f,
-		ConsolidationSeconds = 12f,
-		TauntSeconds = 35f,
-		HunterCount = 1,
+		Mode = DefaultMode,
+		StartCountdownSeconds = DefaultStartCountdownSeconds,
+		HideSeconds = DefaultHideSeconds,
+		HuntSeconds = DefaultHuntSeconds,
+		RevealSeconds = DefaultRevealSeconds,
+		ConsolidationSeconds = DefaultConsolidationSeconds,
+		TauntSeconds = DefaultTauntSeconds,
+		HunterCount = DefaultHunterCount,
 		MapIdent = MapCatalog.RandomIdent,
 	};
 

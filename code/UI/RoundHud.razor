@@ -22,6 +22,11 @@
 *@
 
 <root class="round-hud">
+	@* Off-screen icon renderers. Declared FIRST so it exists before any SdfIcon below asks it for a texture.
+	   Every SDF icon on this HUD is drawn here once at full resolution and then displayed as a plain image,
+	   which is what lets the same head appear in several places off one render. *@
+	<SdfIconFarm class="icon-farm" />
+
 	@* Debug overlay — networking/round/pawn state. Off by default; toggle with `mimiclay_debug_hud` in console. *@
 	@if ( DebugHud )
 	{
@@ -53,11 +58,11 @@
 				var face = FaceOf( player.Connection );
 
 				<div class="thumb-test-cell">
-					@* Not Live: these render on change like the real pips do. Re-rendering every panel's scene
-					   every frame was only there so a console toggle showed up immediately, and SdfThumbnail
-					   now watches mimiclay_thumb_post itself. Set Live=@true here if you need a live view.
-					   Source wins when it's valid, so Brushes is only the fallback for an unresolved player. *@
-					<SdfThumbnail Source=@face Brushes=@DebugHeadBrushes class="thumb-test-panel" @key=@player.Connection />
+					@* Source wins when it's valid, so Brushes is only the fallback for an unresolved player —
+					   and every fallback shares one key, so they all come off a SINGLE sphere render rather
+					   than one each. That sharing is the whole reason the farm exists. *@
+					<SdfIcon Key=@(face.IsValid() ? (object)player.Connection : "debug-fallback")
+						Source=@face Brushes=@DebugHeadBrushes class="thumb-test-panel" />
 					<div class="thumb-test-label">@player.Name@(face.IsValid() ? "" : " (no face — sphere)")</div>
 				</div>
 			}
@@ -109,7 +114,7 @@
 								@* Keyed by connection so the razor rebuild (this panel re-renders every second as
 								   the clock ticks) REUSES the panel. A new panel means a new SceneWorld. *@
 								<div class="pip hunter-pip">
-									<SdfThumbnail Source=@face class="pip-render" @key=@hunter.Connection />
+									<SdfIcon Key=@hunter.Connection Source=@face OutlineWidth=@PipOutline class="pip-render" />
 								</div>
 							}
 							else
@@ -221,6 +226,12 @@
 	// can't — a remote player's face brushes aren't replicated, so only pawns this machine has get a portrait.
 	const int MaxPips = 8;
 
+	// Ink outline on the tally icons, in screen pixels. An ABSOLUTE 2px rather than the rig's proportional
+	// default, to match every other bordered thing in the UI — .paper-card, .btn and the hotkey chips are all
+	// 2px. Overriding here rather than on the rig keeps editor/library thumbnails on their proportional weight,
+	// which is right for them: a 256px thumbnail wants a heavier line than a 112px icon.
+	const float PipOutline = 2f;
+
 	// Roles only exist from Starting onward, and Consolidation has its own results readout.
 	bool ShowTally => RoundManager.Current.IsValid()
 		&& Phase is RoundPhase.Starting or RoundPhase.Hide or RoundPhase.Hunt or RoundPhase.Reveal;
@@ -251,8 +262,10 @@
 			if ( !h.IsValid() || !h.Face.IsValid() )
 				continue;
 
-			// A pawn that hasn't gone on the wire yet has no Network.Owner — if it isn't a proxy, it's ours.
-			var owner = h.GameObject.Network.Owner?.Id ?? (h.IsProxy ? (Guid?)null : Connection.Local?.Id);
+			// RosterIdOf handles the awkward cases: a pawn that hasn't gone on the wire yet has no Network.Owner
+			// (if it isn't a proxy, it's ours), and every bot pawn is host-owned, so an owner match alone would
+			// pin all of their faces — and the host's own — onto the host's row.
+			var owner = RoundManager.RosterIdOf( h.GameObject );
 			if ( owner != connection )
 				continue;
 

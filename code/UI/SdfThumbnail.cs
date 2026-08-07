@@ -62,6 +62,12 @@ public sealed class SdfThumbnail : ScenePanel
 	/// <summary>Padding override around the prop's bounding sphere. 1 = touching the frame edge.</summary>
 	public float? Margin { get; set; }
 
+	/// <summary>Ink outline overrides. Null keeps what the rig prefab authored.</summary>
+	public Color? OutlineColor { get; set; }
+
+	/// <inheritdoc cref="OutlineColor"/>
+	public float? OutlineWidth { get; set; }
+
 	/// <summary>Re-render every frame rather than only when the sculpt changes. Costs a full scene render per
 	/// frame, so it's for debugging — but it means a console toggle shows up immediately instead of waiting for
 	/// something to invalidate the thumbnail.</summary>
@@ -79,6 +85,9 @@ public sealed class SdfThumbnail : ScenePanel
 	float? _framedFov, _framedMargin;
 	bool _framed;
 	bool _postEnabled = SdfStagePost.Enabled;
+	Color? _appliedOutlineColor;
+	float? _appliedOutlineWidth;
+	bool _outlineApplied;
 
 	public SdfThumbnail()
 	{
@@ -120,6 +129,16 @@ public sealed class SdfThumbnail : ScenePanel
 
 			_stage = new SdfStage( scene );
 			_framed = false; // force a Frame() below
+			_outlineApplied = false;
+		}
+
+		if ( !_outlineApplied || _appliedOutlineColor != OutlineColor || _appliedOutlineWidth != OutlineWidth )
+		{
+			_outlineApplied = true;
+			_appliedOutlineColor = OutlineColor;
+			_appliedOutlineWidth = OutlineWidth;
+			_stage.ApplyOutlineOverride( OutlineColor, OutlineWidth );
+			RenderNextFrame();
 		}
 
 		// With a live Source we only re-read on commit; a static list has nothing that can be mid-edit, so it's

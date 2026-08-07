@@ -399,19 +399,19 @@ public sealed class HunterController : Component
 	{
 		// Owner-only: toggle face-edit mode (Q, the same "Edit" action the hider uses). Done before the input
 		// gates below so entering/leaving takes effect this same frame (no one-frame camera gap on exit).
-		if ( !IsProxy && Input.Pressed( "Edit" ) )
+		if ( Owned && Input.Pressed( "Edit" ) )
 			ToggleEdit();
 
 		// Tab toggles the brush wireframe overlay, same as the hider's props. The session no-ops this unless it's
 		// actually editing, so it's only meaningful in face-edit mode.
-		if ( !IsProxy && Input.Pressed( "ToggleWireframes" ) )
+		if ( Owned && Input.Pressed( "ToggleWireframes" ) )
 			_session?.ToggleWireframes();
 
 		// ToggleView (Tab) flips first/third person — play mode only, since in edit mode Tab is the wireframe
 		// toggle above (the two share the key, split by mode). Stored in GameSettings (per-machine, never
 		// networked — proxies render the same either way) so the choice survives the respawn a prop→hunter
 		// conversion goes through.
-		if ( !IsProxy && !EditMode && Input.Pressed( "ToggleView" ) )
+		if ( Owned && !EditMode && Input.Pressed( "ToggleView" ) )
 			GameSettings.HunterThirdPerson = !GameSettings.HunterThirdPerson;
 
 		// Only the owning client reads look/movement + drives the shared camera; on every other machine the pawn is
@@ -425,7 +425,7 @@ public sealed class HunterController : Component
 
 		if ( _controller.IsValid() )
 		{
-			bool play = !IsProxy && !EditMode;
+			bool play = Owned && !EditMode;
 
 			// Alt-orbit runs before the look gate below so grabbing alt freezes the aim the SAME frame the
 			// orbit starts reading the mouse — otherwise one frame of look would leak into both.
@@ -466,7 +466,7 @@ public sealed class HunterController : Component
 		// interpolated pawn transform); SmoothedEyePosition advances _eyez, so call it exactly once per frame.
 		Vector3 eye = _controller.IsValid() ? SmoothedEyePosition() : WorldPosition;
 
-		if ( !IsProxy && !EditMode && _controller.IsValid() )
+		if ( Owned && !EditMode && _controller.IsValid() )
 		{
 			// Re-lock the cursor for first-person look. Edit mode (the orbit camera) frees it for the gizmo and
 			// never re-hides it on exit, so assert it here every play frame — otherwise look can't capture the
@@ -522,7 +522,21 @@ public sealed class HunterController : Component
 	/// that could give them away reads this one flag — visuals and colliders (<see cref="UpdateConcealment"/>),
 	/// footsteps, shot effects, and the nameplate — so there's a single answer to "can we know they're there".
 	/// Never true for our own pawn: concealment is about what OTHER machines perceive.</summary>
-	public bool Concealed => IsProxy && RoundManager.HuntersConcealed;
+	public bool Concealed => !Owned && RoundManager.HuntersConcealed;
+
+	/// <summary>Set by <see cref="RoundManager"/> on a pawn it spawned for a TEST BOT: host-owned, but with nobody
+	/// behind it. Ownership alone can't express that — the host isn't a proxy on its own bot — so this is the other
+	/// half of <see cref="Owned"/>.</summary>
+	public bool Bot { get; set; }
+
+	/// <summary>True when the player at THIS machine is actually driving this pawn — the only pawn allowed to read
+	/// input, hide its own body, capture the mouse and drive the one shared camera. False on a proxy (someone
+	/// else's hunter, moved by the network) and on a bot (host-owned, nobody home): both are pawns we look AT, so
+	/// they render fully and keep the head collider that makes them shootable.
+	///
+	/// Read LIVE every frame, never cached in OnStart: a host-spawned pawn runs OnStart on the owning client BEFORE
+	/// ownership replicates, so a one-shot read is stale. (IsProxy is false in non-networked play, so solo works.)</summary>
+	bool Owned => !IsProxy && !Bot;
 
 	// The body, resolved once so EnsureVisualPivot can move it under the pivot.
 	GameObject _bodyObject;
@@ -831,7 +845,7 @@ public sealed class HunterController : Component
 				* _duckVisual * (1f - DuckChestFollow)
 				+ HeadOnlyDip;
 
-			_gun.Place( eye, visualAim, !IsProxy && !EditMode && !GameSettings.HunterThirdPerson,
+			_gun.Place( eye, visualAim, Owned && !EditMode && !GameSettings.HunterThirdPerson,
 				Vector3.Up * armLift + armBob );
 		}
 
@@ -1079,7 +1093,7 @@ public sealed class HunterController : Component
 		if ( !_controller.IsValid() )
 			return;
 
-		if ( !IsProxy )
+		if ( Owned )
 			DetectJumpEvents();
 
 		float dt = MathF.Min( Time.Delta, 0.05f );
@@ -1510,8 +1524,8 @@ public sealed class HunterController : Component
 		if ( !_headCollider.IsValid() )
 			return;
 
-		if ( _headCollider.Enabled != IsProxy )
-			_headCollider.Enabled = IsProxy;
+		if ( _headCollider.Enabled != !Owned )
+			_headCollider.Enabled = !Owned;
 	}
 
 	// First person: hide our OWN body so we don't see it but it still casts a shadow, while proxies (other
@@ -1525,7 +1539,7 @@ public sealed class HunterController : Component
 		// Hidden in first person — but while editing your own face you need to SEE yourself, so show it then,
 		// and in third person the whole point is seeing your own hunter, so show it there too. Always false
 		// on proxies: other players' hunters render fully.
-		var hideOwn = !IsProxy && !EditMode && !GameSettings.HunterThirdPerson;
+		var hideOwn = Owned && !EditMode && !GameSettings.HunterThirdPerson;
 
 		// Run puffs go shadows-only in first person too. ParticleModelRenderer has no ShadowRenderType, but
 		// shadows-only IS just CastShadows + ExcludeGameLayer at the SceneObject level, and its RenderOptions.Game
@@ -1546,8 +1560,9 @@ public sealed class HunterController : Component
 			}
 		}
 
-		// Body/SDF first-person hide: our own pawn only — a proxy pawn (another player's) isn't ours to touch.
-		if ( IsProxy )
+		// Body/SDF first-person hide: our own pawn only — a pawn we merely look at (another player's, or a bot's)
+		// isn't ours to touch.
+		if ( !Owned )
 			return;
 
 		if ( _bodyRenderers is not null )
@@ -1970,7 +1985,7 @@ public sealed class HunterController : Component
 		// Gated so this stays safe wherever it's called from: HunterThirdPerson is a LOCAL setting, so a proxy
 		// pawn on a third-person player's machine must never converge on THAT player's camera — it would swing a
 		// remote hunter's head around with our own view.
-		if ( IsProxy || !GameSettings.HunterThirdPerson || !cam.IsValid() )
+		if ( !Owned || !GameSettings.HunterThirdPerson || !cam.IsValid() )
 		{
 			// Nothing to converge — and critically, nothing to EASE either. Zeroing the visual aim drops the
 			// head and gun back onto the raw live EyeAngles, exactly as they were before any of this existed;
@@ -2285,7 +2300,7 @@ public sealed class HunterController : Component
 		// Everyone NEAR the shot feels it, falling off with distance from the shooter — a prop hiding by a
 		// hunter gets rattled. The shooter is excluded (IsProxy): they get the recoil punch in Shoot instead,
 		// and stacking both reads as double vision.
-		if ( IsProxy && ShotShakeRadius > 0f && ShotShakeAmplitude > 0f )
+		if ( !Owned && ShotShakeRadius > 0f && ShotShakeAmplitude > 0f )
 			CameraEffectSystem.Get( Scene )?.AddShake( WorldPosition, ShotShakeRadius, ShotShakeAmplitude, ShotShakeFrequency, ShotShakeTime );
 
 		if ( ShootSound is null )
@@ -2297,7 +2312,7 @@ public sealed class HunterController : Component
 
 		handle.FollowParent = false;
 
-		if ( !IsProxy )
+		if ( Owned )
 			handle.SpacialBlend = 0f;
 	}
 

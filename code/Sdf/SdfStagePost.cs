@@ -18,6 +18,26 @@ namespace Mimiclay;
 /// auto-exposure (needs an internal tonemap system pointer). Exposure is therefore fixed at 1.0, which
 /// matches a Tonemapping component with AutoExposureEnabled off.
 /// </summary>
+/// <summary>
+/// The scene object that runs an <see cref="SdfStagePost"/> chain.
+///
+/// A subclass rather than a <c>RenderOverride</c> lambda on purpose: hot reload has to remap delegates into the
+/// freshly compiled assembly, and a compiler-generated lambda closure has no stable identity to match against —
+/// it gets swapped for an error stub, so the pass throws "Unable to find matching substitution for a lambda
+/// method" on the first render after ANY code change. A virtual override remaps by signature and survives.
+/// </summary>
+sealed class SdfStagePostObject : SceneCustomObject
+{
+	readonly SdfStagePost _post;
+
+	public SdfStagePostObject( SceneWorld world, SdfStagePost post ) : base( world )
+	{
+		_post = post;
+	}
+
+	public override void RenderSceneObject() => _post?.Render();
+}
+
 sealed class SdfStagePost
 {
 	// Tonemapping. Mode 0 = the component's absent or set to None; matches D_TONEMAPPING in the shader.
@@ -36,8 +56,24 @@ sealed class SdfStagePost
 	public float Brightness = 1f;
 	public float Contrast = 1f;
 
+	/// <summary>
+	/// The project's ink colour, and the only definition of it in code — the UI theme's <c>$paper-ink</c>
+	/// (#5e4e38), the warm brown used for text and icons on paper. C# can't read SCSS, so these two are the
+	/// one unavoidable duplicate: change either and change both.
+	/// <para>
+	/// NOT <c>$paper-edge</c> (#2c2418), which is what card and button borders use. That one is a dark line on
+	/// a CREAM field, where it reads as ink; an icon outline floats over the 3D scene with no paper behind it,
+	/// so the same value reads as near-black. Same colour, different context — this is the lighter of the two.
+	/// </para>
+	/// <para>
+	/// Deliberately not a property on the rig prefab: it's a brand colour, and one authored copy per prefab
+	/// would guarantee drift. Per-icon overrides still exist for genuine variation, like team colours.
+	/// </para>
+	/// </summary>
+	public static readonly Color DefaultInk = new( 0.369f, 0.306f, 0.220f );
+
 	// Ink outline. Width <= 0 = skip.
-	public Color OutlineColor = new( 0.173f, 0.141f, 0.094f );
+	public Color OutlineColor = DefaultInk;
 	public float OutlineWidth;
 
 	/// <summary>Whether anything would actually draw — the stage skips creating the pass object if not.</summary>
@@ -142,13 +178,10 @@ sealed class SdfStagePost
 		if ( !rigRoot.IsValid() )
 			return;
 
-		// The outline isn't an engine effect — it's ours, so it's configured on the rig component rather than by
-		// dropping a post-process component on the camera.
+		// The outline isn't an engine effect — it's ours, so its WIDTH is configured on the rig component rather
+		// than by dropping a post-process component on the camera. The colour isn't here at all: see DefaultInk.
 		if ( rigRoot.GetAllComponents<SdfStageRig>().FirstOrDefault() is { } rig )
-		{
-			OutlineColor = rig.OutlineColor;
-			OutlineWidth = rig.OutlineWidth;
-		}
+			OutlineWidth = rig.OutlineFraction;
 
 		if ( rigRoot.GetAllComponents<Tonemapping>().FirstOrDefault() is { } tonemap )
 		{

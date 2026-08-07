@@ -73,10 +73,12 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			return phase >= RoundPhase.Hunt;
 
 		// Prop pawn (outline sits inside the cloned Disguise child): owner-only — except the Reveal show-off,
-		// where the only prop pawns left standing are the survivors.
+		// where the only prop pawns left standing are the survivors. A test bot's prop is host-owned and so isn't
+		// a proxy on the host, which would otherwise hand that machine a through-wall glow on every bot — the
+		// exact tell this whole system exists to deny.
 		var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
-			return !hider.IsProxy || phase == RoundPhase.Reveal;
+			return (!hider.IsProxy && !RoundManager.IsBotPawn( hider.GameObject )) || phase == RoundPhase.Reveal;
 
 		// No pawn above it: a scene decoy.
 		return false;

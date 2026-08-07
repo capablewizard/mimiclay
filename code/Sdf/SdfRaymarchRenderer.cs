@@ -300,6 +300,20 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// alongside the transmission and curvature-shading params.</summary>
 	[Property, Group( "Displacement" )] public bool Displace { get; set; }
 
+	/// <summary>Let the lumps bend this prop's cast SHADOW too, not just its camera silhouette. OFF (the
+	/// default) is a pure saving: the sun's shadow cascades are ORTHOGRAPHIC views, where camera distance
+	/// is meaningless and the march is therefore forced to full quality — so they pay the per-step
+	/// displacement noise at the highest step count of any view in the frame, and pay the understep and
+	/// grown step budget on top. Turning it off there also makes the field a true distance field again in
+	/// those views, so both safety factors drop out as well.
+	///
+	/// The cost of OFF is that the shadow is cast by the SMOOTH surface: up to the material's DispAmp
+	/// (~1 unit at the stock plasticine) of lump missing from the shadow edge. On a soft, distant or
+	/// small shadow that is invisible; on a hero prop throwing a big sharp shadow across a flat floor it
+	/// can just about be read, which is why this is per-prop rather than a global rule. No effect with
+	/// <see cref="Displace"/> off.</summary>
+	[Property, Group( "Displacement" )] public bool DisplaceShadows { get; set; }
+
 	/// <summary>This prop's offset into the claymation boil (see <see cref="ClayBoil"/>). The boil
 	/// TICK is global — real stop-motion advances every model on the same frame — so only the random
 	/// offset varies per prop, otherwise a room full of props visibly re-forms in lockstep.
@@ -849,8 +863,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
 		// Displacement look (amp/freq) and curvature shading are MATERIAL params now — only the combo
-		// toggle lives here.
+		// toggle and the per-prop shadow choice live here.
 		_so.Attributes.SetCombo( "D_DISPLACE", Displace ? 1 : 0 );
+		_so.Attributes.Set( "DispShadows", DisplaceShadows ? 1 : 0 );
 
 		// Claymation boil — OPT-IN per prop: only a GameObject carrying an enabled ClayBoil boils.
 		// The else branch is not optional; see ClayBoil.ApplyOff (attributes persist, so a removed or

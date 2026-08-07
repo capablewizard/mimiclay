@@ -233,6 +233,13 @@ PS
 	float g_flDispAmp  < Default( 0.35 ); Range( 0.0, 4.0 );  UiGroup( "Displacement,12/10" ); >;
 	float g_flDispFreq < Default( 0.25 ); Range( 0.01, 2.0 ); UiGroup( "Displacement,12/20" ); >;
 
+	// Whether the lumps also bend the prop's SHADOW silhouette. An ATTRIBUTE, not a material param —
+	// it's a per-prop cost/look call pushed by SdfRaymarchRenderer.DisplaceShadows, not part of the
+	// plasticine look shared by every prop on the material. Defaults to 0 so any path that forgets to
+	// push it gets the cheap behaviour rather than silently paying for shadow lumps (see
+	// SetupDisplacement for why ortho views are the expensive place to displace).
+	int g_nDispShadows < Attribute( "DispShadows" ); Default( 0 ); >;
+
 	// Claymation boil (see Displacement below). Pushed per-object by SdfRaymarchRenderer from the
 	// prop's OWN ClayBoil component — it's opt-in per GameObject, not a scene-wide look, because a
 	// whole room boiling at once reads as an unstable picture rather than as handmade props.
@@ -411,11 +418,46 @@ PS
 	//    sideways, which reads as the prop swimming; separate offsets make the lumps re-form in place.
 	//
 	// BoilFps 0 makes this an exact no-op (both offsets 0, amp untouched) — identical to boil off.
-	float Displacement( float3 lp )
+	//
+	// HOISTED PER PIXEL: the boil terms below (b0/b1/amp) derive ONLY from uniforms — g_flTime, the four
+	// Boil* attributes and g_flDispAmp — so they are identical for every one of the ~150 SdfDistWs calls a
+	// single pixel makes (the march loop, SdfNormal's 6 taps, SdfCurvature's 5, SdfAO's 5, the transmission
+	// probe and its march). Recomputing them per sample cost 7 of the 23 hash13 evaluations each sample
+	// paid for. They live in the statics below, filled once by SetupDisplacement.
+	//
+	// Deliberately still computed IN THE SHADER from g_flTime rather than pushed from C#: the tick must be
+	// bit-identical in the depth prepass, the colour pass, every shadow view AND sdf_highlight within one
+	// frame (see the note above — a mismatch cracks the silhouette and floats the shadow off the prop), and
+	// a CPU-side hash13 reproduction risks diverging from the GPU's by an ULP. Hoisting keeps one source of
+	// truth while still paying for it once.
+	static float3 s_boilB0    = 0.0;
+	static float3 s_boilB1    = 0.0;
+	static float  s_dispAmp   = 0.0; // this tick's amp, wobble applied
+	static float  s_dispBound = 0.0; // worst-case |Displacement| — the conservative bound SdfDistMarchWs skips with
+	static bool   s_dispOn    = false;
+
+	// Fill the statics above. MUST run before anything marches or shades; RayMarchHit calls it as soon as
+	// it knows the projection, which is ahead of both its own loop and all of the shading taps.
+	//
+	// ORTHO (sun shadow cascade) views switch displacement OFF unless g_nDispShadows says otherwise. The
+	// lumps are at most g_flDispAmp (~0.8 units) of silhouette wobble, which is usually invisible in a
+	// cast shadow, but ortho views march at FULL quality by definition (LodQuality is meaningless there,
+	// so q is forced to 1) — so they pay the per-step noise at the maximum step count of any view in the
+	// frame. Off there also drops the understep and the budget growth in RayMarchHit, which compound.
+	// Per-prop, because whether a lumpy shadow edge is worth that is a per-prop judgement: a hero prop
+	// throwing a big sharp shadow onto a flat floor can be worth it, a pawn's own body is not.
+	void SetupDisplacement( bool ortho )
 	{
-		float3 x = lp * g_flDispFreq;
-		float3 b0 = 0.0, b1 = 0.0;
-		float  amp = g_flDispAmp;
+		s_boilB0 = 0.0;
+		s_boilB1 = 0.0;
+		s_dispAmp = 0.0;
+		s_dispBound = 0.0;
+		s_dispOn = !ortho || g_nDispShadows != 0;
+
+		if ( !s_dispOn )
+			return;
+
+		float amp = g_flDispAmp;
 
 		if ( g_flBoilFps > 0.0 )
 		{
@@ -426,36 +468,76 @@ PS
 			// float32 mantissa — the boil would quietly slow down and then freeze. An 85-second
 			// repeat in a sub-pixel jitter is not something anyone can see.
 			float tick = fmod( floor( g_flTime * g_flBoilFps ), 1024.0 ) + g_flBoilSeed;
-			b0 = BoilOffset( tick )         * g_flBoilJitter;
-			b1 = BoilOffset( tick + 101.0 ) * g_flBoilJitter * 2.7; // fine octave rolls harder
+			s_boilB0 = BoilOffset( tick )         * g_flBoilJitter;
+			s_boilB1 = BoilOffset( tick + 101.0 ) * g_flBoilJitter * 2.7; // fine octave rolls harder
 			// Per-tick lump-depth wobble: the surface reading slightly deeper/shallower frame to
 			// frame is the cheaper half of the effect. Bounded by BoilAmpJitter — the step-safety L
 			// below uses that bound, not this instantaneous value.
 			amp *= 1.0 + ( hash13( float3( tick, 7.77, 1.23 ) ) - 0.5 ) * g_flBoilAmpJitter;
 		}
 
-		float n = vnoise( x + b0 ) * 0.67 + vnoise( x * 2.03 + 11.7 + b1 ) * 0.33; // ~[0,1]
-		return (n * 2.0 - 1.0) * amp;
+		s_dispAmp = amp;
+		// The BOUND, not this tick's value: sized from the same worst case L uses, so it holds for every
+		// tick and never has to be recomputed when the boil rolls.
+		s_dispBound = g_flDispAmp * ( 1.0 + max( g_flBoilAmpJitter, 0.0 ) * 0.5 );
+	}
+
+	float Displacement( float3 lp )
+	{
+		float3 x = lp * g_flDispFreq;
+		float n = vnoise( x + s_boilB0 ) * 0.67 + vnoise( x * 2.03 + 11.7 + s_boilB1 ) * 0.33; // ~[0,1]
+		return (n * 2.0 - 1.0) * s_dispAmp;
 	}
 
 	// Combined field at WORLD point p: fold once into the prop's LOCAL frame — where the brushes are
 	// packed and the field is baked — and evaluate there. The transform is rigid (unit scale), so the
 	// local distance IS the world distance and sphere-trace steps along the world ray stay valid. The
 	// analytic loop is the shared sdf_eval.hlsl SdfDist — the same code the field baker dispatches.
-	float SdfDistWs( float3 p )
+	// The UNDISPLACED field, plus the local point (so callers needing the noise don't fold twice).
+	float SdfRawWs( float3 p, out float3 lp )
 	{
-		float3 lp = WorldToModelPos( p );
+		lp = WorldToModelPos( p );
 	#if ( D_FIELD_TEX )
 		// Cached path: one trilinear fetch of the baked field instead of the per-brush loop. Sparse-atlas vs dense
 		// volume is a RUNTIME branch (g_nSdfSparse), not a combo, to avoid a 7th DynamicCombo.
-		float d = g_nSdfSparse != 0 ? SampleFieldSparse( lp ) : SampleFieldTex( lp );
+		return g_nSdfSparse != 0 ? SampleFieldSparse( lp ) : SampleFieldTex( lp );
 	#else
-		float d = SdfDist( lp );
+		return SdfDist( lp );
 	#endif
+	}
+
+	float SdfDistWs( float3 p )
+	{
+		float3 lp;
+		float d = SdfRawWs( p, lp );
 	#if ( D_DISPLACE )
 		// Subtracting noise along the field pushes the whole iso-surface in/out -> bumpy silhouette.
 		// SdfNormal differences this same field, so shading + the depth-prepass normal track the lumps.
-		d -= Displacement( lp );
+		if ( s_dispOn )
+			d -= Displacement( lp );
+	#endif
+		return d;
+	}
+
+	// MARCH-ONLY distance. Same surface as SdfDistWs, far cheaper away from it.
+	//
+	// Displacement can move the iso-surface by at most +/-s_dispBound, so once a sample is comfortably
+	// outside that band, subtracting the BOUND is still a valid sphere-trace distance — it can only ever
+	// UNDER-estimate (s_dispBound >= Displacement() everywhere), which is the safe direction — and the
+	// noise can be skipped entirely. On a sphere trace most steps are the long approach through empty
+	// space, so this is where the bulk of the ~400 ALU/sample went.
+	//
+	// The traced surface is unchanged. The skip branch can only fire when d > 2*s_dispBound, which leaves
+	// d - s_dispBound > s_dispBound — orders of magnitude above the hit epsilon (0.05 vs ~1.2), so it can
+	// never register a hit or step past one. Only the march uses this: SdfNormal, SdfCurvature, SdfAO and
+	// the transmission taps all still go through the exact SdfDistWs above, so shading is bit-identical.
+	float SdfDistMarchWs( float3 p )
+	{
+		float3 lp;
+		float d = SdfRawWs( p, lp );
+	#if ( D_DISPLACE )
+		if ( s_dispOn )
+			d -= ( d > s_dispBound * 2.0 ) ? s_dispBound : Displacement( lp );
 	#endif
 		return d;
 	}
@@ -771,6 +853,12 @@ PS
 		// the offset is NOT the view's camera position (it stays the frame's game camera).
 		float3 ro, rd;
 		bool ortho = IsOrthoView();
+
+		// Fill the hoisted displacement statics for this pixel (and switch the noise off entirely in ortho
+		// shadow views). Must precede the march AND the shading taps that follow the hit, both of which
+		// read them — this is the earliest point where the projection is known.
+		SetupDisplacement( ortho );
+
 		if ( ortho )
 		{
 			// Ortho view (directional-light shadow cascade, or an ortho editor viewport): rays are
@@ -847,16 +935,23 @@ PS
 		// The boil's per-tick amp wobble can push amp above g_flDispAmp, so size L from the WORST
 		// case (+half of BoilAmpJitter) — a per-tick L would understep on the ticks that wobble up,
 		// which shows as edge misses that flicker in time with the boil.
-		float L   = g_flDispAmp * ( 1.0 + max( g_flBoilAmpJitter, 0.0 ) * 0.5 ) * g_flDispFreq * 4.0;
-		stepScale *= 1.0 / (1.0 + L);
-		maxSteps  = (int)( maxSteps * min( 1.0 + L, 2.0 ) ); // cap the budget growth so cost stays bounded
+		//
+		// Skipped entirely when SetupDisplacement turned the noise off (ortho shadow views): with no
+		// displacement the field is a true distance field again, so the understep and the extra budget
+		// would both be pure waste on top of the full step count those views already march at.
+		if ( s_dispOn )
+		{
+			float L   = s_dispBound * g_flDispFreq * 4.0;
+			stepScale *= 1.0 / (1.0 + L);
+			maxSteps  = (int)( maxSteps * min( 1.0 + L, 2.0 ) ); // cap the budget growth so cost stays bounded
+		}
 	#endif
 
 		float t = tEnter;
 		[loop]
 		for ( int s = 0; s < maxSteps; s++ )
 		{
-			float d = SdfDistWs( ro + rd * t );
+			float d = SdfDistMarchWs( ro + rd * t );
 			if ( d < eps ) { hitP = ro + rd * ( t + d ); return true; } // refine onto surface (d~=0), not the eps-shell: kills field-path contour banding
 			t += d * stepScale;
 			if ( t > tExit ) break;

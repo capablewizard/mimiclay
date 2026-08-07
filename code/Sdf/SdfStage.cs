@@ -50,7 +50,7 @@ public sealed class SdfStage : IDisposable
 	// to a raw SceneCamera. Lives in the private world as an overlay object, so BOTH the editor preview and
 	// the in-game thumbnail get the identical chain.
 	readonly SdfStagePost _post = new();
-	SceneCustomObject _postObject;
+	SdfStagePostObject _postObject;
 	SceneSkyBox _sky;
 
 	// Rig values, read from the prefab (or the fallback defaults below).
@@ -276,23 +276,36 @@ public sealed class SdfStage : IDisposable
 	}
 
 	/// <summary>
+	/// Override the rig's outline for this stage only. Null keeps whatever the rig authored. Safe to call after
+	/// construction — <see cref="SdfStagePost.Render"/> reads these live, and the pass object is created here if
+	/// the rig hadn't asked for one.
+	/// </summary>
+	public void ApplyOutlineOverride( Color? colour, float? width )
+	{
+		if ( colour is { } c )
+			_post.OutlineColor = c;
+
+		if ( width is { } w )
+			_post.OutlineWidth = w;
+
+		BuildPostPass();
+	}
+
+	/// <summary>
 	/// The post-process chain, as an overlay object in the private world. OverlayWithoutDepth draws after the
-	/// scene's own post block, which is where the effect components' blits would have landed.
+	/// scene's own post block, which is where the effect components' blits would have landed. Idempotent — the
+	/// outline override calls it again in case the rig alone hadn't asked for a pass.
 	/// </summary>
 	void BuildPostPass()
 	{
-		if ( !_post.Any )
+		if ( _postObject.IsValid() || !_post.Any )
 			return;
 
-		// We're on the main thread here (stage construction); the render callback below is not, and that's the
-		// only place materials could otherwise get loaded.
+		// Main thread here (stage construction, or an override applied from a panel tick); RenderSceneObject is
+		// NOT, and that's the only other place materials could get loaded.
 		SdfStagePost.EnsureMaterials();
 
-		_postObject = new SceneCustomObject( World )
-		{
-			// Grabbing the frame buffer needs the engine to keep a copy available for this object.
-			RenderOverride = _ => _post.Render(),
-		};
+		_postObject = new SdfStagePostObject( World, _post );
 
 		// SceneObject.RenderLayer's setter early-outs on a cached value the Default branch clears natively but
 		// never writes back, so assign a different layer first to move the cache off Default. Same dance as

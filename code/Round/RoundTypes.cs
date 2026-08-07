@@ -73,4 +73,22 @@ public struct PlayerInfo
 	/// <summary>Which spawn point of this player's kind they use, assigned by the host so each player picks a distinct
 	/// spot when they spawn their OWN pawn (the host no longer spawns pawns — see <see cref="RoundManager"/>).</summary>
 	public int SpawnIndex;
+
+	/// <summary>This row is a TEST BOT, not a real connection: no machine, no input, nobody behind it. It plays the
+	/// game everywhere the roster is the truth (counts, win checks, scoring, the HUD tally) and the HOST spawns its
+	/// body, because there's no owning machine to spawn one. Two places have to know: the leaver sweep
+	/// (<see cref="RoundManager"/>.ReconcileConnections) must not drop a row with no connection behind it, and
+	/// pawn ownership must be resolved through <see cref="RoundManager.RosterIdOf"/> rather than Network.Owner.</summary>
+	public bool Bot;
+}
+
+/// <summary>Debug override for the side the LOCAL player takes at role assignment, so you can test either seat
+/// without restarting until the dice agree. <see cref="Auto"/> is normal play (lobby nominations, then chance).
+/// Set on the map's <see cref="RoundManagerSpawner"/>.</summary>
+public enum PlayAsChoice
+{
+	/// <summary>Normal: the lobby's nominations decide, falling back to a random draw.</summary>
+	Auto,
+	Hunter,
+	Prop,
 }

@@ -129,8 +129,9 @@
 		_plates.Sort( ( a, b ) => a.PawnId.CompareTo( b.PawnId ) );
 	}
 
-	// Every OTHER player's pawn in the scene, with its role read from the pawn type. Proxies only — our own pawn
-	// never gets a plate.
+	// Every OTHER player's pawn in the scene, with its role read from the pawn type. Never our own pawn — but that
+	// isn't quite "proxies only", because on the HOST a test bot's pawn is host-owned and so isn't a proxy either.
+	// IsBotPawn covers that second way a body can belong to someone who isn't us.
 	//
 	// PROPS conceal by never being networked, so a hidden one doesn't exist here at all and its name cannot leak.
 	// HUNTERS are networked throughout (the round needs to address them, and their own RPCs have to resolve) and
@@ -139,11 +140,11 @@
 	IEnumerable<(GameObject Pawn, PlayerRole Role)> ProxyPawns()
 	{
 		foreach ( var h in Scene.GetAllComponents<HunterController>() )
-			if ( h.IsValid() && h.IsProxy && !h.Concealed )
+			if ( h.IsValid() && (h.IsProxy || RoundManager.IsBotPawn( h.GameObject )) && !h.Concealed )
 				yield return (h.GameObject, PlayerRole.Hunter);
 
 		foreach ( var h in Scene.GetAllComponents<HiderController>() )
-			if ( h.IsValid() && h.IsProxy )
+			if ( h.IsValid() && (h.IsProxy || RoundManager.IsBotPawn( h.GameObject )) )
 				yield return (h.GameObject, PlayerRole.Prop);
 	}
 
@@ -155,19 +156,20 @@
 			: pawnRole == localRole;
 
 	// Prefer the round roster's snapshotted name (it's [Sync]'d and survives odd connection states); fall back to
-	// the owning connection's display name so debug scenes and the lobby still label pawns.
+	// the owning connection's display name so debug scenes and the lobby still label pawns. Resolved through
+	// RosterIdOf, not Network.Owner: bot pawns are all host-owned, so the owner's name would label every one of
+	// them (and only the host's row would ever be found) — "Bot 3" comes from its row.
 	string NameFor( GameObject pawn )
 	{
-		var owner = pawn.Network.Owner;
-		if ( owner is null )
-			return null;
+		var id = RoundManager.RosterIdOf( pawn );
 
-		if ( RoundManager.Current.IsValid()
-			&& RoundManager.Current.Players.TryGetValue( owner.Id, out var info )
+		if ( id is not null
+			&& RoundManager.Current.IsValid()
+			&& RoundManager.Current.Players.TryGetValue( id.Value, out var info )
 			&& !string.IsNullOrWhiteSpace( info.Name ) )
 			return info.Name;
 
-		return owner.DisplayName;
+		return pawn.Network.Owner?.DisplayName;
 	}
 
 	// Where the plate anchors in the world: the top of the pawn's OWN sculpture bounds — the hunter's Head sits

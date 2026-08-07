@@ -1,5 +1,11 @@
 @import "/UI/_theme.scss";
 
+// Tally icon size, in one place because three rules have to agree on it: the pip box, the image inside it, and
+// how wide the rails need to be to fit a sensible number per row. SdfIcon derives its render resolution from
+// whatever this ends up as, so there's nothing else to keep in step.
+$pip-size: 112px;
+$rail-width: 380px;
+
 // The main player HUD. Clay-craft tokens from _theme.scss so it retunes from one place. Pure readout — never
 // steals the cursor.
 .round-hud {
@@ -7,6 +13,17 @@
 	top: 0; left: 0;
 	width: 100%; height: 100%;
 	pointer-events: none;
+
+	// ── Off-screen icon renderers ───────────────────────────────────────────────────────────────────────────
+	// Parked off-screen rather than hidden, on purpose: a ScenePanel skips rendering entirely when its layout
+	// box is zero, so display:none or width:0 would silently produce no textures at all. Off-screen still lays
+	// out, still ticks, still renders.
+	.icon-farm {
+		position: absolute;
+		left: -8192px;
+		top: 0;
+		flex-direction: column;
+	}
 
 	// ── Thumbnail bisect (mimiclay_debug_thumb) ─────────────────────────────────────────────────────────────
 	// Deliberately the dumbest styling that can work: the panel is a normal flex child at a fixed size, with
@@ -32,6 +49,9 @@
 			width: 256px;
 			height: 256px;
 			border: 2px solid #ff00ff;
+			background-size: contain;
+			background-repeat: no-repeat;
+			background-position: center;
 		}
 
 		.thumb-test-label {
@@ -78,7 +98,7 @@
 			margin-top: -8px;   // the pull-up the timer used to carry — on the ROW, so the rails ride with it
 
 			.rail {
-				width: 260px;
+				width: $rail-width;
 				flex-shrink: 0;
 				flex-direction: row;
 				align-items: center;
@@ -88,11 +108,9 @@
 			.rail-left  { justify-content: flex-end; }
 			.rail-right { justify-content: flex-start; }
 
-			// Bigger than the original 44px on purpose: the thumbnail now renders at exactly this size, so the
-			// pip's size IS its resolution. See .pip-render below for why supersampling went away.
 			.pip {
-				width: 56px;
-				height: 56px;
+				width: $pip-size;
+				height: $pip-size;
 				margin: 3px;
 				align-items: center;
 				justify-content: center;
@@ -120,26 +138,20 @@
 						font-family: "Material Icons";
 						text-transform: none;    // both resets are mandatory or the ligature breaks
 						letter-spacing: 0;
-						font-size: 30px;
+						font-size: 60px;   // scaled with $pip-size so the fallback glyph still fills its pill
 						color: $scene-text;
 					}
 				}
 
-				// Deliberately the same shape as the proven-working debug cells (mimiclay_debug_thumb): a plain
-				// flex child at an explicit size, with no absolute positioning, no transform and no clipping.
-				//
-				// It used to lay out at 256px and scale down, to supersample away the aliasing a raymarched
-				// silhouette gets at icon size. That cost three separate bugs and never rendered: absolute
-				// children escaping to the screen root, transform-origin being silently ignored (s&box always
-				// scales about the centre), and — still unresolved — whether overflow clips before or after the
-				// transform. None of it was worth the aliasing it bought.
-				//
-				// So the render is 1:1 with the pip now, and the pip got bigger to compensate. If supersampling
-				// comes back, verify the clip/transform order FIRST — that's the one that can't be reasoned out
-				// from the style code.
+				// Just an image — the render happens off-screen in .icon-farm at several times this size and
+				// this displays the result, which is where the supersampling comes from. No absolute
+				// positioning or transforms, none of which worked when this panel WAS the renderer.
 				.pip-render {
-					width: 56px;
-					height: 56px;
+					width: $pip-size;
+					height: $pip-size;
+					background-size: contain;
+					background-repeat: no-repeat;
+					background-position: center;
 				}
 			}
 
