@@ -110,6 +110,12 @@ public sealed class SculptEditSession : Component
 	readonly BrushStampTool _stampTool = new();
 	bool _opKeyWas; // manual edge detect for the A add/carve toggle
 	bool _delWas;   // …and for the Delete key
+	bool _undoWas;  // …and for Ctrl+Z
+	bool _redoWas;  // …and for Ctrl+Shift+Z / Ctrl+Y
+
+	// Undo history for this session — one step per COMMIT, seeded on activate and dropped on exit.
+	// See SculptUndo for why it stores authored-prefix states rather than deltas or whole brush lists.
+	readonly SculptUndo _undo = new();
 
 	/// <summary>Snap is a HOLD: Shift held = stamp placement snaps to the origin-centred grid and the
 	/// E-rotate scrub snaps to the 45° grid.</summary>
@@ -378,6 +384,7 @@ public sealed class SculptEditSession : Component
 			EnsureHud(); // the edit system brings its own HUD — no scene setup needed (and works in any game mode)
 			ApplyEditDof();
 			HookPersistSlot(); // save the slot on every commit while editing (see HookPersistSlot for why)
+			_undo.Reset( Target, Selected ); // baseline = the shape the session opens on; undo stops there
 		}
 		else if ( Current == this )
 		{
@@ -391,6 +398,7 @@ public sealed class SculptEditSession : Component
 			if ( _pendingCommit )
 				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit (saves the slot too)
 			UnhookPersistSlot();
+			_undo.Clear(); // history is per-session — the next one re-baselines on whatever it opens on
 			_gizmo.Hide();
 			HideGhosts();
 			RestoreDof();
@@ -416,6 +424,7 @@ public sealed class SculptEditSession : Component
 		if ( _pendingCommit )
 			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown (saves the slot too)
 		UnhookPersistSlot();
+		_undo.Clear();
 		_gizmo.Hide();
 		HideGhosts();
 		_wireframes.Hide();
@@ -790,8 +799,19 @@ public sealed class SculptEditSession : Component
 		}
 
 		_pendingCommit = false; // a full commit covers anything previewed before it
-		if ( Target.IsValid() )
-			Target.Rebuild();
+		if ( !Target.IsValid() )
+			return;
+
+		// THE undo record site. Every authored edit — gizmo release, stamp commit, scrub release, debounced
+		// HUD gesture, add/remove/duplicate/reorder/convert/toggle — funnels through here, and nothing else
+		// does: damage carves, shrink healing and remote shapes all call Target.Rebuild() directly, so they
+		// can't become undo steps. Recording in the SESSION rather than on SdfSculpture.Committed is what
+		// buys those exclusions for free. Gated on IsEditing so the commit run during teardown (where the
+		// stack is about to be dropped anyway) doesn't push a final step.
+		if ( IsEditing )
+			_undo.Record( Target, Selected );
+
+		Target.Rebuild();
 	}
 
 	// A preview happened and no commit has followed yet. The debounce in OnUpdate backstops gestures with no
@@ -819,6 +839,146 @@ public sealed class SculptEditSession : Component
 	/// redundantly: the sculpture's content-hash cache makes a no-change commit cheap.</summary>
 	public void CommitChanged() => NotifyChanged();
 
+	// ── Undo / redo ──────────────────────────────────────────────────────────────────────────────────
+	// The whole system hangs off the commit funnel above: every authored edit ends in NotifyChanged, which
+	// records one step. See SculptUndo for the model; the interesting work down here is APPLYING a step,
+	// which has to splice around the damage tail and drop every cached brush reference.
+
+	/// <summary>A step exists to go back to (drives the HUD button's enabled state).</summary>
+	public bool CanUndo => IsEditing && _undo.CanUndo;
+
+	/// <summary>An undone step exists to re-apply.</summary>
+	public bool CanRedo => IsEditing && _undo.CanRedo;
+
+	/// <summary>Step back one commit. A held stamp ghost is dropped first — it isn't a real shape yet, so
+	/// "one step back" means the last committed shape, not the placement in progress. Any in-flight HUD
+	/// gesture is committed first too, so its change becomes a step of its own rather than being skipped
+	/// straight over (nudge a slider, hit Ctrl+Z, and the nudge is what comes off).</summary>
+	public bool Undo() => Step( redo: false );
+
+	/// <summary>Re-apply the step a matching <see cref="Undo"/> took off.</summary>
+	public bool Redo() => Step( redo: true );
+
+	bool Step( bool redo )
+	{
+		if ( !IsEditing || !Target.IsValid() )
+			return false;
+
+		if ( Tool == SculptTool.Sculpt )
+			SetTool( SculptTool.Gizmo ); // strips the ghost; its commit is a no-op the hash dedup absorbs
+
+		if ( _pendingCommit )
+			CommitChanged(); // fold an unfinished gesture into its own step before stepping off it
+
+		SculptUndo.State state;
+		if ( !(redo ? _undo.Redo( out state ) : _undo.Undo( out state )) )
+			return false;
+
+		ApplyUndoState( state );
+		return true;
+	}
+
+	/// <summary>Apply a recorded state: splice its authored brushes onto the LIVE damage tail, restore the
+	/// build settings and selection, then run the one full commit. This deliberately goes through
+	/// <see cref="SdfSculpture.Rebuild"/> like any other edit, so the remesh, collider, network push and
+	/// persist-slot save all follow exactly as they would for a normal change — an undo IS an edit as far as
+	/// the rest of the system is concerned.</summary>
+	void ApplyUndoState( SculptUndo.State state )
+	{
+		if ( state is null || !Target.IsValid() )
+			return;
+
+		var live = Target.Brushes;
+		int liveAuthored = Target.AuthoredBrushCount;
+
+		// The stack's copies stay pristine so the same entry survives being applied again (undo → redo →
+		// undo); the sculpture gets its own instances to mutate.
+		var restored = new List<SdfBrush>( state.Authored.Count );
+		foreach ( var b in state.Authored )
+			restored.Add( b.Copy() );
+
+		// Carry the damage tail across untouched. Craters that landed (or healed) since the snapshot are
+		// gameplay state, not authoring — undoing a shape edit must neither resurrect nor erase them.
+		var rebuilt = new List<SdfBrush>( restored );
+		if ( live is not null )
+		{
+			for ( int i = liveAuthored; i < live.Count; i++ )
+				rebuilt.Add( live[i] );
+		}
+
+		RemapBrushMemory( live, liveAuthored, restored ); // before the swap — it reads the OLD brushes
+
+		_undo.IsApplying = true;
+		try
+		{
+			Target.Brushes = rebuilt;
+			Target.Resolution = state.Resolution;
+			Target.FlipFaces = state.FlipFaces;
+
+			// Every cached brush REFERENCE now dangles (the gizmo's fade-out brush, both hover ghosts, the
+			// carve wireframe): they'd keep drawing — and stay draggable — as orphans outside the list. Drop
+			// them all and let the next frame re-pick from the restored brushes.
+			_gizmo.Hide();
+			_gizmoBrush = null;
+			_gizmoAlpha = 0f;
+			_splineInsertArmed = false;
+			HideGhosts();
+			_stampWire.Hide();
+			_stampWireList.Clear();
+			_hoverBrush = -1;
+
+			int authored = Target.AuthoredBrushCount;
+			Selected = (state.Selected >= 0 && state.Selected < authored) ? state.Selected : -1;
+
+			_pendingCommit = false;
+			Target.Rebuild();
+		}
+		finally
+		{
+			_undo.IsApplying = false;
+		}
+	}
+
+	// Move the reference-keyed per-brush memories onto the restored brushes, BY INDEX. _mirrorMemory,
+	// _preTextSize and _preSplineSolid all key on the brush INSTANCE, and every authored brush was just
+	// replaced by a fresh copy — so without this they all orphan and, say, a text↔solid round trip spanning an
+	// undo forgets its pre-text size. Index is exact for the common case (undoing a property tweak leaves the
+	// list the same length and order) and no worse than the wholesale orphaning it replaces when it isn't.
+	void RemapBrushMemory( List<SdfBrush> oldBrushes, int oldAuthored, List<SdfBrush> restored )
+	{
+		if ( oldBrushes is null )
+		{
+			_mirrorMemory.Clear();
+			_preTextSize.Clear();
+			_preSplineSolid.Clear();
+			return;
+		}
+
+		int n = Math.Min( Math.Min( oldAuthored, oldBrushes.Count ), restored.Count );
+
+		static void Remap<T>( Dictionary<SdfBrush, T> map, List<SdfBrush> from, List<SdfBrush> to, int n )
+		{
+			if ( map.Count == 0 )
+				return;
+
+			// Collect first, then refill: rekeying in place would risk colliding with keys not yet visited.
+			var carried = new List<(SdfBrush Key, T Value)>( map.Count );
+			for ( int i = 0; i < n; i++ )
+			{
+				if ( map.TryGetValue( from[i], out var v ) )
+					carried.Add( (to[i], v) );
+			}
+
+			map.Clear();
+			foreach ( var (k, v) in carried )
+				map[k] = v;
+		}
+
+		Remap( _mirrorMemory, oldBrushes, restored, n );
+		Remap( _preTextSize, oldBrushes, restored, n );
+		Remap( _preSplineSolid, oldBrushes, restored, n );
+	}
+
 	// ── Save / load (local on-disk library) ──────────────────────────────────────────────────────────
 	// Persist the current sculpture so it survives across sessions, without the editor prefab pipeline. See
 	// SculptLibrary for where the files live. These wrap it with the session's Target so the HUD (or a console
@@ -845,6 +1005,17 @@ public sealed class SculptEditSession : Component
 		Target.Resolution = entry.Resolution;
 		Target.FlipFaces = entry.FlipFaces;
 		Selected = -1; // the loaded brushes are a different set — never keep a stale index into the old list
+
+		// Loading a library shape replaces every brush reference, so the per-brush memories are all orphans.
+		_mirrorMemory.Clear();
+		_preTextSize.Clear();
+		_preSplineSolid.Clear();
+
+		// This path sets the brushes directly rather than going through the commit funnel, so record here
+		// explicitly — loading over your work is exactly the kind of thing you want to be able to take back.
+		if ( IsEditing )
+			_undo.Record( Target, Selected );
+
 		Target.Rebuild();
 		return true;
 	}
@@ -962,6 +1133,29 @@ public sealed class SculptEditSession : Component
 			RemoveSelected();
 		_delWas = del;
 		if ( Input.Pressed( "Drop" ) ) RemoveLast();
+
+		// Undo / redo: Ctrl+Z back, Ctrl+Shift+Z or Ctrl+Y forward. Manual edge detection like the keys above
+		// (Keyboard.Pressed doesn't fire reliably in this context), and held off whenever a gesture owns the
+		// mouse — stepping the shape out from under a live drag or scrub would leave it editing a brush that
+		// no longer exists. The InputFocus guard leaves Ctrl+Z to the text field while typing.
+		bool undoMod = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "ctrl" )
+			&& !PauseMenu.IsOpen && !IsScrubbing && !_gizmo.IsDragging;
+		bool undoShift = Input.Keyboard.Down( "shift" );
+		bool zKey = undoMod && Input.Keyboard.Down( "z" );
+		bool undoKey = zKey && !undoShift;
+		bool redoKey = (zKey && undoShift) || (undoMod && Input.Keyboard.Down( "y" ));
+
+		bool stepped = false;
+		if ( undoKey && !_undoWas ) stepped = Undo();
+		if ( redoKey && !_redoWas ) stepped |= Redo();
+		_undoWas = undoKey;
+		_redoWas = redoKey;
+
+		// A step replaced the brush list wholesale, so the `brushes` local above — and every selection/hover
+		// index derived from it below — now refers to the OLD list. Bail out for this frame; the next one
+		// re-picks against the restored brushes with the gizmo and ghosts already torn down.
+		if ( stepped )
+			return;
 
 		if ( brushes is not { Count: > 0 } )
 			return;
@@ -1160,12 +1354,15 @@ public sealed class SculptEditSession : Component
 			if ( IsManipulating || IsScrubbing )
 				Target.RebuildShadowProxy();
 			else
-				Target.Rebuild();
+				CommitChanged(); // a DISCRETE gizmo change (spline point insert/delete) — full commit
 		}
 
 		// Drag just released → do the accurate full remesh once (nice LODs / exact shadows).
+		// CommitChanged, not a bare Rebuild: a handle drag is a real edit and has to reach the commit funnel
+		// or it never becomes an undo step (and any preview still pending underneath it stays pending).
+		// Both calls here are safe to double up — the undo stack's content hash collapses them to one step.
 		if ( _wasManipulating && !IsManipulating )
-			Target.Rebuild();
+			CommitChanged();
 		_wasManipulating = IsManipulating;
 
 		// Backstop commit for HUD previews with no explicit end event (text typing) or a missed control

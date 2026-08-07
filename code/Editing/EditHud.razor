@@ -137,6 +137,18 @@
 				@* Vertical list: Add Shape keeps the SAME spot whatever the state; the selection-only tools
 				   grow downward beneath it instead of shoving it sideways. *@
 				<div class="tool-list">
+					@* Undo / redo share the top row, so Add Shape below keeps the fixed home it's meant to.
+					   Dimmed (and inert) at the ends of the history rather than hidden — a button that
+					   vanishes when you run out of steps reads as a bug. *@
+					<div class="undo-row">
+						<div class="chip action @(Session.CanUndo ? "" : "disabled")" @onclick=@(() => Session.Undo())>
+							<div class="icon">@SdfIcons.Undo</div><span>Undo</span>
+						</div>
+						<div class="chip action @(Session.CanRedo ? "" : "disabled")" @onclick=@(() => Session.Redo())>
+							<div class="icon">@SdfIcons.Redo</div><span>Redo</span>
+						</div>
+					</div>
+
 					@* Toggles placing on/off — while a stamp is held it's the way back to plain editing
 					   (same as a right-click or Esc). *@
 					@{ var placing = Session.Tool == SculptTool.Sculpt; }
@@ -1256,6 +1268,8 @@
 			hc.Add( (int)stampDotPx.y );
 		}
 		hc.Add( (int)BrushScrub.Active );
+		hc.Add( s?.CanUndo ?? false ); // undo/redo buttons dim at the ends of the history
+		hc.Add( s?.CanRedo ?? false );
 		hc.Add( s?.Selected ?? -1 );
 		hc.Add( s?.Target?.AuthoredBrushCount ?? 0 ); // damage-tail changes (a shot landing) don't churn the rows
 

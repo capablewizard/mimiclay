@@ -352,19 +352,28 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 	/// runs, so it can be baked into a .sdfmesh on disk and compared on a later load to tell whether the bake
 	/// still matches the brushes. Excludes Material — geometry only (the material is applied when the mesh is
 	/// uploaded, not baked into the data).</summary>
-	public static int ContentHash( List<SdfBrush> brushes, int resolution, bool flip )
+	public static int ContentHash( List<SdfBrush> brushes, int resolution, bool flip ) =>
+		ContentHashPrefix( brushes, brushes.Count, resolution, flip );
+
+	/// <summary>Content hash of the first <paramref name="count"/> brushes only — identical to what
+	/// <see cref="ContentHash"/> produces for a list of exactly that length. Used by <see cref="SculptUndo"/>
+	/// to hash the AUTHORED prefix while ignoring the damage tail, without copying the prefix out first.
+	/// A separate name rather than an overload so the many <c>cref</c>s to ContentHash stay unambiguous.</summary>
+	public static int ContentHashPrefix( List<SdfBrush> brushes, int count, int resolution, bool flip )
 	{
 		unchecked
 		{
 			int h = unchecked((int)2166136261);
 			void Mix( int x ) { h = (h ^ x) * 16777619; }
 
+			count = Math.Clamp( count, 0, brushes?.Count ?? 0 );
+
 			Mix( resolution );
 			Mix( flip ? 1 : 0 );
-			Mix( brushes.Count );
+			Mix( count );
 
-			foreach ( var b in brushes )
-				b.HashInto( ref h );
+			for ( int i = 0; i < count; i++ )
+				brushes[i].HashInto( ref h );
 
 			return h;
 		}

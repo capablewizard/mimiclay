@@ -68,5 +68,7 @@ public static class SdfIcons
 	public const string ResetRotation = "rotate_left"; // arrow circling back — the "Rotate" reset tool
 	public const string Copy = "content_copy";
 	public const string Paste = "content_paste";
+	public const string Undo = "undo";
+	public const string Redo = "redo";
 	public const string DragHandle = "drag_indicator"; // the ":::" grip shown at the left of a draggable row
 }

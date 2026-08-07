@@ -139,6 +139,22 @@
 
 		.chip { width: 100%; }
 
+		// Undo / redo sit side by side in one row (they're a pair, and stacking them full-width would push
+		// Add Shape down a slot). Label text is dropped — the glyphs carry it at this width.
+		.undo-row {
+			flex-direction: row;
+			gap: 10px;
+			width: 100%;
+
+			.chip {
+				flex-grow: 1;
+				width: auto;
+				justify-content: center;
+
+				&.disabled { opacity: 0.4; pointer-events: none; }
+			}
+		}
+
 		// Delete: red accents, like the layer rows' bin button.
 		.chip.danger {
 			.icon { color: $craft-red; }

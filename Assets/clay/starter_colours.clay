@@ -85,12 +85,6 @@
       "Roughness": 0.5
     },
     {
-      "Name": "Ice Blue",
-      "Color": "0.82,0.93,0.97,1",
-      "Metalness": 0,
-      "Roughness": 0.5
-    },
-    {
       "Name": "Violet",
       "Color": "0.45,0.2,0.8,1",
       "Metalness": 0,
@@ -121,18 +115,6 @@
       "Roughness": 0.5
     },
     {
-      "Name": "Silver",
-      "Color": "0.7,0.78,0.82,1",
-      "Metalness": 0,
-      "Roughness": 0.5
-    },
-    {
-      "Name": "Light Gray",
-      "Color": "0.85,0.88,0.9,1",
-      "Metalness": 0,
-      "Roughness": 0.5
-    },
-    {
       "Name": "White",
       "Color": "0.97,0.97,0.97,1",
       "Metalness": 0,
@@ -141,12 +123,6 @@
     {
       "Name": "Dark Brown",
       "Color": "0.45,0.26,0.17,1",
-      "Metalness": 0,
-      "Roughness": 0.5
-    },
-    {
-      "Name": "Brown",
-      "Color": "0.6,0.35,0.22,1",
       "Metalness": 0,
       "Roughness": 0.5
     },
@@ -177,12 +153,6 @@
     {
       "Name": "Hot Pink",
       "Color": "0.95,0.42,0.6,1",
-      "Metalness": 0,
-      "Roughness": 0.5
-    },
-    {
-      "Name": "Pink",
-      "Color": "0.96,0.55,0.7,1",
       "Metalness": 0,
       "Roughness": 0.5
     },
