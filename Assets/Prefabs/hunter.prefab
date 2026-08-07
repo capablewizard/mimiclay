@@ -628,7 +628,7 @@
             "Scale": 1,
             "ScaleStrategy": "ConsistentHeight",
             "TargetCamera": null,
-            "ZIndex": 1000
+            "ZIndex": 50
           },
           {
             "__type": "Mimiclay.HunterCrosshair",

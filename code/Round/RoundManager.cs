@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Sandbox.Network;
 
@@ -56,6 +57,11 @@ public sealed class RoundManager : Component, IRoundContext
 	/// <summary>Lobby-data key carrying the chosen hunter connection ids from the lobby into the map scene
 	/// (comma-separated guids). Written by <see cref="LobbyController"/>, read in <see cref="AssignRoles"/>.</summary>
 	public const string HunterIdsKey = "r.hids";
+
+	/// <summary>Lobby-data key carrying how many test bots the LOBBY seated, so the same crowd you set up there
+	/// walks into the map with you. Written by <see cref="LobbyManager"/> at launch; absent when the map was opened
+	/// directly, which is when <see cref="RoundManagerSpawner"/>'s own bot count applies instead.</summary>
+	public const string BotCountKey = "r.bots";
 
 	// Scoring + debug config. NOT [Property]: this component is only ever code-created by RoundManagerSpawner
 	// (never scene-placed), so the inspector never sees it — author these on the SPAWNER, which copies them here.
@@ -166,6 +172,14 @@ public sealed class RoundManager : Component, IRoundContext
 		// Settings + Players are [Sync], so clients (and late-joiners) get them from this one write — and each client
 		// reads its OWN row to spawn its own pawn.
 		Settings = RulesOverride ?? RoundSettings.ReadFromLobby();
+
+		// A lobby that seated bots hands its count over, so the crowd you set up there is the crowd you play with —
+		// and, just as importantly, so a REAL session doesn't inherit whatever bot count a map's spawner happens to
+		// have saved. No key means nobody came from a lobby (the map was opened directly): the spawner decides.
+		var lobbyBots = Networking.GetData( BotCountKey );
+		if ( int.TryParse( lobbyBots, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n ) )
+			BotCount = Math.Max( 0, n );
+
 		AssignRoles();
 		TransitionTo( RoundPhase.Starting );
 	}
@@ -274,7 +288,7 @@ public sealed class RoundManager : Component, IRoundContext
 		// each row's per-role SpawnIndex in WriteRoster, so the humans take the front spawn points.
 		var seats = conns.Select( c => new Seat( c.Id, c.DisplayName, false ) ).ToList();
 		for ( var i = 0; i < BotCount; i++ )
-			seats.Add( new Seat( BotId( i ), $"Bot {i + 1}", true ) );
+			seats.Add( new Seat( RoundBots.IdFor( i ), RoundBots.NameFor( i ), true ) );
 
 		// DEBUG: everyone's a prop, no hunters — just spawn in and hide forever (see the Hide handling below).
 		if ( DebugSoloHide )
@@ -291,10 +305,11 @@ public sealed class RoundManager : Component, IRoundContext
 		var forcedProp = PlayAs == PlayAsChoice.Prop ? me : null;
 
 		var hunters = ReadHunterIds();
-		// Only keep nominees who are still connected — the lobby stamped these ids 10+ seconds ago (countdown + map
-		// load), so a nominee may have left. Without this, a stale non-empty set that matches NO connection would
-		// skip the random fallback and start a zero-hunter round.
-		hunters.IntersectWith( conns.Select( c => c.Id ) );
+		// Only keep nominees who are still SEATED — the lobby stamped these ids 10+ seconds ago (countdown + map
+		// load), so a nominee may have left. Without this, a stale non-empty set that matches nobody would skip the
+		// random fallback and start a zero-hunter round. Bot seats count as seated: a bot nominated in the lobby
+		// keeps that nomination here, which it can only do if its id survives the scene change (RoundBots.IdFor).
+		hunters.IntersectWith( seats.Select( s => s.Id ) );
 		if ( forcedHunter is not null ) hunters.Add( forcedHunter.Value );
 		if ( forcedProp is not null ) hunters.Remove( forcedProp.Value );
 
@@ -358,10 +373,6 @@ public sealed class RoundManager : Component, IRoundContext
 		}
 	}
 
-	// Bot row ids: the seat index in the last field of an otherwise-zero guid. Deterministic (so a bot keeps its
-	// identity across a re-assign and the HunterRoster ordering is stable), sorts in seat order, and can't collide
-	// with a real connection's guid.
-	static Guid BotId( int index ) => new( $"00000000-0000-0000-0000-{index:D12}" );
 
 	static HashSet<Guid> ReadHunterIds()
 	{
@@ -666,51 +677,19 @@ public sealed class RoundManager : Component, IRoundContext
 		if ( !pawn.IsValid() )
 			return;
 
-		// Which row this body is. Stamped before it can go on the wire so it ships in the spawn snapshot — every
-		// machine resolves bot pawns through it (see RosterIdOf).
-		pawn.Components.Create<BotPawn>().RosterId = id;
+		// Stamp the row, take the controls away, strip the per-player hardware — all of it shared with the lobby's
+		// bots so a bot is the same thing on both sides of the scene change.
+		RoundBots.Prepare( pawn, id );
 
-		// Nobody is driving this: no input, no camera, no mouse capture. The prop already has that state — it's
-		// what a disguise released into the level does — and the hunter grew the same flag for bots. Without it a
-		// host-owned pawn is indistinguishable from the host's own and would fight it for the shared camera.
-		var hider = pawn.Components.Get<HiderController>();
-		if ( hider.IsValid() )
-		{
-			hider.ReleaseControl();
-			if ( BotRandomDisguises )
-				_botDressPending.Add( id ); // deferred: the disguise sculpture resolves in the hider's OnStart
-		}
-
-		var hunter = pawn.Components.Get<HunterController>();
-		if ( hunter.IsValid() )
-			hunter.Bot = true;
-
-		StripBotPawn( pawn );
+		// Deferred: the hider resolves its disguise sculpture in OnStart, which hasn't run yet.
+		if ( BotRandomDisguises && pawn.Components.Get<HiderController>().IsValid() )
+			_botDressPending.Add( id );
 
 		_botPawns[id] = pawn;
 		_botPawnRoles[id] = info.Role;
 
 		if ( WantNetworked( info.Role ) )
 			pawn.NetworkSpawn();
-	}
-
-	// A bot has no screen and no microphone. Both pawn prefabs carry per-player hardware that only makes sense for
-	// the person holding the controller, and every piece of it decides "is this mine?" by asking whether the pawn is
-	// a proxy — which a host-owned bot is NOT. Left alone, eight bots means eight full-screen HUD overlays stacked
-	// on the real player's (the tell: nameplates painted once per overlay look heavier than a real player's, which
-	// every overlay skips as its own pawn), eight crosshairs, eight pause menus racing for Escape, and eight voices
-	// broadcasting whenever the host holds push-to-talk. Taking the hardware away is both cheaper and more honest
-	// than teaching each consumer what a bot is.
-	static void StripBotPawn( GameObject pawn )
-	{
-		// The whole HUD branch, not just the panel: its UI components run per-frame scene scans of their own.
-		foreach ( var screen in pawn.Components.GetAll<Sandbox.ScreenPanel>( FindMode.EverythingInSelfAndDescendants ) )
-			screen.GameObject.Enabled = false;
-
-		// Attached by both controllers in OnAwake — which has already run, since Clone initialises synchronously
-		// (SpawnOwnPawn relies on the same thing when it publishes a pawn the instant it clones it).
-		foreach ( var voice in pawn.Components.GetAll<PlayerVoice>( FindMode.EverythingInSelfAndDescendants ) )
-			voice.Enabled = false;
 	}
 
 	void RetireBotPawn( Guid id )
@@ -729,24 +708,8 @@ public sealed class RoundManager : Component, IRoundContext
 	void WearRandomDisguise( Guid id, GameObject pawn )
 	{
 		var hider = pawn.Components.Get<HiderController>();
-		var sculpture = hider.IsValid() ? hider.DisguiseSculpture : null;
-		if ( !sculpture.IsValid() )
-			return; // OnStart hasn't run yet — try again next frame
-
-		_botDressPending.Remove( id );
-
-		var names = SculptLibrary.List();
-		if ( names.Count == 0 )
-			return;
-
-		var entry = SculptLibrary.Load( names[Random.Shared.Next( names.Count )] );
-		if ( entry is null )
-			return;
-
-		sculpture.Brushes = entry.Brushes;
-		sculpture.Resolution = entry.Resolution;
-		sculpture.FlipFaces = entry.FlipFaces;
-		sculpture.Rebuild();
+		if ( RoundBots.TryWearRandomSculpt( hider.IsValid() ? hider.DisguiseSculpture : null ) )
+			_botDressPending.Remove( id ); // otherwise OnStart hasn't run yet — try again next frame
 	}
 
 	// At the hunt, teleport our own hunter pawn back to its start point. We own it, so setting the transform is

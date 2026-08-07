@@ -109,6 +109,11 @@ public class SdfBrush
 	/// <summary>Hard cap on <see cref="Blend"/> — beyond this the smooth-union bulge balloons the shape.</summary>
 	public const float MaxBlend = 15f;
 
+	/// <summary>Floor for <see cref="Rounding"/> — SDF shapes look odd perfectly sharp, so every clamp and
+	/// slider starts here. <see cref="MaxRounding"/> is floored at it too: a brush small enough that its
+	/// inscribed limit falls below this would otherwise invert every range built from the pair.</summary>
+	public const float MinRounding = 0.75f;
+
 	/// <summary>Ceiling for <see cref="Slice"/>: the deepest allowed cut still leaves a sliver of shape, so a
 	/// maxed slider can never make the brush vanish (an empty field would just silently drop the brush).</summary>
 	public const float MaxSlice = 0.95f;
@@ -134,9 +139,9 @@ public class SdfBrush
 	/// the inspector range and the gizmo slider max (kept an auto-property so it serialises like the rest).</summary>
 	[Property, Range( 0f, MaxBlend )] public float Blend { get; set; } = 6f;
 
-	/// <summary>Corner-rounding radius (box and future shapes). Kept at a 0.75 minimum — SDF shapes look
-	/// odd perfectly sharp.</summary>
-	[Property, Range( 0.75f, 64f )] public float Rounding { get; set; } = 0.75f;
+	/// <summary>Corner-rounding radius (box and future shapes). Kept at a <see cref="MinRounding"/> minimum —
+	/// SDF shapes look odd perfectly sharp.</summary>
+	[Property, Range( MinRounding, 64f )] public float Rounding { get; set; } = MinRounding;
 
 	[Property] public Color Color { get; set; } = Color.White;
 
@@ -678,20 +683,23 @@ public class SdfBrush
 
 	/// <summary>The largest rounding this shape can take at its current size — the inscribed limit each
 	/// Distance function clamps to (beyond it the shape is just fully rounded). Used to map a slider so
-	/// "full" always means "fully rounded", whatever the shape.</summary>
+	/// "full" always means "fully rounded", whatever the shape.
+	/// <para>Never returns below <see cref="MinRounding"/>: a small enough brush has an inscribed limit under
+	/// the floor, and a max-below-min inverts every range built from the pair (Math.Clamp THROWS on it). The
+	/// widened cap is harmless — each Distance function re-clamps rounding to its own true limit anyway.</para></summary>
 	public float MaxRounding()
 	{
 		float wx = MathF.Max( Size.x, 1e-3f ), hy = MathF.Max( Size.y, 1e-3f );
 
-		return Shape switch
+		float max = Shape switch
 		{
 			SdfShape.Box => MathF.Min( Size.x, MathF.Min( Size.y, Size.z ) ),
 			SdfShape.Cylinder => MathF.Min( Size.x, Size.z ),
 			// Sliced-cone-aware: the erosion limit of the frustum (= the classic inradius when unsliced).
-			SdfShape.Cone => MathF.Max( FrustumMaxRounding( Size.x, Size.z, Slice ), 0.75f ),
+			SdfShape.Cone => FrustumMaxRounding( Size.x, Size.z, Slice ),
 			// Text: rounding insets glyph strokes, which are far thinner than the quad — keep the cap modest
 			// so full-slider is "chunky rounded letters", not "letters eroded to nothing".
-			SdfShape.Text => MathF.Max( MathF.Min( Size.z, MathF.Min( Size.x, Size.y ) * 0.25f ), 0.75f ),
+			SdfShape.Text => MathF.Min( Size.z, MathF.Min( Size.x, Size.y ) * 0.25f ),
 			SdfShape.Extruded => MathF.Min( CrossSection switch
 			{
 				SdfCrossSection.Star => wx * StarEdgeFactor,       // erosion limit — the star shrinks to a point
@@ -700,12 +708,13 @@ public class SdfBrush
 				_ => TriInradius( new Vector2( 0f, hy ), new Vector2( -wx, -hy ), new Vector2( wx, -hy ) ),
 			}, Size.z ),
 			// Sphere/ellipsoid: rounding only shows on the sliced rim (fillet); unsliced it's a no-op, so
-			// keep the old sane range. Sliced, the fillet is capped by SphereSliceMaxRounding (floored at
-			// the slider min so a deep slice can't invert the slider range).
+			// keep the old sane range. Sliced, the fillet is capped by SphereSliceMaxRounding.
 			_ => Slice > 0f
-				? MathF.Max( SphereSliceMaxRounding( Size, Slice ), 0.75f )
+				? SphereSliceMaxRounding( Size, Slice )
 				: MathF.Min( Size.x, MathF.Min( Size.y, Size.z ) ),
 		};
+
+		return MathF.Max( max, MinRounding );
 	}
 
 	// The most rounding a (possibly sliced) cone fits: caps can't cross (half the sliced height) and the

@@ -163,7 +163,7 @@ public sealed class GizmoSettings : Component
 	/// <summary>Brush rounding value mapped to the LEFT end of the bottom slider. SDF shapes look odd
 	/// perfectly sharp, so this defaults to 0.75 rather than 0. The right end is the shape's own maximum
 	/// rounding, so a full slider is always fully rounded.</summary>
-	[Property, Group( "Sliders" )] public float SliderRoundingMin { get; set; } = 0.75f;
+	[Property, Group( "Sliders" )] public float SliderRoundingMin { get; set; } = SdfBrush.MinRounding;
 
 	// --- Lines (thickness, screen pixels) ---
 

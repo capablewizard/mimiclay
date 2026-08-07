@@ -14,7 +14,8 @@
       "PowerShell($out = \"C:\\\\Users\\\\haydn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--SBox-Projects-mimiclay\\\\e7fc6d3f-60b6-4faa-8f73-95c22c34cede\\\\scratchpad\\\\build\\\\\"; dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -p:OutputPath=$out -p:DocumentationFile= --nologo -v m)",
       "PowerShell($out = \"C:\\\\Users\\\\haydn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--SBox-Projects-mimiclay\\\\e7fc6d3f-60b6-4faa-8f73-95c22c34cede\\\\scratchpad\\\\build\\\\\"; dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -p:OutputPath=$out --nologo -v m)",
       "Bash(ls d:/SBox/sbox-public-master 2>/dev/null | head; find d:/SBox/sbox-public-master -iname \"MoveModeWalk.cs\" -o -iname \"PlayerController.cs\" 2>/dev/null | head)",
-      "Read(//d/SBox/sbox-public-master/**)"
+      "Read(//d/SBox/sbox-public-master/**)",
+      "Bash(cd \"D:/SBox/sbox-public-master\" && find . -name \"ScenePanel.cs\" | head -3)"
     ]
   }
 }

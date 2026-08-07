@@ -57,6 +57,29 @@ public sealed class LobbyController : Component
 	/// <summary>Seconds between hitting Start and the scene change, so everyone sees the launch coming.</summary>
 	[Property, Group( "Round Defaults" )] public float LaunchCountdownSeconds { get; set; } = 10f;
 
+	// ── Test bots ─────────────────────────────────────────────────────────────────────────────────────────
+	// Fake players so a solo editor session can see a full lobby: roster pips, names, a hunter count worth
+	// sliding, nominations. They're the same bots the round uses (RoundBots), just seated by LobbyManager
+	// instead — which reads these LIVE, so changing the count while playing adds or removes them on the spot.
+	/// <summary>How many stand-in players to seat in the lobby. They spawn as hunters like everyone else, hold
+	/// roster slots, and count toward the hunter-count limit. 0 = off.</summary>
+	[Property, Group( "Test Bots" )] public int BotCount { get; set; }
+
+	/// <summary>How many of those bots nominate themselves to hunt. Nominations carry into the round the same way
+	/// a real player's do, so this is how you set up "these three are hunting" without three machines. Clamped to
+	/// <see cref="BotCount"/>.</summary>
+	[Property, Group( "Test Bots" )] public int BotNominations { get; set; }
+
+	/// <summary>Give lobby bots random saved shapes from this machine's sculpt library instead of identical default
+	/// heads — useful for telling roster pips apart at a glance. Off by default because saved sculpts are usually
+	/// PROPS, so expect bots wearing a sofa for a head; it's for checking the UI, not for looking right.</summary>
+	[Property, Group( "Test Bots" )] public bool BotRandomLooks { get; set; }
+
+	/// <summary>Send this lobby's bot count into the map at launch, so the crowd you set up here is the crowd you
+	/// play with. Off = the map's own <see cref="RoundManagerSpawner"/> decides instead (its bot count is the
+	/// direct-Play path, for opening a map scene without going through a lobby).</summary>
+	[Property, Group( "Test Bots" )] public bool BotsFollowIntoRound { get; set; } = true;
+
 	/// <summary>The starting settings built from the inspector defaults above. Read by LobbyManager on the host.</summary>
 	public RoundSettings DefaultSettings => new()
 	{

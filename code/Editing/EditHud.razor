@@ -829,8 +829,9 @@
 	[Property, Group( "Sliders" )] public float SliderStackHeight { get; set; } = 92f;
 
 	// The rounding slider's minimum mirrors the gizmo's old SliderRoundingMin so the 2D slider and the brush
-	// inspector agree on the floor (SDF shapes look odd perfectly sharp).
-	float GizmoSettingsRoundingMin => 0.75f;
+	// inspector agree on the floor (SDF shapes look odd perfectly sharp). MaxRounding() is floored at the
+	// same const, so this end can never cross the slider's max however small the brush gets.
+	float GizmoSettingsRoundingMin => SdfBrush.MinRounding;
 
 	// Top-left of the slider stack (panel px): centred horizontally on the gizmo, dropped below it, clamped
 	// on-screen. Mirrors the palette's tracking so both follow the gizmo as the view orbits.

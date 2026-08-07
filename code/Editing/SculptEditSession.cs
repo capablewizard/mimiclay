@@ -556,7 +556,7 @@ public sealed class SculptEditSession : Component
 		b.Position += oldCentre - b.Rotation * b.LocalCentre;
 
 		// Different shapes cap rounding differently (a star's erosion limit << a box's inscribed radius).
-		b.Rounding = Math.Clamp( b.Rounding, 0.75f, b.MaxRounding() );
+		b.Rounding = Math.Clamp( b.Rounding, SdfBrush.MinRounding, b.MaxRounding() );
 		NotifyChanged();
 	}
 

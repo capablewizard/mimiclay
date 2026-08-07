@@ -266,7 +266,7 @@ public sealed class BrushStampTool
 		_stamp.Shape = shape;
 		_stamp.Size = ResizeForShape( _stamp.Size, from, shape );
 		_stamp.Rotation = SdfSculpture.SpawnRotation( shape );
-		_stamp.Rounding = Math.Clamp( _stamp.Rounding, 0.75f, _stamp.MaxRounding() ); // caps differ per shape
+		_stamp.Rounding = Math.Clamp( _stamp.Rounding, SdfBrush.MinRounding, _stamp.MaxRounding() ); // caps differ per shape
 		_stamp.SplineClosed = false;
 		// A spline ghost carries its live points (chain + preview, rebuilt each frame); anything else has none.
 		_stamp.Points = shape == SdfShape.Spline ? new List<Vector4>() : null;
@@ -796,7 +796,7 @@ public static class BrushScrub
 				if ( b.Shape == SdfShape.Spline )
 					b.Curvature = Math.Clamp( b.Curvature + delta.x * CurvePerPx, 0f, 1f );
 				else
-					b.Rounding = Math.Clamp( b.Rounding + delta.x * RoundPerPx, 0.75f, b.MaxRounding() );
+					b.Rounding = Math.Clamp( b.Rounding + delta.x * RoundPerPx, SdfBrush.MinRounding, b.MaxRounding() );
 				return true;
 
 			case ScrubKind.Wildcard:
@@ -822,7 +822,7 @@ public static class BrushScrub
 							cur = 0;
 						b.CrossSection = ProfileCycle[((cur + steps) % ProfileCycle.Length + ProfileCycle.Length) % ProfileCycle.Length];
 						// Profiles have different rounding caps (star << hexagon) — keep the value honest.
-						b.Rounding = Math.Clamp( b.Rounding, 0.75f, b.MaxRounding() );
+						b.Rounding = Math.Clamp( b.Rounding, SdfBrush.MinRounding, b.MaxRounding() );
 						return true;
 					}
 

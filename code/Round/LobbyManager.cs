@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Sandbox.Network;
 
@@ -46,12 +47,15 @@ public sealed class LobbyManager : Component, IRoundContext
 	// ── Host-only pawn bookkeeping (the lobby host-spawns pawns and hands each to its owner) ──────────────────
 	readonly Dictionary<Guid, GameObject> _pawns = new();
 	readonly HashSet<Guid> _known = new();
+	readonly HashSet<Guid> _botLooksPending = new();   // bots still waiting on a face to dress (see TryDressBot)
 
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
 	// Most hunters we'll allow — always one fewer than the lobby size, so there's at least one prop. (Solo in the
-	// editor it floors at 1, since one person can't be both.)
-	int MaxHunters => Math.Max( 1, Connection.All.Count - 1 );
+	// editor it floors at 1, since one person can't be both.) Counted off the ROSTER, not Connection.All, so
+	// seated test bots raise the ceiling — otherwise a solo host could never slide the hunter count past 1 and
+	// the multi-hunter setup would be untestable without a second machine.
+	int MaxHunters => Math.Max( 1, Players.Count - 1 );
 
 	// ── IRoundContext (for the phase-agnostic HUD) ─────────────────────────────────────────────────────────────
 	RoundPhase IRoundContext.Phase => RoundPhase.Lobby;
@@ -87,6 +91,7 @@ public sealed class LobbyManager : Component, IRoundContext
 			return;
 
 		ReconcileConnections();
+		ReconcileBots(); // after the real players, so they take the front spawn slots
 
 		// Keep the hunter count valid as the lobby grows/shrinks — never more than MaxHunters, so a prop always
 		// remains.
@@ -114,14 +119,100 @@ public sealed class LobbyManager : Component, IRoundContext
 			}
 		}
 
+		// Bot rows are exempt: there was never a connection behind them to leave, and this sweep would otherwise
+		// wipe every bot the frame after ReconcileBots seats it.
 		foreach ( var id in Players.Keys.ToList() )
 		{
-			if ( Connection.All.Any( c => c.Id == id ) )
+			if ( Players[id].Bot || Connection.All.Any( c => c.Id == id ) )
 				continue;
 			Players.Remove( id );
 			if ( _pawns.Remove( id, out var pawn ) )
 				Retire( pawn );
 		}
+	}
+
+	// ── Test bots ──────────────────────────────────────────────────────────────────────────────────────────────
+	// Host-only. Keep the seated bots matching LobbyController's inspector count — read LIVE each frame rather than
+	// latched at start, so turning the dial while playing adds or removes them on the spot. Bots spawn as hunters
+	// like everyone else; the only thing that makes them different from a real row is that nobody is behind them,
+	// so the host holds their pawns and PlayerInfo.Bot marks them for the sweeps that would otherwise drop them.
+	void ReconcileBots()
+	{
+		var lc = LobbyController.Current;
+		var want = Math.Max( 0, lc.IsValid() ? lc.BotCount : 0 );
+		var nominations = Math.Clamp( lc.IsValid() ? lc.BotNominations : 0, 0, want );
+
+		var wanted = new HashSet<Guid>();
+		for ( var i = 0; i < want; i++ )
+			wanted.Add( RoundBots.IdFor( i ) );
+
+		// Bots we no longer want — the count was turned down, or off.
+		foreach ( var id in Players.Keys.ToList() )
+		{
+			if ( !Players[id].Bot || wanted.Contains( id ) )
+				continue;
+
+			Players.Remove( id );
+			if ( _pawns.Remove( id, out var gone ) && gone.IsValid() )
+				gone.Destroy();
+			_botLooksPending.Remove( id );
+		}
+
+		for ( var i = 0; i < want; i++ )
+		{
+			var id = RoundBots.IdFor( i );
+			var nominated = i < nominations;
+
+			if ( !Players.TryGetValue( id, out var row ) )
+			{
+				// SpawnIndex is read BEFORE the row goes in, or the row would count itself as occupying a slot.
+				row = new PlayerInfo
+				{
+					Connection = id,
+					Name = RoundBots.NameFor( i ),
+					Role = PlayerRole.Hunter,
+					Alive = true,
+					Found = false,
+					Nominated = nominated,
+					Score = 0,
+					Bot = true,
+					SpawnIndex = NextFreeSpawnIndex(),
+				};
+				Players[id] = row;
+				SpawnPawnFor( id, row.Name, PlayerRole.Hunter, null );
+
+				if ( lc.IsValid() && lc.BotRandomLooks )
+					_botLooksPending.Add( id ); // deferred: the hunter resolves its Face in OnStart
+
+				continue;
+			}
+
+			// The nomination dial is live too — retuning it re-stamps the existing rows rather than needing a
+			// respawn, so you can watch the lobby UI react.
+			if ( row.Nominated != nominated )
+			{
+				row.Nominated = nominated;
+				Players[id] = row;
+			}
+
+			if ( _botLooksPending.Contains( id ) )
+				TryDressBot( id );
+		}
+	}
+
+	// Host-only. Give a bot a random saved shape for a face. Retried each frame until the hunter's OnStart has
+	// resolved its Face sculpture (an empty sculpt library settles it immediately on the prefab's default head).
+	void TryDressBot( Guid id )
+	{
+		if ( !_pawns.TryGetValue( id, out var pawn ) || !pawn.IsValid() )
+		{
+			_botLooksPending.Remove( id );
+			return;
+		}
+
+		var hunter = pawn.Components.Get<HunterController>();
+		if ( RoundBots.TryWearRandomSculpt( hunter.IsValid() ? hunter.Face : null ) )
+			_botLooksPending.Remove( id );
 	}
 
 	/// <summary>Flip the LOCAL player's nomination. Reads the current value off the synced roster — which now
@@ -249,6 +340,13 @@ public sealed class LobbyManager : Component, IRoundContext
 		Settings.WriteToLobby( map.ResourcePath );
 		Networking.SetData( RoundManager.HunterIdsKey, NominatedHunterIds() );
 
+		// Hand the bot crowd over, so the lobby you set up is the round you play. Written EVERY launch, blank when
+		// they're not to follow: session data outlives the scene change (that's the whole point of it), so a stale
+		// count from a previous launch would otherwise keep seating bots after you turned them off.
+		var follow = LobbyController.Current.IsValid() && LobbyController.Current.BotsFollowIntoRound;
+		Networking.SetData( RoundManager.BotCountKey,
+			follow ? Players.Values.Count( p => p.Bot ).ToString( CultureInfo.InvariantCulture ) : "" );
+
 		var options = new SceneLoadOptions();
 		if ( !options.SetScene( map.Scene ) )
 		{
@@ -288,6 +386,11 @@ public sealed class LobbyManager : Component, IRoundContext
 	}
 
 	GameObject SpawnPawn( Connection connection, PlayerRole role )
+		=> SpawnPawnFor( connection.Id, connection.DisplayName, role, connection );
+
+	// The one spawn path, for players and bots alike. A null <paramref name="owner"/> means a bot: the pawn stays
+	// host-owned and is prepared so nobody drives it (RoundBots.Prepare), instead of being handed to a connection.
+	GameObject SpawnPawnFor( Guid id, string name, PlayerRole role, Connection owner )
 	{
 		var lc = LobbyController.Current;
 		if ( !lc.IsValid() )
@@ -299,16 +402,16 @@ public sealed class LobbyManager : Component, IRoundContext
 		var prefab = role == PlayerRole.Hunter ? lc.HunterPrefab : lc.PropPrefab;
 		if ( !prefab.IsValid() )
 		{
-			Log.Warning( $"LobbyManager: no {role} prefab assigned — can't spawn for {connection.DisplayName}." );
+			Log.Warning( $"LobbyManager: no {role} prefab assigned — can't spawn for {name}." );
 			return null;
 		}
 
-		var at = lc.SpotAt( Players.TryGetValue( connection.Id, out var row ) ? row.SpawnIndex : 0 );
+		var at = lc.SpotAt( Players.TryGetValue( id, out var row ) ? row.SpawnIndex : 0 );
 
 		// A role swap respawns IN PLACE — where the old pawn stands, not back at the spawn ring. Same buried-origin
 		// guard as RoundManager.EnsureOwnPawn: a sculpted prop's origin can sit under the floor, so ground the new
 		// pawn on the shape's feet (traced down onto whatever it stood on) rather than the raw origin.
-		if ( _pawns.TryGetValue( connection.Id, out var previous ) && previous.IsValid() )
+		if ( _pawns.TryGetValue( id, out var previous ) && previous.IsValid() )
 		{
 			at = previous.WorldTransform;
 			var hider = previous.Components.Get<HiderController>();
@@ -321,18 +424,28 @@ public sealed class LobbyManager : Component, IRoundContext
 			}
 		}
 
-		var pawn = prefab.Clone( at, name: $"Lobby Pawn ({role}) {connection.DisplayName}" );
+		var pawn = prefab.Clone( at, name: $"Lobby Pawn ({role}) {name}" );
 		if ( !pawn.IsValid() )
 			return null;
+
+		// A bot's body: stamp its roster row, take the controls away, strip the per-player hardware. Before the
+		// NetworkSpawn below, so BotPawn.RosterId ships in the spawn snapshot and clients resolve it too.
+		if ( owner is null )
+			RoundBots.Prepare( pawn, id );
 
 		// The new pawn takes over the old one's exact spot, so the old pawn goes away entirely. Releasing it as
 		// scenery (the Retire path, kept for disconnects) would leave the fresh pawn spawning inside the released
 		// disguise's collider — the solver shoves overlapping hulls apart, sometimes through the floor.
-		if ( _pawns.Remove( connection.Id, out var old ) && old.IsValid() )
+		if ( _pawns.Remove( id, out var old ) && old.IsValid() )
 			old.Destroy();
 
-		pawn.NetworkSpawn( connection );
-		_pawns[connection.Id] = pawn;
+		// Handed to its player, or kept by the host when there isn't one.
+		if ( owner is not null )
+			pawn.NetworkSpawn( owner );
+		else
+			pawn.NetworkSpawn();
+
+		_pawns[id] = pawn;
 		return pawn;
 	}
 

@@ -4,7 +4,11 @@
 // absolutely positioned by the razor (left/top as viewport percentages at the anchor point) and the translate
 // pulls it back over that point: centred horizontally, sitting fully above the head. Scene-text treatment from
 // the theme (cream + drop shadow) since the names float straight over the 3D scene with no card behind them.
-// z-index below siblings + pointer-events: none so names never cover the pause menu or eat a click.
+// z-index below siblings so the crosshair and any other pawn-HUD panel draw over the names, + pointer-events:
+// none so a name never eats a click. NOTE this z-index only orders panels WITHIN the pawn HUD's ScreenPanel —
+// it says nothing about the round HUD / setup / pause menu, which are separate ScreenPanels ordered purely by
+// ScreenPanel.ZIndex (pawn HUD 50 < round HUD 100 < setup 500 < pause 1000). Names drew over the pause menu
+// until the pawn HUD's ZIndex was dropped out of a tie at 1000; fix that there, never here.
 .player-nameplates {
 	position: absolute;
 	top: 0;

@@ -9,6 +9,11 @@
 // 6px of margin) that's seven across before it wraps, which covers a normal lobby.
 $pip-size: 64px;
 
+// The lobby gets its own, larger size. It has the whole corridor to itself — no clock in the middle and no
+// second group to balance against — so the round's constraint doesn't apply there. At 102px per cell that's
+// eleven across before wrapping, so a full 16-player lobby still lands on two rows.
+$pip-size-lobby: 96px;
+
 // HARD width for the whole clock COLUMN — timer, caption, role chip and anything added under them. Fixing the
 // column rather than the timer is what stops the layout caring how wide any of that text is: the digits are
 // proportional so "1:30" and "0:59" don't measure the same, and the sides split whatever this column doesn't
@@ -18,10 +23,6 @@ $pip-size: 64px;
 // symmetrically rather than clipping, and crucially without moving any icons, since the box can't grow — so
 // overrunning is a cosmetic call, not a layout one.
 $clock-col-width: 150px;
-
-// The idle lobby's status line stands in for the clock and needs far more room than a timer. Matches the
-// max-width on .lobby-status so the column is sized to what actually renders.
-$lobby-status-width: 640px;
 
 // The main player HUD. Clay-craft tokens from _theme.scss so it retunes from one place. Pure readout — never
 // steals the cursor.
@@ -89,22 +90,6 @@ $lobby-status-width: 640px;
 		flex-direction: column;
 		align-items: center;
 
-		// The phase header is a WobbleText with the layered clay emboss per letter — STATIC (no jitter; that's on the
-		// line beneath). Same cream-over-scene clay look as the menu/setup headers.
-		.phase-name {
-			font-family: $header-font;
-			font-size: 64px;
-			color: $scene-text;
-			text-transform: uppercase;   // house rule: all headers are uppercase
-
-			.letter {
-				// Glow first so it paints UNDER the depth (s&box draws stacked text-shadows last-on-top).
-				text-shadow:
-					4px 5px 2px $emboss-glow,
-					1.5px 2.5px 0px $emboss-depth;
-			}
-		}
-
 		// ── Three columns: props | clock | hunters ──────────────────────────────────────────────────────────
 		// Each column is its OWN vertical stack, so anything belonging to one side grows downward inside it
 		// without disturbing the other two — per-prop whistle timers under the left, the caption and role chip
@@ -144,10 +129,6 @@ $lobby-status-width: 640px;
 				flex-shrink: 0;
 				margin-left: $space-md;
 				margin-right: $space-md;
-
-				// The idle lobby's status line replaces the clock entirely and needs far more room. The sides
-				// are flex-grow, so they simply give it up and the column stays centred.
-				&.wide { width: $lobby-status-width; }
 			}
 
 			// The icons inside a side column: a row that wraps, packed toward the clock so the two groups read
@@ -161,85 +142,183 @@ $lobby-status-width: 640px;
 
 			.col-props .roster-icons   { justify-content: flex-end; }
 			.col-hunters .roster-icons { justify-content: flex-start; }
+		}
 
-			// Icon plus its name. The margin lives here rather than on .pip so the name is inside the spacing
-			// and can't crowd the neighbouring cell.
-			.pip-cell {
-				flex-direction: column;
-				align-items: center;
-				margin: 3px;
+		// ── Lobby: everyone in one centred row ──────────────────────────────────────────────────────────────
+		// No props/hunters split to make yet, and nothing to anchor to screen centre, so this doesn't borrow the
+		// three-column layout — it's just the whole server on one wrapping line with the status underneath.
+		.lobby-roster {
+			width: 100%;
+			max-width: $hud-centre-safe;
+			flex-direction: row;
+			flex-wrap: wrap;
+			align-items: flex-start;
+			justify-content: center;
+			margin-bottom: $space-sm;
+
+			// Bigger than the in-round icons — these rules sit deeper than the shared ones below, so they win.
+			// Everything here scales together with $pip-size-lobby; the two font sizes are hand-derived from it
+			// (s&box SCSS has no arithmetic) and want re-deriving if it changes.
+			.pip,
+			.pip-render {
+				width: $pip-size-lobby;
+				height: $pip-size-lobby;
 			}
 
-			// Clipped to the icon's width so a long Steam name can't widen the cell and reflow the whole row.
 			.pip-name {
-				max-width: $pip-size;
-				margin-top: 2px;
-				font-family: $body-font;
-				font-weight: $body-weight;
-				font-size: 13px;
-				color: $scene-text;
-				text-shadow: $scene-shadow;
-				text-align: center;
-				white-space: nowrap;
-				overflow: hidden;
-				text-overflow: ellipsis;
+				max-width: $pip-size-lobby;
+				font-size: 15px;
 			}
 
-			.pip {
-				width: $pip-size;
-				height: $pip-size;
+			.hunter-pip.generic .mi { font-size: 51px; }
+
+			// "I'll hunt" — hangs off the icon's bottom-right corner. Slightly outside the pip on both axes so
+			// it reads as a badge pinned ON the portrait rather than an element floating inside it.
+			//
+			// No chrome — the emoji IS the badge, outlined the way the rest of the UI outlines things. The box
+			// just parks it in the corner, so it has no size of its own and hugs the glyph.
+			//
+			// TOP-left: up beside the head reads as the player putting their hand up, which is what nominating
+			// to hunt actually is. Left rather than right because ✋ is a right hand, so it leans in toward the
+			// portrait rather than away off the edge of it.
+			//
+			// Its glyph deliberately uses .badge-glyph, NOT .mi: the fallback-avatar rule above is
+			// `.hunter-pip.generic .mi`, which would out-specify anything scoped to the badge and blow this up
+			// to 51px on any player whose portrait hasn't resolved.
+			.nominated-badge {
+				position: absolute;
+				left: -4px;
+				top: -4px;
 				align-items: center;
 				justify-content: center;
-			}
 
-			// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop" until
-			// these become real per-prop thumbnails.
-			.prop-pip {
-				background-image: url( "/ui/shapeicons/shape_sphere_large.png" );
-				background-size: contain;
-				background-repeat: no-repeat;
-				background-position: center;
-			}
+				// Hidden by default and revealed by .raised, so the badge exists whether or not the hand is
+				// up — a removed element can't animate on its way out.
+				//
+				// Going DOWN is this transition: a quick, decisive shrink. It fires only on a CHANGE, so the
+				// element sitting at scale(0) on first render doesn't animate into existence.
+				//
+				// Going UP is the keyframes on .raised, because s&box has no overshoot easing to transition
+				// with — no `back`, no cubic-bezier — so the spring has to be spelled out as poses.
+				transform: scale( 0 );
+				transition: transform 0.16s ease;
 
-			// Hunters. The portrait variant is an SdfThumbnail rendering that hunter's own sculpted head; the
-			// generic variant is the fallback for a hunter whose pawn this machine doesn't have.
-			.hunter-pip {
-				border-radius: $radius-pill;
-
-				&.generic {
-					background-color: $craft-red;
-					box-shadow: $shadow-edge;
-
-					.mi {
-						font-family: "Material Icons";
-						text-transform: none;    // both resets are mandatory or the ligature breaks
-						letter-spacing: 0;
-						font-size: 34px;   // scaled with $pip-size so the fallback glyph still fills its pill
-						color: $scene-text;
-					}
+				&.raised {
+					transform: scale( 1 );
+					animation: hud-hand-raise 0.34s ease-out;
 				}
 
-				// Just an image — the render happens off-screen in .icon-farm at several times this size and
-				// this displays the result, which is where the supersampling comes from. No absolute
-				// positioning or transforms, none of which worked when this panel WAS the renderer.
-				.pip-render {
-					width: $pip-size;
-					height: $pip-size;
-					background-size: contain;
-					background-repeat: no-repeat;
-					background-position: center;
+				// No font-family: leave it on the default so Skia's fallback picks the system emoji font for
+				// this codepoint. Forcing Material Icons here would render a missing-glyph box instead.
+				//
+				// The outline is a RING OF SHADOWS, not text-stroke. text-stroke does nothing to a colour
+				// emoji — those are drawn as layered/bitmap glyphs rather than fillable outlines, so there's no
+				// path for Skia to stroke. Shadows are composited from the rendered glyph whatever produced it,
+				// so they work regardless. Eight offsets at the house 2px, diagonals pulled in slightly so the
+				// corners don't read heavier than the edges.
+				.badge-glyph {
+					font-size: 35px;
+					text-transform: none;
+					letter-spacing: 0;
+					text-shadow:
+						2px 0px 0px $paper-edge,
+						-2px 0px 0px $paper-edge,
+						0px 2px 0px $paper-edge,
+						0px -2px 0px $paper-edge,
+						1.4px 1.4px 0px $paper-edge,
+						-1.4px 1.4px 0px $paper-edge,
+						1.4px -1.4px 0px $paper-edge,
+						-1.4px -1.4px 0px $paper-edge;
+				}
+			}
+		}
+
+		// ── Roster icons, shared by both layouts ────────────────────────────────────────────────────────────
+		// Icon plus its name. The margin lives here rather than on .pip so the name is inside the spacing and
+		// can't crowd the neighbouring cell.
+		.pip-cell {
+			flex-direction: column;
+			align-items: center;
+			margin: 3px;
+		}
+
+		// Clipped to the icon's width so a long Steam name can't widen the cell and reflow the whole row.
+		.pip-name {
+			max-width: $pip-size;
+			margin-top: 2px;
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 13px;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
+			text-align: center;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		// position: relative so the nomination badge can hang off its corner — an absolute child anchors to the
+		// nearest POSITIONED ancestor, and without this it would escape all the way to the HUD root.
+		.pip {
+			position: relative;
+			width: $pip-size;
+			height: $pip-size;
+			align-items: center;
+			justify-content: center;
+		}
+
+		// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop" until these
+		// become real per-prop thumbnails.
+		.prop-pip {
+			background-image: url( "/ui/shapeicons/shape_sphere_large.png" );
+			background-size: contain;
+			background-repeat: no-repeat;
+			background-position: center;
+		}
+
+		// The portrait variant is an SdfIcon showing that player's own sculpted head; the generic variant is the
+		// fallback for someone whose pawn this machine doesn't have.
+		.hunter-pip {
+			border-radius: $radius-pill;
+
+			&.generic {
+				background-color: $craft-red;
+				box-shadow: $shadow-edge;
+
+				.mi {
+					font-family: "Material Icons";
+					text-transform: none;    // both resets are mandatory or the ligature breaks
+					letter-spacing: 0;
+					font-size: 34px;   // scaled with $pip-size so the fallback glyph still fills its pill
+					color: $scene-text;
 				}
 			}
 
-			// Overflow marker when a big lobby runs past the pip cap.
-			.pip-more {
-				margin: 3px;
-				font-family: $header-font;
-				font-size: 22px;
-				color: $scene-text;
-				text-shadow: $scene-shadow;
-				align-items: center;
-			}
+		}
+
+		// Just an image — the render happens off-screen in .icon-farm at several times this size and this
+		// displays the result, which is where the supersampling comes from. No absolute positioning or
+		// transforms, none of which worked when this panel WAS the renderer.
+		//
+		// Deliberately NOT nested inside .hunter-pip: that made it the same specificity as .lobby-roster's
+		// override, and later in the file, so the lobby's larger size silently lost and the icons stayed 64px
+		// inside a 128px box. Kept flat, the override is plainly the more specific rule.
+		.pip-render {
+			width: $pip-size;
+			height: $pip-size;
+			background-size: contain;
+			background-repeat: no-repeat;
+			background-position: center;
+		}
+
+		// Overflow marker when a big lobby runs past the pip cap.
+		.pip-more {
+			margin: 3px;
+			font-family: $header-font;
+			font-size: 22px;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
+			align-items: center;
 		}
 
 		// No width of its own any more — it hugs its digits and the fixed-width column centres it, which is
@@ -399,4 +478,20 @@ $lobby-status-width: 640px;
 			text-align: right;
 		}
 	}
+}
+
+// Hand going up: springs out from nothing, overshoots, settles. Four steps rather than an easing curve —
+// a decaying overshoot is what reads as "spring", and spelling out the poses doesn't depend on s&box
+// supporting any particular easing function.
+//
+// MUST be top-level: s&box doesn't register @keyframes nested inside a selector (see the same warning in
+// WobbleText.razor.scss). Scaling is about the panel's centre, so the badge stays pinned to its corner
+// throughout rather than growing out of it.
+@keyframes hud-hand-raise
+{
+	0%   { transform: scale( 0 ); }
+	55%  { transform: scale( 1.3 ); }
+	75%  { transform: scale( 0.9 ); }
+	90%  { transform: scale( 1.06 ); }
+	100% { transform: scale( 1 ); }
 }
