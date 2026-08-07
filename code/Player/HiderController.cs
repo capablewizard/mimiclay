@@ -24,6 +24,23 @@ namespace Mimiclay;
 [Icon( "directions_run" )]
 public sealed class HiderController : Component, IGameObjectNetworkEvents
 {
+	/// <summary>Collision tag stamped on every player prop's disguise. ProjectSettings/Collision.config pairs it
+	/// with ITSELF as Ignore, so two player props never generate contacts — they pass through each other and
+	/// stay exactly as solid as before against the world, decoys and hunters (an unlisted pair falls back to the
+	/// two tags' defaults, and this one defaults to Collide).
+	///
+	/// <b>Why.</b> Props can't see each other while hiding (in Infection they aren't even on the wire until the
+	/// Hunt — see RoundManager), so two of them choosing the same spot is a thing the game actively prevents them
+	/// from noticing. Left solid, that overlap resolves the instant both pawns are published: a prop is a DYNAMIC
+	/// rigidbody on its owner's machine only, so each machine ejects its own pawn out of the other, both at once,
+	/// from a deep penetration. Non-colliding props just overlap visually, which is rare and harmless.
+	///
+	/// Applied at RUNTIME to the pawn's disguise clone rather than authored on disguise.prefab: saved props and
+	/// decoys are exported from that same template, and they must stay solid to players. Physics shapes take
+	/// their tags from the collider's GameObject and follow it live, so tagging the object is enough however the
+	/// collider was built.</summary>
+	public const string PropBodyTag = "propbody";
+
 	// ── Movement ──────────────────────────────────────────────────────────────────────────────────────
 	// Speeds are deliberately the HUNTER's numbers — the stock PlayerController defaults the hunter prefab runs on
 	// (WalkSpeed 110 / RunSpeed 320 / DuckedSpeed 70 / JumpSpeed 300). A prop that moved slower than the thing
@@ -228,6 +245,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// OnEnabled timing. GetOrCreate + Rebuild is idempotent.
 		if ( _body.IsValid() )
 		{
+			// Asserted on EVERY machine, before the collider is built: a proxy's disguise may have arrived in the
+			// pawn's spawn snapshot (already tagged by its owner) or been cloned fresh here, and prop-vs-prop
+			// contacts are only ignored when BOTH shapes carry the tag. Tags.Add is idempotent either way.
+			_body.GameObject.Tags.Add( PropBodyTag );
+
 			_collider = _body.GameObject.Components.GetOrCreate<SdfCollider>();
 			_collider.Rebuild();
 
@@ -253,6 +275,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		_orbit.FollowTarget = _body.GameObject;
 		_orbit.FollowOffset = Vector3.Up * CameraHeightOffset;
 		_orbit.IgnoreCollision = GameObject; // boom ignores the pawn + its disguise, same as before
+		_orbit.IgnoreCollisionTag = PropBodyTag; // …and fellow props, which our physics ignores too (see PropBodyTag)
 		_orbit.MinDistance = MinDistance;
 		_orbit.MaxDistance = MaxDistance;
 		_orbit.ZoomSpeed = ZoomSpeed;
@@ -282,6 +305,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 	protected override void OnUpdate()
 	{
+		// FIRST, and before every gate below: concealment is the one thing here that exists to run on OTHER
+		// players' pawns (see UpdateConcealment). Everything after this point is owner-only.
+		UpdateConcealment();
+
 		// Released into the level: no input, no camera — just let OnFixedUpdate keep the physics settling.
 		if ( _dormant )
 			return;
@@ -313,6 +340,46 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			DrawGroundProbes();
 		if ( DebugCameraPivot )
 			DrawCameraPivot(); // after UpdateCamera, so it shows this frame's pivot (override included)
+	}
+
+	// ── Concealment ───────────────────────────────────────────────────────────────────────────────────
+	/// <summary>True when this prop is concealed FROM US: someone else's prop, while we're a prop ourselves and
+	/// the Reveal hasn't arrived (see <see cref="RoundManager.PropsConcealed"/>). Never true for our own pawn —
+	/// concealment is about what OTHER machines perceive — and never true on a hunter's machine, which has to
+	/// see every prop it's hunting.</summary>
+	public bool Concealed => IsProxy && RoundManager.PropsConcealed;
+
+	// Keep other players' props out of our world until the Reveal. Asserted every frame on every machine and
+	// unconditionally, not on change: GameObject.Enabled is serialized, so a spawn snapshot or a network refresh
+	// can hand us the owner's (enabled) state at any moment, and a "only when it changes" guard would decide it
+	// had already applied concealment and never restore it. Writing a bool to the value it already holds is free.
+	//
+	// It switches the whole DISGUISE BRANCH off rather than flipping renderer flags, which is the lesson from the
+	// hunter's equivalent (HunterController.UpdateConcealment): RenderHidden on an SdfRaymarchRenderer means
+	// SHADOWS-ONLY, so a prop "hidden" that way would still lay its silhouette across the floor in plain sight.
+	// Disabling the branch takes the raymarch, its shadow, the sibling mesh, the collider and the through-wall
+	// outline together, and costs nothing while concealed (no field bakes, no physics shapes). It's also the only
+	// safe way down: disabling the raymarch renderer ALONE hands the sibling mesh back as a visible one
+	// (SdfRaymarchRenderer.RestoreSiblingMeshDeferred) — which that method skips only because the branch is
+	// inactive, exactly as it is here.
+	//
+	// The streamed shape keeps arriving while we're concealing it: SdfNetworkSync sits on the pawn ROOT, so it
+	// stays live and writes the sculpture's brushes regardless of this branch, and re-enabling rebuilds from them
+	// (the renderer clears its change-hash in OnEnabled, the collider rebuilds on its own). A prop shown at the
+	// Reveal is therefore its final sculpted shape, not whatever it wore when we stopped drawing it.
+	//
+	// NOT covered: sound. A concealed prop's taunt whistle and voice still play from where it's hiding — the same
+	// accepted leak as a hidden prop's speech (see PlayerNameplates), and the loudest hint props get about each
+	// other. Gate BroadcastTaunt on this if that turns out to be too much.
+	void UpdateConcealment()
+	{
+		if ( !_body.IsValid() )
+			return;
+
+		bool conceal = Concealed;
+		var branch = _body.GameObject;
+		if ( branch.IsValid() && branch.Enabled == conceal )
+			branch.Enabled = !conceal;
 	}
 
 	// ── Taunts ────────────────────────────────────────────────────────────────────────────────────────
@@ -573,12 +640,16 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	}
 
 	// One downward sphere-probe from a footprint point. Small + tight so the body only reads grounded when a foot is
-	// right at the floor (a generous probe hovers). Ignores our own hierarchy (the disguise collider is a child).
+	// right at the floor (a generous probe hovers). Ignores our own hierarchy (the disguise collider is a child),
+	// and every OTHER player prop: traces don't consult the collision rules unless they opt in, so without this a
+	// prop would read as grounded on a fellow prop that its physics passes straight through — hovering inside one,
+	// then dropping when that player walked off. Decoys and saved props are untagged and still hold us up.
 	const float GroundProbeRadius = 3f, GroundProbeUp = 3f, GroundProbeDown = 4f;
 
 	SceneTraceResult ProbeGround( Vector3 p ) => Scene.Trace
 		.Sphere( GroundProbeRadius, p + Vector3.Up * GroundProbeUp, p - Vector3.Up * GroundProbeDown )
 		.IgnoreGameObjectHierarchy( GameObject )
+		.WithoutTags( PropBodyTag )
 		.Run();
 
 	// Draw every ground probe (green = found ground, red = nothing). Called every frame from OnUpdate — including edit

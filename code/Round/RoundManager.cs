@@ -385,6 +385,28 @@ public sealed class RoundManager : Component, IRoundContext
 		&& Current.Settings.Mode == RoundMode.Infection
 		&& Current.Phase is RoundPhase.Starting or RoundPhase.Hide;
 
+	/// <summary>What THIS machine is currently playing as: the role of the pawn we actually own. Read from the
+	/// pawn rather than our roster row because the row flips FIRST — a caught prop is marked Hunter a moment
+	/// before <see cref="EnsureOwnPawn"/> respawns it — and anything asking "what am I" wants the answer that
+	/// matches the body it's looking through. <see cref="PlayerRole.Unassigned"/> when we have no pawn.</summary>
+	public static PlayerRole LocalRole => Current.IsValid() && Current._ownPawn.IsValid()
+		? Current._ownPawnRole
+		: PlayerRole.Unassigned;
+
+	/// <summary>True while OTHER players' props must be invisible and intangible TO US, because we're a prop
+	/// ourselves and it isn't the Reveal yet. Props go on the wire at the Hunt so HUNTERS can see and shoot them
+	/// (<see cref="WantNetworked"/>), and that necessarily hands every other prop their positions too — so from
+	/// the Hunt onward the hiding is per-machine rendering state, exactly like <see cref="HuntersConcealed"/>.
+	/// Props learning where the other props are is the Reveal's payoff and shouldn't leak before it.
+	///
+	/// Unlike <see cref="HuntersConcealed"/> this is asymmetric — it depends on who WE are, so the same prop is
+	/// concealed on a fellow prop's machine and fully visible on every hunter's. Teams mode is exempt: props are
+	/// a team there and see each other all round (nameplates already work that way).</summary>
+	public static bool PropsConcealed => Current.IsValid()
+		&& Current.Settings.Mode == RoundMode.Infection
+		&& Current.Phase is RoundPhase.Starting or RoundPhase.Hide or RoundPhase.Hunt
+		&& LocalRole == PlayerRole.Prop;
+
 	// Our spawn transform: our assigned spot for our current role.
 	Transform SpotFor( PlayerInfo info )
 	{

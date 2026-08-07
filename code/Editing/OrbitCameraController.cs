@@ -53,6 +53,12 @@ public sealed class OrbitCameraController : Component
 	/// through geometry, even with <see cref="IgnoreCollision"/> set.</summary>
 	[Property] public bool BoomCollision { get; set; } = true;
 
+	/// <summary>Tag the collision boom passes straight through, on top of <see cref="IgnoreCollision"/>'s
+	/// hierarchy. Null = the boom stops on everything. The hider sets it to the prop-body tag so a fellow prop —
+	/// which its own physics already ignores — can't shove its camera either; a boom that stopped on one would
+	/// collapse onto the pivot the moment two props shared a spot (the trace starts inside that collider).</summary>
+	public string IgnoreCollisionTag { get; set; }
+
 	public Vector3 Pivot { get; set; }
 	public float Distance { get; set; }
 
@@ -182,10 +188,14 @@ public sealed class OrbitCameraController : Component
 		// Pull the boom in if it would clip through geometry (gameplay only).
 		if ( BoomCollision && IgnoreCollision.IsValid() )
 		{
-			var tr = Scene.Trace.Ray( Pivot, desired )
+			var trace = Scene.Trace.Ray( Pivot, desired )
 				.Radius( 8f )
-				.IgnoreGameObjectHierarchy( IgnoreCollision )
-				.Run();
+				.IgnoreGameObjectHierarchy( IgnoreCollision );
+
+			if ( !string.IsNullOrEmpty( IgnoreCollisionTag ) )
+				trace = trace.WithoutTags( IgnoreCollisionTag );
+
+			var tr = trace.Run();
 			if ( tr.Hit )
 				desired = tr.EndPosition;
 		}
