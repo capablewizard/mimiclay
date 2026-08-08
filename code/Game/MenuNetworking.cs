@@ -265,7 +265,10 @@ public sealed class SessionResetSystem : GameObjectSystem
 	public override void Dispose()
 	{
 		if ( Game.IsClosing )
+		{
 			MenuNetworking.NoteSessionEnded();
+			SculptBounds.ResetBypass(); // the dev size-limit bypass never outlives the play session
+		}
 
 		base.Dispose();
 	}

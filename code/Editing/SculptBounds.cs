@@ -115,6 +115,25 @@ public sealed class SculptBounds : Component
 	const float VolumeCellTarget = 4f;
 	const int VolumeMaxCellsPerAxis = 36;
 
+	/// <summary>DEV: ignore every sculpt size limit on THIS machine — for authoring the game's own props
+	/// in-game without the gameplay restrictions getting in the way. Toggled by <c>mimi_bounds_bypass</c>.
+	/// Per-machine and local-only: while set, this machine's own checks all pass AND it accepts any
+	/// incoming shape, but OTHER machines still re-validate what it broadcasts unless they bypass too.
+	/// Cleared when play stops (<see cref="SessionResetSystem"/> — statics survive the editor's
+	/// Stop→Play), so a forgotten toggle can't quietly leak into the next playtest.</summary>
+	public static bool BypassAll { get; private set; }
+
+	[ConCmd( "mimi_bounds_bypass" )]
+	public static void ToggleBypass()
+	{
+		BypassAll = !BypassAll;
+		Log.Info( BypassAll
+			? "SculptBounds: size limits BYPASSED on this machine (mimi_bounds_bypass again to re-enforce)."
+			: "SculptBounds: size limits enforced again." );
+	}
+
+	internal static void ResetBypass() => BypassAll = false;
+
 	/// <summary>The sculpt currently exceeds the max region (with hysteresis).</summary>
 	public bool TooBig { get; private set; }
 
@@ -208,6 +227,9 @@ public sealed class SculptBounds : Component
 	/// live stream frames get the cheap max check alone.</summary>
 	public bool ValidateIncoming( List<SdfBrush> brushes, bool withVolume )
 	{
+		if ( BypassAll )
+			return true; // dev bypass (see BypassAll) — this machine accepts anything
+
 		if ( brushes is null )
 			return false;
 
@@ -231,6 +253,14 @@ public sealed class SculptBounds : Component
 
 	void RefreshMax()
 	{
+		if ( BypassAll )
+		{
+			TooBig = false;
+			_offending.Clear();
+			_maxHash = 0; // re-evaluate for real the moment the bypass lifts
+			return;
+		}
+
 		var t = Target;
 		if ( !t.IsValid() || t.Brushes is not { Count: > 0 } )
 		{
@@ -484,6 +514,13 @@ public sealed class SculptBounds : Component
 
 	void RefreshVolume()
 	{
+		if ( BypassAll )
+		{
+			TooSmall = false;
+			_volHash = 0; // re-evaluate for real the moment the bypass lifts
+			return;
+		}
+
 		if ( MinVolume <= 0f )
 		{
 			TooSmall = false;
