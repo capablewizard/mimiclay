@@ -1795,11 +1795,15 @@ public sealed class HunterController : Component
 		if ( !_session.IsValid() )
 			return;
 
+		// Toggle can now DECLINE to exit (an invalid sculpt raises the session's revert confirmation and
+		// stays editing), so both follow-ups key off an actual state CHANGE — re-framing on a blocked exit
+		// would visibly jump the camera for nothing.
+		bool wasEditing = _session.IsEditing;
 		_session.Toggle();
 
-		if ( _session.IsEditing )
+		if ( !wasEditing && _session.IsEditing )
 			FrameFace();
-		else if ( _orbit.IsValid() ) // leaving: remember the view (face-relative), zoom and pan for the next edit session
+		else if ( wasEditing && !_session.IsEditing && _orbit.IsValid() ) // leaving: remember the view (face-relative), zoom and pan for the next edit session
 			_lastEditView = (
 				new Angles( _orbit.Angles.pitch, _orbit.Angles.yaw - FaceYaw(), 0f ),
 				_orbit.Distance,

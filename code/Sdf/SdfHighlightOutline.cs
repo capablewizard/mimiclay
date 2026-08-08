@@ -188,8 +188,15 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	// current: each member pings SyncFromRenderer from ITS OnUpdate.
 	void ScanTargets()
 	{
+		// A renderer belongs to its NEAREST enabled outline: each renderer holds exactly one Highlight
+		// back-reference, so without this rule a nested outline (the hunter's head-only SculptBounds
+		// warning, sitting under the pawn-root hunt glow) and its ancestor would overwrite each other's
+		// claim every frame. The ancestor simply cedes that subtree — at the Hunt both outlines show with
+		// matching authored looks, so the glow still reads as one silhouette.
 		var found = Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants )
-			.Where( r => !r.ExcludeFromHighlight ).ToList();
+			.Where( r => !r.ExcludeFromHighlight
+				&& r.Components.Get<SdfHighlightOutline>( FindMode.Enabled | FindMode.InSelf | FindMode.InAncestors ) == this )
+			.ToList();
 
 		foreach ( var old in _targets )
 		{

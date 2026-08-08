@@ -129,16 +129,26 @@ public sealed class SculptBounds : Component
 	/// single culprit when the constraint is total extent — moving ANY brush moves the region).</summary>
 	public IReadOnlyList<int> OffendingBrushes => _offending;
 
+	/// <summary>The authored brush list (serialized) from the last VALID commit — what
+	/// <see cref="SculptEditSession"/> reverts to when the player leaves edit mode with an incompatible
+	/// shape, so nobody ever walks around wearing a shape the other machines aren't showing. Null until a
+	/// valid shape has committed (a fresh spawn straight into invalid has nothing to fall back to).</summary>
+	public string LastValidAuthored { get; private set; }
+
 	readonly List<int> _offending = new();
 	readonly List<SdfBrush> _shapeScratch = new();   // authored, ghost-free prefix for volume sampling
 	readonly List<Vector3> _ptsScratch = new();      // per-brush hull cloud (support-point generation)
 	readonly List<Vector4> _sweepScratch = new();    // spline swept spheres (support-point generation)
 	readonly List<Vector4> _supportScratch = new();  // one brush's support spheres (max check)
-	readonly List<Vector4> _supportDraw = new();     // whole sculpt's support spheres (debug draw)
+	readonly List<Vector4> _supportDraw = new();     // debug draw: points the check counted as inside
+	readonly List<Vector4> _supportDrawBad = new();  // debug draw: verified violators (drawn red)
 	int _maxHash;    // last brush/config state the max check ran against
 	int _volHash;    // …and the volume check (separate: volume must never re-run per frame)
+	const float LiveVolumeInterval = 0.15f; // mid-drag volume re-sample cadence (see OnUpdate)
+
 	SdfSculpture _sibling;
 	SdfSculpture _hooked; // the sculpture whose Committed we're subscribed to
+	RealTimeSince _sinceLiveVolume;
 	SculptBoundsShell _shell;
 	SculptSupportPoints _supportPoints;
 	float _shellAlpha;
@@ -236,15 +246,16 @@ public sealed class SculptBounds : Component
 			return; // same brushes + config ⇒ same verdict (hysteresis is deterministic on unchanged input)
 		_maxHash = hash;
 
-		// The stamp ghost is a REAL brush in the list but not a committed shape yet — exclude it, like the
-		// camera/pivot consumers do. Its stamp commits through the funnel and is judged then.
-		var ghost = SculptEditSession.PendingStamp( t );
+		// The stamp ghost IS judged, deliberately: an oversized stamp should warn while it's being SIZED,
+		// not the moment after it lands (placing it stays allowed — the warning is feedback, never a
+		// block). It only stays out of RecordLastValid, so a hover preview can never become the shape the
+		// exit-revert falls back to.
 
 		// Per-brush blame only exists for a FIXED region — in FollowShape mode moving ANY brush moves the
 		// region, so there's no single culprit and the whole-sculpt outline carries the warning instead.
 		_offending.Clear();
 		var blame = Anchor == SculptBoundsAnchor.Fixed ? _offending : null;
-		float worst = MaxProtrusion( t.Brushes, authored, ghost, blame, MaxExitSlack );
+		float worst = MaxProtrusion( t.Brushes, authored, null, blame, MaxExitSlack );
 		TooBig = worst > (TooBig ? MaxExitSlack : MaxEnterSlack);
 		if ( !TooBig )
 			_offending.Clear(); // blame only renders while actually invalid
@@ -253,9 +264,13 @@ public sealed class SculptBounds : Component
 	// Worst protrusion (units past the region surface; ≤0 = fully inside) of the additive shape.
 	// FollowShape centres the region on the whole-sculpt union AABB's centre (the same TryGetBounds the
 	// orbit camera pivots on, so the shell/verdict agree with where the player's view centres); Fixed uses
-	// the authored Center. The test itself runs PER BRUSH, per mirror copy, against the shape's actual
-	// SUPPORT POINTS (see BrushWorst) — never a bounding box/sphere, whose padding flags shapes whose
-	// visible surface is nowhere near the wall. `offending` (Fixed mode) records brushes past `offendAt`.
+	// the authored Center. Two-stage test, per brush, per mirror copy:
+	//  1. The shape's SUPPORT POINTS (see CollectSupportPoints) — never a bounding box/sphere, whose
+	//     padding flags shapes whose visible surface is nowhere near the wall. Cheap; runs on every point.
+	//  2. Any point past the wall is VERIFIED against the CARVED field (TryCarvedReach): the point may
+	//     belong to a mostly-subtracted brush and the clay it marks may simply not exist any more. Only
+	//     the violating points pay for field marching, so the common all-inside case costs no field work.
+	// `offending` (Fixed mode) records brushes whose VERIFIED overflow exceeds `offendAt`.
 	float MaxProtrusion( List<SdfBrush> brushes, int authoredCount, SdfBrush exclude, List<int> offending, float offendAt )
 	{
 		var regionCentre = Center;
@@ -266,6 +281,7 @@ public sealed class SculptBounds : Component
 			regionCentre = bb.Center;
 		}
 
+		bool fieldBuilt = false;
 		float worst = 0f;
 		for ( int i = 0; i < Math.Min( authoredCount, brushes.Count ); i++ )
 		{
@@ -273,7 +289,27 @@ public sealed class SculptBounds : Component
 			if ( b == exclude || !b.Enabled || b.Operation != SdfOperation.Add )
 				continue; // a subtract outside the region removes nothing that matters — never constrained
 
-			float bw = BrushWorst( b, regionCentre );
+			_supportScratch.Clear();
+			CollectSupportPoints( b, _supportScratch, Sdf.BlendInert( brushes, b ) );
+
+			float bw = 0f;
+			foreach ( var sp in _supportScratch )
+			{
+				float o = PointOverflow( new Vector3( sp.x, sp.y, sp.z ), sp.w, regionCentre );
+				if ( o > MaxExitSlack )
+				{
+					// Past the wall by the naive test — check whether that clay actually EXISTS (the
+					// carved field is the truth; verify at the tightest threshold any caller compares to).
+					if ( !fieldBuilt )
+					{
+						BuildFieldScratch( brushes, authoredCount, exclude );
+						fieldBuilt = true;
+					}
+					o = TryCarvedReach( sp, regionCentre, out _, out float verified ) ? verified : 0f;
+				}
+				bw = MathF.Max( bw, o );
+			}
+
 			if ( offending is not null && bw > offendAt )
 				offending.Add( i );
 			worst = MathF.Max( worst, bw );
@@ -281,15 +317,55 @@ public sealed class SculptBounds : Component
 		return worst;
 	}
 
-	// One brush's worst region overflow — the max PointOverflow over its support spheres.
-	float BrushWorst( SdfBrush b, Vector3 regionCentre )
+	// The carved field the verification marches: the authored prefix (damage exempt) minus the pending
+	// stamp ghost. Disabled brushes are skipped by Sdf.Sample itself.
+	void BuildFieldScratch( List<SdfBrush> brushes, int authoredCount, SdfBrush exclude )
 	{
-		_supportScratch.Clear();
-		CollectSupportPoints( b, _supportScratch );
-		float bw = float.MinValue;
-		foreach ( var sp in _supportScratch )
-			bw = MathF.Max( bw, PointOverflow( new Vector3( sp.x, sp.y, sp.z ), sp.w, regionCentre ) );
-		return bw == float.MinValue ? 0f : bw;
+		_shapeScratch.Clear();
+		for ( int i = 0; i < Math.Min( authoredCount, brushes.Count ); i++ )
+		{
+			if ( brushes[i] != exclude )
+				_shapeScratch.Add( brushes[i] );
+		}
+	}
+
+	// Verify one violating support point against the carved field (_shapeScratch — call BuildFieldScratch
+	// first): sphere-march from just outside the padded point toward the region centre and stop at the
+	// first SOLID clay on that ray. That hit is the shape's real reach there — a fully carved-away point
+	// finds no clay and returns false (contributes nothing). Solid uncarved shapes converge right back to
+	// their own surface (a couple of steps), so the verified result also corrects the sharp-primitive
+	// cloud's rounding overshoot for free. Slightly PERMISSIVE for carved shapes whose true extreme lies
+	// off-ray — the forgiving direction.
+	bool TryCarvedReach( Vector4 sp, Vector3 regionCentre, out Vector3 hit, out float overflow )
+	{
+		hit = default;
+		overflow = 0f;
+
+		var p = new Vector3( sp.x, sp.y, sp.z );
+		var dir = regionCentre - p;
+		float len = dir.Length;
+		if ( len < 0.01f )
+			dir = Vector3.Up; // support point ON the centre — direction arbitrary, the first sample decides
+		else
+			dir /= len;
+
+		var q = p - dir * sp.w; // start just outside the padded reach
+		float travelled = 0f;
+		float tmax = len + sp.w + 1f;
+		for ( int s = 0; s < 64 && travelled <= tmax; s++ )
+		{
+			float d = Sdf.Sample( _shapeScratch, q );
+			if ( d < 0.25f )
+			{
+				hit = q;
+				overflow = PointOverflow( q, 0f, regionCentre );
+				return true;
+			}
+			float step = MathF.Max( d, 0.5f );
+			q += dir * step;
+			travelled += step;
+		}
+		return false; // no clay anywhere along the ray — the support point marks carved-away space
 	}
 
 	// One brush's SUPPORT SPHERES (xyz = sculpture-local centre, w = radius pad), every mirror copy — the
@@ -300,10 +376,11 @@ public sealed class SculptBounds : Component
 	// AABB or circumradius reads 20-70% past the visible surface for flat, rotated, sliced or off-centre
 	// shapes and flagged sculpts that were nowhere near the wall. Exact for spheres and (rounded) boxes;
 	// a few % PERMISSIVE on curved rims (the tessellation's points sit on the surface, the arcs between
-	// them a hair outside), which errs the forgiving way.
-	void CollectSupportPoints( SdfBrush b, List<Vector4> dst )
+	// them a hair outside), which errs the forgiving way. `blendInert` (see Sdf.BlendInert) drops the
+	// blend pad for the first additive brush, whose blend folds against empty space and bulges nothing.
+	void CollectSupportPoints( SdfBrush b, List<Vector4> dst, bool blendInert )
 	{
-		float pad = b.Blend * 0.25f; // smooth-union bulge ≈ k/4 — same factor as SdfBrush.AabbExtents
+		float pad = blendInert ? 0f : b.Blend * 0.25f; // smooth-union bulge ≈ k/4 — same as SdfBrush.AabbExtents
 		Span<Vector3> signs = stackalloc Vector3[8];
 		int ns = MirrorSigns( b, signs );
 
@@ -421,15 +498,12 @@ public sealed class SculptBounds : Component
 		}
 
 		// The measured shape: the authored prefix (damage craters exempt — being shot can't invalidate
-		// you) minus any pending stamp ghost. Subtracts stay IN — carving away clay is the whole point.
-		var ghost = SculptEditSession.PendingStamp( t );
+		// you), INCLUDING any pending stamp ghost — sizing a stamp should move the verdict live, exactly
+		// as landing it would. Subtracts stay IN — carving away clay is the whole point.
 		int authored = t.AuthoredBrushCount;
 		_shapeScratch.Clear();
 		for ( int i = 0; i < Math.Min( authored, t.Brushes.Count ); i++ )
-		{
-			if ( t.Brushes[i] != ghost )
-				_shapeScratch.Add( t.Brushes[i] );
-		}
+			_shapeScratch.Add( t.Brushes[i] );
 
 		int hash = HashCode.Combine( ConfigHash(),
 			SdfSculpture.ContentHashPrefix( _shapeScratch, _shapeScratch.Count, 0, false ) );
@@ -549,6 +623,8 @@ public sealed class SculptBounds : Component
 
 	// ── Commit hook (volume refresh cadence) ────────────────────────────────────────────────────────────
 
+	protected override void OnEnabled() => EnsureHooked(); // don't miss the spawn-load commit (OnUpdate hooks late)
+
 	void EnsureHooked()
 	{
 		var t = Target;
@@ -585,7 +661,31 @@ public sealed class SculptBounds : Component
 		// PULL the verdict through EvaluateNow.
 		if ( !LocallyEditable )
 			return;
+		RefreshMax(); // hash-cached — just makes sure the verdict below isn't a frame stale
 		RefreshVolume();
+		if ( IsSculptValid )
+			RecordLastValid();
+	}
+
+	// Snapshot the authored shape (ghost-free, damage exempt) as the exit-revert fallback. Valid commits
+	// only — see LastValidAuthored.
+	void RecordLastValid()
+	{
+		var t = Target;
+		if ( !t.IsValid() || t.Brushes is null )
+			return;
+
+		var ghost = SculptEditSession.PendingStamp( t );
+		int authored = t.AuthoredBrushCount;
+		_shapeScratch.Clear();
+		for ( int i = 0; i < Math.Min( authored, t.Brushes.Count ); i++ )
+		{
+			if ( t.Brushes[i] != ghost )
+				_shapeScratch.Add( t.Brushes[i] );
+		}
+
+		if ( _shapeScratch.Count > 0 )
+			LastValidAuthored = SdfSculpture.SerializeBrushes( _shapeScratch );
 	}
 
 	// ── Owner feedback ──────────────────────────────────────────────────────────────────────────────────
@@ -598,7 +698,19 @@ public sealed class SculptBounds : Component
 		// see LocallyEditable for what that excludes (proxies, bots, decoys).
 		bool owner = LocallyEditable;
 		if ( owner )
+		{
 			RefreshMax();
+
+			// Live min-size: volume normally refreshes on COMMIT, but a scale-down drag should warn the
+			// moment the clay dips under the minimum, not at release — so re-sample on a small throttle
+			// too. The content-hash guard inside makes the idle case free; mid-drag this samples the
+			// carved field a few times a second, each pass early-outing at the threshold.
+			if ( _sinceLiveVolume > LiveVolumeInterval )
+			{
+				_sinceLiveVolume = 0f;
+				RefreshVolume();
+			}
+		}
 
 		bool invalid = owner && !IsSculptValid;
 		DriveOutlines( invalid );
@@ -606,9 +718,11 @@ public sealed class SculptBounds : Component
 		DriveSupportDebug();
 	}
 
-	// DEBUG: render the exact support-sphere set the max check measures (see CollectSupportPoints).
-	// Driven by the inspector toggle alone — no owner gate, so a shape can be inspected wherever the
-	// component is ticked on.
+	// DEBUG: render the support-sphere set the max check measures, AFTER the same carved-field
+	// verification the verdict applies — a point whose clay was subtracted away disappears, and a genuine
+	// violator is drawn at its marched reach (where solid clay actually starts on its ray). What's on
+	// screen is therefore exactly what the check counted, never the raw uncarved cloud. Driven by the
+	// inspector toggle alone — no owner gate, so a shape can be inspected wherever the component is on.
 	void DriveSupportDebug()
 	{
 		var t = Target;
@@ -618,26 +732,64 @@ public sealed class SculptBounds : Component
 			return;
 		}
 
-		var ghost = SculptEditSession.PendingStamp( t );
+		var brushes = t.Brushes;
 		int authored = t.AuthoredBrushCount;
+
+		// Ghost included throughout, matching the check — its support points draw (and judge) live while
+		// a stamp is being sized.
+		var regionCentre = Center;
+		if ( Anchor == SculptBoundsAnchor.FollowShape && Sdf.TryGetBounds( brushes, out var bb ) )
+			regionCentre = bb.Center;
+
+		bool fieldBuilt = false;
 		_supportDraw.Clear();
-		for ( int i = 0; i < Math.Min( authored, t.Brushes.Count ); i++ )
+		_supportDrawBad.Clear();
+		for ( int i = 0; i < Math.Min( authored, brushes.Count ); i++ )
 		{
-			var b = t.Brushes[i];
-			if ( b == ghost || !b.Enabled || b.Operation != SdfOperation.Add )
+			var b = brushes[i];
+			if ( !b.Enabled || b.Operation != SdfOperation.Add )
 				continue;
-			CollectSupportPoints( b, _supportDraw );
+
+			_supportScratch.Clear();
+			CollectSupportPoints( b, _supportScratch, Sdf.BlendInert( brushes, b ) );
+			foreach ( var sp in _supportScratch )
+			{
+				if ( PointOverflow( new Vector3( sp.x, sp.y, sp.z ), sp.w, regionCentre ) <= MaxExitSlack )
+				{
+					_supportDraw.Add( sp );
+					continue;
+				}
+
+				if ( !fieldBuilt )
+				{
+					BuildFieldScratch( brushes, authored, null );
+					fieldBuilt = true;
+				}
+				// Verified violators (real clay past the wall) go RED; a hit the carve pulled back inside
+				// is fine and stays the normal colour. No clay on the ray → the check counted nothing →
+				// draw nothing.
+				if ( TryCarvedReach( sp, regionCentre, out var hit, out float overflow ) )
+					(overflow > MaxExitSlack ? _supportDrawBad : _supportDraw)
+						.Add( new Vector4( hit.x, hit.y, hit.z, 0f ) );
+			}
 		}
 
 		_supportPoints ??= new SculptSupportPoints();
-		_supportPoints.Draw( Scene, Scene.Camera, t.WorldTransform, _supportDraw, WarnColor );
+		_supportPoints.Draw( Scene, Scene.Camera, t.WorldTransform,
+			_supportDraw, WarnColor, _supportDrawBad, InvalidPointColor );
 	}
+
+	// Verified violating support points in the debug view — clay the check counted PAST the wall.
+	static readonly Color InvalidPointColor = new( 0.92f, 0.18f, 0.12f );
 
 	// Pulse the sculpt's highlight outline(s) in the warning colour while invalid — through the runtime
 	// OVERRIDE slots, never the authored [Property] colours (snapshot-carries-live-state: authored values
-	// ride the spawn snapshot onto proxies; overrides don't). Visibility (Hidden) is RoundOutlineSystem's
-	// call in round/lobby scenes — it shows an invalid owner's outline itself; only in manager-less scenes
-	// (menu sculpt toy) do we assert it shown here.
+	// ride the spawn snapshot onto proxies; overrides don't). Scoped to the CONSTRAINED SCULPTURE's own
+	// subtree, never the pawn root — the hunter's root outline covers its body/hands/gun for the hunt
+	// glow, and the warning must only paint the sculpt the bounds actually judge (the head-scoped outline
+	// there; the disguise's own outline for props). Visibility (Hidden) is RoundOutlineSystem's call in
+	// round/lobby scenes — it shows an invalid owner's warning outline itself; only in manager-less
+	// scenes (menu sculpt toy) do we assert it shown here.
 	void DriveOutlines( bool on )
 	{
 		// The Reveal flash drives the same override slots; it only runs while RoundOutlineSystem enables it,
@@ -645,12 +797,14 @@ public sealed class SculptBounds : Component
 		if ( on && GameObject.Root.Components.Get<SdfOutlineFlash>( FindMode.EnabledInSelfAndDescendants ).IsValid() )
 			on = false;
 
+		var scope = Target.IsValid() ? Target.GameObject : GameObject;
+
 		if ( !on )
 		{
 			if ( !_drivingOutlines )
 				return;
 			_drivingOutlines = false;
-			foreach ( var o in GameObject.Root.Components.GetAll<SdfHighlightOutline>( FindMode.EverythingInSelfAndDescendants ) )
+			foreach ( var o in scope.Components.GetAll<SdfHighlightOutline>( FindMode.EverythingInSelfAndDescendants ) )
 			{
 				o.ColorOverride = null;
 				o.ObscuredColorOverride = null;
@@ -666,7 +820,7 @@ public sealed class SculptBounds : Component
 		float a = 0.35f + 0.65f * wave; // breathes, never disappears — it's a standing warning, not a flash
 		bool assertShown = !RoundManager.Current.IsValid() && !LobbyManager.Current.IsValid();
 
-		foreach ( var o in GameObject.Root.Components.GetAll<SdfHighlightOutline>( FindMode.EnabledInSelfAndDescendants ) )
+		foreach ( var o in scope.Components.GetAll<SdfHighlightOutline>( FindMode.EnabledInSelfAndDescendants ) )
 		{
 			o.ColorOverride = WarnColor.WithAlpha( WarnColor.a * a );
 			o.ObscuredColorOverride = WarnColor.WithAlpha( 0.5f * a );
@@ -691,12 +845,13 @@ public sealed class SculptBounds : Component
 			return;
 		}
 
-		// Floating region: centred on the same ghost-excluded bounds centre the orbit camera pins to, so
-		// the shell agrees with where the player's view (and their sense of the shape) is centred.
+		// Floating region: centred on the same bounds centre the max check judges against — ghost
+		// INCLUDED, so while an oversized stamp is being sized the shell shows the wall exactly where the
+		// verdict measures it. (The orbit camera's pivot stays ghost-excluded — that's a view rule, and
+		// the shell only exists while too-big anyway.)
 		var centre = Center;
 		if ( Anchor == SculptBoundsAnchor.FollowShape )
-			centre = Sdf.TryGetBounds( t.Brushes, out var bb, SculptEditSession.PendingStamp( t ) )
-				? bb.Center : Vector3.Zero;
+			centre = Sdf.TryGetBounds( t.Brushes, out var bb ) ? bb.Center : Vector3.Zero;
 
 		float wave = (1f + MathF.Cos( Time.Now * PulseFrequency * MathF.Tau )) * 0.5f;
 		float alpha = _shellAlpha * (0.55f + 0.45f * wave);
@@ -932,10 +1087,13 @@ sealed class SculptSupportPoints
 	Vector3 _camPos;
 	float _wpp;
 	Color _col;
+	Transform _tx;
 
-	public void Draw( Scene scene, CameraComponent cam, Transform sculptTx, List<Vector4> points, Color col )
+	public void Draw( Scene scene, CameraComponent cam, Transform sculptTx,
+		List<Vector4> points, Color col, List<Vector4> invalidPoints = null, Color invalidCol = default )
 	{
-		if ( scene is null || cam is null || points is null || points.Count == 0 )
+		int total = (points?.Count ?? 0) + (invalidPoints?.Count ?? 0);
+		if ( scene is null || cam is null || total == 0 )
 		{
 			Hide();
 			return;
@@ -946,8 +1104,13 @@ sealed class SculptSupportPoints
 		hc.Add( sculptTx.Rotation );
 		hc.Add( cam.WorldPosition );
 		hc.Add( col );
-		foreach ( var p in points )
-			hc.Add( p );
+		hc.Add( invalidCol );
+		if ( points is not null )
+			foreach ( var p in points )
+				hc.Add( p );
+		if ( invalidPoints is not null )
+			foreach ( var p in invalidPoints )
+				hc.Add( p );
 		int hash = hc.ToHashCode();
 		if ( hash == _lastHash && _so.IsValid() )
 			return;
@@ -959,13 +1122,31 @@ sealed class SculptSupportPoints
 		_bbMax = new Vector3( float.MinValue );
 		_camPos = cam.WorldPosition;
 		_wpp = WorldPerPixel( cam );
-		_col = col;
+		_tx = sculptTx;
 
-		int n = Math.Min( points.Count, MaxPoints );
+		// Valid points in the base colour, verified violators in theirs — the shared MaxPoints budget is
+		// spent on the violators FIRST (they're what's being debugged; never let a dense valid cloud
+		// starve them out of the draw).
+		int budget = MaxPoints;
+		_col = invalidCol;
+		budget -= AddPoints( invalidPoints, budget );
+		_col = col;
+		AddPoints( points, budget );
+
+		Upload( scene );
+	}
+
+	// Draw up to `budget` of the list's support spheres in the current colour; returns how many it drew.
+	int AddPoints( List<Vector4> points, int budget )
+	{
+		if ( points is null )
+			return 0;
+
+		int n = Math.Min( points.Count, budget );
 		for ( int i = 0; i < n; i++ )
 		{
 			var sp = points[i];
-			var c = sculptTx.PointToWorld( new Vector3( sp.x, sp.y, sp.z ) );
+			var c = _tx.PointToWorld( new Vector3( sp.x, sp.y, sp.z ) );
 
 			// Screen-constant cross at the support centre — always visible, whatever the pad.
 			float h = CrossPx * (_camPos - c).Length * _wpp;
@@ -975,14 +1156,13 @@ sealed class SculptSupportPoints
 
 			// The pad radius as two world-space great circles (world-scale on purpose — the pad is real
 			// clay reach, not a marker). Skipped when it's effectively zero (an unblended hull point).
-			float r = sp.w * sculptTx.UniformScale;
+			float r = sp.w * _tx.UniformScale;
 			if ( r < 0.3f )
 				continue;
 			Circle( c, r, ( s, cs ) => new Vector3( cs, s, 0f ) );
 			Circle( c, r, ( s, cs ) => new Vector3( cs, 0f, s ) );
 		}
-
-		Upload( scene );
+		return n;
 	}
 
 	public void Hide()

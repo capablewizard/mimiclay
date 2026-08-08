@@ -1429,6 +1429,28 @@ public static class Sdf
 		return any;
 	}
 
+	/// <summary>Is this brush's <see cref="SdfBrush.Blend"/> a no-op on the field? True for the FIRST
+	/// enabled additive brush: it folds against empty space (the smooth-union factor clamps to 0, so the
+	/// result is exactly its own distance) — UNLESS mirror symmetry is on, where the blend still smooths
+	/// the seams between the brush's own copies and so remains meaningful. The edit HUD locks the blend
+	/// slider and <see cref="SculptBounds"/> drops the blend padding exactly when this is true, so an
+	/// inert blend can't inflate the size check.</summary>
+	public static bool BlendInert( List<SdfBrush> brushes, SdfBrush b )
+	{
+		if ( brushes is null || b is null || !b.Enabled || b.Operation != SdfOperation.Add )
+			return false;
+		if ( b.EffectiveMirrorX || b.EffectiveMirrorY || b.EffectiveMirrorZ )
+			return false;
+
+		foreach ( var o in brushes )
+		{
+			if ( !o.Enabled || o.Operation != SdfOperation.Add )
+				continue;
+			return o == b; // the first enabled additive — inert exactly when it's this brush
+		}
+		return false;
+	}
+
 	// Inigo Quilez smooth-union / smooth-subtraction. Internal so SdfBrush can fuse mirror-symmetry copies
 	// with the same blend it uses against the rest of the field.
 	internal static float SmoothUnion( float a, float b, float k )

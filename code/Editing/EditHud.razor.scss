@@ -65,35 +65,130 @@
 		background-repeat: no-repeat;
 	}
 
-	// Persistent sculpt-validity toast (SculptBounds): a small paper card pinned top-centre, present for as
-	// long as the local sculpt is too large / too small — a standing notice, not a popup, so no animation
-	// beyond a soft pulse on the warning icon. Full-width flex strip for the centring (no translateX
-	// transforms in panel styles); deliberately clear of the top-right picker column and the bottom hint strip.
-	.validity-strip {
+	// Persistent sculpt-validity toast (SculptBounds): a chunky banner in the shape-tile look (surface —
+	// fill/outline/shadow — comes from .paper-card in the markup, radius matches the tiles), wobbling the
+	// stop-motion clay jitter continuously so it reads alive, not modal. Lives in .validity-float — a
+	// full-width, bottom-anchored strip (offset from code, see ToastBottom) that flex-centres it, so its
+	// position never depends on its own measured size (measure-then-position rendered one frame off-centre).
+	.validity-float {
 		position: absolute;
-		top: $space-lg;
 		left: 0;
 		width: 100%;
 		flex-direction: row;
 		justify-content: center;
 		pointer-events: none;
+	}
 
-		.validity-toast {
-			flex-direction: row;
+	.validity-toast {
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		gap: $space-md;
+		padding: $space-md $space-lg;
+		border-radius: 22px; // match .shape-tile
+		color: $paper-ink;
+		font-family: $header-font;
+		font-size: 30px;
+		font-weight: 800;
+		letter-spacing: 1px;
+		text-transform: uppercase; // house rule: all headers are uppercase
+		pointer-events: none;
+		// The .btn-action hover wobble (see _button.scss), running always — a warning wants the attention.
+		animation: action-jitter $wobble-duration linear 0s infinite;
+
+		// The emoji comes from Skia's system-emoji fallback (colour glyph — `color` can't touch it), whose
+		// line box is taller than Super Joyful's high-riding hand-drawn glyphs — flex centres the BOXES, so
+		// the glyph lands visibly low without the nudge. Outlined with the same ring-of-shadows the lobby
+		// hand badge uses: text-stroke does nothing to colour emoji (bitmap glyphs, no path to stroke), but
+		// shadows composite from the rendered glyph whatever produced it. Eight offsets at the house 2px,
+		// diagonals pulled in so the corners don't read heavier than the edges.
+		.emoji {
+			font-size: 32px;
+			margin-top: -6px;
+			text-transform: none;
+			letter-spacing: 0;
+			text-shadow:
+				2px 0px 0px $paper-edge,
+				-2px 0px 0px $paper-edge,
+				0px 2px 0px $paper-edge,
+				0px -2px 0px $paper-edge,
+				1.4px 1.4px 0px $paper-edge,
+				-1.4px 1.4px 0px $paper-edge,
+				1.4px -1.4px 0px $paper-edge,
+				-1.4px -1.4px 0px $paper-edge;
+		}
+	}
+
+	// Exit-confirm dialog (SculptBounds revert): a dimming scrim owning the pointer, with a centred paper
+	// card — title styled like the validity toast (same emoji shadow-ring outline; colour emoji can't be
+	// text-stroked), body in the plain UI face, and two .btn choices from the shared kit.
+	.exit-confirm {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 100;
+		align-items: center;
+		justify-content: center;
+		background-color: rgba( 20, 14, 6, 0.45 );
+		pointer-events: all;
+
+		.confirm-card {
+			flex-direction: column;
 			align-items: center;
-			gap: $space-sm;
-			padding: $space-sm $space-md;
-			background-color: $paper-top;
-			border: 2px solid $paper-edge;
-			border-radius: $radius-pill;
-			box-shadow: $shadow-float;
-			color: $paper-ink;
-			font-size: 15px;
+			gap: $space-md;
+			padding: $space-lg;
+			border-radius: 22px; // match .shape-tile / the validity toast
+			max-width: 620px;
 
-			.icon {
-				font-size: 18px;
-				color: $craft-orange;
-				animation: validity-pulse 1.25s ease-in-out infinite;
+			.confirm-title {
+				flex-direction: row;
+				align-items: center;
+				gap: $space-md;
+				font-family: $header-font;
+				font-size: 30px;
+				font-weight: 800;
+				letter-spacing: 1px;
+				text-transform: uppercase;
+				color: $paper-ink;
+
+				.emoji {
+					font-size: 32px;
+					margin-top: -6px;
+					text-transform: none;
+					letter-spacing: 0;
+					text-shadow:
+						2px 0px 0px $paper-edge,
+						-2px 0px 0px $paper-edge,
+						0px 2px 0px $paper-edge,
+						0px -2px 0px $paper-edge,
+						1.4px 1.4px 0px $paper-edge,
+						-1.4px 1.4px 0px $paper-edge,
+						1.4px -1.4px 0px $paper-edge,
+						-1.4px -1.4px 0px $paper-edge;
+				}
+			}
+
+			.confirm-body {
+				font-size: 17px;
+				color: $paper-ink;
+				text-align: center;
+			}
+
+			.confirm-buttons {
+				flex-direction: row;
+				gap: $space-md;
+				margin-top: $space-sm;
+
+				// Scoped — the shared kit's .btn stays as-authored. The size bump goes into the TEXT
+				// (16px → 24px), with padding held near the kit's, so the buttons read bigger without
+				// ballooning the empty space around the label.
+				.btn {
+					text-transform: uppercase;
+					font-size: 24px;
+					padding: 10px 18px;
+				}
 			}
 		}
 	}
@@ -209,7 +304,6 @@
 		gap: 10px;
 		pointer-events: none;
 
-		&.hidden .shape-tile { pointer-events: none; }
 	}
 
 	// The active stamp shape in add mode — same orange the selected layer row / on-chips use.
@@ -748,12 +842,4 @@
 @keyframes edit-hud-slide-right {
 	from { transform: translateX( 100% ); }
 	to { transform: translateX( 0 ); }
-}
-
-// The validity toast's warning-icon pulse (see .validity-strip). Top-level like the rest — s&box doesn't
-// register @keyframes nested inside a selector.
-@keyframes validity-pulse {
-	0% { opacity: 1; }
-	50% { opacity: 0.35; }
-	100% { opacity: 1; }
 }

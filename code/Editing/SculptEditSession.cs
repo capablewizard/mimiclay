@@ -356,7 +356,87 @@ public sealed class SculptEditSession : Component
 			SetActive( true );
 	}
 
-	public void Toggle() => SetActive( !IsEditing );
+	/// <summary>The player-facing toggle (the pawn's Edit action). Entering is unconditional; LEAVING
+	/// routes through <see cref="RequestExit"/> so an incompatible sculpt raises the revert confirmation
+	/// instead of exiting silently. Forced teardowns (round retiring the pawn, ownership loss) call
+	/// <see cref="SetActive"/> directly — those can't wait on a dialog, so they revert without one.</summary>
+	public void Toggle()
+	{
+		if ( IsEditing )
+			RequestExit();
+		else
+			SetActive( true );
+	}
+
+	// ── Exit confirmation (SculptBounds revert) ──────────────────────────────────────────────────────
+	// Leaving edit mode must never leave the owner wearing a shape the other machines aren't showing —
+	// the network layer only ever broadcast VALID commits, so an invalid exit would be a permanent local/
+	// remote mismatch. The player-driven exit therefore confirms first ("this will revert"), and every
+	// deactivation — confirmed or forced — restores the bounds' last valid shape on its way out.
+
+	/// <summary>A player-driven exit is waiting on the revert confirmation (the HUD shows the dialog).</summary>
+	public bool ExitConfirmPending { get; private set; }
+
+	/// <summary>Which violation the pending confirmation is about (drives the dialog's message).</summary>
+	public bool ExitConfirmTooBig { get; private set; }
+
+	/// <summary>Leave edit mode, confirming first when the sculpt is invalid and a revert would actually
+	/// change it. Invalid with nothing to revert TO (never had a valid commit) exits directly — there's no
+	/// mismatch a dialog could warn about, since proxies were never shown anything.</summary>
+	public void RequestExit()
+	{
+		if ( !IsEditing )
+			return;
+
+		var bounds = Bounds;
+		if ( bounds.IsValid() && !bounds.EvaluateNow() && bounds.LastValidAuthored is not null )
+		{
+			ExitConfirmPending = true;
+			ExitConfirmTooBig = bounds.TooBig;
+			return;
+		}
+
+		SetActive( false );
+	}
+
+	/// <summary>The dialog's "revert and leave": the actual revert runs inside <see cref="SetActive"/>.</summary>
+	public void ConfirmExit()
+	{
+		ExitConfirmPending = false;
+		SetActive( false );
+	}
+
+	/// <summary>The dialog's "keep editing".</summary>
+	public void CancelExit() => ExitConfirmPending = false;
+
+	SculptBounds Bounds => Target.IsValid() ? Target.GameObject.Components.Get<SculptBounds>() : null;
+
+	// Restore the bounds' last valid authored shape, spliced onto the LIVE damage tail (the same rule as
+	// ApplyUndoState), and push it through the commit funnel — the revert IS an edit as far as the remesh,
+	// collider, network publish and persist slot are concerned. Runs with IsEditing already false, so
+	// NotifyChanged records no undo step (the history is being dropped anyway).
+	void RevertIfInvalid()
+	{
+		var bounds = Bounds;
+		if ( !bounds.IsValid() || !Target.IsValid() || bounds.EvaluateNow() )
+			return;
+
+		var restored = SdfSculpture.DeserializeBrushes( bounds.LastValidAuthored );
+		if ( restored is null )
+			return; // never had a valid shape — nothing was ever shown to revert to
+
+		Deselect(); // the restored list may be shorter than the selection index
+
+		var live = Target.Brushes;
+		int liveAuthored = Target.AuthoredBrushCount;
+		var spliced = new List<SdfBrush>( restored.Count + (live.Count - liveAuthored) );
+		spliced.AddRange( restored );
+		for ( int i = liveAuthored; i < live.Count; i++ )
+			spliced.Add( live[i] );
+
+		Target.Brushes = spliced;
+		NotifyChanged();
+	}
 
 	public void SetActive( bool active )
 	{
@@ -394,7 +474,9 @@ public sealed class SculptEditSession : Component
 		// Tear down the rendered gizmo + ghost when leaving edit mode (works whether or not we own a camera).
 		if ( !active )
 		{
+			ExitConfirmPending = false; // whatever exit path ran, no dialog survives it
 			CancelStamp(); // strip the pending stamp ghost FIRST, so no exit commit can bake it
+			RevertIfInvalid(); // never walk away wearing a shape the other machines aren't showing
 			if ( _pendingCommit )
 				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit (saves the slot too)
 			UnhookPersistSlot();
@@ -1212,7 +1294,8 @@ public sealed class SculptEditSession : Component
 		// Gated on IsDragging, NOT IsBusy: merely HOVERING a gizmo handle (which covers most of the shape)
 		// must not eat the scrub keys — only an actual handle drag owns the mouse.
 		changed |= BrushScrub.Update( SelectedBrush, tx, Scene.Camera,
-			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsDragging, out bool scrubEnded );
+			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsDragging, out bool scrubEnded,
+			blendLocked: Sdf.BlendInert( Target.Brushes, SelectedBrush ) );
 		if ( scrubEnded )
 			CommitChanged();
 

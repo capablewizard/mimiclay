@@ -297,16 +297,16 @@
         "Color": "1,1,1,0",
         "IgnoreDepthOfField": true,
         "InsideColor": "0,0,0,0",
-        "InsideObscuredColor": "0.52558,0.20045,0.20045,0.53",
-        "ObscuredColor": "0,0,0,0.4",
+        "InsideObscuredColor": "0.47059,0.09804,0.09804,0.5",
+        "ObscuredColor": "0.46977,0.09832,0.09832,1",
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "Placement": "Center",
-        "Width": 0
+        "Placement": "Outside",
+        "Width": 5
       }
     ],
     "Children": [
@@ -1422,14 +1422,34 @@
                 "OnComponentUpdate": null
               },
               {
+                "__type": "Mimiclay.SdfHighlightOutline",
+                "__guid": "7e2f8a41-9c5d-4b36-a1e8-3d6f0c9b2e57",
+                "__enabled": true,
+                "Flags": 0,
+                "Color": "1,1,1,0",
+                "IgnoreDepthOfField": true,
+                "InsideColor": "0,0,0,0",
+                "InsideObscuredColor": "0.47059,0.09804,0.09804,0.5",
+                "ObscuredColor": "0.46977,0.09832,0.09832,1",
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "Placement": "Outside",
+                "Width": 5
+              },
+              {
                 "__type": "Mimiclay.SculptBounds",
                 "__guid": "c3d9a5f1-2b7e-4c48-8e6a-5f0b1d3c7a92",
                 "__enabled": true,
                 "Flags": 0,
                 "Anchor": "Fixed",
-                "Center": "0,0,24",
-                "Extents": "26,26,26",
-                "MinVolume": 3000,
+                "Center": "0,0,20",
+                "DrawSupportPoints": false,
+                "Extents": "28,28,32",
+                "MinVolume": 750,
                 "OnComponentDestroy": null,
                 "OnComponentDisabled": null,
                 "OnComponentEnabled": null,
@@ -1440,9 +1460,9 @@
                 "Radius": 64,
                 "Sculpture": null,
                 "Shape": "Box",
-                "ShellFadeSpeed": 10,
+                "ShellFadeSpeed": 50,
                 "WarnColor": "1,0.62,0.1,1",
-                "WarnWidth": 3
+                "WarnWidth": 5
               },
               {
                 "__type": "Mimiclay.DamageProfile",

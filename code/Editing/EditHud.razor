@@ -23,14 +23,40 @@
 	}
 
 	@* Sculpt-validity toast: shows whenever the LOCAL player's sculpt violates its SculptBounds and stays
-	   until fixed — deliberately OUTSIDE the IsEditing gate, because the invalid shape is owner-local (never
-	   broadcast) and the player has to know the world doesn't see what they see, edit mode or not. *@
+	   until fixed, edit mode or not — the invalid shape is owner-local (never broadcast), so the player
+	   has to know the world doesn't see what they see. Floats above the shape dock while the dock is
+	   shown; hugs the bottom of the screen otherwise (see ToastPos). *@
 	@if ( InvalidBounds is { } inv )
 	{
-		<div class="validity-strip">
-			<div class="validity-toast">
-				<div class="icon">warning</div>
+		@* Full-width flex wrapper + a bottom anchor, so neither axis depends on the toast's own measured
+		   size — a freshly mounted panel has no rect for a frame, and position computed from an estimated
+		   size rendered one frame off-centre before snapping (the dock gets away with it because its width
+		   never changes). CSS centres x exactly; growing up from `bottom` makes height irrelevant. *@
+		<div class="validity-float" style="bottom: @((int)ToastBottom())px;">
+			<div class="paper-card validity-toast">
+				<span class="emoji">⚠️</span>
 				<span>@(inv.TooBig ? "Sculpt too large" : "Sculpt too small")</span>
+			</div>
+		</div>
+	}
+
+	@* Exit-confirm dialog: leaving edit mode with an incompatible sculpt REVERTS it to the last valid
+	   shape (see SculptEditSession.RequestExit) — this makes that a choice, not a surprise. The scrim
+	   owns the pointer so nothing world-side fires underneath, and PointerOverUi reports true while it's
+	   up so picks/stamps/scrubs stay parked too. *@
+	@if ( Session is not null && Session.ExitConfirmPending )
+	{
+		<div class="exit-confirm">
+			<div class="paper-card confirm-card">
+				<div class="confirm-title">
+					<span class="emoji">⚠️</span>
+					<span>@(Session.ExitConfirmTooBig ? "Sculpt too large" : "Sculpt too small")</span>
+				</div>
+				<div class="confirm-body">We'll use your last good shape.</div>
+				<div class="confirm-buttons">
+					<div class="btn" @onclick=@(() => Session?.CancelExit())>Keep Editing</div>
+					<div class="btn" @onclick=@(() => Session?.ConfirmExit())>Revert</div>
+				</div>
 			</div>
 		</div>
 	}
@@ -265,9 +291,16 @@
 		if ( ShowSliders )
 		{
 			var slidersShown = Brush is not null && sliderPos.HasValue;
-			var sliderOpacity = !slidersShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f);
+			// No manipulation fade (unlike the palette/picker): the sliders sit BELOW the gizmo, so a drag
+			// doesn't need them cleared out of the way — and the validity toast anchors off this stack's
+			// slot, so keeping it solid keeps that anchor readable too.
+			var sliderOpacity = slidersShown ? 1f : 0f;
 			var fb = _fadeBrush;
-			var blendVal = fb?.Blend ?? 0f;
+			@* The first additive brush's blend folds against empty space — a field no-op that would only
+			   inflate the SculptBounds size padding — so its slider parks at 0, greyed (mirror symmetry
+			   un-parks it: the blend then smooths the copies' seams; see Sdf.BlendInert). *@
+			var blendLocked = fb is not null && Session.Target?.Brushes is { } blendList && Sdf.BlendInert( blendList, fb );
+			var blendVal = blendLocked ? 0f : fb?.Blend ?? 0f;
 			var roundVal = fb?.Rounding ?? GizmoSettingsRoundingMin;
 			var roundMax = fb is not null ? fb.MaxRounding() : 1f;
 			var isSpline = fb?.Shape == SdfShape.Spline;
@@ -286,7 +319,7 @@
 					<span>@(opCarve ? "Carve" : "Add")</span>
 				</div>
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
-					OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
+					Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
 				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
 				   cone) add Slice as a third slider. *@
@@ -356,10 +389,9 @@
 			if ( shapeDockPos.HasValue )
 				_shapeDockPos = shapeDockPos.Value;
 
-			@* Fades out with the sliders while a gizmo handle is manipulated, so the view stays clear. The
-			   "hidden" class also drops the tiles' pointer-events (the container is always click-through). *@
-			var dockOpacity = Session.IsManipulating ? EditTransparency : 1f;
-			<div @ref="ShapeDockPanel" class="shape-dock @(dockOpacity <= 0.01f ? "hidden" : "")" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px; opacity: @(dockOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			@* No manipulation fade — the dock sits well below the gizmo, and the validity toast anchors
+			   above this row, so both stay solid through a handle drag. *@
+			<div @ref="ShapeDockPanel" class="shape-dock" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px;">
 				<div class="shape-grid">
 					@foreach ( var entry in VisibleShapes )
 					{
@@ -553,6 +585,22 @@
 	Panel ShapeDockPanel { get; set; }
 	Vector2 _shapeDockPos;
 
+	// The validity toast's BOTTOM edge, from the bottom of the screen (its wrapper centres x — see the
+	// markup for why neither axis may depend on the toast's measured size). Two anchors: just above the
+	// shape dock while the dock is shown, or the sliders' 64px hotkey-bar allowance any other time
+	// (nothing selected, or not editing at all).
+	float ToastBottom()
+	{
+		bool dockShown = (Session?.IsEditing ?? false) && ShowTools && Brush is not null;
+		if ( dockShown && ShapeDockPos() is { } dock )
+		{
+			float sc = Panel?.ScaleFromScreen ?? 1f;
+			return MathF.Max( 64f, Screen.Height * sc - dock.y + 28f );
+		}
+
+		return 64f;
+	}
+
 	// The shape row sits centred, directly above the slider stack (measured sizes; estimates pre-layout).
 	Vector2? ShapeDockPos()
 	{
@@ -598,7 +646,8 @@
 	/// <summary>Cursor is over any interactive HUD card that should swallow world clicks/picks/gizmo-grabs — or a
 	/// slider is pressed/scrubbing, so a drag that drifts off the thin track still can't highlight world shapes.</summary>
 	public static bool PointerOverUi => PointerOverPalette || PointerOverSliders || PointerOverPicker
-		|| PointerOverPanels || ClaySlider.Pressed || ClayColorPicker.Pressed;
+		|| PointerOverPanels || ClaySlider.Pressed || ClayColorPicker.Pressed
+		|| (Session?.ExitConfirmPending ?? false); // the exit-confirm scrim owns ALL input while it's up
 
 	// Is the cursor over this card RIGHT NOW? HasHovered alone can't answer that: it's a stored pseudo-class
 	// bit, and the engine only clears it by walking UP from the previously-hovered panel — so a button that
@@ -873,6 +922,9 @@
 	void SetBlend( float v )
 	{
 		if ( Brush is null )
+			return;
+		// Belt-and-braces behind the greyed slider: the first additive brush's blend stays untouched.
+		if ( Session?.Target?.Brushes is { } bl && Sdf.BlendInert( bl, Brush ) )
 			return;
 		Brush.Blend = Math.Clamp( v, 0f, SdfBrush.MaxBlend );
 		Session?.PreviewChanged();
@@ -1273,6 +1325,8 @@
 		hc.Add( s );
 		hc.Add( s?.IsEditing ?? false );
 		hc.Add( InvalidBounds is { } iv ? (iv.TooBig ? 1 : 2) : 0 ); // validity toast appears/disappears/relabels
+		hc.Add( s?.ExitConfirmPending ?? false ); // exit-confirm dialog mounts/unmounts
+		hc.Add( s?.ExitConfirmTooBig ?? false );
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
@@ -1291,6 +1345,7 @@
 		// happened to redraw).
 		if ( ShapeDockPos() is { } sdp ) { hc.Add( (int)sdp.x ); hc.Add( (int)sdp.y ); }
 		if ( SliderPos() is { } slp ) { hc.Add( (int)slp.x ); hc.Add( (int)slp.y ); }
+		hc.Add( (int)ToastBottom() );
 
 		// While a frozen-cursor gesture runs with a stamp up, the dot rides the shape — fold its projected
 		// position in so the dot re-renders as the camera moves it across the screen.
@@ -1330,6 +1385,7 @@
 		hc.Add( b?.Metallic ?? 0f );
 		hc.Add( b?.Roughness ?? 0f );
 		hc.Add( b?.Blend ?? 0f );      // drives the 2D blend slider's fill
+		hc.Add( b is not null && s?.Target?.Brushes is { } bl && Sdf.BlendInert( bl, b ) ); // blend-slider lock
 		hc.Add( b?.Rounding ?? 0f );   // drives the 2D roundness slider's fill
 		hc.Add( b?.Slice ?? 0f );      // drives the slice slider's fill (sphere/cone)
 		hc.Add( b?.Curvature ?? 0f );  // drives the spline curvature slider's fill

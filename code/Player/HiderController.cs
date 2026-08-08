@@ -199,7 +199,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	{
 		_dormant = true;
 		if ( EditMode )
-			_session?.Toggle();
+			_session?.SetActive( false ); // forced teardown — no exit-confirm dialog, revert runs silently
 	}
 
 	// Fired by the engine on THIS machine when it stops being the pawn's controller — here, the host retired this

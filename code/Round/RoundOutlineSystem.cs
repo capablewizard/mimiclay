@@ -66,14 +66,22 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 	static bool ShouldShow( SdfHighlightOutline outline, RoundPhase phase )
 	{
-		// Hunter pawn (outline sits on the pawn root): everyone sees it, but only once the Hunt is on —
-		// during Hide "no player can see another player", and that must hold even if pawns ever become
-		// visible to proxies before Hunt. Exception: the OWNER's invalid-sculpt warning (an out-of-bounds
-		// face, see SculptBounds) shows in any phase — it's owner-only information, drawn so the pulsing
-		// warn colour the bounds component drives is actually visible.
+		// Hunter pawn: everyone sees its outlines once the Hunt is on — during Hide "no player can see
+		// another player", and that must hold even if pawns ever become visible to proxies before Hunt.
+		// That covers BOTH the pawn-root hunt glow and the head-scoped outline (nearest-owner split with
+		// a matching authored look, so the glow reads as one silhouette). Pre-Hunt, the only hunter
+		// outline allowed out is the SculptBounds WARNING — the one sharing its GameObject with the
+		// bounds component — for a locally-authored invalid face (owner-only information; SculptBounds
+		// drives its warn colours). Never the root glow: that would paint the whole body pre-Hunt.
 		var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hunter.IsValid() )
-			return phase >= RoundPhase.Hunt || InvalidForOwner( hunter );
+		{
+			if ( phase >= RoundPhase.Hunt )
+				return true;
+
+			var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
+			return bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid;
+		}
 
 		// Prop pawn (outline sits inside the cloned Disguise child): owner-only — except the Reveal show-off,
 		// where the only prop pawns left standing are the survivors. A test bot's prop is host-owned and so isn't
@@ -86,13 +94,5 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 		// No pawn above it: a scene decoy.
 		return false;
-	}
-
-	// Does this pawn carry a locally-authored sculpt currently violating its SculptBounds?
-	// (LocallyEditable already excludes proxies, host-owned bot pawns and decoys.)
-	static bool InvalidForOwner( Component pawn )
-	{
-		var bounds = pawn.Components.Get<SculptBounds>( FindMode.EverythingInSelfAndDescendants );
-		return bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid;
 	}
 }

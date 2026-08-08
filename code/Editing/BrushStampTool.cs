@@ -358,8 +358,10 @@ public sealed class BrushStampTool
 
 		// Hold param scrubs (A blend / S round / RMB scale / MMB rotate) — placement freezes while one runs
 		// so the mouse motion drives the parameter, not the position. Ghost scrubs never commit (the stamp
-		// itself is the commit), so the end signal is ignored.
-		changed |= BrushScrub.Update( _stamp, tx, cam, interactive, out _ );
+		// itself is the commit), so the end signal is ignored. The ghost is already in the brush list, so
+		// BlendInert locks its blend scrub exactly when it would land as the first additive brush.
+		changed |= BrushScrub.Update( _stamp, tx, cam, interactive, out _,
+			blendLocked: Sdf.BlendInert( target.Brushes, _stamp ) );
 
 		// The scale scrub drives Size, but a spline's thickness lives in its point radii — mirror it onto
 		// the preview point live, so the sphere under the cursor visibly resizes as you drag.
@@ -719,8 +721,11 @@ public static class BrushScrub
 
 	/// <summary>Run one frame. Returns true when the brush changed; <paramref name="ended"/> fires on the
 	/// frame a scrub's key is released (edit mode commits there). Passing a null brush or allow=false ends
-	/// any running scrub without changes.</summary>
-	public static bool Update( SdfBrush b, Transform sculptTx, CameraComponent cam, bool allow, out bool ended )
+	/// any running scrub without changes. <paramref name="blendLocked"/> parks the S/blend scrub (the first
+	/// additive brush's blend is a field no-op — see <see cref="Sdf.BlendInert"/> — and the HUD greys its
+	/// slider; the key hold must respect the same lock).</summary>
+	public static bool Update( SdfBrush b, Transform sculptTx, CameraComponent cam, bool allow, out bool ended,
+		bool blendLocked = false )
 	{
 		ended = false;
 		ScaleTapped = false; // one-frame signal; cleared before every early-out below
@@ -750,7 +755,7 @@ public static class BrushScrub
 		// Start on the key's press edge (one scrub at a time; the first claim wins).
 		if ( Active == ScrubKind.None && allow )
 		{
-			if ( blendP ) Begin( ScrubKind.Blend, b );
+			if ( blendP && !blendLocked ) Begin( ScrubKind.Blend, b );
 			else if ( roundP ) Begin( ScrubKind.Round, b );
 			else if ( wildP ) Begin( ScrubKind.Wildcard, b );
 			else if ( scaleP ) Begin( ScrubKind.Scale, b );
