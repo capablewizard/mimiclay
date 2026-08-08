@@ -309,6 +309,20 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// the MATERIAL, alongside the transmission and curvature-shading params.</summary>
 	[Property, Group( "Displacement" )] public bool Displace { get; set; }
 
+	/// <summary>Lump depth, inches. Lives HERE, not on the material: the lumps are baked into the
+	/// distance field by this component, and a material param can't be read back reliably —
+	/// Material.Attributes is captured at load, so material-editor edits never reached the bake
+	/// (tuning silently did nothing). Edits here re-bake on the next frame. Keep Amp × Freq under
+	/// ~0.15 or the field stops being a valid sphere-trace distance (holes); keep under ~1.5 so
+	/// outward lumps stay inside the proxy pad.</summary>
+	[Property, Group( "Displacement" ), Range( 0f, 1.5f )] public float DispAmp { get; set; } = 0.8f;
+
+	/// <summary>Lump density, cells per inch (wavelength = 1/this). Same ownership story as
+	/// <see cref="DispAmp"/>. Keep the wavelength at least ~2–3 field VOXELS (voxel ≈ padded prop
+	/// span / FieldResolution) or the bake can't resolve the lumps — they fade or alias, and do so
+	/// differently on differently-sized props. The stock 0.073 (~14" lumps) is safe everywhere.</summary>
+	[Property, Group( "Displacement" ), Range( 0.01f, 1f )] public float DispFreq { get; set; } = 0.073f;
+
 	/// <summary>Let the lumps bend this prop's cast SHADOW too on the LIVE (analytic-fallback) path —
 	/// the ortho shadow cascades march at full quality, so per-step noise is at its most expensive
 	/// there and off (the default) skips it. On the normal BAKED-field path this has no effect: the
@@ -866,10 +880,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "SdfDepthCull", DepthOcclusionCull ? 1 : 0 );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
-		// Displacement look (amp/freq) and curvature shading are MATERIAL params now. The D_DISPLACE
-		// combo (live per-step noise) is decided AFTER the field block below: it's the fallback for
-		// when no baked field is available — on the field path the lumps are baked into the volume.
-		// DispShadows only affects that live fallback (a baked field can't be smooth per-view).
+		// Displacement look (amp/freq) lives on THIS component (see the DispAmp doc for why it left
+		// the material); pushed as attributes for the live-fallback shader path — the baked path
+		// gets the same values through the field bake below. The D_DISPLACE combo (live per-step
+		// noise) is decided AFTER the field block: it's the fallback for when no baked field is
+		// available. DispShadows only affects that fallback (a baked field can't be smooth per-view).
+		_so.Attributes.Set( "DispAmp", DispAmp );
+		_so.Attributes.Set( "DispFreq", DispFreq );
 		_so.Attributes.Set( "DispShadows", DisplaceShadows ? 1 : 0 );
 
 		// Claymation boil — OPT-IN per prop: only a GameObject carrying an enabled ClayBoil boils.
@@ -895,9 +912,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		float bakeAmp = 0f, bakeFreq = 0.25f, bakeTick = -1f, bakeJitter = 0f, bakeAmpJitter = 0f;
 		if ( Displace )
 		{
-			var dispMat = ActiveMaterial;
-			bakeAmp = dispMat?.Attributes.GetFloat( "g_flDispAmp", 0.35f ) ?? 0.35f;
-			bakeFreq = dispMat?.Attributes.GetFloat( "g_flDispFreq", 0.25f ) ?? 0.25f;
+			bakeAmp = DispAmp;
+			bakeFreq = DispFreq;
 			if ( boil is { Fps: > 0f } )
 			{
 				// Same quantisation as the shader's live tick (floor of global time × fps, wrapped to
@@ -1266,11 +1282,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		float gradL = 0f;
 		if ( Displace )
 		{
-			var mat = ActiveMaterial;
-			float dispAmp = mat?.Attributes.GetFloat( "g_flDispAmp", 0.35f ) ?? 0.35f;
-			float dispFreq = mat?.Attributes.GetFloat( "g_flDispFreq", 0.25f ) ?? 0.25f;
 			var boil = GameObject.Components.Get<ClayBoil>();
-			gradL = dispAmp * (1f + MathF.Max( boil?.AmpJitter ?? 0f, 0f ) * 0.5f) * dispFreq * 4f;
+			gradL = DispAmp * (1f + MathF.Max( boil?.AmpJitter ?? 0f, 0f ) * 0.5f) * DispFreq * 4f;
 		}
 		a.Set( $"DispGradL{slot}", gradL );
 

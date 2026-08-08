@@ -15,7 +15,13 @@
       "PowerShell($out = \"C:\\\\Users\\\\haydn\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--SBox-Projects-mimiclay\\\\e7fc6d3f-60b6-4faa-8f73-95c22c34cede\\\\scratchpad\\\\build\\\\\"; dotnet build \"d:\\\\SBox\\\\Projects\\\\mimiclay\\\\code\\\\mimiclay.csproj\" -p:OutputPath=$out --nologo -v m)",
       "Bash(ls d:/SBox/sbox-public-master 2>/dev/null | head; find d:/SBox/sbox-public-master -iname \"MoveModeWalk.cs\" -o -iname \"PlayerController.cs\" 2>/dev/null | head)",
       "Read(//d/SBox/sbox-public-master/**)",
-      "Bash(cd \"D:/SBox/sbox-public-master\" && find . -name \"ScenePanel.cs\" | head -3)"
+      "Bash(cd \"D:/SBox/sbox-public-master\" && find . -name \"ScenePanel.cs\" | head -3)",
+      "Bash(grep -rln \"public.*class Material\" /d/SBox/sbox-public-master/engine/Sandbox.Engine 2>/dev/null | head -3; grep -rln \"class Material\" /d/SBox/sbox-public-master --include=Material.cs 2>/dev/null | head -5)",
+      "Read(//d/SBox/sbox-public-master/engine/Sandbox.Engine/**)",
+      "Bash(grep -n \"Attributes\" /d/SBox/sbox-public-master/engine/Sandbox.Engine/Resources/Material/Material.cs | head -20)",
+      "Read(//d/SBox/sbox-public-master/engine/Sandbox.Engine/Resources/Material/**)",
+      "Bash(sed -n 1,80p /d/SBox/sbox-public-master/engine/Sandbox.Engine/Resources/Material/Material.cs)",
+      "Bash(ls /d/SBox/sbox-public-master | head; echo ===; grep -rn \"GetRenderAttributes\" /d/SBox/sbox-public-master/engine/Sandbox.Engine --include=*.cs | head; echo ===; grep -rln \"GetRenderAttributes\" /d/SBox/sbox-public-master/src 2>/dev/null | head -5)"
     ]
   }
 }

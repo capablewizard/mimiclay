@@ -16,10 +16,6 @@ Layer0
 	g_flCurveLight "0.500"
 	g_flCurveRadius "0.500"
 
-	//---- Displacement ----
-	g_flDispAmp "0.800"
-	g_flDispFreq "0.073"
-
 	//---- Fog ----
 	g_bFogEnabled "1"
 

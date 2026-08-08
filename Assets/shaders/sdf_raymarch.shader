@@ -237,13 +237,18 @@ PS
 	float  g_flTransMaxDist   < Default( 16.0 ); Range( 1.0, 64.0 ); UiGroup( "Transmission,11/70" ); >; // thickness-march reach
 	float  g_flTransFalloff   < Default( 8.0 );  Range( 0.5, 64.0 ); UiGroup( "Transmission,11/80" ); >; // absorption distance
 
-	// Displacement look (raymarch silhouette only — the D_DISPLACE toggle stays on SdfRaymarchRenderer,
-	// it's a runtime combo). MATERIAL params, tuned in the .vmat like the transmission look. Amp = lump
-	// depth (inches); Freq = lump density. Keep Amp*Freq modest (~<0.15) or the field stops being a valid
-	// distance for sphere tracing and the surface develops holes; outward lumps ride the proxy's ~2" pad,
-	// so keep Amp under ~1.5.
-	float g_flDispAmp  < Default( 0.35 ); Range( 0.0, 4.0 );  UiGroup( "Displacement,12/10" ); >;
-	float g_flDispFreq < Default( 0.25 ); Range( 0.01, 2.0 ); UiGroup( "Displacement,12/20" ); >;
+	// Displacement look — ATTRIBUTES pushed by SdfRaymarchRenderer (its DispAmp/DispFreq properties),
+	// NOT material params like the transmission look. They used to be: but the lumps are baked into
+	// the field by C# now, which must read the values back — and Material.Attributes is a wrapper
+	// captured at LOAD, so material-editor edits never reached the bake and tuning silently did
+	// nothing. The renderer owns them instead; only the LIVE fallback path reads these constants
+	// here (the baked path gets the same values via the field bake). Amp = lump depth (inches);
+	// Freq = lump density. Keep Amp*Freq modest (~<0.15) or the field stops being a valid distance
+	// for sphere tracing and the surface develops holes; outward lumps ride the proxy's ~2" pad, so
+	// keep Amp under ~1.5 — and keep the wavelength (1/Freq) at least ~2-3 field VOXELS or the bake
+	// can't resolve the lumps (they fade/alias, differently per prop size).
+	float g_flDispAmp  < Attribute( "DispAmp" );  Default( 0.35 ); >;
+	float g_flDispFreq < Attribute( "DispFreq" ); Default( 0.25 ); >;
 
 	// Whether the lumps also bend the prop's SHADOW silhouette. An ATTRIBUTE, not a material param —
 	// it's a per-prop cost/look call pushed by SdfRaymarchRenderer.DisplaceShadows, not part of the

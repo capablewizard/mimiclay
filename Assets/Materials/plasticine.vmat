@@ -7,11 +7,7 @@ Layer0
 	//---- Curvature ----
 	g_flCurveDark "0.350"
 	g_flCurveLight "0.500"
-	g_flCurveRadius "0.500"
-
-	//---- Displacement ----
-	g_flDispAmp "0.800"
-	g_flDispFreq "0.805"
+	g_flCurveRadius "1.428"
 
 	//---- Fog ----
 	g_bFogEnabled "1"
@@ -24,7 +20,7 @@ Layer0
 	g_flTriTile "1.000"
 	g_vTintColor "[1.000000 1.000000 1.000000 0.000000]"
 	TextureColor "materials/plasticine/plasticine_basecolor.png"
-	TextureNormal "[0.501961 0.501961 1.000000 0.000000]"
+	TextureNormal "materials/plasticine/plasticine_normal_4.png"
 	TextureRoughness "materials/default/default_rough.tga"
 
 	//---- Transmission ----
