@@ -68,11 +68,12 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	{
 		// Hunter pawn: everyone sees its outlines once the Hunt is on — during Hide "no player can see
 		// another player", and that must hold even if pawns ever become visible to proxies before Hunt.
-		// That covers BOTH the pawn-root hunt glow and the head-scoped outline (nearest-owner split with
-		// a matching authored look, so the glow reads as one silhouette). Pre-Hunt, the only hunter
-		// outline allowed out is the SculptBounds WARNING — the one sharing its GameObject with the
-		// bounds component — for a locally-authored invalid face (owner-only information; SculptBounds
-		// drives its warn colours). Never the root glow: that would paint the whole body pre-Hunt.
+		// Normally that's just the pawn-root glow: the head-scoped WARNING outline is WarningOnly —
+		// enabled by SculptBounds solely while the owner's face is invalid (disabled, its renderers fold
+		// back into the root group), so it only reaches this gate in that state. Pre-Hunt, it is also the
+		// ONLY hunter outline allowed out — the one sharing its GameObject with the bounds component, for
+		// a locally-authored invalid face (owner-only information; SculptBounds drives its warn colours).
+		// Never the root glow: that would paint the whole body pre-Hunt.
 		var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hunter.IsValid() )
 		{

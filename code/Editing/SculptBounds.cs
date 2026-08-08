@@ -799,6 +799,18 @@ public sealed class SculptBounds : Component
 
 		var scope = Target.IsValid() ? Target.GameObject : GameObject;
 
+		// WarningOnly outlines (the hunter's head-scoped one) live exactly as long as the warning: enabled
+		// while it shows, disabled otherwise so the pawn's MAIN outline group re-absorbs their renderers —
+		// two live groups read each other's surfaces as occluders (gun glowing through the head). Asserted
+		// every frame on EVERY machine: the spawn snapshot can ship a live 'enabled' to a late joiner, and
+		// proxies must put it back. (Toggling Enabled is safe here despite the round system's Hidden-only
+		// rule — SculptBounds finds these with an Everything scan, so a disabled one is never lost.)
+		foreach ( var o in scope.Components.GetAll<SdfHighlightOutline>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( o.WarningOnly && o.Enabled != on )
+				o.Enabled = on;
+		}
+
 		if ( !on )
 		{
 			if ( !_drivingOutlines )

@@ -84,6 +84,14 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	/// pass (which DOF affects).</summary>
 	[Property] public bool IgnoreDepthOfField { get; set; }
 
+	/// <summary>This outline exists solely for the <see cref="SculptBounds"/> invalid-sculpt warning
+	/// (the hunter's head-scoped outline). Author it DISABLED: SculptBounds enables it only while the
+	/// local warning shows and keeps it off otherwise, so the pawn's main outline group re-absorbs its
+	/// renderers (nearest-ENABLED-outline ownership in ScanTargets) the rest of the time. Two LIVE
+	/// groups on one pawn read each other's surfaces as occluders — the body group's through-wall fill
+	/// paints the gun/hands straight through the head — which is why this can't simply stay enabled.</summary>
+	[Property] public bool WarningOnly { get; set; }
+
 	/// <summary>Runtime hide gate: true = draw nothing, but the component stays ENABLED — it keeps
 	/// ticking and stays findable through Scene.GetAllComponents (which only enumerates enabled
 	/// components, so a gate that disabled the component could never find it again to re-show it).
