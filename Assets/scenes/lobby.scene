@@ -690,7 +690,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f25871d1-0120-4185-9805-bcfb80ba97d4"
+              "$blob": "216fe9f9-b142-4999-a209-187f927e98b4"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -746,7 +746,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "46c0eb9e-85bb-402f-aa87-43a1e4bd6bed"
+              "$blob": "7d3fd1a6-b046-4195-b74a-ae7847840adf"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -802,7 +802,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "7a6aa353-0ffd-4699-b840-2994c852b426"
+              "$blob": "eab40feb-d2b1-4e76-bc3f-dd1ee3baf335"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -858,7 +858,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "24cc413d-8e06-4b38-b0ab-fae52a84deff"
+              "$blob": "c470eaf6-fdc5-4c04-bb6a-f9c0302d9a9d"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -914,7 +914,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "98a06894-d38f-49e6-91d6-7c6957555b04"
+              "$blob": "daa164e3-2d62-488d-b906-5c511384475a"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -1722,6 +1722,14 @@
             },
             "Property": "__enabled",
             "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
+            },
+            "Property": "Displace",
+            "Value": true
           }
         ],
         "MovedObjects": []
@@ -2308,6 +2316,14 @@
             },
             "Property": "__enabled",
             "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
+            },
+            "Property": "Displace",
+            "Value": true
           }
         ],
         "MovedObjects": []
