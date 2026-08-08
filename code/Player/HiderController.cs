@@ -812,6 +812,19 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( !_body.IsValid() || !Sdf.TryGetBounds( _body.Brushes, out var b, SculptEditSession.PendingStamp( _body ) ) )
 			return;
 
+		// NEVER recenter on an INVALID shape. The recenter is one transaction split across two transports:
+		// the root move rides the engine's always-on transform sync, but the cancelling child shift only
+		// happens on a machine when ITS brushes commit — and an invalid shape is deliberately never published
+		// (see SdfNetworkSync's bounds gate), so proxies would receive the root move alone and watch the
+		// whole prop slide. Proxies only ever recenter on applied (valid) commits; the owner must match
+		// them. Skipping costs nothing visible locally — the pair cancels on screen by construction — and
+		// needs no catch-up bookkeeping: the next VALID commit (fixing the shape, or the exit revert)
+		// recenters from wherever the shape then sits, covering the whole accumulated offset, and publishes.
+		// Same verdict the sync gates on (EvaluateNow is hash-cached), so the two gates can never disagree.
+		var boundsCfg = _body.GameObject.Components.Get<SculptBounds>();
+		if ( boundsCfg.IsValid() && !boundsCfg.EvaluateNow() )
+			return;
+
 		// The shape's feet (bounds bottom-centre) in PAWN space. Purely local — ground contact and slopes never
 		// feed in, so this is zero except right after an edit changed the bounds.
 		var feetLocal = _body.GameObject.LocalTransform.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) );
