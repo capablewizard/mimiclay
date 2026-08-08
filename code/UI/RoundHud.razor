@@ -155,11 +155,18 @@
 							<div class="pip-more">+@HiddenProps</div>
 						}
 						@* Named, but with an anonymous clay blob rather than a portrait. The name says who's
-						   still hiding; the icon never says which object they are. *@
+						   still hiding; the icon never says which object they are. The paint badge says
+						   they're mid-sculpt — it can only ever light up for props this machine can actually
+						   see (your own row, or post-reveal), because a concealed prop's synced state never
+						   reaches us; it reveals that they're editing, never what they look like. *@
 						@foreach ( var prop in ShownProps )
 						{
 							<div class="pip-cell">
-								<div class="pip prop-pip"></div>
+								<div class="pip prop-pip">
+									<div class="paint-badge @(EditingOf( prop.Connection ) ? "editing" : "")">
+										<div class="badge-glyph">🎨</div>
+									</div>
+								</div>
 								<div class="pip-name">@prop.Name</div>
 							</div>
 						}
@@ -187,20 +194,27 @@
 						{
 							var icon = IconOf( hunter.Connection );
 
+							@* One .pip either way (like the lobby's), so the paint badge is written once and
+							   survives the portrait/generic branch flipping. *@
 							<div class="pip-cell">
-								@if ( icon.Sculpture.IsValid() )
-								{
-									@* Keyed by connection so the razor rebuild (this panel re-renders every second as
-									   the clock ticks) REUSES the panel. A new panel means a new SceneWorld.
-									   Frozen while they're face-editing mid-round, same as the lobby pips. *@
-									<div class="pip hunter-pip">
+								<div class="pip hunter-pip @(icon.Sculpture.IsValid() ? "" : "generic")">
+									@if ( icon.Sculpture.IsValid() )
+									{
+										@* Keyed by connection so the razor rebuild (this panel re-renders every second as
+										   the clock ticks) REUSES the panel. A new panel means a new SceneWorld.
+										   Frozen while they're face-editing mid-round, same as the lobby pips. *@
 										<SdfIcon Key=@hunter.Connection Source=@icon.Sculpture Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
+									}
+									else
+									{
+										<div class="mi">person</div>
+									}
+
+									@* Mid-round face edit — same badge as the lobby, scaled to these pips. *@
+									<div class="paint-badge @(icon.Editing ? "editing" : "")">
+										<div class="badge-glyph">🎨</div>
 									</div>
-								}
-								else
-								{
-									<div class="pip hunter-pip generic"><div class="mi">person</div></div>
-								}
+								</div>
 								<div class="pip-name">@hunter.Name</div>
 							</div>
 						}
@@ -432,6 +446,22 @@
 					n ^= p.DisguiseSculpture.GameObject.Id.GetHashCode();
 			return n;
 		}
+	}
+
+	// Whether a player is mid-edit, for rows that don't resolve a full icon (the anonymous prop pips). Only
+	// answerable for pawns this machine can see — a concealed prop's synced state never reaches us, so its
+	// badge simply stays down, which is also the correct amount of information to give a hunter.
+	bool EditingOf( Guid connection )
+	{
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+			if ( h.IsValid() && h.NetEditing && RoundManager.RosterIdOf( h.GameObject ) == connection )
+				return true;
+
+		foreach ( var p in Scene.GetAllComponents<HiderController>() )
+			if ( p.IsValid() && p.NetEditing && !p.Concealed && RoundManager.RosterIdOf( p.GameObject ) == connection )
+				return true;
+
+		return false;
 	}
 
 	// Who's editing (both pawn types) + every synced icon pose, hashed. In BuildHash so a player entering or

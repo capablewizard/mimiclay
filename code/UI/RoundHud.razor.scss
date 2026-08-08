@@ -218,54 +218,6 @@ $clock-col-width: 150px;
 
 			}
 
-			// "I'm editing my look" — pinned to the opposite corner from the hand, driven by the pawn's synced
-			// edit flag. Same no-chrome recipe as the hand (the box only parks the glyph), and the same
-			// lifecycle: hidden at scale(0) and revealed by a class, with the quick shrink transition covering
-			// the exit and the shared spring keyframes covering the entrance. Once the spring settles, the
-			// glyph wobbles forever — jitter on the CHILD, delayed by the spring's duration, exactly like the
-			// raised hand above.
-			.paint-badge {
-				position: absolute;
-				right: -4px;
-				bottom: -4px;
-				align-items: center;
-				justify-content: center;
-
-				transform: scale( 0 );
-				transition: transform 0.16s ease;
-
-				&.editing {
-					transform: scale( 1 );
-					animation: hud-hand-raise 0.34s ease-out;
-
-					.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
-				}
-			}
-
-			// Shared by BOTH corner badges (hand + paintbrush).
-			//
-			// No font-family: leave it on the default so Skia's fallback picks the system emoji font for
-			// this codepoint. Forcing Material Icons here would render a missing-glyph box instead.
-			//
-			// The outline is a RING OF SHADOWS, not text-stroke. text-stroke does nothing to a colour
-			// emoji — those are drawn as layered/bitmap glyphs rather than fillable outlines, so there's no
-			// path for Skia to stroke. Shadows are composited from the rendered glyph whatever produced it,
-			// so they work regardless. Eight offsets at the house 2px, diagonals pulled in slightly so the
-			// corners don't read heavier than the edges.
-			.badge-glyph {
-				font-size: 35px;
-				text-transform: none;
-				letter-spacing: 0;
-				text-shadow:
-					2px 0px 0px $paper-edge,
-					-2px 0px 0px $paper-edge,
-					0px 2px 0px $paper-edge,
-					0px -2px 0px $paper-edge,
-					1.4px 1.4px 0px $paper-edge,
-					-1.4px 1.4px 0px $paper-edge,
-					1.4px -1.4px 0px $paper-edge,
-					-1.4px -1.4px 0px $paper-edge;
-			}
 		}
 
 		// ── Roster icons, shared by both layouts ────────────────────────────────────────────────────────────
@@ -301,6 +253,63 @@ $clock-col-width: 150px;
 			align-items: center;
 			justify-content: center;
 		}
+
+		// "I'm editing my look" — pinned to the pip's bottom-right, driven by the pawn's synced edit flag.
+		// SHARED by both layouts (lobby pips AND the in-round rosters — a hunter can face-edit mid-round, a
+		// prop sculpts through the Hide phase), which is why it lives out here rather than under
+		// .lobby-roster like the hand does. Same no-chrome recipe as the hand (the box only parks the glyph),
+		// and the same lifecycle: hidden at scale(0) and revealed by a class, with the quick shrink
+		// transition covering the exit and the shared spring keyframes covering the entrance. Once the
+		// spring settles, the glyph wobbles forever — jitter on the CHILD, delayed by the spring's duration,
+		// exactly like the raised hand.
+		.paint-badge {
+			position: absolute;
+			right: -4px;
+			bottom: -4px;
+			align-items: center;
+			justify-content: center;
+
+			transform: scale( 0 );
+			transition: transform 0.16s ease;
+
+			&.editing {
+				transform: scale( 1 );
+				animation: hud-hand-raise 0.34s ease-out;
+
+				.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
+			}
+		}
+
+		// Shared by ALL the corner badges (the lobby hand + every paintbrush).
+		//
+		// No font-family: leave it on the default so Skia's fallback picks the system emoji font for
+		// this codepoint. Forcing Material Icons here would render a missing-glyph box instead.
+		//
+		// The outline is a RING OF SHADOWS, not text-stroke. text-stroke does nothing to a colour
+		// emoji — those are drawn as layered/bitmap glyphs rather than fillable outlines, so there's no
+		// path for Skia to stroke. Shadows are composited from the rendered glyph whatever produced it,
+		// so they work regardless. Eight offsets at the house 2px, diagonals pulled in slightly so the
+		// corners don't read heavier than the edges.
+		//
+		// 35px suits the big lobby pips ($pip-size-lobby); the in-round rosters run the smaller $pip-size,
+		// so their glyphs scale down with them (the override below — .hud-columns wraps only the in-round
+		// layout).
+		.badge-glyph {
+			font-size: 35px;
+			text-transform: none;
+			letter-spacing: 0;
+			text-shadow:
+				2px 0px 0px $paper-edge,
+				-2px 0px 0px $paper-edge,
+				0px 2px 0px $paper-edge,
+				0px -2px 0px $paper-edge,
+				1.4px 1.4px 0px $paper-edge,
+				-1.4px 1.4px 0px $paper-edge,
+				1.4px -1.4px 0px $paper-edge,
+				-1.4px -1.4px 0px $paper-edge;
+		}
+
+		.hud-columns .badge-glyph { font-size: 25px; }
 
 		// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop" until these
 		// become real per-prop thumbnails.
