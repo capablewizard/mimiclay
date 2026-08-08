@@ -155,15 +155,20 @@
 							<div class="pip-more">+@HiddenProps</div>
 						}
 						@* Named, but with an anonymous clay blob rather than a portrait. The name says who's
-						   still hiding; the icon never says which object they are. The paint badge says
-						   they're mid-sculpt — it can only ever light up for props this machine can actually
-						   see (your own row, or post-reveal), because a concealed prop's synced state never
-						   reaches us; it reveals that they're editing, never what they look like. *@
+						   still hiding; the icon never says which object they are.
+
+						   The paint badge: through the HIDE phase every prop wears it — that phase IS their
+						   sculpting time, and a concealed prop's real edit state never reaches this machine,
+						   so per-player truth isn't even knowable (our own row would light up while everyone
+						   else's sat dark, which reads as a bug). From the Hunt onward it goes back to the
+						   real synced flag, which by then is resolvable for any prop we can see. *@
 						@foreach ( var prop in ShownProps )
 						{
+							var editing = Phase == RoundPhase.Hide || EditingOf( prop.Connection );
+
 							<div class="pip-cell">
 								<div class="pip prop-pip">
-									<div class="paint-badge @(EditingOf( prop.Connection ) ? "editing" : "")">
+									<div class="paint-badge @(editing ? "editing" : "")">
 										<div class="badge-glyph">🎨</div>
 									</div>
 								</div>
