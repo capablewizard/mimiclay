@@ -65,6 +65,39 @@
 		background-repeat: no-repeat;
 	}
 
+	// Persistent sculpt-validity toast (SculptBounds): a small paper card pinned top-centre, present for as
+	// long as the local sculpt is too large / too small — a standing notice, not a popup, so no animation
+	// beyond a soft pulse on the warning icon. Full-width flex strip for the centring (no translateX
+	// transforms in panel styles); deliberately clear of the top-right picker column and the bottom hint strip.
+	.validity-strip {
+		position: absolute;
+		top: $space-lg;
+		left: 0;
+		width: 100%;
+		flex-direction: row;
+		justify-content: center;
+		pointer-events: none;
+
+		.validity-toast {
+			flex-direction: row;
+			align-items: center;
+			gap: $space-sm;
+			padding: $space-sm $space-md;
+			background-color: $paper-top;
+			border: 2px solid $paper-edge;
+			border-radius: $radius-pill;
+			box-shadow: $shadow-float;
+			color: $paper-ink;
+			font-size: 15px;
+
+			.icon {
+				font-size: 18px;
+				color: $craft-orange;
+				animation: validity-pulse 1.25s ease-in-out infinite;
+			}
+		}
+	}
+
 	// Transparent full-screen capture surface, present only while a layer is being dragged (see markup).
 	// The floating cards leave pointer-events:none gaps that the native drag would stall over; this keeps a
 	// pointer-events:all surface under the cursor for the whole gesture so OnDrag/OnDragEnd keep firing.
@@ -715,4 +748,12 @@
 @keyframes edit-hud-slide-right {
 	from { transform: translateX( 100% ); }
 	to { transform: translateX( 0 ); }
+}
+
+// The validity toast's warning-icon pulse (see .validity-strip). Top-level like the rest — s&box doesn't
+// register @keyframes nested inside a selector.
+@keyframes validity-pulse {
+	0% { opacity: 1; }
+	50% { opacity: 0.35; }
+	100% { opacity: 1; }
 }

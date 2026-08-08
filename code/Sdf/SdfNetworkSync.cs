@@ -79,6 +79,20 @@ public sealed class SdfNetworkSync : Component
 
 	SdfRaymarchRenderer _raymarcher; // proxy: resolved lazily to gate field baking during remote drags
 
+	// ── Sculpt-bounds validity gate ───────────────────────────────────────────────────────────────────────
+	// An out-of-bounds / too-small shape (see SculptBounds) is the owner's private work-in-progress: it must
+	// never enter the networked representation AT ALL. Skipping the send isn't enough — Data is [Sync], so
+	// whatever it holds rides the spawn snapshot to late joiners. So Data only ever holds VALID commits
+	// (_lastValidData), invalid commits re-publish the last valid shape to revert any streamed live frames,
+	// and the receive side re-validates incoming payloads (the owner-side gate lives in a client that can be
+	// modified; this one doesn't).
+	SculptBounds _boundsCfg;
+	string _lastValidData;      // last packed VALID commit — recorded even pre-network (deferred-network pawns)
+	bool _streamedSinceCommit;  // live frames went out since the last durable publish (they need reverting)
+
+	SculptBounds BoundsCfg => _boundsCfg.IsValid() ? _boundsCfg
+		: (_boundsCfg = Target.IsValid() ? Target.GameObject.Components.Get<SculptBounds>() : null);
+
 	protected override void OnDestroy() => Unbind();
 
 	bool _seededOnNetwork; // owner: have we published the shape we authored while still local? (deferred-network pawns)
@@ -140,6 +154,7 @@ public sealed class SdfNetworkSync : Component
 			_bound.Previewed -= OnPreviewed;
 		}
 		_bound = null;
+		_boundsCfg = null; // re-resolve against the new Target (the bounds ride the sculpture's object)
 	}
 
 	// ── Owner -> everyone ─────────────────────────────────────────────────────────────────────────────────
@@ -148,15 +163,35 @@ public sealed class SdfNetworkSync : Component
 	// IsProxy gate stops them echoing it back.
 	void OnCommitted()
 	{
+		if ( IsProxy || !Target.IsValid() )
+			return;
+
+		// Pull the validity verdict (never trust Committed subscription order — EvaluateNow is hash-cached
+		// and idempotent). A valid shape is recorded even while NOT networked, so a deferred-network pawn
+		// (a prop sculpting locally through prep) has its last valid shape ready to seed at the hunt.
+		bool valid = !BoundsCfg.IsValid() || BoundsCfg.EvaluateNow();
+		if ( valid )
+			_lastValidData = Pack( SdfSculpture.SerializeBrushes( Target.Brushes ) );
+
 		// Gate on THIS object being networked, not just on a session existing: a pawn can be live-but-not-yet-networked
 		// (infection prep spawns it locally and only publishes at the hunt), and authoring/streaming on a non-networked
 		// object would fire RPCs with no network identity. Network.Active flips true exactly when it's published.
-		if ( IsProxy || !GameObject.Network.Active || !Target.IsValid() )
+		if ( !GameObject.Network.Active )
+			return;
+
+		// An invalid commit publishes NOTHING new. It still (re-)publishes the LAST VALID shape whenever the
+		// proxies' durable state could disagree with it: live frames streamed since the last durable publish
+		// (max is gated live, but a drag can end too SMALL — volume is only judged at commit), or Data not
+		// holding the last valid payload yet (a deferred-network pawn seeding onto the wire mid-invalid).
+		// With nothing valid to fall back to at all, proxies keep whatever they have.
+		bool republish = _lastValidData is not null && (_streamedSinceCommit || Data != _lastValidData);
+		if ( !valid && !republish )
 			return;
 
 		Seq = ++_sendSeq;
-		Data = Pack( SdfSculpture.SerializeBrushes( Target.Brushes ) );
-		_streamCache = null; // the commit is the new baseline; the next drag re-seeds the diff
+		Data = _lastValidData; // valid: packed just above; invalid: the revert payload
+		_streamedSinceCommit = false;
+		_streamCache = null;   // the durable publish is the new baseline; the next drag re-seeds the diff
 	}
 
 	// Live + throttled: fired on every drag-preview change; streams the in-progress brushes so proxies follow the
@@ -173,12 +208,19 @@ public sealed class SdfNetworkSync : Component
 		if ( brushes is not { Count: > 0 } )
 			return;
 
+		// Invalid live shapes are owner-local: never streamed. Max re-checks live (cheap); too-small keeps
+		// the last commit's verdict. Proxies simply hold the last frame they got; the commit funnel above
+		// reverts them if the drag ends somewhere invalid.
+		if ( BoundsCfg.IsValid() && !BoundsCfg.StreamOk() )
+			return;
+
 		_sinceStream = 0f;
 
 		// No baseline yet (first tick of a drag, or the count changed) → send the full list once and seed the diff.
 		if ( _streamCache is null || _streamCache.Count != brushes.Count )
 		{
 			RefreshStreamCache( brushes );
+			_streamedSinceCommit = true;
 			Stream( ++_sendSeq, Pack( SdfSculpture.SerializeBrushes( brushes ) ) );
 			return;
 		}
@@ -196,6 +238,8 @@ public sealed class SdfNetworkSync : Component
 
 		if ( changed is null )
 			return; // nothing actually moved since the last tick — send nothing at all
+
+		_streamedSinceCommit = true;
 
 		// Lots changed at once (a load, a palette applied across brushes) → the full list is cheaper than a delta.
 		if ( changed.Count > Math.Max( 1, brushes.Count / 3 ) )
@@ -259,6 +303,13 @@ public sealed class SdfNetworkSync : Component
 			target[i] = subset[k];
 		}
 
+		// Same receive-side bounds gate as ApplyBrushes (cheap max only — delta frames stream at 20 Hz).
+		if ( BoundsCfg.IsValid() && !BoundsCfg.ValidateIncoming( target, withVolume: false ) )
+		{
+			_appliedSeq = seq;
+			return;
+		}
+
 		_appliedSeq = seq;
 		SetInterpolationTarget( target );
 		Target.RebuildShadowProxy();
@@ -293,6 +344,17 @@ public sealed class SdfNetworkSync : Component
 		// client (raymarch cost is per-brush — a 500-brush payload taxes every machine that applies it).
 		if ( brushes.Count > SdfBrushPacker.MaxBrushes )
 			return;
+
+		// Receive-side bounds validation — the anti-cheat side of the SculptBounds gate (the owner-side gate
+		// lives in a client that can be modified; this one can't). Volume is only sampled on durable commits;
+		// live frames get the cheap max check inside ValidateIncoming's caller path. The seq still advances
+		// on rejection, or the OnUpdate reconcile poll would re-validate the same rejected snapshot every
+		// frame — the standing (last valid) shape simply survives.
+		if ( BoundsCfg.IsValid() && !BoundsCfg.ValidateIncoming( brushes, withVolume: full ) )
+		{
+			_appliedSeq = seq;
+			return;
+		}
 
 		_appliedSeq = seq;
 

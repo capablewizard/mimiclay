@@ -68,19 +68,31 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	{
 		// Hunter pawn (outline sits on the pawn root): everyone sees it, but only once the Hunt is on —
 		// during Hide "no player can see another player", and that must hold even if pawns ever become
-		// visible to proxies before Hunt.
-		if ( outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
-			return phase >= RoundPhase.Hunt;
+		// visible to proxies before Hunt. Exception: the OWNER's invalid-sculpt warning (an out-of-bounds
+		// face, see SculptBounds) shows in any phase — it's owner-only information, drawn so the pulsing
+		// warn colour the bounds component drives is actually visible.
+		var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
+		if ( hunter.IsValid() )
+			return phase >= RoundPhase.Hunt || InvalidForOwner( hunter );
 
 		// Prop pawn (outline sits inside the cloned Disguise child): owner-only — except the Reveal show-off,
 		// where the only prop pawns left standing are the survivors. A test bot's prop is host-owned and so isn't
 		// a proxy on the host, which would otherwise hand that machine a through-wall glow on every bot — the
-		// exact tell this whole system exists to deny.
+		// exact tell this whole system exists to deny. (The owner-only rule already keeps the invalid-sculpt
+		// warning visible to its owner — no extra case needed here.)
 		var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 			return (!hider.IsProxy && !RoundManager.IsBotPawn( hider.GameObject )) || phase == RoundPhase.Reveal;
 
 		// No pawn above it: a scene decoy.
 		return false;
+	}
+
+	// Does this pawn carry a locally-authored sculpt currently violating its SculptBounds?
+	// (LocallyEditable already excludes proxies, host-owned bot pawns and decoys.)
+	static bool InvalidForOwner( Component pawn )
+	{
+		var bounds = pawn.Components.Get<SculptBounds>( FindMode.EverythingInSelfAndDescendants );
+		return bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid;
 	}
 }

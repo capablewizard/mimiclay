@@ -803,6 +803,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// GetOrCreate so the in-code fallback (prefab missing) still yields a usable sculpture.
 		var sculpture = go.Components.GetOrCreate<SdfSculpture>();
 
+		// Every disguise carries sculpt size limits — the prefab's authored values win, this is only the
+		// fallback so a bounds-less disguise can't slip through as unconstrained (the component's defaults
+		// are the game-wide disguise allowance; see SculptBounds).
+		go.Components.GetOrCreate<SculptBounds>();
+
 		// Lift from the shape's OWN bounds — no fixed body height to keep in sync. Mins.z is negative (the shape
 		// extends below local origin), so -Mins.z puts its lowest point at the feet.
 		float lift = Sdf.TryGetBounds( sculpture.Brushes, out var bounds ) ? -bounds.Mins.z : 0f;

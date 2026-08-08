@@ -22,6 +22,19 @@
 		<div class="drag-capture"></div>
 	}
 
+	@* Sculpt-validity toast: shows whenever the LOCAL player's sculpt violates its SculptBounds and stays
+	   until fixed — deliberately OUTSIDE the IsEditing gate, because the invalid shape is owner-local (never
+	   broadcast) and the player has to know the world doesn't see what they see, edit mode or not. *@
+	@if ( InvalidBounds is { } inv )
+	{
+		<div class="validity-strip">
+			<div class="validity-toast">
+				<div class="icon">warning</div>
+				<span>@(inv.TooBig ? "Sculpt too large" : "Sculpt too small")</span>
+			</div>
+		</div>
+	}
+
 	@if ( Session is not null && Session.IsEditing )
 	{
 		@* (The alt-nav view hints that used to sit top-right are gone — the picker column lives there now,
@@ -475,6 +488,23 @@
 	// (separate ScreenPanels don't block each other's hover, so a higher z-index alone isn't enough).
 	static bool Inert => AltNavActive || PauseMenu.IsOpen;
 	string RootClass => Inert ? "edit-hud alt-nav" : "edit-hud";
+
+	// The local player's SculptBounds currently in violation (or null) — drives the persistent validity
+	// toast. Scanned rather than bound to the session, because the toast outlives edit mode: an invalid
+	// shape stays owner-local until fixed, whoever's HUD state we're in.
+	SculptBounds InvalidBounds
+	{
+		get
+		{
+			foreach ( var sb in Scene.GetAllComponents<SculptBounds>() )
+			{
+				if ( !sb.LocallyEditable || sb.IsSculptValid )
+					continue;
+				return sb;
+			}
+			return null;
+		}
+	}
 
 	// --- Which parts of the HUD show. All default on, so the in-game editor is unchanged; turn pieces off for a
 	// trimmed HUD (e.g. the main-menu sculpt toy wants colours only — no add-shape/layer/symmetry panels). The
@@ -1242,6 +1272,7 @@
 		var hc = new HashCode();
 		hc.Add( s );
 		hc.Add( s?.IsEditing ?? false );
+		hc.Add( InvalidBounds is { } iv ? (iv.TooBig ? 1 : 2) : 0 ); // validity toast appears/disappears/relabels
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover

@@ -44,9 +44,12 @@ public sealed class BrushWireframes
 	/// editor's per-state opacity (selected 1, hovered 0.7, else 0.3) times <paramref name="masterAlpha"/>
 	/// (the fade × drag-opacity), and a screen-constant <paramref name="thicknessPx"/> (the editor's
 	/// OutlineThickness). Camera-dependent now (screen-constant width), so it rebuilds as the view moves.
+	/// <paramref name="warn"/> (optional) tints those brush indices <paramref name="warnColor"/> at high
+	/// opacity — the SculptBounds "these brushes poke out of the region" blame.
 	/// </summary>
 	public void Draw( List<SdfBrush> brushes, Transform sculptTx, Scene scene, CameraComponent cam,
-		int selected, int hovered, float masterAlpha, float thicknessPx, float depthBias )
+		int selected, int hovered, float masterAlpha, float thicknessPx, float depthBias,
+		IReadOnlyList<int> warn = null, Color warnColor = default )
 	{
 		if ( brushes is null || brushes.Count == 0 || scene is null || cam is null )
 		{
@@ -54,16 +57,27 @@ public sealed class BrushWireframes
 			return;
 		}
 
+		int warnHash = 0;
+		if ( warn is { Count: > 0 } )
+		{
+			var whc = new HashCode();
+			foreach ( var i in warn )
+				whc.Add( i );
+			whc.Add( warnColor );
+			warnHash = whc.ToHashCode();
+		}
+
 		var camPos = cam.WorldPosition;
 		int hash = HashCode.Combine(
 			HashCode.Combine( BrushesHash( brushes ), sculptTx.Position, sculptTx.Rotation ),
-			HashCode.Combine( camPos, selected, hovered, masterAlpha, thicknessPx, depthBias ) );
+			HashCode.Combine( camPos, selected, hovered, masterAlpha, thicknessPx, depthBias ),
+			warnHash );
 		if ( hash == _lastHash && _so.IsValid() )
 			return;
 		_lastHash = hash;
 
 		_depthBias = depthBias;
-		Build( brushes, sculptTx, cam, selected, hovered, masterAlpha, thicknessPx );
+		Build( brushes, sculptTx, cam, selected, hovered, masterAlpha, thicknessPx, warn, warnColor );
 		Upload( scene );
 	}
 
@@ -72,6 +86,18 @@ public sealed class BrushWireframes
 		_so?.Delete();
 		_so = null;
 		_lastHash = 0;
+	}
+
+	static bool IndexIn( IReadOnlyList<int> list, int i )
+	{
+		if ( list is null )
+			return false;
+		for ( int k = 0; k < list.Count; k++ )
+		{
+			if ( list[k] == i )
+				return true;
+		}
+		return false;
 	}
 
 	static int BrushesHash( List<SdfBrush> brushes )
@@ -101,7 +127,8 @@ public sealed class BrushWireframes
 		return hc.ToHashCode();
 	}
 
-	void Build( List<SdfBrush> brushes, Transform sculptTx, CameraComponent cam, int selected, int hovered, float masterAlpha, float thicknessPx )
+	void Build( List<SdfBrush> brushes, Transform sculptTx, CameraComponent cam, int selected, int hovered,
+		float masterAlpha, float thicknessPx, IReadOnlyList<int> warn, Color warnColor )
 	{
 		_verts.Clear();
 		_indices.Clear();
@@ -121,9 +148,15 @@ public sealed class BrushWireframes
 			_brush = b;
 
 			// Editor styling: cyan additive / red subtractive; opacity by selection state (× the master fade
-			// and drag-opacity passed in).
+			// and drag-opacity passed in). An out-of-bounds brush (SculptBounds blame, fixed regions only)
+			// wears the warn colour near-full regardless of selection — the culprit has to pop.
 			float stateAlpha = i == selected ? 1f : (i == hovered ? 0.7f : 0.3f);
 			var baseCol = b.Operation == SdfOperation.Subtract ? Color.Red : Color.Cyan;
+			if ( IndexIn( warn, i ) )
+			{
+				baseCol = warnColor;
+				stateAlpha = MathF.Max( stateAlpha, 0.9f );
+			}
 			_col = baseCol.WithAlpha( stateAlpha * masterAlpha );
 
 			// One copy per mirror-sign combination (identity + reflection across each enabled plane).

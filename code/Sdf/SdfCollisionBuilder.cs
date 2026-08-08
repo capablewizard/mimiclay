@@ -712,7 +712,9 @@ public static class SdfCollisionBuilder
 	// Brush-local hull points per shape (axis = Z, matching the SDF/CSG conventions). Coarse on purpose —
 	// a convex collider doesn't benefit from fine tessellation. Rounding/Blend are ignored, so the collider
 	// is the sharp primitive (a hair smaller than the blended visual surface — fine for gameplay).
-	static void LocalPoints( SdfBrush b, List<Vector3> dst )
+	// Internal: SculptBounds measures its max-size region against these same support points (a bounding
+	// box/sphere reads far past the visible surface for flat/rotated/sliced shapes).
+	internal static void LocalPoints( SdfBrush b, List<Vector3> dst )
 	{
 		dst.Clear();
 		var s = b.Size;

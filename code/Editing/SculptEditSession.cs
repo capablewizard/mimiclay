@@ -1045,6 +1045,13 @@ public sealed class SculptEditSession : Component
 		if ( string.IsNullOrWhiteSpace( PersistSlot ) || IsProxy || !Target.IsValid() )
 			return;
 
+		// Only VALID shapes persist (see SculptBounds): an invalid work-in-progress on disk would spawn the
+		// next session invalid with no last-valid shape for proxies to fall back to. Skipping the write means
+		// worst case a disconnect loses edits the player was being told to fix anyway.
+		var bounds = Target.GameObject.Components.Get<SculptBounds>();
+		if ( bounds.IsValid() && !bounds.EvaluateNow() )
+			return;
+
 		SculptLibrary.Save( PersistSlot, Target );
 	}
 
@@ -1620,8 +1627,15 @@ public sealed class SculptEditSession : Component
 		float master = _wireAlpha * dragAlpha;
 		int hover = IsEditing ? _hoverBrush : -1;
 
+		// SculptBounds blame: while the sculpt is too big for a FIXED region, the offending brushes' wires
+		// wear the warning colour so the player sees exactly what to pull back in (a floating region has no
+		// single culprit — its list stays empty and the whole-sculpt outline carries the warning instead).
+		var bounds = Target.GameObject.Components.Get<SculptBounds>();
+		var warn = bounds.IsValid() && bounds.TooBig ? bounds.OffendingBrushes : null;
+
 		_wireframes.Draw( Target.Brushes, Target.WorldTransform, Scene, Scene.Camera,
-			Selected, hover, master, st.OutlineThickness, WireframeDepthBias );
+			Selected, hover, master, st.OutlineThickness, WireframeDepthBias,
+			warn, bounds.IsValid() ? bounds.WarnColor : default );
 	}
 
 	// ── Depth of field (main camera) ─────────────────────────────────────────────────────────────────
