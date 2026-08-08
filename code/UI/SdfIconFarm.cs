@@ -38,6 +38,17 @@ public readonly struct SdfIconRequest
 
 	/// <inheritdoc cref="OutlineColor"/>
 	public float? OutlineWidth { get; init; }
+
+	// Pose and Frozen are deliberately NOT in the cache key: they're the subject's current STATE, not a
+	// different picture of the same subject — a key only ever has one pose and one freeze at a time, and
+	// changing either should retarget the existing render (a reframe / a held picture), not mint a second
+	// SceneWorld. Don't use them to show one subject two ways at once.
+
+	/// <summary>Camera orientation override, in the subject's local space. Null keeps the rig prefab's.</summary>
+	public Angles? Pose { get; init; }
+
+	/// <summary>Hold the current picture — see <see cref="SdfThumbnail.Frozen"/>.</summary>
+	public bool Frozen { get; init; }
 }
 
 public sealed class SdfIconFarm : Panel
@@ -143,6 +154,8 @@ public sealed class SdfIconFarm : Panel
 		entry.Panel.Brushes = request.Brushes;
 		entry.Panel.OutlineColor = request.OutlineColor;
 		entry.Panel.OutlineWidth = request.OutlineWidth;
+		entry.Panel.Pose = request.Pose;
+		entry.Panel.Frozen = request.Frozen;
 		entry.LastUsed = 0;
 
 		return entry.Panel.RenderTexture;

@@ -140,6 +140,13 @@ public sealed class RoundManagerSpawner : Component
 
 			Networking.CreateLobby( new LobbyConfig { MaxPlayers = 8 } );
 			MenuNetworking.NoteSessionStarted();
+
+			// This session is brand new and OURS, so no lobby data can legitimately exist yet — but
+			// Networking.SetData lands in an engine STATIC that survives the editor's Stop→Play, so a lobby
+			// launch earlier in this editor run has left its keys behind. Without this clear the manager
+			// reads that stale data instead of this spawner's config — most visibly the old lobby's bot
+			// count ("0") overriding BotCount above, so the test bots silently never spawn.
+			RoundSettings.ClearLobbyData();
 		}
 
 		// Only the host creates the networked manager; a real client just receives it over the wire and is done.

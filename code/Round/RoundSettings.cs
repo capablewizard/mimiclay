@@ -124,6 +124,28 @@ public struct RoundSettings
 		return d;
 	}
 
+	/// <summary>Blank EVERY key a lobby launch writes — the rules above plus the roster couriers
+	/// (<see cref="RoundManager.HunterIdsKey"/>, <see cref="RoundManager.BotCountKey"/>). For a session this
+	/// process creates ITSELF (a map scene opened directly): session data lives on an engine static that
+	/// only a process restart clears, so without this a lobby launch earlier in the same editor run leaves
+	/// its keys behind — and the fresh "direct play" session reads the old lobby's rules and bot count
+	/// (typically 0, silently eating the spawner's test bots) instead of the map's own config. Blank is
+	/// how a key reads as missing here: every reader falls back on a failed parse.</summary>
+	public static void ClearLobbyData()
+	{
+		Networking.SetData( Keys.Mode, "" );
+		Networking.SetData( Keys.Start, "" );
+		Networking.SetData( Keys.Hide, "" );
+		Networking.SetData( Keys.Hunt, "" );
+		Networking.SetData( Keys.Reveal, "" );
+		Networking.SetData( Keys.Cons, "" );
+		Networking.SetData( Keys.Taunt, "" );
+		Networking.SetData( Keys.Hunters, "" );
+		Networking.SetData( Keys.Map, "" );
+		Networking.SetData( RoundManager.HunterIdsKey, "" );
+		Networking.SetData( RoundManager.BotCountKey, "" );
+	}
+
 	static string Str( float v ) => v.ToString( "0.###", CultureInfo.InvariantCulture );
 
 	static float Read( string key, float fallback )

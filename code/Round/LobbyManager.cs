@@ -49,6 +49,14 @@ public sealed class LobbyManager : Component, IRoundContext
 	readonly HashSet<Guid> _known = new();
 	readonly HashSet<Guid> _botLooksPending = new();   // bots still waiting on a face to dress (see TryDressBot)
 
+	// The face each player's LAST hunter pawn wore, snapshotted host-side as that pawn is destroyed (a role
+	// swap). The host can't read a client's saved head off their disk, so without this a client's fresh hunter
+	// pawn ships wearing the prefab default and everyone watches it flash until the client's own dress
+	// publishes back. Dressing the new pawn from this cache instead means the spawn snapshot already carries
+	// the face everyone was just looking at; the owner's on-arrival dress reconciles any drift (and is a
+	// content-identical no-op in the normal case).
+	readonly Dictionary<Guid, List<SdfBrush>> _lastFaces = new();
+
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
 	// Most hunters we'll allow — always one fewer than the lobby size, so there's at least one prop. (Solo in the
@@ -126,6 +134,7 @@ public sealed class LobbyManager : Component, IRoundContext
 			if ( Players[id].Bot || Connection.All.Any( c => c.Id == id ) )
 				continue;
 			Players.Remove( id );
+			_lastFaces.Remove( id ); // a leaver's cached face has nobody to come back for it
 			if ( _pawns.Remove( id, out var pawn ) )
 				Retire( pawn );
 		}
@@ -424,9 +433,31 @@ public sealed class LobbyManager : Component, IRoundContext
 			}
 		}
 
-		var pawn = prefab.Clone( at, name: $"Lobby Pawn ({role}) {name}" );
+		// A fresh hunter pawn wears its player's face BEFORE anything builds. Cloned DISABLED for that:
+		// SdfSculpture.OnEnabled fires Rebuild, so an enabled clone already has the default face's build in
+		// flight before a post-clone dress could swap the brushes — dressing first means the first build ever
+		// started is the real head, and the NetworkSpawn below snapshots it for everyone.
+		//
+		// Where the face comes from depends on whose pawn it is: the host's own comes off this machine's disk
+		// (the saved head slot); a CLIENT's comes from the last-worn-face cache (the host can't read their
+		// disk, but it was just rendering their previous hunter pawn — see _lastFaces). The client's own
+		// on-arrival dress reconciles any drift. A first-ever spawn has no cache entry and dresses owner-side
+		// on arrival, same as before.
+		var dressLocalHead = role == PlayerRole.Hunter && owner is not null && owner.Id == Connection.Local?.Id;
+		var dressCachedFace = role == PlayerRole.Hunter && !dressLocalHead && owner is not null && _lastFaces.ContainsKey( id );
+
+		var pawn = prefab.Clone( new CloneConfig( at, startEnabled: !(dressLocalHead || dressCachedFace), name: $"Lobby Pawn ({role}) {name}" ) );
 		if ( !pawn.IsValid() )
 			return null;
+
+		if ( dressLocalHead || dressCachedFace )
+		{
+			if ( dressLocalHead )
+				HunterController.WearSavedHead( pawn );
+			else
+				HunterController.WearFace( pawn, _lastFaces[id] );
+			pawn.Enabled = true;
+		}
 
 		// A bot's body: stamp its roster row, take the controls away, strip the per-player hardware. Before the
 		// NetworkSpawn below, so BotPawn.RosterId ships in the spawn snapshot and clients resolve it too.
@@ -437,7 +468,10 @@ public sealed class LobbyManager : Component, IRoundContext
 		// scenery (the Retire path, kept for disconnects) would leave the fresh pawn spawning inside the released
 		// disguise's collider — the solver shoves overlapping hulls apart, sometimes through the floor.
 		if ( _pawns.Remove( id, out var old ) && old.IsValid() )
+		{
+			RememberFace( id, old );
 			old.Destroy();
+		}
 
 		// Handed to its player, or kept by the host when there isn't one.
 		if ( owner is not null )
@@ -447,6 +481,21 @@ public sealed class LobbyManager : Component, IRoundContext
 
 		_pawns[id] = pawn;
 		return pawn;
+	}
+
+	// Snapshot the face a departing HUNTER pawn wore into _lastFaces (see it for why). Hunter pawns only —
+	// ResolveFaceOf on a prop would happily hand back the disguise sculpture, which is not a face. Copied
+	// brush-by-brush so nothing that later mutates the (about-to-die) live list can reach the cache.
+	void RememberFace( Guid id, GameObject pawn )
+	{
+		if ( !pawn.Components.Get<HunterController>( includeDisabled: true ).IsValid() )
+			return;
+
+		var face = HunterController.ResolveFaceOf( pawn );
+		if ( !face.IsValid() || face.Brushes is not { Count: > 0 } )
+			return;
+
+		_lastFaces[id] = face.Brushes.Select( b => b.Copy() ).ToList();
 	}
 
 	static void Retire( GameObject pawn )

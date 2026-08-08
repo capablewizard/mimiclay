@@ -533,8 +533,22 @@ public sealed class RoundManager : Component, IRoundContext
 
 		RetireOwnPawn();
 
-		_ownPawn = prefab.Clone( at, name: $"Pawn ({role}) {Connection.Local.DisplayName}" );
+		// Hunters clone DISABLED, dress, then enable — the ordering is the whole fix for the prefab-default
+		// face flash. SdfSculpture.OnEnabled fires Rebuild, so an enabled clone has the DEFAULT face's build
+		// (and field bake) in flight before any post-clone dress can swap the brushes — that build landing
+		// first is exactly the flash. Dressed while disabled, the first build that ever starts is the real
+		// head; and it's in place before the NetworkSpawn below, so the snapshot ships it too. This is what
+		// stops a converted prop's fresh hunter flashing the default at the hunter who just shot them.
+		var dressHead = role == PlayerRole.Hunter;
+		_ownPawn = prefab.Clone( new CloneConfig( at, startEnabled: !dressHead,
+			name: $"Pawn ({role}) {Connection.Local.DisplayName}" ) );
 		_ownPawnRole = role;
+
+		if ( dressHead && _ownPawn.IsValid() )
+		{
+			HunterController.WearSavedHead( _ownPawn );
+			_ownPawn.Enabled = true;
+		}
 
 		if ( networked && _ownPawn.IsValid() )
 			PublishOwnPawn();

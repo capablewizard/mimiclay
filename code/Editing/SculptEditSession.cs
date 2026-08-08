@@ -1115,6 +1115,13 @@ public sealed class SculptEditSession : Component
 		if ( entry is null )
 			return;
 
+		// Already wearing it — the pawn was dressed before this session even existed (see
+		// HunterController.WearSavedHead, which runs at clone/OnStart so the prefab default never renders).
+		// Rebuilding again here would just re-bake and re-publish the identical shape.
+		if ( SdfSculpture.ContentHash( Target.Brushes, Target.Resolution, Target.FlipFaces )
+			== SdfSculpture.ContentHash( entry.Brushes, Target.Resolution, Target.FlipFaces ) )
+			return;
+
 		Target.Brushes = entry.Brushes;
 		Selected = -1;
 		Target.Rebuild(); // the Committed this fires is what publishes the restored shape on a networked pawn

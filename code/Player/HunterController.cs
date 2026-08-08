@@ -245,6 +245,12 @@ public sealed class HunterController : Component
 	// Internal: the crosshair HUD (HunterCrosshair) reads this to hide the dot while sculpting.
 	internal bool EditMode => _session?.IsEditing ?? false;
 
+	/// <summary>True while this pawn's player is in face-edit mode, on every machine — the roster HUD badges
+	/// their pip with it and holds their icon still until they exit. Mirrored from the session each owner frame
+	/// (rather than written at the toggle site) because the session can also exit itself — revert dialog,
+	/// forced teardown — and a one-shot write would miss those.</summary>
+	[Sync] public bool NetEditing { get; private set; }
+
 	// Alt-orbit (third person only): while Walk/alt is held the mouse swings the CAMERA boom around the pawn
 	// — aim stays frozen (look controls off), so you can turn around and look at your own hunter — and on
 	// release the view snaps straight back to the aim-locked shoulder boom. Mirrors the hider's alt gesture,
@@ -288,10 +294,54 @@ public sealed class HunterController : Component
 		// the spawn snapshot and proxies receive the same component (the engine's voice RPC needs that shared
 		// identity). On a proxy the snapshot copy already exists and GetOrCreate just adopts it.
 		Components.GetOrCreate<PlayerVoice>();
+
+		VeilForSpawn();
 	}
+
+	// ── Spawn veil ────────────────────────────────────────────────────────────────────────────────────
+	// A freshly cloned pawn RENDERS before its components' first update: cloned mid-frame, its OnStart and
+	// OnUpdate don't run until the next frame, so frame one shows the raw prefab — authored orientation
+	// (PlaceVisualPivot hasn't run) and whatever the visuals default to. No amount of pre-dressing fixes
+	// that frame, because placement only exists in update code — so the frame isn't shown at all: every
+	// visual branch goes dark the moment the pawn wakes, and comes back at the top of OnStart, when the
+	// same frame's update will dress and orient everything before the next render. Whole BRANCH objects,
+	// not renderer flags — the concealment lesson (RenderHidden/ShadowsOnly still drags a shadow across
+	// the floor) applies here exactly the same. Colliders and logic stay live so physics settles under it.
+	//
+	// The reveal is a SWEEP (turn on every drawable branch that's off), never a replay of what this machine
+	// veiled: .Enabled is serialized, so a pawn that network-spawns mid-veil (the lobby spawns and publishes
+	// in one frame) ships its branches DISABLED — the receiving machine's own veil then skips them as
+	// already-off, and a replay-style reveal would leave that pawn invisible forever. The sweep heals veiled
+	// state however it arrived. Safe because the prefab authors no disabled visual branches (components yes,
+	// objects no) — and a proxy arriving mid-concealment is still fine, because UpdateConcealment re-asserts
+	// in the same frame's update, before anything renders.
+	void VeilForSpawn()
+	{
+		foreach ( var child in GameObject.Children )
+			if ( child.IsValid() && child.Enabled && DrawsAnything( child ) )
+				child.Enabled = false;
+	}
+
+	void RevealAfterSpawn()
+	{
+		foreach ( var child in GameObject.Children )
+			if ( child.IsValid() && !child.Enabled && DrawsAnything( child ) )
+				child.Enabled = true;
+	}
+
+	// Branches with something to show. SdfRaymarchRenderer isn't a Renderer subclass, so it's named
+	// explicitly; the sibling meshes, body capsules and particles all fall under Renderer.
+	static bool DrawsAnything( GameObject go )
+		=> go.Components.GetAll<Component>( FindMode.EverythingInSelfAndDescendants )
+			.Any( c => c is Renderer or SdfRaymarchRenderer );
 
 	protected override void OnStart()
 	{
+		// Lift the spawn veil FIRST: everything below (and every enabled-only sweep in it) wants the visual
+		// branches back on, and by the end of this frame's update the pawn is dressed and oriented, so the
+		// next render — the first one anybody sees — is already correct.
+		RevealAfterSpawn();
+
 		// Cache what we hide in first person (see HideOwnBody). SDF visuals manage their own sibling mesh
 		// ModelRenderer per-frame (raymarch vs. shadow-only by LOD band), so we must NOT sweep those into
 		// _bodyRenderers — forcing their RenderType from here would fight that and double-draw on proxies.
@@ -314,6 +364,15 @@ public sealed class HunterController : Component
 		// an orbit camera (idle until edit mode hands it the view) and a SculptEditSession pointed at the face.
 		// Wiring OrbitCamera onto the session is what makes SetActive enable/disable the camera for us.
 		Face ??= ResolveFace();
+
+		// Wear the saved head NOW rather than when the edit session's own OnStart reaches its persist-slot
+		// load — the session is only CREATED below (AttachEditing), so its OnStart is a frame away, and that
+		// frame is the "prefab face flash" on any pawn this machine received instead of spawning (the lobby's
+		// host-spawned pawns). Pawns this machine spawned itself were dressed before they ever baked (see
+		// WearSavedHead's callers); for them — and for the session's later load — the content guard makes
+		// this free. Owner-only: proxies wear what the wire says, bots what the host dressed them in.
+		if ( Owned )
+			WearSavedHead( GameObject );
 
 		// Move the head + body off the physics root onto a written pivot — see PlaceVisualPivot. After Face is
 		// resolved (Eyes/Face are the same object) and before anything caches renderers, so the sweeps below
@@ -386,13 +445,58 @@ public sealed class HunterController : Component
 	// Searched at ANY depth, not just direct children: the head hangs off the Visuals pivot now (see
 	// EnsureVisualPivot), and a direct-children lookup would miss it and quietly hand back the BODY instead —
 	// the first sculpture it happened to find — leaving you sculpting the wrong part of yourself.
-	SdfSculpture ResolveFace()
+	SdfSculpture ResolveFace() => ResolveFaceOf( GameObject );
+
+	// The face sculpture on any hunter pawn root — shared by the instance resolve above and the static
+	// pre-spawn dress below. Everything, not EnabledInSelf: the dress runs on clones spawned DISABLED
+	// (so the default face never starts building), where an enabled-only sweep would find nothing.
+	internal static SdfSculpture ResolveFaceOf( GameObject root )
 	{
-		var sculpts = Components.GetAll<SdfSculpture>( FindMode.EnabledInSelfAndDescendants )
+		var sculpts = root.Components.GetAll<SdfSculpture>( FindMode.EverythingInSelfAndDescendants )
 			.Where( s => !s.GameObject.Tags.Has( HunterGun.CloneTag ) )
 			.ToArray();
 
 		return sculpts.FirstOrDefault( s => s.GameObject.Name == "Head" ) ?? sculpts.FirstOrDefault();
+	}
+
+	/// <summary>Dress a hunter pawn's face in THIS machine's saved head — brushes only, the target keeps its
+	/// authored Resolution/FlipFaces, exactly like the edit session's persist-slot load. The point of having
+	/// it callable statically is ORDERING: run it on a fresh clone before the pawn first bakes, renders or
+	/// network-spawns and the prefab's default face never exists anywhere — no flash on this screen, and the
+	/// spawn snapshot ships the real head to every other machine. Only ever call it for a pawn this machine's
+	/// player will drive (the saved head is the LOCAL player's appearance). No-ops with no/empty save, or
+	/// when the face already wears the slot content — so the later, belt-and-braces loads cost nothing.</summary>
+	internal static void WearSavedHead( GameObject pawn )
+	{
+		var entry = SculptLibrary.Load( SculptLibrary.HeadSlot );
+		if ( entry?.Brushes is { Count: > 0 } )
+			WearFace( pawn, entry.Brushes );
+	}
+
+	/// <summary>The brushes-only application both dress paths share — <see cref="WearSavedHead"/> (this
+	/// machine's slot) and the host's last-worn-face cache (see LobbyManager, which dresses a CLIENT's fresh
+	/// hunter pawn from what their previous one wore, since it can't read their disk). Defensively copies the
+	/// list so a shared cache can never be mutated through the live sculpture.</summary>
+	internal static void WearFace( GameObject pawn, List<SdfBrush> brushes )
+	{
+		if ( brushes is not { Count: > 0 } )
+			return;
+
+		var face = ResolveFaceOf( pawn );
+		if ( !face.IsValid() )
+			return;
+
+		if ( SdfSculpture.ContentHash( face.Brushes, face.Resolution, face.FlipFaces )
+			== SdfSculpture.ContentHash( brushes, face.Resolution, face.FlipFaces ) )
+			return;
+
+		face.Brushes = brushes.Select( b => b.Copy() ).ToList();
+
+		// A disabled clone (the pre-spawn dress path) skips the rebuild on purpose: SdfSculpture.OnEnabled
+		// fires one when the pawn is switched on, and THAT being the first build ever started is the whole
+		// point of dressing while disabled.
+		if ( face.Active )
+			face.Rebuild();
 	}
 
 	protected override void OnUpdate()
@@ -406,6 +510,10 @@ public sealed class HunterController : Component
 		// actually editing, so it's only meaningful in face-edit mode.
 		if ( Owned && Input.Pressed( "ToggleWireframes" ) )
 			_session?.ToggleWireframes();
+
+		// Keep the wire in step with the session, whatever path entered or left edit mode (see NetEditing).
+		if ( Owned )
+			NetEditing = EditMode;
 
 		// ToggleView (Tab) flips first/third person — play mode only, since in edit mode Tab is the wireframe
 		// toggle above (the two share the key, split by mode). Stored in GameSettings (per-machine, never

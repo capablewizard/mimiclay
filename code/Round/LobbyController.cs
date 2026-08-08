@@ -116,6 +116,11 @@ public sealed class LobbyController : Component
 		{
 			Networking.CreateLobby( new LobbyConfig { MaxPlayers = MaxLobbyPlayers } );
 			MenuNetworking.NoteSessionStarted();
+
+			// Session data survives the editor's Stop→Play (engine static), so an earlier launch's round keys
+			// are still lying around. Here every key is rewritten at launch anyway, so this is hygiene — the
+			// clear that MATTERS is RoundManagerSpawner's, where stale keys were read as real lobby intent.
+			RoundSettings.ClearLobbyData();
 		}
 
 		// Spawn the host's setup panel (programmatically, like the pause/edit HUDs — clients don't get one).

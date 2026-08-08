@@ -35,10 +35,10 @@
 			<div>phase=@Phase</div>
 			<div>mode=@DbgMode</div>
 			<div>pawns(self/proxy)=@DbgSelfPawns/@DbgProxyPawns</div>
-			@* Thumbnail tally. tally = is the rail drawn at all; faces = hunter pawns whose Face sculpt resolved
-			   right now (how many portraits CAN draw); cached = how many we've ever resolved. If faces is 0 the
-			   problem is pawn/face lookup; if it's 2 and you still see no portraits, it's the panel or its CSS. *@
-			<div>tally=@ShowTally hunters=@HunterCount props=@PropsLeft faces=@FaceSignal cached=@_faceCache.Count</div>
+			@* Thumbnail tally. tally = is the rail drawn at all; iconsig = identity hash of the sculpts resolvable
+			   right now (0 usually means NONE resolved — the problem is pawn/sculpt lookup; nonzero with no
+			   portraits showing means the panel or its CSS); cached = how many we've ever resolved. *@
+			<div>tally=@ShowTally hunters=@HunterCount props=@PropsLeft iconsig=@IconSignal cached=@_iconCache.Count</div>
 		</div>
 	}
 
@@ -55,7 +55,7 @@
 		<div class="thumb-test">
 			@foreach ( var player in DebugPlayers )
 			{
-				var face = FaceOf( player.Connection );
+				var face = IconOf( player.Connection ).Sculpture;
 
 				<div class="thumb-test-cell">
 					@* Source wins when it's valid, so Brushes is only the fallback for an unresolved player —
@@ -78,15 +78,19 @@
 			<div class="lobby-roster">
 				@foreach ( var player in LobbyRoster )
 				{
-					var face = FaceOf( player.Connection );
+					var icon = IconOf( player.Connection );
 
 					@* One .pip either way, with the portrait/glyph as its content — so the nomination badge below
-					   is written once rather than duplicated into both branches. *@
+					   is written once rather than duplicated into both branches.
+
+					   Frozen while that player is editing: their per-commit strokes would otherwise replay on
+					   everyone's pip live — the icon holds still and re-renders ONCE when they exit. Pose is a
+					   prop's edit-exit camera angle (null for faces, which keep the rig's portrait pose). *@
 					<div class="pip-cell">
-						<div class="pip hunter-pip @(face.IsValid() ? "" : "generic")">
-							@if ( face.IsValid() )
+						<div class="pip hunter-pip @(icon.Sculpture.IsValid() ? "" : "generic")">
+							@if ( icon.Sculpture.IsValid() )
 							{
-								<SdfIcon Key=@player.Connection Source=@face OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
+								<SdfIcon Key=@player.Connection Source=@icon.Sculpture Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
 							}
 							else
 							{
@@ -107,9 +111,10 @@
 								<div class="badge-glyph">✋</div>
 							</div>
 
-							@* TEST: paintbrush pinned to the opposite corner, always on — just to judge the look
-							   before it's wired to any state. Same emoji treatment as the hand above. *@
-							<div class="paint-badge">
+							@* This player is in edit mode, sculpting their look — pinned to the opposite corner
+							   from the hand, driven by the pawn's synced NetEditing flag. Always rendered and
+							   revealed by the class, same as the hand: a removed element can't animate out. *@
+							<div class="paint-badge @(icon.Editing ? "editing" : "")">
 								<div class="badge-glyph">🎨</div>
 							</div>
 						</div>
@@ -180,15 +185,16 @@
 					{
 						@foreach ( var hunter in ShownHunters )
 						{
-							var face = FaceOf( hunter.Connection );
+							var icon = IconOf( hunter.Connection );
 
 							<div class="pip-cell">
-								@if ( face.IsValid() )
+								@if ( icon.Sculpture.IsValid() )
 								{
 									@* Keyed by connection so the razor rebuild (this panel re-renders every second as
-									   the clock ticks) REUSES the panel. A new panel means a new SceneWorld. *@
+									   the clock ticks) REUSES the panel. A new panel means a new SceneWorld.
+									   Frozen while they're face-editing mid-round, same as the lobby pips. *@
 									<div class="pip hunter-pip">
-										<SdfIcon Key=@hunter.Connection Source=@face OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
+										<SdfIcon Key=@hunter.Connection Source=@icon.Sculpture Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
 									</div>
 								}
 								else
@@ -343,17 +349,27 @@
 	bool ShowRoster => Phase == RoundPhase.Lobby ? LobbyPlayerCount > 0 : ShowTally;
 
 
-	// Last face we managed to resolve per player. Losing a face for even ONE frame used to swap the razor branch
-	// from portrait to generic glyph, which deletes the SdfThumbnail panel — and with it a whole SceneWorld, to be
-	// rebuilt from scratch the moment the pawn came back. That churn is what a thumbnail "flashing up for a second"
-	// looks like. A pawn blinking out is never a reason to forget whose face it was, so we don't.
-	readonly Dictionary<Guid, SdfSculpture> _faceCache = new();
+	// What a roster pip should portray for one player: their sculpture (hunter face, or a prop's whole
+	// disguise), the icon camera pose that goes with it (props carry their edit-exit angle; faces keep the
+	// rig's default, so Pose stays null), and whether they're mid-edit right now — which badges the pip and
+	// freezes the render (see SdfIcon.Frozen).
+	readonly record struct PipIcon( SdfSculpture Sculpture, Angles? Pose, bool Editing );
 
-	// The face SCULPTURE for a roster row, or null if this machine has never had a pawn for them. Handing over
-	// the sculpture rather than its brushes is what lets the thumbnail update on commit instead of following a
-	// live drag — see SdfThumbnail.Source.
-	SdfSculpture FaceOf( Guid connection )
+	// Last subject we managed to resolve per player. Losing the pawn for even ONE frame used to swap the razor
+	// branch from portrait to generic glyph, which deletes the SdfThumbnail panel — and with it a whole
+	// SceneWorld, to be rebuilt from scratch the moment the pawn came back. That churn is what a thumbnail
+	// "flashing up for a second" looks like. A pawn blinking out is never a reason to forget whose icon it
+	// was, so we don't.
+	readonly Dictionary<Guid, (SdfSculpture Sculpture, Angles? Pose)> _iconCache = new();
+
+	// The icon subject for a roster row, or a null sculpture if this machine has never had a pawn for them.
+	// Handing over the sculpture rather than its brushes is what lets the thumbnail update on commit instead
+	// of following a live drag — see SdfThumbnail.Source. Whichever pawn type is live wins the cache row, so
+	// a lobby role swap retargets the pip to the new body on its first resolvable frame.
+	PipIcon IconOf( Guid connection )
 	{
+		var editing = false;
+
 		foreach ( var h in Scene.GetAllComponents<HunterController>() )
 		{
 			if ( !h.IsValid() || !h.Face.IsValid() )
@@ -366,28 +382,79 @@
 			if ( owner != connection )
 				continue;
 
+			editing = h.NetEditing;
 			if ( h.Face.Brushes is { Count: > 0 } )
-				_faceCache[connection] = h.Face;
+				_iconCache[connection] = (h.Face, null);
 
 			break;
 		}
 
-		var cached = _faceCache.GetValueOrDefault( connection );
-		return cached.IsValid() ? cached : null;
+		// Prop players portray the disguise itself, from the angle its player last signed it off at. A prop the
+		// round is concealing from us never resolves — the cache can't leak what this machine was never shown —
+		// though in practice a concealed prop's pawn isn't even on this machine's network until the Reveal.
+		foreach ( var p in Scene.GetAllComponents<HiderController>() )
+		{
+			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed )
+				continue;
+
+			var owner = RoundManager.RosterIdOf( p.GameObject );
+			if ( owner != connection )
+				continue;
+
+			editing = p.NetEditing;
+			if ( p.DisguiseSculpture.Brushes is { Count: > 0 } )
+				_iconCache[connection] = (p.DisguiseSculpture, p.IconPoseSet ? p.IconPose : null);
+
+			break;
+		}
+
+		var (sculpture, pose) = _iconCache.GetValueOrDefault( connection );
+		return new PipIcon( sculpture.IsValid() ? sculpture : null, pose, editing );
 	}
 
-	// How many hunter faces this machine can currently resolve. Folded into BuildHash so a pawn spawning (or its
-	// sculpt arriving) triggers a re-render — otherwise the portraits would stay on the generic glyph until some
-	// unrelated change happened to force one.
-	int FaceSignal
+	// The SET of icon subjects this machine can currently resolve — an order-independent hash of their object
+	// ids, folded into BuildHash so a pawn spawning (or its sculpt arriving) triggers a re-render. Identities,
+	// deliberately NOT a count: a lobby role swap destroys one pawn and spawns another, so a count reads 1→1
+	// and the HUD can skip the rebuild entirely — the pip keeps requesting the destroyed sculpture and sits on
+	// the old body's last render. Ids see old-out/new-in and force the rebuild that retargets the pip. XOR
+	// because GetAllComponents' enumeration order reshuffles on despawn/respawn (it's a HashSet underneath),
+	// and an order-sensitive hash would fire spurious rebuilds every time the slots got reused.
+	int IconSignal
 	{
 		get
 		{
 			var n = 0;
 			foreach ( var h in Scene.GetAllComponents<HunterController>() )
 				if ( h.IsValid() && h.Face.IsValid() && h.Face.Brushes is { Count: > 0 } )
-					n++;
+					n ^= h.Face.GameObject.Id.GetHashCode();
+			foreach ( var p in Scene.GetAllComponents<HiderController>() )
+				if ( p.IsValid() && p.DisguiseSculpture.IsValid() && p.DisguiseSculpture.Brushes is { Count: > 0 } )
+					n ^= p.DisguiseSculpture.GameObject.Id.GetHashCode();
 			return n;
+		}
+	}
+
+	// Who's editing (both pawn types) + every synced icon pose, hashed. In BuildHash so a player entering or
+	// leaving edit mode — or a fresh portrait angle arriving — re-renders the roster: the badge class, the
+	// Frozen flag and the Pose all only reach the panels through a razor rebuild.
+	int EditSignal
+	{
+		get
+		{
+			var hash = new HashCode();
+			foreach ( var h in Scene.GetAllComponents<HunterController>() )
+				if ( h.IsValid() && h.NetEditing )
+					hash.Add( h.GameObject.Id );
+			foreach ( var p in Scene.GetAllComponents<HiderController>() )
+			{
+				if ( !p.IsValid() )
+					continue;
+				if ( p.NetEditing )
+					hash.Add( p.GameObject.Id );
+				if ( p.IconPoseSet )
+					hash.Add( p.IconPose );
+			}
+			return hash.ToHashCode();
 		}
 	}
 
@@ -523,8 +590,9 @@
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false ), // hotkey hints hide while sculpt-editing
-			HashCode.Combine( ShowTally, PropsLeft, HunterCount, FaceSignal, _faceCache.Count, DebugThumb, DebugPlayerCount ),
+			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount ),
 			// Lobby roster: nothing else in the hash moves when someone joins or leaves the lobby, so without
-			// this the row would sit stale until the next unrelated rebuild.
-			HashCode.Combine( ShowRoster, LobbyPlayerCount, LobbyNominatedCount, IconSupersample ) );
+			// this the row would sit stale until the next unrelated rebuild. EditSignal is what re-renders on
+			// enter/exit edit mode — the paint badge, the icon freeze and the portrait pose all ride it.
+			HashCode.Combine( ShowRoster, LobbyPlayerCount, LobbyNominatedCount, IconSupersample, EditSignal ) );
 }

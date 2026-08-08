@@ -218,8 +218,12 @@ $clock-col-width: 150px;
 
 			}
 
-			// TEST: a paintbrush pinned to the opposite corner, always visible — a look-test before it's
-			// wired to any state. Same no-chrome recipe as the hand: the box only parks the glyph.
+			// "I'm editing my look" — pinned to the opposite corner from the hand, driven by the pawn's synced
+			// edit flag. Same no-chrome recipe as the hand (the box only parks the glyph), and the same
+			// lifecycle: hidden at scale(0) and revealed by a class, with the quick shrink transition covering
+			// the exit and the shared spring keyframes covering the entrance. Once the spring settles, the
+			// glyph wobbles forever — jitter on the CHILD, delayed by the spring's duration, exactly like the
+			// raised hand above.
 			.paint-badge {
 				position: absolute;
 				right: -4px;
@@ -227,8 +231,15 @@ $clock-col-width: 150px;
 				align-items: center;
 				justify-content: center;
 
-				// Same always-on wobble as the raised hand, no delay — there's no spring to wait out here.
-				.badge-glyph { animation: action-jitter $wobble-duration linear 0s infinite; }
+				transform: scale( 0 );
+				transition: transform 0.16s ease;
+
+				&.editing {
+					transform: scale( 1 );
+					animation: hud-hand-raise 0.34s ease-out;
+
+					.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
+				}
 			}
 
 			// Shared by BOTH corner badges (hand + paintbrush).

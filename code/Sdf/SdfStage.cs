@@ -39,7 +39,16 @@ public sealed class SdfStage : IDisposable
 	{
 		public SceneLight Light;
 		public Vector3 Position;    // as authored, relative to a ReferenceRadius-sized subject at the origin
+		public Rotation Rotation;   // as authored — matters for spots, harmless for points
 		public float Radius;
+	}
+
+	// A directional light plus its authored rotation, kept so Frame can re-derive the swung direction every
+	// call (mutating the live rotation in place would compound across frames).
+	sealed class PlacedDirectional
+	{
+		public SceneDirectionalLight Light;
+		public Rotation Rotation;
 	}
 
 	readonly List<SceneLight> _lights = new();
@@ -72,8 +81,9 @@ public sealed class SdfStage : IDisposable
 	float _epsilon = 0.02f;
 
 	// Directional lights need their cascade range re-fitted per subject (see Frame) — cascades are sized from
-	// the camera, and the default range is built for a whole map, not a prop on a turntable.
-	readonly List<SceneDirectionalLight> _cascadeLights = new();
+	// the camera, and the default range is built for a whole map, not a prop on a turntable. Also carries the
+	// authored rotation so the sun swings with a pose override like the placed lights do.
+	readonly List<PlacedDirectional> _directionals = new();
 
 	int _brushHash;
 	bool _disposed;
@@ -230,7 +240,7 @@ public sealed class SdfStage : IDisposable
 
 			ApplyCommon( so, l );
 			_lights.Add( so );
-			_cascadeLights.Add( so );
+			_directionals.Add( new PlacedDirectional { Light = so, Rotation = l.WorldRotation } );
 			any = true;
 		}
 
@@ -239,7 +249,7 @@ public sealed class SdfStage : IDisposable
 			var so = new ScenePointLight( World, l.WorldPosition, l.Radius, l.LightColor );
 			ApplyCommon( so, l );
 			_lights.Add( so );
-			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Radius = l.Radius } );
+			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Rotation = l.WorldRotation, Radius = l.Radius } );
 			any = true;
 		}
 
@@ -255,7 +265,7 @@ public sealed class SdfStage : IDisposable
 
 			ApplyCommon( so, l );
 			_lights.Add( so );
-			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Radius = l.Radius } );
+			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Rotation = l.WorldRotation, Radius = l.Radius } );
 			any = true;
 		}
 
@@ -335,10 +345,12 @@ public sealed class SdfStage : IDisposable
 
 		World.AmbientLightColor = _ambient;
 
-		_lights.Add( new SceneDirectionalLight( World, Rotation.From( 35, 150, 0 ), Color.White * 2.2f )
+		var sun = new SceneDirectionalLight( World, Rotation.From( 35, 150, 0 ), Color.White * 2.2f )
 		{
 			ShadowsEnabled = false, // one object on transparency — a cast shadow has nothing to land on
-		} );
+		};
+		_lights.Add( sun );
+		_directionals.Add( new PlacedDirectional { Light = sun, Rotation = Rotation.From( 35, 150, 0 ) } );
 
 		// Key is front-above-LEFT of the camera, so fill goes front-right (into its shadow) and the rim sits
 		// back-left to pick out the silhouette. Keep these in step with thumbnail_stage.prefab.
@@ -350,7 +362,7 @@ public sealed class SdfStage : IDisposable
 	{
 		var so = new ScenePointLight( World, position, radius, colour ) { ShadowsEnabled = false };
 		_lights.Add( so );
-		_placed.Add( new PlacedLight { Light = so, Position = position, Radius = radius } );
+		_placed.Add( new PlacedLight { Light = so, Position = position, Rotation = Rotation.Identity, Radius = radius } );
 	}
 
 	void ApplyEnvmap( Texture cube )
@@ -503,11 +515,19 @@ public sealed class SdfStage : IDisposable
 		// prop at the origin, so scaling by the real radius means a tennis ball and a wardrobe get the same
 		// LIGHTING rather than the same absolute light positions (which would leave one blown out and the other
 		// unlit). Directional lights need none of this — they're direction-only.
+		//
+		// SWING the whole rig by the difference between the rig's authored camera pose and the requested one,
+		// so key/fill/rim keep their authored relationship to the CAMERA rather than to the subject's axes — a
+		// prop portrayed from behind (a pose override) is lit like a portrait, not like the dark side of the
+		// moon. Identity when no pose override is in play, so the stock thumbnails render exactly as before.
+		// Derived fresh from the AUTHORED values every call — swinging the live lights in place would compound.
 		var scale = subjectRadius / _referenceRadius;
+		var swing = rot * _pose.ToRotation().Inverse;
 
 		foreach ( var p in _placed )
 		{
-			p.Light.Position = centre + p.Position * scale;
+			p.Light.Position = centre + swing * p.Position * scale;
+			p.Light.Rotation = swing * p.Rotation;
 			p.Light.Radius = p.Radius * scale;
 		}
 
@@ -517,8 +537,11 @@ public sealed class SdfStage : IDisposable
 		// puts the entire map on the thing we're photographing.
 		var shadowRange = _shadowDistance > 0f ? _shadowDistance : dist + subjectRadius * 2f;
 
-		foreach ( var light in _cascadeLights )
-			light.SetCascadeDistanceScale( shadowRange );
+		foreach ( var d in _directionals )
+		{
+			d.Light.Rotation = swing * d.Rotation;
+			d.Light.SetCascadeDistanceScale( shadowRange );
+		}
 	}
 
 	public void Dispose()
@@ -539,7 +562,7 @@ public sealed class SdfStage : IDisposable
 
 		_lights.Clear();
 		_placed.Clear();
-		_cascadeLights.Clear();
+		_directionals.Clear();
 
 		_postObject?.Delete();
 		_postObject = null;

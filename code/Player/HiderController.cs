@@ -158,6 +158,23 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// Internal: the disguise sculpture, for code that needs THE pawn's body explicitly (PlayerNameplates
 	// anchors above it) — resolved on every machine in OnStart, so proxies can read it too.
 	internal SdfSculpture DisguiseSculpture => _body;
+
+	/// <summary>True while this prop's player is in edit mode, on every machine — the roster HUD badges their
+	/// pip with it and holds their icon still until they exit. Mirrored from the session each owner frame
+	/// (rather than written at the toggle site) because the session can also exit itself — revert dialog,
+	/// forced teardown — and a one-shot write would miss those.</summary>
+	[Sync] public bool NetEditing { get; private set; }
+
+	/// <summary>Camera orientation for this prop's roster icon, in DISGUISE-LOCAL space — the angle the orbit
+	/// camera was at when the player last left edit mode, i.e. the view they signed the shape off from. The
+	/// icon stage renders brushes in sculpture-local space, so local angles frame the same portrait on every
+	/// machine no matter where the pawn has walked or turned since. <see cref="IconPoseSet"/> gates it.</summary>
+	[Sync] public Angles IconPose { get; private set; }
+
+	/// <summary>False until the first edit exit — icons fall back to the rig prefab's default pose.</summary>
+	[Sync] public bool IconPoseSet { get; private set; }
+
+	bool _editWas; // last frame's edit state, so the owner can catch the exit edge (see OnUpdate)
 	SdfCollider _collider;   // the disguise's physics (footprint snapshot + ModelCollider), if it's solid
 	SculptEditSession _session;
 
@@ -327,6 +344,14 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( Input.Pressed( "ToggleWireframes" ) )
 			_session?.ToggleWireframes();
 
+		// Keep the wire in step with the session, whatever path entered or left edit mode (see NetEditing) —
+		// and on the way OUT, stamp the camera's angle as the icon portrait pose: the view the player was
+		// looking from when they signed the shape off is the best angle we'll ever get for it.
+		NetEditing = EditMode;
+		if ( _editWas && !EditMode )
+			CaptureIconPose();
+		_editWas = EditMode;
+
 		UpdateTaunts();
 
 		if ( ControlActive && Input.Pressed( "jump" ) )
@@ -340,6 +365,17 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			DrawGroundProbes();
 		if ( DebugCameraPivot )
 			DrawCameraPivot(); // after UpdateCamera, so it shows this frame's pivot (override included)
+	}
+
+	// Owner-only, on the edit-exit edge. World camera angle → disguise-local, so the synced pose stays
+	// meaningful however the pawn moves afterwards. Roll is whatever the orbit rig held (always 0).
+	void CaptureIconPose()
+	{
+		if ( !_body.IsValid() || !_orbit.IsValid() )
+			return;
+
+		IconPose = (_body.WorldRotation.Inverse * _orbit.Angles.ToRotation()).Angles();
+		IconPoseSet = true;
 	}
 
 	// ── Concealment ───────────────────────────────────────────────────────────────────────────────────

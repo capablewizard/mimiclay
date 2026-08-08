@@ -73,12 +73,23 @@ public sealed class SdfThumbnail : ScenePanel
 	/// something to invalidate the thumbnail.</summary>
 	public bool Live { get; set; }
 
+	/// <summary>
+	/// Hold the current picture: while true, commits (and static-brush changes) stop reaching the stage, and
+	/// the panel catches up in one re-read the moment it's cleared. This is how a roster icon sits still while
+	/// its player sculpts — their per-commit edits would otherwise replay on everyone's HUD stroke by stroke —
+	/// and updates exactly once, on edit exit. The FIRST render always goes through, frozen or not, so a
+	/// panel built mid-edit (a late joiner's HUD) shows the current shape rather than nothing.
+	/// </summary>
+	public bool Frozen { get; set; }
+
 	/// <summary>True once a sculpt has actually been staged — the caller's cue to stop showing its fallback
 	/// icon. False while Brushes is empty or the stage hasn't come up yet.</summary>
 	public bool HasSubject { get; private set; }
 
 	SdfSculpture _source;
 	bool _syncPending;
+	bool _staged;    // first SetBrushes has landed — until then Frozen must not hold an empty stage
+	bool _wasFrozen; // last tick's Frozen, to catch the thaw edge and re-read once
 
 	SdfStage _stage;
 	Angles? _framedPose;
@@ -130,6 +141,7 @@ public sealed class SdfThumbnail : ScenePanel
 			_stage = new SdfStage( scene );
 			_framed = false; // force a Frame() below
 			_outlineApplied = false;
+			_staged = false; // a fresh stage has no picture to hold — the next SetBrushes must go through
 		}
 
 		if ( !_outlineApplied || _appliedOutlineColor != OutlineColor || _appliedOutlineWidth != OutlineWidth )
@@ -143,12 +155,21 @@ public sealed class SdfThumbnail : ScenePanel
 
 		// With a live Source we only re-read on commit; a static list has nothing that can be mid-edit, so it's
 		// polled by content hash (which is itself a no-op when nothing moved).
+		//
+		// Frozen holds the stage as-is (once it has a first picture at all) — _syncPending is left standing, so
+		// everything committed while held collapses into the single re-read on the thaw edge below.
+		if ( _wasFrozen && !Frozen )
+			_syncPending = true;
+		_wasFrozen = Frozen;
+
+		var hold = Frozen && _staged;
 		var changed = false;
 
-		if ( !live || _syncPending )
+		if ( !hold && (!live || _syncPending) )
 		{
 			_syncPending = false;
 			changed = _stage.SetBrushes( brushes );
+			_staged = true;
 		}
 
 		// Toggling mimiclay_thumb_post changes what a render produces but nothing about the sculpt, so without

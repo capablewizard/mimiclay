@@ -55,6 +55,15 @@ public sealed class SdfIcon : Panel
 	/// not per icon.</summary>
 	public Color? OutlineColor { get; set; }
 
+	/// <summary>Camera orientation override, in the subject's local space (a prop disguise portrays from the
+	/// angle its player last edited it at). Null keeps the rig prefab's pose. Per subject, not per icon —
+	/// see the note on <see cref="SdfIconRequest.Pose"/>.</summary>
+	public Angles? Pose { get; set; }
+
+	/// <summary>Hold the current picture while this subject's player is mid-edit; it catches up in one render
+	/// when cleared. See <see cref="SdfThumbnail.Frozen"/>.</summary>
+	public bool Frozen { get; set; }
+
 	Texture _applied;
 	SdfIconFarm _farm;
 
@@ -121,6 +130,8 @@ public sealed class SdfIcon : Panel
 			Brushes = Brushes,
 			OutlineColor = OutlineColor,
 			OutlineWidth = outlineFraction,
+			Pose = Pose,
+			Frozen = Frozen,
 		} );
 		if ( texture == _applied )
 			return;
