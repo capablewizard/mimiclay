@@ -9,9 +9,10 @@ namespace Mimiclay;
 /// the lobby clones pawns from the same prefabs, so it follows the same rules as the Lobby phase (menu / debug
 /// scenes keep their authored outline state untouched):
 /// <list type="bullet">
-/// <item>A HUNTER pawn's outline shows for everyone from Hunt onward. Hunters aren't hiding, and props tracking the threat
-/// through walls is the prop's information edge (the hunter's own first-person body already self-hides via
-/// RenderHidden, which the highlight follows).</item>
+/// <item>A HUNTER pawn's outline shows from Hunt onward on every machine EXCEPT its own. Hunters aren't hiding,
+/// and props tracking the threat through walls is the prop's information edge — but the glow is for THEM, and
+/// on the owner's machine it would paint the gun/hands (which, unlike the RenderHidden first-person body, stay
+/// visible).</item>
 /// <item>A PROP pawn's outline shows only on the machine that owns it — a private "where am I" locator when the
 /// player's own disguise is occluded. Everyone else (hunters AND fellow props, who convert to hunters when
 /// found) sees nothing.</item>
@@ -77,11 +78,19 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hunter.IsValid() )
 		{
-			if ( phase >= RoundPhase.Hunt )
-				return true;
-
+			// The head-scoped SculptBounds WARNING outline (co-located with the bounds component) is
+			// owner-only information and OUTRANKS the phase rules: it shows exactly while the local
+			// player's face is invalid, whatever the phase — and never for anyone else. It's only ever
+			// enabled while the warning is live (WarningOnly), so this branch is rarely even reached.
 			var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
-			return bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid;
+			if ( bounds.IsValid() )
+				return bounds.LocallyEditable && !bounds.IsSculptValid;
+
+			// The hunt glow — but never on the hunter's OWN machine: it's threat information FOR THE
+			// PROPS, and while the first-person body self-hides (RenderHidden, which the highlight
+			// follows), the gun/hands don't — so an owner-side glow paints their own viewmodel. A
+			// host-owned bot hunter isn't a proxy on the host yet must still glow there.
+			return phase >= RoundPhase.Hunt && (hunter.IsProxy || RoundManager.IsBotPawn( hunter.GameObject ));
 		}
 
 		// Prop pawn (outline sits inside the cloned Disguise child): owner-only — except the Reveal show-off,
