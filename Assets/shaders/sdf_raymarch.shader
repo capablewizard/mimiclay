@@ -266,6 +266,11 @@ PS
 	float g_flBoilJitter    < Attribute( "BoilJitter" );    Default( 0.0 ); >; // offset per tick, noise CELLS
 	float g_flBoilAmpJitter < Attribute( "BoilAmpJitter" ); Default( 0.0 ); >; // +/- lump-depth wobble per tick
 	float g_flBoilSeed      < Attribute( "BoilSeed" );      Default( 0.0 ); >; // per-prop, so props don't lockstep
+	// The current boil pose — wrapped, unseeded — computed on the CPU (ClayBoil.TickAt) and pushed
+	// every frame. CPU-authored rather than derived from g_flTime here so an impact burst can splice
+	// in an off-grid jolt pose the moment a shot lands, and so the live tick and the baked field
+	// agree by construction (both read the same value).
+	float g_flBoilTick      < Attribute( "BoilTick" );      Default( 0.0 ); >;
 	// Surface-detail boil: shifts the triplanar sample point so the fingerprints/imperfections in the
 	// normal map re-form each tick too. Measured in texture REPEATS. Shading-only (once at the hit),
 	// so unlike the displacement boil it costs no march steps and needs no step-safety adjustment.
@@ -380,7 +385,7 @@ PS
 		if ( g_flBoilFps <= 0.0 || g_flBoilTexJitter <= 0.0 )
 			return 0.0;
 
-		float tick = fmod( floor( g_flTime * g_flBoilFps ), 1024.0 ) + g_flBoilSeed;
+		float tick = g_flBoilTick + g_flBoilSeed;
 		// Salted away from the lump offsets so the fine detail re-forms on its own schedule instead
 		// of sliding in lockstep with the silhouette (which reads as the whole prop swimming).
 		return BoilOffset( tick + 307.0 ) * g_flBoilTexJitter * ( 39.3701 / max( g_flTriTile, 0.001 ) );
@@ -450,13 +455,13 @@ PS
 
 		if ( g_flBoilFps > 0.0 )
 		{
-			// The tick is GLOBAL (real stop-motion advances every model on the same frame); only the
-			// seed is per-prop, so a room full of props boils together but not identically.
-			// WRAPPED to 1024 ticks (~85s at 12fps): g_flTime is seconds since level load, so an
-			// unwrapped tick reaches five figures in a long match and hash13's frac() runs out of
-			// float32 mantissa — the boil would quietly slow down and then freeze. An 85-second
-			// repeat in a sub-pixel jitter is not something anyone can see.
-			float tick = fmod( floor( g_flTime * g_flBoilFps ), 1024.0 ) + g_flBoilSeed;
+			// The tick comes from the CPU (ClayBoil.TickAt): the GLOBAL clock normally — real
+			// stop-motion advances every model on the same frame; only the seed is per-prop, so a
+			// room full of props boils together but not identically — or an off-grid impact pose
+			// while a shot's jolt plays. Already wrapped to 1024 ticks CPU-side (hash13's frac()
+			// runs out of float32 mantissa on an unwrapped tick in a long match — the boil would
+			// quietly slow down and then freeze).
+			float tick = g_flBoilTick + g_flBoilSeed;
 			s_boilB0 = BoilOffset( tick )         * g_flBoilJitter;
 			s_boilB1 = BoilOffset( tick + 101.0 ) * g_flBoilJitter * 2.7; // fine octave rolls harder
 			// Per-tick lump-depth wobble: the surface reading slightly deeper/shallower frame to

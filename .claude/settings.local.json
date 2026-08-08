@@ -21,7 +21,8 @@
       "Bash(grep -n \"Attributes\" /d/SBox/sbox-public-master/engine/Sandbox.Engine/Resources/Material/Material.cs | head -20)",
       "Read(//d/SBox/sbox-public-master/engine/Sandbox.Engine/Resources/Material/**)",
       "Bash(sed -n 1,80p /d/SBox/sbox-public-master/engine/Sandbox.Engine/Resources/Material/Material.cs)",
-      "Bash(ls /d/SBox/sbox-public-master | head; echo ===; grep -rn \"GetRenderAttributes\" /d/SBox/sbox-public-master/engine/Sandbox.Engine --include=*.cs | head; echo ===; grep -rln \"GetRenderAttributes\" /d/SBox/sbox-public-master/src 2>/dev/null | head -5)"
+      "Bash(ls /d/SBox/sbox-public-master | head; echo ===; grep -rn \"GetRenderAttributes\" /d/SBox/sbox-public-master/engine/Sandbox.Engine --include=*.cs | head; echo ===; grep -rln \"GetRenderAttributes\" /d/SBox/sbox-public-master/src 2>/dev/null | head -5)",
+      "PowerShell(dotnet build code\\\\mimiclay.csproj --nologo -v q)"
     ]
   }
 }

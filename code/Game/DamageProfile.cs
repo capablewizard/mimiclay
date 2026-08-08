@@ -14,6 +14,10 @@ namespace Mimiclay;
 /// The shooter reads this off the target at carve time, rolls the timing ONCE, and ships concrete values
 /// with the carve — so every machine agrees on each crater's schedule (see HunterController.TryCarve; the
 /// animation itself is the mode-agnostic SdfShrinkSystem).
+///
+/// Presentation lives elsewhere: give the prop a <see cref="ClayBoil"/> set to WhileDamaged and it churns
+/// stop-motion style from impact until the heal settles (see ClayBoil.Activation) — purely local look,
+/// no gameplay effect, which is why it isn't a property here.
 /// </summary>
 [Title( "Damage Profile" )]
 [Category( "Mimiclay" )]

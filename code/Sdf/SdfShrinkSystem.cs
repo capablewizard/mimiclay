@@ -14,7 +14,9 @@ namespace Mimiclay;
 /// joiners too.
 ///
 /// Animation cost: mutating sizes here changes the renderer's brush hash, so the field cache re-dispatches
-/// itself every frame the shrink runs — the same per-change GPU eval a local edit drag pays, for one prop at
+/// itself every frame the shrink runs (on a prop with an active <see cref="ClayBoil"/> the pose is instead
+/// held between boil ticks, so those mutations — and their dispatches — collapse onto the boil's own re-bake
+/// frames) — the same per-change GPU eval a local edit drag pays, for one prop at
 /// a time (no Previewed events fire, so nothing streams). Suppressing the cache instead (the old approach,
 /// borrowed from remote drags) regressed the march to the analytic per-brush path — O(all brushes) per pixel
 /// on a dense sculpted head right in the shooter's face, the game's worst perf drop. The final full
@@ -45,6 +47,23 @@ public sealed class SdfShrinkSystem : GameObjectSystem
 		if ( brushes is not { Count: > 0 } )
 			return;
 
+		// Boil-locked heal: while the prop's ClayBoil is ACTIVE (Always mode, or WhileDamaged — which
+		// these very shrink brushes turn on), each heal pose is HELD and only re-evaluated on the
+		// frame the boil tick rolls (same clock as the renderer's bake tick, floor(Time.Now × Fps)):
+		// remodelled clay moves in poses, and the healing crater is part of what's being remodelled,
+		// so it must not glide smoothly across a surface that only moves in ticks. The timeline and
+		// ease are untouched — ShrinkAge still accumulates every frame — so total heal time is
+		// identical; the pose is just sampled at BoilFps. Free perf bonus: brush mutations land on
+		// the same frames as the boil's field re-bake, so the heal stops paying its own per-frame
+		// dispatch. No boil (or Fps 0 / disabled) = the original smooth per-frame heal.
+		// TickAt keeps the hold boundaries on the same grid as the field bake — including an impact
+		// burst's spliced-in jolt pose, which counts as a tick roll of its own (the heal jumps the
+		// frame the shot lands, then holds with everything else). LockHeal false opts the heal out:
+		// smooth per-frame healing even while the surface boils.
+		var boil = sculpt.GameObject.Components.Get<ClayBoil>(); // self-only + enabled-only
+		bool hold = boil is { Fps: > 0f, Boiling: true, LockHeal: true }
+			&& boil.TickAt( Time.Now ) == boil.TickAt( Time.Now - Time.Delta );
+
 		bool animating = false;
 		bool removed = false;
 
@@ -61,6 +80,14 @@ public sealed class SdfShrinkSystem : GameObjectSystem
 
 			if ( t <= 0f )
 				continue; // grace period — nothing visual yet
+
+			if ( hold )
+			{
+				// Between boil ticks: keep the last-applied pose, including a finished brush — the
+				// removal is a visual change too, so it waits for the next tick to land on a pose.
+				animating = true;
+				continue;
+			}
 
 			if ( t >= 1f )
 			{

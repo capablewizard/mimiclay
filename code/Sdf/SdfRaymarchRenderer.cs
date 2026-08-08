@@ -889,12 +889,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "DispFreq", DispFreq );
 		_so.Attributes.Set( "DispShadows", DisplaceShadows ? 1 : 0 );
 
-		// Claymation boil — OPT-IN per prop: only a GameObject carrying an enabled ClayBoil boils.
-		// The else branch is not optional; see ClayBoil.ApplyOff (attributes persist, so a removed or
-		// disabled component would otherwise leave the prop boiling forever). Pushed every frame so
-		// live tuning, and adding/removing the component in play mode, both take effect immediately.
+		// Claymation boil — OPT-IN per prop: only a GameObject carrying an enabled, ACTIVE ClayBoil
+		// boils (a WhileDamaged boil with no shrinking crater is treated exactly like no component).
+		// The else branch is not optional; see ClayBoil.ApplyOff (attributes persist, so a removed,
+		// disabled or deactivated component would otherwise leave the prop boiling forever). Pushed
+		// every frame so live tuning, add/remove in play mode, and activation flips all take effect
+		// immediately.
 		var boil = GameObject.Components.Get<ClayBoil>(); // self-only + enabled-only
-		if ( boil is not null )
+		bool boilActive = boil is { Boiling: true };
+		if ( boilActive )
 			boil.Apply( _so.Attributes );
 		else
 			ClayBoil.ApplyOff( _so.Attributes );
@@ -914,11 +917,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		{
 			bakeAmp = DispAmp;
 			bakeFreq = DispFreq;
-			if ( boil is { Fps: > 0f } )
+			if ( boilActive && boil.Fps > 0f )
 			{
-				// Same quantisation as the shader's live tick (floor of global time × fps, wrapped to
-				// 1024, + the per-prop seed) so the analytic fallback and the baked field agree.
-				bakeTick = MathF.Floor( Time.Now * boil.Fps ) % 1024f + BoilSeed;
+				// ClayBoil.TickAt is THE clock (global tick normally, an off-grid impact pose during
+				// a shot's jolt); the shader's live tick reads the same value via the BoilTick
+				// attribute, so the analytic fallback and the baked field agree by construction.
+				// (An activation flip changes bakeTick between -1 and a tick, so the hash below
+				// re-dispatches the field once on each edge — lumps appear/settle within a frame.)
+				bakeTick = boil.TickAt( Time.Now ) + BoilSeed;
 				bakeJitter = boil.Jitter;
 				bakeAmpJitter = boil.AmpJitter;
 			}
@@ -1282,8 +1288,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		float gradL = 0f;
 		if ( Displace )
 		{
+			// Active-gated: a dormant WhileDamaged boil mustn't tax the outline march with the
+			// worst-tick understep. Re-pushed per frame, so an activation flip retightens it in step
+			// with the field re-bake.
 			var boil = GameObject.Components.Get<ClayBoil>();
-			gradL = DispAmp * (1f + MathF.Max( boil?.AmpJitter ?? 0f, 0f ) * 0.5f) * DispFreq * 4f;
+			float ampJitter = boil is { Boiling: true } ? MathF.Max( boil.AmpJitter, 0f ) : 0f;
+			gradL = DispAmp * (1f + ampJitter * 0.5f) * DispFreq * 4f;
 		}
 		a.Set( $"DispGradL{slot}", gradL );
 
