@@ -101,6 +101,11 @@ PS
 	// are dark by choice are untouched. 1 = off. Mirrored in sdf_raymarch.shader — keep the two in sync.
 	float  g_flDarkSatBoost < Default( 1.0 ); Range( 1.0, 2.0 ); UiGroup( "Surface,10/95" ); >;
 
+	// Per-object seed, same "BoilSeed" attribute the raymarcher gets (stamped by SdfRaymarchRenderer on
+	// the sibling renderer and by SdfSculpture on model assignment). Drives SeedTexOffset below; 0 (unset)
+	// = authored texture placement.
+	float  g_flBoilSeed < Attribute( "BoilSeed" ); Default( 0.0 ); >;
+
 	// Accurate sRGB->linear, so the gamma vertex colour matches the SrgbRead texture albedo.
 	float3 SrgbToLinear( float3 c )
 	{
@@ -127,6 +132,17 @@ PS
 	{
 		float texLuma = dot( tex, float3( 0.2126, 0.7152, 0.0722 ) );
 		return BoostSat( col, lerp( 1.0, boost, saturate( (1.0 - texLuma) * 3.0 ) ) );
+	}
+
+	// STATIC per-instance offset for the triplanar maps, in model-space inches: identical models (every
+	// hunter pawn) otherwise project identical texels, so they all wear the same dark patch in the same
+	// place. Spread over 16 texture repeats via frac() of the per-object seed against the R3 irrationals —
+	// whole repeats apart means fully uncorrelated texels. Seed 0 keeps the authored placement.
+	// Mirrored in sdf_raymarch.shader — keep the two in sync.
+	float3 SeedTexOffset()
+	{
+		return frac( g_flBoilSeed * float3( 0.8191725134, 0.6710436067, 0.5497004779 ) )
+		     * 16.0 * ( 39.3701 / max( g_flTriTile, 0.001 ) );
 	}
 
 	// Triplanar normal mapping (Ben Golus whiteout blend) — identical to the raymarcher. Space-agnostic:
@@ -168,7 +184,7 @@ PS
 		// so the pattern lines up across an LOD switch). Albedo/roughness are space-agnostic; the
 		// normal map is projected in model space then rotated back to world (below) for lighting.
 		float3x3 matObjToWorld = float3x3( i.vObjToWorld0, i.vObjToWorld1, i.vObjToWorld2 );
-		float3 modelP = i.vPositionOs;
+		float3 modelP = i.vPositionOs + SeedTexOffset();
 		// World normal -> model normal via the inverse rotation. For an orthonormal (unit-scale) basis
 		// the inverse is the transpose, which mul(vector, matrix) applies as R^T * worldN.
 		float3 modelN = normalize( mul( i.vNormalWs, matObjToWorld ) );

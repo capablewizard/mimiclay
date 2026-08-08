@@ -220,6 +220,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 			_proxyDataValid = true;
 
 			renderer.Model = new ModelBuilder().AddMesh( SurfaceNetsMesher.Upload( data, baseMat ) ).Create();
+			StampTexSeed( renderer );
 
 			if ( _proxyVisible )
 			{
@@ -231,6 +232,16 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 		}
 		catch { /* never crash the game on a proxy build */ }
 		finally { _proxyBuilding = false; }
+	}
+
+	// The meshed path samples the same triplanar maps as the raymarch, offset per instance by the
+	// object's seed (SeedTexOffset in the shaders). SdfRaymarchRenderer re-stamps every frame while it's
+	// active; stamping on every Model assignment covers mesh-only rendering and the SceneObject being
+	// recreated by the model swap.
+	static void StampTexSeed( ModelRenderer renderer )
+	{
+		if ( renderer.IsValid() && renderer.SceneObject.IsValid() )
+			renderer.SceneObject.Attributes.Set( "BoilSeed", SdfRaymarchRenderer.BoilSeedFor( renderer.GameObject ) );
 	}
 
 	public async Task RebuildAsync()
@@ -257,6 +268,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 			if ( baked is not null )
 			{
 				renderer.Model = baked;
+				StampTexSeed( renderer );
 				return;
 			}
 		}
@@ -283,6 +295,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 			return;
 
 		renderer.Model = model;
+		StampTexSeed( renderer );
 	}
 
 	// One build in flight at a time, machine-wide. A scene load kicks EVERY sculpture's rebuild in the same

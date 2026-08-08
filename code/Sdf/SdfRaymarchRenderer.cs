@@ -339,7 +339,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// two props can't share a sequence by landing a whole number apart. Kept under 64 to stay in the
 	/// range where the shader's frac()-based hash has mantissa left (the tick is wrapped for the same
 	/// reason) — a big seed reads as "all props share one offset" once precision runs out.</summary>
-	private float BoilSeed => ( ( GameObject.Id.GetHashCode() & 0xFFFF ) * 0.6180339887f ) % 64f;
+	private float BoilSeed => BoilSeedFor( GameObject );
+
+	/// <summary>Shared with SdfSculpture, which stamps the same seed on the meshed path — the shaders'
+	/// SeedTexOffset (per-instance triplanar offset) must agree across the raymarch/mesh swap.</summary>
+	internal static float BoilSeedFor( GameObject go ) => ( ( go.Id.GetHashCode() & 0xFFFF ) * 0.6180339887f ) % 64f;
 
 	/// <summary>Subsurface / back-scatter lighting — thin parts glow when back-lit (foliage, skin,
 	/// ears). Thickness is read from the SDF itself, so it's cheap (runs once after the hit, not per
@@ -902,6 +906,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		else
 			ClayBoil.ApplyOff( _so.Attributes );
 		_so.Attributes.Set( "BoilSeed", BoilSeed );
+		// The sibling meshed renderer samples the same triplanar maps — stamp the same seed so the
+		// per-instance texture offset doesn't pop when the raymarch<->mesh role swaps.
+		if ( _meshRenderer.IsValid() && _meshRenderer.SceneObject.IsValid() )
+			_meshRenderer.SceneObject.Attributes.Set( "BoilSeed", BoilSeed );
 
 		// Transmission look (tint, strength, thickness) lives on the material; this just gates the combo.
 		_so.Attributes.SetCombo( "D_TRANSMISSION", Transmission ? 1 : 0 );

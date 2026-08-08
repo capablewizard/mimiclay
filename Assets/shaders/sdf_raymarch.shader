@@ -398,6 +398,18 @@ PS
 		return BoilOffset( tick + 307.0 ) * g_flBoilTexJitter * ( 39.3701 / max( g_flTriTile, 0.001 ) );
 	}
 
+	// STATIC per-instance offset for the same maps, also in model-space inches: identical models (every
+	// hunter pawn) otherwise project identical texels, so they all wear the same dark patch in the same
+	// place. Spread over 16 texture repeats via frac() of the per-object seed against the R3 irrationals —
+	// whole repeats apart means fully uncorrelated texels, and unlike the boil jitter this never animates.
+	// Seed 0 (nothing pushed the attribute: thumbnails, menu head) keeps the authored placement.
+	// Mirrored in sdf_mesh.shader — keep the two in sync.
+	float3 SeedTexOffset()
+	{
+		return frac( g_flBoilSeed * float3( 0.8191725134, 0.6710436067, 0.5497004779 ) )
+		     * 16.0 * ( 39.3701 / max( g_flTriTile, 0.001 ) );
+	}
+
 	// Signed displacement (centred on 0): big lump + a half-scale octave for an uneven, hand-pressed
 	// feel. Deliberately LOW frequency — fine grain is left to the triplanar normal map, and fine
 	// displacement would just alias against the SdfNormal finite-difference epsilon (0.05) anyway.
@@ -1152,7 +1164,7 @@ PS
 		// jittering only the normal map would peel the fingerprint off its own smudge.
 		// modelP feeds nothing but these three samples (SdfShade/SdfAO/SdfCurvature all work from
 		// world p), so this can't disturb the geometry.
-		float3 modelP = WorldToModelPos( p ) + BoilTexOffset();
+		float3 modelP = WorldToModelPos( p ) + BoilTexOffset() + SeedTexOffset();
 		float3 modelN = normalize( WorldToModelDir( baseN ) );
 
 		float3 albedo = Tex2DTriplanar( g_tAlbedo, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).rgb;
