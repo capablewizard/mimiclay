@@ -235,6 +235,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	float MoveYaw => _orbit.Angles.yaw;
 	float FacingYaw => _bodyYaw;
 
+	/// <summary>The orbit camera's current zoom — read at a lobby swap press so the next prop pawn can come
+	/// back at the same framing (see <see cref="LobbySwapCarry.PropZoom"/>).</summary>
+	internal float OrbitDistance => _orbit.IsValid() ? _orbit.Distance : CameraDistance;
+
 	protected override void OnAwake()
 	{
 		Body = GameObject.Components.GetOrCreate<Rigidbody>();
@@ -301,6 +305,20 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		_orbit.MaxPitch = MaxPitch;
 		_orbit.Angles = new Angles( 15f, EyeAngles.yaw, 0f );
 		_orbit.Distance = CameraDistance;
+
+		// Lobby swap continuity — the split that makes a swap feel like returning to a parked body: the BODY
+		// keeps its remembered facing (the spawn rotation, restored host-side from swap memory, seeded into
+		// EyeAngles/_bodyYaw above — the cone still points where the prop pointed), while the CAMERA comes up
+		// looking along the view we swapped from, at the zoom we last had as a prop. Both are owner-only
+		// state (the host never knows our pitch or zoom); RosterIdOf so a host's bot prop can't eat the
+		// carry meant for the host's own pawn, and the lobby gate keeps it out of round spawns.
+		if ( LobbyManager.Current.IsValid() && RoundManager.RosterIdOf( GameObject ) == Connection.Local?.Id )
+		{
+			if ( LobbySwapCarry.TakeCamera() is { } view )
+				_orbit.Angles = new Angles( Math.Clamp( view.pitch, MinPitch, MaxPitch ), view.yaw, 0f );
+			if ( LobbySwapCarry.PropZoom is { } zoom )
+				_orbit.Distance = Math.Clamp( zoom, MinDistance, MaxDistance );
+		}
 
 		// Edit session + network sync, both bound to this machine's disguise — SculptablePawn keeps the
 		// "session and sync always target the same sculpture" invariant in one place. No orbit rig handed to
@@ -825,6 +843,36 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// ── Disguise body ─────────────────────────────────────────────────────────────────────────────────
 	// Clone the prefab (mesh/SDF renderer + materials authored there), parent it to the pawn, and lift it so the
 	// BOTTOM of its sculpted shape rests at the pawn's feet (origin) rather than centred half underground.
+	/// <summary>Host-side lobby restore: put a remembered disguise onto a fresh, still-DISABLED prop clone —
+	/// the same pre-enable dress as <see cref="HunterController.WearFace"/>, for the same reason (the first
+	/// build ever started is the remembered shape, and the spawn snapshot then carries it to everyone —
+	/// including its owner, because a disguise has no disk anywhere and the host's swap memory is the only
+	/// copy). Creates the disguise branch early; OnStart's <see cref="EnsureDisguiseBody"/> then finds it
+	/// exactly like it finds a proxy's snapshot copy. Re-lifts the branch onto the restored shape's feet —
+	/// the creation-time lift measured the prefab's default shape, and a taller/shorter restore would
+	/// otherwise sink into or hover over the ground.</summary>
+	internal static void WearDisguise( GameObject pawn, List<SdfBrush> brushes )
+	{
+		if ( brushes is not { Count: > 0 } )
+			return;
+
+		var hider = pawn.Components.Get<HiderController>( includeDisabled: true );
+		if ( !hider.IsValid() )
+			return;
+
+		var sculpture = hider.EnsureDisguiseBody();
+		if ( !sculpture.IsValid() )
+			return;
+
+		sculpture.Brushes = brushes.Select( b => b.Copy() ).ToList();
+
+		if ( Sdf.TryGetBounds( sculpture.Brushes, out var bounds ) )
+			sculpture.GameObject.LocalPosition = Vector3.Up * -bounds.Mins.z;
+
+		if ( sculpture.Active )
+			sculpture.Rebuild();
+	}
+
 	SdfSculpture EnsureDisguiseBody()
 	{
 		var existing = GameObject.Children.FirstOrDefault( c => c.Name == "Disguise" );

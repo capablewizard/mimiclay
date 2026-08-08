@@ -49,13 +49,32 @@ public sealed class LobbyManager : Component, IRoundContext
 	readonly HashSet<Guid> _known = new();
 	readonly HashSet<Guid> _botLooksPending = new();   // bots still waiting on a face to dress (see TryDressBot)
 
-	// The face each player's LAST hunter pawn wore, snapshotted host-side as that pawn is destroyed (a role
-	// swap). The host can't read a client's saved head off their disk, so without this a client's fresh hunter
-	// pawn ships wearing the prefab default and everyone watches it flash until the client's own dress
-	// publishes back. Dressing the new pawn from this cache instead means the spawn snapshot already carries
-	// the face everyone was just looking at; the owner's on-arrival dress reconciles any drift (and is a
-	// content-identical no-op in the normal case).
-	readonly Dictionary<Guid, List<SdfBrush>> _lastFaces = new();
+	// What each player's last pawn OF EACH ROLE was like, snapshotted host-side as that pawn is destroyed in a
+	// role swap and put back on the next pawn of that role — so swapping prop↔hunter is returning to a body
+	// you parked, not rolling a fresh character.
+	//
+	//  • Face: the hunter head. The host can't read a client's saved head off their disk, so without this a
+	//    client's fresh hunter pawn ships wearing the prefab default and everyone watches it flash until the
+	//    client's own dress publishes back. The owner's on-arrival dress reconciles any drift (a
+	//    content-identical no-op in the normal case).
+	//  • Disguise: the prop they were sculpting. Deliberately saved on NO disk anywhere (see
+	//    SculptEditSession.PersistSlot) — this cache is the only copy, and it's what makes a swap round-trip
+	//    keep your work-in-progress.
+	//  • PropYaw: the prop BODY's facing (the cone keeps pointing where it pointed). Only the prop's — a
+	//    hunter's facing is its aim, which is view state, and the VIEW is continuity, not memory: the camera
+	//    direction rides the swap request (yaw) and LobbySwapCarry (pitch + prop zoom, owner-side), so
+	//    whatever you were looking at, you still are — while the prop's body ignores the view entirely.
+	sealed class SwapMemory
+	{
+		public List<SdfBrush> Face;
+		public List<SdfBrush> Disguise;
+		public float? PropYaw;
+	}
+
+	readonly Dictionary<Guid, SwapMemory> _swapMemory = new();
+
+	SwapMemory MemoryFor( Guid id )
+		=> _swapMemory.TryGetValue( id, out var m ) ? m : (_swapMemory[id] = new SwapMemory());
 
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
@@ -134,7 +153,7 @@ public sealed class LobbyManager : Component, IRoundContext
 			if ( Players[id].Bot || Connection.All.Any( c => c.Id == id ) )
 				continue;
 			Players.Remove( id );
-			_lastFaces.Remove( id ); // a leaver's cached face has nobody to come back for it
+			_swapMemory.Remove( id ); // a leaver's remembered bodies have nobody to come back for them
 			if ( _pawns.Remove( id, out var pawn ) )
 				Retire( pawn );
 		}
@@ -234,9 +253,13 @@ public sealed class LobbyManager : Component, IRoundContext
 	}
 
 	// ── Client → host requests ─────────────────────────────────────────────────────────────────────────────────
-	/// <summary>Caller swaps to the opposite lobby role — hunter ↔ prop — respawning where they stand.</summary>
+	/// <summary>Caller swaps to the opposite lobby role — hunter ↔ prop — respawning where they stand.
+	/// <paramref name="viewYaw"/> is the caller's CAMERA yaw at the press — the view that must stay
+	/// continuous across the swap. A new HUNTER spawns aiming along it; a new PROP's body ignores it (the
+	/// body facing is remembered per role — see SwapMemory) and only its orbit camera picks the view up,
+	/// owner-side via LobbySwapCarry (which also carries the pitch and the prop zoom the host can't see).</summary>
 	[Rpc.Host]
-	public void RequestSwapRole()
+	public void RequestSwapRole( float viewYaw )
 	{
 		var c = Rpc.Caller;
 		if ( c is null || Launching )
@@ -248,7 +271,7 @@ public sealed class LobbyManager : Component, IRoundContext
 		row.Role = row.Role == PlayerRole.Prop ? PlayerRole.Hunter : PlayerRole.Prop;
 		Players[c.Id] = row;
 		_known.Add( c.Id );
-		SpawnPawn( c, row.Role );
+		SpawnPawn( c, row.Role, viewYaw );
 	}
 
 	/// <summary>Caller nominates (or un-nominates) themselves to be a hunter next round.</summary>
@@ -394,12 +417,13 @@ public sealed class LobbyManager : Component, IRoundContext
 		return i;
 	}
 
-	GameObject SpawnPawn( Connection connection, PlayerRole role )
-		=> SpawnPawnFor( connection.Id, connection.DisplayName, role, connection );
+	GameObject SpawnPawn( Connection connection, PlayerRole role, float? viewYaw = null )
+		=> SpawnPawnFor( connection.Id, connection.DisplayName, role, connection, viewYaw );
 
 	// The one spawn path, for players and bots alike. A null <paramref name="owner"/> means a bot: the pawn stays
 	// host-owned and is prepared so nobody drives it (RoundBots.Prepare), instead of being handed to a connection.
-	GameObject SpawnPawnFor( Guid id, string name, PlayerRole role, Connection owner )
+	// A non-null <paramref name="viewYaw"/> spawns the pawn facing it (a role swap carrying the caller's camera).
+	GameObject SpawnPawnFor( Guid id, string name, PlayerRole role, Connection owner, float? viewYaw = null )
 	{
 		var lc = LobbyController.Current;
 		if ( !lc.IsValid() )
@@ -433,29 +457,48 @@ public sealed class LobbyManager : Component, IRoundContext
 			}
 		}
 
-		// A fresh hunter pawn wears its player's face BEFORE anything builds. Cloned DISABLED for that:
-		// SdfSculpture.OnEnabled fires Rebuild, so an enabled clone already has the default face's build in
-		// flight before a post-clone dress could swap the brushes — dressing first means the first build ever
-		// started is the real head, and the NetworkSpawn below snapshots it for everyone.
-		//
-		// Where the face comes from depends on whose pawn it is: the host's own comes off this machine's disk
-		// (the saved head slot); a CLIENT's comes from the last-worn-face cache (the host can't read their
-		// disk, but it was just rendering their previous hunter pawn — see _lastFaces). The client's own
-		// on-arrival dress reconciles any drift. A first-ever spawn has no cache entry and dresses owner-side
-		// on arrival, same as before.
-		var dressLocalHead = role == PlayerRole.Hunter && owner is not null && owner.Id == Connection.Local?.Id;
-		var dressCachedFace = role == PlayerRole.Hunter && !dressLocalHead && owner is not null && _lastFaces.ContainsKey( id );
+		_swapMemory.TryGetValue( id, out var memory );
 
-		var pawn = prefab.Clone( new CloneConfig( at, startEnabled: !(dressLocalHead || dressCachedFace), name: $"Lobby Pawn ({role}) {name}" ) );
+		// The spawn rotation means something different per role. A HUNTER spawns facing the caller's camera
+		// yaw — its facing IS its view, and the view is continuous across a swap (the engine PlayerController
+		// seeds EyeAngles from the spawn rotation, then resets the root to identity). A PROP spawns at its
+		// REMEMBERED body facing — the cone keeps pointing where it pointed — and its camera picks the view
+		// up separately, owner-side (LobbySwapCarry): HiderController seeds body AND orbit from the spawn
+		// rotation, then the carry re-aims just the orbit. Position still comes from the in-place block above
+		// (you swap where you STAND).
+		var spawnYaw = role == PlayerRole.Prop ? (memory?.PropYaw ?? viewYaw) : viewYaw;
+		if ( spawnYaw is { } yaw )
+			at = at.WithRotation( Rotation.FromYaw( yaw ) );
+
+		// A fresh pawn wears its player's remembered body BEFORE anything builds. Cloned DISABLED for that:
+		// SdfSculpture.OnEnabled fires Rebuild, so an enabled clone already has the default's build in flight
+		// before a post-clone dress could swap the brushes — dressing first means the first build ever started
+		// is the right shape, and the NetworkSpawn below snapshots it for everyone.
+		//
+		// Hunters: the host's own face comes off this machine's disk (the saved head slot); a CLIENT's comes
+		// from the swap memory (the host can't read their disk, but it was just rendering their previous
+		// hunter pawn), and their own on-arrival dress reconciles any drift. Props: the remembered disguise is
+		// the ONLY copy anywhere (no disk, by design), and everyone — owner included — receives it through
+		// the spawn snapshot. A first-ever spawn has nothing remembered and spawns the prefab default.
+		var dressLocalHead = role == PlayerRole.Hunter && owner is not null && owner.Id == Connection.Local?.Id;
+		var dressCachedFace = role == PlayerRole.Hunter && !dressLocalHead && owner is not null && memory?.Face is not null;
+		var dressDisguise = role == PlayerRole.Prop && owner is not null && memory?.Disguise is not null;
+		var dress = dressLocalHead || dressCachedFace || dressDisguise;
+
+		var pawn = prefab.Clone( new CloneConfig( at, startEnabled: !dress, name: $"Lobby Pawn ({role}) {name}" ) );
 		if ( !pawn.IsValid() )
 			return null;
 
-		if ( dressLocalHead || dressCachedFace )
+		if ( dress )
 		{
 			if ( dressLocalHead )
 				HunterController.WearSavedHead( pawn );
-			else
-				HunterController.WearFace( pawn, _lastFaces[id] );
+			else if ( dressCachedFace )
+				HunterController.WearFace( pawn, memory.Face );
+
+			if ( dressDisguise )
+				HiderController.WearDisguise( pawn, memory.Disguise );
+
 			pawn.Enabled = true;
 		}
 
@@ -469,7 +512,7 @@ public sealed class LobbyManager : Component, IRoundContext
 		// disguise's collider — the solver shoves overlapping hulls apart, sometimes through the floor.
 		if ( _pawns.Remove( id, out var old ) && old.IsValid() )
 		{
-			RememberFace( id, old );
+			RememberPawn( id, old );
 			old.Destroy();
 		}
 
@@ -483,19 +526,32 @@ public sealed class LobbyManager : Component, IRoundContext
 		return pawn;
 	}
 
-	// Snapshot the face a departing HUNTER pawn wore into _lastFaces (see it for why). Hunter pawns only —
-	// ResolveFaceOf on a prop would happily hand back the disguise sculpture, which is not a face. Copied
-	// brush-by-brush so nothing that later mutates the (about-to-die) live list can reach the cache.
-	void RememberFace( Guid id, GameObject pawn )
+	// Snapshot what a departing pawn WORE — face or disguise — into _swapMemory (see it for why). Role told
+	// apart by controller: ResolveFaceOf on a prop would happily hand back the disguise sculpture, which is
+	// not a face. Brushes are copied brush-by-brush so nothing that later mutates the (about-to-die) live
+	// list can reach the cache.
+	void RememberPawn( Guid id, GameObject pawn )
 	{
-		if ( !pawn.Components.Get<HunterController>( includeDisabled: true ).IsValid() )
+		if ( pawn.Components.Get<HunterController>( includeDisabled: true ).IsValid() )
+		{
+			var face = HunterController.ResolveFaceOf( pawn );
+			if ( face.IsValid() && face.Brushes is { Count: > 0 } )
+				MemoryFor( id ).Face = face.Brushes.Select( b => b.Copy() ).ToList();
 			return;
+		}
 
-		var face = HunterController.ResolveFaceOf( pawn );
-		if ( !face.IsValid() || face.Brushes is not { Count: > 0 } )
-			return;
+		var hider = pawn.Components.Get<HiderController>( includeDisabled: true );
+		if ( hider.IsValid() )
+		{
+			var m = MemoryFor( id );
 
-		_lastFaces[id] = face.Brushes.Select( b => b.Copy() ).ToList();
+			// The hider turns its physics root through the solver, so the root yaw IS the body's facing.
+			m.PropYaw = pawn.WorldRotation.Angles().yaw;
+
+			var disguise = hider.DisguiseSculpture;
+			if ( disguise.IsValid() && disguise.Brushes is { Count: > 0 } )
+				m.Disguise = disguise.Brushes.Select( b => b.Copy() ).ToList();
+		}
 	}
 
 	static void Retire( GameObject pawn )

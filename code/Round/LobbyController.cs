@@ -187,8 +187,31 @@ public sealed class LobbyController : Component
 		if ( !lm.IsValid() || !Networking.IsActive || RoundSetup.IsOpen )
 			return;
 
-		if ( Input.Keyboard.Pressed( "P" ) ) lm.RequestSwapRole();
+		// The swap keeps the CAMERA continuous: whatever the view was pointing at, the new pawn's view points
+		// at too. The yaw rides the request (the host aims the new HUNTER's spawn rotation with it — a prop's
+		// body ignores it and keeps its remembered facing instead); the pitch and the prop-orbit zoom are
+		// owner-only state the host never sees, so they ride LobbySwapCarry and our own replacement pawn
+		// applies them as it starts.
+		if ( Input.Keyboard.Pressed( "P" ) )
+		{
+			LobbySwapCarry.Capture( Scene, OwnProp() );
+			lm.RequestSwapRole( Scene.Camera.IsValid() ? Scene.Camera.WorldRotation.Angles().yaw : 0f );
+		}
 		if ( Input.Keyboard.Pressed( "N" ) ) lm.ToggleNominate();
+	}
+
+	// Our own hider pawn, if we're currently a prop — RosterIdOf rather than a bare IsProxy so the host's bot
+	// pawns can never answer for the host's own.
+	HiderController OwnProp()
+	{
+		if ( Connection.Local?.Id is not { } id )
+			return null;
+
+		foreach ( var p in Scene.GetAllComponents<HiderController>() )
+			if ( p.IsValid() && RoundManager.RosterIdOf( p.GameObject ) == id )
+				return p;
+
+		return null;
 	}
 
 	// The spot for a slot: point slot%N (SpawnPoints, else the legacy single SpawnPoint, else this GameObject),

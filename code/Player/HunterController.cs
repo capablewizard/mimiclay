@@ -245,6 +245,7 @@ public sealed class HunterController : Component
 	// Internal: the crosshair HUD (HunterCrosshair) reads this to hide the dot while sculpting.
 	internal bool EditMode => _session?.IsEditing ?? false;
 
+
 	/// <summary>True while this pawn's player is in face-edit mode, on every machine — the roster HUD badges
 	/// their pip with it and holds their icon still until they exit. Mirrored from the session each owner frame
 	/// (rather than written at the toggle site) because the session can also exit itself — revert dialog,
@@ -373,6 +374,13 @@ public sealed class HunterController : Component
 		// this free. Owner-only: proxies wear what the wire says, bots what the host dressed them in.
 		if ( Owned )
 			WearSavedHead( GameObject );
+
+		// Lobby swap continuity: come up looking along the exact camera view we swapped from — pitch included,
+		// which the spawn-rotation seed can't deliver (the engine controller flattens it). First and third
+		// person both read EyeAngles, so this aims either. Owner-only and consumed-once by design; the gate on
+		// a live lobby keeps a stale carry from ever steering a ROUND spawn.
+		if ( Owned && LobbyManager.Current.IsValid() && LobbySwapCarry.TakeCamera() is { } view )
+			_controller.EyeAngles = view with { roll = 0f };
 
 		// Move the head + body off the physics root onto a written pivot — see PlaceVisualPivot. After Face is
 		// resolved (Eyes/Face are the same object) and before anything caches renderers, so the sweeps below
