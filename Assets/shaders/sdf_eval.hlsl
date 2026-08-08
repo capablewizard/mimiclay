@@ -472,4 +472,81 @@ float SdfDist( float3 lp )
 	return d;
 }
 
+// ─── Plasticine displacement noise + the field-BAKE inputs ─────────────────────────────────────────
+//
+// The lumps are baked INTO the distance volume by the field/atlas compute shaders (re-dispatched per
+// claymation-boil tick by SdfRaymarchRenderer), so the raymarch and the highlight get them for free —
+// their one trilinear fetch per step — instead of paying the two-octave noise (~16 hash13) per march
+// sample. These noise definitions used to live in sdf_raymarch's PS; they moved here so the baker and
+// the live analytic fallback (D_DISPLACE while no field is ready) share ONE definition and the baked
+// lumps match the live ones sample-for-sample.
+
+float hash13( float3 p3 )
+{
+	p3 = frac( p3 * 0.1031 );
+	p3 += dot( p3, p3.zyx + 31.32 );
+	return frac( (p3.x + p3.y) * p3.z );
+}
+
+// Trilinearly-interpolated value noise, smoothstep-faded per cell. Output ~[0,1].
+float vnoise( float3 x )
+{
+	float3 i = floor( x );
+	float3 f = x - i;
+	f = f * f * (3.0 - 2.0 * f);
+	return lerp(
+		lerp( lerp( hash13( i + float3( 0, 0, 0 ) ), hash13( i + float3( 1, 0, 0 ) ), f.x ),
+		      lerp( hash13( i + float3( 0, 1, 0 ) ), hash13( i + float3( 1, 1, 0 ) ), f.x ), f.y ),
+		lerp( lerp( hash13( i + float3( 0, 0, 1 ) ), hash13( i + float3( 1, 0, 1 ) ), f.x ),
+		      lerp( hash13( i + float3( 0, 1, 1 ) ), hash13( i + float3( 1, 1, 1 ) ), f.x ), f.y ),
+		f.z );
+}
+
+// A per-tick random offset in noise-cell units, centred on 0. Fed a QUANTISED tick, so it holds its
+// value for a whole tick and then jumps — that discrete hold-then-pop is the claymation boil.
+float3 BoilOffset( float tick )
+{
+	return float3( hash13( float3( tick, 17.13, 3.71 ) ),
+	               hash13( float3( tick, 53.77, 8.29 ) ),
+	               hash13( float3( tick, 91.31, 5.13 ) ) ) - 0.5;
+}
+
+// Bake-time displacement inputs, pushed by SdfFieldGpu per dispatch. Defaults = no displacement, so
+// every OTHER consumer of this file (the raymarch material, the classify pass) never setting them is
+// exactly "off". The tick is quantised on the CPU — floor(time·BoilFps) wrapped to 1024 ticks, plus
+// the per-prop seed, mirroring the live path's in-shader tick — and < 0 means boil off.
+float g_flBakeDispAmp       < Attribute( "BakeDispAmp" );       Default( 0.0 ); >;
+float g_flBakeDispFreq      < Attribute( "BakeDispFreq" );      Default( 0.25 ); >;
+float g_flBakeBoilTick      < Attribute( "BakeBoilTick" );      Default( -1.0 ); >;
+float g_flBakeBoilJitter    < Attribute( "BakeBoilJitter" );    Default( 0.0 ); >;
+float g_flBakeBoilAmpJitter < Attribute( "BakeBoilAmpJitter" ); Default( 0.0 ); >;
+
+// Signed displacement at a LOCAL point — the same two-octave field sdf_raymarch's live fallback
+// computes (see the long comment there for why each piece is shaped the way it is: separate octave
+// offsets, offsets added after the freq multiply, amp wobble bounded by BoilAmpJitter).
+float BakeDisplacement( float3 lp )
+{
+	float3 b0 = 0.0, b1 = 0.0;
+	float amp = g_flBakeDispAmp;
+	if ( g_flBakeBoilTick >= 0.0 )
+	{
+		b0 = BoilOffset( g_flBakeBoilTick )         * g_flBakeBoilJitter;
+		b1 = BoilOffset( g_flBakeBoilTick + 101.0 ) * g_flBakeBoilJitter * 2.7;
+		amp *= 1.0 + ( hash13( float3( g_flBakeBoilTick, 7.77, 1.23 ) ) - 0.5 ) * g_flBakeBoilAmpJitter;
+	}
+	float3 x = lp * g_flBakeDispFreq;
+	float n = vnoise( x + b0 ) * 0.67 + vnoise( x * 2.03 + 11.7 + b1 ) * 0.33;
+	return (n * 2.0 - 1.0) * amp;
+}
+
+// The value the field volume / atlas tiles store: the brush union minus the lumps. Amp 0 (the
+// default, and every prop with Displace off) makes this exactly SdfDist.
+float SdfDistBaked( float3 lp )
+{
+	float d = SdfDist( lp );
+	if ( g_flBakeDispAmp > 0.0 )
+		d -= BakeDisplacement( lp );
+	return d;
+}
+
 #endif // MIMICLAY_SDF_EVAL_H

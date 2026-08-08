@@ -22,7 +22,11 @@ CS
 	float3 g_vFieldMax  < Attribute( "FieldMax" ); >;              // local pos of voxel (Dims-1)
 	float3 g_vFieldDims < Attribute( "FieldDims" ); >;             // voxel counts per axis (cast to int)
 	int    g_nBlock     < Attribute( "Block" ); Default( 8 ); >;
-	float  g_flBand     < Attribute( "Band" ); Default( 1.0 ); >;  // extra slack (≈ one voxel) on the circumradius test
+	// Extra slack on the circumradius test: ≈ one voxel, PLUS the displacement bound when the fill bakes
+	// lumps (SdfFieldGpu widens it) — every displaced-surface point sits within ±bound of the SMOOTH
+	// surface this pass evaluates, so widening by the bound keeps the single-sample test conservative
+	// without paying the noise here.
+	float  g_flBand     < Attribute( "Band" ); Default( 1.0 ); >;
 
 	[numthreads( 4, 4, 4 )]
 	void MainCs( uint3 bid : SV_DispatchThreadID )

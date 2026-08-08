@@ -106,9 +106,6 @@ PS
 	float3 g_vBrickDims0 < Attribute( "BrickDims0" ); >;
 	float3 g_vAtlasDims0 < Attribute( "AtlasDims0" ); >;
 	int    g_nSdfSparse0 < Attribute( "SdfSparse0" ); Default( 0 ); >;
-	float  g_flDispAmp0  < Attribute( "DispAmp0" ); Default( 0.0 ); >;  // 0 = member's Displace off
-	float  g_flDispFreq0 < Attribute( "DispFreq0" ); Default( 0.25 ); >;
-	float  g_flBoilSeed0 < Attribute( "BoilSeed0" ); Default( 0.0 ); >; // must match the member's own seed
 
 	Texture3D g_tField1 < Attribute( "FieldTex1" ); >;
 	float3 g_vFieldMin1   < Attribute( "FieldMin1" ); >;
@@ -122,9 +119,6 @@ PS
 	float3 g_vBrickDims1 < Attribute( "BrickDims1" ); >;
 	float3 g_vAtlasDims1 < Attribute( "AtlasDims1" ); >;
 	int    g_nSdfSparse1 < Attribute( "SdfSparse1" ); Default( 0 ); >;
-	float  g_flDispAmp1  < Attribute( "DispAmp1" ); Default( 0.0 ); >;
-	float  g_flDispFreq1 < Attribute( "DispFreq1" ); Default( 0.25 ); >;
-	float  g_flBoilSeed1 < Attribute( "BoilSeed1" ); Default( 0.0 ); >;
 
 	Texture3D g_tField2 < Attribute( "FieldTex2" ); >;
 	float3 g_vFieldMin2   < Attribute( "FieldMin2" ); >;
@@ -138,9 +132,6 @@ PS
 	float3 g_vBrickDims2 < Attribute( "BrickDims2" ); >;
 	float3 g_vAtlasDims2 < Attribute( "AtlasDims2" ); >;
 	int    g_nSdfSparse2 < Attribute( "SdfSparse2" ); Default( 0 ); >;
-	float  g_flDispAmp2  < Attribute( "DispAmp2" ); Default( 0.0 ); >;
-	float  g_flDispFreq2 < Attribute( "DispFreq2" ); Default( 0.25 ); >;
-	float  g_flBoilSeed2 < Attribute( "BoilSeed2" ); Default( 0.0 ); >;
 
 	Texture3D g_tField3 < Attribute( "FieldTex3" ); >;
 	float3 g_vFieldMin3   < Attribute( "FieldMin3" ); >;
@@ -154,27 +145,17 @@ PS
 	float3 g_vBrickDims3 < Attribute( "BrickDims3" ); >;
 	float3 g_vAtlasDims3 < Attribute( "AtlasDims3" ); >;
 	int    g_nSdfSparse3 < Attribute( "SdfSparse3" ); Default( 0 ); >;
-	float  g_flDispAmp3  < Attribute( "DispAmp3" ); Default( 0.0 ); >;
-	float  g_flDispFreq3 < Attribute( "DispFreq3" ); Default( 0.25 ); >;
-	float  g_flBoilSeed3 < Attribute( "BoilSeed3" ); Default( 0.0 ); >;
 
-	// Claymation boil, PER SLOT — it's opt-in per GameObject, so one group can hold a boiling member
-	// and a still one (a hunter's head and body) and a single shared set would be wrong for one of
-	// them. Each slot's values must match what that member's own sdf_raymarch pass is using, or the
-	// outline swims off the silhouette by the difference. Default 0 = still, which is what an
-	// unoccupied slot and a member with no ClayBoil both get.
-	float g_flBoilFps0 < Attribute( "BoilFps0" ); Default( 0.0 ); >;
-	float g_flBoilFps1 < Attribute( "BoilFps1" ); Default( 0.0 ); >;
-	float g_flBoilFps2 < Attribute( "BoilFps2" ); Default( 0.0 ); >;
-	float g_flBoilFps3 < Attribute( "BoilFps3" ); Default( 0.0 ); >;
-	float g_flBoilJitter0 < Attribute( "BoilJitter0" ); Default( 0.0 ); >;
-	float g_flBoilJitter1 < Attribute( "BoilJitter1" ); Default( 0.0 ); >;
-	float g_flBoilJitter2 < Attribute( "BoilJitter2" ); Default( 0.0 ); >;
-	float g_flBoilJitter3 < Attribute( "BoilJitter3" ); Default( 0.0 ); >;
-	float g_flBoilAmpJitter0 < Attribute( "BoilAmpJitter0" ); Default( 0.0 ); >;
-	float g_flBoilAmpJitter1 < Attribute( "BoilAmpJitter1" ); Default( 0.0 ); >;
-	float g_flBoilAmpJitter2 < Attribute( "BoilAmpJitter2" ); Default( 0.0 ); >;
-	float g_flBoilAmpJitter3 < Attribute( "BoilAmpJitter3" ); Default( 0.0 ); >;
+	// Displacement gradient bound, PER SLOT. The lumps (and their claymation boil) are baked INTO
+	// each member's field by SdfFieldGpu, so the outline tracks the lumpy silhouette by construction —
+	// what each member still owes the march is the step-safety factor: a displaced field's slope is
+	// inflated by up to L = worst-tick-amp · freq · 4, and the union march must understep by the
+	// steepest member's 1/(1+L). 0 = that member's field is a true distance field (Displace off),
+	// which is also what an unoccupied slot gets.
+	float g_flDispGradL0 < Attribute( "DispGradL0" ); Default( 0.0 ); >;
+	float g_flDispGradL1 < Attribute( "DispGradL1" ); Default( 0.0 ); >;
+	float g_flDispGradL2 < Attribute( "DispGradL2" ); Default( 0.0 ); >;
+	float g_flDispGradL3 < Attribute( "DispGradL3" ); Default( 0.0 ); >;
 
 	// ── Highlight look (set per-object by SdfHighlightOutline) ──
 	float4 g_vOutlineColor         < Attribute( "OutlineColor" );         Default4( 1.0, 1.0, 1.0, 1.0 ); >;
@@ -199,57 +180,9 @@ PS
 		return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
 	}
 
-	// --- Plasticine displacement noise — EXACT copies of sdf_raymarch's hash13/vnoise/Displacement
-	// so the highlight's silhouette tracks the main shader's lumps sample-for-sample. Members with
-	// D_DISPLACE off (or the component's MatchDisplacement off) arrive with amp 0 and skip it. ---
-
-	float hash13( float3 p3 )
-	{
-		p3 = frac( p3 * 0.1031 );
-		p3 += dot( p3, p3.zyx + 31.32 );
-		return frac( (p3.x + p3.y) * p3.z );
-	}
-
-	float vnoise( float3 x )
-	{
-		float3 i = floor( x );
-		float3 f = x - i;
-		f = f * f * (3.0 - 2.0 * f);
-		return lerp(
-			lerp( lerp( hash13( i + float3( 0, 0, 0 ) ), hash13( i + float3( 1, 0, 0 ) ), f.x ),
-			      lerp( hash13( i + float3( 0, 1, 0 ) ), hash13( i + float3( 1, 1, 0 ) ), f.x ), f.y ),
-			lerp( lerp( hash13( i + float3( 0, 0, 1 ) ), hash13( i + float3( 1, 0, 1 ) ), f.x ),
-			      lerp( hash13( i + float3( 0, 1, 1 ) ), hash13( i + float3( 1, 1, 1 ) ), f.x ), f.y ),
-			f.z );
-	}
-
-	float3 BoilOffset( float tick )
-	{
-		return float3( hash13( float3( tick, 17.13, 3.71 ) ),
-		               hash13( float3( tick, 53.77, 8.29 ) ),
-		               hash13( float3( tick, 91.31, 5.13 ) ) ) - 0.5;
-	}
-
-	// Signed displacement at a MODEL-space point (matches sdf_raymarch.Displacement, which samples
-	// in model space so the lumps are locked to the prop). The claymation boil is reproduced here
-	// line-for-line — see the long comment on sdf_raymarch.Displacement for why each piece is shaped
-	// this way. Same g_flTime, same quantisation, same per-prop seed => the same surface this frame.
-	float SlotDisplacement( float3 lp, float amp, float freq, float seed, float fps, float jitter, float ampJitter )
-	{
-		float3 x = lp * freq;
-		float3 b0 = 0.0, b1 = 0.0;
-
-		if ( fps > 0.0 )
-		{
-			float tick = fmod( floor( g_flTime * fps ), 1024.0 ) + seed; // wrap: see sdf_raymarch
-			b0 = BoilOffset( tick )         * jitter;
-			b1 = BoilOffset( tick + 101.0 ) * jitter * 2.7;
-			amp *= 1.0 + ( hash13( float3( tick, 7.77, 1.23 ) ) - 0.5 ) * ampJitter;
-		}
-
-		float n = vnoise( x + b0 ) * 0.67 + vnoise( x * 2.03 + 11.7 + b1 ) * 0.33;
-		return (n * 2.0 - 1.0) * amp;
-	}
+	// (The per-sample displacement noise that lived here is gone: the lumps — claymation boil
+	// included — are baked into each member's field by SdfFieldGpu, so sampling the field IS
+	// sampling the displaced surface. Only the per-slot gradient bound above survives.)
 
 	// Sample ONE slot's baked field at world point wp: fold into that prop's local frame, fetch the
 	// dense volume (or the sparse brick atlas near the surface), then REPAIR the sample outside the
@@ -261,8 +194,7 @@ PS
 	float SampleSlot(
 		Texture3D field, Texture3D atlas, Texture2D indirection, int sparse,
 		float3 fmin, float3 fmax, float3 fdims, float3 sdims, float3 bdims, float3 adims,
-		float3 origin, float4 rot, float dispAmp, float dispFreq,
-		float boilSeed, float boilFps, float boilJitter, float boilAmpJitter, float3 wp )
+		float3 origin, float4 rot, float3 wp )
 	{
 		float3 lp = qrot( float4( -rot.xyz, rot.w ), wp - origin );
 
@@ -297,13 +229,6 @@ PS
 			}
 		}
 
-		// Displacement: subtract the same noise the main shader subtracts, so the band tracks the
-		// LUMPY silhouette instead of the smooth baked one (D_DISPLACE bends the silhouette, and
-		// the noise is deliberately NOT baked into the field). Applied before the repair, at the
-		// query point in model space — exactly where sdf_raymarch applies it.
-		if ( dispAmp > 0.0 )
-			d -= SlotDisplacement( lp, dispAmp, dispFreq, boilSeed, boilFps, boilJitter, boilAmpJitter );
-
 		// Out-of-region repair (see above). Inside the grid dq = 0 and the sample passes through
 		// untouched (including negative, inside-the-prop values).
 		float3 q  = max( max( fmin - lp, lp - fmax ), 0.0 );
@@ -321,26 +246,22 @@ PS
 	{
 		float d = SampleSlot( g_tField0, g_tAtlas0, g_tIndirection0, g_nSdfSparse0,
 			g_vFieldMin0, g_vFieldMax0, g_vFieldDims0, g_vSurfaceDims0, g_vBrickDims0, g_vAtlasDims0,
-			g_vModelOrigin0, g_vModelRot0, g_flDispAmp0, g_flDispFreq0,
-				g_flBoilSeed0, g_flBoilFps0, g_flBoilJitter0, g_flBoilAmpJitter0, p );
+			g_vModelOrigin0, g_vModelRot0, p );
 
 		if ( g_nFieldCount > 1 )
 			d = min( d, SampleSlot( g_tField1, g_tAtlas1, g_tIndirection1, g_nSdfSparse1,
 				g_vFieldMin1, g_vFieldMax1, g_vFieldDims1, g_vSurfaceDims1, g_vBrickDims1, g_vAtlasDims1,
-				g_vModelOrigin1, g_vModelRot1, g_flDispAmp1, g_flDispFreq1,
-				g_flBoilSeed1, g_flBoilFps1, g_flBoilJitter1, g_flBoilAmpJitter1, p ) );
+				g_vModelOrigin1, g_vModelRot1, p ) );
 
 		if ( g_nFieldCount > 2 )
 			d = min( d, SampleSlot( g_tField2, g_tAtlas2, g_tIndirection2, g_nSdfSparse2,
 				g_vFieldMin2, g_vFieldMax2, g_vFieldDims2, g_vSurfaceDims2, g_vBrickDims2, g_vAtlasDims2,
-				g_vModelOrigin2, g_vModelRot2, g_flDispAmp2, g_flDispFreq2,
-				g_flBoilSeed2, g_flBoilFps2, g_flBoilJitter2, g_flBoilAmpJitter2, p ) );
+				g_vModelOrigin2, g_vModelRot2, p ) );
 
 		if ( g_nFieldCount > 3 )
 			d = min( d, SampleSlot( g_tField3, g_tAtlas3, g_tIndirection3, g_nSdfSparse3,
 				g_vFieldMin3, g_vFieldMax3, g_vFieldDims3, g_vSurfaceDims3, g_vBrickDims3, g_vAtlasDims3,
-				g_vModelOrigin3, g_vModelRot3, g_flDispAmp3, g_flDispFreq3,
-				g_flBoilSeed3, g_flBoilFps3, g_flBoilJitter3, g_flBoilAmpJitter3, p ) );
+				g_vModelOrigin3, g_vModelRot3, p ) );
 
 		return d;
 	}
@@ -383,19 +304,12 @@ PS
 		// surface but miss the eroded one. The erosion grows with t (screen-constant), which adds
 		// only ~ErodePx*PixelScale (~0.03) to the field's directional slope — comfortably inside
 		// the 0.9 understep insurance already there for trilinear interpolation (as sdf_raymarch).
-		// A displaced field is no longer unit-gradient (subtracting the noise inflates its slope by
-		// ~L = amp·freq·4, the steepest member winning): understep by 1/(1+L) and grow the budget
-		// by the same so grazing rays still converge — the same insurance as sdf_raymarch. Amp 0
-		// everywhere (no displacing member / MatchDisplacement off) makes this an exact no-op.
-		// The boil's amp wobble can push a member above its authored amp, so size L from that bound
-		// (matches sdf_raymarch — a per-tick L would understep on the ticks that wobble up). Folded in
-		// PER SLOT: with boil opt-in, a still member must not be inflated by a boiling sibling's
-		// wobble, and the steepest member still has to win.
-		float L = 4.0 * max(
-			max( g_flDispAmp0 * g_flDispFreq0 * ( 1.0 + max( g_flBoilAmpJitter0, 0.0 ) * 0.5 ),
-			     g_flDispAmp1 * g_flDispFreq1 * ( 1.0 + max( g_flBoilAmpJitter1, 0.0 ) * 0.5 ) ),
-			max( g_flDispAmp2 * g_flDispFreq2 * ( 1.0 + max( g_flBoilAmpJitter2, 0.0 ) * 0.5 ),
-			     g_flDispAmp3 * g_flDispFreq3 * ( 1.0 + max( g_flBoilAmpJitter3, 0.0 ) * 0.5 ) ) );
+		// A displaced field is no longer unit-gradient — the BAKE subtracted the noise into it,
+		// inflating its slope by up to that member's L (pushed per slot as DispGradL, sized from the
+		// worst boil tick — see ApplyHighlightAttributes): understep by 1/(1+L) and grow the budget
+		// by the same so grazing rays still converge — the same insurance as sdf_raymarch. PER SLOT
+		// with the steepest member winning; 0 everywhere (no displacing member) is an exact no-op.
+		float L = max( max( g_flDispGradL0, g_flDispGradL1 ), max( g_flDispGradL2, g_flDispGradL3 ) );
 		float stepScale = 0.9 / (1.0 + L);
 
 		bool  hit = false;

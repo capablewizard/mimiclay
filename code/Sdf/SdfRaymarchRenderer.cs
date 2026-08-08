@@ -289,29 +289,32 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// multi-brush or high-segment-count prop.</summary>
 	[Property, Group( "Overdraw" )] public bool BrushCulling { get; set; } = true;
 
+	/// <summary>Clamp the FORWARD march against the scene depth the prepass already wrote: a pixel whose
+	/// ray enters the proxy behind nearer opaque geometry returns before marching at all, and miss rays
+	/// stop at the first occluder instead of marching the rest of the proxy. This matters because the
+	/// shader writes SV_Depth, which disables early-Z — without it a prop fully hidden behind a wall (or
+	/// behind another SDF prop's overlapping proxy) still pays its complete march per covered pixel.
+	/// Toggle off to A/B the cost.</summary>
+	[Property, Group( "Overdraw" )] public bool DepthOcclusionCull { get; set; } = true;
+
 	/// <summary>Render a tight bounding-SPHERE proxy instead of the AABB box, so round props march
 	/// fewer wasted pixels around their silhouette. Best for round/blobby props; an AABB box can be
 	/// tighter for long/thin props, so toggle off for those.</summary>
 	[Property, Group( "Overdraw" )] public bool TightBounds { get; set; }
 
 	/// <summary>Lumpy plasticine displacement on the raymarched surface — bends the SILHOUETTE, not
-	/// just the lighting (the meshed LOD is unaffected). Costs extra march steps (the field needs a
-	/// safety understep), so it's a toggle. The LOOK (lump depth/density) is tuned on the MATERIAL,
-	/// alongside the transmission and curvature-shading params.</summary>
+	/// just the lighting (the meshed LOD is unaffected). The lumps are baked INTO the distance field
+	/// (re-baked per claymation-boil tick), so the per-frame cost is only a step-safety understep —
+	/// the march itself stays one texture fetch per step. The LOOK (lump depth/density) is tuned on
+	/// the MATERIAL, alongside the transmission and curvature-shading params.</summary>
 	[Property, Group( "Displacement" )] public bool Displace { get; set; }
 
-	/// <summary>Let the lumps bend this prop's cast SHADOW too, not just its camera silhouette. OFF (the
-	/// default) is a pure saving: the sun's shadow cascades are ORTHOGRAPHIC views, where camera distance
-	/// is meaningless and the march is therefore forced to full quality — so they pay the per-step
-	/// displacement noise at the highest step count of any view in the frame, and pay the understep and
-	/// grown step budget on top. Turning it off there also makes the field a true distance field again in
-	/// those views, so both safety factors drop out as well.
-	///
-	/// The cost of OFF is that the shadow is cast by the SMOOTH surface: up to the material's DispAmp
-	/// (~1 unit at the stock plasticine) of lump missing from the shadow edge. On a soft, distant or
-	/// small shadow that is invisible; on a hero prop throwing a big sharp shadow across a flat floor it
-	/// can just about be read, which is why this is per-prop rather than a global rule. No effect with
-	/// <see cref="Displace"/> off.</summary>
+	/// <summary>Let the lumps bend this prop's cast SHADOW too on the LIVE (analytic-fallback) path —
+	/// the ortho shadow cascades march at full quality, so per-step noise is at its most expensive
+	/// there and off (the default) skips it. On the normal BAKED-field path this has no effect: the
+	/// lumps are in the texture, every view samples them, and the shadow silhouette always matches
+	/// the camera one (which is a look upgrade, and the understep it costs the shadow views is far
+	/// cheaper than the per-step noise ever was). No effect with <see cref="Displace"/> off.</summary>
 	[Property, Group( "Displacement" )] public bool DisplaceShadows { get; set; }
 
 	/// <summary>This prop's offset into the claymation boil (see <see cref="ClayBoil"/>). The boil
@@ -860,11 +863,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// (D_DEPTH_CLAMP was deleted with its property: nothing shipped used it, and inter-object
 		// occlusion rides the engine depth chain via the prepass.)
 		_so.Attributes.Set( "SdfOverdrawOpt", OverdrawOptimization ? 1 : 0 );
+		_so.Attributes.Set( "SdfDepthCull", DepthOcclusionCull ? 1 : 0 );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
-		// Displacement look (amp/freq) and curvature shading are MATERIAL params now — only the combo
-		// toggle and the per-prop shadow choice live here.
-		_so.Attributes.SetCombo( "D_DISPLACE", Displace ? 1 : 0 );
+		// Displacement look (amp/freq) and curvature shading are MATERIAL params now. The D_DISPLACE
+		// combo (live per-step noise) is decided AFTER the field block below: it's the fallback for
+		// when no baked field is available — on the field path the lumps are baked into the volume.
+		// DispShadows only affects that live fallback (a baked field can't be smooth per-view).
 		_so.Attributes.Set( "DispShadows", DisplaceShadows ? 1 : 0 );
 
 		// Claymation boil — OPT-IN per prop: only a GameObject carrying an enabled ClayBoil boils.
@@ -882,22 +887,41 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.SetCombo( "D_TRANSMISSION", Transmission ? 1 : 0 );
 
 		// Field cache (D_FIELD_TEX): the GPU compute evaluator (SdfFieldGpu) writes this prop's distance volume,
-		// which the march samples. Re-dispatched only when brushes change, so a static prop pays a single dispatch
-		// and an edited one updates instantly. The shared CPU bake (SdfFieldBaker) is retired for now (see the note
-		// in that file); it can return later to share one texture across many identical clones if that's worth it.
+		// which the march samples. Re-dispatched only when brushes change — or, for a displaced prop with a
+		// ClayBoil, when the boil TICK rolls (the tick is in the hash below): the lumps are baked INTO the field
+		// at the current tick, so a boiling prop costs a few dispatches a second at BoilFps instead of paying
+		// two-octave noise per march step in every view every frame. The shared CPU bake (SdfFieldBaker) is
+		// retired for now (see the note in that file).
+		float bakeAmp = 0f, bakeFreq = 0.25f, bakeTick = -1f, bakeJitter = 0f, bakeAmpJitter = 0f;
+		if ( Displace )
+		{
+			var dispMat = ActiveMaterial;
+			bakeAmp = dispMat?.Attributes.GetFloat( "g_flDispAmp", 0.35f ) ?? 0.35f;
+			bakeFreq = dispMat?.Attributes.GetFloat( "g_flDispFreq", 0.25f ) ?? 0.25f;
+			if ( boil is { Fps: > 0f } )
+			{
+				// Same quantisation as the shader's live tick (floor of global time × fps, wrapped to
+				// 1024, + the per-prop seed) so the analytic fallback and the baked field agree.
+				bakeTick = MathF.Floor( Time.Now * boil.Fps ) % 1024f + BoilSeed;
+				bakeJitter = boil.Jitter;
+				bakeAmpJitter = boil.AmpJitter;
+			}
+		}
 		_fieldReady = false;
 		if ( UseFieldCache && _curCount > 0 && _curRadius > 0.01f )
 		{
 			_fieldGpu ??= new SdfFieldGpu();
 			// Re-dispatch when anything the build depends on changes: the brushes, the resolution (including its
-			// live-drag scale), OR the sparse toggle. Folding the field parameters into the hash means tweaking
-			// them in the inspector updates the field live, instead of only when a brush is moved.
+			// live-drag scale), the sparse toggle, OR the baked displacement (its look params + the boil tick).
+			// Folding the field parameters into the hash means tweaking them in the inspector updates the field
+			// live, instead of only when a brush is moved.
 			int res = EffectiveFieldResolution;
-			int fieldHash = HashCode.Combine( Hash( brushes ), res, SparseField );
+			int fieldHash = HashCode.Combine( Hash( brushes ), res, SparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
 			if ( (fieldHash != _lastFieldHash || !_fieldGpu.IsValid)
 				&& (!_fieldGpu.IsValid || _sinceFieldDispatch >= FieldRebakeInterval) )
 			{
-				if ( _fieldGpu.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, SparseField ) )
+				if ( _fieldGpu.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, SparseField,
+					bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter ) )
 				{
 					_lastFieldHash = fieldHash;
 					_sinceFieldDispatch = 0f;
@@ -929,6 +953,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			}
 		}
 		_so.Attributes.SetCombo( "D_FIELD_TEX", _fieldReady ? 1 : 0 );
+		// Live per-step displacement ONLY as the analytic fallback: with a baked field the lumps are
+		// already in the texture, and the live subtract would displace the surface twice.
+		_so.Attributes.SetCombo( "D_DISPLACE", Displace && !_fieldReady ? 1 : 0 );
+		// Baked-field gradient safety: subtracting the noise at bake steepens the field's slope by up
+		// to L = bound·freq·4 (bound = the worst boil tick's amp), so the march understeps by 1/(1+L)
+		// and grows its budget to match — the same insurance the live path computes for itself.
+		_so.Attributes.Set( "DispGradL", Displace && _fieldReady
+			? bakeAmp * (1f + MathF.Max( bakeAmpJitter, 0f ) * 0.5f) * bakeFreq * 4f : 0f );
 
 		if ( DebugLiveField && _fieldGpu is { IsValid: true } )
 			DrawLiveFieldDebug( tx );
@@ -1215,7 +1247,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// scene object (the highlight shader unions up to 4 slots). Must track what Refresh binds on
 	/// the main scene object — the highlight samples the same field in the same local frame. The
 	/// shared attributes (union bracket, march budget, colours) are set by the highlight itself.</summary>
-	internal void ApplyHighlightAttributes( SceneObject so, int slot, bool matchDisplacement )
+	internal void ApplyHighlightAttributes( SceneObject so, int slot )
 	{
 		if ( _fieldGpu is not { IsValid: true } )
 			return; // shouldn't happen — the highlight only assigns slots to HighlightReady members
@@ -1226,32 +1258,21 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		a.Set( $"ModelOrigin{slot}", tx.Position );
 		a.Set( $"ModelRotation{slot}", new Vector4( tx.Rotation.x, tx.Rotation.y, tx.Rotation.z, tx.Rotation.w ) );
 
-		// Displacement bends the SILHOUETTE (the noise is deliberately NOT baked into the field),
-		// so the highlight needs the same amp/freq to track the lumpy edge. The look lives on the
-		// MATERIAL — vmat params surface through Material.Attributes; fall back to the shader
-		// defaults if a value was never authored. Amp 0 = off (member not displacing, or the
-		// highlight's MatchDisplacement disabled).
-		float dispAmp = 0f, dispFreq = 0.25f;
-		if ( matchDisplacement && Displace )
+		// Displacement (and its boil) is baked INTO the field now, so the outline tracks the lumpy
+		// silhouette by construction — no per-sample noise to mirror. What remains is the step-safety
+		// factor: a displaced field's slope is inflated by up to L = bound·freq·4, and the highlight's
+		// march must understep by the same 1/(1+L) the main march uses. PER-SLOT, because one group can
+		// mix a displaced member with a smooth one and the steepest member has to win.
+		float gradL = 0f;
+		if ( Displace )
 		{
 			var mat = ActiveMaterial;
-			dispAmp = mat?.Attributes.GetFloat( "g_flDispAmp", 0.35f ) ?? 0.35f;
-			dispFreq = mat?.Attributes.GetFloat( "g_flDispFreq", 0.25f ) ?? 0.25f;
+			float dispAmp = mat?.Attributes.GetFloat( "g_flDispAmp", 0.35f ) ?? 0.35f;
+			float dispFreq = mat?.Attributes.GetFloat( "g_flDispFreq", 0.25f ) ?? 0.25f;
+			var boil = GameObject.Components.Get<ClayBoil>();
+			gradL = dispAmp * (1f + MathF.Max( boil?.AmpJitter ?? 0f, 0f ) * 0.5f) * dispFreq * 4f;
 		}
-		a.Set( $"DispAmp{slot}", dispAmp );
-		a.Set( $"DispFreq{slot}", dispFreq );
-
-		// The boil offsets the displacement noise per tick, so the outline needs this member's boil
-		// to track the lumpy edge — a mismatch slides the band off the silhouette by the jitter
-		// amount, every tick. PER-SLOT, not shared: boil is opt-in per GameObject now, so a group can
-		// legitimately mix a boiling member with a still one (hunter head + body), and one shared set
-		// of values would be wrong for at least one of them.
-		var boil = matchDisplacement && Displace ? GameObject.Components.Get<ClayBoil>() : null;
-		if ( boil is not null )
-			boil.Apply( a, slot.ToString() );
-		else
-			ClayBoil.ApplyOff( a, slot.ToString() );
-		a.Set( $"BoilSeed{slot}", BoilSeed );
+		a.Set( $"DispGradL{slot}", gradL );
 
 		a.Set( $"FieldTex{slot}", _fieldGpu.Texture );
 		a.Set( $"FieldMin{slot}", _fieldGpu.Mins );

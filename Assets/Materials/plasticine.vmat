@@ -11,7 +11,7 @@ Layer0
 
 	//---- Displacement ----
 	g_flDispAmp "0.800"
-	g_flDispFreq "0.073"
+	g_flDispFreq "0.805"
 
 	//---- Fog ----
 	g_bFogEnabled "1"
@@ -24,7 +24,7 @@ Layer0
 	g_flTriTile "1.000"
 	g_vTintColor "[1.000000 1.000000 1.000000 0.000000]"
 	TextureColor "materials/plasticine/plasticine_basecolor.png"
-	TextureNormal "materials/plasticine_imperfections_04.png"
+	TextureNormal "[0.501961 0.501961 1.000000 0.000000]"
 	TextureRoughness "materials/default/default_rough.tga"
 
 	//---- Transmission ----

@@ -3,8 +3,9 @@
 // distance volume on the GPU, in parallel, instead of the CPU re-baking + uploading it per edit. Brushes are packed in
 // the prop's LOCAL (model) space (identity transform) so the field is placement-invariant and the raymarch's existing
 // WorldToModelPos sampling is unchanged. One thread = one voxel. The distance math lives in the shared sdf_eval.hlsl
-// (also used by the sparse atlas-fill and brick-classify compute shaders); colour/displacement are NOT baked — the
-// raymarch still computes those per-pixel.
+// (also used by the sparse atlas-fill and brick-classify compute shaders). DISPLACEMENT is baked in (SdfDistBaked —
+// re-dispatched per claymation-boil tick) so the march samples the lumps for free; colour is NOT baked — the raymarch
+// still computes it per-pixel at the hit.
 //=========================================================================================================================
 MODES
 {
@@ -31,6 +32,6 @@ CS
 		// Dims-1 -> FieldMax), matching the CPU baker and the shader's UVW remap.
 		float3 cell = (g_vFieldMax - g_vFieldMin) / max( g_vFieldDims - 1.0, 1.0 );
 		float3 lp = g_vFieldMin + float3( id ) * cell;
-		g_tField[id] = SdfDist( lp );
+		g_tField[id] = SdfDistBaked( lp );
 	}
 }

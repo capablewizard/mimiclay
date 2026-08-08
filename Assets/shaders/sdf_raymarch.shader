@@ -107,9 +107,12 @@ PS
 	// D_DEPTH_CLAMP (software occlusion against the depth chain) was deleted outright: nothing shipped
 	// used it — inter-object occlusion rides the engine depth chain via the prepass.)
 
-	// Plasticine displacement: subtract a low-frequency 3D noise field from the SDF so the
-	// raymarched SILHOUETTE goes lumpy (the meshed LOD is untouched). Gated as a combo so it's
-	// free when off, and so the step-size safety factor (below) only costs when it's on.
+	// Plasticine displacement, LIVE (analytic-fallback) path: subtract a low-frequency 3D noise
+	// field from the SDF per sample so the raymarched SILHOUETTE goes lumpy (the meshed LOD is
+	// untouched). On the NORMAL path the renderer bakes these same lumps into the distance field
+	// (SdfDistBaked in the compute evaluators, re-baked per boil tick) and sets this combo OFF —
+	// the march then samples them in its one trilinear fetch and only pays the g_flDispGradL
+	// understep below. This combo is only 1 while Displace is on but no baked field is bound.
 	DynamicCombo( D_DISPLACE, 0..1, Sys( All ) );
 
 		// Distance-field cache: sample the whole brush field from a baked 3D (volume) texture — ONE
@@ -177,6 +180,15 @@ PS
 	// (round props) instead of the AABB. Uniform per draw, so the branches are effectively free.
 	int       g_nSdfOverdrawOpt < Attribute( "SdfOverdrawOpt" ); Default( 1 ); >;
 	int       g_nSdfTightBounds < Attribute( "SdfTightBounds" ); Default( 0 ); >;
+	// Scene-depth occlusion clamp for the FORWARD march (see RayMarchHit). Runtime toggle, same
+	// variant-budget reasoning as the two above.
+	int       g_nSdfDepthCull   < Attribute( "SdfDepthCull" ); Default( 1 ); >;
+	// Gradient bound of the BAKED displaced field: the bake subtracts the lumps into the volume,
+	// steepening its slope by up to this L (= worst-tick amp · freq · 4). 0 = field is a true
+	// distance field (no displacement baked). Drives the same understep + budget growth the live
+	// D_DISPLACE path computes for itself — pushed by the renderer because only IT knows whether
+	// the bound field was baked with displacement.
+	float     g_flDispGradL     < Attribute( "DispGradL" ); Default( 0.0 ); >;
 	// Adaptive quality (scaled by on-screen size): floors used when the object is small/far, and
 	// the near/far LOD distances measured in BOUNDING-RADII. Defaults keep quality maxed (LOD off).
 	int       g_nMinSteps   < Attribute( "MinSteps" );   Default( 96 ); >;
@@ -342,37 +354,9 @@ PS
 			return g_tAtlas.SampleLevel( g_sField, uvw, 0 ).r;
 		}
 
-	// --- Plasticine displacement noise (cheap hash-based 3D value noise, no texture fetch) ---
-
-	float hash13( float3 p3 )
-	{
-		p3 = frac( p3 * 0.1031 );
-		p3 += dot( p3, p3.zyx + 31.32 );
-		return frac( (p3.x + p3.y) * p3.z );
-	}
-
-	// Trilinearly-interpolated value noise, smoothstep-faded per cell. Output ~[0,1].
-	float vnoise( float3 x )
-	{
-		float3 i = floor( x );
-		float3 f = x - i;
-		f = f * f * (3.0 - 2.0 * f);
-		return lerp(
-			lerp( lerp( hash13( i + float3( 0, 0, 0 ) ), hash13( i + float3( 1, 0, 0 ) ), f.x ),
-			      lerp( hash13( i + float3( 0, 1, 0 ) ), hash13( i + float3( 1, 1, 0 ) ), f.x ), f.y ),
-			lerp( lerp( hash13( i + float3( 0, 0, 1 ) ), hash13( i + float3( 1, 0, 1 ) ), f.x ),
-			      lerp( hash13( i + float3( 0, 1, 1 ) ), hash13( i + float3( 1, 1, 1 ) ), f.x ), f.y ),
-			f.z );
-	}
-
-	// A per-tick random offset in noise-cell units, centred on 0. Fed a QUANTISED tick, so it holds
-	// its value for a whole tick and then jumps — that discrete hold-then-pop is the whole effect.
-	float3 BoilOffset( float tick )
-	{
-		return float3( hash13( float3( tick, 17.13, 3.71 ) ),
-		               hash13( float3( tick, 53.77, 8.29 ) ),
-		               hash13( float3( tick, 91.31, 5.13 ) ) ) - 0.5;
-	}
+	// --- Plasticine displacement noise: hash13 / vnoise / BoilOffset come from sdf_eval.hlsl now
+	// (shared with the field-bake compute shaders, which bake these same lumps into the volume —
+	// the LIVE path below is only the analytic fallback while no baked field is bound). ---
 
 	// Per-tick offset for the triplanar surface maps, returned in MODEL-SPACE INCHES.
 	//
@@ -907,6 +891,28 @@ PS
 		if ( tExit < tEnter )
 			return false;
 
+	#if ( S_MODE_DEPTH == 0 )
+		// Scene-depth occlusion clamp — FORWARD pass only (S_MODE_DEPTH covers the camera prepass,
+		// where the chain is still being written this frame, and every shadow view, where the bound
+		// depth belongs to a different projection). Writing SV_Depth disables early-Z, so the depth
+		// test runs AFTER this shader: without this clamp a prop fully hidden behind a wall — or
+		// behind another SDF's overlapping proxy — still pays its whole march per covered pixel, and
+		// a MISS ray (the proxy area around the silhouette) marches the full box even when everything
+		// past the first occluder is invisible. The prepass depth already contains every opaque
+		// surface INCLUDING our own, so clamp the bracket to it; the slack keeps our own re-marched
+		// surface (prepass<->forward hit spread — see the depth nudge before MainPs' output) on the
+		// reachable side. Skipped for the viewmodel: its rays belong to the gun's warped projection,
+		// not this pixel's scene ray, and its pixels are stencil-claimed by the overlay prepass anyway.
+		if ( g_nSdfDepthCull != 0 && !ortho && g_nSdfViewmodel == 0 )
+		{
+			float3 sceneWp = Depth::GetWorldPosition( i.vPositionSs.xy );
+			float tScene = dot( sceneWp - ro, rd ) + 2.0;
+			if ( tEnter > tScene )
+				return false;
+			tExit = min( tExit, tScene );
+		}
+	#endif
+
 		// Adaptive quality by projected size: full steps/epsilon when big on screen, the floors
 		// when small/far. Per object (LodQuality uses the bounds centre), so every pixel of one
 		// object marches at the same budget. Ortho (shadow) views have no meaningful camera
@@ -925,6 +931,18 @@ PS
 		// this, grazing/silhouette rays run ~11% short of the surface and flicker hit<->miss = edge sparkle.
 		stepScale = 0.9;
 		maxSteps  = (int)( maxSteps / 0.9 );
+
+		// Baked displacement: the lumps were subtracted INTO this field by the baker, inflating its
+		// slope by up to g_flDispGradL — understep by 1/(1+L) and grow the budget by the same, exactly
+		// the insurance the live D_DISPLACE block below applies to the analytic path. Unlike that
+		// block this runs in EVERY view, ortho shadow cascades included: the lumps are in the texture,
+		// so there is no per-view way to march the smooth surface (the shadow silhouette now always
+		// matches the camera one). 0 (field baked without displacement) is an exact no-op.
+		if ( g_flDispGradL > 0.0 )
+		{
+			stepScale *= 1.0 / (1.0 + g_flDispGradL);
+			maxSteps  = (int)( maxSteps * min( 1.0 + g_flDispGradL, 2.0 ) );
+		}
 	#endif
 	#if ( D_DISPLACE )
 		// A displaced field is no longer a true distance field: subtracting the noise inflates its

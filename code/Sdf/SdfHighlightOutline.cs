@@ -106,13 +106,8 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	/// <inheritdoc cref="ColorOverride"/>
 	public float? WidthOverride { get; set; }
 
-	/// <summary>Track the plasticine displacement lumps on members that have Displace on, so the
-	/// line hugs the LUMPY silhouette instead of the smooth baked one (the noise is not in the
-	/// field — the main shader adds it per pixel, and so does the highlight when this is on).
-	/// Free when no member displaces; on displacing props it adds the same noise + understep cost
-	/// per march step that the main shader already pays. Off = the smooth-silhouette outline
-	/// (which can show slivers of clay past an Inside line at each outward lump).</summary>
-	[Property] public bool MatchDisplacement { get; set; } = true;
+	// (MatchDisplacement is gone: displacement + boil are baked INTO each member's field now, so the
+	// outline tracks the lumpy silhouette by construction — there is no smooth field left to march.)
 
 	SceneObject _so;
 	Material _material;
@@ -360,17 +355,16 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 		} );
 		a.Set( "PixelScale", ComputePixelScale() );
 
-		// (Claymation boil is per-member now, pushed into each slot by ApplyHighlightAttributes.)
-
-		// Each member's field bindings + model fold into its shader slot.
+		// Each member's field bindings + model fold into its shader slot. (Displacement + boil live in
+		// the baked fields themselves; only the per-slot gradient bound rides along for step safety.)
 		for ( int slot = 0; slot < ready.Count; slot++ )
-			ready[slot].ApplyHighlightAttributes( _so, slot, MatchDisplacement );
+			ready[slot].ApplyHighlightAttributes( _so, slot );
 
-		// Zero the displacement of unoccupied slots: attributes persist, and a stale amp from a
+		// Zero the gradient bound of unoccupied slots: attributes persist, and a stale value from a
 		// member that left the group would keep inflating the march's understep budget (the shader
-		// reads all four amps for its step-safety factor, occupied or not).
+		// maxes all four for its step-safety factor, occupied or not).
 		for ( int slot = ready.Count; slot < MaxTargets; slot++ )
-			a.Set( $"DispAmp{slot}", 0f );
+			a.Set( $"DispGradL{slot}", 0f );
 
 		// Route the draw. Normally the scene object renders itself in the translucent pass (which
 		// DOF then blurs); with IgnoreDepthOfField the same model + attributes are submitted

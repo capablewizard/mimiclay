@@ -69,6 +69,9 @@ public sealed class SdfFieldGpu
 	int _brushCount;        // packed brush count from the last Evaluate (the fill re-evals the same set)
 	float[] _data, _spline;
 
+	// Baked-displacement inputs carried from Evaluate into the classify/fill dispatches (see Evaluate's doc).
+	float _dispAmp, _dispFreq, _dispTick, _dispJitter, _dispAmpJitter, _dispBound;
+
 	// Sparse-brick classification: a small per-brick occupancy volume (1 = surface brick) produced by a second
 	// compute pass after the field eval. The foundation for the brick atlas + render.
 	public Texture Occupancy { get; private set; }
@@ -89,11 +92,27 @@ public sealed class SdfFieldGpu
 
 	/// <summary>Re-evaluate the field for the given brushes over the local AABB [localMin,localMax]. Sizes the
 	/// volume, packs the brushes (local), and dispatches the compute shader over every voxel. Returns false if it
-	/// couldn't (no compute shader / texture creation failed) so the caller can fall back to the analytic march.</summary>
-	public bool Evaluate( List<SdfBrush> brushes, Vector3 localMin, Vector3 localMax, int resolution, bool buildSparse )
+	/// couldn't (no compute shader / texture creation failed) so the caller can fall back to the analytic march.
+	///
+	/// Displacement is baked IN (dispAmp &gt; 0): the field/atlas evals subtract the plasticine noise
+	/// (SdfDistBaked), so the march samples the lumps in its one trilinear fetch instead of paying the
+	/// noise per step. The caller re-dispatches when the boil tick rolls (it folds the tick into its field
+	/// hash), so a boiling prop costs a few bakes a second rather than per-step noise every frame.
+	/// boilTick &lt; 0 = boil off; jitter/ampJitter mirror <see cref="ClayBoil"/>'s dials.</summary>
+	public bool Evaluate( List<SdfBrush> brushes, Vector3 localMin, Vector3 localMax, int resolution, bool buildSparse,
+		float dispAmp = 0f, float dispFreq = 0.25f, float boilTick = -1f, float boilJitter = 0f, float boilAmpJitter = 0f )
 	{
 		if ( brushes is null || brushes.Count == 0 )
 			return false;
+
+		_dispAmp = MathF.Max( dispAmp, 0f );
+		_dispFreq = dispFreq;
+		_dispTick = boilTick;
+		_dispJitter = boilJitter;
+		_dispAmpJitter = boilAmpJitter;
+		// Worst-case |displacement| over every boil tick (the amp wobble can push above dispAmp) — what the
+		// classify band is widened by, matching the L bound the march's understep is sized from.
+		_dispBound = _dispAmp * ( 1f + MathF.Max( boilAmpJitter, 0f ) * 0.5f );
 
 		// Sparse stores only the surface shell, so it can go to 512; the dense path stays capped at 256 because a full
 		// 512³ R32F volume is ~537 MB (the whole reason the sparse path exists).
@@ -172,6 +191,7 @@ public sealed class SdfFieldGpu
 		_cs.Attributes.Set( "FieldMin", Mins );
 		_cs.Attributes.Set( "FieldMax", Maxs ); // guide/field spans the SAME bounds as the surface grid
 		_cs.Attributes.Set( "FieldDims", Dims );
+		SetDisplacement( _cs );
 		_cs.Dispatch( fnx, fny, fnz ); // thread counts (s&box divides by the shader's numthreads)
 
 		// The classify→alloc→fill passes only feed the sparse atlas. Skip them entirely when the prop isn't using
@@ -215,7 +235,10 @@ public sealed class SdfFieldGpu
 		_classifyCs.Attributes.Set( "FieldMax", Maxs );
 		_classifyCs.Attributes.Set( "FieldDims", SurfaceDims ); // high-res grid (Dims is now the low-res guide)
 		_classifyCs.Attributes.Set( "Block", Block );
-		_classifyCs.Attributes.Set( "Band", cell ); // one-voxel surface band
+		// One-voxel surface band, widened by the displacement bound: classify stays on the SMOOTH eval
+		// (every displaced-surface point lies within ±bound of the smooth surface, so the single-sample
+		// test stays conservative without paying the noise per brick).
+		_classifyCs.Attributes.Set( "Band", cell + _dispBound );
 		_classifyCs.Dispatch( bx, by, bz );
 
 		AllocateAndFill();
@@ -297,7 +320,18 @@ public sealed class SdfFieldGpu
 		_fillCs.Attributes.Set( "TileSize", TileSize );
 		_fillCs.Attributes.Set( "TilesX", TilesX );
 		_fillCs.Attributes.Set( "TilesY", TilesY );
+		SetDisplacement( _fillCs ); // atlas tiles bake the same displaced union as the dense/guide field
 		_fillCs.Dispatch( maxTiles, TileSize * TileSize * TileSize, 1 ); // x=tile, y=voxel-in-tile
+	}
+
+	// The SdfDistBaked inputs (shared sdf_eval.hlsl) for a field-writing dispatch.
+	void SetDisplacement( ComputeShader cs )
+	{
+		cs.Attributes.Set( "BakeDispAmp", _dispAmp );
+		cs.Attributes.Set( "BakeDispFreq", _dispFreq );
+		cs.Attributes.Set( "BakeBoilTick", _dispTick );
+		cs.Attributes.Set( "BakeBoilJitter", _dispJitter );
+		cs.Attributes.Set( "BakeBoilAmpJitter", _dispAmpJitter );
 	}
 
 	/// <summary>Read the allocated surface-brick (tile) count back to the CPU. Debug/validation only — a sync stall.</summary>

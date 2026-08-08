@@ -51,6 +51,6 @@ CS
 
 		int3 tc = int3( tile % (uint)g_nTilesX, ( tile / (uint)g_nTilesX ) % (uint)g_nTilesY, tile / (uint)( g_nTilesX * g_nTilesY ) );
 		int3 av = tc * g_nTileSize + voxel;
-		g_tAtlas[av] = SdfDist( lp );
+		g_tAtlas[av] = SdfDistBaked( lp ); // displaced union — same value the dense/guide field bakes
 	}
 }
