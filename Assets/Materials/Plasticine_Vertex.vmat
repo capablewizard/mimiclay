@@ -8,7 +8,9 @@ Layer0
 	g_bFogEnabled "1"
 
 	//---- Surface ----
+	g_flDarkSatBoost "1.000"
 	g_flMetalness "0.000"
+	g_flNormalStrength "1.000"
 	g_flRoughness "0.950"
 	g_flTriBlend "6.000"
 	g_flTriTile "0.500"
