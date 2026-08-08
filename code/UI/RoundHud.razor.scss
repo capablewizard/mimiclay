@@ -1,4 +1,5 @@
 @import "/UI/_theme.scss";
+@import "/UI/_button.scss"; // for the action-jitter keyframes (the raised hand badge wobbles like the validity toast)
 
 // Roster icon size, in one place because several rules have to agree on it: the pip box, the image inside it,
 // the fallback glyph, the divider's height, and how wide each side needs to be to fit a sensible number per
@@ -206,30 +207,53 @@ $clock-col-width: 150px;
 				&.raised {
 					transform: scale( 1 );
 					animation: hud-hand-raise 0.34s ease-out;
+
+					// Once the spring has settled, wobble forever — the same stop-motion action-jitter the
+					// validity toast runs, so a raised hand reads alive rather than parked. It lives on the
+					// GLYPH, not this box: both animations drive `transform`, so sharing an element would
+					// have them fight; and the glyph IS the whole visible badge, so the effect is the same.
+					// The delay matches the spring's duration so the jitter takes over exactly as it lands.
+					.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
 				}
 
-				// No font-family: leave it on the default so Skia's fallback picks the system emoji font for
-				// this codepoint. Forcing Material Icons here would render a missing-glyph box instead.
-				//
-				// The outline is a RING OF SHADOWS, not text-stroke. text-stroke does nothing to a colour
-				// emoji — those are drawn as layered/bitmap glyphs rather than fillable outlines, so there's no
-				// path for Skia to stroke. Shadows are composited from the rendered glyph whatever produced it,
-				// so they work regardless. Eight offsets at the house 2px, diagonals pulled in slightly so the
-				// corners don't read heavier than the edges.
-				.badge-glyph {
-					font-size: 35px;
-					text-transform: none;
-					letter-spacing: 0;
-					text-shadow:
-						2px 0px 0px $paper-edge,
-						-2px 0px 0px $paper-edge,
-						0px 2px 0px $paper-edge,
-						0px -2px 0px $paper-edge,
-						1.4px 1.4px 0px $paper-edge,
-						-1.4px 1.4px 0px $paper-edge,
-						1.4px -1.4px 0px $paper-edge,
-						-1.4px -1.4px 0px $paper-edge;
-				}
+			}
+
+			// TEST: a paintbrush pinned to the opposite corner, always visible — a look-test before it's
+			// wired to any state. Same no-chrome recipe as the hand: the box only parks the glyph.
+			.paint-badge {
+				position: absolute;
+				right: -4px;
+				bottom: -4px;
+				align-items: center;
+				justify-content: center;
+
+				// Same always-on wobble as the raised hand, no delay — there's no spring to wait out here.
+				.badge-glyph { animation: action-jitter $wobble-duration linear 0s infinite; }
+			}
+
+			// Shared by BOTH corner badges (hand + paintbrush).
+			//
+			// No font-family: leave it on the default so Skia's fallback picks the system emoji font for
+			// this codepoint. Forcing Material Icons here would render a missing-glyph box instead.
+			//
+			// The outline is a RING OF SHADOWS, not text-stroke. text-stroke does nothing to a colour
+			// emoji — those are drawn as layered/bitmap glyphs rather than fillable outlines, so there's no
+			// path for Skia to stroke. Shadows are composited from the rendered glyph whatever produced it,
+			// so they work regardless. Eight offsets at the house 2px, diagonals pulled in slightly so the
+			// corners don't read heavier than the edges.
+			.badge-glyph {
+				font-size: 35px;
+				text-transform: none;
+				letter-spacing: 0;
+				text-shadow:
+					2px 0px 0px $paper-edge,
+					-2px 0px 0px $paper-edge,
+					0px 2px 0px $paper-edge,
+					0px -2px 0px $paper-edge,
+					1.4px 1.4px 0px $paper-edge,
+					-1.4px 1.4px 0px $paper-edge,
+					1.4px -1.4px 0px $paper-edge,
+					-1.4px -1.4px 0px $paper-edge;
 			}
 		}
 
@@ -490,8 +514,8 @@ $clock-col-width: 150px;
 @keyframes hud-hand-raise
 {
 	0%   { transform: scale( 0 ); }
-	55%  { transform: scale( 1.3 ); }
-	75%  { transform: scale( 0.9 ); }
-	90%  { transform: scale( 1.06 ); }
+	55%  { transform: scale( 1.38 ); }
+	75%  { transform: scale( 0.87 ); }
+	90%  { transform: scale( 1.08 ); }
 	100% { transform: scale( 1 ); }
 }

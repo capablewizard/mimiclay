@@ -106,6 +106,12 @@
 							<div class="nominated-badge @(player.Nominated ? "raised" : "")">
 								<div class="badge-glyph">✋</div>
 							</div>
+
+							@* TEST: paintbrush pinned to the opposite corner, always on — just to judge the look
+							   before it's wired to any state. Same emoji treatment as the hand above. *@
+							<div class="paint-badge">
+								<div class="badge-glyph">🎨</div>
+							</div>
 						</div>
 						<div class="pip-name">@player.Name</div>
 					</div>
