@@ -1,25 +1,23 @@
-// Viewmodel variant of plasticine.vmat — identical look, but F_TRANSLUCENT opts the shader into the
-// S_TRANSLUCENT lighting variant: the engine treats the surface as not-in-the-depth-buffer, so its
-// shading skips the screen-space passes (SSAO sample; contact-shadow mask) that a depth-squashed
-// overlay viewmodel must not participate in. Blend/depth state are unaffected (the shader guards its
-// own render states) — this is a lighting configuration, not transparency. Used by HunterGun on the
-// first-person gun clone only; keep the look params in sync with plasticine.vmat when tuning clay.
+// THIS FILE IS AUTO-GENERATED
 
 Layer0
 {
 	shader "shaders/sdf_raymarch.shader"
 
+	//---- Translucent ----
 	F_TRANSLUCENT 1
 
 	//---- Curvature ----
 	g_flCurveDark "0.350"
 	g_flCurveLight "0.500"
 	g_flCurveRadius "0.500"
+	g_flCurveSatBoost "1.500"
 
 	//---- Fog ----
 	g_bFogEnabled "1"
 
 	//---- Surface ----
+	g_flDarkSatBoost "1.250"
 	g_flMetalness "0.000"
 	g_flNormalStrength "0.850"
 	g_flRoughness "1.900"

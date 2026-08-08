@@ -8,11 +8,13 @@ Layer0
 	g_flCurveDark "0.350"
 	g_flCurveLight "0.500"
 	g_flCurveRadius "0.500"
+	g_flCurveSatBoost "1.500"
 
 	//---- Fog ----
 	g_bFogEnabled "1"
 
 	//---- Surface ----
+	g_flDarkSatBoost "1.200"
 	g_flMetalness "0.000"
 	g_flNormalStrength "0.850"
 	g_flRoughness "1.900"

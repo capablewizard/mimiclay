@@ -218,6 +218,10 @@ PS
 	float g_flTriTile  < Default( 8.0 ); Range( 0.5, 64.0 ); UiGroup( "Surface,10/70" ); >;
 	float g_flTriBlend < Default( 4.0 ); Range( 1.0, 16.0 ); UiGroup( "Surface,10/80" ); >;
 	float g_flNormalStrength < Default( 1.0 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/90" ); >; // 0 = ignore normal map, 1 = full
+	// The albedo-texture multiply pulls dark tints toward the texture's own grey (chroma dies faster than
+	// brightness in linear space). This re-saturates where the TEXTURE texel is dark — clay colours that
+	// are dark by choice are untouched. 1 = off. Mirrored in sdf_mesh.shader — keep the two in sync.
+	float g_flDarkSatBoost < Default( 1.0 ); Range( 1.0, 2.0 ); UiGroup( "Surface,10/95" ); >;
 
 	// --- Transmission / subsurface (used when D_TRANSMISSION is on). Through-colour = Tint * lerp(1,
 	// deepened albedo, FromAlbedo): Tint is a warm/cool bias, FromAlbedo dials in the surface's own
@@ -283,6 +287,9 @@ PS
 	float g_flCurveRadius < Default( 1.5 );  Range( 0.25, 8.0 ); UiGroup( "Curvature,13/10" ); >;
 	float g_flCurveDark   < Default( 0.35 ); Range( 0.0, 1.0 );  UiGroup( "Curvature,13/20" ); >;
 	float g_flCurveLight  < Default( 0.15 ); Range( 0.0, 1.0 );  UiGroup( "Curvature,13/30" ); >;
+	// Re-saturation for the cavity darkening above — same grey-out problem as the texture multiply, but
+	// scaled by how much crevice shade was applied instead of by luminance. 1 = off.
+	float g_flCurveSatBoost < Default( 1.0 ); Range( 1.0, 2.0 ); UiGroup( "Curvature,13/40" ); >;
 
 		// --- Baked distance-field volume (D_FIELD_TEX). One R32F distance per voxel, spanning the prop's
 		// local AABB [FieldMin, FieldMax] with samples on the inclusive corners; Dims = texel counts. ---
@@ -631,6 +638,26 @@ PS
 		// screen-space pass that samples it (noise over all SDFs at once). Fall back to facing the camera.
 		float l = length( g );
 		return l > 1e-6 ? g / l : float3( 0, 0, 1 );
+	}
+
+	// Extrapolated saturation: lerp away from the colour's own grey (t > 1 oversaturates). Clamped low
+	// side so already-saturated hues don't drive a channel negative. ~5 ALU, no fetches.
+	float3 BoostSat( float3 col, float sat )
+	{
+		float luma = dot( col, float3( 0.2126, 0.7152, 0.0722 ) );
+		return max( lerp( luma.xxx, col, sat ), 0.0 );
+	}
+
+	// Dark-tone re-saturation, driven by the TEXTURE sample's darkness — NOT the tinted result — so it
+	// only gives back the chroma the texture multiply took, and an intrinsically dark clay colour under
+	// a bright texel keeps exactly its picked colour. Boost scales with how much the texel darkens
+	// (1 - luma), with a ×3 gain so it bites on bright grime maps: plasticine_basecolor averages ~0.83
+	// LINEAR luma, so a plain 1-luma ramp (or the old 0.5-luma cutoff) left the slider a near-no-op.
+	// Full boost from texel luma ~0.67 down. 1 = off.
+	float3 BoostDarkSat( float3 col, float3 tex, float boost )
+	{
+		float texLuma = dot( tex, float3( 0.2126, 0.7152, 0.0722 ) );
+		return BoostSat( col, lerp( 1.0, boost, saturate( (1.0 - texLuma) * 3.0 ) ) );
 	}
 
 	// Mean-curvature estimate at the hit: the field's Laplacian via four tetrahedral taps at radius e,
@@ -1141,6 +1168,7 @@ PS
 
 		Material m = Material::Init( i );
 		m.Albedo = albedo * g_vTintColor * surf.col;
+		m.Albedo = BoostDarkSat( m.Albedo, albedo, g_flDarkSatBoost );
 		m.Roughness = max( saturate( roughness * g_flRoughness * surf.rough ), 0.08 );
 		m.Metalness = saturate( surf.metal + g_flMetalness );
 
@@ -1156,8 +1184,12 @@ PS
 		if ( g_flCurveDark + g_flCurveLight > 1e-3 )
 		{
 			float curv = SdfCurvature( p, max( g_flCurveRadius, 0.05 ) );
-			float shade = (1.0 - g_flCurveDark * saturate( -curv )) * (1.0 + g_flCurveLight * saturate( curv ));
+			float cavity = g_flCurveDark * saturate( -curv );
+			float shade = (1.0 - cavity) * (1.0 + g_flCurveLight * saturate( curv ));
 			m.Albedo = saturate( m.Albedo * shade );
+			// Give the crevice shade back its colour: boost scales with how much darkening was applied,
+			// so ridges and flats are untouched.
+			m.Albedo = BoostSat( m.Albedo, lerp( 1.0, g_flCurveSatBoost, cavity ) );
 		}
 
 	#if ( D_TRANSMISSION && S_MODE_DEPTH == 0 )
