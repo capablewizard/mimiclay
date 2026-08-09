@@ -737,8 +737,17 @@ public sealed class RoundManager : Component, IRoundContext
 			return;
 
 		var at = SpotFor( info );
-		_ownPawn.WorldPosition = at.Position;
-		_ownPawn.WorldRotation = at.Rotation;
+
+		// Through the controller when there is one: if the player is mid-face-edit, it carries the orbit camera
+		// along with the pawn (a raw transform write leaves the rig's world-space pivot behind at the old spot).
+		var hunter = _ownPawn.Components.Get<HunterController>();
+		if ( hunter.IsValid() )
+			hunter.Teleport( at.Position, at.Rotation );
+		else
+		{
+			_ownPawn.WorldPosition = at.Position;
+			_ownPawn.WorldRotation = at.Rotation;
+		}
 
 		var body = _ownPawn.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndDescendants );
 		if ( body.IsValid() )

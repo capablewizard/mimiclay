@@ -21,6 +21,15 @@ public enum SculptTool
 	Gizmo,
 }
 
+/// <summary>What the world-space cursor should show, on the one grab-language rule: OPEN hand over
+/// anything grabbable, CLOSED hand while anything is grabbed. None = whatever the UI/default says.</summary>
+public enum GrabCursor
+{
+	None,
+	Open,
+	Closed,
+}
+
 [Title( "Sculpt Edit Session" )]
 [Category( "Mimiclay" )]
 [Icon( "construction" )]
@@ -183,6 +192,42 @@ public sealed class SculptEditSession : Component
 	/// <summary>True while a hold-key param scrub (A/S/D/E) is running — the HUD captures the mouse and
 	/// draws the frozen-cursor dot at <see cref="BrushScrub.Anchor"/>.</summary>
 	public bool IsScrubbing => BrushScrub.Active != ScrubKind.None;
+
+	// Brush under the cursor via the 3D scene pick ONLY (never the layer-row hover fallback that feeds
+	// _hoverBrush) — the grab cursor must not go open-hand while the mouse is over a HUD row.
+	int _worldHover = -1;
+
+	/// <summary>The grab cursor the world should show this frame — ONE rule for the whole edit system:
+	/// open hand over anything grabbable (a gizmo handle, a spline point/radius dot, a shape you can
+	/// select), closed hand while anything is grabbed (a handle drag, the stamp ghost riding the cursor).
+	/// None while a captured gesture hides the cursor (the drawn dot owns it), while the add-point cursor
+	/// owns a spline-line hover, or when there's just nothing to grab. The HUD paints it via its
+	/// full-screen cursor zone (the same trick as the add-point cursor).</summary>
+	public GrabCursor WorldCursor
+	{
+		get
+		{
+			if ( !IsEditing || PauseMenu.IsOpen )
+				return GrabCursor.None;
+			if ( AltNav.Dragging || IsScrubbing )
+				return GrabCursor.None; // cursor hidden by the mouse capture — the drawn dot stands in
+
+			// Sculpt mode: the stamp ghost rides the cursor — it IS a grabbed thing, the whole time.
+			if ( Tool == SculptTool.Sculpt )
+				return StampBrush is not null ? GrabCursor.Closed : GrabCursor.None;
+
+			if ( _gizmo.IsDragging || _gizmo.IsUiDragging )
+				return GrabCursor.Closed;
+			if ( _gizmo.HoveringSplineLine )
+				return GrabCursor.None; // the add-point cursor panel owns this hover
+			if ( _gizmo.IsHoveringGrabbable )
+				return GrabCursor.Open;
+			if ( _worldHover >= 0 )
+				return GrabCursor.Open; // a shape you can pick up (select) is under the cursor
+
+			return GrabCursor.None;
+		}
+	}
 
 	/// <summary>The pending stamp's projected screen position (real screen px), for landing the cursor on
 	/// the shape when a frozen-cursor gesture releases. False with no stamp / camera / behind-camera.</summary>
@@ -1043,6 +1088,7 @@ public sealed class SculptEditSession : Component
 			_stampWire.Hide();
 			_stampWireList.Clear();
 			_hoverBrush = -1;
+			_worldHover = -1;
 
 			int authored = Target.AuthoredBrushCount;
 			Selected = (state.Selected >= 0 && state.Selected < authored) ? state.Selected : -1;
@@ -1403,6 +1449,7 @@ public sealed class SculptEditSession : Component
 		// paused — the pause overlay must not highlight shapes behind it).
 		int hover = (!overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing)
 			? PickBrush( tx ) : -1;
+		_worldHover = hover; // scene pick only — recorded BEFORE the layer-row fallback (see the field)
 
 		// Fall back to the brush the HUD's layer list is hovering, so mousing a row highlights its shape.
 		// The scene pick wins when valid; this only fills in when the cursor isn't over a 3D brush.
@@ -1633,6 +1680,7 @@ public sealed class SculptEditSession : Component
 		_gizmoAlpha = 0f;
 		_gizmoBrush = null;
 		_hoverBrush = -1;
+		_worldHover = -1;
 		_ghostOut.Hide();
 		_ghostOutBrush = null;
 		_ghostOutAlpha = 0f;

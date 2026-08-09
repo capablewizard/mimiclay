@@ -1920,10 +1920,7 @@ public sealed class HunterController : Component
 		if ( !wasEditing && _session.IsEditing )
 			FrameFace();
 		else if ( wasEditing && !_session.IsEditing && _orbit.IsValid() ) // leaving: remember the view (face-relative), zoom and pan for the next edit session
-			_lastEditView = (
-				new Angles( _orbit.Angles.pitch, _orbit.Angles.yaw - FaceYaw(), 0f ),
-				_orbit.Distance,
-				Rotation.FromYaw( FaceYaw() ).Inverse * (_orbit.Pivot - FaceCenterWorld()) );
+			_lastEditView = CaptureEditView();
 	}
 
 	// The last edit session's view, zoom and pan, stored RELATIVE to the face (yaw-relative angles; the panned
@@ -1934,6 +1931,36 @@ public sealed class HunterController : Component
 
 	float FaceYaw() => _controller.IsValid() ? _controller.EyeAngles.yaw : WorldRotation.Angles().yaw;
 
+	// The orbit rig's current view expressed relative to the face (the _lastEditView shape), and its inverse.
+	// Shared by leaving edit mode (store for next time), re-entering (restore), and Teleport (carry the camera
+	// across an external move).
+	(Angles view, float distance, Vector3 panOffset) CaptureEditView() => (
+		new Angles( _orbit.Angles.pitch, _orbit.Angles.yaw - FaceYaw(), 0f ),
+		_orbit.Distance,
+		Rotation.FromYaw( FaceYaw() ).Inverse * (_orbit.Pivot - FaceCenterWorld()) );
+
+	void RestoreEditView( (Angles view, float distance, Vector3 panOffset) v )
+	{
+		_orbit.Pivot = FaceCenterWorld() + Rotation.FromYaw( FaceYaw() ) * v.panOffset;
+		_orbit.Distance = v.distance;
+		_orbit.Angles = new Angles( v.view.pitch, FaceYaw() + v.view.yaw, 0f );
+	}
+
+	/// <summary>Move this (owned) pawn somewhere authoritatively — the round system's hunt-start return to the
+	/// start point. A plain transform write strands the edit camera: the orbit rig's free pivot is a fixed WORLD
+	/// point, so mid-edit the head would teleport out from under the view. This captures the view face-relative
+	/// first and re-applies it after the move, so the framing survives the jump exactly.</summary>
+	public void Teleport( Vector3 position, Rotation rotation )
+	{
+		var view = EditMode && _orbit.IsValid() ? CaptureEditView() : ((Angles, float, Vector3)?)null;
+
+		WorldPosition = position;
+		WorldRotation = rotation;
+
+		if ( view is { } v )
+			RestoreEditView( v );
+	}
+
 	// Park the orbit camera on the face: the FIRST entry frames it from the front (along the head's facing,
 	// aiming back at it); later entries restore wherever you last left the view. Must run AFTER the session
 	// enables the camera, since OrbitCameraController.OnEnabled seeds pivot/angles from the (first-person) view.
@@ -1943,11 +1970,7 @@ public sealed class HunterController : Component
 			return;
 
 		if ( _lastEditView is { } last )
-		{
-			_orbit.Pivot = FaceCenterWorld() + Rotation.FromYaw( FaceYaw() ) * last.panOffset;
-			_orbit.Distance = last.distance;
-			_orbit.Angles = new Angles( last.view.pitch, FaceYaw() + last.view.yaw, 0f );
-		}
+			RestoreEditView( last );
 		else
 		{
 			_orbit.Pivot = FaceCenterWorld();

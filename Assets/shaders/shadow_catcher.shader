@@ -87,7 +87,7 @@ PS
 		// Material::Init gives the camera-relative world position + screen position the shadow/light queries expect.
 		Material m = Material::Init( i );
 		float3 worldPos  = m.WorldPosition;
-		float2 screenPos = m.ScreenPosition.xy;
+		float4 screenPos = m.ScreenPosition;
 		float3 N = normalize( i.vNormalWs );
 
 		// Ratio formulation: sum each light's would-be illumination (potential) and the part that actually arrives

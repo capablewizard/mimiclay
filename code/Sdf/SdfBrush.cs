@@ -49,8 +49,17 @@ public class SdfBrush
 	[Property] public SdfCrossSection CrossSection { get; set; } = SdfCrossSection.Triangle;
 
 	/// <summary>The string the <see cref="SdfShape.Text"/> shape renders (ignored by every other shape).
-	/// Serialises/networks like any brush field; each machine bakes the same distance field locally.</summary>
-	[Property, Group( "Text" )] public string Text { get; set; } = "clay";
+	/// Serialises/networks like any brush field; each machine bakes the same distance field locally.
+	/// Never blank: an empty string is invisible geometry, so blank/whitespace assignments are dropped and
+	/// the previous string stays — from the HUD, the inspector and deserialised payloads alike. The edit
+	/// HUD's entry can still SHOW empty mid-typing (see EditHud.SelectedText).</summary>
+	[Property, Group( "Text" )]
+	public string Text
+	{
+		get => _text;
+		set { if ( !string.IsNullOrWhiteSpace( value ) ) _text = value; }
+	}
+	string _text = "clay";
 
 	/// <summary>Font family for the <see cref="SdfShape.Text"/> shape. Fonts shipped in Assets/fonts resolve
 	/// by their embedded family name, same as UI styles — e.g. "Super Joyful" (the theme's display font,

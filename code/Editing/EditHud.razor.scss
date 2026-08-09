@@ -203,6 +203,7 @@
 		width: 100%;
 		height: 100%;
 		pointer-events: all;
+		cursor: hand_closed; // whatever raised this overlay (layer drag, slider/wheel scrub) is being HELD
 	}
 
 	// The left "panel" is now just an invisible layout column — the controls float over the scene as
@@ -389,7 +390,7 @@
 		justify-content: space-between; // spread the cells evenly across the row, in order
 		padding: 8px 12px;
 		border-radius: 22px; // surface (fill/outline/shadow) comes from .paper-card
-		cursor: pointer;
+		cursor: pointer; // point hand — the grab-hover cursor (drag to reorder); grabbing shows the closed hand
 		// NO transform transition on the base — so the dragged row follows the cursor with zero easing.
 		// Only the shuffling siblings animate their transform (see &.shuffle below).
 		transition: background-color 0.1s ease;
@@ -582,7 +583,7 @@
 	.color-wheel {
 		position: relative;
 		pointer-events: all;
-		cursor: pointer;
+		cursor: pointer; // point hand = grab-hover; the scrub's drag-capture overlay shows the closed hand
 
 		&:hover { sound-in: $sound-hover; }
 		&:active { sound-in: $sound-click; }
@@ -637,7 +638,16 @@
 		height: 100%;
 		pointer-events: all;
 		cursor: pointer; // the hand cursor (cursor_add didn't render right yet — swap back to it once its image is fixed)
+
+		// The insert-and-place drag: the freshly inserted point is GRABBED, so the shared grab language
+		// (closed hand while holding anything) applies here too.
+		&.dragging { cursor: hand_closed; }
 	}
+
+	// (No world grab-cursor zone here on purpose: the world cursor — point hand over grabbables, closed
+	// hand while grabbed — goes through the Mouse.CursorType fallback (EditHud.WorldCursorName). A hovered
+	// pointer-events surface routes the mouse buttons to the UI, swallowing Attack1, which killed world
+	// selection and every gizmo grab when this was first built as a zone like .add-point-cursor above.)
 
 	// Bounding-sphere silhouette of the selected shape (Bounds toggle in the Tools panel). A flat circle is
 	// the exact silhouette of the bound sphere; left/top/width/height are set inline from code. Outline only.
@@ -786,7 +796,7 @@
 			flex-direction: row;
 			align-items: center;      // centre the thin groove vertically in the tall hit zone
 			height: 24px;             // generous vertical target (the visual groove is only 7px)
-			cursor: pointer;
+			cursor: pointer;          // point hand = grab-hover; the scrub's drag-capture shows the closed hand
 			pointer-events: all;
 
 			&:hover { sound-in: $sound-hover; }  // hover the groove zone — not the label

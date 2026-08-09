@@ -373,7 +373,7 @@
 				{
 					<div class="text-row paper-card">
 						<div class="icon">@SdfIcons.Shape( SdfShape.Text )</div>
-						<TextEntry class="text-input" Value:bind=@SelectedText />
+						<TextEntry @ref="TextInput" class="text-input" Value:bind=@SelectedText onblur=@OnTextEntryBlur />
 					</div>
 				}
 			</div>
@@ -430,11 +430,17 @@
 	   gesture is UI-swallowed, so this panel's mouseup is the only visible release to end the drag with. *@
 	@if ( ( Session?.HoveringSplineLine ?? false ) || ( Session?.SplinePointUiDragging ?? false ) )
 	{
-		@* LEFT button only — onmousedown fires for every button, and right-click means delete-a-point, not add. *@
-		<div class="add-point-cursor"
+		@* LEFT button only — onmousedown fires for every button, and right-click means delete-a-point, not add.
+		   While the insert-and-place drag runs the point is GRABBED, so the zone swaps to the closed hand. *@
+		<div class="add-point-cursor @(Session?.SplinePointUiDragging == true ? "dragging" : "")"
 			@onmousedown=@(( PanelEvent e ) => { if ( e is MousePanelEvent m && m.MouseButton == MouseButtons.Left ) Session?.InsertHoveredSplinePoint(); })
 			@onmouseup=@(() => Session?.EndSplinePointUiDrag())></div>
 	}
+
+	@* (The world grab cursor — point hand over grabbables, closed hand while grabbed — is painted via the
+	   Mouse.CursorType fallback in OnUpdate, NOT a cursor zone like the add-point panel above. A hovered
+	   pointer-events surface routes the mouse buttons to the UI, swallowing Attack1 — which killed world
+	   selection and every gizmo grab when this was first tried as a full-screen zone. See WorldCursorName. *@
 
 	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during an
 	   alt-nav drag or a hold param scrub). *@
@@ -661,6 +667,32 @@
 	static bool Over( Panel p ) =>
 		p is { IsValid: true, IsDeleting: false } && p.HasHovered && p.IsInside( Mouse.Position );
 
+	// The world cursor name fed to the Mouse.CursorType fallback each frame (via AltNav.HoverCursor — the
+	// single writer). The engine paints this ONLY when no hovered panel claims the cursor, which is exactly
+	// the "over the world" case; every HUD card's own CSS cursor wins the moment the pointer is over it.
+	// NEVER paint this with a full-screen pointer-events panel instead: a hovered pointer-events surface
+	// routes the mouse buttons to the UI, swallowing Attack1 — which kills world selection and every gizmo
+	// grab. (The add-point zone survives that only because it handles the click itself.)
+	string WorldCursorName()
+	{
+		var s = Session;
+		if ( s is null || !s.IsEditing )
+			return null;
+		if ( s.ExitConfirmPending )
+			return null; // the scrim declares no CSS cursor, so the fallback would show through it
+		if ( s.SplinePointUiDragging )
+			return "hand_closed"; // the freshly inserted point is held — matches the zone's .dragging CSS
+		if ( s.HoveringSplineLine )
+			return AddPointCursor; // keep the fallback in sync with the add-point zone's CSS cursor
+
+		return s.WorldCursor switch
+		{
+			GrabCursor.Closed => "hand_closed",
+			GrabCursor.Open => "pointer", // the point hand (hand_point.png via Cursors.config)
+			_ => null,
+		};
+	}
+
 	// Hovered swatch index, set from the cells' mouse-over/out. Drives the inline hover scale (see markup).
 	int _hoverIndex = -1;
 
@@ -855,10 +887,13 @@
 				Mouse.Position = stampPx;
 		}
 
-		// Over a selected spline's line → request the add-point cursor (a click inserts a control point there).
-		// Routed through AltNav (the single writer of Mouse.CursorType each frame) — setting Mouse.CursorType
-		// directly here just gets clobbered by AltNav.Tick's per-frame reset. null = back to the default arrow.
-		AltNav.HoverCursor = (Session?.HoveringSplineLine ?? false) ? AddPointCursor : null;
+		// The world cursor: add-point over a spline's line, else the grab language (point hand over
+		// grabbables, closed hand while grabbed). Routed through AltNav (the single writer of
+		// Mouse.CursorType each frame) — setting Mouse.CursorType directly here just gets clobbered by
+		// AltNav.Tick's per-frame reset. null = back to the default arrow. Safe against UI clobbering the
+		// other way too: PanelInput writes the cursor only on hover CHANGES (with a claim latch), so this
+		// per-frame write stands whenever the pointer is over the world.
+		AltNav.HoverCursor = WorldCursorName();
 	}
 
 	/// <summary>Cursor for the AltNav backup path while hovering a spline's line. The VISIBLE cursor is the
@@ -966,13 +1001,17 @@
 	/// <summary>The selected text brush's string, two-way bound to the HUD's TextEntry. Setting it re-bakes
 	/// the glyph field and resizes the quad so the LETTERS keep a constant world height — the quad grows
 	/// with the string. The quad stays locked to the glyph slot's 2:1 aspect: the slot→world mapping must be
-	/// uniform (matching the quad to the STRING's aspect is what squished the glyphs as you typed).</summary>
+	/// uniform (matching the quad to the STRING's aspect is what squished the glyphs as you typed).
+	/// A cleared-out entry does NOT reach the brush (SdfBrush.Text drops blank strings — no-letter text is
+	/// invisible geometry): the entry can sit empty while it has focus, because TextEntry's bound-value
+	/// refresh skips a focused panel, so you can delete everything and retype — the shape keeps its last
+	/// string meanwhile, and leaving the field snaps it back (see <see cref="OnTextEntryBlur"/>).</summary>
 	string SelectedText
 	{
 		get => Brush?.Text ?? "";
 		set
 		{
-			if ( Brush is null || Brush.Text == value )
+			if ( Brush is null || string.IsNullOrWhiteSpace( value ) || Brush.Text == value )
 				return;
 
 			// Letter height before the change: the quad maps the full slot; letters fill ContentHeightFrac of it.
@@ -988,6 +1027,18 @@
 			// commit debounce runs the full commit once the typing goes quiet.
 			Session?.PreviewChanged();
 		}
+	}
+
+	TextEntry TextInput { get; set; }
+
+	/// <summary>Enter, Escape and click-away all end in a Blur. If the entry was left cleared, the two-way
+	/// bind won't refill it — after pushing the blank at <see cref="SelectedText"/> (which dropped it) the
+	/// bind considers both sides in sync — so snap the entry back to the brush's real string here. A no-op
+	/// when the field holds what the brush holds, i.e. after any normal accepted edit.</summary>
+	void OnTextEntryBlur()
+	{
+		if ( TextInput.IsValid() )
+			TextInput.Text = SelectedText;
 	}
 
 	// Swap the extruded brush's 2D profile. Rounding is re-clamped because the profiles have different

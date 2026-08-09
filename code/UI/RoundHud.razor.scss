@@ -311,6 +311,35 @@ $clock-col-width: 150px;
 
 		.hud-columns .badge-glyph { font-size: 25px; }
 
+		// De-sync the badge jitters pip-to-pip, the menu-button way (see _menu.scss): everyone still springs
+		// up together — the one-shot raise reads as the group reacting to the same moment, which is right —
+		// but each cell's infinite jitter runs a slightly different DURATION, so a row that comes up in
+		// unison (the Hide phase raising every prop's palette at once) drifts out of lockstep within the
+		// first cycle and stays scattered. Duration, not delay: a staggered delay would leave glyphs parked
+		// between the spring landing and the wobble starting. animation-duration is a longhand, so it
+		// retunes the shorthand set on the glyph without touching the keyframes or the 0.34s handoff.
+		// Sixteen entries = a full lobby; anything longer repeats the pattern, which never re-aligns visibly.
+		// Hits the hand badge AND the paint badge alike — both park their jitter on .badge-glyph.
+		// Routed through .pip so the selector carries enough specificity to retune BOTH badge rules — the
+		// hand's jitter is declared at .lobby-roster .nominated-badge.raised .badge-glyph (four classes),
+		// which a bare .pip-cell:nth-child() .badge-glyph would lose to; this ties it and wins on order.
+		.pip-cell:nth-child(  1 ) .pip .badge-glyph { animation-duration: 0.90s; }
+		.pip-cell:nth-child(  2 ) .pip .badge-glyph { animation-duration: 1.10s; }
+		.pip-cell:nth-child(  3 ) .pip .badge-glyph { animation-duration: 0.80s; }
+		.pip-cell:nth-child(  4 ) .pip .badge-glyph { animation-duration: 1.05s; }
+		.pip-cell:nth-child(  5 ) .pip .badge-glyph { animation-duration: 0.95s; }
+		.pip-cell:nth-child(  6 ) .pip .badge-glyph { animation-duration: 1.15s; }
+		.pip-cell:nth-child(  7 ) .pip .badge-glyph { animation-duration: 0.85s; }
+		.pip-cell:nth-child(  8 ) .pip .badge-glyph { animation-duration: 1.00s; }
+		.pip-cell:nth-child(  9 ) .pip .badge-glyph { animation-duration: 0.92s; }
+		.pip-cell:nth-child( 10 ) .pip .badge-glyph { animation-duration: 1.08s; }
+		.pip-cell:nth-child( 11 ) .pip .badge-glyph { animation-duration: 0.88s; }
+		.pip-cell:nth-child( 12 ) .pip .badge-glyph { animation-duration: 1.12s; }
+		.pip-cell:nth-child( 13 ) .pip .badge-glyph { animation-duration: 0.97s; }
+		.pip-cell:nth-child( 14 ) .pip .badge-glyph { animation-duration: 1.03s; }
+		.pip-cell:nth-child( 15 ) .pip .badge-glyph { animation-duration: 0.83s; }
+		.pip-cell:nth-child( 16 ) .pip .badge-glyph { animation-duration: 1.07s; }
+
 		// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop" until these
 		// become real per-prop thumbnails.
 		.prop-pip {

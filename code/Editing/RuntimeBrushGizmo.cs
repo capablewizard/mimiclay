@@ -68,6 +68,11 @@ public sealed class RuntimeBrushGizmo
 	/// <summary>True while a handle is actively being dragged.</summary>
 	public bool IsDragging => _active is not null;
 
+	/// <summary>True while the cursor is over a GRABBABLE handle (move/scale/rotate/trackball, spline
+	/// point/radius dots) with no drag running. The spline LINE is excluded — that hover is the add-point
+	/// affordance with its own cursor. Drives the open-hand grab cursor.</summary>
+	public bool IsHoveringGrabbable => _active is null && _hover is not null && _hover != "splineLine";
+
 	public bool Update( Transform tx, SdfBrush brush, Scene scene, GizmoSettings style, bool allowInteract = true, float alpha = 1f )
 	{
 		_cam = scene?.Camera;
