@@ -206,6 +206,28 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// the camera, so a freshly-spawned pawn can take over while this one stays as scenery.
 	bool _dormant;
 
+	// ── Hunter grab ragdoll ───────────────────────────────────────────────────────────────────────────
+	// While a hunter's PropGrabber holds this pawn, the character controller stands aside and the body is a
+	// free physics object: engine gravity on (our own integration is skipped with the rest of UpdateMovement),
+	// pitch/roll unlocked so it tumbles and dangles off the grab joint. The player can't move — but they CAN
+	// keep sculpting; the edit session is untouched. After release the body keeps tumbling until it comes to
+	// rest (or the timeout catches a ball shape rolling forever), then control returns AT WHATEVER ORIENTATION
+	// IT LANDED IN — no righting, no snap, nothing visibly changes at the control handoff. That's disguise
+	// preservation: a thrown decoy stays lying where it fell, so a thrown player must too, or the stand-up
+	// IS the tell. (The locks freeze velocities, not pose, so re-locking pitch/roll keeps the tilt; movement,
+	// ground probes and yaw-turning all still work on a tilted body — it just walks around lying down.)
+	// Owner-machine state only — proxies just watch the networked transform, and the joint itself also lives
+	// on this machine (PropGrabber's CanMove picks the non-proxy body).
+	enum RagdollPhase { None, Held, Tumbling }
+	RagdollPhase _ragdoll;
+	TimeSince _ragdollSettled;  // how long the released body has been slow enough to count as at rest
+	TimeSince _ragdollFree;     // time since release — the give-up timeout for shapes that never settle
+
+	const float RagdollRestSpeed = 15f;   // linear speed under which the body counts as settling
+	const float RagdollRestSpin = 0.8f;   // angular speed (rad/s) ditto
+	const float RagdollRestTime = 0.35f;  // how long both must hold before control returns
+	const float RagdollMaxSeconds = 6f;   // rolling-down-a-hill forever isn't a fate — recover anyway
+
 	/// <summary>Hand this prop off, HOST-SIDE: mark it dormant so the host keeps simulating it as scenery (gravity +
 	/// ground-snap still settle it) without driving it with host input/camera, and finish any host-side sculpt.
 	/// One-way — used to scatter player-sculpted props around the level. Pairs with a <c>pawn.Network.DropOwnership()</c>
@@ -329,13 +351,30 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// Committed fires on discrete edits + gizmo release locally, and on an applied commit on proxies — never
 		// mid-drag — so both sides rebase on the same settled shape states (see RecenterOriginOnShape).
 		if ( _body.IsValid() )
+		{
 			_body.Committed += RecenterOriginOnShape;
+
+			// Physics mass from clay volume, per commit — the SAME formula the grabbable map props use
+			// (PropMass), so a hunter picking props up can never weigh-test for players. Also what makes a
+			// disguise sculpted bigger genuinely heavier to hold — including live, mid-grab.
+			_body.Committed += UpdateBodyMass;
+			UpdateBodyMass();
+		}
 	}
 
 	protected override void OnDestroy()
 	{
 		if ( _body.IsValid() )
+		{
 			_body.Committed -= RecenterOriginOnShape;
+			_body.Committed -= UpdateBodyMass;
+		}
+	}
+
+	void UpdateBodyMass()
+	{
+		if ( Body.IsValid() )
+			Body.MassOverride = PropMass.Clamp( PropMass.MassOf( _body ) );
 	}
 
 	protected override void OnUpdate()
@@ -512,6 +551,17 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( !Body.MotionEnabled )
 			Body.MotionEnabled = true;
 
+		// Grabbed by a hunter (or still tumbling from one): the character controller stands aside entirely —
+		// no ground snap, no turn, no input — and the ragdoll state machine owns the body until it has settled
+		// and righted itself. Checked before the dormant/edit gates: a grab overrides everything, including a
+		// released lobby prop (which ragdolls and then just settles back to dormant scenery).
+		bool held = PropGrabber.IsHeldByHunter( GameObject );
+		if ( held || _ragdoll != RagdollPhase.None )
+		{
+			UpdateRagdoll( held );
+			return;
+		}
+
 		// No locomotion input when editing (control suspended) OR when released into the level (dormant): the body
 		// stays LIVE — gravity, collision and ground-snap still run, so an editing prop re-settles onto its shape as
 		// soon as a commit rebuilds collision, and a released prop keeps resting where it was left.
@@ -623,6 +673,63 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		float contactSpin = Body.AngularVelocity.z - _lastSetYawRate; // spin the solver introduced on its own
 		_lastSetYawRate = mouseRate + contactSpin * SnagCompliance;
 		Body.AngularVelocity = Body.AngularVelocity.WithZ( _lastSetYawRate );
+	}
+
+	// ── Hunter grab ragdoll (see the field block) ────────────────────────────────────────────────────
+
+	void UpdateRagdoll( bool held )
+	{
+		if ( _ragdoll == RagdollPhase.None )
+		{
+			// Grab begins: free the body. Engine gravity takes over from our own integration (which is skipped
+			// with the rest of the movement code while ragdolling), and the upright locks come off so the
+			// disguise dangles and tumbles off the grab point like any other prop — identical behaviour to a
+			// decoy is the point, a grab must not weigh-or-wiggle-test as "player".
+			_ragdoll = RagdollPhase.Held;
+			Body.Gravity = true;
+			Body.Locking = new PhysicsLock();
+			_turnSeeded = false;
+			_jumpQueued = false;
+		}
+
+		if ( held )
+		{
+			// Asserted every held tick, not just on entry: a RE-GRAB right after recovery arrives with the
+			// locks back on and gravity handed back to us — the grab must re-free the body or it hangs rigid.
+			_ragdoll = RagdollPhase.Held;
+			Body.Gravity = true;
+			Body.Locking = new PhysicsLock();
+			_ragdollSettled = 0f;
+			_ragdollFree = 0f;
+			_jumpQueued = false; // no struggling (yet) — a queued jump firing on recovery would be a surprise
+			return;
+		}
+
+		if ( _ragdoll == RagdollPhase.Held )
+		{
+			// Released (dropped, thrown or launched): keep tumbling under the velocity the grab gave us.
+			_ragdoll = RagdollPhase.Tumbling;
+			_ragdollFree = 0f;
+			_ragdollSettled = 0f;
+		}
+
+		bool slow = Body.Velocity.Length < RagdollRestSpeed && Body.AngularVelocity.Length < RagdollRestSpin;
+		if ( !slow )
+			_ragdollSettled = 0f;
+
+		bool grounded = CheckGround( out _, out _ );
+		if ( (slow && grounded && _ragdollSettled > RagdollRestTime) || _ragdollFree > RagdollMaxSeconds )
+		{
+			// Settled (or timed out mid-roll — the controller taking over IS what stops it). Hand control
+			// back exactly as the body lies: re-lock pitch/roll AT THE LANDED TILT (locks freeze velocities,
+			// not pose), re-take gravity, and touch nothing visible — see the field-block comment for why a
+			// stand-up would be the tell that breaks the disguise.
+			_ragdoll = RagdollPhase.None;
+			Body.Gravity = false;
+			Body.Locking = new PhysicsLock { Pitch = true, Yaw = false, Roll = true };
+			Body.AngularVelocity = Vector3.Zero;
+			_turnSeeded = false; // resume play re-seeds the compliance turn from the live facing (no snap)
+		}
 	}
 
 	// Ground test: sphere-probe straight down from EACH footprint point (see GroundProbePoints), so a body made of

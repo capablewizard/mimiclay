@@ -53,6 +53,19 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
 			outline.Hidden = !ShouldShow( outline, phase );
 
+		// The local hunter's grab hover/held highlight outranks the phase rules — applied HERE, not just in
+		// PropGrabber's own update, because the outline's draw decision is consumed from the member renderers'
+		// OnUpdate: if a renderer updates before the grabber (order is a HashSet), a claim applied only there
+		// arrives after the verdict was consumed and never draws. This runs at StartUpdate, before every
+		// renderer, so the claim always lands. Local-only information by construction: ClaimedOutline is only
+		// ever set on the grabbing player's own machine.
+		foreach ( var grabber in Scene.GetAllComponents<PropGrabber>() )
+		{
+			var claimed = grabber.ClaimedOutline;
+			if ( claimed.IsValid() )
+				PropGrabber.StyleGrabHighlight( claimed, grabber.ClaimedHeld );
+		}
+
 		// Reveal pulse: any prop pawn still standing at the Reveal IS a survivor (caught props were
 		// swapped to hunter pawns), so its authored-off SdfOutlineFlash runs for exactly that phase.
 		// Asserted per machine every frame like the visibility above — Get, not GetAllComponents,

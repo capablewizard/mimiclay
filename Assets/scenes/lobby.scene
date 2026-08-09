@@ -158,6 +158,8 @@
           "__enabled": false,
           "Flags": 0,
           "__version": 1,
+          "Filter": "Bilinear",
+          "Gamma": 2.2,
           "Mode": "Additive",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -688,7 +690,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "ef6ee3ff-2bc4-8eb4-bd8e-f7be1d790ca5"
+              "$blob": "252ebc82-1a2e-4d83-ba68-3aa69920a98b"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -744,7 +746,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
+              "$blob": "d6b6cd0b-00b7-4ec1-a133-2fbec6de8338"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -800,7 +802,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
+              "$blob": "5381b522-236a-4231-aaed-46d1500fbc68"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -856,7 +858,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
+              "$blob": "d6729508-b2c5-4eb4-a4cb-0345ebcaa5a7"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -912,7 +914,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
+              "$blob": "9dc0eb70-abd1-4d7b-aa6a-87fab2673e67"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -1168,7 +1170,87 @@
       "__version": 2,
       "__Prefab": "prefabs/saved/gameboy.prefab",
       "__PrefabInstancePatch": {
-        "AddedObjects": [],
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "e0a1bea2-e737-42ea-b1f7-af1f08d2005a"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "db48c1f6-f208-4752-a9f1-e5896c493e3a"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "e0a1bea2-e737-42ea-b1f7-af1f08d2005a",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "c940e676-4ce6-4080-938b-735e6a60f778"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "e0a1bea2-e737-42ea-b1f7-af1f08d2005a"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "c940e676-4ce6-4080-938b-735e6a60f778",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
         "RemovedObjects": [],
         "PropertyOverrides": [
           {
@@ -1726,8 +1808,24 @@
               "Type": "Component",
               "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
             },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
+            },
             "Property": "Displace",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -1742,11 +1840,762 @@
       }
     },
     {
+      "__guid": "547ced22-e7b3-4b23-8d30-59dcaaf74133",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/trophy.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "a6910b09-b579-44e6-b800-d21a94353e79"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "43b1e208-6903-411d-b19d-7b1599b31cf8"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "de64ddee-9d5c-475b-9ee6-c4284ad764de"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "a6910b09-b579-44e6-b800-d21a94353e79",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "02c689db-a7b1-4a1d-a951-ff71bb78c9be"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "43b1e208-6903-411d-b19d-7b1599b31cf8"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "a6910b09-b579-44e6-b800-d21a94353e79"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "02c689db-a7b1-4a1d-a951-ff71bb78c9be",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          }
+        ],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "43b1e208-6903-411d-b19d-7b1599b31cf8"
+            },
+            "Property": "Position",
+            "Value": "-257.231323,-212.130692,-12.5992403"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "43b1e208-6903-411d-b19d-7b1599b31cf8"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.114669144,0.993403673"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e5f5e4cc-0e61-45d5-b797-6ef092a89d90"
+            },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "de64ddee-9d5c-475b-9ee6-c4284ad764de"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "de64ddee-9d5c-475b-9ee6-c4284ad764de": "93926bbd-40b3-4a59-8e11-8acc87c6588f",
+        "5a169cf9-b454-4ea4-a1b2-0cfbad600a25": "75a222ca-6a50-41a8-bac1-d9feb8c265e7",
+        "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b": "93bfd032-5e9d-440c-8593-99bdc0f7121d",
+        "e5f5e4cc-0e61-45d5-b797-6ef092a89d90": "27b17c00-dbf5-4d45-a06b-333ec5750785",
+        "e2593524-cc48-4c33-ac9a-033a2d62c294": "224e63e4-dee2-4574-8df2-d74de492bea2",
+        "43b1e208-6903-411d-b19d-7b1599b31cf8": "547ced22-e7b3-4b23-8d30-59dcaaf74133"
+      }
+    },
+    {
+      "__guid": "5e9138c4-c874-418c-8185-618f22ce5286",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/alarmclock.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "6dc04d76-153f-4dec-b81a-bf4675f6c1d8"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "8be05277-e0aa-405c-8306-d55ff5a2260c"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "44be6cde-6e47-41df-9e18-17f6984baedf"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "6dc04d76-153f-4dec-b81a-bf4675f6c1d8",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "3967a2ea-3cee-45ab-8378-69ff9307b21a"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "8be05277-e0aa-405c-8306-d55ff5a2260c"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "6dc04d76-153f-4dec-b81a-bf4675f6c1d8"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "3967a2ea-3cee-45ab-8378-69ff9307b21a",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          }
+        ],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8be05277-e0aa-405c-8306-d55ff5a2260c"
+            },
+            "Property": "Position",
+            "Value": "-188.88028,-294.249023,9.39801311"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8be05277-e0aa-405c-8306-d55ff5a2260c"
+            },
+            "Property": "Rotation",
+            "Value": "0.106506146,-0.0557669736,-0.460499167,0.879481018"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "04546774-8679-4833-8c11-4341bd39820d"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "1.21295452E-05,-2.15877295,16",
+                "Rotation": "-0.707106829,-1.49011612E-08,0,0.707106829",
+                "Size": "26.4732342,12,10.1175842",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 2.2987561,
+                "Color": "0.77067,0.25787,0.25787,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.840742
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-1.47819519E-05,16.545311,15.9999971",
+                "Rotation": "-0.707106829,-1.49011612E-08,0,0.707106829",
+                "Size": "21.8535309,17.5867462,11.9185448",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.0048598,
+                "Rounding": 1.570068,
+                "Color": "0.77067,0.25787,0.25787,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 25.143555
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-8.34465027E-06,2.36937499,15.9999971",
+                "Rotation": "-0.707106829,-1.49011612E-08,0,0.707106829",
+                "Size": "21.4795513,20.1738663,3.98544073",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 1.5495863,
+                "Color": "0.97726,0.94505,0.84841,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 21.846163
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.53674316E-06,7.85873318,16",
+                "Rotation": "-0.707106829,-1.49011612E-08,0,0.707106829",
+                "Size": "3.61806822,5.06189108,4.14099216",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 1.5495863,
+                "Color": "0.72481,0.26506,0.26506,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.4989305
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-16.4586697,-2.69609261,40.3609886",
+                "Rotation": "2.98023224E-08,-0.961757839,-7.4505806E-09,-0.273901522",
+                "Size": "11.324832,11.324832,9.84334087",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.37534964,
+                "SlicePlaneN": 0.24930072,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 0.75,
+                "Color": "0.8,0.68627,0.34902,1",
+                "Metallic": 1,
+                "Roughness": 0.5,
+                "MirrorX": true,
+                "MirrorY": false,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 11.324832
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-22.0167522,-2.58624864,49.3276634",
+                "Rotation": "2.98023224E-08,-0.961757839,-7.4505806E-09,-0.273901522",
+                "Size": "3.05954099,3.05954099,2.69214272",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.37534964,
+                "SlicePlaneN": 0.24930072,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 0.75,
+                "Color": "0.2,0.5,0.85,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": true,
+                "MirrorY": false,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 3.059541
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-1.93119049E-05,7.47276449,24.713377",
+                "Rotation": "0,0,0,1",
+                "Size": "2.51214981,2.60754299,10.2832375",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 6.375,
+                "Color": "0.2,0.5,0.85,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.902071
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-6.03074408,7.00654221,13.3827038",
+                "Rotation": "-0.0303239301,-0.836065054,0.0272220187,0.547115028",
+                "Size": "2.51214981,2.60754299,6.78251457",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 6.375,
+                "Color": "0.2,0.5,0.85,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 7.688477
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-15.7768211,1.29869092,-4.18466187",
+                "Rotation": "0.254953921,0.322123438,-0.0861845687,0.90763849",
+                "Size": "4.07596302,4.07596302,9.70991802",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 2.1687675,
+                "Color": "0.2,0.5,0.85,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": true,
+                "MirrorY": false,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.530716
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-0.301453024,-2.76032901,45.1922073",
+                "Rotation": "0,0,0,1",
+                "Size": "4.00638008,3.87671685,2.72786927",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 1.5314658,
+                "Color": "0.2,0.5,0.85,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 6.206552
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a78df9de-4ad2-475e-bed3-b9376bbf5d3c"
+            },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "44be6cde-6e47-41df-9e18-17f6984baedf"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "8be05277-e0aa-405c-8306-d55ff5a2260c": "5e9138c4-c874-418c-8185-618f22ce5286",
+        "04546774-8679-4833-8c11-4341bd39820d": "fa84ee87-3398-499c-a2be-9718860f2711",
+        "a78df9de-4ad2-475e-bed3-b9376bbf5d3c": "310d3998-5883-4b41-95b9-8c84570baa6f",
+        "23056d9f-08e5-449a-b0fe-3dc439c3d3d9": "d20cf7e9-d91e-4803-97be-c406554ec30c",
+        "bb43e671-b58d-44a1-ade4-de0777c62cfb": "7fbf0f1c-83c2-4218-a012-b081343d07fc",
+        "44be6cde-6e47-41df-9e18-17f6984baedf": "28c3cb47-6d3a-4018-92c4-d4d05d4f69fb"
+      }
+    },
+    {
       "__guid": "b098d542-bc7d-43dc-964e-b9d344fe7946",
       "__version": 2,
       "__Prefab": "prefabs/saved/gameboy.prefab",
       "__PrefabInstancePatch": {
-        "AddedObjects": [],
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "acf43a54-c56b-46ec-81e8-1d4510e16a63"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "db48c1f6-f208-4752-a9f1-e5896c493e3a"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "acf43a54-c56b-46ec-81e8-1d4510e16a63",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "76197f5e-6b88-452c-8b31-a119fe2a7a84"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "acf43a54-c56b-46ec-81e8-1d4510e16a63"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "76197f5e-6b88-452c-8b31-a119fe2a7a84",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
         "RemovedObjects": [],
         "PropertyOverrides": [
           {
@@ -2320,8 +3169,24 @@
               "Type": "Component",
               "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
             },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
+            },
             "Property": "Displace",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -2333,6 +3198,2117 @@
         "41820ea1-1179-47ef-8578-3c0c288101d0": "355056fc-a575-4b63-a115-b40b297d9460",
         "cd4fbd2e-5e91-4801-ad6b-1e90d8314895": "f68bf6e2-6b44-4934-aaae-d9e1fc80df95",
         "db48c1f6-f208-4752-a9f1-e5896c493e3a": "0032d163-52ee-4f25-bc96-b9e5412a9b51"
+      }
+    },
+    {
+      "__guid": "61965456-917d-4144-b616-94189e5efe68",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/block_1.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "e399fbc0-7584-4c83-b17c-29e855004390"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "77942b9e-d559-4149-a0be-847b64ff5f43"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "ac4df60b-5409-4189-bd18-91b8ce1c265b"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "e399fbc0-7584-4c83-b17c-29e855004390",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "36294d35-4d5f-4f31-9fd3-bc09afb15d18"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "77942b9e-d559-4149-a0be-847b64ff5f43"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "e399fbc0-7584-4c83-b17c-29e855004390"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "36294d35-4d5f-4f31-9fd3-bc09afb15d18",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "5aba165d-c527-4c56-bbca-d6930b0e48e5"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "77942b9e-d559-4149-a0be-847b64ff5f43"
+            },
+            "Property": "Position",
+            "Value": "-254.783249,170.981506,-3.45920897"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "77942b9e-d559-4149-a0be-847b64ff5f43"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.729895294,0.683558941"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3c27a4a3-c7ff-4b37-8888-e7b3dd486401"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 1.8907343,
+                "Color": "0.88542,0.66249,0.17376,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 22.284609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "1",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "30.6588898,15.3294449,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Rounding": 0.75,
+                "Color": "0.84346,0.6472,0.21695,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 9.600513
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "253c76f0-6a9a-459b-9d26-7df191da49e0"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "253c76f0-6a9a-459b-9d26-7df191da49e0"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "253c76f0-6a9a-459b-9d26-7df191da49e0"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac4df60b-5409-4189-bd18-91b8ce1c265b"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "77942b9e-d559-4149-a0be-847b64ff5f43": "61965456-917d-4144-b616-94189e5efe68",
+        "3c27a4a3-c7ff-4b37-8888-e7b3dd486401": "d681edae-2852-4c73-b5ee-87ebd2218089",
+        "247caa18-0f6c-476e-bb9a-13a4706dd74f": "bd992f1e-bdef-4d75-ab9d-9c3ea6e58c9c",
+        "253c76f0-6a9a-459b-9d26-7df191da49e0": "35f0bf94-b152-40c8-9142-a9ea885aeefe",
+        "b40977a5-c8ec-448c-b3ae-aab30ac53c06": "cf9190a8-b26b-43f3-9421-9b1765b0103a",
+        "ac4df60b-5409-4189-bd18-91b8ce1c265b": "7afa149d-5d25-4c79-ad65-52b6ef11e445",
+        "5aba165d-c527-4c56-bbca-d6930b0e48e5": "df292bfb-2208-4399-babb-06df2eadd47b"
+      }
+    },
+    {
+      "__guid": "13b62b6b-3cb5-4ff5-9884-d5c27bb6808e",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/block_2.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "4bd4cbe8-fac1-4699-bd0b-c8305c69dca2"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "dec06d48-73df-4288-af22-0425a7b65fd0"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "f5af8697-4778-4f72-92e2-27faab02adf2"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "4bd4cbe8-fac1-4699-bd0b-c8305c69dca2",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "fa1b78af-9d26-450a-b5d2-5f75a2f1f4bd"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "dec06d48-73df-4288-af22-0425a7b65fd0"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "4bd4cbe8-fac1-4699-bd0b-c8305c69dca2"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "fa1b78af-9d26-450a-b5d2-5f75a2f1f4bd",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "43bd8c70-96b2-4a28-bf01-164285722b5d"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "dec06d48-73df-4288-af22-0425a7b65fd0"
+            },
+            "Property": "Position",
+            "Value": "-207.874802,199.618713,12.2308006"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "dec06d48-73df-4288-af22-0425a7b65fd0"
+            },
+            "Property": "Rotation",
+            "Value": "0.656909883,-0.261666626,-0.261666626,0.656909883"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e72a6486-7018-456e-823f-82053c882afc"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 1.8907343,
+                "Color": "0.95,0.42,0.6,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 22.284609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "2",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "30.2740498,15.1370249,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Rounding": 0.75,
+                "Color": "0.95,0.42,0.6,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.171775
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "0c7c4e0a-becf-45a5-af09-459685312921"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "0c7c4e0a-becf-45a5-af09-459685312921"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "0c7c4e0a-becf-45a5-af09-459685312921"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f5af8697-4778-4f72-92e2-27faab02adf2"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "dec06d48-73df-4288-af22-0425a7b65fd0": "13b62b6b-3cb5-4ff5-9884-d5c27bb6808e",
+        "e72a6486-7018-456e-823f-82053c882afc": "1ed2ee56-2805-4714-912f-6e1529ab91f9",
+        "f43222a1-02a8-40f1-951b-f7b38b29c627": "8b2ce61d-9785-4883-8d23-170a95e56656",
+        "0c7c4e0a-becf-45a5-af09-459685312921": "368b3846-3393-4146-a430-913ecacaef1f",
+        "7ff49eb5-07e1-4755-941a-58f993bafbdc": "d3910d67-3de4-4256-93c9-23f5ac47f875",
+        "f5af8697-4778-4f72-92e2-27faab02adf2": "79fc166f-ddd0-4a82-89d2-5752eb5d73fc",
+        "43bd8c70-96b2-4a28-bf01-164285722b5d": "63d2073c-78ed-4359-93af-a47cd4eb650f"
+      }
+    },
+    {
+      "__guid": "ea1a785c-4bb4-4554-a78c-94cc4b2e0576",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/block_3.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "132cecc5-77b1-40a9-8c79-84dc7a763aa3"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "1b63fe26-5fe0-4fac-aa91-35d1a828bb03"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "e004449a-75e0-470f-8861-1db97f8d7bc2"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "132cecc5-77b1-40a9-8c79-84dc7a763aa3",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "e39c5778-d08d-47b5-bf36-727cf479c3a6"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "1b63fe26-5fe0-4fac-aa91-35d1a828bb03"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "132cecc5-77b1-40a9-8c79-84dc7a763aa3"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "e39c5778-d08d-47b5-bf36-727cf479c3a6",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "f7249810-a9f8-4da7-b92d-e7eb47245ed2"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1b63fe26-5fe0-4fac-aa91-35d1a828bb03"
+            },
+            "Property": "Position",
+            "Value": "-192.577484,133.732452,-3.91652441"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1b63fe26-5fe0-4fac-aa91-35d1a828bb03"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.40134573,0.915926635"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "117e1e76-f4f9-44b9-becf-9fceccd57847"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 1.8907343,
+                "Color": "0.5388,0.40637,0.60501,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 22.284609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "3",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "30.6588898,15.3294449,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Rounding": 0.75,
+                "Color": "0.61347,0.42823,0.70609,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.292144
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d4031c71-7ad9-4c2d-b946-e991603d0b2e"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d4031c71-7ad9-4c2d-b946-e991603d0b2e"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d4031c71-7ad9-4c2d-b946-e991603d0b2e"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e004449a-75e0-470f-8861-1db97f8d7bc2"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "1b63fe26-5fe0-4fac-aa91-35d1a828bb03": "ea1a785c-4bb4-4554-a78c-94cc4b2e0576",
+        "117e1e76-f4f9-44b9-becf-9fceccd57847": "990c81db-cf53-40dd-9ceb-ae2d89813c2b",
+        "7ddf420f-a563-4fa4-9e8e-c64396bc0320": "884b3d5b-e053-42b0-8503-fcecc4529985",
+        "d4031c71-7ad9-4c2d-b946-e991603d0b2e": "5b93b35e-0a80-4d0a-839f-6d30702d6ad9",
+        "b9fe40db-c0fb-4e95-b07f-343e977560d0": "cbdab2f2-c603-4de4-a38e-98fa9b0f8074",
+        "e004449a-75e0-470f-8861-1db97f8d7bc2": "1db0555a-a7f2-4c05-be5e-7498c75f1aa8",
+        "f7249810-a9f8-4da7-b92d-e7eb47245ed2": "781b37b7-dbb0-4eac-a081-8f2a93918e2e"
+      }
+    },
+    {
+      "__guid": "a13b16d6-93b5-4202-87f4-d409cc132fa6",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/block_a.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "26ffe3f7-9af8-4cd1-9abc-9f3e8bcaee0c"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "8a3442ce-d15b-4a88-a465-74aac92841cb"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "26ffe3f7-9af8-4cd1-9abc-9f3e8bcaee0c",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "da2cb4af-890e-4225-8eb4-6210b1aebb3e"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "8a3442ce-d15b-4a88-a465-74aac92841cb"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "26ffe3f7-9af8-4cd1-9abc-9f3e8bcaee0c"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "da2cb4af-890e-4225-8eb4-6210b1aebb3e",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8a3442ce-d15b-4a88-a465-74aac92841cb"
+            },
+            "Property": "Position",
+            "Value": "-130.83963,171.164185,-3.805408"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8a3442ce-d15b-4a88-a465-74aac92841cb"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.964757621,0.263140231"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3ae922bf-4b75-413c-9bdb-ddda7200d884"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 1.8907343,
+                "Color": "0.67832,0.36171,0.35106,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 22.284609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "a",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "31.4586868,15.7293434,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Rounding": 0.75,
+                "Color": "0.69538,0.36612,0.36612,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.672114
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "8a3442ce-d15b-4a88-a465-74aac92841cb": "a13b16d6-93b5-4202-87f4-d409cc132fa6",
+        "3ae922bf-4b75-413c-9bdb-ddda7200d884": "1b11f5d6-839e-402f-b9fd-55727164e49a",
+        "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "5d91301d-2352-4ff8-97de-9b6e9066a4e2",
+        "d18818a7-d31c-44a0-8c71-702227370bfe": "6cd05c91-8689-41bc-bc9a-dcc3b21c6cba",
+        "b8c33660-fe1b-42fc-a064-98f087d68c2b": "49f80088-1e9c-455a-8e05-77a5bec1a437",
+        "130804e7-9335-4eff-8901-1c6f6e316011": "7236ce02-e296-4c6b-bd15-b30646b266a7",
+        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "07182030-e3b2-4325-bbbc-9f9a02e6eb22"
+      }
+    },
+    {
+      "__guid": "6043f271-7dd0-4222-a480-26a71c5aeda1",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/block_b.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "c0527ba7-3a94-416f-8516-73bfe96c035e"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "6ceec772-f0a7-467d-81cd-b61ce4ded814"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "a42f9987-312c-43cc-ad57-48f30ef41af0"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "c0527ba7-3a94-416f-8516-73bfe96c035e",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "d4a4ddf0-8280-4891-af9a-b947c8797be7"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "6ceec772-f0a7-467d-81cd-b61ce4ded814"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "c0527ba7-3a94-416f-8516-73bfe96c035e"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "d4a4ddf0-8280-4891-af9a-b947c8797be7",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "1e8c51db-aecb-4e7b-99d4-d006403278e1"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6ceec772-f0a7-467d-81cd-b61ce4ded814"
+            },
+            "Property": "Position",
+            "Value": "-161.253021,155.978516,-4.0329771"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7bd4a337-4a92-445f-a229-a44cc9325ec0"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 1.8907343,
+                "Color": "0.38478,0.58694,0.6958,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 22.284609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "b",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "28.4862137,14.2431068,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Rounding": 0.75,
+                "Color": "0.48837,0.67552,0.77629,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.184609
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8f38980e-0fda-481c-bed7-8d0bc055a06c"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8f38980e-0fda-481c-bed7-8d0bc055a06c"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8f38980e-0fda-481c-bed7-8d0bc055a06c"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a42f9987-312c-43cc-ad57-48f30ef41af0"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "6ceec772-f0a7-467d-81cd-b61ce4ded814": "6043f271-7dd0-4222-a480-26a71c5aeda1",
+        "7bd4a337-4a92-445f-a229-a44cc9325ec0": "bb5a4c4e-d392-42c5-89c4-cfa5553eb8ef",
+        "a119c483-21fd-44e9-bcfb-52d37c870955": "1ba4729c-42a8-43d9-9d4c-f1c751283aa5",
+        "8f38980e-0fda-481c-bed7-8d0bc055a06c": "63bbbba2-8364-4544-82f5-264f09e9a0a2",
+        "a9bba8ee-5a70-45c0-80b8-06d92b41c039": "73d7606c-5f1f-42cf-8729-7f63d8a5a6c1",
+        "a42f9987-312c-43cc-ad57-48f30ef41af0": "c5726d08-76ac-4793-8660-d3c2421f28ef",
+        "1e8c51db-aecb-4e7b-99d4-d006403278e1": "bb58983e-27b0-45cf-a8bd-a88848c97551"
+      }
+    },
+    {
+      "__guid": "35618720-4b25-4f56-9007-d6bff3944a04",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/block_c.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "0672e129-a7bf-457a-a43f-514c0091048f"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "9752ae28-208a-4a97-8b6a-f415e6005911"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "82a2fc8c-996f-4426-a3dc-ccf59abad055"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "0672e129-a7bf-457a-a43f-514c0091048f",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "07d798c3-b0ba-4d04-bf0c-38d8834805a6"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "9752ae28-208a-4a97-8b6a-f415e6005911"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "0672e129-a7bf-457a-a43f-514c0091048f"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "07d798c3-b0ba-4d04-bf0c-38d8834805a6",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "e2fb9900-d396-49e4-a908-781053dd3b67"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "9752ae28-208a-4a97-8b6a-f415e6005911"
+            },
+            "Property": "Position",
+            "Value": "-145.978058,162.803268,20.3970757"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "9752ae28-208a-4a97-8b6a-f415e6005911"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.384161413,0.923265934"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f2a5c3cb-02ae-46d2-a0b4-a7629ca57ee9"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 1.8907343,
+                "Color": "0.26462,0.56799,0.34736,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 22.284609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "c",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "29.8987522,14.9493761,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Rounding": 0.75,
+                "Color": "0.2947,0.61039,0.3808,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.431812
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "92d3a55b-1a9d-4109-9473-f43d6e7f6c61"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "92d3a55b-1a9d-4109-9473-f43d6e7f6c61"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "92d3a55b-1a9d-4109-9473-f43d6e7f6c61"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "82a2fc8c-996f-4426-a3dc-ccf59abad055"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "9752ae28-208a-4a97-8b6a-f415e6005911": "35618720-4b25-4f56-9007-d6bff3944a04",
+        "f2a5c3cb-02ae-46d2-a0b4-a7629ca57ee9": "6b30014a-9e42-4e3a-a818-685c7973d5cd",
+        "e8f4e780-b72a-4465-9fcb-15999eb16f4e": "93ced169-4424-4d00-ac8d-d6c4498bc036",
+        "92d3a55b-1a9d-4109-9473-f43d6e7f6c61": "e691e3b5-bc29-4dfd-902e-07fff53f3174",
+        "b7cf051d-6d40-4a1d-9a12-9f5951054959": "225eda20-5a8f-45d8-87e6-7f5c08d827f0",
+        "82a2fc8c-996f-4426-a3dc-ccf59abad055": "05b36619-9cd9-4e56-adf3-a7df2256f114",
+        "e2fb9900-d396-49e4-a908-781053dd3b67": "cdeb7aa1-5808-4c85-b695-50fb3e4b6606"
+      }
+    },
+    {
+      "__guid": "229363c8-c092-4d1e-bac5-fd232622a1c0",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/bowlingball.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "49bbeb95-f53d-470c-bb8e-fa8bd6e8668c"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "094636e3-c686-4b82-af2a-dae12c51b8b4"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "8976d441-e537-49ba-aed3-fa9d3ec58cb0"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "49bbeb95-f53d-470c-bb8e-fa8bd6e8668c",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "6c5a4822-e1e5-4cd5-bf41-4ce5da1ba69d"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "094636e3-c686-4b82-af2a-dae12c51b8b4"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "49bbeb95-f53d-470c-bb8e-fa8bd6e8668c"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "6c5a4822-e1e5-4cd5-bf41-4ce5da1ba69d",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "480c50e5-b54c-401a-a87c-c093e8ce97ed"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "094636e3-c686-4b82-af2a-dae12c51b8b4"
+            },
+            "Property": "Position",
+            "Value": "142.394928,168.38028,33.1000519"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "094636e3-c686-4b82-af2a-dae12c51b8b4"
+            },
+            "Property": "Rotation",
+            "Value": "0.371299177,0.0208051242,0.100621358,0.922810555"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1240b238-21ac-440a-b087-028a06207923"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1240b238-21ac-440a-b087-028a06207923"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1240b238-21ac-440a-b087-028a06207923"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8976d441-e537-49ba-aed3-fa9d3ec58cb0"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "094636e3-c686-4b82-af2a-dae12c51b8b4": "229363c8-c092-4d1e-bac5-fd232622a1c0",
+        "46309ea6-7bfd-4f71-9451-ffe39fd68197": "e0c0f044-b729-4530-ae63-4a1d202c180c",
+        "6b7c0fa5-0f2d-40d2-9942-060969a8723c": "0d64bcdf-800c-4197-b266-a222273fc818",
+        "1240b238-21ac-440a-b087-028a06207923": "a753b816-0ac1-46dd-ae8b-545ef3c666a3",
+        "f40af5c2-6b6e-4bb5-b609-f4207f04b6cc": "46173e8f-a3ee-4ae7-a6d4-6b45895dc111",
+        "8976d441-e537-49ba-aed3-fa9d3ec58cb0": "b87a7a87-e3f9-4331-9df5-d28c1546182d",
+        "480c50e5-b54c-401a-a87c-c093e8ce97ed": "6e4342cc-e2b4-4427-ab1a-b524971cf909"
+      }
+    },
+    {
+      "__guid": "6c5a9abf-5700-4efc-9e9c-9b2648f2f21e",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/footstool.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "0875f7f4-08b8-4481-bdcf-cd447c6774c0"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "6a00c5ed-804b-477b-8e99-688da0dfab76"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "3708f563-6429-4d77-bd1a-a2b6d273facf"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Sandbox.Rigidbody",
+              "__guid": "0875f7f4-08b8-4481-bdcf-cd447c6774c0",
+              "__enabled": true,
+              "Flags": 0,
+              "AngularDamping": 0,
+              "EnableImpactDamage": true,
+              "EnhancedCcd": false,
+              "Gravity": true,
+              "GravityScale": 1,
+              "ImpactDamage": 0,
+              "LinearDamping": 0,
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "MassCenterOverride": "0,0,0",
+              "MassOverride": 0,
+              "MinImpactDamageSpeed": 500,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OverrideMassCenter": false,
+              "RigidbodyFlags": 0,
+              "SleepThreshold": 2,
+              "StartAsleep": false
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "0649fb69-0fb7-44fe-abbc-0f65af4b45b6"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "6a00c5ed-804b-477b-8e99-688da0dfab76"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "0875f7f4-08b8-4481-bdcf-cd447c6774c0"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.GrabbableProp",
+              "__guid": "0649fb69-0fb7-44fe-abbc-0f65af4b45b6",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
+        "RemovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "09acb11c-0869-4be8-b8ee-0b68ee06dd1b"
+            }
+          }
+        ],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6a00c5ed-804b-477b-8e99-688da0dfab76"
+            },
+            "Property": "Position",
+            "Value": "-339.680084,-73.6028137,11.3009758"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6a00c5ed-804b-477b-8e99-688da0dfab76"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.141984999,0.98986882"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8185eb5e-f70a-48de-9378-be32b31f4680"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,36.9812241",
+                "Rotation": "0,0,0,1",
+                "Size": "36.1758232,36.1758232,9.66160202",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 7.3260226,
+                "Color": "0.22791,0.22261,0.22261,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 38.943783
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,24.1865215",
+                "Rotation": "0,0,0,1",
+                "Size": "36.1758232,36.1758232,4.06194687",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 1.4100733,
+                "Color": "0.29878,0.50685,0.61888,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 36.403152
+              },
+              {
+                "Shape": "Spline",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,40.2134819",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": [
+                  "18.7052994,17.2913399,23.0028343,6.38228369",
+                  "25.1472111,23.6187019,-2.4726162,8.65173626"
+                ],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": true,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.4718795,
+                "Rounding": 0.75,
+                "Color": "0.35494,0.54874,0.65309,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": true,
+                "MirrorY": true,
+                "EffectiveMirrorX": true,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 12.3679695
+              },
+              {
+                "Shape": "Cone",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-3.51108611E-07,-0.0581934005,84.862442",
+                "Rotation": "-1,-1.49011594E-08,-8.74808385E-12,-4.37113883E-08",
+                "Size": "24,24,24",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,24",
+                "Blend": 15,
+                "Rounding": 0.75,
+                "Color": "0.10698,0.10698,0.10698,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 57.41563
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,42.7818985",
+                "Rotation": "0,0,0,1",
+                "Size": "5.80909729,5.80909729,3.79481554",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 2.8522792,
+                "Color": "0.10588,0.10588,0.10588,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 6.9387493
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8055e640-5701-4473-b747-ecdb71cfb8c4"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8055e640-5701-4473-b747-ecdb71cfb8c4"
+            },
+            "Property": "Displace",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8055e640-5701-4473-b747-ecdb71cfb8c4"
+            },
+            "Property": "DistanceSwitching",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3708f563-6429-4d77-bd1a-a2b6d273facf"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "6a00c5ed-804b-477b-8e99-688da0dfab76": "6c5a9abf-5700-4efc-9e9c-9b2648f2f21e",
+        "8185eb5e-f70a-48de-9378-be32b31f4680": "4451912e-a786-4ea6-88ab-d06123b101e8",
+        "6c62dc06-ae92-4419-b8e6-d6bada5d39bb": "77acdff0-461c-4e91-b802-1fb3bc737d1f",
+        "8055e640-5701-4473-b747-ecdb71cfb8c4": "27622978-ca6a-4fa0-b0ba-e202e2019a49",
+        "2b88121e-c9a6-40d6-8cea-d0541a98642b": "9cd1b723-5ed5-4a18-9dae-ff8e0469c541",
+        "3708f563-6429-4d77-bd1a-a2b6d273facf": "036f9dde-574f-41f6-b677-bdf8f83d764d",
+        "09acb11c-0869-4be8-b8ee-0b68ee06dd1b": "045760e9-5ac5-460f-969d-035a44e0a5f8"
       }
     }
   ],
@@ -2360,8 +5336,7 @@
     "GameObjectSystems": {
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
-          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
-          "$refs": []
+          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd"
         }
       },
       "Sandbox.SelectionSetsSystem": {

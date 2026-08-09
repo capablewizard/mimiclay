@@ -224,6 +224,7 @@ public sealed class HunterController : Component
 	SculptEditSession _session;
 	OrbitCameraController _orbit;
 	HunterGun _gun;
+	PropGrabber _grabber;
 
 	// The pawn's OTHER sculptures (body spheres, the fist) — kept dressed in the face's material, see
 	// MatchBodyMaterialToFace.
@@ -241,6 +242,13 @@ public sealed class HunterController : Component
 	// holding the last resolved values keeps the pawn still instead of snapping it back to parallel.
 	Vector3 _aimDir;
 	Vector3 _visualAimDir;
+
+	// Internal: PropGrabber traces its grab along the same converged crosshair ray the shot takes (matters in
+	// third person, where the eye forward isn't where the dot is). Same fallback as Shoot: raw eye forward
+	// until the first resolve.
+	internal Vector3 AimDirection => _aimDir.LengthSquared > 0.5f
+		? _aimDir
+		: (_controller.IsValid() ? _controller.EyeAngles.ToRotation().Forward : WorldRotation.Forward);
 
 	// Internal: the crosshair HUD (HunterCrosshair) reads this to hide the dot while sculpting.
 	internal bool EditMode => _session?.IsEditing ?? false;
@@ -295,6 +303,11 @@ public sealed class HunterController : Component
 		// the spawn snapshot and proxies receive the same component (the engine's voice RPC needs that shared
 		// identity). On a proxy the snapshot copy already exists and GetOrCreate just adopts it.
 		Components.GetOrCreate<PlayerVoice>();
+
+		// The prop grab (RMB carry / LMB launch). Same OnAwake-before-NetworkSpawn reasoning as the voice
+		// component: its [Sync] grab state must exist on every machine, because the machine that SIMULATES a
+		// grabbed prop's body (host for map props, the hider's client for player props) is usually not ours.
+		Components.GetOrCreate<PropGrabber>();
 
 		VeilForSpawn();
 	}
@@ -360,6 +373,9 @@ public sealed class HunterController : Component
 		// The detector gun display (world model + owner viewmodel). Optional — a pawn without the component
 		// just has no gun; placement is pushed from OnUpdate so it shares the smoothed eye with the camera.
 		_gun = Components.Get<HunterGun>();
+
+		// The prop grab (created in OnAwake) — the shot below defers to it while it's holding something.
+		_grabber = Components.Get<PropGrabber>();
 
 		// Face-edit mode. Resolve the editable sculpture (the head), then stand up the shared edit machinery:
 		// an orbit camera (idle until edit mode hands it the view) and a SculptEditSession pointed at the face.
@@ -608,7 +624,11 @@ public sealed class HunterController : Component
 			// trace always matches what the dot shows. During an alt-orbit the trigger is swallowed (no blip): alt+mouse is a
 			// camera gesture here — same as the hider — and the aim is frozen off-camera, so a shot would land
 			// somewhere the hidden crosshair can't show.
-			if ( Input.Pressed( "attack1" ) && !_altOrbiting )
+			// While the grabber is holding a prop, LMB is its LAUNCH — the whole press belongs to it (no shot,
+			// no denied blip). SuppressShot rather than Holding, so the click still can't double-fire when the
+			// grabber's update processed the launch BEFORE ours this frame (component order is a HashSet —
+			// never rely on it).
+			if ( Input.Pressed( "attack1" ) && !_altOrbiting && !(_grabber.IsValid() && _grabber.SuppressShot) )
 			{
 				if ( !locked && RoundManager.HuntingAllowed )
 				{
