@@ -313,7 +313,7 @@
 			var sliceVal = fb?.Slice ?? 0f;
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
 			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
-				@* Add/Carve toggle for the active brush (ghost or selection) — same flip Space does. *@
+				@* Add/Carve toggle for the active brush (ghost or selection) — same flip the A key does. *@
 				@{ var opCarve = (fb?.Operation ?? SdfOperation.Add) == SdfOperation.Subtract; }
 				<div class="chip op-chip @(opCarve ? "carve" : "")" @onclick=@ToggleActiveOperation>
 					<span>@(opCarve ? "Carve" : "Add")</span>
@@ -403,7 +403,7 @@
 						</div>
 					}
 				</div>
-				@* (No Add/Carve chips — spacebar toggles the op, and the 3D preview + red carve wireframe
+				@* (No Add/Carve chips — the A key toggles the op, and the 3D preview + red carve wireframe
 				   already make the mode obvious.) *@
 			</div>
 		}

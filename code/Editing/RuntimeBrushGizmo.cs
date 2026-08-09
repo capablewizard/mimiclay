@@ -551,11 +551,17 @@ public sealed class RuntimeBrushGizmo
 			// Scroll while dragging pushes/pulls the point along the VIEW RAY. Both drag anchors shift by
 			// the same amount along the view, which keeps the accumulated cursor delta intact and moves the
 			// drag plane to the new depth — so the point stays under the cursor as it travels, exactly like
-			// the stamp ghost's scroll-depth. Step scales with the point's own radius.
+			// the stamp ghost's scroll-depth. The step IS the shared accelerated one (sized by the point's
+			// radius, scroll-accelerated, camera-distance-scaled), so pushing a point feels identical to
+			// pushing the ghost or the whole selection.
 			float wheel = Input.MouseWheel.y;
 			if ( wheel != 0f )
 			{
-				var push = _cam.WorldRotation.Forward * (wheel * MathF.Max( 1f, brush.Points[i].w ) * 0.5f);
+				float camDist = (_grabWorldPos - _camPos).Length;
+				float step = SculptEditSession.Current is { } session
+					? session.DepthStep( brush.Points[i].w, camDist )
+					: MathF.Max( 1f, brush.Points[i].w ) * 0.5f; // no session (shouldn't happen) — old fixed step
+				var push = _cam.WorldRotation.Forward * (wheel * step);
 				_grabWorldPos += push;
 				_grabPoint += push;
 			}
@@ -563,6 +569,11 @@ public sealed class RuntimeBrushGizmo
 			if ( _down && new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
 			{
 				var local = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
+
+				// Shift snaps the point onto the shared grid — a free move, so absolute, like the stamp.
+				// Applied BEFORE the loop snap below, which overrides it: closing the ring always wins.
+				if ( SculptEditSession.SnapHeld )
+					local = SculptEditSession.SnapPosition( local );
 
 				// Loop snap, the same gesture sculpt mode's chain has: drag one END of an open curve onto
 				// the other and it sticks there. Releasing merges them into a closed ring (see
@@ -634,7 +645,13 @@ public sealed class RuntimeBrushGizmo
 		if ( _active == name && _down )
 		{
 			float t = ClosestAxisT( _grabWorldPos, axis, _ray );
-			brush.Position = tx.PointToLocal( _grabWorldPos + axis * (t - _grabT) );
+			float move = t - _grabT;
+			// Shift snaps the travel along the axis to grid-step increments. The axis is the BRUSH's local
+			// axis (arbitrary once rotated), so the DISPLACEMENT quantizes — snapping the absolute position
+			// would yank a rotated brush off its own constraint line.
+			if ( SculptEditSession.SnapHeld )
+				move = MathF.Round( move / SculptEditSession.GridStep ) * SculptEditSession.GridStep;
+			brush.Position = tx.PointToLocal( _grabWorldPos + axis * move );
 			return true;
 		}
 
@@ -671,9 +688,13 @@ public sealed class RuntimeBrushGizmo
 
 	// Blender-style trackball: the disc inside the rotation rings. Invisible until hovered (then a faint
 	// white fill), and dragging free-rotates about the SCREEN axes — mouse X spins about the camera's up,
-	// mouse Y about its right — so the shape tumbles under the cursor in all three axes at once.
-	Vector2 _trackPx; // last frame's cursor position during a trackball drag (the drag is delta-driven)
-	const float TrackballDegPerPx = 0.4f;
+	// mouse Y about its right — so the shape tumbles under the cursor in all three axes at once. Shift
+	// held snaps to the shared angle grid, same as the E-rotate scrub and the rings: the motion
+	// accumulates on the RAW orientation and only the applied value quantizes (absolutely — a brush at 8°
+	// lands on the grid, never 8°+step).
+	Vector2 _trackPx;   // last frame's cursor position during a trackball drag (the drag is delta-driven)
+	Rotation _trackRaw; // continuous unsnapped orientation, sculpture-local — Shift applies its snapped form
+	const float TrackballDegPerPx = 0.4f; // matches BrushScrub's DegPerPx — one free-rotate feel
 
 	bool Trackball( Transform tx, SdfBrush brush, Vector3 c, float radius )
 	{
@@ -687,6 +708,7 @@ public sealed class RuntimeBrushGizmo
 		{
 			_active = name;
 			_trackPx = Mouse.Position;
+			_trackRaw = brush.Rotation;
 		}
 
 		if ( _active == name && _down )
@@ -696,11 +718,17 @@ public sealed class RuntimeBrushGizmo
 			if ( d.LengthSquared < 0.0001f )
 				return false;
 
-			var worldRot = tx.Rotation * brush.Rotation;
+			var worldRot = tx.Rotation * _trackRaw;
 			worldRot = Rotation.FromAxis( _cam.WorldRotation.Up, d.x * TrackballDegPerPx )
 				* Rotation.FromAxis( _cam.WorldRotation.Right, d.y * TrackballDegPerPx )
 				* worldRot;
-			brush.Rotation = tx.Rotation.Inverse * worldRot;
+			_trackRaw = tx.Rotation.Inverse * worldRot;
+
+			var applied = SculptEditSession.SnapHeld ? SculptEditSession.SnapRotation( _trackRaw ) : _trackRaw;
+			if ( applied == brush.Rotation )
+				return false; // still in the same grid cell — no rebuild churn
+
+			brush.Rotation = applied;
 			return true;
 		}
 
@@ -738,7 +766,8 @@ public sealed class RuntimeBrushGizmo
 			_grabWorldRot = tx.Rotation * brush.Rotation;
 
 			// The brush's existing twist about the drag axis, in sculpture-local space (swing-twist
-			// decomposition) — lets ctrl snap the brush's TOTAL angle to the 45° grid, not the drag delta.
+			// decomposition) — lets Shift snap the brush's TOTAL angle to the shared angle grid, not the
+			// drag delta.
 			var la = (tx.Rotation.Inverse * axis).Normal;
 			var lr = brush.Rotation;
 			_grabTwist = 2f * MathF.Atan2( lr.x * la.x + lr.y * la.y + lr.z * la.z, lr.w );
@@ -760,12 +789,13 @@ public sealed class RuntimeBrushGizmo
 		_accumAngle += delta;
 		_grabAngle = ang;
 
-		// Ctrl snaps the absolute angle: a brush already at 2.1° lands on 45°, not 47.1°. Snap the
-		// total twist (pre-drag + dragged) to 45° steps, then apply what's left after the pre-drag part.
+		// Shift snaps the absolute angle (the shared snap hold, same grid as the E-rotate scrub): a brush
+		// already at 2.1° lands on 22.5°, not 24.6°. Snap the total twist (pre-drag + dragged) to the grid,
+		// then apply what's left after the pre-drag part.
 		float applied = _accumAngle;
-		if ( Input.Keyboard.Down( "ctrl" ) )
+		if ( SculptEditSession.SnapHeld )
 		{
-			const float step = MathF.PI / 4f;
+			const float step = SculptEditSession.SnapDeg * (MathF.PI / 180f);
 			applied = MathF.Round( (_grabTwist + _accumAngle) / step ) * step - _grabTwist;
 		}
 
@@ -792,7 +822,12 @@ public sealed class RuntimeBrushGizmo
 
 		if ( _active == name && _down && new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
 		{
-			brush.Position = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
+			// Screen-move is a free move (camera-parallel plane, like stamp steering), so Shift snaps the
+			// ABSOLUTE sculpture-local position onto the shared grid — exactly what the stamp does.
+			var pos = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
+			if ( SculptEditSession.SnapHeld )
+				pos = SculptEditSession.SnapPosition( pos );
+			brush.Position = pos;
 			return true;
 		}
 
@@ -853,7 +888,17 @@ public sealed class RuntimeBrushGizmo
 
 		if ( _active == name && _down && new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
 		{
-			brush.Position = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
+			var d = hit - _grabPoint;
+			// Shift snaps the in-plane travel to grid-step increments along the plane's own axes — the
+			// plane is brush-rotated, so (like the axis handles) the displacement quantizes, not the
+			// absolute position.
+			if ( SculptEditSession.SnapHeld )
+			{
+				float du = MathF.Round( Vector3.Dot( d, u ) / SculptEditSession.GridStep ) * SculptEditSession.GridStep;
+				float dv = MathF.Round( Vector3.Dot( d, v ) / SculptEditSession.GridStep ) * SculptEditSession.GridStep;
+				d = u * du + v * dv;
+			}
+			brush.Position = tx.PointToLocal( _grabWorldPos + d );
 			return true;
 		}
 

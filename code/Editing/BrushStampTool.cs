@@ -4,10 +4,12 @@ namespace Mimiclay;
 
 /// <summary>
 /// Add-mode stamp tool: a pending "ghost" brush that rides the cursor over the sculpture, previewing its
-/// add (or, while right-click is held, its carve) LIVE in the real surface — the ghost is a real brush in
-/// <see cref="SdfSculpture.Brushes"/>, so the raymarcher/field/blend all show exactly what a commit will
-/// produce. Left-release commits an add, right-release commits a subtract, and a fresh ghost (inheriting
-/// the committed material/params) spawns immediately so stamping flows: place, click, place, click.
+/// add or carve LIVE in the real surface — the ghost is a real brush in <see cref="SdfSculpture.Brushes"/>,
+/// so the raymarcher/field/blend all show exactly what a commit will produce. The operation comes from the
+/// HUD's Add/Carve toggle (the A key flips it); left-release commits the stamp, and a fresh ghost
+/// (inheriting the committed material/params) spawns immediately so stamping flows: place, click, place,
+/// click. Right-click is the shared scrub button: an RMB DRAG scrubs scale, an RMB TAP steps back out of
+/// placing (see <see cref="BrushScrub.ScaleTapped"/>).
 ///
 /// Placement is physgun-style — ONE depth mechanism, no surface glue: the ghost's depth lives on a
 /// WORLD-space anchor point (cursor steering slides it in the camera-parallel plane through that point, so
@@ -127,10 +129,6 @@ public sealed class BrushStampTool
 		float distScale = Math.Clamp( camDist / MathF.Max( 1f, DepthDistanceRef ), DepthDistanceScaleMin, DepthDistanceScaleMax );
 		return DepthStepFor( sizeRef ) * _accel * distScale;
 	}
-
-	/// <summary>Grid cell size for shift-snapped placement (sculpture-local units). The grid is centred on
-	/// the sculpture origin, so 0,0,0 — the symmetry planes — is always on-grid.</summary>
-	public float GridStep { get; set; } = 8f;
 
 	// ── Spline chain placement ───────────────────────────────────────────────────────────────────────
 	// A spline isn't one stamp, it's a CHAIN: each click drops a control point (a sphere at the cursor,
@@ -586,14 +584,11 @@ public sealed class BrushStampTool
 			_anchor = pos;
 		}
 
-		// Shift held = rough grid snap, in sculpture-local space with the grid centred on the origin — so
-		// the symmetry planes (0,0,0) are always a snappable cell. The anchor stays UNSNAPPED so steering
-		// keeps its precision; only the applied position quantizes.
+		// Shift held = rough grid snap (the shared sculpture-local, origin-centred grid every editing tool
+		// uses — see SculptEditSession.SnapPosition). The anchor stays UNSNAPPED so steering keeps its
+		// precision; only the applied position quantizes.
 		if ( SculptEditSession.SnapHeld )
-			pos = new Vector3(
-				MathF.Round( pos.x / GridStep ) * GridStep,
-				MathF.Round( pos.y / GridStep ) * GridStep,
-				MathF.Round( pos.z / GridStep ) * GridStep );
+			pos = SculptEditSession.SnapPosition( pos );
 
 		// A spline lives in its points, not its transform: steer the PREVIEW point (the sphere under the
 		// cursor) and leave Position alone.
@@ -670,9 +665,10 @@ public enum ScrubKind
 /// <summary>
 /// Hold parameter scrubbing, Blender-modal-style: hold S / D / F (the slider stack in order — blend, round,
 /// then the per-shape wildcard: slice, profile, spline size; A ahead of them TAPS add/carve, so the whole
-/// edit row sits on A-S-D-F), RIGHT CLICK (uniform scale) or E (rotate, gmod-style) and move the mouse. Shift held snaps the rotate to the SnapDeg grid. Shared by BOTH tools — the stamp
-/// ghost in add mode and the selected brush in edit mode — so the whole scheme is learned once. One scrub
-/// runs at a time, game-wide (static), matching the one-cursor reality; the HUD reads
+/// edit row sits on A-S-D-F), RIGHT CLICK (uniform scale) or E (free rotate) and move the mouse. Shift held
+/// snaps the rotate to the shared <see cref="SculptEditSession.SnapDeg"/> grid. Shared by BOTH tools — the
+/// stamp ghost in add mode and the selected brush in edit mode — so the whole scheme is learned once. One
+/// scrub runs at a time, game-wide (static), matching the one-cursor reality; the HUD reads
 /// <see cref="Active"/>/<see cref="Anchor"/> to capture the mouse and draw the frozen-cursor dot.
 /// </summary>
 public static class BrushScrub
@@ -693,7 +689,7 @@ public static class BrushScrub
 	const float TapTravelPx = 6f;
 
 	// Manual edge detection (Input.Keyboard exposes Down only).
-	static bool _aWas, _sWas, _dWas, _scaleWas, _rotWas;
+	static bool _blendWas, _roundWas, _wildWas, _scaleWas, _rotWas;
 
 	// The rotate scrub's continuous (unsnapped) orientation, sculpture-local. The mouse always drives THIS;
 	// shift only changes what gets applied to the brush (the grid-snapped version of it).
@@ -716,8 +712,7 @@ public static class BrushScrub
 	const float SplineSizePerPx = 0.08f;
 	const float ProfileStepPx = 80f;
 	const float ScaleHalfDoublePx = 240f; // px of mouse travel that doubles the size
-	const float DegPerPx = 0.4f;
-	const float SnapDeg = 22.5f; // half-steps between the 45s — 0 / 22.5 / 45 / 67.5 / 90…
+	const float DegPerPx = 0.4f; // matches the gizmo trackball's TrackballDegPerPx — one free-rotate feel
 
 	/// <summary>Run one frame. Returns true when the brush changed; <paramref name="ended"/> fires on the
 	/// frame a scrub's key is released (edit mode commits there). Passing a null brush or allow=false ends
@@ -741,9 +736,9 @@ public static class BrushScrub
 		bool wildKey = !typing && Input.Keyboard.Down( "f" );
 		bool scale = Input.Down( "Attack2" ) && !Input.Down( "Walk" );
 		bool rot = !typing && Input.Keyboard.Down( "e" );
-		bool blendP = blendKey && !_aWas, roundP = roundKey && !_sWas, wildP = wildKey && !_dWas,
+		bool blendP = blendKey && !_blendWas, roundP = roundKey && !_roundWas, wildP = wildKey && !_wildWas,
 			scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
-		_aWas = blendKey; _sWas = roundKey; _dWas = wildKey; _scaleWas = scale; _rotWas = rot;
+		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _scaleWas = scale; _rotWas = rot;
 
 		if ( b is null || cam is null || (!allow && Active == ScrubKind.None) )
 		{
@@ -854,6 +849,28 @@ public static class BrushScrub
 			case ScrubKind.Scale:
 			{
 				float factor = MathF.Pow( 2f, delta.x / ScaleHalfDoublePx );
+
+				// A selected spline's geometry lives in its points, so Size would be inert — scale the WHOLE
+				// curve instead: positions about its bounds centre plus every radius, multiplicatively, so
+				// the per-point radius ratios survive (the F/wildcard scrub is the "make them uniform"
+				// control). While PLACING a chain the solid path below still runs — Size.x is what the stamp
+				// tool mirrors onto the preview point, sizing each point as it's dropped.
+				if ( b.Shape == SdfShape.Spline && SculptEditSession.Current?.Tool != SculptTool.Sculpt )
+				{
+					if ( b.Points is not { Count: > 0 } pts )
+						return false;
+
+					b.LocalBounds( out var mn, out var mx, includeBlend: false );
+					var centre = (mn + mx) * 0.5f;
+					for ( int i = 0; i < pts.Count; i++ )
+					{
+						var p = centre + (new Vector3( pts[i].x, pts[i].y, pts[i].z ) - centre) * factor;
+						float r = Math.Clamp( pts[i].w * factor, 1f, SdfBrush.MaxSplineRadius );
+						pts[i] = new Vector4( p.x, p.y, p.z, r );
+					}
+					return true;
+				}
+
 				float floor = b.Shape == SdfShape.Text ? 0.6f : 1f; // same floor the gizmo's scale handles use
 				b.Size = new Vector3(
 					MathF.Max( floor, b.Size.x * factor ),
@@ -864,17 +881,45 @@ public static class BrushScrub
 
 			case ScrubKind.Rotate:
 			{
-				// Mouse X = yaw about the camera's up, mouse Y = pitch about its right — gmod-familiar.
-				// The motion accumulates on the RAW orientation; Shift held applies it snapped ABSOLUTELY
-				// to the grid in the sculpture's frame (local Euler rounded) — a brush at 8° lands on the
-				// grid steps (0/22.5/45…), never 8°+step. Releasing Shift returns to the raw value.
+				// A spline's Rotation is inert — while PLACING a chain there's nothing to rotate (each point
+				// is placed where it's placed), so the scrub just parks, like the wildcard does there.
+				if ( b.Shape == SdfShape.Spline && SculptEditSession.Current?.Tool == SculptTool.Sculpt )
+					return false;
+
+				// Mouse X = yaw about the camera's up, mouse Y = pitch about its right — the SAME direction
+				// convention as the gizmo's trackball (the shape follows the mouse), so the two free-rotate
+				// controls feel like one. The motion accumulates on the RAW orientation; Shift held applies
+				// it snapped ABSOLUTELY to the shared grid in the sculpture's frame (local Euler rounded) —
+				// a brush at 8° lands on the grid steps (0/22.5/45…), never 8°+step. Releasing Shift
+				// returns to the raw value.
 				var worldRaw = sculptTx.Rotation * _rawRot;
-				worldRaw = Rotation.FromAxis( cam.WorldRotation.Up, -delta.x * DegPerPx )
-					* Rotation.FromAxis( cam.WorldRotation.Right, -delta.y * DegPerPx )
+				worldRaw = Rotation.FromAxis( cam.WorldRotation.Up, delta.x * DegPerPx )
+					* Rotation.FromAxis( cam.WorldRotation.Right, delta.y * DegPerPx )
 					* worldRaw;
 				_rawRot = sculptTx.Rotation.Inverse * worldRaw;
 
-				var applied = SculptEditSession.SnapHeld ? SnapToGrid( _rawRot, SnapDeg ) : _rawRot;
+				var applied = SculptEditSession.SnapHeld ? SculptEditSession.SnapRotation( _rawRot ) : _rawRot;
+
+				// A selected spline has no transform to turn — rotate its POINT CLOUD about its bounds
+				// centre instead. _rawRot accumulates the drag DELTA (Begin seeds identity + a point
+				// snapshot), so Shift snaps that delta to the same 22.5° grid.
+				if ( b.Shape == SdfShape.Spline )
+				{
+					if ( b.Points is not { Count: > 0 } pts || _splinePts0 is null || pts.Count != _splinePts0.Count )
+						return false;
+					if ( applied == _splineApplied )
+						return false; // still in the same grid cell — no rebuild churn
+
+					_splineApplied = applied;
+					for ( int i = 0; i < pts.Count; i++ )
+					{
+						var p0 = new Vector3( _splinePts0[i].x, _splinePts0[i].y, _splinePts0[i].z );
+						var p = _splineCentre0 + applied * (p0 - _splineCentre0);
+						pts[i] = new Vector4( p.x, p.y, p.z, _splinePts0[i].w );
+					}
+					return true;
+				}
+
 				if ( applied == b.Rotation )
 					return false; // still in the same grid cell — no rebuild churn
 
@@ -886,16 +931,11 @@ public static class BrushScrub
 		return false;
 	}
 
-	// Quantize an orientation onto the angle grid: its local Euler angles each rounded to the step. Lands
-	// exactly on the clean axis-aligned orientations (0/45/90…) in the sculpture's frame.
-	static Rotation SnapToGrid( Rotation r, float step )
-	{
-		var a = r.Angles();
-		return Rotation.From(
-			MathF.Round( a.pitch / step ) * step,
-			MathF.Round( a.yaw / step ) * step,
-			MathF.Round( a.roll / step ) * step );
-	}
+	// Whole-spline rotate state: the points as they were when the scrub began, and the curve centre they
+	// turn about. _rawRot holds the accumulated drag delta (from identity) instead of a brush orientation.
+	static List<Vector4> _splinePts0;
+	static Vector3 _splineCentre0;
+	static Rotation _splineApplied;
 
 	static void Begin( ScrubKind kind, SdfBrush b )
 	{
@@ -904,5 +944,17 @@ public static class BrushScrub
 		_rawRot = b.Rotation; // rotate scrub: continuous motion accumulates from the brush's current orientation
 		_wildAccum = 0f;
 		_travel = 0f;
+
+		_splinePts0 = null;
+		if ( kind == ScrubKind.Rotate && b.Shape == SdfShape.Spline && b.Points is { Count: > 0 } pts )
+		{
+			// A spline rotates its point cloud, not its (inert) Rotation: accumulate a DELTA from identity
+			// and re-derive every frame from this snapshot, so Shift-snapping stays absolute and clean.
+			_rawRot = Rotation.Identity;
+			_splineApplied = Rotation.Identity;
+			_splinePts0 = new List<Vector4>( pts );
+			b.LocalBounds( out var mn, out var mx, includeBlend: false );
+			_splineCentre0 = (mn + mx) * 0.5f;
+		}
 	}
 }

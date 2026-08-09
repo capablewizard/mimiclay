@@ -117,10 +117,45 @@ public sealed class SculptEditSession : Component
 	// See SculptUndo for why it stores authored-prefix states rather than deltas or whole brush lists.
 	readonly SculptUndo _undo = new();
 
-	/// <summary>Snap is a HOLD: Shift held = stamp placement snaps to the origin-centred grid and the
-	/// E-rotate scrub snaps to the 45° grid.</summary>
+	/// <summary>Snap is a HOLD, and Shift is THE snap modifier everywhere: stamp placement, the gizmo's
+	/// move handles and spline point drags all snap to the origin-centred <see cref="GridStep"/> position
+	/// grid, and every rotate control (E-scrub, rotation rings, trackball) snaps to the
+	/// <see cref="SnapDeg"/> angle grid.</summary>
 	public static bool SnapHeld =>
 		Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "shift" );
+
+	/// <summary>The angle grid (degrees) every rotate control snaps to while Shift is held — half-steps
+	/// between the 45s: 0 / 22.5 / 45 / 67.5 / 90…</summary>
+	public const float SnapDeg = 22.5f;
+
+	/// <summary>Position grid cell size (sculpture-local units) for shift-snapped placement and moves. The
+	/// grid is centred on the sculpture origin, so 0,0,0 — the symmetry planes — is always on-grid.</summary>
+	public const float GridStep = 8f;
+
+	/// <summary>Quantize a sculpture-local position onto the <see cref="GridStep"/> grid.</summary>
+	public static Vector3 SnapPosition( Vector3 p ) => new(
+		MathF.Round( p.x / GridStep ) * GridStep,
+		MathF.Round( p.y / GridStep ) * GridStep,
+		MathF.Round( p.z / GridStep ) * GridStep );
+
+	/// <summary>Quantize an orientation onto the <see cref="SnapDeg"/> angle grid: its local Euler angles
+	/// each rounded to the step. Lands exactly on the clean axis-aligned orientations (0/45/90…) in the
+	/// sculpture's frame.</summary>
+	public static Rotation SnapRotation( Rotation r )
+	{
+		var a = r.Angles();
+		return Rotation.From(
+			MathF.Round( a.pitch / SnapDeg ) * SnapDeg,
+			MathF.Round( a.yaw / SnapDeg ) * SnapDeg,
+			MathF.Round( a.roll / SnapDeg ) * SnapDeg );
+	}
+
+	/// <summary>The shared accelerated scroll-depth step (size-scaled, scroll-accelerated,
+	/// camera-distance-scaled — see <see cref="BrushStampTool.AcceleratedDepthStep"/>). Exposed so the
+	/// gizmo's spline point drags push/pull with exactly the same feel as ghost placement and the
+	/// selection push.</summary>
+	public float DepthStep( float sizeRef, float camDist ) =>
+		_stampTool.AcceleratedDepthStep( sizeRef, camDist );
 
 
 	/// <summary>The active stamp shape (what the next/current ghost is). The HUD toolbar highlights it.</summary>
@@ -1199,9 +1234,14 @@ public sealed class SculptEditSession : Component
 		// (Q is NOT handled here: it's the pawn's Edit action — enter/exit EDIT MODE as a whole. Sculpt
 		// mode is entered via the Add Shape button / shape tiles / number keys, and left via Esc/stamping.)
 
+		// One shared gate for every discrete editing key below: never while typing in a text field, never
+		// while the pause menu is open. (The scrubs, gizmo and stamp tool each carry their own equivalent
+		// gate — this covers the one-shot keys, which used to check only the typing half.)
+		bool keysLive = Sandbox.UI.InputFocus.Current is null && !PauseMenu.IsOpen;
+
 		// A flips add/carve — the head of the A/S/D/F "edit keys" row, matching the strip's chip order
 		// (op · blend · round · wildcard). Stamp's op in sculpt mode, the SELECTED brush's in gizmo mode.
-		bool opKey = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "a" );
+		bool opKey = keysLive && Input.Keyboard.Down( "a" );
 		if ( opKey && !_opKeyWas )
 		{
 			if ( Tool == SculptTool.Sculpt )
@@ -1212,24 +1252,27 @@ public sealed class SculptEditSession : Component
 		_opKeyWas = opKey;
 
 		// Number keys follow the shape row left-to-right, so the tile order IS the hotkey order.
-		if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
-		if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
-		if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
-		if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
-		if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
-		if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
-		if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+		if ( keysLive )
+		{
+			if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
+			if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
+			if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
+			if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
+			if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
+			if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
+			if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+		}
 
 		// Delete removes the selected brush (gizmo mode only — in sculpt mode the pending ghost isn't a
 		// real shape yet, and Esc/right-click is how you drop that). Manual edge detection on Down, like
 		// the other keys here: Keyboard.Pressed doesn't fire reliably in this context. Both spellings are
 		// asked for since an unknown key name just resolves to invalid (false), never throws.
-		bool del = Sandbox.UI.InputFocus.Current is null
+		bool del = keysLive
 			&& (Input.Keyboard.Down( "delete" ) || Input.Keyboard.Down( "del" ));
 		if ( del && !_delWas && Tool == SculptTool.Gizmo )
 			RemoveSelected();
 		_delWas = del;
-		if ( Input.Pressed( "Drop" ) ) RemoveLast();
+		if ( keysLive && Input.Pressed( "Drop" ) ) RemoveLast();
 
 		// Undo / redo: Ctrl+Z back, Ctrl+Shift+Z or Ctrl+Y forward. Manual edge detection like the keys above
 		// (Keyboard.Pressed doesn't fire reliably in this context), and held off whenever a gesture owns the
@@ -1299,9 +1342,12 @@ public sealed class SculptEditSession : Component
 		// Hold-key param scrubs on the selection — the same A/S/D/E scheme the stamp tool uses, so both
 		// modes share one muscle memory. Continuous changes preview; the key release runs the full commit.
 		// Gated on IsDragging, NOT IsBusy: merely HOVERING a gizmo handle (which covers most of the shape)
-		// must not eat the scrub keys — only an actual handle drag owns the mouse.
+		// must not eat the scrub keys — only an actual handle drag owns the mouse. RightClickConsumed keeps
+		// the RMB-press that just deleted a spline control point from ALSO starting a scale scrub — that
+		// click was the delete, held or not.
 		changed |= BrushScrub.Update( SelectedBrush, tx, Scene.Camera,
-			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsDragging, out bool scrubEnded,
+			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsDragging
+				&& !_gizmo.RightClickConsumed, out bool scrubEnded,
 			blendLocked: Sdf.BlendInert( Target.Brushes, SelectedBrush ) );
 		if ( scrubEnded )
 			CommitChanged();
@@ -1353,9 +1399,10 @@ public sealed class SculptEditSession : Component
 		else if ( !Input.Down( "Attack1" ) )
 			_splineInsertArmed = true;
 
-		// Hover: the brush under the cursor (skipped while orbiting, over a gizmo handle, or over the UI).
-		// Ghost it if it isn't already the selected one; a click selects it.
-		int hover = (!overUi && !Input.Down( "Walk" ) && !_gizmo.IsBusy && !IsScrubbing) ? PickBrush( tx ) : -1;
+		// Hover: the brush under the cursor (skipped while orbiting, over a gizmo handle, over the UI, or
+		// paused — the pause overlay must not highlight shapes behind it).
+		int hover = (!overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing)
+			? PickBrush( tx ) : -1;
 
 		// Fall back to the brush the HUD's layer list is hovering, so mousing a row highlights its shape.
 		// The scene pick wins when valid; this only fills in when the cursor isn't over a 3D brush.
@@ -1422,9 +1469,11 @@ public sealed class SculptEditSession : Component
 		}
 
 		// A click selects the hovered shape, or clears the selection when it lands on empty space. Gated so it
-		// only fires on a real world click: not over the HUD, not alt-orbiting, and not on a gizmo handle (a
-		// handle grab reads hover<0, so without the IsBusy guard starting a drag would also deselect).
-		if ( Input.Pressed( "Attack1" ) && !overUi && !Input.Down( "Walk" ) && !_gizmo.IsBusy && !IsScrubbing )
+		// only fires on a real world click: not over the HUD, not alt-orbiting, not paused (a pause-menu
+		// button click must not fall through to the world), and not on a gizmo handle (a handle grab reads
+		// hover<0, so without the IsBusy guard starting a drag would also deselect).
+		if ( Input.Pressed( "Attack1" ) && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
+			&& !_gizmo.IsBusy && !IsScrubbing )
 			Selected = hover; // hover is -1 on empty space → deselect
 
 		// Debug: render the shadow-proxy mesh AS the visible surface (raymarch + full mesh hidden).
