@@ -457,10 +457,13 @@ public sealed class BrushStampTool
 
 			// A right-click TAP (as opposed to an RMB scale DRAG — see BrushScrub.ScaleTapped) steps back
 			// out of placing: it finishes a spline chain, or drops the pending stamp and returns to gizmo
-			// mode. Enter finishes a chain too — manual edge detection on Down, since Keyboard.Pressed
-			// doesn't fire reliably here (an unknown key name resolves to invalid/false, never throws).
+			// mode. Enter and Space finish a chain too (the session's Space toggle stands down while a
+			// spline stamp is active — see its addKey gate) — manual edge detection on Down, since
+			// Keyboard.Pressed doesn't fire reliably here (an unknown key name resolves to invalid/false,
+			// never throws).
 			bool enter = Sandbox.UI.InputFocus.Current is null
-				&& (Input.Keyboard.Down( "enter" ) || Input.Keyboard.Down( "return" ));
+				&& (Input.Keyboard.Down( "enter" ) || Input.Keyboard.Down( "return" )
+					|| Input.Keyboard.Down( "space" ));
 			bool enterTap = enter && !_enterWas;
 			_enterWas = enter;
 

@@ -125,6 +125,7 @@ public sealed class SculptEditSession : Component
 
 	readonly BrushStampTool _stampTool = new();
 	bool _opKeyWas; // manual edge detect for the A add/carve toggle
+	bool _addKeyWas; // …and for the Space add-shape toggle
 	bool _delWas;   // …and for the Delete key
 	bool _undoWas;  // …and for Ctrl+Z
 	bool _redoWas;  // …and for Ctrl+Shift+Z / Ctrl+Y
@@ -1325,7 +1326,8 @@ public sealed class SculptEditSession : Component
 		var brushes = Target.Brushes;
 
 		// (Q is NOT handled here: it's the pawn's Edit action — enter/exit EDIT MODE as a whole. Sculpt
-		// mode is entered via the Add Shape button / shape tiles / number keys, and left via Esc/stamping.)
+		// mode is entered via the Add Shape button / Space / shape tiles / number keys, and left via
+		// Space/Esc/stamping.)
 
 		// One shared gate for every discrete editing key below: never while typing in a text field, never
 		// while the pause menu is open. (The scrubs, gizmo and stamp tool each carry their own equivalent
@@ -1343,6 +1345,18 @@ public sealed class SculptEditSession : Component
 				ToggleOperation( Selected );
 		}
 		_opKeyWas = opKey;
+
+		// Space mirrors the Tools panel's Add Shape button: pick up a stamp, or — while one is held —
+		// put it down and return to plain editing ("Done"). During spline chain placement the stamp tool
+		// owns Space instead (it finishes the chain, like Enter) — toggling the tool here would silently
+		// drop the half-built chain. Held off during a drag or scrub so the tool can't switch out from
+		// under a live gesture. Manual edge detection like the keys below.
+		bool addKey = keysLive && Input.Keyboard.Down( "space" )
+			&& !IsScrubbing && !_gizmo.IsDragging
+			&& !(Tool == SculptTool.Sculpt && ActiveShape == SdfShape.Spline);
+		if ( addKey && !_addKeyWas )
+			SetTool( Tool == SculptTool.Sculpt ? SculptTool.Gizmo : SculptTool.Sculpt );
+		_addKeyWas = addKey;
 
 		// Number keys follow the shape row left-to-right, so the tile order IS the hotkey order.
 		if ( keysLive )
