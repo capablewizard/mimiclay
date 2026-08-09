@@ -539,7 +539,7 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideRules": false,
-          "PlayAs": "Hunter",
+          "PlayAs": "Auto",
           "PropPointsPerSecond": 1,
           "PropPrefab": {
             "_type": "gameobject",
