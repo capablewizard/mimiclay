@@ -32,16 +32,17 @@ public sealed class MainCamera : Component
 	/// and can leak the host's edit-session focus onto joiners.</summary>
 	[Property] public DepthOfField DepthOfField { get; set; }
 
-	/// <summary>Authored blur strength, asserted onto the depth of field on every machine at startup.
+	/// <summary>Baseline blur strength for normal gameplay. Continuously re-asserted whenever nothing is
+	/// driving the DoF (see <see cref="Dof"/>), so tweaking it in the inspector during play applies live.
 	/// This (not the DepthOfField component) is the place to author the scene's DoF look — these
 	/// properties are never mutated at runtime, so they arrive authored on every machine regardless of
 	/// what live state the join snapshot carried.</summary>
 	[Property, Group( "Depth of Field" )] public float AuthoredBlurSize { get; set; } = 6.33f;
 
-	/// <summary>Authored focal distance (world units), asserted on every machine at startup. See <see cref="AuthoredBlurSize"/>.</summary>
+	/// <summary>Baseline focal distance (world units) for normal gameplay, live-tweakable. See <see cref="AuthoredBlurSize"/>.</summary>
 	[Property, Group( "Depth of Field" )] public float AuthoredFocalDistance { get; set; } = 705f;
 
-	/// <summary>Authored focus range (world units), asserted on every machine at startup. See <see cref="AuthoredBlurSize"/>.</summary>
+	/// <summary>Baseline focus range (world units) for normal gameplay, live-tweakable. See <see cref="AuthoredBlurSize"/>.</summary>
 	[Property, Group( "Depth of Field" )] public float AuthoredFocusRange { get; set; } = 616f;
 
 	/// <summary>Whether to switch the depth-of-field on when this camera awakes. Defaults to true so gameplay
@@ -69,10 +70,17 @@ public sealed class MainCamera : Component
 
 	// Targets the live DepthOfField blends toward every frame. Set them from anywhere (directly, via the
 	// static pass-throughs, or SetFocus) and the rack happens here so it always eases instead of popping.
-	// Seeded from the authored DoF values on awake so play mode starts wherever the editor left it.
 	float _targetBlurSize;
 	float _targetFocalDistance;
 	float _targetFocusRange;
+
+	// Every external target write stamps a claim. While claims stay fresh (a driver like the sculpt edit
+	// session asserts per frame) the baseline backs off; when they stop for a beat, the Authored* baseline
+	// re-asserts and the live DoF eases back to the gameplay look. That makes exit automatic (no
+	// save/restore handshake with drivers) and keeps the baseline live-editable in the inspector.
+	const float DofClaimGrace = 0.1f;
+	float _lastDofClaim = float.MinValue;
+	void ClaimDof() => _lastDofClaim = Time.Now;
 
 	// Target FOV, same scheme as the DoF targets: whoever drives the camera this frame declares it (per
 	// frame, from GameSettings) and the live camera eases toward it here. Seeded from the authored camera
@@ -114,33 +122,39 @@ public sealed class MainCamera : Component
 		Current.WorldRotation = rotation;
 	}
 
-	/// <summary>Target depth-of-field blur strength. The live camera eases toward it.</summary>
+	/// <summary>Target depth-of-field blur strength. The live camera eases toward it. Writing claims the
+	/// DoF — keep asserting per frame, or the authored baseline takes back over.</summary>
 	public static float TargetBlurSize
 	{
 		get => Current.IsValid() ? Current._targetBlurSize : 0f;
-		set { if ( Current.IsValid() ) Current._targetBlurSize = value; }
+		set { if ( Current.IsValid() ) { Current.ClaimDof(); Current._targetBlurSize = value; } }
 	}
 
-	/// <summary>Target focal distance — how far from the camera is in sharp focus. The live camera eases toward it.</summary>
+	/// <summary>Target focal distance — how far from the camera is in sharp focus. The live camera eases
+	/// toward it. Writing claims the DoF — keep asserting per frame, or the authored baseline takes back over.</summary>
 	public static float TargetFocalDistance
 	{
 		get => Current.IsValid() ? Current._targetFocalDistance : 0f;
-		set { if ( Current.IsValid() ) Current._targetFocalDistance = value; }
+		set { if ( Current.IsValid() ) { Current.ClaimDof(); Current._targetFocalDistance = value; } }
 	}
 
-	/// <summary>Target focus range — the depth band that stays sharp around the focal distance. The live camera eases toward it.</summary>
+	/// <summary>Target focus range — the depth band that stays sharp around the focal distance. The live
+	/// camera eases toward it. Writing claims the DoF — keep asserting per frame, or the authored baseline
+	/// takes back over.</summary>
 	public static float TargetFocusRange
 	{
 		get => Current.IsValid() ? Current._targetFocusRange : 0f;
-		set { if ( Current.IsValid() ) Current._targetFocusRange = value; }
+		set { if ( Current.IsValid() ) { Current.ClaimDof(); Current._targetFocusRange = value; } }
 	}
 
-	/// <summary>Set all three depth-of-field targets at once; they blend in over the next frames.</summary>
+	/// <summary>Set all three depth-of-field targets at once; they blend in over the next frames. Claims the
+	/// DoF — keep asserting per frame, or the authored baseline takes back over.</summary>
 	public static void SetFocus( float focalDistance, float focusRange, float blurSize )
 	{
 		if ( !Current.IsValid() )
 			return;
 
+		Current.ClaimDof();
 		Current._targetFocalDistance = focalDistance;
 		Current._targetFocusRange = focusRange;
 		Current._targetBlurSize = blurSize;
@@ -170,26 +184,29 @@ public sealed class MainCamera : Component
 	static DofControl _noopDof;
 
 	/// <summary>Depth-of-field handle for the active camera: <c>MainCamera.Dof.Set( focal, range, blur, lerp )</c>.
-	/// <c>lerp:true</c> (default) eases toward the values; <c>lerp:false</c> snaps. No-ops when no camera is live.</summary>
+	/// <c>lerp:true</c> (default) eases toward the values; <c>lerp:false</c> snaps. No-ops when no camera is live.
+	/// Writing through this claims the DoF: assert every frame while you want control — stop, and the camera
+	/// eases back to its authored baseline on its own.</summary>
 	public static DofControl Dof => Current.IsValid()
 		? (Current._dofControl ??= new DofControl( Current ))
 		: (_noopDof ??= new DofControl( null ));
 
 	/// <summary>Fluent control over the camera's depth of field. Setting a value (or calling <see cref="Set"/>
-	/// with lerp:true) eases toward it over the next frames; lerp:false snaps the live DoF immediately.</summary>
+	/// with lerp:true) eases toward it over the next frames; lerp:false snaps the live DoF immediately.
+	/// Every write claims the DoF (see <see cref="Dof"/>).</summary>
 	public sealed class DofControl
 	{
 		readonly MainCamera _cam;
 		internal DofControl( MainCamera cam ) => _cam = cam;
 
 		/// <summary>Target focal distance — how far from the camera is in sharp focus.</summary>
-		public float FocalDistance { get => _cam?._targetFocalDistance ?? 0f; set { if ( _cam is not null ) _cam._targetFocalDistance = value; } }
+		public float FocalDistance { get => _cam?._targetFocalDistance ?? 0f; set { if ( _cam is not null ) { _cam.ClaimDof(); _cam._targetFocalDistance = value; } } }
 
 		/// <summary>Target focus range — the sharp band around the focal distance.</summary>
-		public float FocusRange { get => _cam?._targetFocusRange ?? 0f; set { if ( _cam is not null ) _cam._targetFocusRange = value; } }
+		public float FocusRange { get => _cam?._targetFocusRange ?? 0f; set { if ( _cam is not null ) { _cam.ClaimDof(); _cam._targetFocusRange = value; } } }
 
 		/// <summary>Target blur strength.</summary>
-		public float BlurSize { get => _cam?._targetBlurSize ?? 0f; set { if ( _cam is not null ) _cam._targetBlurSize = value; } }
+		public float BlurSize { get => _cam?._targetBlurSize ?? 0f; set { if ( _cam is not null ) { _cam.ClaimDof(); _cam._targetBlurSize = value; } } }
 
 		/// <summary>Set focal distance, focus range and blur together. lerp:true eases; lerp:false snaps now.</summary>
 		public void Set( float focalDistance, float focusRange, float blurSize, bool lerp = true )
@@ -197,6 +214,7 @@ public sealed class MainCamera : Component
 			if ( _cam is null )
 				return;
 
+			_cam.ClaimDof();
 			_cam._targetFocalDistance = focalDistance;
 			_cam._targetFocusRange = focusRange;
 			_cam._targetBlurSize = blurSize;
@@ -211,6 +229,7 @@ public sealed class MainCamera : Component
 			if ( _cam is null )
 				return;
 
+			_cam.ClaimDof();
 			_cam._targetBlurSize = blurSize;
 			if ( !lerp )
 				_cam.SnapToTargets();
@@ -223,6 +242,7 @@ public sealed class MainCamera : Component
 			if ( _cam is null )
 				return;
 
+			_cam.ClaimDof();
 			_cam._targetFocalDistance = focalDistance;
 			if ( !lerp )
 				_cam.SnapToTargets();
@@ -273,6 +293,15 @@ public sealed class MainCamera : Component
 
 		if ( !DepthOfField.IsValid() )
 			return;
+
+		// Nothing has claimed the DoF recently → rest on the authored baseline. Re-reading it every frame
+		// is what makes the gameplay DoF live-editable in the inspector.
+		if ( Time.Now - _lastDofClaim > DofClaimGrace )
+		{
+			_targetBlurSize = AuthoredBlurSize;
+			_targetFocalDistance = AuthoredFocalDistance;
+			_targetFocusRange = AuthoredFocusRange;
+		}
 
 		float t = 1f - MathF.Exp( -FocusLerpSpeed * Time.Delta );
 

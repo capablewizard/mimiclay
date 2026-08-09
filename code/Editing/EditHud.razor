@@ -22,11 +22,24 @@
 		<div class="drag-capture"></div>
 	}
 
+	@* Transient refusal toast: the session just refused a layer action that would have left no solid
+	   clay — deleting, hiding or carving the last additive brush (no shape means no collider, and a prop
+	   pawn would fall through the floor). Same look and anchor as the validity toast below; it takes the
+	   slot while active, being the direct response to the player's click. *@
+	@if ( NoSolidToast )
+	{
+		<div class="validity-float" style="bottom: @((int)ToastBottom())px;">
+			<div class="paper-card validity-toast">
+				<span class="emoji">⚠️</span>
+				<span>Must have at least 1 shape</span>
+			</div>
+		</div>
+	}
 	@* Sculpt-validity toast: shows whenever the LOCAL player's sculpt violates its SculptBounds and stays
 	   until fixed, edit mode or not — the invalid shape is owner-local (never broadcast), so the player
 	   has to know the world doesn't see what they see. Floats above the shape dock while the dock is
 	   shown; hugs the bottom of the screen otherwise (see ToastPos). *@
-	@if ( InvalidBounds is { } inv )
+	else if ( InvalidBounds is { } inv )
 	{
 		@* Full-width flex wrapper + a bottom anchor, so neither axis depends on the toast's own measured
 		   size — a freshly mounted panel has no rect for a frame, and position computed from an estimated
@@ -526,6 +539,10 @@
 	// (separate ScreenPanels don't block each other's hover, so a higher z-index alone isn't enough).
 	static bool Inert => AltNavActive || PauseMenu.IsOpen;
 	string RootClass => Inert ? "edit-hud alt-nav" : "edit-hud";
+
+	// The "must have at least 1 shape" toast's lifetime — a quick flash; each blocked click re-arms it.
+	const float NoSolidToastTime = 1f;
+	static bool NoSolidToast => Session is { } s && s.SinceNoSolidRefusal < NoSolidToastTime;
 
 	// The local player's SculptBounds currently in violation (or null) — drives the persistent validity
 	// toast. Scanned rather than bound to the session, because the toast outlives edit mode: an invalid
@@ -1376,6 +1393,7 @@
 		hc.Add( s );
 		hc.Add( s?.IsEditing ?? false );
 		hc.Add( InvalidBounds is { } iv ? (iv.TooBig ? 1 : 2) : 0 ); // validity toast appears/disappears/relabels
+		hc.Add( NoSolidToast ); // transient "must have at least 1 shape" toast appears/disappears
 		hc.Add( s?.ExitConfirmPending ?? false ); // exit-confirm dialog mounts/unmounts
 		hc.Add( s?.ExitConfirmTooBig ?? false );
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );

@@ -56,19 +56,26 @@ public sealed class SculptEditSession : Component
 	/// override tuned build settings. Null/empty = no persistence (the hider's disguise session).</summary>
 	[Property] public string PersistSlot { get; set; }
 
-	/// <summary>While editing, pull the main camera's depth of field in so the focus sits just behind the
-	/// edited object (it stays sharp, the background blurs). Restored on exit.</summary>
+	/// <summary>While editing, pull the main camera's depth of field onto the edited object (the whole
+	/// sculpt stays sharp, the background blurs). The sharp band is sized from the sculpt's bounds, so it
+	/// grows with the sculpt. On exit the camera eases back to its authored gameplay baseline by itself.
+	/// All of these tune live while editing — they're re-read every frame.</summary>
 	[Property, Group( "Depth of Field" )] public bool EditDepthOfField { get; set; } = true;
-
-	/// <summary>How far behind the object's centre the focus plane sits (bigger = object sharper / more
-	/// background blur).</summary>
-	[Property, Group( "Depth of Field" )] public float DofFocusOffset { get; set; } = 32f;
 
 	/// <summary>Blur strength applied while editing.</summary>
 	[Property, Group( "Depth of Field" )] public float DofBlurSize { get; set; } = 7f;
 
-	/// <summary>Depth band that stays sharp around the focus plane while editing.</summary>
-	[Property, Group( "Depth of Field" )] public float DofFocusRange { get; set; } = 50f;
+	/// <summary>Sharp margin (world units) in front of the sculpt's near surface — how much space toward
+	/// the camera stays in focus before the blur starts.</summary>
+	[Property, Group( "Depth of Field" )] public float DofFrontPadding { get; set; } = 16f;
+
+	/// <summary>Sharp margin (world units) behind the sculpt's far surface — bigger keeps more of the
+	/// backdrop in focus before the background blur ramps in.</summary>
+	[Property, Group( "Depth of Field" )] public float DofBackPadding { get; set; } = 48f;
+
+	/// <summary>How much of the sculpt's bounds radius counts toward the sharp band. 1 = the whole sculpt
+	/// stays in focus no matter how big it gets; 0 = ignore size (only the pads around its centre are sharp).</summary>
+	[Property, Group( "Depth of Field" )] public float DofSizeScale { get; set; } = 1f;
 
 	/// <summary>When the focus distance changes faster than this (units/sec, i.e. zooming) the focus snaps
 	/// instead of lerping, so it doesn't trail the camera. Orbiting changes it slowly, so that still eases.</summary>
@@ -563,7 +570,7 @@ public sealed class SculptEditSession : Component
 			_undo.Clear(); // history is per-session — the next one re-baselines on whatever it opens on
 			_gizmo.Hide();
 			HideGhosts();
-			RestoreDof();
+			// No DoF restore needed: we just stop asserting, and MainCamera eases back to its baseline.
 			if ( _proxyDebugActive )
 				ExitProxyDebug();
 		}
@@ -573,7 +580,7 @@ public sealed class SculptEditSession : Component
 		if ( OrbitCamera.IsValid() )
 		{
 			if ( active )
-				OrbitCamera.FocusHint = FocusPoint();
+				OrbitCamera.FocusHint = FocusTarget().Point;
 			OrbitCamera.Enabled = active;
 		}
 	}
@@ -591,7 +598,6 @@ public sealed class SculptEditSession : Component
 		HideGhosts();
 		_wireframes.Hide();
 		_wireAlpha = 0f;
-		RestoreDof();
 		if ( _proxyDebugActive )
 			ExitProxyDebug();
 
@@ -781,14 +787,19 @@ public sealed class SculptEditSession : Component
 	public void Deselect() => Selected = -1;
 
 	/// <summary>Remove the selected brush (keeps at least one AUTHORED brush — damage craters don't count
-	/// toward that minimum) and rebuild. Leaves nothing selected.</summary>
+	/// toward that minimum — and never the last SOLID one, see <see cref="RefuseIfLastSolid"/>) and rebuild.
+	/// Leaves nothing selected.</summary>
 	public void RemoveSelected()
 	{
 		var b = Target.IsValid() ? Target.Brushes : null;
 		if ( Selected < 0 || b is not { Count: > 1 } || Target.AuthoredBrushCount <= 1 )
 			return;
 
-		b.RemoveAt( Math.Clamp( Selected, 0, b.Count - 1 ) );
+		int i = Math.Clamp( Selected, 0, b.Count - 1 );
+		if ( RefuseIfLastSolid( b[i] ) )
+			return;
+
+		b.RemoveAt( i );
 		Selected = -1;
 		NotifyChanged();
 	}
@@ -802,20 +813,55 @@ public sealed class SculptEditSession : Component
 		return ( b is not null && index >= 0 && index < b.Count ) ? b[index] : null;
 	}
 
-	/// <summary>Toggle a brush's visibility (the eye button) and rebuild.</summary>
+	/// <summary>Set to 0 whenever a layer action is refused because it would leave the sculpt with no solid
+	/// clay (see <see cref="RefuseIfLastSolid"/>) — <see cref="EditHud"/> shows its transient "must have at
+	/// least 1 shape" toast off this.</summary>
+	public RealTimeSince SinceNoSolidRefusal { get; private set; } = 999f;
+
+	// Would losing `b` (deleting it, hiding it, or flipping it to carve) leave the sculpt with no enabled
+	// additive brush? No solid clay means no mesh AND no collider — a prop pawn would fall straight through
+	// the floor — so the layer actions REFUSE the edit up front (returning true and firing the toast)
+	// rather than ever allowing the state. Self-filtering: a brush that isn't itself solid can't be the
+	// last solid, so callers guard with a bare call, no pre-checks. The pending stamp ghost never counts
+	// as the remaining solid — it's cancelled on every exit path.
+	bool RefuseIfLastSolid( SdfBrush b )
+	{
+		if ( b is null || !b.Enabled || b.Operation != SdfOperation.Add )
+			return false; // b isn't solid itself — losing it can't empty the sculpt
+
+		var list = Target.IsValid() ? Target.Brushes : null;
+		if ( list is null )
+			return false;
+
+		var ghost = PendingStamp( Target );
+		int authored = Target.AuthoredBrushCount;
+		for ( int i = 0; i < Math.Min( authored, list.Count ); i++ )
+		{
+			var o = list[i];
+			if ( o != b && o != ghost && o.Enabled && o.Operation == SdfOperation.Add )
+				return false; // another solid brush remains — the edit is safe
+		}
+
+		SinceNoSolidRefusal = 0f;
+		return true;
+	}
+
+	/// <summary>Toggle a brush's visibility (the eye button) and rebuild. Refused (with the toast) when
+	/// hiding it would leave no solid shape.</summary>
 	public void ToggleEnabled( int index )
 	{
-		if ( BrushAt( index ) is not { } b )
+		if ( BrushAt( index ) is not { } b || RefuseIfLastSolid( b ) )
 			return;
 
 		b.Enabled = !b.Enabled;
 		NotifyChanged();
 	}
 
-	/// <summary>Flip a brush between additive and subtractive (the +/- button) and rebuild.</summary>
+	/// <summary>Flip a brush between additive and subtractive (the +/- button) and rebuild. Refused (with
+	/// the toast) when carving it would leave no solid shape.</summary>
 	public void ToggleOperation( int index )
 	{
-		if ( BrushAt( index ) is not { } b )
+		if ( BrushAt( index ) is not { } b || RefuseIfLastSolid( b ) )
 			return;
 
 		b.Operation = b.Operation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add;
@@ -862,11 +908,12 @@ public sealed class SculptEditSession : Component
 		NotifyChanged();
 	}
 
-	/// <summary>Delete a specific brush (the bin button), keeping at least one, and rebuild.</summary>
+	/// <summary>Delete a specific brush (the bin button), keeping at least one — and never the last SOLID
+	/// one (see <see cref="RefuseIfLastSolid"/>) — and rebuild.</summary>
 	public void Remove( int index )
 	{
 		var b = Target.IsValid() ? Target.Brushes : null;
-		if ( b is not { Count: > 1 } || index < 0 || index >= b.Count )
+		if ( b is not { Count: > 1 } || index < 0 || index >= b.Count || RefuseIfLastSolid( b[index] ) )
 			return;
 
 		b.RemoveAt( index );
@@ -1826,11 +1873,10 @@ public sealed class SculptEditSession : Component
 	}
 
 	// ── Depth of field (main camera) ─────────────────────────────────────────────────────────────────
-	// Pull focus onto the edited object on enter (tracked while editing), then ease back on exit. The actual
-	// rack/easing lives in MainCamera — we just set its targets via MainCamera.Dof, so it lerps nicely.
+	// Pull focus onto the edited object by asserting DoF targets every frame while editing; MainCamera does
+	// the rack/easing. Asserting claims the DoF, so on exit we just stop — the camera's authored gameplay
+	// baseline re-takes over and eases back in on its own (no save/restore handshake).
 
-	bool _dofSaved;
-	float _savedFocal, _savedRange, _savedBlur;
 	float _lastFocusDist;
 
 	void ApplyEditDof()
@@ -1838,14 +1884,8 @@ public sealed class SculptEditSession : Component
 		if ( !EditDepthOfField || !MainCamera.Current.IsValid() )
 			return;
 
-		// Remember the current DoF so we can ease back to it on exit.
-		_savedFocal = MainCamera.TargetFocalDistance;
-		_savedRange = MainCamera.TargetFocusRange;
-		_savedBlur = MainCamera.TargetBlurSize;
-		_dofSaved = true;
-
 		// Seed so the first frame reads as "not moving" → the rack-in eases rather than snapping.
-		_lastFocusDist = Vector3.DistanceBetween( MainCamera.Position, FocusPoint() );
+		_lastFocusDist = Vector3.DistanceBetween( MainCamera.Position, FocusTarget().Point );
 
 		UpdateDofFocus(); // eases in toward the object
 	}
@@ -1855,33 +1895,36 @@ public sealed class SculptEditSession : Component
 		if ( !EditDepthOfField || !MainCamera.Current.IsValid() )
 			return;
 
-		float dist = Vector3.DistanceBetween( MainCamera.Position, FocusPoint() );
+		var (point, radius) = FocusTarget();
+		float dist = Vector3.DistanceBetween( MainCamera.Position, point );
 
 		// Snap the focal plane while zooming (distance changing fast) so it doesn't trail the camera; ease
 		// otherwise (enter/exit rack, orbiting). Blur/range always ease (and pick up live tweaks).
 		float speed = Time.Delta > 0f ? MathF.Abs( dist - _lastFocusDist ) / Time.Delta : 0f;
 		_lastFocusDist = dist;
 
-		MainCamera.Dof.SetFocal( dist + DofFocusOffset, lerp: speed <= DofZoomSnapSpeed );
+		// The sharp band spans the sculpt (its radius scaled by DofSizeScale) plus the front/back pads;
+		// the focal plane is the band's centre. Solved from the band edges, so the whole sculpt stays in
+		// focus at any size and the pads keep their meaning as it grows.
+		float extent = radius * DofSizeScale;
+		float focal = dist + (DofBackPadding - DofFrontPadding) * 0.5f;
+		float range = 2f * extent + DofFrontPadding + DofBackPadding;
+
+		MainCamera.Dof.SetFocal( focal, lerp: speed <= DofZoomSnapSpeed );
 		MainCamera.Dof.SetBlur( DofBlurSize, lerp: true );
-		MainCamera.Dof.FocusRange = DofFocusRange;
+		MainCamera.Dof.FocusRange = range;
 	}
 
-	void RestoreDof()
-	{
-		if ( !_dofSaved )
-			return;
-
-		_dofSaved = false;
-		MainCamera.Dof.Set( _savedFocal, _savedRange, _savedBlur, lerp: true ); // eases back to normal
-	}
-
-	Vector3 FocusPoint()
+	(Vector3 Point, float Radius) FocusTarget()
 	{
 		// Exclude the pending stamp ghost — the DoF focus must not chase the cursor while placing.
 		if ( Target.IsValid() && Sdf.TryGetBounds( Target.Brushes, out var bounds, StampBrush ) )
-			return Target.WorldTransform.PointToWorld( bounds.Center );
+		{
+			var scale = Target.WorldTransform.Scale;
+			float maxScale = MathF.Max( MathF.Abs( scale.x ), MathF.Max( MathF.Abs( scale.y ), MathF.Abs( scale.z ) ) );
+			return (Target.WorldTransform.PointToWorld( bounds.Center ), bounds.Size.Length * 0.5f * maxScale);
+		}
 
-		return Target.IsValid() ? Target.WorldPosition : WorldPosition;
+		return (Target.IsValid() ? Target.WorldPosition : WorldPosition, 0f);
 	}
 }

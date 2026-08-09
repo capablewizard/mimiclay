@@ -158,8 +158,6 @@
           "__enabled": false,
           "Flags": 0,
           "__version": 1,
-          "Filter": "Bilinear",
-          "Gamma": 2.2,
           "Mode": "Additive",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -690,7 +688,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "86b2f3d0-1fe0-49b0-8593-b2a38ebc7cf0"
+              "$blob": "ef6ee3ff-2bc4-8eb4-bd8e-f7be1d790ca5"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -746,7 +744,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "dc74911c-688b-4a38-b329-e5590bdc0c1a"
+              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -802,7 +800,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "94c9f19f-190a-4eb6-bcf0-a968e9c77085"
+              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -858,7 +856,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "70c459f1-7fda-4092-ac1d-6a5b9f6d1d28"
+              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -914,7 +912,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "196a8707-92f7-4660-a666-7f9e15972566"
+              "$blob": "f3da9a78-8939-8e71-88c5-6b11e6990e88"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -2362,7 +2360,8 @@
     "GameObjectSystems": {
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
-          "$blob": "8eb7c3f4-e78c-4eda-8541-6056c585aa02"
+          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
+          "$refs": []
         }
       },
       "Sandbox.SelectionSetsSystem": {
