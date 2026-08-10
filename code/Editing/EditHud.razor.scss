@@ -43,6 +43,7 @@
 		.shape-tile,
 		.layer,
 		.layer .iconbtn,
+		.back-btn,
 		.chip,
 		.palette-float,
 		.palette-float .swatch-cell,
@@ -381,6 +382,35 @@
 		// the list doesn't need to scroll; if it ever gets long we'd add a scroll wrapper instead.
 		overflow: visible;
 	}
+
+	// The menu customiser's Back button, under the layer stack (the layers' flex-grow pins it to the column's
+	// bottom edge — the same corner the menu footer's Back occupies on every other page). A smaller cousin of
+	// the footer button: same header font + layered clay emboss; the per-letter clay-jitter keyframe ships
+	// with WobbleText, so referencing it here resolves.
+	.back-btn {
+		pointer-events: all;
+		flex-shrink: 0;
+		align-self: flex-start;
+		font-family: $header-font;
+		font-size: 64px;
+		text-transform: uppercase;
+		color: $scene-text;
+		cursor: pointer;
+		transform-origin: left center;
+		transition: all 0.1s ease-out;
+
+		.letter {
+			// Glow first so it paints UNDER the depth (s&box draws stacked text-shadows last-on-top).
+			text-shadow:
+				10px 12px 4px $emboss-glow,
+				4px 6px 0px $emboss-depth;
+		}
+
+		&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }
+		&:active { sound-in: $sound-click; }
+	}
+
+	.back-btn:hover .letter { animation: clay-jitter 0.95s linear 0s infinite; }
 
 	// A layer row: a chunky floating paper card toolbar — eye · shape · colour · op · symmetry · bin.
 	.layer {

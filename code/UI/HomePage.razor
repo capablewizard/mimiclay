@@ -31,6 +31,12 @@
 			<div class="menu-button @(MenuNetworking.Busy ? "disabled" : "")" @onclick=@Sessions>
 				<WobbleText Text="Sessions" />
 			</div>
+			<div class="menu-button" @onclick=@Customise>
+				<WobbleText Text="Customise" />
+			</div>
+			<div class="menu-button" @onclick=@Library>
+				<WobbleText Text="Library" />
+			</div>
 			<div class="menu-button" @onclick=@Options>
 				<WobbleText Text="Options" />
 			</div>
@@ -58,6 +64,8 @@
 
 	void HostGame() => this.Navigate( "/host" );
 	void Sessions() => this.Navigate( "/sessions" );
+	void Customise() => this.Navigate( "/customise" );
+	void Library() => this.Navigate( "/library" );
 	void Options() => this.Navigate( "/options" );
 
 	// Re-render while a network action is in flight (label / disabled state) and when an error appears/clears.

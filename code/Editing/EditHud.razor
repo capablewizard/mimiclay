@@ -178,6 +178,16 @@
 				}
 			</div>
 
+			@* The menu customiser's Back button — under the shape list, pinned to the column's bottom by the
+			   layers' flex-grow (right where the menu footer's Back sits on every other page, which this
+			   replaces there — see MenuCustomise). Only mounted when a BackAction is wired; in game it never is. *@
+			@if ( BackAction is not null )
+			{
+				<div class="back-btn" @onclick=@(() => BackAction?.Invoke())>
+					<WobbleText Text="Back" />
+				</div>
+			}
+
 		</div>
 		}
 
@@ -578,6 +588,11 @@
 	[Property, Group( "Panels" )] public bool ShowSliders { get; set; } = true;
 	/// <summary>Draw the selected shape's bounding-sphere silhouette (toggled by the Bounds chip in Tools).</summary>
 	[Property, Group( "Panels" )] public bool ShowBounds { get; set; }
+
+	/// <summary>When set, a "Back" button (footer-style WobbleText) mounts under the layer stack and invokes
+	/// this on click. Wired by the menu customiser — whose session has no pawn and so no Q toggler, and whose
+	/// page hides the normal menu footer (see MenuCustomise); null everywhere else, including in game.</summary>
+	public Action BackAction { get; set; }
 
 	// The shapes the "Add Shape" grid offers, with their button labels. Centralised here; the glyphs come
 	// from SdfIcons.Shape().
@@ -1400,6 +1415,7 @@
 		hc.Add( s?.ExitConfirmTooBig ?? false );
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
+		hc.Add( BackAction is not null ); // the customiser's Back button mounts/unmounts with its wiring
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
 		hc.Add( s?.SplinePointUiDragging ?? false ); // keep it mounted through the insert-and-place drag, drop it on release
 		hc.Add( (int)(s?.Tool ?? SculptTool.Gizmo) );          // tool toggle highlight + add-mode layout swap

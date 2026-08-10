@@ -1,0 +1,25 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@using Sandbox.UI.Navigation
+@using Microsoft.AspNetCore.Components
+@namespace Mimiclay
+@inherits Panel
+@attribute [Route( "/customise" )]
+
+@*
+	Customise screen — the page itself is deliberately empty: on this route the sculpt toy is swapped for the
+	player's hunter model in permanent face-edit mode, and the EditHud provides all the UI, including the Back
+	button under the shape list. The root stays click-through so every click reaches the sculpt session.
+
+	The model swap is driven by MainMenuNav watching CurrentUrl (see its Tick), NOT by this page's lifecycle:
+	the NavigationHost keeps left pages alive and merely tags them .hidden, so OnDeleted never fires on a
+	navigate-away and can't be the teardown hook.
+*@
+
+<root class="customise-page menu-page"></root>
+
+@code
+{
+	protected override int BuildHash() => 0;
+}

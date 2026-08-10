@@ -1,0 +1,23 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@using Sandbox.UI.Navigation
+@using Microsoft.AspNetCore.Components
+@namespace Mimiclay
+@inherits Panel
+@attribute [Route( "/library" )]
+
+@*
+	Library screen — header only for now; the saved-sculpt browser (SculptLibrary.List + thumbnails) drops
+	into the menu-content band below later.
+*@
+
+<root class="library-page menu-page">
+
+	<WobbleText Text="Library" class="menu-title auto" />
+</root>
+
+@code
+{
+	protected override int BuildHash() => 0;
+}

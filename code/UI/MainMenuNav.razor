@@ -16,6 +16,10 @@
 <root class="@RootClass">
 	<div class="navigator-canvas" slot="navigator-canvas"></div>
 
+	@* The customise screen hides the footer — its Back button lives in the EditHud, under the shape list
+	   (see MenuCustomise), so a second one down here would just double up. *@
+	@if ( !IsCustomise )
+	{
 	<div class="menu-footer">
 		<div class="footer-button" @onclick=@OnFooter>
 			<WobbleText Text=@(IsHome ? "Quit" : "Back") />
@@ -37,6 +41,7 @@
 			}
 		}
 	</div>
+	}
 
 	@* Persistent control hints (top-right) for the sculpt toy's alt-nav — shown on every page, like the version tag. *@
 	<div class="menu-controls">
@@ -64,6 +69,14 @@
 
 	// The server browser gets an extra footer action (Refresh), driven through the page's static instance.
 	bool IsSessions => CurrentUrl == "/sessions";
+
+	// The customiser replaces the footer Back with one under the EditHud's shape list (see MenuCustomise).
+	bool IsCustomise => CurrentUrl == "/customise";
+
+	// On the customise page Escape belongs to the sculpt session first (cancel a stamp, drop a selection,
+	// answer the revert dialog) — only an idle session lets it fall through to back-navigation.
+	bool EscapeNavBlocked => IsCustomise && SculptEditSession.Current is { } s
+		&& (s.Tool != SculptTool.Gizmo || s.HasSelection || s.ExitConfirmPending);
 
 	public MainMenuNav()
 	{
@@ -94,7 +107,8 @@
 		GoBackOrHome();
 	}
 
-	void GoBackOrHome()
+	// Public: also the EditHud Back button's action on the customise screen (see MenuCustomise).
+	public void GoBackOrHome()
 	{
 		if ( !GoBack() )
 			Navigate( "/" );
@@ -106,13 +120,29 @@
 	// Footer Join (server browser only) — connect to the selected session through the live page instance.
 	void OnJoin() => SessionsPage.Current?.JoinSelected();
 
+	// Route-transition watcher: the customise model swap keys off ARRIVING AT / LEAVING the /customise route,
+	// not the page's lifecycle — the NavigationHost keeps left pages alive (just tagged .hidden), so a page's
+	// OnDeleted never fires on navigate-away and can't tear the model down. Watching CurrentUrl here catches
+	// every way off the page (HUD Back, Escape, deep navigation) with one owner.
+	bool _customiseUp;
+
 	public override void Tick()
 	{
 		base.Tick();
 
+		if ( IsCustomise != _customiseUp )
+		{
+			_customiseUp = IsCustomise;
+
+			if ( _customiseUp )
+				MenuCustomise.Instance?.Activate();
+			else
+				MenuCustomise.Instance?.Deactivate();
+		}
+
 		// Escape still works as Back on any sub-page (no on-screen hint anymore, but it's standard). Deliberately
 		// NOT wired to Quit on the landing page, so you can't accidentally close the game by tapping Escape.
-		if ( !IsHome && Input.EscapePressed )
+		if ( !IsHome && !EscapeNavBlocked && Input.EscapePressed )
 			GoBackOrHome();
 
 		// Auto-clear a surfaced error once it's lived its lifetime — the page's .menu-error fades it out across
