@@ -242,6 +242,68 @@
 			</div>
 		}
 
+		@* Workshop column (menu customiser only) — a second card stack just LEFT of the Tools panel, same
+		   paper style. Only mounted when the customiser wires the actions; the in-game HUD never does. *@
+		@if ( WorkshopSave is not null )
+		{
+			<div class="panel right workshop-col">
+				<div class="section-title"><span>Workshop</span><div class="icon">cloud</div></div>
+				<div class="tool-list">
+					<div class="chip action" @onclick=@(() => WorkshopSave?.Invoke())>
+						<div class="icon">cloud_upload</div><span>Save To Workshop</span>
+					</div>
+					<div class="chip action" @onclick=@(() => WorkshopLoad?.Invoke())>
+						<div class="icon">cloud_download</div><span>Load From Workshop</span>
+					</div>
+				</div>
+			</div>
+
+			@* The workshop library window — our own browser (loading is silent API; only publishing has an
+			   engine dialog). Centre-screen paper card with the player's published heads as rounded image
+			   tiles, thumbnails straight off each item's workshop preview. The WRAPPER is click-through so
+			   the sculpt stays interactive around the window; the card opts in and is tracked in
+			   PointerOverPanels so world picks/stamps stand down underneath it. *@
+			@if ( WorkshopBrowserOpen )
+			{
+				<div class="workshop-window-wrap">
+					<div class="paper-card workshop-window" @ref="WorkshopWindowPanel">
+						<div class="window-head">
+							<div class="section-title"><div class="icon">cloud</div><span>Workshop</span></div>
+							<div class="chip mini window-close" @onclick=@(() => WorkshopClose?.Invoke())>
+								<div class="icon">close</div>
+							</div>
+						</div>
+
+						@if ( WorkshopStatus is not null )
+						{
+							<div class="workshop-status">@WorkshopStatus</div>
+						}
+
+						@if ( WorkshopItems is { Count: > 0 } )
+						{
+							<div class="workshop-grid">
+								@foreach ( var entry in WorkshopItems )
+								{
+									var it = entry;
+									<div class="workshop-tile paper-card" @onclick=@(() => it.Apply?.Invoke())>
+										@if ( string.IsNullOrEmpty( it.Image ) )
+										{
+											<div class="tile-fallback"><div class="icon">face</div></div>
+										}
+										else
+										{
+											<div class="tile-img" style="background-image: url( @it.Image )"></div>
+										}
+										<span class="label">@it.Title</span>
+									</div>
+								}
+							</div>
+						}
+					</div>
+				</div>
+			}
+		}
+
 		@* Palette + sliders fade in/out with the selection. They stay mounted while editing (a mount/unmount can't
 		   animate) — content comes from _fadeBrush so they hold their last state while fading out after a deselect —
 		   and opacity is driven by whether a brush is selected, so the CSS opacity transition animates both ways. *@
@@ -594,6 +656,27 @@
 	/// page hides the normal menu footer (see MenuCustomise); null everywhere else, including in game.</summary>
 	public Action BackAction { get; set; }
 
+	/// <summary>When set, a Workshop column (Save To Workshop / Load From Workshop) mounts just left of the
+	/// Tools panel. Wired by the menu customiser; null everywhere else, including in game.</summary>
+	public Action WorkshopSave { get; set; }
+
+	/// <summary>The Workshop column's second button — see <see cref="WorkshopSave"/>.</summary>
+	public Action WorkshopLoad { get; set; }
+
+	/// <summary>The workshop library window is up (see the markup for what it is). Opened/closed by the
+	/// customiser; the window's own close button routes through <see cref="WorkshopClose"/>.</summary>
+	public bool WorkshopBrowserOpen { get; set; }
+
+	/// <summary>The library window's close action — owned by the customiser so its state stays consistent.</summary>
+	public Action WorkshopClose { get; set; }
+
+	/// <summary>Status line inside the library window ("Searching…", "No saved heads found"). Null hides it.</summary>
+	public string WorkshopStatus { get; set; }
+
+	/// <summary>The library window's tiles: title, thumbnail URL (the item's workshop preview; empty = glyph
+	/// fallback), and the click action. Null/empty hides the grid.</summary>
+	public IReadOnlyList<(string Title, string Image, Action Apply)> WorkshopItems { get; set; }
+
 	// The shapes the "Add Shape" grid offers, with their button labels. Centralised here; the glyphs come
 	// from SdfIcons.Shape().
 	static readonly (SdfShape Shape, string Label)[] AddShapes =
@@ -623,6 +706,7 @@
 	Panel LeftPanel { get; set; }
 	Panel RightPanel { get; set; }
 	Panel ShapeDockPanel { get; set; }
+	Panel WorkshopWindowPanel { get; set; }
 	Vector2 _shapeDockPos;
 
 	// The validity toast's BOTTOM edge, from the bottom of the screen (its wrapper centres x — see the
@@ -896,7 +980,7 @@
 		PointerOverPalette = Over( PalettePanel );
 		PointerOverSliders = Over( SliderStackPanel );
 		PointerOverPicker = Over( PickerPanel );
-		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel );
+		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel ) || Over( WorkshopWindowPanel );
 
 		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
 		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.
@@ -1416,6 +1500,10 @@
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
 		hc.Add( BackAction is not null ); // the customiser's Back button mounts/unmounts with its wiring
+		hc.Add( WorkshopSave is not null ); // ditto the customiser's Workshop column
+		hc.Add( WorkshopBrowserOpen );     // the library window mounts/unmounts
+		hc.Add( WorkshopStatus );          // search/download status line appears/relabels/clears
+		hc.Add( WorkshopItems?.Count ?? -1 ); // tiles mount/unmount
 		hc.Add( s?.HoveringSplineLine ?? false ); // re-render so the add-point cursor panel appears/disappears on hover
 		hc.Add( s?.SplinePointUiDragging ?? false ); // keep it mounted through the insert-and-place drag, drop it on release
 		hc.Add( (int)(s?.Tool ?? SculptTool.Gizmo) );          // tool toggle highlight + add-mode layout swap

@@ -103,10 +103,92 @@ public sealed class SdfThumbnail : ScenePanel
 	public SdfThumbnail()
 	{
 		RenderOnce = true;
+		EnsureInternalSceneSafe();
 	}
+
+	static bool _navWarned;
+
+	// The base ScenePanel creates — and GameTicks, every frame — an internal Scene we never use (our picture
+	// comes from Camera.World pointing at the stage's SceneWorld), and on current engine builds that tick can
+	// NRE inside Scene.Nav_Update (seen 2026-08-10; decompiled retail Nav_Update's first line dereferences
+	// Scene.NavMesh, and its whole body sits behind NavMesh.IsEnabled). Assert both ways out on EVERY tick,
+	// not just construction: the nav must be disabled so Nav_Update early-outs, and a scene whose NavMesh has
+	// somehow gone null (teardown edge) must be replaced before GameTick can touch it.
+	void EnsureInternalSceneSafe()
+	{
+		var scene = RenderScene;
+		if ( !scene.IsValid() )
+			return; // base.Tick early-outs on an invalid scene by itself — nothing to protect
+
+		if ( scene.NavMesh is not null )
+		{
+			scene.NavMesh.IsEnabled = false;
+			return;
+		}
+
+		// NavMesh gone but the scene still counts as valid — GameTick would NRE. Swap in a fresh inert
+		// scene; the panel only needs A valid RenderScene to reach its render path. Log once so we learn
+		// which shape of this engine bug we're actually seeing in the wild.
+		if ( !_navWarned )
+		{
+			_navWarned = true;
+			Log.Warning( "SdfThumbnail: internal RenderScene had a null NavMesh — replaced it (engine Nav_Update NRE guard)." );
+		}
+
+		var fresh = new Scene { WantsSystemScene = false };
+		if ( fresh.NavMesh is not null )
+			fresh.NavMesh.IsEnabled = false;
+		RenderScene = fresh; // setter destroys the old owned scene
+		_replacementScene = fresh; // ...but marks the new one caller-owned, so we destroy it on delete
+	}
+
+	Scene _replacementScene;
+	static int _tickCrashLogged;
+
+	// Diagnostic wrapper around the base panel tick. The engine has NREd in the internal scene's Nav_Update
+	// even with the state asserted one line earlier — which the decompiled retail code says is impossible —
+	// so instead of letting the throw kill the panel's whole tick (no render, HUD icons dead), catch it and
+	// report the ACTUAL state it happened with. First three occurrences only; if the log shows nav disabled
+	// and non-null at catch time, the running method is stale hotload code, not an engine state bug.
+	void SafeBaseTick()
+	{
+		try
+		{
+			base.Tick();
+		}
+		catch ( NullReferenceException e )
+		{
+			if ( _tickCrashLogged >= 3 )
+				return;
+
+			_tickCrashLogged++;
+			var rs = RenderScene;
+			var sceneValid = rs.IsValid();
+			var navNull = sceneValid ? (rs.NavMesh is null).ToString() : "n/a";
+			var navOn = sceneValid && rs.NavMesh is not null ? rs.NavMesh.IsEnabled.ToString() : "n/a";
+			Log.Warning( $"SdfThumbnail: engine tick NRE #{_tickCrashLogged} — sceneValid={sceneValid} navMeshNull={navNull} navEnabled={navOn}\n{e}" );
+		}
+	}
+
+	/// <summary>Delete this panel at the START of its next tick instead of right now. Use this — never
+	/// Delete() — from async continuations: awaits resume inside the global frame-stage pump, which fires
+	/// from within Scene.InternalFixedUpdate, so a Delete there can destroy THIS panel's internal scene in
+	/// the middle of its own GameTick (root cause of the 2026-08-10 Nav_Update NRE: the delete nulled the
+	/// scene's NavMesh, then the interrupted tick resumed into Nav_Update).</summary>
+	public void DeleteSoon() => _deleteSoon = true;
+	bool _deleteSoon;
 
 	public override void Tick()
 	{
+		// Deferred self-delete (see DeleteSoon): here the internal scene is guaranteed not mid-tick.
+		if ( _deleteSoon )
+		{
+			Delete( true );
+			return;
+		}
+
+		EnsureInternalSceneSafe(); // every tick, before base.Tick can GameTick the internal scene
+
 		RenderOnce = !Live;
 
 		var live = _source.IsValid();
@@ -117,7 +199,7 @@ public sealed class SdfThumbnail : ScenePanel
 			HasSubject = false;
 			// Keep the stage alive through an empty frame — a hunter's pawn can flicker out of the scene between
 			// phases, and rebuilding the SceneWorld each time would cost far more than holding it.
-			base.Tick();
+			SafeBaseTick();
 			return;
 		}
 
@@ -134,7 +216,7 @@ public sealed class SdfThumbnail : ScenePanel
 			var scene = Game.ActiveScene;
 			if ( !scene.IsValid() )
 			{
-				base.Tick();
+				SafeBaseTick();
 				return;
 			}
 
@@ -195,7 +277,7 @@ public sealed class SdfThumbnail : ScenePanel
 
 		HasSubject = true;
 
-		base.Tick();
+		SafeBaseTick();
 	}
 
 	public override void Delete( bool immediate = false )
@@ -231,5 +313,11 @@ public sealed class SdfThumbnail : ScenePanel
 
 		_stage?.Dispose();
 		_stage = null;
+
+		// A replacement internal scene (see EnsureInternalSceneSafe) is caller-owned — the base panel only
+		// destroys the scene it created itself.
+		if ( _replacementScene.IsValid() )
+			_replacementScene.Destroy();
+		_replacementScene = null;
 	}
 }

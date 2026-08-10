@@ -44,6 +44,8 @@
 		.layer,
 		.layer .iconbtn,
 		.back-btn,
+		.workshop-window,
+		.workshop-window .workshop-tile,
 		.chip,
 		.palette-float,
 		.palette-float .swatch-cell,
@@ -123,6 +125,106 @@
 	// Exit-confirm dialog (SculptBounds revert): a dimming scrim owning the pointer, with a centred paper
 	// card — title styled like the validity toast (same emoji shadow-ring outline; colour emoji can't be
 	// text-stroked), body in the plain UI face, and two .btn choices from the shared kit.
+	// The customiser's workshop library window: same centring shell as the exit-confirm below, but NO scrim —
+	// the wrapper is click-through so the sculpt stays interactive around the window; only the card opts in
+	// (and it's tracked in PointerOverPanels so picks/stamps stand down beneath it).
+	.workshop-window-wrap {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 90; // above the floating edit cards, below the exit-confirm scrim
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+	}
+
+	.workshop-window {
+		pointer-events: all;
+		flex-direction: column;
+		gap: $space-md;
+		padding: $space-lg;
+		border-radius: 22px; // match .shape-tile / the confirm card
+		max-width: 640px;
+
+		.window-head {
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			gap: $space-lg;
+
+			.window-close {
+				flex-grow: 0;
+				padding: 6px 10px;
+			}
+		}
+
+		// Search/download/error line — display-only ink text, same voice as the hint strip.
+		.workshop-status {
+			justify-content: center;
+			font-size: 14px;
+			font-weight: 700;
+			text-transform: uppercase;
+			color: $paper-edge;
+			opacity: 0.9;
+			pointer-events: none;
+		}
+
+		// The tiles: rounded image squares in the shape-tile mould — thumbnail on top, name under it.
+		.workshop-grid {
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 12px;
+			max-width: 580px;
+		}
+
+		.workshop-tile {
+			pointer-events: all;
+			flex-direction: column;
+			align-items: center;
+			gap: 6px;
+			padding: 10px;
+			cursor: pointer;
+			transition: all 0.08s ease-out;
+
+			.tile-img {
+				width: 108px;
+				height: 108px;
+				border-radius: 16px;
+				background-size: cover;
+				background-position: center;
+				background-repeat: no-repeat;
+			}
+
+			// No preview on the item — a big face glyph in the same rounded square.
+			.tile-fallback {
+				width: 108px;
+				height: 108px;
+				border-radius: 16px;
+				align-items: center;
+				justify-content: center;
+				background-color: rgba( 44, 36, 24, 0.08 );
+
+				.icon { font-size: 64px; color: $paper-ink; }
+			}
+
+			.label {
+				font-size: 14px;
+				font-weight: 700;
+				color: $paper-ink;
+				max-width: 112px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			&:hover { transform: translateY( -2px ); background-color: #fff; sound-in: $sound-hover; }
+			&:active { transform: translateY( 1px ); sound-in: $sound-click; }
+		}
+	}
+
 	.exit-confirm {
 		position: absolute;
 		top: 0;
@@ -232,6 +334,12 @@
 			// Right-aligned section header (label sits against the right edge, icon trails it).
 			// Only the header is pushed right; the chip rows below still stretch to full width.
 			.section-title { justify-content: flex-end; }
+		}
+
+		// The customiser's Workshop column: one slot further in from the Tools panel.
+		// 228 = $panel-inset (24) + tools width (190) + 14 gap — spelled out, s&box scss has no arithmetic.
+		&.right.workshop-col {
+			right: 228px;
 		}
 	}
 

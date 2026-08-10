@@ -1205,11 +1205,18 @@ public sealed class SculptEditSession : Component
 	/// which case the current shape is left untouched.</summary>
 	public bool Load( string name )
 	{
+		return Load( SculptLibrary.Load( name ) );
+	}
+
+	/// <summary>The same replace-commit-undo funnel for an entry that didn't come off the local disk — the
+	/// workshop download path. Validates like <see cref="SculptLibrary.Load"/> does (a workshop file is just
+	/// as player-editable as a save on disk): empty or over the brush cap = refused, shape untouched.</summary>
+	public bool Load( SculptLibrary.Entry entry )
+	{
 		if ( !Target.IsValid() )
 			return false;
 
-		var entry = SculptLibrary.Load( name );
-		if ( entry is null )
+		if ( entry?.Brushes is not { Count: > 0 } || entry.Brushes.Count > SdfBrushPacker.MaxBrushes )
 			return false;
 
 		Target.Brushes = entry.Brushes;
