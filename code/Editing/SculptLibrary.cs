@@ -229,6 +229,68 @@ public static class SculptLibrary
 			Log.Info( $"No saved sculpture \"{name}\"." );
 	}
 
+	/// <summary>Convert a prefab asset's sculpture into a <c>.sculpt</c> library save without touching the
+	/// scene: reads the <see cref="SdfSculpture"/> straight off the prefab scene (the same trick
+	/// <see cref="HunterGun"/> uses to read gun.prefab's brushes) and writes it under the given name — default
+	/// is the prefab's file stem. Complements <see cref="SdfSculpture.SaveToLibrary"/>, which needs the
+	/// sculpture placed in a scene; this works on the asset directly.</summary>
+	[ConCmd( "mimi_sculpt_from_prefab" )]
+	public static void FromPrefabCmd( string prefabPath, string name = null )
+	{
+		if ( string.IsNullOrWhiteSpace( prefabPath ) )
+		{
+			Log.Info( "Usage: mimi_sculpt_from_prefab <prefab path> [save name] — e.g. mimi_sculpt_from_prefab prefabs/bedroom/toycar" );
+			return;
+		}
+
+		var path = prefabPath.Replace( '\\', '/' ).Trim().ToLowerInvariant();
+		if ( !path.EndsWith( ".prefab", StringComparison.Ordinal ) )
+			path += ".prefab";
+
+		var file = ResourceLibrary.Get<PrefabFile>( path );
+		if ( file is null )
+		{
+			Log.Info( $"mimi_sculpt_from_prefab: no prefab at \"{path}\" (paths are relative to the assets root, e.g. prefabs/bedroom/toycar.prefab)." );
+			return;
+		}
+
+		var sculptures = SceneUtility.GetPrefabScene( file )?.GetAllComponents<SdfSculpture>().ToList();
+		if ( sculptures is not { Count: > 0 } )
+		{
+			Log.Info( $"mimi_sculpt_from_prefab: \"{path}\" has no SdfSculpture component." );
+			return;
+		}
+
+		if ( sculptures.Count > 1 )
+			Log.Info( $"mimi_sculpt_from_prefab: \"{path}\" has {sculptures.Count} sculptures — converting the first (\"{sculptures[0].GameObject.Name}\")." );
+
+		var sculpture = sculptures[0];
+		if ( sculpture.Brushes is not { Count: > 0 } )
+		{
+			Log.Info( $"mimi_sculpt_from_prefab: \"{path}\" has an empty brush list — nothing to convert." );
+			return;
+		}
+
+		// Refuse rather than write a file Load() will reject as over-cap (it treats > MaxBrushes as corrupt).
+		if ( sculpture.Brushes.Count > SdfBrushPacker.MaxBrushes )
+		{
+			Log.Info( $"mimi_sculpt_from_prefab: \"{path}\" has {sculpture.Brushes.Count} brushes (cap {SdfBrushPacker.MaxBrushes}) — too many to convert." );
+			return;
+		}
+
+		if ( string.IsNullOrWhiteSpace( name ) )
+		{
+			// Default save name = the prefab's file stem ("prefabs/bedroom/toycar.prefab" → "toycar").
+			var stem = path[(path.LastIndexOf( '/' ) + 1)..];
+			name = stem[..^".prefab".Length];
+		}
+
+		if ( Save( name, sculpture ) )
+			Log.Info( $"Converted \"{path}\" → sculpture \"{name}\" at \"{FullPath( name )}\"." );
+		else
+			Log.Info( $"Failed to convert \"{path}\"." );
+	}
+
 	[ConCmd( "mimi_sculpt_list" )]
 	public static void ListCmd()
 	{

@@ -239,4 +239,104 @@ public static class SdfPrefabUtility
 	[ConCmd( "mimi_sculpt_export" )]
 	public static void ExportCmd( string saveName )
 		=> Log.Info( ExportFromSave( saveName ) ? $"Exported '{saveName}' to a prefab." : $"Export of '{saveName}' failed." );
+
+	// ── Prefab → .sculpt (the reverse direction, from the asset browser) ─────────────────────────────────
+
+	/// <summary>Right-click a prefab in the asset browser → "Save as .sculpt". The inverse of
+	/// <see cref="Export(SdfSculpture)"/>: parses the prefab's JSON directly (no instantiation, works even if
+	/// it hasn't compiled yet), finds its first <see cref="SdfSculpture"/> — root or child — and writes the
+	/// shape to the local <see cref="SculptLibrary"/> under the prefab's file name. Produces the same file as
+	/// the in-game <c>mimi_sculpt_from_prefab</c> command.</summary>
+	[Event( "asset.contextmenu", Priority = 50 )]
+	public static void OnPrefabAssetContext( AssetContextMenu e )
+	{
+		if ( e.SelectedList.Count == 0 || !e.SelectedList.All( x => x.Asset?.AssetType?.FileExtension == "prefab" ) )
+			return;
+
+		e.Menu.AddOption( "Save as .sculpt", "gesture", action: () =>
+		{
+			foreach ( var entry in e.SelectedList )
+				SaveSculptFromPrefab( entry.Asset );
+		} );
+	}
+
+	static void SaveSculptFromPrefab( Asset asset )
+	{
+		JsonNode root;
+		try
+		{
+			root = JsonNode.Parse( File.ReadAllText( asset.AbsolutePath ) );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[SDF Import] couldn't read \"{asset.Path}\" — {e.Message}" );
+			return;
+		}
+
+		var sculptNode = FindSculptureNode( root?["RootObject"] );
+		if ( sculptNode is null )
+		{
+			Log.Warning( $"[SDF Import] \"{asset.Path}\" has no SdfSculpture component." );
+			return;
+		}
+
+		List<SdfBrush> brushes;
+		try
+		{
+			// Round-trip through the same serializer the runtime uses, so the brush JSON is read identically
+			// to a networked or .sculpt-saved brush list.
+			brushes = Json.Deserialize<List<SdfBrush>>( sculptNode["Brushes"]?.ToJsonString() ?? "null" );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[SDF Import] couldn't parse brushes in \"{asset.Path}\" — {e.Message}" );
+			return;
+		}
+
+		if ( brushes is not { Count: > 0 } )
+		{
+			Log.Warning( $"[SDF Import] \"{asset.Path}\" has an empty brush list — nothing to save." );
+			return;
+		}
+
+		// Refuse rather than write a file SculptLibrary.Load() will reject as over-cap.
+		if ( brushes.Count > SdfBrushPacker.MaxBrushes )
+		{
+			Log.Warning( $"[SDF Import] \"{asset.Path}\" has {brushes.Count} brushes (cap {SdfBrushPacker.MaxBrushes}) — too many to save." );
+			return;
+		}
+
+		var entry = new SculptLibrary.Entry
+		{
+			Name = asset.Name,
+			Resolution = sculptNode["Resolution"]?.GetValue<int>() ?? 32,
+			FlipFaces = sculptNode["FlipFaces"]?.GetValue<bool>() ?? false,
+			Brushes = brushes,
+		};
+
+		if ( SculptLibrary.Save( entry ) )
+			Log.Info( $"[SDF Import] saved \"{asset.Path}\" -> \"{SculptLibrary.FullPath( entry.Name )}\"." );
+		else
+			Log.Warning( $"[SDF Import] failed to save \"{asset.Path}\" as a sculpt." );
+	}
+
+	// First SdfSculpture component on this GameObject node or (depth-first) any of its children.
+	static JsonObject FindSculptureNode( JsonNode gameObject )
+	{
+		if ( gameObject is not JsonObject go )
+			return null;
+
+		var found = go["Components"]?.AsArray()
+			.FirstOrDefault( c => c is JsonObject && (string)c["__type"] == "Mimiclay.SdfSculpture" )
+			?.AsObject();
+		if ( found is not null )
+			return found;
+
+		if ( go["Children"] is JsonArray children )
+			foreach ( var child in children )
+				if ( FindSculptureNode( child ) is { } inChild )
+					return inChild;
+
+		return null;
+	}
 }
