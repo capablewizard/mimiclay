@@ -205,13 +205,12 @@ public sealed class MenuCustomise : Component
 		Hud.WorkshopItems = null;
 	}
 
-	// Save To Workshop, first cut: pack the current head into a Storage entry (the same JSON a local .sculpt
-	// save carries) and hand it to the Steam Workshop publish overlay — user-confirmed every time, by Steam's
-	// design (the silent UgcPublisher is engine-internal on purpose). The entry is created once per app run
-	// and reused, so repeat publishes update the SAME entry (and, via its _workshopId meta, the same workshop
-	// item). Not yet done: a thumbnail (SdfThumbnail could render one), and finding a previously-published
-	// entry after a restart instead of minting a new item.
-	Storage.Entry _workshopEntry;
+	// Save To Workshop: pack the current head into a Storage entry (the same JSON a local .sculpt save
+	// carries) and hand it to the Steam Workshop publish overlay — user-confirmed every time, by Steam's
+	// design (the silent UgcPublisher is engine-internal on purpose). Every save is a FRESH entry and so a
+	// NEW workshop item: the workshop is a library of heads, and the earlier update-in-place behaviour (one
+	// reused entry carrying a _workshopId) meant each save — or a save after a load — silently overwrote an
+	// existing item. An explicit "update this item" flow can come later; overwriting must never be implicit.
 
 	bool _thumbCapturing;
 
@@ -236,8 +235,8 @@ public sealed class MenuCustomise : Component
 		if ( !IsOpen || !_face.IsValid() || _face.Brushes is not { Count: > 0 } )
 			return;
 
-		_workshopEntry ??= Storage.CreateEntry( "head" );
-		_workshopEntry.Files.WriteAllText( "head.sculpt", Json.Serialize( new SculptLibrary.Entry
+		var entry = Storage.CreateEntry( "head" );
+		entry.Files.WriteAllText( "head.sculpt", Json.Serialize( new SculptLibrary.Entry
 		{
 			Name = "Head",
 			Resolution = _face.Resolution,
@@ -248,9 +247,9 @@ public sealed class MenuCustomise : Component
 		// Stored ON the entry (not just passed to the modal): Publish reads the entry's _thumb.png into the
 		// options itself, and the saved file doubles as the local gallery icon for the future Library page.
 		if ( thumb is not null )
-			_workshopEntry.SetThumbnail( thumb );
+			entry.SetThumbnail( thumb );
 
-		_workshopEntry.Publish( new WorkshopPublishOptions
+		entry.Publish( new WorkshopPublishOptions
 		{
 			Title = "My Mimiclay Head",
 			Description = "A head sculpted in Mimiclay.",
@@ -302,20 +301,15 @@ public sealed class MenuCustomise : Component
 			if ( tex is null )
 				return null;
 
-			// Steam thumbnails want no transparency — composite the stage's transparent render over the
-			// menu's backdrop colour, then square it to the 512×512 the workshop asks for.
-			var bg = Scene.Camera.IsValid() ? Scene.Camera.BackgroundColor : new Color( 0.12f, 0.22f, 0.26f );
+			// Keep the stage's transparency: the head floats on alpha with its ink outline, so the library
+			// tiles show no backdrop square. (Steam's docs suggest opaque previews but alpha PNGs are
+			// accepted fine — the workshop site just draws its own ground behind them.) Then square it to
+			// the 512×512 the workshop asks for.
 			var src = tex.GetPixels();
 			var pixels = new Color[src.Length];
 
 			for ( int i = 0; i < src.Length; i++ )
-			{
-				var c = src[i].ToColor();
-				pixels[i] = new Color(
-					bg.r + (c.r - bg.r) * c.a,
-					bg.g + (c.g - bg.g) * c.a,
-					bg.b + (c.b - bg.b) * c.a );
-			}
+				pixels[i] = src[i].ToColor();
 
 			var bitmap = new Bitmap( tex.Width, tex.Height );
 			bitmap.SetPixels( pixels );
@@ -437,14 +431,10 @@ public sealed class MenuCustomise : Component
 				return;
 			}
 
-			// Success — the head is on; close the window so the player sees it.
+			// Success — the head is on; close the window so the player sees it. (Deliberately NOT remembering
+			// the item's id for the next save: saves always mint a new item — sculpting over a loaded head
+			// and saving must never silently overwrite the original.)
 			CloseWorkshopBrowser();
-
-			// Loading marks this item as THE cloud copy: stamp its id onto our publish entry (the meta key
-			// Storage.Entry.Publish reads), so a later Save To Workshop updates it in place instead of
-			// minting a sibling — including after an app restart, which the save path alone can't do.
-			_workshopEntry ??= Storage.CreateEntry( "head" );
-			_workshopEntry.SetMeta( "_workshopId", item.Id );
 		}
 		catch ( Exception e )
 		{

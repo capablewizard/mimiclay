@@ -250,10 +250,10 @@
 				<div class="section-title"><span>Workshop</span><div class="icon">cloud</div></div>
 				<div class="tool-list">
 					<div class="chip action" @onclick=@(() => WorkshopSave?.Invoke())>
-						<div class="icon">cloud_upload</div><span>Save To Workshop</span>
+						<div class="icon">cloud_upload</div><span>Save</span>
 					</div>
 					<div class="chip action" @onclick=@(() => WorkshopLoad?.Invoke())>
-						<div class="icon">cloud_download</div><span>Load From Workshop</span>
+						<div class="icon">cloud_download</div><span>Load</span>
 					</div>
 				</div>
 			</div>
@@ -285,14 +285,23 @@
 								@foreach ( var entry in WorkshopItems )
 								{
 									var it = entry;
-									<div class="workshop-tile paper-card" @onclick=@(() => it.Apply?.Invoke())>
+									@* No card behind each tile — the thumbnails carry their own ink outline,
+									   so they sit on the window like photos: rounded image, name beneath. *@
+									<div class="workshop-tile" @onclick=@(() => it.Apply?.Invoke())>
 										@if ( string.IsNullOrEmpty( it.Image ) )
 										{
 											<div class="tile-fallback"><div class="icon">face</div></div>
 										}
 										else
 										{
-											<div class="tile-img" style="background-image: url( @it.Image )"></div>
+											@* Silhouette shadow, faked in CSS: the same image again UNDER the
+											   real one, offset + blur() + brightness(0) — black keeps the alpha
+											   shape. (filter: drop-shadow would be the real feature; it parses
+											   but never draws on this engine build.) *@
+											<div class="tile-stack">
+												<div class="tile-img tile-shadow" style="background-image: url( @it.Image )"></div>
+												<div class="tile-img" style="background-image: url( @it.Image )"></div>
+											</div>
 										}
 										<span class="label">@it.Title</span>
 									</div>

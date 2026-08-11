@@ -180,47 +180,81 @@
 			max-width: 580px;
 		}
 
+		// Bare tiles — no card behind them: the thumbnail's own ink outline does the framing, so each entry
+		// reads as a rounded photo with its name beneath, sitting directly on the window paper.
 		.workshop-tile {
 			pointer-events: all;
 			flex-direction: column;
 			align-items: center;
-			gap: 6px;
-			padding: 10px;
+			gap: 8px;
 			cursor: pointer;
 			transition: all 0.08s ease-out;
 
+			// The image pair lives in a fixed-size stack so the shadow copy can sit offset underneath.
+			.tile-stack {
+				position: relative;
+				width: 116px;
+				height: 116px;
+			}
+
 			.tile-img {
-				width: 108px;
-				height: 108px;
-				border-radius: 16px;
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 116px;
+				height: 116px;
+				border-radius: 20px;
 				background-size: cover;
 				background-position: center;
 				background-repeat: no-repeat;
 			}
 
-			// No preview on the item — a big face glyph in the same rounded square.
+			// The silhouette shadow: same image, offset down, crushed to black (brightness 0 keeps alpha) and
+			// blurred — $shadow-float's geometry, done with the filters that DO render on this build (the
+			// real feature, filter: drop-shadow, parses but never draws — see ui-border-geometry notes).
+			//
+			// The panel is OVERSIZED by 20px a side with the image drawn at tile size in its centre: the blur
+			// happens in a panel-sized layer, so a tile-sized copy clips the blur hard wherever the head
+			// reaches the edge — the inset gives the smear room to fade out inside the layer instead.
+			.tile-shadow {
+				left: -20px;
+				top: -14px; // -20 inset + the 6px downward shadow offset
+				width: 156px;
+				height: 156px;
+				background-size: 116px 116px;
+				background-position: center;
+				border-radius: 0; // don't let the inherited tile radius mask the oversized layer's corners
+				filter: blur( 8px ) brightness( 0 );
+				opacity: 0.32;
+			}
+
+			// No preview on the item — just the bare face glyph, sized like the images so the grid stays even.
 			.tile-fallback {
-				width: 108px;
-				height: 108px;
-				border-radius: 16px;
+				width: 116px;
+				height: 116px;
 				align-items: center;
 				justify-content: center;
-				background-color: rgba( 44, 36, 24, 0.08 );
 
-				.icon { font-size: 64px; color: $paper-ink; }
+				.icon {
+					font-size: 72px;
+					color: $paper-ink;
+					// Glyph = text, so its shadow can hug the actual shape (same trick as the emboss text).
+					text-shadow: 0px 6px 16px rgba( 30, 20, 8, 0.32 ); // = $shadow-float, keep in step
+				}
 			}
 
 			.label {
-				font-size: 14px;
+				font-size: 15px;
 				font-weight: 700;
+				text-transform: uppercase;
 				color: $paper-ink;
-				max-width: 112px;
+				max-width: 116px;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
 
-			&:hover { transform: translateY( -2px ); background-color: #fff; sound-in: $sound-hover; }
+			&:hover { transform: translateY( -3px ) scale( 1.03 ); sound-in: $sound-hover; }
 			&:active { transform: translateY( 1px ); sound-in: $sound-click; }
 		}
 	}
