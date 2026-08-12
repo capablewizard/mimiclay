@@ -1,3 +1,5 @@
+@import "/UI/_menu.scss";   // tokens + .paper-card, for the creative "E to Edit" toast
+
 // Hunter crosshair — the shared dot-cursor art (same image the edit HUD's alt-drag cursor uses), centred with
 // flex rather than offsets so it can't drift with resolution. pointer-events:none throughout so it can never
 // eat a click from anything overlaying it (pause menu, round setup).
@@ -17,5 +19,46 @@
 		background-image: url( "/pointers/dot_large.png" );
 		background-size: 100% 100%;
 		background-repeat: no-repeat;
+	}
+
+	// Creative's "E to Edit" prompt — the edit HUD's validity-toast recipe: a full-width flex wrapper anchored
+	// to the bottom so neither axis depends on the toast's own measured size (a freshly mounted panel has no
+	// rect for a frame).
+	.possess-float {
+		position: absolute;
+		left: 0;
+		bottom: 64px;
+		width: 100%;
+		flex-direction: row;
+		justify-content: center;
+		pointer-events: none;
+	}
+
+	.possess-toast {
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		gap: $space-md;
+		padding: $space-md $space-lg;
+		border-radius: 22px;               // matches the validity toast / shape tiles
+		color: $paper-ink;
+		font-family: $header-font;
+		font-size: 30px;
+		font-weight: 800;
+		letter-spacing: 1px;
+		text-transform: uppercase;
+		pointer-events: none;
+
+		// The keyboard-key chip, same language as the round HUD's hotkey hints.
+		.key {
+			width: 40px;
+			height: 40px;
+			align-items: center;
+			justify-content: center;
+			border-radius: $radius-md;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
+			font-size: 24px;
+		}
 	}
 }

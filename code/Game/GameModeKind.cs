@@ -20,15 +20,15 @@ public enum GameModeKind
 
 /// <summary>Display metadata for a <see cref="GameModeKind"/> — label, one-line blurb, icon, and the gameplay
 /// scene the LOBBY launches when the host starts this game. Empty <see cref="Scene"/> means the game doesn't
-/// launch a fixed scene: prop hunt resolves its map through <see cref="MapCatalog"/> instead. Centralised here
-/// so the setup dialog, the server browser and the launch path all agree from one place.</summary>
+/// launch a fixed scene: it plays on a map resolved through <see cref="MapCatalog"/> instead (all current games
+/// do). Centralised here so the setup dialog, the server browser and the launch path all agree from one place.</summary>
 public readonly record struct GameModeInfo( GameModeKind Kind, string Label, string Blurb, string Scene, string Icon )
 {
-	/// <summary>The setup dialog shows the map picker for this game (prop hunt launches into the pick;
-	/// creative stores it but still launches its fixed scene until it has its own manager). COMPUTED, not a
-	/// stored field: GameModes.All is a static, and statics survive hotload — a field added to the struct
-	/// arrives as its DEFAULT (false) in the migrated array because the initializer doesn't re-run, which
-	/// silently hid the maps panel for every game until an editor restart.</summary>
+	/// <summary>This game plays on a picked map: the setup dialog shows the map picker, the start preflight
+	/// requires a resolvable map, and the launch loads it. COMPUTED, not a stored field: GameModes.All is a
+	/// static, and statics survive hotload — a field added to the struct arrives as its DEFAULT (false) in the
+	/// migrated array because the initializer doesn't re-run, which silently hid the maps panel for every game
+	/// until an editor restart.</summary>
 	public bool UsesMaps => Kind is GameModeKind.PropHunt or GameModeKind.Creative;
 }
 
@@ -39,8 +39,8 @@ public static class GameModes
 	{
 		new( GameModeKind.PropHunt, "Prop Hunt", "Create a disguise to blend in and evade the hunters.",
 			"", "visibility" ), // scene comes from the map picker (MapCatalog), not the catalogue
-		new( GameModeKind.Creative, "Creative", "A quiet sandbox — let your creativity run wild",
-			"scenes/perftestdebug.scene", "brush" ),
+		new( GameModeKind.Creative, "Creative", "A quiet sandbox, let your creativity run wild",
+			"", "brush" ),      // plays on the picked map too — the mode key tells the map to run creative
 	};
 
 	public static GameModeInfo Get( GameModeKind kind )

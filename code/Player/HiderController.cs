@@ -230,6 +230,58 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			_session.SetActive( false );
 	}
 
+	/// <summary>Released into the level and claimable (creative mode's E-to-edit). <c>_dormant</c> above is
+	/// machine-local — no other machine can tell a released prop from a live one — so claimability is a synced
+	/// flag, written ONLY while the HOST owns the pawn: set true right after the release's DropOwnership, set
+	/// false right before a possession's AssignOwnership (the flip is also the claim's idempotency guard — the
+	/// first claim clears it, every later claim is rejected). See <see cref="CreativeManager"/>.</summary>
+	[Sync] public bool Released { get; set; }
+
+	// Set by BeginPossession, consumed in OnUpdate once ownership has actually replicated to us. A latch rather
+	// than acting inside the RPC because the ownership packet and the RPC race: acting while we're still a proxy
+	// would resume control of a pawn we can't drive yet.
+	bool _possessionPending;
+
+	/// <summary>Host→claimant (sent filtered to the new owner by <see cref="CreativeManager"/>): you've been
+	/// handed this released prop — resume control once the ownership change lands. Not IGameObjectNetworkEvents
+	/// .StartControl, deliberately: that fires on every normal spawn (owner handoff) and on the HOST when a
+	/// release's DropOwnership makes it the controller — both would wrongly resume a pawn.</summary>
+	[Rpc.Broadcast]
+	public void BeginPossession()
+	{
+		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
+			return; // only the host hands out props
+		_possessionPending = true;
+	}
+
+	/// <summary>The counterpart to <see cref="ReleaseControl"/>, run on the machine that just took ownership of
+	/// a released prop: wake the control path and re-seed the state that went stale while it was scenery. Most
+	/// control state self-heals off the dormant/proxy gates (_turnSeeded, Body.MotionEnabled, _pivotOffsetXY);
+	/// what doesn't is the orbit rig (still aimed wherever this pawn's spawn left it) and the facing yaw (the
+	/// body has been turned by physics since). The camera comes up along the possessing hunter's view — the E
+	/// press captured it into <see cref="LobbySwapCarry"/> — so whatever you were looking at, you still are.</summary>
+	public void ResumeControl()
+	{
+		_dormant = false;
+		_jumpQueued = false;
+
+		EyeAngles = WorldRotation.Angles() with { pitch = 0f, roll = 0f };
+		_bodyYaw = EyeAngles.yaw;
+
+		if ( _orbit.IsValid() )
+		{
+			_orbit.Angles = new Angles( 15f, _bodyYaw, 0f );
+			if ( LobbySwapCarry.TakeCamera() is { } view )
+				_orbit.Angles = new Angles( Math.Clamp( view.pitch, MinPitch, MaxPitch ), view.yaw, 0f );
+			if ( LobbySwapCarry.PropZoom is { } zoom )
+				_orbit.Distance = Math.Clamp( zoom, MinDistance, MaxDistance );
+		}
+
+		// Straight into sculpting — the prompt that got us here said "E to Edit".
+		if ( _session.IsValid() && !_session.IsEditing )
+			_session.SetActive( true );
+	}
+
 	// Yaw WASD is measured against = the camera (the rig's yaw); yaw the disguise visually faces = its own
 	// (frozen during alt orbit).
 	float MoveYaw => _orbit.Angles.yaw;
@@ -343,6 +395,14 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// FIRST, and before every gate below: concealment is the one thing here that exists to run on OTHER
 		// players' pawns (see UpdateConcealment). Everything after this point is owner-only.
 		UpdateConcealment();
+
+		// A granted possession resumes here — before the dormant gate, because a HOST possessing a prop it
+		// released itself still has _dormant latched on its own copy (ResumeControl clears it).
+		if ( _possessionPending && !IsProxy )
+		{
+			_possessionPending = false;
+			ResumeControl();
+		}
 
 		// Released into the level: no input, no camera — just let OnFixedUpdate keep the physics settling.
 		if ( _dormant )

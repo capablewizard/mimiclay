@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Mimiclay;
 
 /// <summary>
@@ -47,6 +49,14 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			phase = RoundManager.Current.Phase;
 		else if ( LobbyManager.Current.IsValid() )
 			phase = RoundPhase.Lobby;
+		else if ( CreativeManager.Current.IsValid() )
+		{
+			// Creative has its own rules (no phases, and the hover glow) — and it NEEDS gating just as much:
+			// with no system writing Hidden, every prop in the map would wear its authored through-wall glow
+			// on every machine.
+			ApplyCreative();
+			return;
+		}
 		else
 			return;
 
@@ -62,6 +72,77 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			var flash = hider.Components.Get<SdfOutlineFlash>( FindMode.EverythingInSelf );
 			if ( flash.IsValid() )
 				flash.Enabled = phase == RoundPhase.Reveal;
+		}
+	}
+
+	// ── Creative ───────────────────────────────────────────────────────────────────────────────────────────────
+	// The hover-glow look, driven through the runtime OVERRIDE slots (never the authored [Property] colours —
+	// snapshot-carries-live-state) and restored to null when the crosshair moves off, the SdfOutlineFlash way.
+	// The authored prop outline is invisible in the open (alpha-0 colour, through-wall blue only), so without
+	// the override a hovered prop in plain sight would show nothing.
+	static readonly Color HoverColor = new( 1f, 0.65f, 0.15f );
+	const float HoverWidth = 5f;
+
+	// Outlines we hover-tinted, so moving off restores them exactly (null = authored look, no bookkeeping).
+	readonly List<SdfHighlightOutline> _hoverDriven = new();
+
+	// Creative visibility: your OWN live prop keeps the owner-only locator glow (same rule as the lobby), the
+	// hunter's SculptBounds warning outline keeps outranking everything, and the one RELEASED prop under the
+	// local hunter's crosshair glows as "you can take this". Everything else — other players' pawns, the rest
+	// of the released props, decoys — shows nothing.
+	void ApplyCreative()
+	{
+		var hover = CreativeManager.LocalHoverProp;
+
+		// Restore anything we tinted that's no longer the hover target (or died with its prop).
+		for ( var i = _hoverDriven.Count - 1; i >= 0; i-- )
+		{
+			var o = _hoverDriven[i];
+			if ( o.IsValid() && hover.IsValid()
+				&& o.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) == hover )
+				continue;
+
+			if ( o.IsValid() )
+			{
+				o.ColorOverride = null;
+				o.ObscuredColorOverride = null;
+				o.InsideColorOverride = null;
+				o.InsideObscuredColorOverride = null;
+				o.WidthOverride = null;
+			}
+			_hoverDriven.RemoveAt( i );
+		}
+
+		foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
+		{
+			var hovered = false;
+
+			var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
+			if ( hunter.IsValid() )
+			{
+				// Same as the round rules: the head-scoped invalid-face warning is owner-only information and
+				// the only hunter outline creative ever shows (there is no hunt, so no hunt glow).
+				var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
+				outline.Hidden = !(bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid);
+			}
+			else
+			{
+				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+				hovered = hider.IsValid() && hider == hover;
+				var own = hider.IsValid() && !hider.IsProxy && !hider.Released
+					&& !RoundManager.IsBotPawn( hider.GameObject );
+				outline.Hidden = !(hovered || own);
+			}
+
+			if ( hovered && !_hoverDriven.Contains( outline ) )
+			{
+				outline.ColorOverride = HoverColor;
+				outline.ObscuredColorOverride = HoverColor.WithAlpha( 0.35f );
+				outline.InsideColorOverride = HoverColor.WithAlpha( 0.08f );
+				outline.InsideObscuredColorOverride = HoverColor.WithAlpha( 0.08f );
+				outline.WidthOverride = HoverWidth;
+				_hoverDriven.Add( outline );
+			}
 		}
 	}
 

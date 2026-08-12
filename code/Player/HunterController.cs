@@ -599,18 +599,25 @@ public sealed class HunterController : Component
 			if ( !_altOrbiting )
 				ResolveAim( eye );
 
+			// Creative: what's under the crosshair is a thing you can TAKE, not shoot — hover a released prop
+			// to outline it (+ the "E to Edit" prompt), press E to claim it. Runs on the fresh aim, so the
+			// prompt and the claim agree on what the dot shows.
+			UpdateCreativeHover( eye );
+
 			// Owner-only: otherwise every machine would shoot when ITS local player clicked, from a remote pawn's
 			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
 			// No shooting while controls are locked (the Starting countdown) or outside the Hunt — during Hide a
 			// shot would still carve permanent craters into disguises the props can't heal, even though the host
-			// ignores the hit report. A denied press gets a local error blip instead, so the trigger doesn't feel
-			// broken. The shot leaves from the eye along _aimDir, which is converged onto the crosshair, so the
-			// trace always matches what the dot shows. During an alt-orbit the trigger is swallowed (no blip): alt+mouse is a
-			// camera gesture here — same as the hider — and the aim is frozen off-camera, so a shot would land
-			// somewhere the hidden crosshair can't show.
+			// ignores the hit report. Creative suppresses the shot the same way and for the same reason: the
+			// pellet carve permanently craters clay, and nothing here is huntable. A denied press gets a local
+			// error blip instead, so the trigger doesn't feel broken. The shot leaves from the eye along _aimDir,
+			// which is converged onto the crosshair, so the trace always matches what the dot shows. During an
+			// alt-orbit the trigger is swallowed (no blip): alt+mouse is a camera gesture here — same as the
+			// hider — and the aim is frozen off-camera, so a shot would land somewhere the hidden crosshair
+			// can't show.
 			if ( Input.Pressed( "attack1" ) && !_altOrbiting )
 			{
-				if ( !locked && RoundManager.HuntingAllowed )
+				if ( !locked && RoundManager.HuntingAllowed && !CreativeManager.Current.IsValid() )
 				{
 					if ( _nextShot <= 0f )
 						Shoot( eye );
@@ -621,6 +628,44 @@ public sealed class HunterController : Component
 		}
 
 		ComposePawn( eye );
+	}
+
+	/// <summary>The released prop under this hunter's crosshair, or null — creative mode only. The crosshair HUD
+	/// reads it for the "E to Edit" toast; the same value is published to <see cref="CreativeManager.LocalHover"/>
+	/// for the outline gate.</summary>
+	public HiderController HoveredProp { get; private set; }
+
+	// Owner-only, creative-only: resolve what the crosshair is over (the same ray the shot would take), keep it
+	// if it's a RELEASED prop, and claim it on E. "Use" is the E key; sculpt-mode's E-scrub can't collide with
+	// it because this whole path is inside the !EditMode block.
+	void UpdateCreativeHover( Vector3 eye )
+	{
+		var creative = CreativeManager.Current;
+		if ( !creative.IsValid() )
+		{
+			HoveredProp = null;
+			return;
+		}
+
+		HiderController hover = null;
+		if ( !_altOrbiting && _aimDir.LengthSquared > 0.5f )
+		{
+			var tr = TraceShot( eye, _aimDir );
+			var hider = tr.Hit ? FindHider( tr.GameObject ) : null;
+			if ( hider.IsValid() && hider.Released )
+				hover = hider;
+		}
+
+		HoveredProp = hover;
+		CreativeManager.SetLocalHover( hover );
+
+		if ( hover.IsValid() && Input.Pressed( "Use" ) )
+		{
+			// Carry the view into the prop, same as a lobby swap: yaw+pitch stashed owner-side here, consumed
+			// by ResumeControl on the possessed pawn — whatever you were looking at, you still are.
+			LobbySwapCarry.Capture( Scene, null );
+			creative.RequestPossess( hover.GameObject );
+		}
 	}
 
 	/// <summary>Pivot the pawn's VISUALS hang off. Found by name ("Visuals") or created; the head and body are

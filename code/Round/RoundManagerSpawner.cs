@@ -1,10 +1,13 @@
+using System;
 using Sandbox.Network;
 
 namespace Mimiclay;
 
 /// <summary>
-/// Drop this in each map scene. On the HOST it creates the real, networked <see cref="RoundManager"/> and steps
-/// aside; clients just receive that manager over the wire.
+/// Drop this in each map scene. On the HOST it creates the real, networked manager for whichever GAME the
+/// session launched — <see cref="RoundManager"/> for prop hunt, <see cref="CreativeManager"/> for creative,
+/// decided by the mode key the lobby stamped into session data — and steps aside; clients just receive that
+/// manager over the wire.
 ///
 /// Why a spawner instead of placing RoundManager directly: a scene-placed component's <c>[Sync]</c> CHANGES don't
 /// replicate to clients here, but a <see cref="GameObject.NetworkSpawn()"/>'d object (NetworkMode.Object) syncs
@@ -43,6 +46,11 @@ public sealed class RoundManagerSpawner : Component
 	/// <summary>DEBUG: spawn everyone as a prop with an endless Hide phase (no hunters, no progression) — see
 	/// <see cref="RoundManager.DebugSoloHide"/>. Tick for solo disguise testing; leave off for real play.</summary>
 	[Property, Group( "Debug" )] public bool DebugSoloHide { get; set; }
+
+	/// <summary>DEBUG: direct-playing this map scene runs CREATIVE instead of a prop hunt round — the sandbox
+	/// where everyone's a hunter populating the map with props. Only consulted when no lobby launched us (the
+	/// mode key in session data always wins); leave off for real play.</summary>
+	[Property, Group( "Debug" )] public bool DebugCreative { get; set; }
 
 	// ── Test bots ─────────────────────────────────────────────────────────────────────────────────────────
 	// Everything needed to play a full round on your own: seat some bots, say how many of the seats hunt, pick
@@ -152,6 +160,25 @@ public sealed class RoundManagerSpawner : Component
 		// Only the host creates the networked manager; a real client just receives it over the wire and is done.
 		if ( !Networking.IsHost )
 		{
+			_done = true;
+			return;
+		}
+
+		// Which game did the lobby launch? The mode key rides session data across the scene change; a blank key
+		// (direct play — ClearLobbyData ran) falls back to this spawner's debug toggle.
+		var creative = Enum.TryParse<GameModeKind>( Networking.GetData( MenuNetworking.Keys.Mode ), out var game )
+			? game == GameModeKind.Creative
+			: DebugCreative;
+
+		if ( creative )
+		{
+			if ( !CreativeManager.Current.IsValid() )
+			{
+				var go = new GameObject( true, "Creative Manager" );
+				go.Components.Create<CreativeManager>(); // pawn prefabs are read live off this spawner, like RoundManager's
+				go.NetworkSpawn();
+			}
+
 			_done = true;
 			return;
 		}

@@ -133,6 +133,11 @@ public struct RoundSettings
 	/// how a key reads as missing here: every reader falls back on a failed parse.</summary>
 	public static void ClearLobbyData()
 	{
+		// The GAME key too (MenuNetworking.Keys.Mode — the launch stamps it as the map's game selector): a
+		// Creative launch earlier in the same editor run would otherwise flip a direct-played map scene into
+		// sandbox mode. Blank reads fall back to PropHunt.
+		Networking.SetData( MenuNetworking.Keys.Mode, "" );
+
 		Networking.SetData( Keys.Mode, "" );
 		Networking.SetData( Keys.Start, "" );
 		Networking.SetData( Keys.Hide, "" );

@@ -132,9 +132,11 @@
 				@* Idle lobby (before the host starts): the jittering status line stands in for the timer. *@
 				<WobbleText Text=@LobbyStatus class="lobby-status auto" Strength=@WobbleText.JitterStrength.Soft @key=@LobbyStatus />
 			}
-			else
+			else if ( RoundContext.Active?.HasTimer ?? false )
 			{
-				@* Launch countdown running — the clock replaces the status in the same slot. *@
+				@* Launch countdown running — the clock replaces the status in the same slot. Gated on an actual
+				   timer: creative also reports the Lobby phase (for this roster layout) but never counts down,
+				   and a dead "0" clock would just look broken. *@
 				<div class="timer">@TimerText</div>
 			}
 		}
@@ -346,13 +348,19 @@
 
 	// ── Lobby roster ───────────────────────────────────────────────────────────────────────────────────────
 	// Everyone in the server, before roles exist. Twice the per-side cap, since there's no split to balance —
-	// one row for the whole lobby rather than two competing for width.
+	// one row for the whole lobby rather than two competing for width. Creative reuses this row wholesale (it
+	// reports the Lobby phase for exactly that reason), so the roster reads whichever manager is live.
 	int LobbyCap => MaxPips * 2;
 
-	int LobbyPlayerCount => LobbyManager.Current.IsValid() ? LobbyManager.Current.Players.Count : 0;
+	NetDictionary<Guid, PlayerInfo> LobbyPlayers
+		=> LobbyManager.Current.IsValid() ? LobbyManager.Current.Players
+			: CreativeManager.Current.IsValid() ? CreativeManager.Current.Players
+			: null;
 
-	IEnumerable<PlayerInfo> LobbyRoster => LobbyManager.Current.IsValid()
-		? LobbyManager.Current.Players.Values.OrderBy( p => p.Connection ).Take( LobbyCap )
+	int LobbyPlayerCount => LobbyPlayers?.Count ?? 0;
+
+	IEnumerable<PlayerInfo> LobbyRoster => LobbyPlayers is { } players
+		? players.Values.OrderBy( p => p.Connection ).Take( LobbyCap )
 		: Enumerable.Empty<PlayerInfo>();
 
 	int HiddenLobbyPlayers => Math.Max( 0, LobbyPlayerCount - LobbyCap );
@@ -411,9 +419,12 @@
 		// Prop players portray the disguise itself, from the angle its player last signed it off at. A prop the
 		// round is concealing from us never resolves — the cache can't leak what this machine was never shown —
 		// though in practice a concealed prop's pawn isn't even on this machine's network until the Reveal.
+		// Released props (creative scenery) belong to NOBODY and must never portray anyone — skipped before the
+		// owner resolve so no resolver quirk (an unowned pawn resolves null today, but a host-orphaned one
+		// answers the host) can pin scenery onto a player's row.
 		foreach ( var p in Scene.GetAllComponents<HiderController>() )
 		{
-			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed )
+			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed || p.Released )
 				continue;
 
 			var owner = RoundManager.RosterIdOf( p.GameObject );
@@ -494,8 +505,11 @@
 	}
 
 	// Idle lobby — no phase timer running. The status line replaces the timer here; the moment the host starts, the
-	// launch countdown sets HasTimer and the timer takes back over.
-	bool ShowLobbyStatus => Phase == RoundPhase.Lobby && !(RoundContext.Active?.HasTimer ?? false);
+	// launch countdown sets HasTimer and the timer takes back over. A real lobby only: creative reports the Lobby
+	// phase too (for the roster layout), but "Press G to set up game" would be a lie there — there's no setup HUD
+	// in a map scene.
+	bool ShowLobbyStatus => Phase == RoundPhase.Lobby && LobbyManager.Current.IsValid()
+		&& !(RoundContext.Active?.HasTimer ?? false);
 
 	// True for the host (and for the non-networked editor session, which is effectively the host).
 	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
@@ -503,13 +517,15 @@
 	// What the idle lobby tells the local player to do — the host sets the game up + starts it; everyone else waits.
 	string LobbyStatus => LocalIsHost ? "Press G to set up game" : "Waiting for host to start the game";
 
-	// The GAME the lobby is set up to play (prop hunt in a running round / by fallback — a live RoundManager
-	// IS prop hunt). Gates the prop-hunt-only lobby furniture: the nominate hint and which mode card shows.
+	// The GAME this session is playing right now: told by which manager is live in a map scene (RoundManager IS
+	// prop hunt, CreativeManager IS creative), by the host's live selection in the lobby, PropHunt by fallback.
+	// Gates the prop-hunt-only lobby furniture: the nominate hint and which mode card shows.
 	GameModeKind LobbyGame
 	{
 		get
 		{
 			if ( RoundManager.Current.IsValid() ) return GameModeKind.PropHunt;
+			if ( CreativeManager.Current.IsValid() ) return GameModeKind.Creative;
 			if ( LobbyManager.Current.IsValid() ) return LobbyManager.Current.SelectedGame;
 			return GameModeKind.PropHunt;
 		}
@@ -576,7 +592,8 @@
 				yield return new( "P", LocalRole == PlayerRole.Prop ? "Swap to Hunter" : "Swap to Prop" );
 				if ( LobbyGame == GameModeKind.PropHunt )
 					yield return new( "N", "Nominate to Hunt" ); // nominations only mean anything in prop hunt
-				yield return new( "G", "Set Up Game (Host)" );
+				if ( LobbyManager.Current.IsValid() )
+					yield return new( "G", "Set Up Game (Host)" ); // the setup HUD only exists in the real lobby
 				yield return new( "Q", "Edit Mode" );
 				yield break;
 			}

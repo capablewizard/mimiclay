@@ -301,8 +301,8 @@ public sealed class LobbyManager : Component, IRoundContext
 		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
 			return; // only the host starts
 
-		// Don't begin a countdown we can't finish — per-game preflight (only prop hunt needs a map resolved).
-		if ( SelectedGame == GameModeKind.PropHunt && MapCatalog.Resolve( Settings.MapIdent ) is null )
+		// Don't begin a countdown we can't finish — every map-playing game needs a resolvable map.
+		if ( GameModes.Get( SelectedGame ).UsesMaps && MapCatalog.Resolve( Settings.MapIdent ) is null )
 		{
 			Log.Warning( "LobbyManager: can't start — no Prop Hunt Map assets exist. Create one and pick it." );
 			return;
@@ -369,9 +369,10 @@ public sealed class LobbyManager : Component, IRoundContext
 	}
 
 	// ── Launch ─────────────────────────────────────────────────────────────────────────────────────────────────
-	// Host-only. The countdown elapsed: hand off to the selected game's launch path. Each path stamps whatever
-	// session data its scene's manager reads back, then changes scene — the lobby scene (and every component on
-	// it, this one included) is destroyed by the change, which is why everything rides session data.
+	// Host-only. The countdown elapsed: every game launches into the picked map. The mode key stamped below is
+	// the courier that tells the map scene which game to run — RoundManagerSpawner reads it and spawns that
+	// game's manager (RoundManager / CreativeManager). Everything rides session data because the scene change
+	// destroys the lobby scene and every component on it, this one included.
 	void Launch()
 	{
 		Launching = false;
@@ -379,34 +380,16 @@ public sealed class LobbyManager : Component, IRoundContext
 			return;
 
 		// Re-stamp the browser-facing mode at the moment it becomes true (SetGame keeps it live pre-launch).
+		// This same key doubles as the map scene's game selector.
 		Networking.SetData( MenuNetworking.Keys.Mode, SelectedGame.ToString() );
 
-		switch ( SelectedGame )
-		{
-			case GameModeKind.Creative:
-				LaunchSceneGame( GameModes.Get( GameModeKind.Creative ) );
-				return;
-		}
-
-		LaunchPropHunt();
+		LaunchIntoMap();
 	}
 
-	// Fixed-scene games (creative): the catalogue names the scene, nothing map-shaped to resolve.
-	void LaunchSceneGame( GameModeInfo info )
-	{
-		var options = new SceneLoadOptions();
-		if ( !options.SetScene( info.Scene ) )
-		{
-			Log.Warning( $"LobbyManager: couldn't resolve the scene '{info.Scene}' for {info.Label}." );
-			return;
-		}
-
-		Game.ChangeScene( options );
-	}
-
-	// Prop hunt: resolve the map, stamp the round settings + nominated hunters into session data, then change
-	// scene into the map where RoundManager reads them back.
-	void LaunchPropHunt()
+	// Resolve the map, stamp the round settings + nominated hunters into session data, then change scene into
+	// the map where the game's manager reads them back. Shared by every game: creative ignores the hunter ids
+	// (it has no roles to assign) but rides the same courier.
+	void LaunchIntoMap()
 	{
 		var map = MapCatalog.Resolve( Settings.MapIdent );
 		if ( map is null || map.Scene is null )

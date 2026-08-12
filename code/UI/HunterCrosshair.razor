@@ -1,3 +1,4 @@
+@using System
 @using Sandbox
 @using Sandbox.UI
 @namespace Mimiclay
@@ -8,12 +9,26 @@
 	exactly when a hunter pawn does (rounds AND debug scenes); drawn only for the OWNING hunter in first-person
 	play. Proxies draw nothing, and face-edit mode draws nothing either — the orbit camera frees the real cursor
 	there, so a crosshair would just be a second dot.
+
+	Also hosts creative mode's "E to Edit" prompt: when the dot is over a released prop (HunterController's
+	hover trace), a toast rises from the bottom — same paper-card recipe as the edit HUD's validity toast, and
+	the same full-width-wrapper + bottom-anchor trick so neither axis depends on the toast's own measured size.
 *@
 
 <root class="hunter-crosshair">
 	@if ( Visible )
 	{
 		<div class="dot" />
+
+		@if ( Hovering )
+		{
+			<div class="possess-float">
+				<div class="paper-card possess-toast">
+					<span class="key">E</span>
+					<span>Edit</span>
+				</div>
+			</div>
+		}
 	}
 </root>
 
@@ -30,5 +45,8 @@
 	// about where a shot lands.
 	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting;
 
-	protected override int BuildHash() => Visible ? 1 : 0;
+	// A released prop under the dot (creative only — HoveredProp is never set anywhere else).
+	bool Hovering => Hunter.IsValid() && Hunter.HoveredProp.IsValid();
+
+	protected override int BuildHash() => HashCode.Combine( Visible, Hovering );
 }
