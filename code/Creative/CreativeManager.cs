@@ -32,16 +32,16 @@ public sealed class CreativeManager : Component, IRoundContext
 	/// hover detection read this to know creative rules apply.</summary>
 	public static CreativeManager Current { get; private set; }
 
-	/// <summary>The released prop the LOCAL hunter is currently aiming at, published per-frame by
-	/// <see cref="HunterController"/> via <see cref="SetLocalHover"/>. Read through <see cref="LocalHoverProp"/>,
-	/// which is freshness-gated: the publisher can vanish mid-hover (the hunter pawn is destroyed by a granted
-	/// possession, or stops updating in edit mode), and component update order is a HashSet — so staleness is
-	/// told by age, never by relying on someone clearing it.</summary>
-	public static HiderController LocalHover { get; private set; }
+	/// <summary>The claimable clay the LOCAL hunter is currently aiming at, published per-frame by
+	/// <see cref="HunterController"/> via <see cref="SetLocalHover"/>. Read through
+	/// <see cref="LocalHoverSculpture"/>, which is freshness-gated: the publisher can vanish mid-hover (the
+	/// hunter pawn is destroyed by a granted possession, or stops updating in edit mode), and component update
+	/// order is a HashSet — so staleness is told by age, never by relying on someone clearing it.</summary>
+	public static SdfSculpture LocalHover { get; private set; }
 	static RealTimeSince _hoverAge;
 
 	/// <summary>Stamp this frame's hover (null = aiming at nothing claimable).</summary>
-	public static void SetLocalHover( HiderController hover )
+	public static void SetLocalHover( SdfSculpture hover )
 	{
 		LocalHover = hover;
 		_hoverAge = 0f;
@@ -49,8 +49,27 @@ public sealed class CreativeManager : Component, IRoundContext
 
 	/// <summary>The hover target if it's still current and still claimable, else null — what the outline gate
 	/// and the toast actually consume.</summary>
-	public static HiderController LocalHoverProp
-		=> LocalHover.IsValid() && LocalHover.Released && _hoverAge < 0.1f ? LocalHover : null;
+	public static SdfSculpture LocalHoverSculpture
+		=> IsClaimable( LocalHover ) && _hoverAge < 0.1f ? LocalHover : null;
+
+	/// <summary>What creative lets you take over: any clay in the map that isn't currently BEING someone.
+	/// A pawn prop only once its player let it go (<see cref="HiderController.Released"/>); a hunter's face
+	/// never; everything else with brushes — scene decoys, prop-builder balls, blockset pieces — always
+	/// (claiming one CONVERTS it into a prop pawn, see <see cref="RequestPossess"/>).</summary>
+	public static bool IsClaimable( SdfSculpture sculpture )
+	{
+		if ( !sculpture.IsValid() || sculpture.Brushes is not { Count: > 0 } )
+			return false;
+
+		if ( sculpture.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
+			return false; // someone's face (or their gun's clay) — never claimable
+
+		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		if ( hider.IsValid() )
+			return hider.Released; // a pawn's body: only once released into the world
+
+		return true; // scene-placed clay — claimable by conversion
+	}
 
 	// ── Networked state (host writes, everyone reads — incl. late-joiners via the spawn snapshot) ─────────────
 	/// <summary>Per-player state for the roster row at the top of the HUD. Role mirrors what each player is
@@ -233,21 +252,27 @@ public sealed class CreativeManager : Component, IRoundContext
 		}
 	}
 
-	/// <summary>Caller claims a released prop — the E press. THE arbitration point: requests arrive serially on
-	/// the host, and <see cref="HiderController.Released"/> doubles as the idempotency guard (the first claim
-	/// clears it while the host still owns the pawn; every later claim sees it cleared and is rejected), so two
-	/// players pressing E together get exactly one winner. Validated like <see cref="RoundManager.ReportPropHit"/>:
-	/// the caller must actually be a hunter here, within reach, and not spamming.</summary>
+	// Scene props already converted (or mid-conversion) this session, by the ORIGINAL scene object's id. The
+	// original's Destroy is deferred to end-of-frame, so without this two same-frame claims on one scene prop
+	// would both pass the IsValid check and mint two clones.
+	readonly HashSet<Guid> _claimedScene = new();
+
+	/// <summary>Caller claims the clay under their crosshair — the E press. THE arbitration point: requests
+	/// arrive serially on the host. A released PAWN prop is handed over directly, with
+	/// <see cref="HiderController.Released"/> doubling as the idempotency guard (the first claim clears it
+	/// while the host still owns the pawn; every later claim is rejected). A SCENE prop (decoy / prop-builder
+	/// clay — never networked, and you can't NetworkSpawn a scene object without duplicating it on clients) is
+	/// CONVERTED: a prop-pawn clone is dressed in its brushes at its exact spot, spawned owned by the claimant,
+	/// and the original is destroyed on every machine — guarded by <see cref="_claimedScene"/>. Either way two
+	/// players pressing E together get exactly one winner; the loser keeps their hunter. Validated like
+	/// <see cref="RoundManager.ReportPropHit"/>: the caller must actually be a hunter here, within reach, and
+	/// not spamming.</summary>
 	[Rpc.Host]
-	public void RequestPossess( GameObject propPawn )
+	public void RequestPossess( GameObject target )
 	{
 		var c = Rpc.Caller;
-		if ( c is null || !propPawn.IsValid() || !Players.TryGetValue( c.Id, out var row ) )
+		if ( c is null || !target.IsValid() || !Players.TryGetValue( c.Id, out var row ) )
 			return;
-
-		var hider = propPawn.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-		if ( !hider.IsValid() || !hider.Released )
-			return; // not a prop, or already claimed — the loser of a race lands here and keeps their hunter
 
 		// The claimant must currently be a hunter (their pawn is how we range-check, too).
 		var pawn = _pawns.GetValueOrDefault( c.Id );
@@ -258,32 +283,124 @@ public sealed class CreativeManager : Component, IRoundContext
 			return;
 		_possessGate[c.Id] = PossessCooldown;
 
-		if ( pawn.WorldPosition.Distance( hider.WorldPosition ) > PossessRange * 1.25f )
+		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange * 1.25f )
 			return;
 
-		// Claim it. Released flips FIRST, while the host still owns the pawn ([Sync] writes need ownership) —
-		// this is the moment the prop stops being claimable by anyone else.
-		hider.Released = false;
+		// A released pawn prop: claim it as-is.
+		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		if ( hider.IsValid() )
+		{
+			if ( !hider.Released )
+				return; // already claimed (or still being worn) — the loser of a race lands here
 
-		RememberFace( c.Id, pawn );
+			// Released flips FIRST, while the host still owns the pawn ([Sync] writes need ownership) — this
+			// is the moment the prop stops being claimable by anyone else.
+			hider.Released = false;
+			HandOver( c, row, pawn, hider, assignOwnership: true );
+			return;
+		}
+
+		// Scene-placed clay: convert it into a pawn the claimant owns.
+		var sculpture = target.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndAncestors );
+		if ( !IsClaimable( sculpture ) || !_claimedScene.Add( sculpture.GameObject.Id ) )
+			return; // not clay, someone's body, or a same-frame race already took it
+
+		var converted = ConvertSceneProp( sculpture, c );
+		if ( !converted.IsValid() )
+		{
+			_claimedScene.Remove( sculpture.GameObject.Id ); // conversion failed — the original is still there
+			return;
+		}
+
+		HandOver( c, row, pawn, converted.Components.Get<HiderController>(), assignOwnership: false );
+	}
+
+	// The shared possession tail: swap the claimant's hunter for the prop. assignOwnership is false for a
+	// freshly-converted clone (it NetworkSpawned already owned by the claimant); true for a released pawn prop,
+	// which is UNOWNED after its release's DropOwnership — and everything that maps a body to a player
+	// (RosterIdOf → the roster pips, own-prop lookups) reads Network.Owner, so even a host self-claim assigns.
+	void HandOver( Connection c, PlayerInfo row, GameObject hunterPawn, HiderController prop, bool assignOwnership )
+	{
+		RememberFace( c.Id, hunterPawn );
 		_pawns.Remove( c.Id );
-		pawn.Destroy();
+		hunterPawn.Destroy();
 
-		// Even when the claimant is the host: a released prop is UNOWNED (DropOwnership), and everything that
-		// maps a body to a player (RosterIdOf → the roster pips, own-prop lookups) reads Network.Owner.
-		if ( Networking.IsActive )
-			hider.GameObject.Network.AssignOwnership( c );
+		if ( assignOwnership && Networking.IsActive )
+			prop.GameObject.Network.AssignOwnership( c );
 
 		// Tell the claimant (and only them) to resume control once the ownership change lands on their machine.
 		// Their copy consumes it in OnUpdate — acting inside the RPC could race the ownership packet.
 		using ( Rpc.FilterInclude( c ) )
 		{
-			hider.BeginPossession();
+			prop.BeginPossession();
 		}
 
 		row.Role = PlayerRole.Prop;
 		Players[c.Id] = row;
-		_pawns[c.Id] = hider.GameObject;
+		_pawns[c.Id] = prop.GameObject;
+	}
+
+	// Host-only. Turn a scene-placed sculpture into a live prop pawn: clone the prop prefab dressed in the
+	// scene shape's brushes, positioned so the clay lands EXACTLY where it stood (the pawn root sits upright at
+	// the shape's feet; any tilt/scale the scene object carried moves onto the disguise child — the shape must
+	// never move on its own), then remove the original everywhere. Spawned owned by the claimant with the same
+	// ClearOwner orphan mode as every creative prop.
+	GameObject ConvertSceneProp( SdfSculpture sculpture, Connection owner )
+	{
+		var prefab = RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.PropPrefab : null;
+		if ( !prefab.IsValid() )
+		{
+			Log.Warning( "CreativeManager: no prop prefab on the spawner — can't convert a scene prop." );
+			return null;
+		}
+
+		var sceneT = sculpture.WorldTransform;
+		var feet = Sdf.TryGetBounds( sculpture.Brushes, out var b )
+			? sceneT.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) )
+			: sceneT.Position;
+		var rootT = new Transform( feet, Rotation.FromYaw( sceneT.Rotation.Yaw() ) );
+
+		var pawn = prefab.Clone( new CloneConfig( rootT, startEnabled: false, name: $"Creative Prop {owner.DisplayName}" ) );
+		if ( !pawn.IsValid() )
+			return null;
+
+		// Dress while disabled (the first build ever started is the right shape), then override WearDisguise's
+		// feet-at-origin lift with the exact composed placement — the lift assumes an upright unscaled shape,
+		// and the scene original may be neither.
+		HiderController.WearDisguise( pawn, sculpture.Brushes );
+		var disguise = pawn.Children.FirstOrDefault( ch => ch.Name == "Disguise" );
+		if ( disguise.IsValid() )
+		{
+			var local = rootT.ToLocal( sceneT );
+			disguise.LocalPosition = local.Position;
+			disguise.LocalRotation = local.Rotation;
+			disguise.LocalScale = local.Scale;
+		}
+
+		// The clone replaces the original for everyone. Scene objects share ids from the scene file, so the
+		// broadcast resolves the same object on every machine; joiners never see it — they receive the host's
+		// live scene snapshot, where it's already gone.
+		DestroySceneProp( sculpture.GameObject );
+
+		pawn.Enabled = true;
+		pawn.NetworkSpawn( new NetworkSpawnOptions
+		{
+			Owner = owner,
+			OrphanedMode = NetworkOrphaned.ClearOwner,
+		} );
+		return pawn;
+	}
+
+	/// <summary>Host→everyone: remove a scene prop that was just converted — each machine destroys its own copy
+	/// of the scene object (a scene object can't be despawned through the network; it was never on it).</summary>
+	[Rpc.Broadcast]
+	void DestroySceneProp( GameObject go )
+	{
+		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
+			return; // only the host converts
+
+		if ( go.IsValid() )
+			go.Destroy();
 	}
 
 	// ── Release (the persistence move) ─────────────────────────────────────────────────────────────────────────

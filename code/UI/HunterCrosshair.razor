@@ -45,8 +45,8 @@
 	// about where a shot lands.
 	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting;
 
-	// A released prop under the dot (creative only — HoveredProp is never set anywhere else).
-	bool Hovering => Hunter.IsValid() && Hunter.HoveredProp.IsValid();
+	// Claimable clay under the dot (creative only — HoveredSculpture is never set anywhere else).
+	bool Hovering => Hunter.IsValid() && Hunter.HoveredSculpture.IsValid();
 
 	protected override int BuildHash() => HashCode.Combine( Visible, Hovering );
 }

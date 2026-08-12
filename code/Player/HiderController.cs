@@ -363,8 +363,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// EyeAngles/_bodyYaw above — the cone still points where the prop pointed), while the CAMERA comes up
 		// looking along the view we swapped from, at the zoom we last had as a prop. Both are owner-only
 		// state (the host never knows our pitch or zoom); RosterIdOf so a host's bot prop can't eat the
-		// carry meant for the host's own pawn, and the lobby gate keeps it out of round spawns.
-		if ( LobbyManager.Current.IsValid() && RoundManager.RosterIdOf( GameObject ) == Connection.Local?.Id )
+		// carry meant for the host's own pawn, and the manager gate keeps it out of round spawns. Creative
+		// swaps/conversions carry the view the same way (its P and E presses both Capture).
+		if ( (LobbyManager.Current.IsValid() || CreativeManager.Current.IsValid())
+			&& RoundManager.RosterIdOf( GameObject ) == Connection.Local?.Id )
 		{
 			if ( LobbySwapCarry.TakeCamera() is { } view )
 				_orbit.Angles = new Angles( Math.Clamp( view.pitch, MinPitch, MaxPitch ), view.yaw, 0f );

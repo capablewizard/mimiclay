@@ -87,19 +87,21 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	readonly List<SdfHighlightOutline> _hoverDriven = new();
 
 	// Creative visibility: your OWN live prop keeps the owner-only locator glow (same rule as the lobby), the
-	// hunter's SculptBounds warning outline keeps outranking everything, and the one RELEASED prop under the
-	// local hunter's crosshair glows as "you can take this". Everything else — other players' pawns, the rest
-	// of the released props, decoys — shows nothing.
+	// hunter's SculptBounds warning outline keeps outranking everything, and the one claimable sculpture under
+	// the local hunter's crosshair — a released prop OR scene clay — glows as "you can take this". Everything
+	// else — other players' pawns, the rest of the released props and decoys — shows nothing.
 	void ApplyCreative()
 	{
-		var hover = CreativeManager.LocalHoverProp;
+		var hover = CreativeManager.LocalHoverSculpture;
 
-		// Restore anything we tinted that's no longer the hover target (or died with its prop).
+		// Restore anything we tinted that's no longer the hover target (or died with its prop). Matched by the
+		// SCULPTURE sharing the outline's GameObject — outlines live beside their clay (the disguise child, a
+		// decoy's root) — so pawn and scene props resolve the same way.
 		for ( var i = _hoverDriven.Count - 1; i >= 0; i-- )
 		{
 			var o = _hoverDriven[i];
 			if ( o.IsValid() && hover.IsValid()
-				&& o.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) == hover )
+				&& o.Components.Get<SdfSculpture>( FindMode.EverythingInSelf ) == hover )
 				continue;
 
 			if ( o.IsValid() )
@@ -127,8 +129,10 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			}
 			else
 			{
+				var sculpture = outline.Components.Get<SdfSculpture>( FindMode.EverythingInSelf );
+				hovered = sculpture.IsValid() && sculpture == hover;
+
 				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-				hovered = hider.IsValid() && hider == hover;
 				var own = hider.IsValid() && !hider.IsProxy && !hider.Released
 					&& !RoundManager.IsBotPawn( hider.GameObject );
 				outline.Hidden = !(hovered || own);

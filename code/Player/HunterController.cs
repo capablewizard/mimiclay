@@ -630,33 +630,34 @@ public sealed class HunterController : Component
 		ComposePawn( eye );
 	}
 
-	/// <summary>The released prop under this hunter's crosshair, or null — creative mode only. The crosshair HUD
+	/// <summary>The claimable clay under this hunter's crosshair, or null — creative mode only. A released pawn
+	/// prop OR any scene-placed sculpture (see <see cref="CreativeManager.IsClaimable"/>). The crosshair HUD
 	/// reads it for the "E to Edit" toast; the same value is published to <see cref="CreativeManager.LocalHover"/>
 	/// for the outline gate.</summary>
-	public HiderController HoveredProp { get; private set; }
+	public SdfSculpture HoveredSculpture { get; private set; }
 
 	// Owner-only, creative-only: resolve what the crosshair is over (the same ray the shot would take), keep it
-	// if it's a RELEASED prop, and claim it on E. "Use" is the E key; sculpt-mode's E-scrub can't collide with
+	// if it's claimable clay, and claim it on E. "Use" is the E key; sculpt-mode's E-scrub can't collide with
 	// it because this whole path is inside the !EditMode block.
 	void UpdateCreativeHover( Vector3 eye )
 	{
 		var creative = CreativeManager.Current;
 		if ( !creative.IsValid() )
 		{
-			HoveredProp = null;
+			HoveredSculpture = null;
 			return;
 		}
 
-		HiderController hover = null;
+		SdfSculpture hover = null;
 		if ( !_altOrbiting && _aimDir.LengthSquared > 0.5f )
 		{
 			var tr = TraceShot( eye, _aimDir );
-			var hider = tr.Hit ? FindHider( tr.GameObject ) : null;
-			if ( hider.IsValid() && hider.Released )
-				hover = hider;
+			var sculpture = tr.Hit ? FindSculpture( tr.GameObject ) : null;
+			if ( CreativeManager.IsClaimable( sculpture ) )
+				hover = sculpture;
 		}
 
-		HoveredProp = hover;
+		HoveredSculpture = hover;
 		CreativeManager.SetLocalHover( hover );
 
 		if ( hover.IsValid() && Input.Pressed( "Use" ) )
@@ -666,6 +667,20 @@ public sealed class HunterController : Component
 			LobbySwapCarry.Capture( Scene, null );
 			creative.RequestPossess( hover.GameObject );
 		}
+	}
+
+	// Walk up from the traced object to whatever sculpture owns it — the disguise/decoy collider we hit is on
+	// (or under) the sculpture's own GameObject. The FindHider counterpart for clay that may not be a pawn.
+	static SdfSculpture FindSculpture( GameObject go )
+	{
+		while ( go.IsValid() )
+		{
+			var sculpture = go.Components.Get<SdfSculpture>();
+			if ( sculpture.IsValid() )
+				return sculpture;
+			go = go.Parent;
+		}
+		return null;
 	}
 
 	/// <summary>Pivot the pawn's VISUALS hang off. Found by name ("Visuals") or created; the head and body are
