@@ -1,4 +1,6 @@
 @using System
+@using System.Collections.Generic
+@using System.Globalization
 @using Sandbox
 @using Sandbox.UI
 @namespace Mimiclay
@@ -10,9 +12,13 @@
 	play. Proxies draw nothing, and face-edit mode draws nothing either — the orbit camera frees the real cursor
 	there, so a crosshair would just be a second dot.
 
-	Also hosts creative mode's "E to Edit" prompt: when the dot is over a released prop (HunterController's
-	hover trace), a toast rises from the bottom — same paper-card recipe as the edit HUD's validity toast, and
-	the same full-width-wrapper + bottom-anchor trick so neither axis depends on the toast's own measured size.
+	Also hosts creative mode's "E to Edit" prompt: when the dot is over claimable clay, a wobbling paper toast
+	floats just UNDER that prop — anchored in SCREEN space every frame at the shape's projected centre (x)
+	and the lowest on-screen projection of the COLLIDER'S FOOT POINTS (y): the carve-aware ground probes are
+	the one point set that lies on the clay the player actually sees. See ResolvePrompt for the graveyard of
+	bounds-derived schemes this replaced. Projection itself is the PlayerNameplates recipe. Two elements,
+	deliberately: the float carries the position (and the centring translate), the card carries the clay
+	jitter — they'd fight over `transform` on one element.
 *@
 
 <root class="hunter-crosshair">
@@ -20,9 +26,9 @@
 	{
 		<div class="dot" />
 
-		@if ( Hovering )
+		@if ( _promptAt is { } at )
 		{
-			<div class="possess-float">
+			<div class="possess-float" style=@PromptStyle( at )>
 				<div class="paper-card possess-toast">
 					<span class="key">E</span>
 					<span>Edit</span>
@@ -36,6 +42,10 @@
 {
 	HunterController _hunter;
 
+	// Where the prompt is drawn, as viewport fractions (resolution-independent — see PromptStyle), or null when
+	// nothing claimable is under the dot. Recomputed every frame in OnUpdate, since it tracks the world.
+	Vector2? _promptAt;
+
 	// The pawn's controller, resolved once from the prefab hierarchy (this panel sits on the HUD child).
 	HunterController Hunter => _hunter.IsValid() ? _hunter : _hunter = Components.Get<HunterController>( FindMode.InAncestors );
 
@@ -45,8 +55,85 @@
 	// about where a shot lands.
 	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting;
 
-	// Claimable clay under the dot (creative only — HoveredSculpture is never set anywhere else).
-	bool Hovering => Hunter.IsValid() && Hunter.HoveredSculpture.IsValid();
+	protected override void OnUpdate()
+	{
+		_promptAt = ResolvePrompt();
+	}
 
-	protected override int BuildHash() => HashCode.Combine( Visible, Hovering );
+	// Where the prompt goes: x from the shape's projected CENTRE — one stable point, so panning the camera
+	// can't make the anchor slide the way a min/max midpoint over corners does near the screen edges — and
+	// y from the lowest on-screen COLLIDER FOOT POINT.
+	//
+	// The foot points (SdfCollider.FootPoints — the ground probes) are the one cheap point set that lies on
+	// the clay THE PLAYER ACTUALLY SEES: they're computed against the emitted collider, carve decisions and
+	// all. Everything derived from brush EXTENTS failed here in turn: bounding-box corners overshoot round
+	// clay by ~41% of the radius (the bowling ball floated the toast way under), the box's local bottom face
+	// assumed upright props (rotated blockset pieces overlapped), and even per-brush surface sampling can't
+	// know what a SUBTRACT removed — the bin's Add cylinder extends far below its VISIBLE base, because a
+	// subtract box carves the underside away, and only the collider build knows that.
+	//
+	// The fixed screen-space gap under the anchor is the SCSS padding on .possess-float. Points behind the
+	// camera are skipped (their projections flip; y falls back toward the centre) — that only happens
+	// practically inside the prop. Clamped into the viewport so a huge prop up close keeps the prompt visible.
+	Vector2? ResolvePrompt()
+	{
+		if ( !Visible )
+			return null;
+
+		// Claimable clay under the crosshair — creative only; HoveredSculpture is never set in other modes.
+		var hovered = Hunter.HoveredSculpture;
+		var cam = Scene.Camera;
+		if ( !hovered.IsValid() || !cam.IsValid() )
+			return null;
+
+		if ( !Sdf.TryGetBounds( hovered.Brushes, out var bounds ) )
+			return null;
+
+		var centre = cam.PointToScreenNormal( hovered.WorldTransform.PointToWorld( bounds.Center ), out var centreBehind );
+		if ( centreBehind )
+			return null;
+
+		var bottom = centre.y;
+		foreach ( var point in AnchorPoints( hovered, bounds ) )
+		{
+			var screen = cam.PointToScreenNormal( hovered.WorldTransform.PointToWorld( point ), out var behind );
+			if ( behind )
+				continue;
+
+			bottom = Math.Max( bottom, screen.y ); // screen y grows downward
+		}
+
+		return new Vector2(
+			Math.Clamp( centre.x, 0.04f, 0.96f ),
+			Math.Clamp( bottom, 0.06f, 0.90f ) );
+	}
+
+	// Sculpture-local points whose projections bound the shape's on-screen underside: the collider's cached
+	// foot points (one per underside cell of the ACTUAL emitted collider — see ResolvePrompt for why nothing
+	// brush-derived is good enough). Fallback for a sculpture whose collider hasn't built yet: the bounds'
+	// bottom face, which at least anchors somewhere sane for a frame.
+	static IEnumerable<Vector3> AnchorPoints( SdfSculpture sculpture, BBox bounds )
+	{
+		var collider = sculpture.Components.Get<SdfCollider>();
+		if ( collider.IsValid() && collider.FootPoints is { Count: > 0 } feet )
+			return feet;
+
+		return new[]
+		{
+			new Vector3( bounds.Mins.x, bounds.Mins.y, bounds.Mins.z ),
+			new Vector3( bounds.Maxs.x, bounds.Mins.y, bounds.Mins.z ),
+			new Vector3( bounds.Mins.x, bounds.Maxs.y, bounds.Mins.z ),
+			new Vector3( bounds.Maxs.x, bounds.Maxs.y, bounds.Mins.z ),
+		};
+	}
+
+	// left/top as viewport percentages (this root is full-screen), invariant-formatted so the style parses on any
+	// system locale. The SCSS translate pulls the float back to centre it on the point; the card then hangs below.
+	static string PromptStyle( Vector2 at )
+		=> $"left: {(at.x * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
+			$"top: {(at.y * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%;";
+
+	// The anchor moves nearly every frame, so it belongs in the hash — that's what keeps the toast glued under
+	// the prop (same reasoning as PlayerNameplates hashing its plate positions).
+	protected override int BuildHash() => HashCode.Combine( Visible, _promptAt );
 }

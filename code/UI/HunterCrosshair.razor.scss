@@ -21,17 +21,24 @@
 		background-repeat: no-repeat;
 	}
 
-	// Creative's "E to Edit" prompt — the edit HUD's validity-toast recipe: a full-width flex wrapper anchored
-	// to the bottom so neither axis depends on the toast's own measured size (a freshly mounted panel has no
-	// rect for a frame).
+	// Creative's "E to Edit" prompt, anchored under the hovered prop in the world: the razor sets left/top as
+	// viewport percentages (the projected point) and this translate pulls the float back so the card is centred
+	// on it and hangs BELOW it — the PlayerNameplates plate recipe, flipped downward.
+	//
+	// The position lives on this wrapper and the jitter on the card inside it, because both want `transform`:
+	// action-jitter animates transform outright, so a centring translate on the same element would be thrown
+	// away the moment the animation started (card snapping to the point's right).
 	.possess-float {
 		position: absolute;
-		left: 0;
-		bottom: 64px;
-		width: 100%;
+		transform: translateX( -50% );
 		flex-direction: row;
 		justify-content: center;
 		pointer-events: none;
+
+		// THE gap: the razor's anchor is the exact bottom edge of the shape's screen rect, and this constant
+		// screen offset hangs the card just under it. Padding on the wrapper rather than margin, so it can't
+		// depend on how the layout engine treats margins on absolutely-positioned nodes.
+		padding-top: $space-md;
 	}
 
 	.possess-toast {
@@ -47,7 +54,12 @@
 		font-weight: 800;
 		letter-spacing: 1px;
 		text-transform: uppercase;
+		white-space: nowrap;               // never wrap "E Edit" when the float sits near a screen edge
 		pointer-events: none;
+
+		// Same stop-motion clay wobble as the edit HUD's validity toast (keyframes come from _button.scss via
+		// _menu.scss). This element owns its transform — see the note on .possess-float.
+		animation: action-jitter $wobble-duration linear 0s infinite;
 
 		// The keyboard-key chip, same language as the round HUD's hotkey hints.
 		.key {
