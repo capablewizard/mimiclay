@@ -35,9 +35,29 @@
 				<div class="paper-card panel settings-panel">
 					<div class="section-label"><span>Settings</span></div>
 
-					@* Game mode at the top — cycle the rules variant with the < > buttons. (Description dropped for now.) *@
+					@* The GAME at the top — prop hunt / creative. Everything below it is that game's own
+					   setup: prop hunt's rules variant + times + maps. *@
 					<div class="setting-row">
-						<div class="setting-name"><div class="mi">category</div><span>Game Mode</span></div>
+						<div class="setting-name"><div class="mi">@Game.Icon</div><span>Game</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => CycleGame( -1 ))>chevron_left</div>
+							<div class="step-value mode-value">@Game.Label</div>
+							<div class="step-btn" @onclick=@(() => CycleGame( 1 ))>chevron_right</div>
+						</div>
+					</div>
+
+					@if ( G == GameModeKind.Creative )
+					{
+					@* No rules yet — the sandbox is the sandbox. *@
+					<div class="setting-row" style="justify-content: center;">
+						<div class="setting-name"><span>@Game.Blurb</span></div>
+					</div>
+					}
+					else
+					{
+					@* Prop hunt's mode-within-the-game — Infection / Teams (the second taxonomy level). *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">category</div><span>Mode</span></div>
 						<div class="stepper">
 							<div class="step-btn" @onclick=@(() => CycleMode( -1 ))>chevron_left</div>
 							<div class="step-value mode-value">@RoundModes.Get( S.Mode ).Label</div>
@@ -90,9 +110,12 @@
 							<div class="step-btn" @onclick=@(() => AddReveal( 5f ))>add</div>
 						</div>
 					</div>
+					}
 				</div>
 
-				@* ── Right: maps (from the Prop Hunt Map assets) ─────────────── *@
+				@* ── Right: maps (from the Prop Hunt Map assets) — prop hunt is the only game that picks one *@
+				@if ( G == GameModeKind.PropHunt )
+				{
 				<div class="paper-card panel maps-panel">
 					<div class="section-label"><span>Maps</span></div>
 
@@ -117,6 +140,7 @@
 						}
 					</div>
 				</div>
+				}
 			</div>
 
 			@* Start sits inside the menu (not the footer), right-aligned to the panels' edge. *@
@@ -154,6 +178,10 @@
 
 	// The live settings to display (host owns the LobbyManager, so its setters mutate the synced struct directly).
 	RoundSettings S => LobbyManager.Current.IsValid() ? LobbyManager.Current.Settings : RoundSettings.Default;
+
+	// The selected GAME (top taxonomy level) + its catalogue entry.
+	GameModeKind G => LobbyManager.Current.IsValid() ? LobbyManager.Current.SelectedGame : GameModeKind.PropHunt;
+	GameModeInfo Game => GameModes.Get( G );
 
 	// People currently in the lobby — the "y" in the hunters "x/y" readout.
 	int LobbyPlayerCount => Connection.All.Count;
@@ -198,8 +226,22 @@
 		SetOpen( false );
 	}
 
-	// ── Game mode ───────────────────────────────────────────────────────────────────────────────────────────
-	// Step forward/back through the catalogue, wrapping around at the ends.
+	// ── Game (which game the session plays) ─────────────────────────────────────────────────────────────────
+	// Step forward/back through the games catalogue, wrapping around at the ends.
+	void CycleGame( int dir )
+	{
+		var games = GameModes.All;
+		if ( games.Length == 0 )
+			return;
+
+		var i = System.Array.FindIndex( games, g => g.Kind == G );
+		if ( i < 0 ) i = 0;
+		i = ((i + dir) % games.Length + games.Length) % games.Length; // wrap both directions
+		LobbyManager.Current?.SetGame( games[i].Kind );
+	}
+
+	// ── Prop hunt's mode-within-the-game (Infection / Teams) ────────────────────────────────────────────────
+	// Step forward/back through the variants, wrapping around at the ends.
 	void CycleMode( int dir )
 	{
 		var modes = RoundModes.All;
@@ -239,5 +281,5 @@
 	protected override int BuildHash()
 		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.RevealSeconds ),
-			_picked, LobbyPlayerCount );
+			G, _picked, LobbyPlayerCount );
 }

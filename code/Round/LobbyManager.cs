@@ -32,6 +32,11 @@ public sealed class LobbyManager : Component, IRoundContext
 	/// <summary>Per-player lobby state: which role they're editing as + whether they've nominated to hunt.</summary>
 	[Sync] public NetDictionary<Guid, PlayerInfo> Players { get; private set; } = new();
 
+	/// <summary>Which GAME this session is set up to play — the top level of the mode taxonomy (prop hunt /
+	/// creative), chosen in the setup dialog. Synced so every client's lobby UI shows what's coming.
+	/// Per-game rules live beside it (<see cref="Settings"/> for prop hunt).</summary>
+	[Sync] public GameModeKind SelectedGame { get; private set; } = GameModeKind.PropHunt;
+
 	/// <summary>The round rules the host is configuring — genuinely synced now, so every client's lobby UI shows
 	/// the same setup. Seeded from LobbyController's inspector defaults on the host in OnStart.</summary>
 	[Sync] public RoundSettings Settings { get; set; } = RoundSettings.Default;
@@ -296,8 +301,8 @@ public sealed class LobbyManager : Component, IRoundContext
 		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
 			return; // only the host starts
 
-		// Don't begin a countdown we can't finish — there must be a map to launch into.
-		if ( MapCatalog.Resolve( Settings.MapIdent ) is null )
+		// Don't begin a countdown we can't finish — per-game preflight (only prop hunt needs a map resolved).
+		if ( SelectedGame == GameModeKind.PropHunt && MapCatalog.Resolve( Settings.MapIdent ) is null )
 		{
 			Log.Warning( "LobbyManager: can't start — no Prop Hunt Map assets exist. Create one and pick it." );
 			return;
@@ -308,6 +313,17 @@ public sealed class LobbyManager : Component, IRoundContext
 	}
 
 	// ── Host-side config (the host owns this object, so it can set the synced fields directly) ────────────────
+	/// <summary>Pick which game the session plays. Re-stamps the browser-facing lobby data too, so the server
+	/// list shows what a session is set up for the moment the host changes their mind — not just what it was
+	/// when the session was created.</summary>
+	public void SetGame( GameModeKind game )
+	{
+		if ( !IsHostAuthority ) return;
+		SelectedGame = game;
+		if ( Networking.IsActive )
+			Networking.SetData( MenuNetworking.Keys.Mode, game.ToString() );
+	}
+
 	public void SetRoundMode( RoundMode mode )
 	{
 		if ( !IsHostAuthority ) return;
@@ -353,14 +369,45 @@ public sealed class LobbyManager : Component, IRoundContext
 	}
 
 	// ── Launch ─────────────────────────────────────────────────────────────────────────────────────────────────
-	// Host-only. Resolve the map, stamp the round settings + nominated hunters into session data (so they survive
-	// the scene change), then change scene into the map where RoundManager reads them back.
+	// Host-only. The countdown elapsed: hand off to the selected game's launch path. Each path stamps whatever
+	// session data its scene's manager reads back, then changes scene — the lobby scene (and every component on
+	// it, this one included) is destroyed by the change, which is why everything rides session data.
 	void Launch()
 	{
 		Launching = false;
 		if ( !Networking.IsHost && Networking.IsActive )
 			return;
 
+		// Re-stamp the browser-facing mode at the moment it becomes true (SetGame keeps it live pre-launch).
+		Networking.SetData( MenuNetworking.Keys.Mode, SelectedGame.ToString() );
+
+		switch ( SelectedGame )
+		{
+			case GameModeKind.Creative:
+				LaunchSceneGame( GameModes.Get( GameModeKind.Creative ) );
+				return;
+		}
+
+		LaunchPropHunt();
+	}
+
+	// Fixed-scene games (creative): the catalogue names the scene, nothing map-shaped to resolve.
+	void LaunchSceneGame( GameModeInfo info )
+	{
+		var options = new SceneLoadOptions();
+		if ( !options.SetScene( info.Scene ) )
+		{
+			Log.Warning( $"LobbyManager: couldn't resolve the scene '{info.Scene}' for {info.Label}." );
+			return;
+		}
+
+		Game.ChangeScene( options );
+	}
+
+	// Prop hunt: resolve the map, stamp the round settings + nominated hunters into session data, then change
+	// scene into the map where RoundManager reads them back.
+	void LaunchPropHunt()
+	{
 		var map = MapCatalog.Resolve( Settings.MapIdent );
 		if ( map is null || map.Scene is null )
 		{
