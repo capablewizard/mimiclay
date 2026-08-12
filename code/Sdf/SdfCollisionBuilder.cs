@@ -73,17 +73,61 @@ public static class SdfCollisionBuilder
 		                                               // inside the boxes' footprint would be wrongly dropped
 	}
 
+	// Optional capture of everything Build emits, as sculpture-space points (hull vertices, voxel-box corners,
+	// points on each collision sphere). Every emitted shape passes through builder.AddCollisionHull /
+	// AddCollisionSphere, so recording at those call sites frames the EXACT collider — carve decisions and all
+	// — with no second pass. A static rather than a parameter threaded through every helper: Build is
+	// main-thread-only (it creates physics shapes) and the field lives only for the duration of one call.
+	static List<Vector3> _frame;
+
+	static void FrameHull( List<Vector3> hull ) => _frame?.AddRange( hull );
+
+	static void FrameSphere( Vector3 c, float r )
+	{
+		if ( _frame is null )
+			return;
+
+		// 6 axis extremes + 8 diagonal points, all ON the sphere — enough that its projected rect hugs the
+		// silhouette from any angle (worst-case slack ~8% of r, vs 41% for its bounding box's corners).
+		_frame.Add( c + new Vector3( r, 0f, 0f ) );
+		_frame.Add( c - new Vector3( r, 0f, 0f ) );
+		_frame.Add( c + new Vector3( 0f, r, 0f ) );
+		_frame.Add( c - new Vector3( 0f, r, 0f ) );
+		_frame.Add( c + new Vector3( 0f, 0f, r ) );
+		_frame.Add( c - new Vector3( 0f, 0f, r ) );
+
+		float d = r * 0.577350269f; // r / √3 — the on-sphere diagonal
+		for ( int i = 0; i < 8; i++ )
+			_frame.Add( c + new Vector3( (i & 1) != 0 ? d : -d, (i & 2) != 0 ? d : -d, (i & 4) != 0 ? d : -d ) );
+	}
+
 	/// <summary>Build a collision-only Model (no render mesh) from the additive brushes, carving the ones that
 	/// later subtractive brushes significantly hollow. MAIN THREAD — creates physics shapes. Returns null when
 	/// there's nothing solid to collide with. Pass <paramref name="carvedCopies"/> to receive the voxelised
 	/// copies' boxes — hand the same list to <see cref="ComputeFootPoints"/> so the ground probes sit exactly
-	/// on the emitted collider.</summary>
-	public static Model Build( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies = null )
+	/// on the emitted collider. Pass <paramref name="framePoints"/> to receive sculpture-space points outlining
+	/// every shape actually emitted — the carve-aware extent, for consumers that must match the VISIBLE clay
+	/// (the creative-mode prompt frames the prop on screen with them).</summary>
+	public static Model Build( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies = null, List<Vector3> framePoints = null )
 	{
 		carvedCopies?.Clear();
+		framePoints?.Clear();
 		if ( brushes is null || brushes.Count == 0 )
 			return null;
 
+		_frame = framePoints;
+		try
+		{
+			return BuildInternal( brushes, carvedCopies );
+		}
+		finally
+		{
+			_frame = null;
+		}
+	}
+
+	static Model BuildInternal( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies )
+	{
 		var builder = new ModelBuilder();
 		bool any = false;
 		Span<Vector3> centres = stackalloc Vector3[8];
@@ -134,6 +178,7 @@ public static class SdfCollisionBuilder
 					{
 						var c = new Vector3( pt.x, pt.y, pt.z ) * sign;
 						builder.AddCollisionSphere( MathF.Max( pt.w, 0.5f ), c );
+						FrameSphere( c, MathF.Max( pt.w, 0.5f ) );
 						any = true;
 					}
 				}
@@ -157,6 +202,7 @@ public static class SdfCollisionBuilder
 				for ( int i = 0; i < n; i++ )
 				{
 					builder.AddCollisionSphere( MathF.Max( b.Size.x, 0.5f ), centres[i] );
+					FrameSphere( centres[i], MathF.Max( b.Size.x, 0.5f ) );
 					any = true;
 				}
 				continue;
@@ -189,6 +235,7 @@ public static class SdfCollisionBuilder
 					hull.Add( (b.Position + b.Rotation * lp) * sign );
 
 				builder.AddCollisionHull( hull );
+				FrameHull( hull );
 				any = true;
 			}
 		}
@@ -236,6 +283,7 @@ public static class SdfCollisionBuilder
 				hull.Add( (b.Position + b.Rotation * new Vector3( v.x, v.y, -sz )) * sign );
 			}
 			builder.AddCollisionHull( hull );
+			FrameHull( hull );
 			any = true;
 		}
 		return any;
@@ -493,6 +541,7 @@ public static class SdfCollisionBuilder
 				if ( d >= r * (1f - SplineCarveGraze) )
 				{
 					builder.AddCollisionSphere( r, c ); // untouched, or only a sliver lost — keep it exact
+					FrameSphere( c, r );
 					record.Spheres.Add( new Vector4( c.x, c.y, c.z, r ) );
 					any = true;
 					continue;
@@ -557,6 +606,7 @@ public static class SdfCollisionBuilder
 		if ( b.Shape == SdfShape.Sphere && IsUniform( b.Size ) && b.Slice <= 0f )
 		{
 			builder.AddCollisionSphere( MathF.Max( b.Size.x, 0.5f ), b.Position * sign );
+			FrameSphere( b.Position * sign, MathF.Max( b.Size.x, 0.5f ) );
 			return true;
 		}
 
@@ -573,6 +623,7 @@ public static class SdfCollisionBuilder
 		foreach ( var lp in pts )
 			hull.Add( (b.Position + b.Rotation * lp) * sign );
 		builder.AddCollisionHull( hull );
+		FrameHull( hull );
 		return true;
 	}
 
@@ -621,6 +672,7 @@ public static class SdfCollisionBuilder
 				hull.Add( (framePos + frameRot * corner) * sign );
 			}
 			builder.AddCollisionHull( hull );
+			FrameHull( hull );
 			record?.Boxes.Add( (blo, bhi) );
 			any = true;
 		}

@@ -12,13 +12,12 @@
 	play. Proxies draw nothing, and face-edit mode draws nothing either — the orbit camera frees the real cursor
 	there, so a crosshair would just be a second dot.
 
-	Also hosts creative mode's "E to Edit" prompt: when the dot is over claimable clay, a wobbling paper toast
-	floats just UNDER that prop — anchored in SCREEN space every frame at the shape's projected centre (x)
-	and the lowest on-screen projection of the COLLIDER'S FOOT POINTS (y): the carve-aware ground probes are
-	the one point set that lies on the clay the player actually sees. See ResolvePrompt for the graveyard of
-	bounds-derived schemes this replaced. Projection itself is the PlayerNameplates recipe. Two elements,
-	deliberately: the float carries the position (and the centring translate), the card carries the clay
-	jitter — they'd fight over `transform` on one element.
+	Also hosts creative mode's "E to Edit" prompt: when the dot is over claimable clay, the prop's COLLISION
+	GEOMETRY (SdfCollider.FramePoints) is projected into the screen rect it occupies, and a wobbling paper
+	toast hangs under that rect's bottom edge, centred. Carve-aware and pose-blind by construction — see
+	ResolvePrompt. Projection itself is the PlayerNameplates recipe. Debug the anchoring live with
+	mimiclay_toast_debug 1. Two elements, deliberately: the float carries the position (and the centring
+	translate), the card carries the clay jitter — they'd fight over `transform` on one element.
 *@
 
 <root class="hunter-crosshair">
@@ -36,15 +35,46 @@
 			</div>
 		}
 	}
+
+	@* Toast-anchoring debug (console: mimiclay_toast_debug 1) — drawn in the SAME screen space the anchor is
+	   computed in, so what you see is literally the data: cyan dots = the hovered prop's projected collider
+	   frame points, the orange outline = the screen rect they span (the toast hangs under its bottom edge,
+	   centred), green = the final anchor after clamping. *@
+	@if ( ToastDebug && _debugValid )
+	{
+		<div class="toast-debug">
+			<div class="dbg-rect" style=@RectStyle()></div>
+			@foreach ( var p in _debugPoints )
+			{
+				<div class="dbg-dot" style=@AtStyle( p )></div>
+			}
+			@if ( _promptAt is { } anchor )
+			{
+				<div class="dbg-anchor" style=@AtStyle( anchor )></div>
+			}
+		</div>
+	}
 </root>
 
 @code
 {
+	/// <summary>Draw the toast-anchoring debug: the hovered prop's projected collider frame points, the screen
+	/// rect they span, and the chosen anchor. Hover a claimable prop to see it. Console:
+	/// <c>mimiclay_toast_debug 1</c>.</summary>
+	[ConVar( "mimiclay_toast_debug" )]
+	public static bool ToastDebug { get; set; }
+
 	HunterController _hunter;
 
 	// Where the prompt is drawn, as viewport fractions (resolution-independent — see PromptStyle), or null when
 	// nothing claimable is under the dot. Recomputed every frame in OnUpdate, since it tracks the world.
 	Vector2? _promptAt;
+
+	// Debug capture from the last ResolvePrompt (only filled while ToastDebug): the projected frame points and
+	// the screen rect they span — viewport fractions, the same space the anchor uses.
+	readonly List<Vector2> _debugPoints = new();
+	Vector2 _debugMin, _debugMax;
+	bool _debugValid;
 
 	// The pawn's controller, resolved once from the prefab hierarchy (this panel sits on the HUD child).
 	HunterController Hunter => _hunter.IsValid() ? _hunter : _hunter = Components.Get<HunterController>( FindMode.InAncestors );
@@ -60,23 +90,21 @@
 		_promptAt = ResolvePrompt();
 	}
 
-	// Where the prompt goes: x from the shape's projected CENTRE — one stable point, so panning the camera
-	// can't make the anchor slide the way a min/max midpoint over corners does near the screen edges — and
-	// y from the lowest on-screen COLLIDER FOOT POINT.
-	//
-	// The foot points (SdfCollider.FootPoints — the ground probes) are the one cheap point set that lies on
-	// the clay THE PLAYER ACTUALLY SEES: they're computed against the emitted collider, carve decisions and
-	// all. Everything derived from brush EXTENTS failed here in turn: bounding-box corners overshoot round
-	// clay by ~41% of the radius (the bowling ball floated the toast way under), the box's local bottom face
-	// assumed upright props (rotated blockset pieces overlapped), and even per-brush surface sampling can't
-	// know what a SUBTRACT removed — the bin's Add cylinder extends far below its VISIBLE base, because a
-	// subtract box carves the underside away, and only the collider build knows that.
+	// Where the prompt goes — the simple, pose-blind scheme: project the prop's COLLISION GEOMETRY
+	// (SdfCollider.FramePoints — hull vertices, carved voxel-box corners, on-sphere points, captured from the
+	// collider build itself), min/max the projections into the screen rect the prop occupies, and hang the
+	// toast under that rect's bottom edge, centred on it. Rotation can't matter: no point set is chosen by
+	// "which way is down" — the projection decides everything. And carving can't lie: the frame points carry
+	// the build's own carve decisions, so a hollowed bin's rect stops at its real base (anything derived from
+	// the brush list instead can't know what a subtract removed — the failure behind every earlier scheme).
 	//
 	// The fixed screen-space gap under the anchor is the SCSS padding on .possess-float. Points behind the
-	// camera are skipped (their projections flip; y falls back toward the centre) — that only happens
-	// practically inside the prop. Clamped into the viewport so a huge prop up close keeps the prompt visible.
+	// camera are skipped (their projections flip) — that only happens practically inside the prop. Clamped
+	// into the viewport so a huge prop up close keeps the prompt visible.
 	Vector2? ResolvePrompt()
 	{
+		_debugValid = false;
+
 		if ( !Visible )
 			return null;
 
@@ -86,45 +114,55 @@
 		if ( !hovered.IsValid() || !cam.IsValid() )
 			return null;
 
-		if ( !Sdf.TryGetBounds( hovered.Brushes, out var bounds ) )
-			return null;
+		if ( ToastDebug )
+			_debugPoints.Clear();
 
-		var centre = cam.PointToScreenNormal( hovered.WorldTransform.PointToWorld( bounds.Center ), out var centreBehind );
-		if ( centreBehind )
-			return null;
+		var min = new Vector2( float.MaxValue, float.MaxValue );
+		var max = new Vector2( float.MinValue, float.MinValue );
+		var any = false;
 
-		var bottom = centre.y;
-		foreach ( var point in AnchorPoints( hovered, bounds ) )
+		foreach ( var point in FramePoints( hovered ) )
 		{
 			var screen = cam.PointToScreenNormal( hovered.WorldTransform.PointToWorld( point ), out var behind );
 			if ( behind )
 				continue;
 
-			bottom = Math.Max( bottom, screen.y ); // screen y grows downward
+			min = Vector2.Min( min, screen );
+			max = Vector2.Max( max, screen );
+			any = true;
+
+			if ( ToastDebug )
+				_debugPoints.Add( screen );
 		}
 
+		if ( !any )
+			return null;
+
+		if ( ToastDebug )
+		{
+			_debugMin = min;
+			_debugMax = max;
+			_debugValid = true;
+		}
+
+		// Bottom edge of the rect, centred (screen y grows downward, so the bottom is max.y).
 		return new Vector2(
-			Math.Clamp( centre.x, 0.04f, 0.96f ),
-			Math.Clamp( bottom, 0.06f, 0.90f ) );
+			Math.Clamp( (min.x + max.x) * 0.5f, 0.04f, 0.96f ),
+			Math.Clamp( max.y, 0.06f, 0.90f ) );
 	}
 
-	// Sculpture-local points whose projections bound the shape's on-screen underside: the collider's cached
-	// foot points (one per underside cell of the ACTUAL emitted collider — see ResolvePrompt for why nothing
-	// brush-derived is good enough). Fallback for a sculpture whose collider hasn't built yet: the bounds'
-	// bottom face, which at least anchors somewhere sane for a frame.
-	static IEnumerable<Vector3> AnchorPoints( SdfSculpture sculpture, BBox bounds )
+	// The sculpture-local points to frame: the collider's emitted geometry. Fallback for a sculpture whose
+	// collider hasn't built yet (or has none): the brush bounds' corners — loose, but only ever a stand-in
+	// for a frame or two.
+	static IEnumerable<Vector3> FramePoints( SdfSculpture sculpture )
 	{
 		var collider = sculpture.Components.Get<SdfCollider>();
-		if ( collider.IsValid() && collider.FootPoints is { Count: > 0 } feet )
-			return feet;
+		if ( collider.IsValid() && collider.FramePoints is { Count: > 0 } frame )
+			return frame;
 
-		return new[]
-		{
-			new Vector3( bounds.Mins.x, bounds.Mins.y, bounds.Mins.z ),
-			new Vector3( bounds.Maxs.x, bounds.Mins.y, bounds.Mins.z ),
-			new Vector3( bounds.Mins.x, bounds.Maxs.y, bounds.Mins.z ),
-			new Vector3( bounds.Maxs.x, bounds.Maxs.y, bounds.Mins.z ),
-		};
+		return Sdf.TryGetBounds( sculpture.Brushes, out var bounds )
+			? bounds.Corners
+			: Array.Empty<Vector3>();
 	}
 
 	// left/top as viewport percentages (this root is full-screen), invariant-formatted so the style parses on any
@@ -133,7 +171,17 @@
 		=> $"left: {(at.x * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
 			$"top: {(at.y * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%;";
 
+	static string Pct( float v ) => (v * 100f).ToString( "0.##", CultureInfo.InvariantCulture );
+
+	string RectStyle()
+		=> $"left: {Pct( _debugMin.x )}%; top: {Pct( _debugMin.y )}%; " +
+			$"width: {Pct( _debugMax.x - _debugMin.x )}%; height: {Pct( _debugMax.y - _debugMin.y )}%;";
+
+	static string AtStyle( Vector2 at ) => $"left: {Pct( at.x )}%; top: {Pct( at.y )}%;";
+
 	// The anchor moves nearly every frame, so it belongs in the hash — that's what keeps the toast glued under
-	// the prop (same reasoning as PlayerNameplates hashing its plate positions).
-	protected override int BuildHash() => HashCode.Combine( Visible, _promptAt );
+	// the prop (same reasoning as PlayerNameplates hashing its plate positions). The debug layer re-renders off
+	// the rect (the dots can't move without it moving).
+	protected override int BuildHash()
+		=> HashCode.Combine( Visible, _promptAt, ToastDebug, _debugValid, _debugMin, _debugMax, _debugPoints.Count );
 }

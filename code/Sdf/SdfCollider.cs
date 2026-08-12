@@ -42,6 +42,16 @@ public sealed class SdfCollider : Component
 	/// the first build). Transform by <see cref="GameObject"/>'s world transform to probe the ground.</summary>
 	public IReadOnlyList<Vector3> FootPoints => _footPoints;
 
+	// Sculpture-local points outlining every shape the last build EMITTED — hull vertices, voxel-box corners,
+	// points on each collision sphere — captured by SdfCollisionBuilder.Build itself, so they carry its carve
+	// decisions exactly (a hollowed bin's frame stops at its real base, not the uncarved cylinder's).
+	readonly List<Vector3> _framePoints = new();
+
+	/// <summary>Sculpture-local points outlining the ACTUAL emitted collider (empty until the first build) —
+	/// project them to frame the visible clay on screen (the creative-mode "E to Edit" prompt). Anything
+	/// derived from the brush list instead cannot know what a subtract carved away.</summary>
+	public IReadOnlyList<Vector3> FramePoints => _framePoints;
+
 	SdfSculpture _sculpture;
 	SculptBounds _bounds;
 
@@ -67,6 +77,7 @@ public sealed class SdfCollider : Component
 		if ( collider.IsValid() )
 			collider.Enabled = false;
 		_footPoints.Clear();
+		_framePoints.Clear();
 	}
 
 	/// <summary>Rebuild the primitive collider from the sibling sculpture's additive brushes and assign it to a
@@ -101,8 +112,9 @@ public sealed class SdfCollider : Component
 
 		// The carved-copy record keeps the foot probes in lockstep with the collider: any copy Build swaps to
 		// voxel boxes gets its probes placed ON those boxes (see ComputeFootPoints), not on the smooth field.
+		// The frame points ride the same build (see FramePoints).
 		var carved = new List<SdfCollisionBuilder.CarvedCopy>();
-		var model = SdfCollisionBuilder.Build( brushes, carved );
+		var model = SdfCollisionBuilder.Build( brushes, carved, _framePoints );
 
 		var collider = standing.IsValid() ? standing : GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
