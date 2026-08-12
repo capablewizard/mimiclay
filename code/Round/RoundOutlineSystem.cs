@@ -28,6 +28,10 @@ namespace Mimiclay;
 /// Gates <see cref="SdfHighlightOutline.Hidden"/>, NOT Enabled: Scene.GetAllComponents only enumerates enabled
 /// components, so an outline this system disabled could never be found again to re-show at the Reveal.
 /// A GameObjectSystem, like <see cref="PauseMenuSystem"/>: exists in every scene with no wiring.
+///
+/// In CREATIVE maps this is the hover presentation gate instead: the claimable clay under the local hunter's
+/// crosshair gets the outline glow AND the claymation boil (see <see cref="ApplyCreativeBoil"/>), everything
+/// else stays quiet.
 /// </summary>
 public sealed class RoundOutlineSystem : GameObjectSystem
 {
@@ -89,9 +93,16 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	// Outlines we CREATED for a hover (see below) — these are destroyed on unhover, not restored.
 	readonly HashSet<SdfHighlightOutline> _hoverSpawned = new();
 
-	// Stopping play mid-hover must not leave a runtime-created outline behind: in-editor play mutates the OPEN
-	// scene, so a surviving component would bake into the .scene on the next save (as a default-look white
-	// outline on some prop). Swept here because Dispose is the one hook that runs however play ends.
+	// The hovered SCENE prop's ClayBoil we're driving: the component itself, whether WE created it (destroy on
+	// the way out vs restore), and the activation to put back if it was authored. Single slot — there's only
+	// ever one hover.
+	ClayBoil _hoverBoil;
+	bool _hoverBoilSpawned;
+	BoilActivation _hoverBoilWas;
+
+	// Stopping play mid-hover must not leave runtime-created components behind (or a flipped authored dial):
+	// in-editor play mutates the OPEN scene, so survivors bake into the .scene on the next save. Swept here
+	// because Dispose is the one hook that runs however play ends.
 	public override void Dispose()
 	{
 		foreach ( var o in _hoverSpawned )
@@ -101,7 +112,25 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		}
 		_hoverSpawned.Clear();
 
+		ReleaseHoverBoil();
+
 		base.Dispose();
+	}
+
+	// Put the hovered scene prop's boil back the way we found it — destroyed if we made it, restored to its
+	// authored activation if the mapper did.
+	void ReleaseHoverBoil()
+	{
+		if ( _hoverBoil.IsValid() )
+		{
+			if ( _hoverBoilSpawned )
+				_hoverBoil.Destroy();
+			else
+				_hoverBoil.Activation = _hoverBoilWas;
+		}
+
+		_hoverBoil = null;
+		_hoverBoilSpawned = false;
 	}
 
 	// Creative visibility: your OWN live prop keeps the owner-only locator glow (same rule as the lobby), the
@@ -191,6 +220,53 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				_hoverDriven.Add( outline );
 			}
 		}
+
+		ApplyCreativeBoil( hover );
+	}
+
+	// ── Hover boil: the hovered clay is "in the animator's hands" ─────────────────────────────────────────────
+	// The stop-motion churn is the same "you can take this" feedback as the outline. Both prop kinds boil with
+	// the hunter/prop pawns' tuning — the disguise/hunter prefabs' dials ARE ClayBoil's defaults (fps 4, jitter
+	// 0.4, amp 1), only Activation differs — so a created component needs no setup beyond existing.
+	void ApplyCreativeBoil( SdfSculpture hover )
+	{
+		// PAWN props carry an authored boil on the disguise (activation Never). Asserted continuously and in
+		// BOTH directions, the RoundRevealLifeSystem way: a network snapshot ships live component state, so a
+		// prop that was being hovered on the authority machine when a late-joiner connected would otherwise
+		// arrive boiling and never stop (the RunPFX lesson). RevealLife itself is inert here (no round/lobby
+		// manager), so nothing fights this.
+		foreach ( var hider in Scene.GetAllComponents<HiderController>() )
+		{
+			var boil = hider.Components.Get<ClayBoil>( FindMode.EverythingInSelfAndDescendants );
+			if ( boil.IsValid() )
+				boil.Activation = hover.IsValid() && hider.DisguiseSculpture == hover
+					? BoilActivation.Always
+					: BoilActivation.Never;
+		}
+
+		// SCENE props: drive only the hovered one — an authored boil on any OTHER scene prop is the mapper's
+		// look, not ours to assert. Most scene prefabs have no ClayBoil at all, so one is created on demand
+		// (defaults = the pawn tuning) and destroyed on the way out, same lifecycle as the hover outline (a
+		// runtime-created component on a scene object bakes into the open .scene otherwise); an authored one
+		// is flipped and restored to what the mapper set.
+		var sceneHover = hover.IsValid()
+			&& !hover.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ).IsValid()
+			? hover : null;
+
+		if ( _hoverBoil is not null
+			&& (!_hoverBoil.IsValid() || !sceneHover.IsValid() || _hoverBoil.GameObject != sceneHover.GameObject) )
+			ReleaseHoverBoil();
+
+		if ( sceneHover.IsValid() && _hoverBoil is null )
+		{
+			var existing = sceneHover.Components.Get<ClayBoil>();
+			_hoverBoilSpawned = !existing.IsValid();
+			_hoverBoilWas = existing.IsValid() ? existing.Activation : BoilActivation.Always;
+			_hoverBoil = existing.IsValid() ? existing : sceneHover.Components.Create<ClayBoil>();
+		}
+
+		if ( _hoverBoil.IsValid() )
+			_hoverBoil.Activation = BoilActivation.Always;
 	}
 
 	static bool ShouldShow( SdfHighlightOutline outline, RoundPhase phase )
