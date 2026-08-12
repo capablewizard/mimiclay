@@ -48,7 +48,18 @@
 
 					@if ( G == GameModeKind.Creative )
 					{
-					@* Creative's options land here — the blank space is reserved so the panel keeps
+					@* Keep the map's pre-placed props, or start from a blank canvas. Yes/No through the same
+					   < value > scrubber as every other option — with two values, both arrows just flip it. *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">weekend</div><span>Spawn Props</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@ToggleSpawnProps>chevron_left</div>
+							<div class="step-value">@(C.SpawnProps ? "Yes" : "No")</div>
+							<div class="step-btn" @onclick=@ToggleSpawnProps>chevron_right</div>
+						</div>
+					</div>
+
+					@* Further creative options land here — the blank space is reserved so the panel keeps
 					   prop hunt's footprint (see .settings-panel min-height) instead of collapsing. *@
 					<div class="options-space">
 						<div class="options-hint">@Game.Blurb</div>
@@ -181,9 +192,10 @@
 	// The live settings to display (host owns the LobbyManager, so its setters mutate the synced struct directly).
 	RoundSettings S => LobbyManager.Current.IsValid() ? LobbyManager.Current.Settings : RoundSettings.Default;
 
-	// The selected GAME (top taxonomy level) + its catalogue entry.
+	// The selected GAME (top taxonomy level) + its catalogue entry, and creative's live settings.
 	GameModeKind G => LobbyManager.Current.IsValid() ? LobbyManager.Current.SelectedGame : GameModeKind.PropHunt;
 	GameModeInfo Game => GameModes.Get( G );
+	CreativeSettings C => LobbyManager.Current.IsValid() ? LobbyManager.Current.CreativeCfg : CreativeSettings.Default;
 
 	// People currently in the lobby — the "y" in the hunters "x/y" readout.
 	int LobbyPlayerCount => Connection.All.Count;
@@ -263,6 +275,9 @@
 	void AddTaunt( float d ) => LobbyManager.Current?.SetTauntSeconds( S.TauntSeconds + d );
 	void AddReveal( float d ) => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d );
 
+	// Creative's toggle (host-authority enforced by the LobbyManager setter, like everything above).
+	void ToggleSpawnProps() => LobbyManager.Current?.SetSpawnProps( !C.SpawnProps );
+
 	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
 	void PickMap( string ident )
 	{
@@ -283,5 +298,6 @@
 	protected override int BuildHash()
 		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.RevealSeconds ),
-			G, _picked, LobbyPlayerCount );
+			HashCode.Combine( G, C.SpawnProps ),
+			_picked, LobbyPlayerCount );
 }

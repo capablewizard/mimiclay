@@ -41,6 +41,10 @@ public sealed class LobbyManager : Component, IRoundContext
 	/// the same setup. Seeded from LobbyController's inspector defaults on the host in OnStart.</summary>
 	[Sync] public RoundSettings Settings { get; set; } = RoundSettings.Default;
 
+	/// <summary>The creative-mode rules the host is configuring (only meaningful while <see cref="SelectedGame"/>
+	/// is Creative; carried into the map by its courier at launch — see <see cref="CreativeSettings"/>).</summary>
+	[Sync] public CreativeSettings CreativeCfg { get; set; } = CreativeSettings.Default;
+
 	/// <summary>True from Start being hit until the scene change. [Sync]'d, so a client joining mid-countdown
 	/// sees the launch coming instead of an idle "waiting for host".</summary>
 	[Sync] public bool Launching { get; private set; }
@@ -368,6 +372,13 @@ public sealed class LobbyManager : Component, IRoundContext
 		var s = Settings; s.TauntSeconds = MathF.Max( 5f, seconds ); Settings = s;
 	}
 
+	// ── Creative config (same copy-mutate-write shape as the round setters above) ─────────────────────────────
+	public void SetSpawnProps( bool on )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CreativeCfg; s.SpawnProps = on; CreativeCfg = s;
+	}
+
 	// ── Launch ─────────────────────────────────────────────────────────────────────────────────────────────────
 	// Host-only. The countdown elapsed: every game launches into the picked map. The mode key stamped below is
 	// the courier that tells the map scene which game to run — RoundManagerSpawner reads it and spawns that
@@ -382,6 +393,10 @@ public sealed class LobbyManager : Component, IRoundContext
 		// Re-stamp the browser-facing mode at the moment it becomes true (SetGame keeps it live pre-launch).
 		// This same key doubles as the map scene's game selector.
 		Networking.SetData( MenuNetworking.Keys.Mode, SelectedGame.ToString() );
+
+		// Creative's own rules ride their courier (CreativeManager reads them back on every machine).
+		if ( SelectedGame == GameModeKind.Creative )
+			CreativeCfg.WriteToLobby();
 
 		LaunchIntoMap();
 	}

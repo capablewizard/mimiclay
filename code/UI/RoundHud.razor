@@ -424,7 +424,7 @@
 		// answers the host) can pin scenery onto a player's row.
 		foreach ( var p in Scene.GetAllComponents<HiderController>() )
 		{
-			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed || p.Released )
+			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed || CreativeManager.IsReleased( p ) )
 				continue;
 
 			var owner = RoundManager.RosterIdOf( p.GameObject );

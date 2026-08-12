@@ -230,12 +230,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			_session.SetActive( false );
 	}
 
-	/// <summary>Released into the level and claimable (creative mode's E-to-edit). <c>_dormant</c> above is
-	/// machine-local — no other machine can tell a released prop from a live one — so claimability is a synced
-	/// flag, written ONLY while the HOST owns the pawn: set true right after the release's DropOwnership, set
-	/// false right before a possession's AssignOwnership (the flip is also the claim's idempotency guard — the
-	/// first claim clears it, every later claim is rejected). See <see cref="CreativeManager"/>.</summary>
-	[Sync] public bool Released { get; set; }
+	// Released-and-claimable state deliberately does NOT live here: _dormant above is machine-local (no other
+	// machine can tell a released prop from a live one), and a [Sync] flag on the pawn would have to be written
+	// across the release's ownership edge. It's a registry on the host-owned manager instead — see
+	// CreativeManager.ReleasedProps / IsReleased.
 
 	// Set by BeginPossession, consumed in OnUpdate once ownership has actually replicated to us. A latch rather
 	// than acting inside the RPC because the ownership packet and the RPC race: acting while we're still a proxy

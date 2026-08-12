@@ -19,7 +19,7 @@ namespace Mimiclay;
 /// <b>Networking.</b> This is the LOBBY's pawn model, not the round's: a NetworkSpawn'd singleton (a scene-placed
 /// component's [Sync] changes don't replicate) where the HOST spawns every pawn and hands each to its owner —
 /// because possession is an ownership CLAIM, and claims must be arbitrated in one place. The host processes
-/// <see cref="RequestPossess"/> calls serially and flips <see cref="HiderController.Released"/> as the
+/// <see cref="RequestPossess"/> calls serially with the <see cref="ReleasedProps"/> registry remove as the
 /// idempotency guard, so two players pressing E on the same prop in the same instant get exactly one winner —
 /// the loser keeps their hunter.
 /// </summary>
@@ -53,8 +53,8 @@ public sealed class CreativeManager : Component, IRoundContext
 		=> IsClaimable( LocalHover ) && _hoverAge < 0.1f ? LocalHover : null;
 
 	/// <summary>What creative lets you take over: any clay in the map that isn't currently BEING someone.
-	/// A pawn prop only once its player let it go (<see cref="HiderController.Released"/>); a hunter's face
-	/// never; everything else with brushes — scene decoys, prop-builder balls, blockset pieces — always
+	/// A pawn prop only once its player let it go (<see cref="IsReleased"/>); a hunter's face never;
+	/// everything else with brushes — scene decoys, prop-builder balls, blockset pieces — always
 	/// (claiming one CONVERTS it into a prop pawn, see <see cref="RequestPossess"/>).</summary>
 	public static bool IsClaimable( SdfSculpture sculpture )
 	{
@@ -66,15 +66,40 @@ public sealed class CreativeManager : Component, IRoundContext
 
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
-			return hider.Released; // a pawn's body: only once released into the world
+			return IsReleased( hider ); // a pawn's body: only once released into the world
 
-		return true; // scene-placed clay — claimable by conversion
+		return IsScenery( sculpture ); // scene-placed clay — claimable by conversion
 	}
+
+	/// <summary>Scene-placed clay: a sculpture that is nobody's pawn (no controller above it) and genuinely
+	/// part of the scene — NotSaved excludes runtime-made rigs, most importantly SdfStage's thumbnail hosts,
+	/// which live in the GAME scene while rendering to their own SceneWorld and would otherwise read as props.
+	/// The component IS the marker (no prop tag to keep in sync across prefabs); this is the classification
+	/// both the claim rule and the spawn-props sweep bottom out in, so "what the sweep deletes" and "what a
+	/// hunter can take" can never drift apart.</summary>
+	static bool IsScenery( SdfSculpture sculpture )
+		=> sculpture.IsValid()
+		&& !sculpture.GameObject.Flags.HasFlag( GameObjectFlags.NotSaved )
+		&& !sculpture.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors ).IsValid()
+		&& !sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ).IsValid();
 
 	// ── Networked state (host writes, everyone reads — incl. late-joiners via the spawn snapshot) ─────────────
 	/// <summary>Per-player state for the roster row at the top of the HUD. Role mirrors what each player is
 	/// currently being (hunter or prop) so the pips read right; nominations/scores don't exist here.</summary>
 	[Sync] public NetDictionary<Guid, PlayerInfo> Players { get; private set; } = new();
+
+	/// <summary>The released props, by pawn GameObject id — the registry every machine's hover/claim reads.
+	/// Lives HERE, on the host-owned manager, rather than as a [Sync] flag on the pawn itself: a released pawn
+	/// is UNOWNED (its release just dropped ownership), and a per-pawn flag written across that ownership edge
+	/// proved unreliable on other machines — while this manager's [Sync] state is the same provably-replicating
+	/// mechanism the roster uses. Host adds on release, removes on claim (the remove is the claim's idempotency
+	/// guard). Destroyed pawns' ids linger harmlessly — nothing resolves them again.</summary>
+	[Sync] public NetDictionary<Guid, bool> ReleasedProps { get; private set; } = new();
+
+	/// <summary>Is this pawn prop released scenery (claimable, driven by nobody)? Safe anywhere — false outside
+	/// creative maps.</summary>
+	public static bool IsReleased( HiderController hider )
+		=> hider.IsValid() && Current.IsValid() && Current.ReleasedProps.ContainsKey( hider.GameObject.Id );
 
 	// ── Host-only pawn bookkeeping ─────────────────────────────────────────────────────────────────────────────
 	// The pawn each player currently IS. Released props leave this map — they belong to nobody.
@@ -117,6 +142,28 @@ public sealed class CreativeManager : Component, IRoundContext
 		if ( ReferenceEquals( RoundContext.Active, this ) ) RoundContext.Active = null;
 	}
 
+	protected override void OnStart()
+	{
+		// EVERY machine (clients run this when the spawned manager replicates — after their scene is up): read
+		// the host's creative rules off session data. Lobby data reaches all members, and what it drives here
+		// is machine-local work, so nothing needs to ride [Sync].
+		var settings = CreativeSettings.ReadFromLobby();
+
+		// "Spawn Props" off = blank canvas: delete the map's pre-placed clay. A LOCAL, deterministic sweep on
+		// each machine rather than host broadcasts — scene objects come identical from the scene file, so every
+		// machine (late joiners included) resolves the same set, with zero network traffic. Player-made and
+		// converted props all live under pawn controllers, so they can never match; running at start-only is
+		// therefore also correct for a joiner arriving mid-session.
+		if ( !settings.SpawnProps )
+		{
+			foreach ( var sculpture in Scene.GetAllComponents<SdfSculpture>().ToList() )
+			{
+				if ( IsScenery( sculpture ) )
+					sculpture.GameObject.Destroy();
+			}
+		}
+	}
+
 	protected override void OnUpdate()
 	{
 		HandleInput();
@@ -150,7 +197,7 @@ public sealed class CreativeManager : Component, IRoundContext
 			return null;
 
 		foreach ( var p in Scene.GetAllComponents<HiderController>() )
-			if ( p.IsValid() && !p.Released && RoundManager.RosterIdOf( p.GameObject ) == id )
+			if ( p.IsValid() && !IsReleased( p ) && RoundManager.RosterIdOf( p.GameObject ) == id )
 				return p;
 
 		return null;
@@ -258,9 +305,9 @@ public sealed class CreativeManager : Component, IRoundContext
 	readonly HashSet<Guid> _claimedScene = new();
 
 	/// <summary>Caller claims the clay under their crosshair — the E press. THE arbitration point: requests
-	/// arrive serially on the host. A released PAWN prop is handed over directly, with
-	/// <see cref="HiderController.Released"/> doubling as the idempotency guard (the first claim clears it
-	/// while the host still owns the pawn; every later claim is rejected). A SCENE prop (decoy / prop-builder
+	/// arrive serially on the host. A released PAWN prop is handed over directly, with the
+	/// <see cref="ReleasedProps"/> registry remove doubling as the idempotency guard (it succeeds for the first
+	/// claim only; every later claim is rejected). A SCENE prop (decoy / prop-builder
 	/// clay — never networked, and you can't NetworkSpawn a scene object without duplicating it on clients) is
 	/// CONVERTED: a prop-pawn clone is dressed in its brushes at its exact spot, spawned owned by the claimant,
 	/// and the original is destroyed on every machine — guarded by <see cref="_claimedScene"/>. Either way two
@@ -286,16 +333,14 @@ public sealed class CreativeManager : Component, IRoundContext
 		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange * 1.25f )
 			return;
 
-		// A released pawn prop: claim it as-is.
+		// A released pawn prop: claim it as-is. The registry Remove is the idempotency guard — it succeeds for
+		// exactly one caller, so the loser of a same-frame race returns here and keeps their hunter.
 		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 		{
-			if ( !hider.Released )
-				return; // already claimed (or still being worn) — the loser of a race lands here
+			if ( !ReleasedProps.Remove( hider.GameObject.Id ) )
+				return; // already claimed (or still being worn)
 
-			// Released flips FIRST, while the host still owns the pawn ([Sync] writes need ownership) — this
-			// is the moment the prop stops being claimable by anyone else.
-			hider.Released = false;
 			HandOver( c, row, pawn, hider, assignOwnership: true );
 			return;
 		}
@@ -406,7 +451,8 @@ public sealed class CreativeManager : Component, IRoundContext
 	// ── Release (the persistence move) ─────────────────────────────────────────────────────────────────────────
 	// Host-only. Hand a prop off into the world: dormant on the host (which keeps simulating it as scenery),
 	// ownership dropped (the ex-owner's copy becomes a proxy; StopControl tears down their edit state), then
-	// marked Released — written AFTER the drop, because the [Sync] write needs the host to own the pawn.
+	// registered released — in THIS manager's [Sync] registry, whose replication doesn't depend on the pawn's
+	// just-changed ownership.
 	void ReleaseProp( HiderController hider )
 	{
 		if ( !hider.IsValid() )
@@ -415,7 +461,7 @@ public sealed class CreativeManager : Component, IRoundContext
 		hider.ReleaseControl();
 		if ( Networking.IsActive && hider.GameObject.Network.Active )
 			hider.GameObject.Network.DropOwnership();
-		hider.Released = true;
+		ReleasedProps[hider.GameObject.Id] = true;
 	}
 
 	// ── Spawning (host-only; prefabs + spawn points read off the scene) ────────────────────────────────────────

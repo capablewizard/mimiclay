@@ -155,6 +155,7 @@ public sealed class RoundManagerSpawner : Component
 			// reads that stale data instead of this spawner's config — most visibly the old lobby's bot
 			// count ("0") overriding BotCount above, so the test bots silently never spawn.
 			RoundSettings.ClearLobbyData();
+			CreativeSettings.ClearLobbyData();
 		}
 
 		// Only the host creates the networked manager; a real client just receives it over the wire and is done.

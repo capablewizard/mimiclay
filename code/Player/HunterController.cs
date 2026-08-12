@@ -669,15 +669,23 @@ public sealed class HunterController : Component
 		}
 	}
 
-	// Walk up from the traced object to whatever sculpture owns it — the disguise/decoy collider we hit is on
-	// (or under) the sculpture's own GameObject. The FindHider counterpart for clay that may not be a pawn.
+	// Walk up from the traced object to whatever sculpture owns it. Pawns resolve through their CONTROLLER,
+	// exactly like FindHider: a hit on a pawn prop reports the pawn ROOT (the disguise's collider shapes belong
+	// to the pawn's rigidbody, so the trace answers with the body's object) — and the root has no sculpture,
+	// its clay is the Disguise CHILD. An upward-only sculpture walk therefore misses pawn props entirely (the
+	// bug that killed hover on player-made props), while static scene clay still resolves off its own GO.
 	static SdfSculpture FindSculpture( GameObject go )
 	{
 		while ( go.IsValid() )
 		{
+			var hider = go.Components.Get<HiderController>();
+			if ( hider.IsValid() )
+				return hider.DisguiseSculpture;
+
 			var sculpture = go.Components.Get<SdfSculpture>();
 			if ( sculpture.IsValid() )
 				return sculpture;
+
 			go = go.Parent;
 		}
 		return null;

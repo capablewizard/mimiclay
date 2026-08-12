@@ -86,6 +86,24 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	// Outlines we hover-tinted, so moving off restores them exactly (null = authored look, no bookkeeping).
 	readonly List<SdfHighlightOutline> _hoverDriven = new();
 
+	// Outlines we CREATED for a hover (see below) — these are destroyed on unhover, not restored.
+	readonly HashSet<SdfHighlightOutline> _hoverSpawned = new();
+
+	// Stopping play mid-hover must not leave a runtime-created outline behind: in-editor play mutates the OPEN
+	// scene, so a surviving component would bake into the .scene on the next save (as a default-look white
+	// outline on some prop). Swept here because Dispose is the one hook that runs however play ends.
+	public override void Dispose()
+	{
+		foreach ( var o in _hoverSpawned )
+		{
+			if ( o.IsValid() )
+				o.Destroy();
+		}
+		_hoverSpawned.Clear();
+
+		base.Dispose();
+	}
+
 	// Creative visibility: your OWN live prop keeps the owner-only locator glow (same rule as the lobby), the
 	// hunter's SculptBounds warning outline keeps outranking everything, and the one claimable sculpture under
 	// the local hunter's crosshair — a released prop OR scene clay — glows as "you can take this". Everything
@@ -94,9 +112,23 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	{
 		var hover = CreativeManager.LocalHoverSculpture;
 
+		// Not every scene prop's prefab carries an outline — only some of the saved exports do (bear yes,
+		// alarmclock no), and the prop-builder clay has none. Give the hovered sculpture one ON DEMAND, and
+		// destroy it again on unhover (below) rather than leaving it: a runtime-created component on a scene
+		// object would otherwise bake into the open scene on an in-editor save. One per subtree, never a
+		// second beside an authored one — two live groups read each other's surfaces as occluders.
+		if ( hover.IsValid()
+			&& !hover.Components.Get<SdfHighlightOutline>( FindMode.EverythingInSelfAndDescendants ).IsValid() )
+		{
+			var made = hover.Components.Create<SdfHighlightOutline>();
+			made.IgnoreDepthOfField = true; // look comes from the hover overrides; this is the one flag they don't cover
+			_hoverSpawned.Add( made );
+		}
+
 		// Restore anything we tinted that's no longer the hover target (or died with its prop). Matched by the
 		// SCULPTURE sharing the outline's GameObject — outlines live beside their clay (the disguise child, a
-		// decoy's root) — so pawn and scene props resolve the same way.
+		// decoy's root) — so pawn and scene props resolve the same way. Outlines we created are destroyed
+		// instead of restored (their authored look IS nothing).
 		for ( var i = _hoverDriven.Count - 1; i >= 0; i-- )
 		{
 			var o = _hoverDriven[i];
@@ -106,11 +138,22 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 			if ( o.IsValid() )
 			{
-				o.ColorOverride = null;
-				o.ObscuredColorOverride = null;
-				o.InsideColorOverride = null;
-				o.InsideObscuredColorOverride = null;
-				o.WidthOverride = null;
+				if ( _hoverSpawned.Remove( o ) )
+				{
+					o.Destroy();
+				}
+				else
+				{
+					o.ColorOverride = null;
+					o.ObscuredColorOverride = null;
+					o.InsideColorOverride = null;
+					o.InsideObscuredColorOverride = null;
+					o.WidthOverride = null;
+				}
+			}
+			else
+			{
+				_hoverSpawned.Remove( o );
 			}
 			_hoverDriven.RemoveAt( i );
 		}
@@ -133,7 +176,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				hovered = sculpture.IsValid() && sculpture == hover;
 
 				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-				var own = hider.IsValid() && !hider.IsProxy && !hider.Released
+				var own = hider.IsValid() && !hider.IsProxy && !CreativeManager.IsReleased( hider )
 					&& !RoundManager.IsBotPawn( hider.GameObject );
 				outline.Hidden = !(hovered || own);
 			}
