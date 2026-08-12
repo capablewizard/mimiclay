@@ -3,32 +3,37 @@ using System;
 namespace Mimiclay;
 
 /// <summary>
-/// The game modes the host can pick in the Host Game screen. Kept deliberately small for the block-out — the
-/// real round managers land later; for now this is just the menu's selection + what gets stashed in lobby data
-/// so a future <c>RoundManager</c> (and the server browser) can read which mode a session is running.
+/// The GAMES the lobby's host can set the session up to play. This is the top level of a two-level taxonomy:
+/// a game (this enum) owns which gameplay scene the lobby launches and which manager runs there; a game may
+/// then have its own modes WITHIN it — prop hunt's <see cref="RoundMode"/> (Infection / Teams) is the first —
+/// picked in the same setup dialog. The menu no longer chooses any of this: hosting just creates a session
+/// and drops everyone into the lobby, where <see cref="LobbyManager.SelectedGame"/> carries the live choice.
 ///
-/// <see cref="PropHunt"/> is the headline mode (hunters vs. sculpted hiders). <see cref="Creative"/> is the
-/// no-round sandbox that just drops everyone into the sculpt editor.
+/// <see cref="PropHunt"/> is the headline game (hunters vs. sculpted hiders). <see cref="Creative"/> is the
+/// no-round sandbox. <see cref="Pictionary"/> is sculpt-and-guess.
 /// </summary>
 public enum GameModeKind
 {
 	PropHunt,
 	Creative,
+	Pictionary,
 }
 
-/// <summary>Display metadata for a <see cref="GameModeKind"/> — its menu label, one-line blurb, and the gameplay
-/// scene to load when a host starts it. Centralised here so the Host screen, the server browser and (later) the
-/// round manager all agree on names and scenes from one place.</summary>
+/// <summary>Display metadata for a <see cref="GameModeKind"/> — label, one-line blurb, icon, and the gameplay
+/// scene the LOBBY launches when the host starts this game. Empty <see cref="Scene"/> means the game doesn't
+/// launch a fixed scene: prop hunt resolves its map through <see cref="MapCatalog"/> instead. Centralised here
+/// so the setup dialog, the server browser and the launch path all agree from one place.</summary>
 public readonly record struct GameModeInfo( GameModeKind Kind, string Label, string Blurb, string Scene, string Icon );
 
-/// <summary>The catalogue of selectable modes. The scene paths point at what exists today (the debug perf scene)
-/// so Host → Start is testable end-to-end now; swap them for the real mode scenes as those land.</summary>
+/// <summary>The catalogue of playable games, in the order the setup dialog cycles them.</summary>
 public static class GameModes
 {
 	public static readonly GameModeInfo[] All =
 	{
 		new( GameModeKind.PropHunt, "Prop Hunt", "Create a disguise to blend in and evade the hunters.",
-			LobbyController.LobbyScene, "visibility" ),
+			"", "visibility" ), // scene comes from the map picker (MapCatalog), not the catalogue
+		new( GameModeKind.Pictionary, "Pictionary", "One player sculpts a secret word — everyone else guesses.",
+			"scenes/pictionary.scene", "draw" ),
 		new( GameModeKind.Creative, "Creative", "A quiet sandbox — let your creativity run wild",
 			"scenes/perftestdebug.scene", "brush" ),
 	};

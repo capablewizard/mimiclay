@@ -503,8 +503,20 @@
 	// What the idle lobby tells the local player to do — the host sets the game up + starts it; everyone else waits.
 	string LobbyStatus => LocalIsHost ? "Press G to set up game" : "Waiting for host to start the game";
 
-	// The active game mode. Both managers are NetworkSpawn'd, so their [Sync] Settings reach every client —
-	// the lobby no longer needs the launch broadcast to smuggle the mode across.
+	// The GAME the lobby is set up to play (prop hunt in a running round / by fallback — a live RoundManager
+	// IS prop hunt). Gates the prop-hunt-only lobby furniture: the nominate hint and which mode card shows.
+	GameModeKind LobbyGame
+	{
+		get
+		{
+			if ( RoundManager.Current.IsValid() ) return GameModeKind.PropHunt;
+			if ( LobbyManager.Current.IsValid() ) return LobbyManager.Current.SelectedGame;
+			return GameModeKind.PropHunt;
+		}
+	}
+
+	// The active prop-hunt rules variant. Both managers are NetworkSpawn'd, so their [Sync] Settings reach
+	// every client — the lobby no longer needs the launch broadcast to smuggle the mode across.
 	RoundMode CurrentMode
 	{
 		get
@@ -515,8 +527,15 @@
 		}
 	}
 
-	string ModeLabel => RoundModes.Get( CurrentMode ).Label;
-	string ModeDescription => RoundModes.Get( CurrentMode ).Description;
+	// The mode card names the game — and for prop hunt, its rules variant (the mode within the game). Other
+	// games have no variant yet, so the card shows the game itself.
+	string ModeLabel => LobbyGame == GameModeKind.PropHunt
+		? RoundModes.Get( CurrentMode ).Label
+		: GameModes.Get( LobbyGame ).Label;
+
+	string ModeDescription => LobbyGame == GameModeKind.PropHunt
+		? RoundModes.Get( CurrentMode ).Description
+		: GameModes.Get( LobbyGame ).Blurb;
 
 	// The mode card shows from Start onward — the lobby launch countdown and every in-map phase — but not in the
 	// idle lobby (before the host starts).
@@ -555,7 +574,8 @@
 			if ( Phase == RoundPhase.Lobby )
 			{
 				yield return new( "P", LocalRole == PlayerRole.Prop ? "Swap to Hunter" : "Swap to Prop" );
-				yield return new( "N", "Nominate to Hunt" );
+				if ( LobbyGame == GameModeKind.PropHunt )
+					yield return new( "N", "Nominate to Hunt" ); // nominations only mean anything in prop hunt
 				yield return new( "G", "Set Up Game (Host)" );
 				yield return new( "Q", "Edit Mode" );
 				yield break;
@@ -622,7 +642,7 @@
 
 	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole, so they're covered.
 	protected override int BuildHash()
-		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, CurrentMode ),
+		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false ), // hotkey hints hide while sculpt-editing
 			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount ),

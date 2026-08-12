@@ -30,6 +30,10 @@
 			{
 				<div class="menu-button" @onclick=@Resume><WobbleText Text="Resume" /></div>
 				<div class="menu-button" @onclick=@OpenSettings><WobbleText Text="Options" /></div>
+				@if ( CanReturnToLobby )
+				{
+					<div class="menu-button" @onclick=@ReturnToLobby><WobbleText Text="Return to Lobby" /></div>
+				}
 				<div class="menu-button" @onclick=@ExitToMenu><WobbleText Text="Main Menu" /></div>
 				<div class="menu-button" @onclick=@Quit><WobbleText Text="Quit" /></div>
 			}
@@ -121,6 +125,35 @@
 	// explicit confirmation. Clients (and a solo host) leave freely.
 	bool LeaveStrandsOthers => Networking.IsActive && Networking.IsHost && Connection.All.Count > 1;
 
+	// The host can pull the whole session back to the lobby hub from any GAME scene — the general "end this
+	// game early" (and creative's only exit that keeps the session together). Hidden in the lobby itself, and
+	// for clients: the scene change is the host's call, everyone else follows it automatically.
+	bool CanReturnToLobby => (!Networking.IsActive || Networking.IsHost) && !LobbyManager.Current.IsValid();
+
+	// Resolve the lobby through whichever scene spawner is live (a SceneFile REFERENCE — the string lookup is
+	// only the last resort; it has returned null mid-session before), then change scene. No confirmation: the
+	// session survives, everyone lands together in the lobby.
+	void ReturnToLobby()
+	{
+		SetOpen( false );
+
+		SceneFile lobby = null;
+		if ( RoundManagerSpawner.Current.IsValid() )
+			lobby = RoundManagerSpawner.Current.LobbyScene;
+		if ( lobby is null && PictionarySpawner.Current.IsValid() )
+			lobby = PictionarySpawner.Current.LobbyScene;
+
+		var options = new SceneLoadOptions();
+		var resolved = lobby is not null ? options.SetScene( lobby ) : options.SetScene( LobbyController.LobbyScene );
+		if ( !resolved )
+		{
+			Log.Warning( "PauseMenu: couldn't resolve the lobby scene to return to." );
+			return;
+		}
+
+		Game.ChangeScene( options );
+	}
+
 	// Leave the session and return to our front-end menu scene.
 	void ExitToMenu()
 	{
@@ -177,5 +210,5 @@
 		IsOpen = false;
 	}
 
-	protected override int BuildHash() => HashCode.Combine( _open, _confirm );
+	protected override int BuildHash() => HashCode.Combine( _open, _confirm, CanReturnToLobby );
 }

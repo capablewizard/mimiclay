@@ -79,9 +79,15 @@ public static class MenuNetworking
 	/// before <see cref="ExitToMenu"/>, so the player lands on the menu with an explanation, not a silent kick.</summary>
 	public static void NotifyDisconnected( string message ) => SetError( message );
 
-	/// <summary>Host a new lobby for the chosen mode/settings, then (as host) load that mode's gameplay scene. The
-	/// settings are written into lobby data first so they're live the instant clients see the session.</summary>
-	public static void Host( GameModeKind mode, int maxPlayers, LobbyPrivacy privacy, string sessionName )
+	/// <summary>Default session name when the host leaves it blank. The mode is no longer known at host time —
+	/// it's chosen in the lobby — so the default can't be mode-flavoured any more.</summary>
+	public const string DefaultSessionName = "Mimiclay Game";
+
+	/// <summary>Host a new session, then (as host) load the LOBBY — the universal hub where the game mode is
+	/// chosen and configured (see <see cref="LobbyManager"/>). The menu no longer picks a mode; it only creates
+	/// the session. The lobby stamps <see cref="Keys.Mode"/> live as the host changes selection, so the server
+	/// browser always shows what a session is actually set up to play.</summary>
+	public static void Host( int maxPlayers, LobbyPrivacy privacy, string sessionName )
 	{
 		if ( Busy )
 			return;
@@ -92,24 +98,23 @@ public static class MenuNetworking
 		if ( Networking.IsActive )
 			Networking.Disconnect();
 
-		var info = GameModes.Get( mode );
 		var config = new LobbyConfig
 		{
 			MaxPlayers = Math.Clamp( maxPlayers, MinMaxPlayers, MaxMaxPlayers ),
 			Privacy = privacy,
 			Hidden = privacy != LobbyPrivacy.Public,
-			Name = string.IsNullOrWhiteSpace( sessionName ) ? $"{info.Label} Game" : sessionName.Trim(),
+			Name = string.IsNullOrWhiteSpace( sessionName ) ? DefaultSessionName : sessionName.Trim(),
 		};
 
 		Networking.CreateLobby( config );
 		NoteSessionStarted();
 
-		// Stamp the session so the browser + round manager know what's running. CreateLobby makes us host
-		// synchronously, so SetData is safe right after.
-		Networking.SetData( Keys.Mode, mode.ToString() );
+		// Seed the browser-facing data. CreateLobby makes us host synchronously, so SetData is safe right after.
+		// Mode starts at the lobby's default; LobbyManager re-stamps it whenever the host changes selection.
+		Networking.SetData( Keys.Mode, GameModeKind.PropHunt.ToString() );
 		Networking.SetData( Keys.Name, config.Name );
 
-		LoadGameplayScene( info );
+		LoadLobbyScene();
 	}
 
 	/// <summary>Quick Play: find the best public lobby for this game and join it. Falls back to an error the UI shows
@@ -229,16 +234,17 @@ public static class MenuNetworking
 	/// <summary>The front-end menu scene (the .sbproj StartupScene), loaded when leaving a session.</summary>
 	const string MenuScene = "scenes/menu.scene";
 
-	// Host-only scene change into the mode's gameplay scene. Mirrors MiniMotors' LobbyFlow.Launch.
-	static void LoadGameplayScene( GameModeInfo info )
+	// Host-only scene change into the lobby hub. Mirrors MiniMotors' LobbyFlow.Launch; the lobby launches the
+	// actual gameplay scene later (LobbyManager.Launch), once the host has picked + configured a game.
+	static void LoadLobbyScene()
 	{
 		if ( !Networking.IsHost )
 			return;
 
 		var options = new SceneLoadOptions();
-		if ( !options.SetScene( info.Scene ) )
+		if ( !options.SetScene( LobbyController.LobbyScene ) )
 		{
-			Log.Warning( $"MenuNetworking: couldn't resolve scene '{info.Scene}' for {info.Label}." );
+			Log.Warning( $"MenuNetworking: couldn't resolve the lobby scene '{LobbyController.LobbyScene}'." );
 			return;
 		}
 

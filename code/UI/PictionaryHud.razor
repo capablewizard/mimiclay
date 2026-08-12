@@ -1,0 +1,215 @@
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The Pictionary player HUD — one panel for the whole session, bound to PictionaryManager.Current.
+
+	Layout:
+	  • top-centre — phase caption + timer + the word strip: the sculptor sees their word, guessers see the
+	    masked hint, the reveal shows everyone the answer.
+	  • centre overlay — the sculptor's three word buttons during Choosing (guessers see who's choosing).
+	  • right edge — the scoreboard, always up (it IS the game's tension).
+	  • bottom-left — the guess/chat feed + entry box. The box is the guessers' whole verb, so it stays
+	    visible except while YOU are the sculptor.
+
+	Hidden wholesale while the local player sculpt-edits (the sculptor keeps a slim word reminder only) —
+	the edit HUD owns the screen there, same deal as RoundHud's hotkey strip.
+*@
+
+<root class="pictionary-hud">
+	@if ( Manager is null )
+	{
+		<div class="top-centre">
+			<div class="phase-caption">Setting up…</div>
+		</div>
+	}
+	else if ( Editing )
+	{
+		@* Sculptor, in the editor: everything gets out of the edit HUD's way except what they must not
+		   forget — the word and the clock. *@
+		<div class="sculptor-strip">
+			<div class="strip-word">@(Manager.LocalWord ?? "")</div>
+			<div class="strip-timer">@TimerText</div>
+		</div>
+	}
+	else
+	{
+		<div class="top-centre">
+			<div class="phase-caption">@PhaseCaption</div>
+			@if ( HasTimer )
+			{
+				<div class="timer">@TimerText</div>
+			}
+
+			@if ( WordStrip != "" )
+			{
+				<div class="word-strip @(Manager.Phase == PictionaryPhase.TurnReveal ? "revealed" : "")">@WordStrip</div>
+			}
+		</div>
+
+		@* Choosing: the sculptor picks; everyone else watches the name. *@
+		@if ( Manager.Phase == PictionaryPhase.Choosing )
+		{
+			@if ( Manager.LocalIsSculptor && Manager.OfferedWords.Count > 0 )
+			{
+				<div class="word-choice paper-card">
+					<div class="choice-title">Sculpt one:</div>
+					<div class="choice-row">
+						@foreach ( var (word, i) in Manager.OfferedWords.Select( ( w, i ) => (w, i) ) )
+						{
+							<div class="btn choice-btn" onclick=@( () => Manager.ChooseWord( i ) )>@word</div>
+						}
+					</div>
+				</div>
+			}
+		}
+
+		@* Podium: the standings, big. *@
+		@if ( Manager.Phase == PictionaryPhase.Podium )
+		{
+			<div class="podium paper-card">
+				<div class="podium-title">@WinnerLine</div>
+				@foreach ( var (p, i) in Manager.Scoreboard.Take( 8 ).Select( ( p, i ) => (p, i) ) )
+				{
+					<div class="podium-row rank-@i">
+						<div class="rank">@(i + 1)</div>
+						<div class="name">@p.Name</div>
+						<div class="score">@p.Score</div>
+					</div>
+				}
+			</div>
+		}
+
+		@* Scoreboard — right edge, always on. *@
+		<div class="scoreboard">
+			@foreach ( var p in Manager.Scoreboard.Take( 10 ) )
+			{
+				<div class="score-row @(p.Connection == Manager.SculptorId ? "sculpting" : "") @(p.GuessedThisTurn ? "guessed" : "")">
+					<div class="badge">@(p.Connection == Manager.SculptorId ? "🎨" : p.GuessedThisTurn ? "✔" : "")</div>
+					<div class="name">@p.Name</div>
+					<div class="score">@p.Score</div>
+				</div>
+			}
+		</div>
+
+		@* Guess feed + entry, bottom-left. The entry hides on your own turn — you know the word. *@
+		<div class="guess-box">
+			<div class="feed">
+				@foreach ( var entry in Manager.FeedEntries.TakeLast( 8 ) )
+				{
+					<div class="feed-line @entry.Kind.ToString().ToLower()">
+						@if ( entry.Name != "" )
+						{
+							<div class="feed-name">@(entry.Name):</div>
+						}
+						<div class="feed-text">@(entry.Kind == PictionaryManager.FeedKind.Correct ? "got it! ✔" : entry.Text)</div>
+					</div>
+				}
+			</div>
+
+			@if ( !Manager.LocalIsSculptor )
+			{
+				<TextEntry @ref="GuessEntry" class="guess-entry" Placeholder=@GuessPlaceholder onsubmit=@SubmitGuess />
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	PictionaryManager Manager => PictionaryManager.Current;
+
+	TextEntry GuessEntry { get; set; }
+
+	// The local player is in the sculpt editor (as sculptor OR just face-editing) — the edit HUD owns the
+	// screen, this panel slims down to the reminder strip.
+	bool Editing => SculptEditSession.Current?.IsEditing == true;
+
+	bool HasTimer => Manager is not null && Manager.Phase != PictionaryPhase.Waiting;
+
+	string TimerText
+	{
+		get
+		{
+			if ( Manager is null || !HasTimer )
+				return "0";
+
+			var t = MathF.Ceiling( MathF.Max( 0f, Manager.PhaseEndsAt ) );
+			return $"{(int)(t / 60f)}:{(int)(t % 60f):00}";
+		}
+	}
+
+	string PhaseCaption => Manager?.Phase switch
+	{
+		PictionaryPhase.Waiting => $"Waiting for players ({Manager.Players.Count}/{Manager.Settings.MinPlayers})",
+		PictionaryPhase.Choosing => Manager.LocalIsSculptor ? "Your turn — pick a word!" : $"{Manager.SculptorName} is choosing a word…",
+		PictionaryPhase.Sculpting => Manager.LocalIsSculptor ? "Sculpt it!" : $"{Manager.SculptorName} is sculpting — guess!",
+		PictionaryPhase.TurnReveal => "The word was…",
+		PictionaryPhase.Podium => "Final standings",
+		_ => "",
+	} ?? "";
+
+	// The word strip under the clock: your word (sculptor), the letter-spaced hint (guessers), the answer
+	// (reveal). Round count rides along in Waiting/nothing states via PhaseCaption instead.
+	string WordStrip
+	{
+		get
+		{
+			if ( Manager is null )
+				return "";
+
+			if ( Manager.Phase == PictionaryPhase.TurnReveal )
+				return Manager.RevealedWord;
+
+			if ( Manager.Phase != PictionaryPhase.Sculpting )
+				return "";
+
+			if ( Manager.LocalIsSculptor )
+				return Manager.LocalWord ?? "";
+
+			// "___ _____" reads better letter-spaced: "_ _ _   _ _ _ _ _".
+			return string.Join( " ", (Manager.WordHint ?? "").Select( c => c == ' ' ? " " : c.ToString() ) );
+		}
+	}
+
+	string WinnerLine
+	{
+		get
+		{
+			var top = Manager?.Scoreboard.FirstOrDefault();
+			return top is { Name.Length: > 0 } ? $"🏆 {top.Value.Name} wins!" : "Game over!";
+		}
+	}
+
+	string GuessPlaceholder => Manager?.Phase == PictionaryPhase.Sculpting ? "type your guess…" : "chat…";
+
+	void SubmitGuess()
+	{
+		var text = GuessEntry?.Text?.Trim();
+		if ( string.IsNullOrEmpty( text ) || Manager is null )
+			return;
+
+		Manager.SubmitGuess( text );
+
+		if ( GuessEntry is not null )
+		{
+			GuessEntry.Text = "";
+			GuessEntry.Focus(); // keep the rally going — guessing is rapid-fire
+		}
+	}
+
+	protected override int BuildHash()
+		=> Manager is null
+			? 0
+			: HashCode.Combine(
+				HashCode.Combine( Manager.Phase, TimerText, Manager.SculptorId, Manager.WordHint, Manager.RevealedWord ),
+				HashCode.Combine( Manager.FeedVersion, Manager.OfferedWords.Count, Manager.LocalWord, Editing ),
+				// Scores/guessed flags move without anything above noticing.
+				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedThisTurn ) ),
+				Manager.Players.Count );
+}

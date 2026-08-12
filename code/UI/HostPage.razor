@@ -9,9 +9,9 @@
 @attribute [Route( "/host" )]
 
 @*
-	Host Game screen — pick a mode, set max players + privacy + a session name, then Start. Start hands off to
-	MenuNetworking.Host which creates the lobby, stamps its data, and (as host) loads the mode's gameplay scene.
-	This is the front-end side of the lobby/network handoff; the in-game round flow picks up from the loaded scene.
+	Host Game screen — set max players + privacy + a session name, then Start. Start hands off to
+	MenuNetworking.Host which creates the session and loads the LOBBY; the game mode itself is chosen and
+	configured there (RoundSetup), not here — the menu only makes the room people gather in.
 *@
 
 <root class="host-page menu-page">
@@ -19,24 +19,6 @@
 	<WobbleText Text="Host Game" class="menu-title auto" />
 
 	<div class="menu-content">
-
-		@* --- Mode picker --- *@
-		<div class="section">
-			<div class="section-label"><span>Game Mode</span></div>
-			<div class="mode-grid">
-				@foreach ( var m in GameModes.All )
-				{
-					var mode = m;
-					<div class="paper-card mode-card @(mode.Kind == _mode ? "selected" : "")" @onclick=@(() => _mode = mode.Kind)>
-						<div class="mode-head">
-							<div class="mi mode-icon">@mode.Icon</div>
-							<div class="mode-name">@mode.Label</div>
-						</div>
-						<div class="mode-blurb">@mode.Blurb</div>
-					</div>
-				}
-			</div>
-		</div>
 
 		@* --- Settings --- *@
 		<div class="section">
@@ -83,13 +65,12 @@
 
 @code
 {
-	GameModeKind _mode = GameModeKind.PropHunt;
 	int _maxPlayers = MenuNetworking.DefaultMaxPlayers;
 	LobbyPrivacy _privacy = LobbyPrivacy.Public;
 	string _sessionName = "";
 
 	// Placeholder shown when the host leaves the name blank — mirrors what MenuNetworking will name it.
-	string DefaultName => $"{GameModes.Get( _mode ).Label} Game";
+	string DefaultName => MenuNetworking.DefaultSessionName;
 
 	void Step( int dir )
 		=> _maxPlayers = Math.Clamp( _maxPlayers + dir, MenuNetworking.MinMaxPlayers, MenuNetworking.MaxMaxPlayers );
@@ -99,10 +80,10 @@
 		if ( MenuNetworking.Busy )
 			return;
 
-		MenuNetworking.Host( _mode, _maxPlayers, _privacy, _sessionName );
+		MenuNetworking.Host( _maxPlayers, _privacy, _sessionName );
 		// Host() changes the scene synchronously on success; nothing more to do here.
 	}
 
 	protected override int BuildHash()
-		=> HashCode.Combine( _mode, _maxPlayers, _privacy, _sessionName, MenuNetworking.Busy );
+		=> HashCode.Combine( _maxPlayers, _privacy, _sessionName, MenuNetworking.Busy );
 }

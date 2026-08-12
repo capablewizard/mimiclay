@@ -1911,6 +1911,11 @@ public sealed class HunterController : Component
 		if ( !_session.IsValid() )
 			return;
 
+		// During a Pictionary sculpt turn the session belongs to the CANVAS and isn't optional — the manager
+		// would bounce us straight back in, so the toggle is swallowed rather than fought (see EnsureSculptorEditing).
+		if ( _externalActive )
+			return;
+
 		// Toggle can now DECLINE to exit (an invalid sculpt raises the session's revert confirmation and
 		// stays editing), so both follow-ups key off an actual state CHANGE — re-framing on a blocked exit
 		// would visibly jump the camera for nothing.
@@ -1921,6 +1926,85 @@ public sealed class HunterController : Component
 			FrameFace();
 		else if ( wasEditing && !_session.IsEditing && _orbit.IsValid() ) // leaving: remember the view (face-relative), zoom and pan for the next edit session
 			_lastEditView = CaptureEditView();
+	}
+
+	// ── External sculpt (the Pictionary canvas) ─────────────────────────────────────────────────────────
+	// The same session + orbit rig, temporarily pointed at a sculpture that ISN'T part of this pawn. The
+	// pawn's own SdfNetworkSync stays bound to the face — an external target is expected to network itself
+	// (the canvas prefab carries its own sync). PersistSlot is parked at null while retargeted, which is what
+	// makes this safe: canvas strokes can never save over the head slot, and the slot's saved head can never
+	// load over the canvas.
+	SdfSculpture _externalTarget;
+	bool _externalActive;
+
+	/// <summary>True while the session is live on an external sculpture (see <see cref="BeginExternalEdit"/>).
+	/// <see cref="PictionaryManager"/> polls this to keep the sculptor in the editor for their whole turn.</summary>
+	public bool ExternalEditing => _externalActive && _session.IsValid() && _session.IsEditing;
+
+	/// <summary>Point this (owned) pawn's edit session at <paramref name="target"/> and enter edit mode on
+	/// it — the Pictionary sculptor's turn. The pawn stands where it is; the camera detaches into edit-orbit
+	/// framed on the target, exactly the move face-editing makes, aimed at the canvas instead.</summary>
+	public void BeginExternalEdit( SdfSculpture target )
+	{
+		if ( !_session.IsValid() || !target.IsValid() || !_orbit.IsValid() )
+			return;
+
+		// A live face edit ends first — and saves normally, since PersistSlot is still the head slot here.
+		if ( _session.IsEditing )
+			_session.SetActive( false );
+
+		_externalTarget = target;
+		_externalActive = true;
+		_session.PersistSlot = null;
+		_session.Target = target;
+		_session.SetActive( true );
+		FrameExternal( target );
+	}
+
+	/// <summary>Undo <see cref="BeginExternalEdit"/>: leave edit mode and hand the session back to the face.
+	/// Safe to call repeatedly, and safe after the external target has already been destroyed.</summary>
+	public void EndExternalEdit()
+	{
+		if ( !_externalActive )
+			return;
+
+		_externalActive = false;
+		_externalTarget = null;
+
+		if ( !_session.IsValid() )
+			return;
+
+		if ( _session.IsEditing )
+			_session.SetActive( false ); // PersistSlot is still null — nothing canvas-shaped can reach the head slot
+
+		_session.Target = Face;
+		_session.PersistSlot = SculptLibrary.HeadSlot;
+	}
+
+	// Frame the orbit rig on the external target: pivot at its bounds centre, distance fitting its bounding
+	// sphere, viewed from wherever the pawn is currently facing — the sculptor walked up to the stage, so the
+	// view swings in from their side of it. Same fit-sphere math as FramingDistance, against the target.
+	void FrameExternal( SdfSculpture target )
+	{
+		if ( !_orbit.IsValid() )
+			return;
+
+		var centre = target.WorldPosition;
+		var distance = 160f;
+
+		if ( Sdf.TryGetBounds( target.Brushes, out var bounds, SculptEditSession.PendingStamp( target ) ) )
+		{
+			centre = target.WorldTransform.PointToWorld( bounds.Center );
+
+			float radius = bounds.Size.Length * 0.5f * target.WorldScale.x;
+			float halfFov = GameSettings.OrbitFov.DegreeToRadian() * 0.5f;
+			if ( radius > 0.01f && MathF.Sin( halfFov ) > 0.001f )
+				distance = radius / MathF.Sin( halfFov ) * 1.15f;
+		}
+
+		_orbit.Pivot = centre;
+		_orbit.Distance = distance;
+		_orbit.Angles = new Angles( EditCameraPitch, FaceYaw(), 0f );
 	}
 
 	// The last edit session's view, zoom and pan, stored RELATIVE to the face (yaw-relative angles; the panned
