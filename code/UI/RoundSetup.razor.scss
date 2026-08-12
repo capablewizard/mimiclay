@@ -62,8 +62,26 @@
 		border-radius: $radius-lg;
 	}
 
-	.settings-panel { width: 460px; } // wide enough that "Game Mode" + the < name > stepper sit on one line
+	// Width: wide enough that "Game Mode" + the < name > stepper sit on one line. Min-height: pinned to
+	// (roughly) prop hunt's natural content height, so a game with fewer rows (creative's blank options
+	// space) keeps the same panel size and cycling games doesn't jump the dialog around.
+	.settings-panel { width: 460px; min-height: 520px; }
 	.maps-panel { width: 400px; }
+
+	// Creative's reserved options area — empty for now bar the blurb; grows to fill the pinned panel height.
+	.options-space {
+		flex-grow: 1;
+		align-items: center;
+		justify-content: center;
+
+		.options-hint {
+			max-width: 360px;
+			font-size: 22px;
+			font-weight: 600;
+			text-align: center;
+			color: $paper-ink-soft;
+		}
+	}
 
 	// Dark-brown section header (matches Host Game's .section-label).
 	.section-label {

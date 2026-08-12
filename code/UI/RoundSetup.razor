@@ -48,9 +48,10 @@
 
 					@if ( G == GameModeKind.Creative )
 					{
-					@* No rules yet — the sandbox is the sandbox. *@
-					<div class="setting-row" style="justify-content: center;">
-						<div class="setting-name"><span>@Game.Blurb</span></div>
+					@* Creative's options land here — the blank space is reserved so the panel keeps
+					   prop hunt's footprint (see .settings-panel min-height) instead of collapsing. *@
+					<div class="options-space">
+						<div class="options-hint">@Game.Blurb</div>
 					</div>
 					}
 					else
@@ -113,8 +114,9 @@
 					}
 				</div>
 
-				@* ── Right: maps (from the Prop Hunt Map assets) — prop hunt is the only game that picks one *@
-				@if ( G == GameModeKind.PropHunt )
+				@* ── Right: maps (from the Prop Hunt Map assets). Shared by every game that plays on a map —
+				   prop hunt launches into the pick; creative stores it for when its own launch path lands. *@
+				@if ( Game.UsesMaps )
 				{
 				<div class="paper-card panel maps-panel">
 					<div class="section-label"><span>Maps</span></div>
