@@ -820,9 +820,13 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// them. Skipping costs nothing visible locally — the pair cancels on screen by construction — and
 		// needs no catch-up bookkeeping: the next VALID commit (fixing the shape, or the exit revert)
 		// recenters from wherever the shape then sits, covering the whole accumulated offset, and publishes.
-		// Same verdict the sync gates on (EvaluateNow is hash-cached), so the two gates can never disagree.
+		// Same verdict the sync and collider gates pull (EvaluateNow is hash-cached), so the gates can never
+		// disagree — and, like them, it's asked on the PUBLISHING side only. A proxy re-deriving its own strict
+		// verdict for an applied commit would be the same bug mirrored: receive-side validation is deliberately
+		// lenient and stateless (ValidateIncoming), so a shape sitting near the limit can read invalid here and
+		// cost the proxy its counter-shift while the owner's root move still arrives — the prop slides.
 		var boundsCfg = _body.GameObject.Components.Get<SculptBounds>();
-		if ( boundsCfg.IsValid() && !boundsCfg.EvaluateNow() )
+		if ( !IsProxy && boundsCfg.IsValid() && !boundsCfg.EvaluateNow() )
 			return;
 
 		// The shape's feet (bounds bottom-centre) in PAWN space. Purely local — ground contact and slopes never

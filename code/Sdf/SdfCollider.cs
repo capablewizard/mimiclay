@@ -14,7 +14,8 @@ namespace Mimiclay;
 /// Rebuilds itself whenever the shape is COMMITTED — it subscribes to <see cref="SdfSculpture.Committed"/>
 /// (gizmo release / discrete edits / a networked disguise swap), never mid-drag — so gameplay code never has
 /// to poke it. Runtime only (no ExecuteInEditor): physics is a play concern, and not building shapes while
-/// authoring keeps the editor clean.
+/// authoring keeps the editor clean. Commits that <see cref="SculptBounds"/> judges INVALID are skipped, so
+/// the collider always matches the shape other machines are rendering (see <see cref="Rebuild"/>).
 /// </summary>
 [Title( "SDF Collider" )]
 [Category( "SDF" )]
@@ -42,10 +43,12 @@ public sealed class SdfCollider : Component
 	public IReadOnlyList<Vector3> FootPoints => _footPoints;
 
 	SdfSculpture _sculpture;
+	SculptBounds _bounds;
 
 	protected override void OnEnabled()
 	{
 		_sculpture = GameObject.Components.Get<SdfSculpture>();
+		_bounds = GameObject.Components.Get<SculptBounds>();
 		if ( _sculpture.IsValid() )
 			_sculpture.Committed += Rebuild;
 
@@ -57,6 +60,7 @@ public sealed class SdfCollider : Component
 		if ( _sculpture.IsValid() )
 			_sculpture.Committed -= Rebuild;
 		_sculpture = null;
+		_bounds = null;
 
 		// Going away = no longer solid: tear down the collider we drive and drop the footprint snapshot.
 		var collider = GameObject.Components.Get<ModelCollider>();
@@ -67,20 +71,40 @@ public sealed class SdfCollider : Component
 
 	/// <summary>Rebuild the primitive collider from the sibling sculpture's additive brushes and assign it to a
 	/// sibling <see cref="ModelCollider"/>. Cheap and synchronous (no field sampling). Public so the disguise
-	/// can force a build regardless of clone/OnEnabled timing; normally driven by <see cref="SdfSculpture.Committed"/>.</summary>
+	/// can force a build regardless of clone/OnEnabled timing; normally driven by <see cref="SdfSculpture.Committed"/>.
+	/// A commit an owner-side <see cref="SculptBounds"/> rejects leaves the standing collider alone — see the gate.</summary>
 	public void Rebuild()
 	{
-		// Re-resolve in case Rebuild is called before OnEnabled has bound the sibling (e.g. a forced build right
+		// Re-resolve in case Rebuild is called before OnEnabled has bound the siblings (e.g. a forced build right
 		// after the component is created).
 		_sculpture ??= GameObject.Components.Get<SdfSculpture>();
+		_bounds ??= GameObject.Components.Get<SculptBounds>();
 		var brushes = _sculpture.IsValid() ? _sculpture.Brushes : null;
+
+		// NEVER build physics for an INVALID shape. An invalid shape is deliberately never published (see
+		// SdfNetworkSync's bounds gate), so proxies keep rendering the last valid one — but the collider is a
+		// LOCAL rebuild that changes the pawn's footprint and the ground snap that rides it, and the resulting
+		// root move goes out over the engine's always-on transform sync. Everyone else then watches the prop
+		// slide and settle at a height that matches a shape they can't see. Same split-transport trap the origin
+		// recenter gates on (HiderController.RecenterOriginOnShape), and the same predicate the sync gates on
+		// (non-proxy + hash-cached EvaluateNow, so the three gates can never disagree): proxies always build,
+		// because what they applied was already validated on receive.
+		//
+		// Freezing costs nothing to catch up on — the shape other machines see is the shape the standing
+		// collider was built from, and the next VALID commit (a fix, or the exit revert) rebuilds and publishes
+		// together. Only ever skips when a collider is already standing: the very first build must go through
+		// whatever the sculpture starts as, or a shape that spawns invalid (or a decoy this machine's config
+		// judges invalid) would be left with no collision at all.
+		var standing = GameObject.Components.Get<ModelCollider>();
+		if ( !IsProxy && _bounds.IsValid() && standing.IsValid() && standing.Model is not null && !_bounds.EvaluateNow() )
+			return;
 
 		// The carved-copy record keeps the foot probes in lockstep with the collider: any copy Build swaps to
 		// voxel boxes gets its probes placed ON those boxes (see ComputeFootPoints), not on the smooth field.
 		var carved = new List<SdfCollisionBuilder.CarvedCopy>();
 		var model = SdfCollisionBuilder.Build( brushes, carved );
 
-		var collider = GameObject.Components.GetOrCreate<ModelCollider>();
+		var collider = standing.IsValid() ? standing : GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
 		collider.IsTrigger = BuildAsTrigger;
 		collider.Enabled = model is not null;
