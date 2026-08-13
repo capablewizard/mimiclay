@@ -608,8 +608,9 @@ public sealed class HunterController : Component
 			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
 			// No shooting while controls are locked (the Starting countdown) or outside the Hunt — during Hide a
 			// shot would still carve permanent craters into disguises the props can't heal, even though the host
-			// ignores the hit report. Creative suppresses the shot the same way and for the same reason: the
-			// pellet carve permanently craters clay, and nothing here is huntable. A denied press gets a local
+			// ignores the hit report. Creative shoots freely: nothing is huntable there (no manager takes the
+			// hit report, so a hit prop just gets carved), and every carve HEALS — TryCarve forces it — so shots
+			// are harmless fun that can't permanently deface anyone's build. A denied press gets a local
 			// error blip instead, so the trigger doesn't feel broken. The shot leaves from the eye along _aimDir,
 			// which is converged onto the crosshair, so the trace always matches what the dot shows. During an
 			// alt-orbit the trigger is swallowed (no blip): alt+mouse is a camera gesture here — same as the
@@ -617,7 +618,7 @@ public sealed class HunterController : Component
 			// can't show.
 			if ( Input.Pressed( "attack1" ) && !_altOrbiting )
 			{
-				if ( !locked && RoundManager.HuntingAllowed && !CreativeManager.Current.IsValid() )
+				if ( !locked && RoundManager.HuntingAllowed )
 				{
 					if ( _nextShot <= 0f )
 						Shoot( eye );
@@ -2408,10 +2409,17 @@ public sealed class HunterController : Component
 		// The shooter reads the target's prefab-authored config and rolls the timing HERE, once, shipping
 		// concrete values — every machine must agree on when each crater vanishes, so the randomness can't
 		// be rolled per machine. Staggered, not lockstep.
+		//
+		// CREATIVE overrides the policy: everything heals. Scarring is a prop-hunt integrity rule (disguises
+		// must scar like decoys), and creative has no hunt to protect — but it does have builds to protect,
+		// and a stray shot permanently defacing someone's prop would be worse than the tell ever was. A
+		// profile still supplies its authored timing; bare clay heals on the profile defaults.
 		var profile = sculpt.GameObject.Components.Get<DamageProfile>();
-		bool heals = profile.IsValid() && profile.Heals;
-		float delay = heals ? Game.Random.Float( profile.HealDelay.x, profile.HealDelay.y ) : 0f;
-		float duration = heals ? Game.Random.Float( profile.HealDuration.x, profile.HealDuration.y ) : 0f;
+		bool heals = CreativeManager.Current.IsValid() || (profile.IsValid() && profile.Heals);
+		var healDelay = profile.IsValid() ? profile.HealDelay : DamageProfile.DefaultHealDelay;
+		var healDuration = profile.IsValid() ? profile.HealDuration : DamageProfile.DefaultHealDuration;
+		float delay = heals ? Game.Random.Float( healDelay.x, healDelay.y ) : 0f;
+		float duration = heals ? Game.Random.Float( healDuration.x, healDuration.y ) : 0f;
 		BroadcastCarve( anchor, local, radius, heals, delay, duration );
 	}
 

@@ -174,6 +174,10 @@ public sealed class CreativeManager : Component, IRoundContext
 		ReconcileConnections();
 	}
 
+	// A P press parked on the edit session's revert confirmation (see TrySwap). Local UI state, resolved when
+	// the dialog closes: confirmed (the session exited, reverted) completes the swap; "Keep Editing" drops it.
+	bool _swapAwaitingConfirm;
+
 	// Every machine: the P swap, same raw-key shape as LobbyController.HandleDebugInput (the request is
 	// [Rpc.Host], so a client's press routes to the host). The camera carry is owner-side state the host never
 	// sees — captured at the press, consumed by our replacement pawn as it starts.
@@ -182,11 +186,55 @@ public sealed class CreativeManager : Component, IRoundContext
 		if ( PauseMenu.IsOpen )
 			return;
 
-		if ( Input.Keyboard.Pressed( "P" ) )
+		// A swap waiting on the revert dialog: complete or drop it the frame the player answers. Further P
+		// presses are swallowed while it's up (the dialog's scrim owns the HUD's input; this is the raw-key
+		// equivalent).
+		if ( _swapAwaitingConfirm )
 		{
-			LobbySwapCarry.Capture( Scene, OwnProp() );
-			RequestSwap( Scene.Camera.IsValid() ? Scene.Camera.WorldRotation.Angles().yaw : 0f );
+			var session = SculptEditSession.Current;
+			if ( !session.IsValid() )
+			{
+				_swapAwaitingConfirm = false; // forced teardown took the session — nothing left to complete
+			}
+			else if ( !session.ExitConfirmPending )
+			{
+				_swapAwaitingConfirm = false;
+				if ( !session.IsEditing )
+					Swap(); // confirmed: reverted + exited — finish what the P press started
+				// still editing = "Keep Editing" — the swap is dropped with it
+			}
+			return;
 		}
+
+		if ( Input.Keyboard.Pressed( "P" ) )
+			TrySwap();
+	}
+
+	// The P press. Exiting your pawn is also exiting its edit session, so an ACTIVE session goes through the
+	// same exit gate the Q toggle uses (SculptEditSession.RequestExit): a too-big/too-small sculpt raises the
+	// revert confirmation instead of the swap silently releasing an invalid shape into the world, and the swap
+	// waits on the player's answer. A valid session just exits cleanly first — persist included, better than
+	// the force-teardown the release would otherwise run. The hunter's face edit gets the same treatment.
+	void TrySwap()
+	{
+		var session = SculptEditSession.Current;
+		if ( session.IsValid() && session.IsEditing )
+		{
+			session.RequestExit();
+			if ( session.ExitConfirmPending )
+			{
+				_swapAwaitingConfirm = true;
+				return;
+			}
+		}
+
+		Swap();
+	}
+
+	void Swap()
+	{
+		LobbySwapCarry.Capture( Scene, OwnProp() );
+		RequestSwap( Scene.Camera.IsValid() ? Scene.Camera.WorldRotation.Angles().yaw : 0f );
 	}
 
 	// Our own hider pawn if we're currently a prop — RosterIdOf, not IsProxy, for symmetry with the lobby's

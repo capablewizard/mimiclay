@@ -9,7 +9,10 @@ namespace Mimiclay;
 ///
 /// ABSENT = the default: craters scar permanently. That default is also a game-integrity rule — player
 /// disguises must behave identically to decoys (both scar), or a healing crater would be an inverted tell
-/// exposing the player. Heads healing leaks nothing: hunters are public.
+/// exposing the player. Heads healing leaks nothing: hunters are public. CREATIVE mode overrides the
+/// default wholesale — every carve heals there (see HunterController.TryCarve), on this component's
+/// timing when present and on <see cref="DefaultHealDelay"/>/<see cref="DefaultHealDuration"/> otherwise:
+/// there is no hunt to keep honest, and shots must never permanently deface what people are building.
 ///
 /// The shooter reads this off the target at carve time, rolls the timing ONCE, and ships concrete values
 /// with the carve — so every machine agrees on each crater's schedule (see HunterController.TryCarve; the
@@ -24,12 +27,19 @@ namespace Mimiclay;
 [Icon( "healing" )]
 public sealed class DamageProfile : Component
 {
+	/// <summary>The timing a creative-forced heal uses on clay with no profile of its own — also the
+	/// authored properties' initial values, so the two can never drift apart.</summary>
+	internal static readonly Vector2 DefaultHealDelay = new( 1.5f, 3.5f );
+
+	/// <inheritdoc cref="DefaultHealDelay"/>
+	internal static readonly Vector2 DefaultHealDuration = new( 0.8f, 2.2f );
+
 	/// <summary>Craters on this sculpture heal (shrink away and free their brush slots).</summary>
 	[Property] public bool Heals { get; set; } = true;
 
 	/// <summary>Grace period range (seconds, min..max) before a crater starts healing — rolled per crater.</summary>
-	[Property] public Vector2 HealDelay { get; set; } = new( 1.5f, 3.5f );
+	[Property] public Vector2 HealDelay { get; set; } = DefaultHealDelay;
 
 	/// <summary>Heal (ease-to-nothing) duration range, seconds min..max — rolled per crater.</summary>
-	[Property] public Vector2 HealDuration { get; set; } = new( 0.8f, 2.2f );
+	[Property] public Vector2 HealDuration { get; set; } = DefaultHealDuration;
 }
