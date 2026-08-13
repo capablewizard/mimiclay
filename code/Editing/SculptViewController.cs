@@ -3,12 +3,12 @@ using System;
 namespace Mimiclay;
 
 /// <summary>
-/// Alt-drag navigation for a framed sculpture — the main-menu sculpt toy (and a soft tutorial for the in-game
-/// alt-nav). Hold Alt and drag:
+/// Drag navigation for a framed sculpture — the main-menu sculpt toy (and a soft tutorial for the in-game
+/// create-mode navigation):
 /// <list type="bullet">
-/// <item><b>LMB</b> rotates the <see cref="Target"/> in place (yaw + clamped pitch).</item>
-/// <item><b>RMB</b> zooms by moving the CAMERA along the camera→object line.</item>
-/// <item><b>MMB</b> pans the CAMERA (vertical).</item>
+/// <item><b>MMB</b> rotates the <see cref="Target"/> in place (yaw + clamped pitch).</item>
+/// <item><b>Alt+RMB</b> zooms by moving the CAMERA along the camera→object line.</item>
+/// <item><b>Alt+MMB</b> pans the CAMERA (vertical).</item>
 /// </list>
 /// Plus a slow idle turntable when nothing's selected.
 ///

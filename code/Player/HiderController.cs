@@ -822,7 +822,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		if ( EditMode )
 		{
-			// Edit: the rig reads Maya alt-nav itself (orbit/dolly/pan + the dot cursor). We leave _bodyYaw alone,
+			// Edit: the rig reads create-mode navigation itself (orbit/dolly/pan + the dot cursor). We leave _bodyYaw alone,
 			// so the disguise stays put and re-settles onto its shape in place while we sculpt.
 			_orbit.Tick( handleAltDrag: true );
 		}

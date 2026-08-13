@@ -1,7 +1,7 @@
 namespace Mimiclay;
 
 /// <summary>
-/// Shared Maya alt-nav input: the single source of truth for "is the user holding Alt and dragging a nav button,
+/// Shared create-mode navigation input: the single source of truth for "is the user holding a navigation input
 /// and which one." One consumer advances it each frame via <see cref="Tick"/> (the active
 /// <see cref="OrbitCameraController"/> in edit mode, or the <see cref="SculptViewController"/> in the menu); both
 /// the camera/object controllers and the edit HUD read the resulting state. Centralised here so there's exactly
@@ -13,7 +13,7 @@ public static class AltNav
 {
 	public enum Gesture { None, Orbit, Dolly, Pan }
 
-	/// <summary>Alt held this frame (nav intent), even before a button is pressed. The HUD reads this to raise its
+	/// <summary>A navigation modifier/button is held this frame. The HUD reads this to raise its
 	/// inert shield so the cursor drift can't grab UI; the menu reads it to go inert the same way.</summary>
 	public static bool Held { get; private set; }
 
@@ -51,9 +51,10 @@ public static class AltNav
 		}
 
 		bool alt = Input.Down( "Walk" );
-		bool orbit = alt && Input.Down( "Attack1" );
+		bool middle = Input.Down( "CameraPan" );
+		bool orbit = middle && !alt;
 		bool dolly = alt && Input.Down( "Attack2" );
-		bool pan = alt && Input.Down( "CameraPan" );
+		bool pan = alt && middle;
 		bool dragging = orbit || dolly || pan;
 
 		// Freeze the anchor on the frame the drag begins, while the cursor is still visible and its position real.
@@ -61,7 +62,7 @@ public static class AltNav
 			_anchor = Mouse.Position;
 		_was = dragging;
 
-		Held = alt;
+		Held = alt || middle;
 		Dragging = dragging;
 		Anchor = _anchor;
 		Current = orbit ? Gesture.Orbit : dolly ? Gesture.Dolly : pan ? Gesture.Pan : Gesture.None;

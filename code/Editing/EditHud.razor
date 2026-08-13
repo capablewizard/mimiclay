@@ -611,10 +611,10 @@
 	};
 
 
-	// True while alt is held in edit mode (Maya camera nav). Read from the camera controller (a regular component
+	// True while a camera navigation input is held in edit mode. Read from the camera controller (a regular component
 	// where Input.Down reads reliably — it doesn't from UI panel code). While set, the HUD goes pointer-events:none
 	// (via the root's "alt-nav" class) so the camera-driven cursor drift can't grab the layer rows / palette, AND
-	// the alt+mouse buttons fall straight through to the scene so the camera actually gets them.
+	// the navigation mouse buttons fall straight through to the scene so the camera actually gets them.
 	static bool AltNavActive => AltNav.Held && (Session?.IsEditing ?? false);
 
 	// The HUD goes click-through (its interactive cards drop pointer-events, via the "alt-nav" class) both during

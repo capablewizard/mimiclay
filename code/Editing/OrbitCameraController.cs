@@ -3,8 +3,8 @@ using System;
 namespace Mimiclay;
 
 /// <summary>
-/// Maya-style orbit camera. Hold Alt and drag: LMB orbits around the pivot, RMB dollies (zoom), MMB pans
-/// (vertical). Drives the scene's main camera.
+/// Create-mode orbit camera. Middle-drag orbits around the pivot; Alt+RMB dollies (zoom), and Alt+MMB pans
+/// vertically. Drives the scene's main camera.
 ///
 /// Two modes:
 /// <list type="bullet">
