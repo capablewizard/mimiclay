@@ -93,6 +93,15 @@ public sealed class ClayBoil : Component
 	/// so both shudder identically.</summary>
 	[Property, Range( 0f, 8f ), Group( "Boil" )] public float ImpactTicks { get; set; } = 1f;
 
+	/// <summary>Set (only) by the runtime presentation systems that CREATE boils on scene clay (creative's
+	/// hover/heal churn — see RoundOutlineSystem.ApplySceneBoils): marks the component as system-owned, so
+	/// its <see cref="Activation"/> is ASSERTED both ways every frame and the component is destroyed once
+	/// dormant. Never author this — a mapper's hand-placed boil keeps it false and its Activation is
+	/// treated as the authored look. A durable flag on the COMPONENT rather than bookkeeping in a system:
+	/// a hotload rebuilds GameObjectSystems with empty memory, and a runtime boil orphaned mid-hover that
+	/// way had its transient Always latched in forever (the creative stuck-boiling-props bug).</summary>
+	[Property, Hide] public bool RuntimeManaged { get; set; }
+
 	/// <summary>The boil pose (unseeded, wrapped tick) at a given time — THE clock. Consumed by the
 	/// renderer's field bake, the shader's live tick (pushed as the BoilTick attribute) and the heal's
 	/// tick-lock, so all three agree by construction. Normally the GLOBAL tick (floor of time × Fps —
@@ -204,6 +213,60 @@ public sealed class ClayBoil : Component
 		a.Set( "BoilAmpJitter", MathF.Max( AmpJitter, 0f ) );
 		a.Set( "BoilTexJitter", MathF.Max( TextureJitter, 0f ) );
 		a.Set( "BoilTick", TickAt( Time.Now ) );
+	}
+
+	/// <summary>Dump why every live boil is (or isn't) running, plus any sculpture still holding a Shrinks
+	/// brush — the "this prop won't stop churning" diagnostic. One line per component: activation, the
+	/// Boiling verdict and which leg produced it (burst window remaining vs live shrink brushes, each with
+	/// its age against delay+duration), and enough context (pawn above? proxy? NotSaved?) to tell a scene
+	/// decoy from a released pawn prop from a thumbnail rig at a glance.</summary>
+	[ConCmd( "mimi_boil_debug" )]
+	public static void DebugDump()
+	{
+		var scene = Game.ActiveScene;
+		if ( !scene.IsValid() )
+			return;
+
+		foreach ( var boil in scene.GetAllComponents<ClayBoil>() )
+		{
+			float burst = MathF.Max( 0f, boil._burstUntil - Time.Now );
+			Log.Info( $"[boil] {Describe( boil.GameObject )}: {boil.Activation}{(boil.RuntimeManaged ? " (runtime)" : "")} " +
+				$"Fps={boil.Fps} Boiling={boil.Boiling} burst={burst:0.00}s lastCount={boil._lastBrushCount}" );
+			DumpShrinks( boil.GameObject.Components.Get<SdfSculpture>() );
+		}
+
+		// Shrinks with NO enabled boil beside them — a prop that churns in this state means stale render
+		// attributes, not a live component (see ApplyOff).
+		foreach ( var sculpt in scene.GetAllComponents<SdfSculpture>() )
+		{
+			if ( sculpt.GameObject.Components.Get<ClayBoil>().IsValid() )
+				continue;
+			if ( sculpt.Brushes is not { Count: > 0 } brushes || !brushes.Exists( b => b.Shrinks ) )
+				continue;
+			Log.Info( $"[boil] {Describe( sculpt.GameObject )}: NO ClayBoil but shrink brushes remain:" );
+			DumpShrinks( sculpt );
+		}
+	}
+
+	static void DumpShrinks( SdfSculpture sculpt )
+	{
+		if ( sculpt?.Brushes is not { Count: > 0 } brushes )
+			return;
+		for ( int i = 0; i < brushes.Count; i++ )
+		{
+			var b = brushes[i];
+			if ( b.Shrinks )
+				Log.Info( $"   [{i}] shrink age={b.ShrinkAge:0.00} / delay={b.ShrinkDelay:0.00}+dur={b.ShrinkDuration:0.00} size={b.Size.x:0.0} dmg={b.Damage}" );
+		}
+	}
+
+	static string Describe( GameObject go )
+	{
+		string pawn = go.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ).IsValid() ? " hider"
+			: go.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors ).IsValid() ? " hunter" : "";
+		string flags = go.Flags.HasFlag( GameObjectFlags.NotSaved ) ? " notsaved" : "";
+		string net = go.Network.Active ? (go.IsProxy ? " proxy" : " owned") : "";
+		return $"'{go.Name}'{pawn}{net}{flags}";
 	}
 
 	/// <summary>Write "no boil" onto a scene object's attributes. Must be called for props WITHOUT a
