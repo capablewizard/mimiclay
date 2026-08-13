@@ -877,9 +877,11 @@ PS
 
 	// Sphere-trace the field along the current view ray (camera in the forward pass, light
 	// in the shadow/depth pass). Returns false on a miss, else the world-space hit point.
-	bool RayMarchHit( PixelInput i, out float3 hitP )
+	bool RayMarchHit( PixelInput i, float hitEpsScale, out float3 hitP, out float closestD, out float closestT )
 	{
 		hitP = float3( 0, 0, 0 );
+		closestD = 1e9;
+		closestT = 0.0;
 
 		// Projection-aware ray. vPositionWithOffsetWs = worldPos − g_vHighPrecisionLightingOffsetWs
 		// (subtracted in the shared VS with the SAME constant this pass sees), so adding the constant
@@ -971,6 +973,8 @@ PS
 		float q = ortho ? 1.0 : LodQuality( ro );
 		int   maxSteps = (int)lerp( (float)g_nMinSteps, (float)g_nMaxSteps, q );
 		float eps      = lerp( g_flFarEpsilon, g_flEpsilon, q );
+		float hitEps   = max( eps * hitEpsScale, 0.001 );
+		if ( hitEpsScale < 1.0 ) maxSteps += 8;
 
 		float stepScale = 1.0;
 	#if ( D_FIELD_TEX )
@@ -1020,7 +1024,8 @@ PS
 		for ( int s = 0; s < maxSteps; s++ )
 		{
 			float d = SdfDistMarchWs( ro + rd * t );
-			if ( d < eps ) { hitP = ro + rd * ( t + d ); return true; } // refine onto surface (d~=0), not the eps-shell: kills field-path contour banding
+			if ( d < closestD ) { closestD = d; closestT = t; }
+			if ( d < hitEps ) { hitP = ro + rd * ( t + d ); return true; } // refine onto surface (d~=0), not the eps-shell: kills field-path contour banding
 			t += d * stepScale;
 			if ( t > tExit ) break;
 		}
@@ -1040,13 +1045,14 @@ PS
 	// single hint is ever valid; a violated hint lets the GPU wrongly early-cull marched pixels
 	// (seen as background punching through the prop). Inter-object occlusion rides the engine depth
 	// chain via the prepass instead — no early-Z promise needed.
-	struct SdfPixelOutput { float4 vColor : SV_Target0; float flDepth : SV_Depth; };
+	struct SdfPixelOutput { float4 vColor : SV_Target0; float flDepth : SV_Depth; uint nCoverage : SV_Coverage; };
 
 	SdfPixelOutput MainPs( PixelInput i, bool isFrontFace : SV_IsFrontFace )
 	{
 		SdfPixelOutput o;
 		o.vColor = float4( 0, 0, 0, 0 );
 		o.flDepth = 1.0;
+		o.nCoverage = 0xFFu;
 
 	#if ( S_TRANSLUCENT && S_MODE_DEPTH )
 		// Translucent (viewmodel) variant: never in the depth prepass or shadow views — the whole point
@@ -1090,7 +1096,36 @@ PS
 		}
 
 		float3 p;
-		if ( !RayMarchHit( i, p ) )
+		float closestD, closestT;
+		bool centreHit = RayMarchHit( i, 1.0, p, closestD, closestT );
+		float3 surfaceN = centreHit ? SdfNormal( p ) : 0.0;
+
+		float3 centreRay = normalize( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
+		float rayPixel = max( length( ddx( centreRay ) ), length( ddy( centreRay ) ) );
+		bool nearMiss = !centreHit && closestD <= max( closestT * rayPixel, 1e-4 );
+		bool grazingHit = centreHit && abs( dot( surfaceN, normalize( g_vCameraPositionWs - p ) ) ) < 0.35;
+		if ( !IsOrthoView() && (nearMiss || grazingHit) )
+		{
+			uint mask = 0u;
+			float3 firstHit = p;
+			[unroll]
+			for ( uint s = 0u; s < 8u; s++ )
+			{
+				PixelInput si = i;
+				si.vPositionWithOffsetWs = EvaluateAttributeAtSample( i.vPositionWithOffsetWs, s );
+				float3 sampleP; float sampleD, sampleT;
+				if ( RayMarchHit( si, 0.05, sampleP, sampleD, sampleT ) )
+				{
+					mask |= 1u << s;
+					if ( mask == (1u << s) ) firstHit = sampleP;
+				}
+			}
+			o.nCoverage = mask;
+			if ( !centreHit && mask != 0u ) { p = firstHit; surfaceN = SdfNormal( p ); }
+			centreHit = mask != 0u;
+		}
+
+		if ( !centreHit )
 		{
 			clip( -1 );
 			return o;
@@ -1113,7 +1148,7 @@ PS
 		// pass wins here at true depth and the gun still never clips into geometry. Real depth also
 		// keeps the depth chain honest for its consumers: screen UI (which depth-tests, and which the
 		// old near-camera squash used to lose against), contact shadows and screen AO.
-		o.vColor = DepthNormals::Output( SdfNormal( p ) );
+		o.vColor = DepthNormals::Output( surfaceN );
 		o.flDepth = DepthFromWorld( pd );
 		return o;
 	#endif
@@ -1153,7 +1188,7 @@ PS
 			return o;
 		}
 
-		float3 baseN = SdfNormal( p ); // world-space gradient normal
+		float3 baseN = surfaceN; // world-space gradient normal
 
 		// Re-base the triplanar projection into the prop's MODEL space, so the plasticine pattern is
 		// locked to the prop (moves/rotates with it) instead of the prop sliding through a fixed
