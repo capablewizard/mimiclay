@@ -357,7 +357,8 @@ PS
 				return guide;
 
 			float ind = g_tIndirection.Load( int3( brick.x, brick.y + bd.y * brick.z, 0 ) ).r;
-			if ( ind < 0.0 )
+			float maxTiles = (g_vAtlasDims.x / SDF_TILESIZE) * (g_vAtlasDims.y / SDF_TILESIZE) * (g_vAtlasDims.z / SDF_TILESIZE);
+			if ( !(ind >= 0.0 && ind < maxTiles) )
 				return guide;                   // empty brick near the surface: keep stepping on the guide
 
 			// Occupied brick: sample its atlas tile. Decode the tile's cell in the atlas tile-grid (matches the fill

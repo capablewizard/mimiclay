@@ -83,6 +83,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// edges at the cost of memory + bake time. Off = the exact per-brush march.</summary>
 	[Property, Group( "Distance Field" )] public bool UseFieldCache { get; set; } = true;
 
+	/// <summary>Global diagnostic kill switch for the field-cache compute path.</summary>
+	[ConVar( "mimiclay_sdf_field_cache" )]
+	public static bool FieldCacheEnabled { get; set; } = true;
+
 	/// <summary>Voxels along the prop's longest axis in the GPU-evaluated field. Higher = sharper silhouette but
 	/// memory grows with the CUBE (R32F: 64³≈1MB, 128³≈8MB, 256³≈67MB), and each edit re-dispatches every voxel.
 	/// 64 is a good middle for organic clay props; 128–256 for crisp detail. (Past ~256 dense gets prohibitive —
@@ -106,6 +110,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// can A/B it against the dense path; the result should be visually identical. (Built by SdfFieldGpu's
 	/// classify→alloc→fill passes.)</summary>
 	[Property, Group( "Distance Field" )] public bool SparseField { get; set; }
+
+	/// <summary>Global diagnostic kill switch for the sparse classify/allocate/fill path.</summary>
+	[ConVar( "mimiclay_sdf_sparse_field" )]
+	public static bool SparseFieldEnabled { get; set; } = true;
+
+	bool EffectiveUseFieldCache => UseFieldCache && FieldCacheEnabled;
+	bool EffectiveSparseField => SparseField && SparseFieldEnabled;
 
 	/// <summary>Runtime override (NOT authored — a [Property] would leak into network spawn snapshots): scales
 	/// <see cref="FieldResolution"/> for this prop's field bakes. Set below 1 by <see cref="SdfNetworkSync"/> on
@@ -738,7 +749,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// Rebuild geometry + packed brush data only when the brushes / transform change. UseFieldCache is in
 		// here because the proxy's padding (liveBounds below) depends on it — toggling it used to leave a
 		// stale proxy until the next brush edit.
-		int hash = HashCode.Combine( Hash( brushes ), tx.Position, tx.Rotation, Material, TightBounds, UseFieldCache );
+		int hash = HashCode.Combine( Hash( brushes ), tx.Position, tx.Rotation, Material, TightBounds, EffectiveUseFieldCache );
 		if ( hash != _lastHash || !_so.IsValid() || _forceRepack )
 		{
 			// Bounds computed in the object's LOCAL frame, so the proxy can be ORIENTED to the object
@@ -765,7 +776,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				// bounds and clamps at the edge). So when a live field is active, grow the proxy to cover it.
 				var pmins = lmins;
 				var pmaxs = lmaxs;
-				bool liveBounds = UseFieldCache; // the GPU field is padded by BlendPad, so grow the proxy to enclose it
+				bool liveBounds = EffectiveUseFieldCache; // the GPU field is padded by BlendPad, so grow the proxy to enclose it
 				if ( liveBounds )
 				{
 					pmins -= SdfFieldGpu.BlendPad;
@@ -938,7 +949,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			}
 		}
 		_fieldReady = false;
-		if ( UseFieldCache && _curCount > 0 && _curRadius > 0.01f )
+		if ( EffectiveUseFieldCache && _curCount > 0 && _curRadius > 0.01f )
 		{
 			_fieldGpu ??= new SdfFieldGpu();
 			// Re-dispatch when anything the build depends on changes: the brushes, the resolution (including its
@@ -946,11 +957,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			// Folding the field parameters into the hash means tweaking them in the inspector updates the field
 			// live, instead of only when a brush is moved.
 			int res = EffectiveFieldResolution;
-			int fieldHash = HashCode.Combine( Hash( brushes ), res, SparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
+			int fieldHash = HashCode.Combine( Hash( brushes ), res, EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
 			if ( (fieldHash != _lastFieldHash || !_fieldGpu.IsValid)
 				&& (!_fieldGpu.IsValid || _sinceFieldDispatch >= FieldRebakeInterval) )
 			{
-				if ( _fieldGpu.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, SparseField,
+				if ( _fieldGpu.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, EffectiveSparseField,
 					bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter ) )
 				{
 					_lastFieldHash = fieldHash;
@@ -977,7 +988,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 					_so.Attributes.Set( "BrickDims", _fieldGpu.BrickDims );
 					_so.Attributes.Set( "AtlasDims", _fieldGpu.AtlasDims );
 				}
-				_so.Attributes.Set( "SdfSparse", SparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
+				_so.Attributes.Set( "SdfSparse", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 
 				_fieldReady = true;
 			}
@@ -998,7 +1009,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// FieldCacheOnly: suppress the analytic march entirely. When the field path is active but nothing's
 		// ready yet (first build in flight), hide the surface this frame rather than revealing the brush loop —
 		// applied as the last word on visibility in OnUpdate/UpdateDistanceSwitch.
-		_fieldOnlyHidden = FieldCacheOnly && UseFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
+		_fieldOnlyHidden = FieldCacheOnly && EffectiveUseFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
 
 		if ( DebugLiveField )
 		{
@@ -1318,7 +1329,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			a.Set( $"BrickDims{slot}", _fieldGpu.BrickDims );
 			a.Set( $"AtlasDims{slot}", _fieldGpu.AtlasDims );
 		}
-		a.Set( $"SdfSparse{slot}", SparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
+		a.Set( $"SdfSparse{slot}", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 	}
 
 	// The repack / field-dispatch change hash. Built on the ONE canonical per-brush hash (SdfBrush.HashInto) —

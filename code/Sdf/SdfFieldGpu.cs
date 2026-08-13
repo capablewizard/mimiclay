@@ -83,7 +83,6 @@ public sealed class SdfFieldGpu
 	public Texture Atlas { get; private set; }
 	public Texture IndirectionTex { get; private set; } // brick -> tile (R32F, -1 = empty); a TEXTURE not a buffer
 	GpuBuffer _counter;                                  // because structured buffers don't bind to a material PS
-	GpuBuffer _tileToBrick; int _tileToBrickCount;       // reverse map tile→brick, so the fill runs one thread per voxel
 	ComputeShader _allocCs, _fillCs;
 	int _indBx, _indBy, _indBz, _atlasX, _atlasY, _atlasZ;
 
@@ -259,13 +258,6 @@ public sealed class SdfFieldGpu
 		int ax = TilesX * TileSize, ay = TilesY * TileSize, az = tilesZ * TileSize;
 
 		_counter ??= new GpuBuffer( 1, 4, GpuBuffer.UsageFlags.Structured, "sdf_brick_counter" );
-		if ( _tileToBrick is null || _tileToBrickCount != maxTiles )
-		{
-			// Reverse map tile→brick: lets the fill run one thread per tile-voxel (the alloc writes it on claim).
-			_tileToBrick?.Dispose();
-			_tileToBrick = new GpuBuffer( maxTiles, 4, GpuBuffer.UsageFlags.Structured, "sdf_tile_to_brick" );
-			_tileToBrickCount = maxTiles;
-		}
 		if ( !IndirectionTex.IsValid() || _indBx != _bx || _indBy != _by || _indBz != _bz )
 		{
 			// 2D (NOT a volume): a second user volume texture bound to the material PS aliases the dense field
@@ -293,7 +285,6 @@ public sealed class SdfFieldGpu
 		_allocCs.Attributes.Set( "Occupancy", Occupancy );
 		_allocCs.Attributes.Set( "IndirectionTex", IndirectionTex );
 		_allocCs.Attributes.Set( "Counter", _counter );
-		_allocCs.Attributes.Set( "TileToBrick", _tileToBrick );
 		_allocCs.Attributes.Set( "BrickDims", BrickDims );
 		_allocCs.Attributes.Set( "MaxTiles", maxTiles );
 		_allocCs.Dispatch( _bx, _by, _bz );
@@ -301,16 +292,14 @@ public sealed class SdfFieldGpu
 		_fillCs ??= new ComputeShader( "sdf_atlas_fill_cs" );
 		if ( _fillCs is null )
 			return;
-		// Direct eval, one thread per tile-voxel (no dense field read). The reverse map + GPU tile counter let the fill
-		// dispatch over (maxTiles × TileSize³) threads and process only allocated tiles — saturating the GPU instead of
-		// ~10K threads each running a 9³ serial loop.
+		// Direct eval, one thread per brick-voxel (no dense field read). Read the compact tile from indirection rather
+		// than carrying the atomic counter + reverse map into another dispatch; stale buffer mappings corrupted AMD.
 		_fillCs.Attributes.Set( "BrushData", _brushTex );
 		_fillCs.Attributes.Set( "SplineData", _splineTex );
 		_fillCs.Attributes.Set( "TextSdf", _textAtlas.Texture );
 		_fillCs.Attributes.Set( "BrushCount", _brushCount );
 		_fillCs.Attributes.Set( "SdfCull", 1 ); // near-surface evals — cull far brushes (exact + much cheaper)
-		_fillCs.Attributes.Set( "Counter", _counter );
-		_fillCs.Attributes.Set( "TileToBrick", _tileToBrick );
+		_fillCs.Attributes.Set( "IndirectionTex", IndirectionTex );
 		_fillCs.Attributes.Set( "Atlas", Atlas );
 		_fillCs.Attributes.Set( "FieldMin", Mins );
 		_fillCs.Attributes.Set( "FieldMax", Maxs );
@@ -320,8 +309,9 @@ public sealed class SdfFieldGpu
 		_fillCs.Attributes.Set( "TileSize", TileSize );
 		_fillCs.Attributes.Set( "TilesX", TilesX );
 		_fillCs.Attributes.Set( "TilesY", TilesY );
+		_fillCs.Attributes.Set( "MaxTiles", maxTiles );
 		SetDisplacement( _fillCs ); // atlas tiles bake the same displaced union as the dense/guide field
-		_fillCs.Dispatch( maxTiles, TileSize * TileSize * TileSize, 1 ); // x=tile, y=voxel-in-tile
+		_fillCs.Dispatch( _bx * _by, TileSize * TileSize * TileSize, _bz ); // x=brick XY, y=voxel, z=brick Z
 	}
 
 	// The SdfDistBaked inputs (shared sdf_eval.hlsl) for a field-writing dispatch.

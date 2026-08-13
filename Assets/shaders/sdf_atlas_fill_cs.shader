@@ -1,10 +1,9 @@
 //=========================================================================================================================
-// Atlas fill (compute), DIRECT EVAL, ONE THREAD PER TILE-VOXEL. Dispatched over (maxTiles × TileSize³) threads: x = tile,
-// y = voxel-within-tile. Each thread evaluates the SDF (shared sdf_eval.hlsl) at its single voxel and writes it — so the
-// GPU stays saturated like the dense field eval, instead of ~10K threads each grinding a 9³ serial loop. The tile→brick
-// reverse map (from the allocator) gives each tile its brick; the GPU tile counter bounds the work to allocated tiles
-// only. No dense field is read, so the full dense volume is never required. Tiles hold TileSize = Block+1 samples per
-// axis (the inclusive far corner shared with the neighbour brick) so trilinear is correct up to the brick boundary.
+// Atlas fill (compute), DIRECT EVAL, ONE THREAD PER BRICK-VOXEL. Dispatched over (brick count × TileSize³) threads:
+// x = brick, y = voxel-within-tile. The allocator's indirection texture supplies the compact tile index. Reading that
+// texture directly avoids carrying an atomic counter and reverse-map buffer across dispatches, which produced stale
+// mappings on some drivers. Empty and overflow bricks return before evaluating the SDF. Tiles hold TileSize = Block+1
+// samples per axis (the inclusive far corner shared with the neighbour brick) so trilinear is correct at boundaries.
 //=========================================================================================================================
 MODES
 {
@@ -16,8 +15,7 @@ CS
 	#include "system.fxc"
 	#include "sdf_eval.hlsl"
 
-	RWStructuredBuffer<uint> g_Counter     < Attribute( "Counter" ); >;      // [0] = allocated tile count (read-only here)
-	RWStructuredBuffer<uint> g_TileToBrick < Attribute( "TileToBrick" ); >;  // tile -> brick linear index (read-only here)
+	Texture2D<float>         g_tIndirection < Attribute( "IndirectionTex" ); >; // brick -> compact tile index
 	RWTexture3D<float>       g_tAtlas      < Attribute( "Atlas" ); >;
 
 	float3 g_vBrickDims < Attribute( "BrickDims" ); >;
@@ -28,20 +26,25 @@ CS
 	int    g_nTileSize  < Attribute( "TileSize" ); >;
 	int    g_nTilesX    < Attribute( "TilesX" ); >;
 	int    g_nTilesY    < Attribute( "TilesY" ); >;
+	int    g_nMaxTiles  < Attribute( "MaxTiles" ); >;
 
 	[numthreads( 8, 8, 1 )]
 	void MainCs( uint3 id : SV_DispatchThreadID )
 	{
-		uint tile = id.x;
+		uint brickXY = id.x;
 		uint vlin = id.y;
 		uint ts   = (uint)g_nTileSize;
-		if ( tile >= g_Counter[0] || vlin >= ts * ts * ts )
-			return; // past the allocated tiles, or padding threads from the numthreads round-up
+		int3 bd = (int3)( g_vBrickDims + 0.5 );
+		uint brickPlane = (uint)( bd.x * bd.y );
+		if ( brickXY >= brickPlane || id.z >= (uint)bd.z || vlin >= ts * ts * ts )
+			return; // past the bricks, or padding threads from the numthreads round-up
 
-		// Reverse map tile -> brick, then unflatten both the brick index and the voxel-within-tile.
-		uint  brickLin = g_TileToBrick[tile];
-		int3  bd    = (int3)( g_vBrickDims + 0.5 );
-		int3  brick = int3( brickLin % (uint)bd.x, ( brickLin / (uint)bd.x ) % (uint)bd.y, brickLin / (uint)( bd.x * bd.y ) );
+		uint brickLin = brickXY + brickPlane * id.z;
+		int3 brick = int3( brickLin % (uint)bd.x, ( brickLin / (uint)bd.x ) % (uint)bd.y, brickLin / (uint)( bd.x * bd.y ) );
+		float ind = g_tIndirection.Load( int3( brick.x, brick.y + bd.y * brick.z, 0 ) ).r;
+		if ( !(ind >= 0.0 && ind < (float)g_nMaxTiles) )
+			return;
+		uint tile = (uint)( ind + 0.5 );
 		int3  voxel = int3( vlin % ts, ( vlin / ts ) % ts, vlin / ( ts * ts ) );
 
 		int3   dims = (int3)( g_vFieldDims + 0.5 );

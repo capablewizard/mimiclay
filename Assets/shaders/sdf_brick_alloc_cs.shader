@@ -1,7 +1,6 @@
 //=========================================================================================================================
 // Brick tile allocator (compute). One thread per brick: if the brick holds surface, claim the next free atlas tile via
-// an atomic counter, write its index into the 2D indirection map AND record the reverse map tile→brick (so the fill can
-// run one thread per tile-voxel instead of one serial thread per brick). Empty/overflow bricks write -1. The counter
+// an atomic counter and write its index into the 2D indirection map. Empty/overflow bricks write -1. The counter
 // must be reset to 0 before each dispatch (SdfFieldGpu does this), and its final value is the allocated tile count.
 //=========================================================================================================================
 MODES
@@ -16,7 +15,6 @@ CS
 	Texture3D<float>         g_tOccupancy   < Attribute( "Occupancy" ); >;      // 1 = surface brick
 	RWTexture2D<float>       g_tIndirection < Attribute( "IndirectionTex" ); >; // brick -> tile index (float), or -1
 	RWStructuredBuffer<uint> g_Counter      < Attribute( "Counter" ); >;        // [0] atomic tile counter (reset each frame)
-	RWStructuredBuffer<uint> g_TileToBrick  < Attribute( "TileToBrick" ); >;    // tile -> brick linear index (reverse map)
 
 	float3 g_vBrickDims < Attribute( "BrickDims" ); >;
 	int    g_nMaxTiles  < Attribute( "MaxTiles" ); >;
@@ -38,7 +36,6 @@ CS
 			if ( tile < (uint)g_nMaxTiles )
 			{
 				g_tIndirection[ic] = (float)tile;
-				g_TileToBrick[tile] = (uint)( bid.x + bd.x * ( bid.y + bd.y * bid.z ) ); // reverse map for the fill
 			}
 			else
 			{

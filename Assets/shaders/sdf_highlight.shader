@@ -217,7 +217,8 @@ PS
 				if ( !( any( brick < 0 ) || any( brick >= bd ) ) )
 				{
 					float ind = indirection.Load( int3( brick.x, brick.y + bd.y * brick.z, 0 ) ).r;
-					if ( ind >= 0.0 )
+					float maxTiles = (adims.x / SDF_TILESIZE) * (adims.y / SDF_TILESIZE) * (adims.z / SDF_TILESIZE);
+					if ( ind >= 0.0 && ind < maxTiles )
 					{
 						float3 vit = fv - (float3)brick * SDF_BLOCK;
 						uint   tile = (uint)( ind + 0.5 );
