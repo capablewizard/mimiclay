@@ -98,9 +98,34 @@ public static class SculptLibrary
 		if ( !FileSystem.Data.FileExists( path ) )
 			return null;
 
+		string json;
 		try
 		{
-			var entry = Json.Deserialize<Entry>( FileSystem.Data.ReadAllText( path ) );
+			json = FileSystem.Data.ReadAllText( path );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"SculptLibrary: failed to load '{name}' — {e.Message}" );
+			return null;
+		}
+
+		var entry = EntryFromJson( json, name );
+		if ( entry is null )
+			return null;
+
+		entry.Name ??= name;
+		return entry;
+	}
+
+	/// <summary>Parse a serialized <see cref="Entry"/> with the same validation <see cref="Load"/> applies —
+	/// null (never a throw) on corrupt, empty or over-cap data. Shared with <see cref="SculptSceneLibrary"/>,
+	/// whose scene-save folders hold the same files under a different root. <paramref name="context"/> is only
+	/// for the warning log (which file was bad).</summary>
+	public static Entry EntryFromJson( string json, string context )
+	{
+		try
+		{
+			var entry = Json.Deserialize<Entry>( json );
 			if ( entry?.Brushes is not { Count: > 0 } )
 				return null;
 
@@ -108,16 +133,15 @@ public static class SculptLibrary
 			// hand-grown list can't blow past what the packer/raymarcher handle. Treated as corrupt, not truncated.
 			if ( entry.Brushes.Count > SdfBrushPacker.MaxBrushes )
 			{
-				Log.Warning( $"SculptLibrary: '{name}' has {entry.Brushes.Count} brushes (cap {SdfBrushPacker.MaxBrushes}) — ignoring it." );
+				Log.Warning( $"SculptLibrary: '{context}' has {entry.Brushes.Count} brushes (cap {SdfBrushPacker.MaxBrushes}) — ignoring it." );
 				return null;
 			}
 
-			entry.Name ??= name;
 			return entry;
 		}
 		catch ( Exception e )
 		{
-			Log.Warning( $"SculptLibrary: failed to load '{name}' — {e.Message}" );
+			Log.Warning( $"SculptLibrary: failed to load '{context}' — {e.Message}" );
 			return null;
 		}
 	}
@@ -177,10 +201,11 @@ public static class SculptLibrary
 			: file;
 	}
 
-	// Map a free-text name to a safe file stem: keep letters/digits/space/-/_; fold anything else to '_'. Two
-	// names that sanitize the same share a file (last write wins) — fine for a first-cut local library; the
-	// original text is preserved inside the JSON's Name field for display.
-	static string Sanitize( string name )
+	/// <summary>Map a free-text name to a safe file stem: keep letters/digits/space/-/_; fold anything else to
+	/// '_'. Two names that sanitize the same share a file (last write wins) — fine for a first-cut local
+	/// library; the original text is preserved inside the JSON's Name field for display. Public because
+	/// <see cref="SculptSceneLibrary"/> names its save FOLDERS by the same rule.</summary>
+	public static string Sanitize( string name )
 	{
 		if ( string.IsNullOrWhiteSpace( name ) )
 			return "unnamed";

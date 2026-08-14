@@ -77,15 +77,25 @@ public static class SdfPrefabUtility
 			return null;
 		}
 
-		if ( !Export( entry.Name ?? saveName, entry.Brushes, entry.Resolution, entry.FlipFaces ) )
+		return ExportAsset( entry.Name ?? saveName, entry.Brushes, entry.Resolution, entry.FlipFaces );
+	}
+
+	/// <summary>Export a shape to a prefab and hand back the registered <see cref="Asset"/>. Null on failure.
+	/// <paramref name="outputRelDir"/> overrides where it lands (assets-relative segments) — scene-save exports
+	/// group their prefabs per scene under <c>prefabs/saved/scenes/&lt;scene&gt;/</c>; default is the flat
+	/// <c>prefabs/saved/</c>.</summary>
+	public static Asset ExportAsset( string name, List<SdfBrush> brushes, int resolution, bool flip, string[] outputRelDir = null )
+	{
+		if ( !Export( name, brushes, resolution, flip, outputRelDir ) )
 			return null;
 
-		return AssetSystem.FindByPath( $"prefabs/saved/{SanitizeName( entry.Name ?? saveName )}.prefab" );
+		return AssetSystem.FindByPath( $"{string.Join( '/', outputRelDir ?? OutputRelDir )}/{SanitizeName( name )}.prefab" );
 	}
 
 	/// <summary>Core writer: clone the template prefab, swap in the given shape, write it under
-	/// <c>prefabs/saved/&lt;name&gt;.prefab</c> and register it so the editor imports it.</summary>
-	public static bool Export( string name, List<SdfBrush> brushes, int resolution, bool flip )
+	/// <c>&lt;outputRelDir&gt;/&lt;name&gt;.prefab</c> (default <c>prefabs/saved/</c>) and register it so the
+	/// editor imports it.</summary>
+	public static bool Export( string name, List<SdfBrush> brushes, int resolution, bool flip, string[] outputRelDir = null )
 	{
 		if ( brushes is not { Count: > 0 } )
 			return false;
@@ -147,7 +157,7 @@ public static class SdfPrefabUtility
 		// Fresh GUIDs so this prefab is a standalone asset, not one that aliases the template's object identities.
 		RemapGuids( root );
 
-		var dir = Path.Combine( assets, Path.Combine( OutputRelDir ) );
+		var dir = Path.Combine( assets, Path.Combine( outputRelDir ?? OutputRelDir ) );
 		Directory.CreateDirectory( dir );
 		var absPath = Path.Combine( dir, safe + ".prefab" );
 
@@ -224,7 +234,7 @@ public static class SdfPrefabUtility
 		}
 	}
 
-	static string SanitizeName( string name )
+	internal static string SanitizeName( string name )
 	{
 		if ( string.IsNullOrWhiteSpace( name ) )
 			return "sdf_prop";
