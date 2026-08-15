@@ -40,6 +40,11 @@ public sealed class RoundManagerSpawner : Component
 	/// has never failed).</summary>
 	[Property, Group( "Scenes" )] public SceneFile LobbyScene { get; set; }
 
+	/// <summary>Creative only: how close a hunter must be for clay to outline and offer "E to Edit" — measured
+	/// from the eye to the surface the crosshair lands on. Widen it for open maps where props sit far apart; see
+	/// <see cref="CreativeManager.HoverRange"/>, which this authors.</summary>
+	[Property, Group( "Creative" ), Range( 64f, 4096f )] public float CreativeHoverRange { get; set; } = 300f;
+
 	[Property, Group( "Scoring" )] public int FindReward { get; set; } = 50;
 	[Property, Group( "Scoring" )] public float PropPointsPerSecond { get; set; } = 1f;
 
@@ -176,7 +181,10 @@ public sealed class RoundManagerSpawner : Component
 			if ( !CreativeManager.Current.IsValid() )
 			{
 				var go = new GameObject( true, "Creative Manager" );
-				go.Components.Create<CreativeManager>(); // pawn prefabs are read live off this spawner, like RoundManager's
+				var cm = go.Components.Create<CreativeManager>(); // pawn prefabs are read live off this spawner, like RoundManager's
+				// Set BEFORE NetworkSpawn: the spawn snapshot ships this component's live JSON, so the host's
+				// authored reach is the reach every client's hover uses — a client's own scene copy never applies.
+				cm.HoverRange = CreativeHoverRange;
 				go.NetworkSpawn();
 			}
 

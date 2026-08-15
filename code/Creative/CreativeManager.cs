@@ -32,6 +32,19 @@ public sealed class CreativeManager : Component, IRoundContext
 	/// hover detection read this to know creative rules apply.</summary>
 	public static CreativeManager Current { get; private set; }
 
+	/// <summary>How far a hunter can reach to hover (and so claim) clay, measured from the eye to the point the
+	/// crosshair ray lands on — NOT to the prop's origin, so a big prop is reachable by its near face. The gun's
+	/// own ray is map-length (4096u); without this bound every distant prop across the room outlines and offers
+	/// "E to Edit", which reads as noise and lets you claim things you can't see properly. Instance property
+	/// rather than a const so a map can widen it for open spaces.</summary>
+	[Property, Group( "Creative" ), Range( 64f, 4096f )]
+	public float HoverRange { get; set; } = 300f;
+
+	/// <summary>The reach the host validates a claim against, in origin-to-origin terms. Slack over
+	/// <see cref="HoverRange"/> on two counts: the client measured to a SURFACE, and the origin of a large prop
+	/// can sit well behind it; plus the usual latency margin the shot validation uses.</summary>
+	float PossessRange => HoverRange * 1.25f + 256f;
+
 	/// <summary>The claimable clay the LOCAL hunter is currently aiming at, published per-frame by
 	/// <see cref="HunterController"/> via <see cref="SetLocalHover"/>. Read through
 	/// <see cref="LocalHoverSculpture"/>, which is freshness-gated: the publisher can vanish mid-hover (the
@@ -116,10 +129,6 @@ public sealed class CreativeManager : Component, IRoundContext
 	// boundary, so re-enforce a sane rate at it rather than trusting the client's own key repeat.
 	const float PossessCooldown = 0.3f;
 	readonly Dictionary<Guid, RealTimeUntil> _possessGate = new();
-
-	// How far a hunter can claim a prop from. Generous — the hover raycast is the gun's 4096u ray — but bounded,
-	// with the same latency slack the shot validation uses.
-	const float PossessRange = 4096f;
 
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
@@ -378,7 +387,7 @@ public sealed class CreativeManager : Component, IRoundContext
 			return;
 		_possessGate[c.Id] = PossessCooldown;
 
-		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange * 1.25f )
+		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange )
 			return;
 
 		// A released pawn prop: claim it as-is. The registry Remove is the idempotency guard — it succeeds for

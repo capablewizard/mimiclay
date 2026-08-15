@@ -652,7 +652,10 @@ public sealed class HunterController : Component
 		SdfSculpture hover = null;
 		if ( !_altOrbiting && _aimDir.LengthSquared > 0.5f )
 		{
-			var tr = TraceShot( eye, _aimDir );
+			// The gun's ray, cut to arm's reach (CreativeManager.HoverRange): shortening the ray rather than
+			// range-testing its hit keeps occlusion for free — whatever is first along it still blocks — and
+			// means a prop only lights up once you're actually close enough for E to be granted.
+			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, creative.HoverRange ) );
 			var sculpture = tr.Hit ? FindSculpture( tr.GameObject ) : null;
 			if ( CreativeManager.IsClaimable( sculpture ) )
 				hover = sculpture;
@@ -2306,8 +2309,8 @@ public sealed class HunterController : Component
 	// contactless, bullet-visible only), so without it a shot could never land on a face. The WithoutTags guard
 	// keeps actual volume triggers bullet-transparent — any map trigger volume must carry the "trigger" (or
 	// "water") tag or it will eat shots.
-	SceneTraceResult TraceShot( Vector3 from, Vector3 dir ) => Scene.Trace
-		.Ray( from, from + dir * Range )
+	SceneTraceResult TraceShot( Vector3 from, Vector3 dir, float? range = null ) => Scene.Trace
+		.Ray( from, from + dir * (range ?? Range) )
 		.IgnoreGameObjectHierarchy( GameObject )
 		.HitTriggers()
 		.WithoutTags( "trigger", "water" )
