@@ -45,9 +45,9 @@
 
 	@* Persistent control hints (top-right) for the sculpt toy's navigation — shown on every page, like the version tag. *@
 	<div class="menu-controls">
-		<div>Middle-drag · Rotate</div>
-		<div>Alt + Right-drag · Zoom</div>
-		<div>Alt + Middle-drag · Pan</div>
+		<div>Left-drag · Rotate</div>
+		<div>Right-drag · Zoom</div>
+		<div>Middle-drag · Pan</div>
 	</div>
 
 	@* Persistent build tag — lives here (not on a page) so it stays bottom-right through every navigation. *@
@@ -59,9 +59,10 @@
 	/// <summary>Live navigator instance, so any page can read/drive the current route via the static.</summary>
 	public static MainMenuNav Instance { get; private set; }
 
-	// While Alt is held the sculpt toy is being navigated (orbit/zoom/pan): the cursor is hidden + driven by the
-	// nav, so the whole menu goes inert (its buttons drop pointer-events, see _menu.scss / _button.scss) — exactly
-	// as EditHud does — so the drifting cursor can't hover/click them and the drag falls through to the scene.
+	// While the sculpt toy is being navigated (a claimed rotate/zoom/pan drag, or alt held): the cursor is hidden +
+	// driven by the nav, so the whole menu goes inert (its buttons drop pointer-events, see _menu.scss /
+	// _button.scss) — exactly as EditHud does — so the drifting cursor can't hover/click them and the drag falls
+	// through to the scene.
 	string RootClass => AltNav.Held ? "menu-bg nav-inert" : "menu-bg";
 
 	// The landing page is the root route; there's nowhere to go "back" to, so the footer offers Quit instead.

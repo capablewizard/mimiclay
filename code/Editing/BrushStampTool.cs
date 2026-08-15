@@ -8,8 +8,9 @@ namespace Mimiclay;
 /// so the raymarcher/field/blend all show exactly what a commit will produce. The operation comes from the
 /// HUD's Add/Carve toggle (the A key flips it); left-release commits the stamp, and a fresh ghost
 /// (inheriting the committed material/params) spawns immediately so stamping flows: place, click, place,
-/// click. Right-click is the shared scrub button: an RMB DRAG scrubs scale, an RMB TAP steps back out of
-/// placing (see <see cref="BrushScrub.ScaleTapped"/>).
+/// click. R + mouse movement scrubs scale (the same hold-key pattern as the rest of the edit row); a
+/// right-click TAP steps back out of placing (<see cref="AltNav.RmbTapped"/> — a right DRAG is the camera
+/// zoom).
 ///
 /// Placement is physgun-style — ONE depth mechanism, no surface glue: the ghost's depth lives on a
 /// WORLD-space anchor point (cursor steering slides it in the camera-parallel plane through that point, so
@@ -354,7 +355,7 @@ public sealed class BrushStampTool
 		_lastCamRot = cam.WorldRotation;
 		_camSeen = true;
 
-		// Hold param scrubs (A blend / S round / RMB scale / MMB rotate) — placement freezes while one runs
+		// Hold param scrubs (S blend / D round / F wildcard / E rotate / R scale) — placement freezes while one runs
 		// so the mouse motion drives the parameter, not the position. Ghost scrubs never commit (the stamp
 		// itself is the commit), so the end signal is ignored. The ghost is already in the brush list, so
 		// BlendInert locks its blend scrub exactly when it would land as the first additive brush.
@@ -455,19 +456,19 @@ public sealed class BrushStampTool
 				}
 			}
 
-			// A right-click TAP (as opposed to an RMB scale DRAG — see BrushScrub.ScaleTapped) steps back
-			// out of placing: it finishes a spline chain, or drops the pending stamp and returns to gizmo
-			// mode. Enter and Space finish a chain too (the session's Space toggle stands down while a
-			// spline stamp is active — see its addKey gate) — manual edge detection on Down, since
-			// Keyboard.Pressed doesn't fire reliably here (an unknown key name resolves to invalid/false,
-			// never throws).
+			// A right-click TAP (a zoom claim that released without travel — see AltNav.RmbTapped; a right
+			// DRAG is the camera zoom now) steps back out of placing: it finishes a spline chain, or drops
+			// the pending stamp and returns to gizmo mode. Enter and Space finish a chain too (the session's
+			// Space toggle stands down while a spline stamp is active — see its addKey gate) — manual edge
+			// detection on Down, since Keyboard.Pressed doesn't fire reliably here (an unknown key name
+			// resolves to invalid/false, never throws).
 			bool enter = Sandbox.UI.InputFocus.Current is null
 				&& (Input.Keyboard.Down( "enter" ) || Input.Keyboard.Down( "return" )
 					|| Input.Keyboard.Down( "space" ));
 			bool enterTap = enter && !_enterWas;
 			_enterWas = enter;
 
-			if ( !committed && (BrushScrub.ScaleTapped || enterTap) )
+			if ( !committed && (AltNav.RmbTapped || enterTap) )
 			{
 				if ( Shape == SdfShape.Spline )
 				{
@@ -476,7 +477,7 @@ public sealed class BrushStampTool
 					if ( !committed )
 						Abandon = true; // too short to be a curve — the caller strips the ghost
 				}
-				else if ( BrushScrub.ScaleTapped )
+				else if ( AltNav.RmbTapped )
 				{
 					Abandon = true; // plain right-click = done placing
 				}
@@ -663,14 +664,17 @@ public enum ScrubKind
 	Wildcard, // the per-shape third slider: slice / profile / spline size
 	Scale,
 	Rotate,
+	Move, // screen-space grab (W) — edit mode only; the stamp ghost already rides the cursor
 }
 
 /// <summary>
 /// Hold parameter scrubbing, Blender-modal-style: hold S / D / F (the slider stack in order — blend, round,
 /// then the per-shape wildcard: slice, profile, spline size; A ahead of them TAPS add/carve, so the whole
-/// edit row sits on A-S-D-F), RIGHT CLICK (uniform scale) or E (free rotate) and move the mouse. Shift held
-/// snaps the rotate to the shared <see cref="SculptEditSession.SnapDeg"/> grid. Shared by BOTH tools — the
-/// stamp ghost in add mode and the selected brush in edit mode — so the whole scheme is learned once. One
+/// edit row sits on A-S-D-F), W (screen-space move), R (uniform scale) or E (free rotate) and move the
+/// mouse. Shift held snaps the rotate to the shared <see cref="SculptEditSession.SnapDeg"/> grid and the
+/// move to the <see cref="SculptEditSession.GridStep"/> grid. Shared by BOTH tools — the stamp ghost in add
+/// mode and the selected brush in edit mode — so the whole scheme is learned once (W is the exception: the
+/// caller enables it per-tool, and the stamp leaves it off — its ghost already rides the cursor). One
 /// scrub runs at a time, game-wide (static), matching the one-cursor reality; the HUD reads
 /// <see cref="Active"/>/<see cref="Anchor"/> to capture the mouse and draw the frozen-cursor dot.
 /// </summary>
@@ -683,16 +687,8 @@ public static class BrushScrub
 	/// mouse is captured.</summary>
 	public static Vector2 Anchor { get; private set; }
 
-	/// <summary>True on the frame a SCALE scrub ended without the mouse really moving — a right-click TAP
-	/// rather than a drag. Both tools use it as the "step back" gesture: leave sculpt mode / finish a
-	/// spline chain / deselect. Living here keeps one definition of tap-vs-drag for the shared button.</summary>
-	public static bool ScaleTapped { get; private set; }
-
-	static float _travel; // mouse movement accumulated during the running scrub
-	const float TapTravelPx = 6f;
-
 	// Manual edge detection (Input.Keyboard exposes Down only).
-	static bool _blendWas, _roundWas, _wildWas, _scaleWas, _rotWas;
+	static bool _blendWas, _roundWas, _wildWas, _moveWas, _scaleWas, _rotWas;
 
 	// The rotate scrub's continuous (unsnapped) orientation, sculpture-local. The mouse always drives THIS;
 	// shift only changes what gets applied to the brush (the grid-snapped version of it).
@@ -721,27 +717,30 @@ public static class BrushScrub
 	/// frame a scrub's key is released (edit mode commits there). Passing a null brush or allow=false ends
 	/// any running scrub without changes. <paramref name="blendLocked"/> parks the S/blend scrub (the first
 	/// additive brush's blend is a field no-op — see <see cref="Sdf.BlendInert"/> — and the HUD greys its
-	/// slider; the key hold must respect the same lock).</summary>
+	/// slider; the key hold must respect the same lock). <paramref name="allowMove"/> enables the W
+	/// screen-space move — the edit session turns it on; the stamp leaves it off (its ghost already rides
+	/// the cursor, so a move scrub there would just be a worse version of placement).</summary>
 	public static bool Update( SdfBrush b, Transform sculptTx, CameraComponent cam, bool allow, out bool ended,
-		bool blendLocked = false )
+		bool blendLocked = false, bool allowMove = false )
 	{
 		ended = false;
-		ScaleTapped = false; // one-frame signal; cleared before every early-out below
 
 		// A focused text field (the Text brush's entry) owns the keyboard — typing must never scrub.
 		// S/D/F scrub the slider stack in order: blend, round (curve on a spline), then the per-shape
 		// wildcard (slice / profile / spline size) — A ahead of them taps add/carve, so the whole edit row
-		// sits on A-S-D-F. E rotates (gmod-style); scale rides RIGHT CLICK (without alt — alt+RMB is the
-		// camera dolly).
+		// sits on A-S-D-F. W moves (screen space), R scales, E rotates (gmod-style) — keyboard holds like
+		// the rest of the row; the right mouse button belongs to the CAMERA now (zoom drag, step-back tap
+		// via AltNav.RmbTapped).
 		bool typing = Sandbox.UI.InputFocus.Current is not null;
 		bool blendKey = !typing && Input.Keyboard.Down( "s" );
 		bool roundKey = !typing && Input.Keyboard.Down( "d" );
 		bool wildKey = !typing && Input.Keyboard.Down( "f" );
-		bool scale = Input.Down( "Attack2" ) && !Input.Down( "Walk" );
+		bool moveKey = allowMove && !typing && Input.Keyboard.Down( "w" );
+		bool scale = !typing && Input.Keyboard.Down( "r" );
 		bool rot = !typing && Input.Keyboard.Down( "e" );
 		bool blendP = blendKey && !_blendWas, roundP = roundKey && !_roundWas, wildP = wildKey && !_wildWas,
-			scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
-		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _scaleWas = scale; _rotWas = rot;
+			moveP = moveKey && !_moveWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
+		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _moveWas = moveKey; _scaleWas = scale; _rotWas = rot;
 
 		if ( b is null || cam is null || (!allow && Active == ScrubKind.None) )
 		{
@@ -756,6 +755,7 @@ public static class BrushScrub
 			if ( blendP && !blendLocked ) Begin( ScrubKind.Blend, b );
 			else if ( roundP ) Begin( ScrubKind.Round, b );
 			else if ( wildP ) Begin( ScrubKind.Wildcard, b );
+			else if ( moveP ) Begin( ScrubKind.Move, b );
 			else if ( scaleP ) Begin( ScrubKind.Scale, b );
 			else if ( rotP ) Begin( ScrubKind.Rotate, b );
 		}
@@ -769,21 +769,19 @@ public static class BrushScrub
 			ScrubKind.Blend => blendKey,
 			ScrubKind.Round => roundKey,
 			ScrubKind.Wildcard => wildKey,
+			ScrubKind.Move => moveKey,
 			ScrubKind.Scale => scale,
 			ScrubKind.Rotate => rot,
 			_ => false,
 		};
 		if ( !stillHeld )
 		{
-			// A scale scrub that never really moved was a right-click TAP, not a drag (see ScaleTapped).
-			ScaleTapped = Active == ScrubKind.Scale && _travel < TapTravelPx;
 			Active = ScrubKind.None;
 			ended = true;
 			return false;
 		}
 
 		var delta = Mouse.Delta;
-		_travel += delta.Length;
 		if ( delta.LengthSquared < 0.0001f )
 			return false;
 
@@ -929,16 +927,56 @@ public static class BrushScrub
 				b.Rotation = applied;
 				return true;
 			}
+
+			case ScrubKind.Move:
+			{
+				// Screen-space grab: the shape tracks the captured cursor 1:1 — the mouse delta maps onto the
+				// camera's right/up plane at the shape's own depth (world-per-pixel × distance, recomputed as
+				// it moves so the 1:1 lock holds while it travels). The offset accumulates RAW from the grab
+				// snapshot; Shift applies it snapped — a solid's ABSOLUTE position onto the shared grid (like
+				// the gizmo's screen-move and the stamp), a spline's OFFSET onto grid steps instead (points
+				// rounded independently would distort the curve). Releasing Shift returns to the raw drag.
+				bool spline = b.Shape == SdfShape.Spline;
+				if ( spline && (b.Points is not { Count: > 0 } || _splinePts0 is null || b.Points.Count != _splinePts0.Count) )
+					return false;
+
+				var centreLocal = spline ? _splineCentre0 + _moveAccum : b.Position;
+				float dist = (sculptTx.PointToWorld( centreLocal ) - cam.WorldPosition).Length;
+				var worldDelta = (cam.WorldRotation.Right * delta.x - cam.WorldRotation.Up * delta.y)
+					* (dist * WorldPerPixel( cam ));
+				_moveAccum += sculptTx.Rotation.Inverse * worldDelta; // sculpture-local (unit scale, like the picks)
+
+				if ( spline )
+				{
+					var pts = b.Points;
+					var off = SculptEditSession.SnapHeld ? SculptEditSession.SnapPosition( _moveAccum ) : _moveAccum;
+					for ( int i = 0; i < pts.Count; i++ )
+						pts[i] = new Vector4( _splinePts0[i].x + off.x, _splinePts0[i].y + off.y,
+							_splinePts0[i].z + off.z, _splinePts0[i].w );
+					return true;
+				}
+
+				var pos = _movePos0 + _moveAccum;
+				if ( SculptEditSession.SnapHeld )
+					pos = SculptEditSession.SnapPosition( pos );
+				b.Position = pos;
+				return true;
+			}
 		}
 
 		return false;
 	}
 
-	// Whole-spline rotate state: the points as they were when the scrub began, and the curve centre they
-	// turn about. _rawRot holds the accumulated drag delta (from identity) instead of a brush orientation.
+	// Whole-spline rotate/move state: the points as they were when the scrub began, and the curve centre
+	// they turn about. _rawRot holds the accumulated drag delta (from identity) instead of a brush
+	// orientation.
 	static List<Vector4> _splinePts0;
 	static Vector3 _splineCentre0;
 	static Rotation _splineApplied;
+
+	// Move scrub state: position at grab + the accumulated raw (unsnapped) sculpture-local offset.
+	static Vector3 _movePos0;
+	static Vector3 _moveAccum;
 
 	static void Begin( ScrubKind kind, SdfBrush b )
 	{
@@ -946,18 +984,29 @@ public static class BrushScrub
 		Anchor = Mouse.Position;
 		_rawRot = b.Rotation; // rotate scrub: continuous motion accumulates from the brush's current orientation
 		_wildAccum = 0f;
-		_travel = 0f;
+		_movePos0 = b.Position;
+		_moveAccum = Vector3.Zero;
 
 		_splinePts0 = null;
-		if ( kind == ScrubKind.Rotate && b.Shape == SdfShape.Spline && b.Points is { Count: > 0 } pts )
+		if ( (kind == ScrubKind.Rotate || kind == ScrubKind.Move)
+			&& b.Shape == SdfShape.Spline && b.Points is { Count: > 0 } pts )
 		{
-			// A spline rotates its point cloud, not its (inert) Rotation: accumulate a DELTA from identity
-			// and re-derive every frame from this snapshot, so Shift-snapping stays absolute and clean.
+			// A spline rotates/moves its point cloud, not its (inert) transform: accumulate a DELTA from
+			// identity/zero and re-derive every frame from this snapshot, so Shift-snapping stays clean.
 			_rawRot = Rotation.Identity;
 			_splineApplied = Rotation.Identity;
 			_splinePts0 = new List<Vector4>( pts );
 			b.LocalBounds( out var mn, out var mx, includeBlend: false );
 			_splineCentre0 = (mn + mx) * 0.5f;
 		}
+	}
+
+	// World size of one screen pixel at unit distance (same formula as RuntimeBrushGizmo / BrushWireframes).
+	static float WorldPerPixel( CameraComponent cam )
+	{
+		var c = Screen.Size * 0.5f;
+		var r0 = cam.ScreenPixelToRay( c );
+		var r1 = cam.ScreenPixelToRay( c + new Vector2( 0f, 1f ) );
+		return (r1.Forward - r0.Forward).Length;
 	}
 }

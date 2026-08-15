@@ -3,8 +3,10 @@ using System;
 namespace Mimiclay;
 
 /// <summary>
-/// Create-mode orbit camera. Middle-drag orbits around the pivot; Alt+RMB dollies (zoom), and Alt+MMB pans
-/// vertically. Drives the scene's main camera.
+/// Create-mode orbit camera. Left-drag orbits around the pivot (a clean left CLICK stays a select — the drag
+/// only claims after a few px of travel), right-drag dollies (zoom), middle-drag pans vertically — presses
+/// that land on an edit drag-target (HUD, gizmo handle, stamp) go to editing instead, and alt+button always
+/// navigates; see <see cref="AltNav"/> for the claim rules. Drives the scene's main camera.
 ///
 /// Two modes:
 /// <list type="bullet">

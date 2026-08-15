@@ -88,7 +88,7 @@
 				<div class="hint"><span class="key">LMB</span><span>@(Session.ChainWillLoop ? "close loop" : "add point")</span></div>
 				<div class="hint"><span class="key">RMB tap / Space</span><span>finish</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-				<div class="hint"><span class="key">RMB drag</span><span>point size</span></div>
+				<div class="hint"><span class="key">R</span><span>point size</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
 				<div class="hint"><span class="key">A</span><span>add / carve</span></div>
 				<div class="hint"><span class="key">S</span><span>blend</span></div>
@@ -100,7 +100,8 @@
 			{
 				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : "stamp")</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-				<div class="hint"><span class="key">RMB</span><span>drag scale · tap done</span></div>
+				<div class="hint"><span class="key">RMB tap</span><span>done</span></div>
+				<div class="hint"><span class="key">R</span><span>scale</span></div>
 				<div class="hint"><span class="key">E</span><span>rotate</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
 				<div class="hint"><span class="key">A</span><span>add / carve</span></div>
@@ -125,7 +126,9 @@
 				@if ( Session.SelectedBrush is not null )
 				{
 					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-					<div class="hint"><span class="key">RMB</span><span>drag scale · tap deselect</span></div>
+					<div class="hint"><span class="key">RMB tap</span><span>deselect</span></div>
+					<div class="hint"><span class="key">W</span><span>move</span></div>
+					<div class="hint"><span class="key">R</span><span>scale</span></div>
 					<div class="hint"><span class="key">E</span><span>rotate</span></div>
 					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
 					<div class="hint"><span class="key">A</span><span>add / carve</span></div>
@@ -421,7 +424,7 @@
 				   cone) add Slice as a third slider. *@
 				@if ( isSpline && Session.Tool == SculptTool.Sculpt )
 				{
-					@* While PLACING: just smoothness. Each point's size is set as you place it (RMB drag),
+					@* While PLACING: just smoothness. Each point's size is set as you place it (R + move),
 					   and the loop closes itself by snapping to the first point — so the uniform Size
 					   slider and the Loop chip would both fight the flow. *@
 					<ClaySlider Label="Smooth" Value=@curveVal Min=@(0f) Max=@(1f)

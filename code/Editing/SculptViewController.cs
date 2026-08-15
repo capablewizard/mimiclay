@@ -6,9 +6,9 @@ namespace Mimiclay;
 /// Drag navigation for a framed sculpture — the main-menu sculpt toy (and a soft tutorial for the in-game
 /// create-mode navigation):
 /// <list type="bullet">
-/// <item><b>MMB</b> rotates the <see cref="Target"/> in place (yaw + clamped pitch).</item>
-/// <item><b>Alt+RMB</b> zooms by moving the CAMERA along the camera→object line.</item>
-/// <item><b>Alt+MMB</b> pans the CAMERA (vertical).</item>
+/// <item><b>LMB</b> rotates the <see cref="Target"/> in place (yaw + clamped pitch).</item>
+/// <item><b>RMB</b> zooms by moving the CAMERA along the camera→object line.</item>
+/// <item><b>MMB</b> pans the CAMERA (vertical).</item>
 /// </list>
 /// Plus a slow idle turntable when nothing's selected.
 ///
@@ -18,8 +18,9 @@ namespace Mimiclay;
 /// drift it sideways). Rotation still moves the object so the gizmo/brushes follow its transform.
 ///
 /// Input comes from the shared <see cref="AltNav"/> (this is its sole consumer here, so it ticks it); that owns the
-/// cursor dot + the drag/anchor state the HUD reads for its mouse-capture. Conflict-free with editing: the
-/// gizmo + the session's hover/pick stand down while Alt is held. Knows nothing about the SDF system itself.
+/// cursor dot + the drag/anchor state the HUD reads for its mouse-capture. Conflict-free with editing: a press
+/// that lands on the HUD or on an edit target never claims a nav gesture (AltNav's press-edge claims), and the
+/// gizmo + the session's hover/pick stand down while a claimed drag runs. Knows nothing about the SDF system itself.
 /// </summary>
 [Title( "Sculpt View Controller" )]
 [Category( "Mimiclay" )]

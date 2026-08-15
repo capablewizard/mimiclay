@@ -1426,7 +1426,7 @@ public sealed class SculptEditSession : Component
 		// ── Sculpt mode: the stamp ghost owns the frame (no selection / gizmo / hover-pick). ─────────────
 		if ( Tool == SculptTool.Sculpt )
 		{
-			SculptToolUpdate( tx, interactive: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen );
+			SculptToolUpdate( tx, interactive: !overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen );
 			return;
 		}
 
@@ -1453,22 +1453,24 @@ public sealed class SculptEditSession : Component
 				_gizmoBrush = null;
 		}
 
-		// Hold-key param scrubs on the selection — the same A/S/D/E scheme the stamp tool uses, so both
-		// modes share one muscle memory. Continuous changes preview; the key release runs the full commit.
+		// Hold-key param scrubs on the selection — the same A/S/D/F + W/R/E scheme the stamp tool uses, so
+		// both modes share one muscle memory (W move is edit-only — the stamp ghost already rides the
+		// cursor). Continuous changes preview; the key release runs the full commit.
 		// Gated on IsDragging, NOT IsBusy: merely HOVERING a gizmo handle (which covers most of the shape)
-		// must not eat the scrub keys — only an actual handle drag owns the mouse. RightClickConsumed keeps
-		// the RMB-press that just deleted a spline control point from ALSO starting a scale scrub — that
-		// click was the delete, held or not.
+		// must not eat the scrub keys — only an actual handle drag owns the mouse.
 		changed |= BrushScrub.Update( SelectedBrush, tx, Scene.Camera,
-			allow: !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsDragging
-				&& !_gizmo.RightClickConsumed, out bool scrubEnded,
-			blendLocked: Sdf.BlendInert( Target.Brushes, SelectedBrush ) );
+			allow: !overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsDragging,
+			out bool scrubEnded,
+			blendLocked: Sdf.BlendInert( Target.Brushes, SelectedBrush ),
+			allowMove: true );
 		if ( scrubEnded )
 			CommitChanged();
 
-		// A right-click TAP (not a scale drag) clears the selection — the same "step back" gesture that
-		// leaves sculpt mode. Skipped when the gizmo used that click to delete a spline control point.
-		if ( BrushScrub.ScaleTapped && !_gizmo.RightClickConsumed )
+		// A right-click TAP (a zoom claim that released without travel) clears the selection — the same
+		// "step back" gesture that leaves sculpt mode. RightClickConsumed guards the update-order race: if
+		// the gizmo deleted a spline control point with this click before AltNav saw the press, the claim
+		// query's gizmo-hover state may have been a frame stale — that click was the delete, never a tap.
+		if ( AltNav.RmbTapped && !_gizmo.RightClickConsumed )
 			Deselect();
 
 		// Scroll = push/pull the SELECTED brush along the view direction — the same size-scaled depth
@@ -1477,7 +1479,7 @@ public sealed class SculptEditSession : Component
 		// (Skipped while a gizmo handle is being dragged — the drag owns the wheel there; a spline point
 		// drag consumes it to push that single point along the view ray.)
 		float pushWheel = Input.MouseWheel.y;
-		if ( pushWheel != 0f && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
+		if ( pushWheel != 0f && !overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen
 			&& BrushScrub.Active == ScrubKind.None && !_gizmo.IsDragging
 			&& SelectedBrush is { } pushB && Scene.Camera is { } pushCam )
 		{
@@ -1513,9 +1515,9 @@ public sealed class SculptEditSession : Component
 		else if ( !Input.Down( "Attack1" ) )
 			_splineInsertArmed = true;
 
-		// Hover: the brush under the cursor (skipped while orbiting, over a gizmo handle, over the UI, or
+		// Hover: the brush under the cursor (skipped while camera-navving, over a gizmo handle, over the UI, or
 		// paused — the pause overlay must not highlight shapes behind it).
-		int hover = (!overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing)
+		int hover = (!overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing)
 			? PickBrush( tx ) : -1;
 		_worldHover = hover; // scene pick only — recorded BEFORE the layer-row fallback (see the field)
 
@@ -1583,11 +1585,13 @@ public sealed class SculptEditSession : Component
 			_stampWire.Hide();
 		}
 
-		// A click selects the hovered shape, or clears the selection when it lands on empty space. Gated so it
-		// only fires on a real world click: not over the HUD, not alt-orbiting, not paused (a pause-menu
-		// button click must not fall through to the world), and not on a gizmo handle (a handle grab reads
-		// hover<0, so without the IsBusy guard starting a drag would also deselect).
-		if ( Input.Pressed( "Attack1" ) && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
+		// Selection decides on the RELEASE, not the press: a clean LMB tap (AltNav's click-vs-drag window
+		// never crossed the travel threshold) selects the hovered shape, or clears the selection on empty
+		// space. A press that grew into a drag became the ORBIT instead — so you can start an orbit anywhere,
+		// including on top of a shape, and a clean click on that same shape still picks it. The tap can only
+		// exist if the press already landed clear of the HUD/gizmo/scrub; the gates here re-check the ones
+		// that can shift inside the window (and alt, whose own click has never meant select).
+		if ( AltNav.LmbTapped && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
 			&& !_gizmo.IsBusy && !IsScrubbing )
 			Selected = hover; // hover is -1 on empty space → deselect
 
@@ -1821,6 +1825,33 @@ public sealed class SculptEditSession : Component
 
 		Selected = ghost is null ? brushes.Count - 1 : -1;
 		NotifyChanged();
+	}
+
+	// ── AltNav claim queries ─────────────────────────────────────────────────────────────────────────
+	// AltNav asks these on a bare mouse press edge: true = "this press is an EDIT interaction here", so the
+	// camera gesture (LMB orbit / RMB zoom) must stand down. Answered from live state on the press edge so
+	// the verdict can't disagree with what this session does with the same press, whichever component
+	// happens to update first.
+
+	/// <summary>Would a bare left-press at the current cursor start an edit DRAG gesture of its own (stamp
+	/// placement, gizmo handle grab, spline add-point)? False = the press enters AltNav's click-vs-drag
+	/// window: a drag becomes the orbit, a clean click comes back as <see cref="AltNav.LmbTapped"/> and runs
+	/// selection below. Deliberately NOT a hover/pick test — a press on top of a shape must still be able to
+	/// grow into an orbit (a room-sized invisible carve volume must not wall off the camera).</summary>
+	internal bool LmbPressIsEdit()
+	{
+		if ( Tool == SculptTool.Sculpt )
+			return true; // the stamp ghost owns LMB everywhere — a click places it
+		return IsScrubbing || _gizmo.IsBusy || HoveringSplineLine;
+	}
+
+	/// <summary>Would a bare right-press start an edit interaction? Only a press on the gizmo itself (a spline
+	/// point delete) or a running scrub owns RMB now — scale scrubbing moved to the R key, so right-DRAG is
+	/// the camera zoom everywhere (selection, stamp, or nothing), and a right-click TAP comes back as
+	/// <see cref="AltNav.RmbTapped"/>: the step-back gesture (deselect / drop the pending stamp).</summary>
+	internal bool RmbPressIsEdit()
+	{
+		return IsScrubbing || _gizmo.IsBusy;
 	}
 
 	// Sphere-trace the field along the cursor ray and return the brush owning the surface point (or -1).

@@ -90,7 +90,7 @@ public sealed class RuntimeBrushGizmo
 
 		// Still draws, but won't hover/grab when the cursor is over the UI, the orbit camera owns the mouse, or the
 		// pause menu is open.
-		_interactive = allowInteract && !Input.Down( "Walk" ) && !PauseMenu.IsOpen;
+		_interactive = allowInteract && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen;
 		// A drag born from the HUD's add-point panel (insert-and-place) never sees Attack1 — the UI swallows
 		// the whole click gesture — so _uiDrag stands in for the held button until the panel's mouseup ends it.
 		_pressed = _interactive && Input.Pressed( "Attack1" );
