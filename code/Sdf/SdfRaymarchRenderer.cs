@@ -987,6 +987,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 					_so.Attributes.Set( "IndirectionTex", _fieldGpu.IndirectionTex );
 					_so.Attributes.Set( "BrickDims", _fieldGpu.BrickDims );
 					_so.Attributes.Set( "AtlasDims", _fieldGpu.AtlasDims );
+					_so.Attributes.Set( "AtlasEncode", _fieldGpu.AtlasEncodeBand ); // 8-bit tile decode band (0 = raw R32F)
 				}
 				_so.Attributes.Set( "SdfSparse", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 
@@ -1328,6 +1329,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			a.Set( $"IndirectionTex{slot}", _fieldGpu.IndirectionTex );
 			a.Set( $"BrickDims{slot}", _fieldGpu.BrickDims );
 			a.Set( $"AtlasDims{slot}", _fieldGpu.AtlasDims );
+			a.Set( $"AtlasEncode{slot}", _fieldGpu.AtlasEncodeBand ); // 8-bit tile decode band (0 = raw R32F)
 		}
 		a.Set( $"SdfSparse{slot}", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 	}

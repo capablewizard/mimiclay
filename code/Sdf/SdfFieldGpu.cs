@@ -34,8 +34,9 @@ public sealed class SdfFieldGpu
 
 	// Sparse atlas (approach B). Each tile holds Block+1 samples per axis (the inclusive far corner, shared with
 	// the neighbour brick, so trilinear is correct up to the boundary). Tiles pack into a 16×16×Z grid whose DEPTH
-	// (and thus the tile budget + atlas memory) scales with resolution: ~6 MB at 128, up to ~95 MB at 512 — instead of
-	// a fixed worst-case allocation. Z is capped at MaxTilesZ (=128 → 32768 tiles, atlas (144,144,1152) ≈ 95 MB).
+	// (and thus the tile budget + atlas memory) scales with resolution — instead of a fixed worst-case allocation.
+	// Z is capped at MaxTilesZ (=128 → 32768 tiles, atlas (144,144,1152)): ≈ 24 MB in I8 (the 8-bit narrow-band
+	// default, see AtlasEncodeBand), ≈ 95 MB on the R32F fallback; ~6 MB / ~1.5 MB at 128 respectively.
 	public const int TileSize = Block + 1;
 	public const int TilesX = 16, TilesY = 16;
 	const int MaxTilesZ = 128; // atlas-Z capacity cap (tiles = TilesX*TilesY*MaxTilesZ = 32768 max)
@@ -81,6 +82,18 @@ public sealed class SdfFieldGpu
 	// Sparse atlas: surface bricks compacted into atlas tiles + an indirection table (brick→tile). All GPU-built
 	// each edit (no readback), so they stay in sync with the field. Bound to the raymarch sampler in Step 3.
 	public Texture Atlas { get; private set; }
+
+	/// <summary>Global kill switch for the 8-bit narrow-band atlas — flip off to A/B against (or retreat to)
+	/// raw R32F tiles. Takes effect on the next bake (the atlas is recreated when the format choice changes).</summary>
+	[ConVar( "mimiclay_sdf_atlas_8bit" )]
+	public static bool Atlas8BitEnabled { get; set; } = true;
+
+	/// <summary>8-bit tile decode band in WORLD units (±band maps to the unorm [0,1] — Claybook's narrow-band
+	/// trick: 4 surface voxels in 8 bits = 1/32-voxel precision at a quarter of R32F's memory). 0 = the atlas
+	/// stores raw float distances (I8 creation failed, or <see cref="Atlas8BitEnabled"/> is off). The renderer
+	/// pushes this as the "AtlasEncode" attribute; it MUST travel with the atlas it was filled with.</summary>
+	public float AtlasEncodeBand { get; private set; }
+	bool _atlas8Bit;
 	public Texture IndirectionTex { get; private set; } // brick -> tile (R32F, -1 = empty); a TEXTURE not a buffer
 	GpuBuffer _counter;                                  // because structured buffers don't bind to a material PS
 	ComputeShader _allocCs, _fillCs;
@@ -269,9 +282,17 @@ public sealed class SdfFieldGpu
 				return;
 			_indBx = _bx; _indBy = _by; _indBz = _bz;
 		}
-		if ( !Atlas.IsValid() || _atlasZ != az ) // ax/ay are fixed; only the depth scales with resolution
+		// ax/ay are fixed; only the depth scales with resolution. Also recreated when the 8-bit choice flips,
+		// so the ConVar can be A/B'd live. I8 (single-channel unorm) quarters the atlas memory; if the driver
+		// refuses it (format+UAV support varies), fall back to R32F and leave AtlasEncodeBand at 0 = raw floats.
+		if ( !Atlas.IsValid() || _atlasZ != az || _atlas8Bit != Atlas8BitEnabled )
 		{
-			Atlas = Texture.CreateVolume( ax, ay, az, ImageFormat.R32F ).WithUAVBinding().WithName( "sdf_atlas" ).Finish();
+			Atlas = Atlas8BitEnabled
+				? Texture.CreateVolume( ax, ay, az, ImageFormat.I8 ).WithUAVBinding().WithName( "sdf_atlas" ).Finish()
+				: null;
+			_atlas8Bit = Atlas8BitEnabled && Atlas.IsValid();
+			if ( !Atlas.IsValid() )
+				Atlas = Texture.CreateVolume( ax, ay, az, ImageFormat.R32F ).WithUAVBinding().WithName( "sdf_atlas" ).Finish();
 			if ( !Atlas.IsValid() )
 				return;
 			_atlasX = ax; _atlasY = ay; _atlasZ = az;
@@ -310,6 +331,16 @@ public sealed class SdfFieldGpu
 		_fillCs.Attributes.Set( "TilesX", TilesX );
 		_fillCs.Attributes.Set( "TilesY", TilesY );
 		_fillCs.Attributes.Set( "MaxTiles", maxTiles );
+
+		// 8-bit encode band: ±4 surface voxels (the Claybook narrow band — 8 voxels over 256 levels =
+		// 1/32-voxel precision). Recomputed every fill because the cell size tracks the bounds; the
+		// renderer re-reads the property after each bake so decode always matches the tiles' encode.
+		float maxCell = MathF.Max( (Maxs.x - Mins.x) / MathF.Max( SurfaceDims.x - 1f, 1f ),
+			MathF.Max( (Maxs.y - Mins.y) / MathF.Max( SurfaceDims.y - 1f, 1f ),
+			            (Maxs.z - Mins.z) / MathF.Max( SurfaceDims.z - 1f, 1f ) ) );
+		AtlasEncodeBand = _atlas8Bit ? 4f * maxCell : 0f;
+		_fillCs.Attributes.Set( "AtlasEncode", AtlasEncodeBand );
+
 		SetDisplacement( _fillCs ); // atlas tiles bake the same displaced union as the dense/guide field
 		_fillCs.Dispatch( _bx * _by, TileSize * TileSize * TileSize, _bz ); // x=brick XY, y=voxel, z=brick Z
 	}
@@ -375,9 +406,20 @@ public sealed class SdfFieldGpu
 		{
 			int tile = (int)(ind[fb] + 0.5f);
 			int tcx = tile % TilesX, tcy = (tile / TilesX) % TilesY, tcz = tile / (TilesX * TilesY);
-			var av = new float[1];
-			Atlas.GetPixels3D( (tcx * TileSize + 1, tcy * TileSize + 1, tcz * TileSize + 1, 1, 1, 1), 0, av.AsSpan(), ImageFormat.R32F );
-			s += $"; tile{tile} centre atlas={av[0]:0.###}";
+			var region = (tcx * TileSize + 1, tcy * TileSize + 1, tcz * TileSize + 1, 1, 1, 1);
+			if ( AtlasEncodeBand > 0f )
+			{
+				// 8-bit tiles: read the raw unorm byte and decode the same way the samplers do.
+				var av8 = new byte[1];
+				Atlas.GetPixels3D( region, 0, av8.AsSpan(), ImageFormat.I8 );
+				s += $"; tile{tile} centre atlas={(av8[0] / 255f - 0.5f) * 2f * AtlasEncodeBand:0.###} (i8)";
+			}
+			else
+			{
+				var av = new float[1];
+				Atlas.GetPixels3D( region, 0, av.AsSpan(), ImageFormat.R32F );
+				s += $"; tile{tile} centre atlas={av[0]:0.###}";
+			}
 		}
 
 		return s;

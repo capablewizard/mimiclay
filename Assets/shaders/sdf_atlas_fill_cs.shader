@@ -27,6 +27,12 @@ CS
 	int    g_nTilesX    < Attribute( "TilesX" ); >;
 	int    g_nTilesY    < Attribute( "TilesY" ); >;
 	int    g_nMaxTiles  < Attribute( "MaxTiles" ); >;
+	// 8-bit narrow-band encode (Claybook): >0 = the atlas is an I8 unorm texture and this is the encode
+	// band in WORLD units (±band maps to [0,1]; SdfFieldGpu sizes it at 4 surface voxels → 1/32-voxel
+	// precision, a quarter of R32F's memory). 0 = raw float store (R32F fallback). Out-of-band values
+	// SATURATE, which only ever UNDERSTATES distance — safe for sphere tracing (shorter steps, never a
+	// skipped surface). Decodes live in sdf_raymarch's SampleFieldSparse and sdf_highlight's SampleSlot.
+	float  g_flAtlasEncode < Attribute( "AtlasEncode" ); Default( 0.0 ); >;
 
 	[numthreads( 8, 8, 1 )]
 	void MainCs( uint3 id : SV_DispatchThreadID )
@@ -54,6 +60,7 @@ CS
 
 		int3 tc = int3( tile % (uint)g_nTilesX, ( tile / (uint)g_nTilesX ) % (uint)g_nTilesY, tile / (uint)( g_nTilesX * g_nTilesY ) );
 		int3 av = tc * g_nTileSize + voxel;
-		g_tAtlas[av] = SdfDistBaked( lp ); // displaced union — same value the dense/guide field bakes
+		float d = SdfDistBaked( lp ); // displaced union — same value the dense/guide field bakes
+		g_tAtlas[av] = g_flAtlasEncode > 0.0 ? saturate( d / ( 2.0 * g_flAtlasEncode ) + 0.5 ) : d;
 	}
 }

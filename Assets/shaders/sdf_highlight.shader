@@ -106,6 +106,7 @@ PS
 	float3 g_vBrickDims0 < Attribute( "BrickDims0" ); >;
 	float3 g_vAtlasDims0 < Attribute( "AtlasDims0" ); >;
 	int    g_nSdfSparse0 < Attribute( "SdfSparse0" ); Default( 0 ); >;
+	float  g_flAtlasEncode0 < Attribute( "AtlasEncode0" ); Default( 0.0 ); >; // 8-bit tiles: encode band (world units), 0 = raw R32F
 
 	Texture3D g_tField1 < Attribute( "FieldTex1" ); >;
 	float3 g_vFieldMin1   < Attribute( "FieldMin1" ); >;
@@ -119,6 +120,7 @@ PS
 	float3 g_vBrickDims1 < Attribute( "BrickDims1" ); >;
 	float3 g_vAtlasDims1 < Attribute( "AtlasDims1" ); >;
 	int    g_nSdfSparse1 < Attribute( "SdfSparse1" ); Default( 0 ); >;
+	float  g_flAtlasEncode1 < Attribute( "AtlasEncode1" ); Default( 0.0 ); >;
 
 	Texture3D g_tField2 < Attribute( "FieldTex2" ); >;
 	float3 g_vFieldMin2   < Attribute( "FieldMin2" ); >;
@@ -132,6 +134,7 @@ PS
 	float3 g_vBrickDims2 < Attribute( "BrickDims2" ); >;
 	float3 g_vAtlasDims2 < Attribute( "AtlasDims2" ); >;
 	int    g_nSdfSparse2 < Attribute( "SdfSparse2" ); Default( 0 ); >;
+	float  g_flAtlasEncode2 < Attribute( "AtlasEncode2" ); Default( 0.0 ); >;
 
 	Texture3D g_tField3 < Attribute( "FieldTex3" ); >;
 	float3 g_vFieldMin3   < Attribute( "FieldMin3" ); >;
@@ -145,6 +148,7 @@ PS
 	float3 g_vBrickDims3 < Attribute( "BrickDims3" ); >;
 	float3 g_vAtlasDims3 < Attribute( "AtlasDims3" ); >;
 	int    g_nSdfSparse3 < Attribute( "SdfSparse3" ); Default( 0 ); >;
+	float  g_flAtlasEncode3 < Attribute( "AtlasEncode3" ); Default( 0.0 ); >;
 
 	// Displacement gradient bound, PER SLOT. The lumps (and their claymation boil) are baked INTO
 	// each member's field by SdfFieldGpu, so the outline tracks the lumpy silhouette by construction —
@@ -193,7 +197,7 @@ PS
 	// (the legs can't oppose: the nearest surface is inward of the clamp point, wp is outward of it).
 	float SampleSlot(
 		Texture3D field, Texture3D atlas, Texture2D indirection, int sparse,
-		float3 fmin, float3 fmax, float3 fdims, float3 sdims, float3 bdims, float3 adims,
+		float3 fmin, float3 fmax, float3 fdims, float3 sdims, float3 bdims, float3 adims, float aenc,
 		float3 origin, float4 rot, float3 wp )
 	{
 		float3 lp = qrot( float4( -rot.xyz, rot.w ), wp - origin );
@@ -225,6 +229,8 @@ PS
 						int3   tc  = int3( tile % SDF_TILESX, ( tile / SDF_TILESX ) % SDF_TILESY, tile / ( SDF_TILESX * SDF_TILESY ) );
 						float3 av  = (float3)tc * SDF_TILESIZE + vit;
 						d = atlas.SampleLevel( g_sField, ( av + 0.5 ) / adims, 0 ).r;
+						if ( aenc > 0.0 ) // 8-bit unorm tiles: decode ±band (see sdf_raymarch's SampleFieldSparse)
+							d = ( d - 0.5 ) * ( 2.0 * aenc );
 					}
 				}
 			}
@@ -246,22 +252,22 @@ PS
 	float SdfDistAll( float3 p )
 	{
 		float d = SampleSlot( g_tField0, g_tAtlas0, g_tIndirection0, g_nSdfSparse0,
-			g_vFieldMin0, g_vFieldMax0, g_vFieldDims0, g_vSurfaceDims0, g_vBrickDims0, g_vAtlasDims0,
+			g_vFieldMin0, g_vFieldMax0, g_vFieldDims0, g_vSurfaceDims0, g_vBrickDims0, g_vAtlasDims0, g_flAtlasEncode0,
 			g_vModelOrigin0, g_vModelRot0, p );
 
 		if ( g_nFieldCount > 1 )
 			d = min( d, SampleSlot( g_tField1, g_tAtlas1, g_tIndirection1, g_nSdfSparse1,
-				g_vFieldMin1, g_vFieldMax1, g_vFieldDims1, g_vSurfaceDims1, g_vBrickDims1, g_vAtlasDims1,
+				g_vFieldMin1, g_vFieldMax1, g_vFieldDims1, g_vSurfaceDims1, g_vBrickDims1, g_vAtlasDims1, g_flAtlasEncode1,
 				g_vModelOrigin1, g_vModelRot1, p ) );
 
 		if ( g_nFieldCount > 2 )
 			d = min( d, SampleSlot( g_tField2, g_tAtlas2, g_tIndirection2, g_nSdfSparse2,
-				g_vFieldMin2, g_vFieldMax2, g_vFieldDims2, g_vSurfaceDims2, g_vBrickDims2, g_vAtlasDims2,
+				g_vFieldMin2, g_vFieldMax2, g_vFieldDims2, g_vSurfaceDims2, g_vBrickDims2, g_vAtlasDims2, g_flAtlasEncode2,
 				g_vModelOrigin2, g_vModelRot2, p ) );
 
 		if ( g_nFieldCount > 3 )
 			d = min( d, SampleSlot( g_tField3, g_tAtlas3, g_tIndirection3, g_nSdfSparse3,
-				g_vFieldMin3, g_vFieldMax3, g_vFieldDims3, g_vSurfaceDims3, g_vBrickDims3, g_vAtlasDims3,
+				g_vFieldMin3, g_vFieldMax3, g_vFieldDims3, g_vSurfaceDims3, g_vBrickDims3, g_vAtlasDims3, g_flAtlasEncode3,
 				g_vModelOrigin3, g_vModelRot3, p ) );
 
 		return d;

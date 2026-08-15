@@ -313,6 +313,9 @@ PS
 		float3 g_vAtlasDims < Attribute( "AtlasDims" ); >;
 		float3 g_vSurfaceDims < Attribute( "SurfaceDims" ); >; // high-res brick-grid dims (g_tField may be a lower-res guide)
 		int    g_nSdfSparse < Attribute( "SdfSparse" ); Default( 0 ); >;
+		// 8-bit tiles: >0 = atlas is I8 unorm, this is the encode band in world units (±band → [0,1],
+		// set by SdfFieldGpu to 4 surface voxels — Claybook's 1/32-voxel precision). 0 = raw R32F.
+		float  g_flAtlasEncode < Attribute( "AtlasEncode" ); Default( 0.0 ); >;
 		#define SDF_BLOCK    8.0
 		#define SDF_TILESIZE 9.0
 		#define SDF_TILESX   16u
@@ -369,7 +372,13 @@ PS
 			int3   tc  = int3( tile % SDF_TILESX, ( tile / SDF_TILESX ) % SDF_TILESY, tile / ( SDF_TILESX * SDF_TILESY ) );
 			float3 av  = (float3)tc * SDF_TILESIZE + vit;
 			float3 uvw = ( av + 0.5 ) / g_vAtlasDims;
-			return g_tAtlas.SampleLevel( g_sField, uvw, 0 ).r;
+			float  v   = g_tAtlas.SampleLevel( g_sField, uvw, 0 ).r;
+			// 8-bit decode (see the attribute): the encode is affine, so decoding AFTER the trilinear
+			// fetch equals interpolating decoded values — except where saturation clamped, which only
+			// understates distance (safe). Band-saturated tiles read ±band here, never a bogus far value.
+			if ( g_flAtlasEncode > 0.0 )
+				v = ( v - 0.5 ) * ( 2.0 * g_flAtlasEncode );
+			return v;
 		}
 
 	// --- Plasticine displacement noise: hash13 / vnoise / BoilOffset come from sdf_eval.hlsl now
@@ -1016,12 +1025,28 @@ PS
 	#endif
 
 		float t = tEnter;
+		float prevD = 0.0, prevStep = 0.0;
 		[loop]
 		for ( int s = 0; s < maxSteps; s++ )
 		{
 			float d = SdfDistMarchWs( ro + rd * t );
-			if ( d < eps ) { hitP = ro + rd * ( t + d ); return true; } // refine onto surface (d~=0), not the eps-shell: kills field-path contour banding
-			t += d * stepScale;
+			if ( d < eps )
+			{
+				// Refine onto the surface (d~=0), not the eps-shell: kills field-path contour banding.
+				// Secant of the last two samples (Claybook's last-step refinement): the trilinear field is
+				// piecewise linear, so intersecting that line with zero lands the hit in one step where the
+				// first-order "+d" under-refines — a grazing ray's along-ray distance is d/cos(theta), not d.
+				// Clamped to [d, prevStep] so a near-tangent sample pair (flat secant) can't extrapolate
+				// further than the step that produced it; the first sample has no pair -> plain +d.
+				float refine = ( prevStep > 0.0 && prevD > d )
+					? clamp( d * prevStep / ( prevD - d ), d, prevStep )
+					: d;
+				hitP = ro + rd * ( t + refine );
+				return true;
+			}
+			prevD = d;
+			prevStep = d * stepScale;
+			t += prevStep;
 			if ( t > tExit ) break;
 		}
 		return false;
