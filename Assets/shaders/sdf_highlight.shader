@@ -228,9 +228,15 @@ PS
 						uint   tile = (uint)( ind + 0.5 );
 						int3   tc  = int3( tile % SDF_TILESX, ( tile / SDF_TILESX ) % SDF_TILESY, tile / ( SDF_TILESX * SDF_TILESY ) );
 						float3 av  = (float3)tc * SDF_TILESIZE + vit;
-						d = atlas.SampleLevel( g_sField, ( av + 0.5 ) / adims, 0 ).r;
-						if ( aenc > 0.0 ) // 8-bit unorm tiles: decode ±band (see sdf_raymarch's SampleFieldSparse)
-							d = ( d - 0.5 ) * ( 2.0 * aenc );
+						float  at  = atlas.SampleLevel( g_sField, ( av + 0.5 ) / adims, 0 ).r;
+						if ( aenc > 0.0 )
+						{
+							// 8-bit unorm tiles: decode ±band, then blend saturated magnitudes back to the
+							// guide value (d, still the dense fetch here) — see sdf_raymarch's SampleFieldSparse.
+							at = ( at - 0.5 ) * ( 2.0 * aenc );
+							at = lerp( at, d, smoothstep( 0.7 * aenc, 0.95 * aenc, abs( at ) ) );
+						}
+						d = at;
 					}
 				}
 			}

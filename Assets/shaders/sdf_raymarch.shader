@@ -374,10 +374,19 @@ PS
 			float3 uvw = ( av + 0.5 ) / g_vAtlasDims;
 			float  v   = g_tAtlas.SampleLevel( g_sField, uvw, 0 ).r;
 			// 8-bit decode (see the attribute): the encode is affine, so decoding AFTER the trilinear
-			// fetch equals interpolating decoded values — except where saturation clamped, which only
-			// understates distance (safe). Band-saturated tiles read ±band here, never a bogus far value.
+			// fetch equals interpolating decoded values — except where saturation clamped it to ±band.
+			// Clamped magnitudes are march-safe (understated = shorter steps) but WRONG for the shading
+			// taps, whose reach is WORLD units, not voxels: SdfAO walks up to 4in along the normal and
+			// the curvature tetrahedron spans ~2+ voxels, so past the band they'd read "surface nearby"
+			// on open surfaces — false occlusion + a tetrahedral/contour pattern stamped into the albedo
+			// (the raw-prop artifact, 2026-08-15). The GUIDE (R32F, full range, already fetched above)
+			// holds the true coarse distance, so blend back to it over the outer band. Inside ~0.7·band
+			// the atlas is exact and wins; the smoothstep kills the seam the stencils would pattern on.
 			if ( g_flAtlasEncode > 0.0 )
+			{
 				v = ( v - 0.5 ) * ( 2.0 * g_flAtlasEncode );
+				v = lerp( v, guide, smoothstep( 0.7 * g_flAtlasEncode, 0.95 * g_flAtlasEncode, abs( v ) ) );
+			}
 			return v;
 		}
 
@@ -1036,10 +1045,14 @@ PS
 				// Secant of the last two samples (Claybook's last-step refinement): the trilinear field is
 				// piecewise linear, so intersecting that line with zero lands the hit in one step where the
 				// first-order "+d" under-refines — a grazing ray's along-ray distance is d/cos(theta), not d.
-				// Clamped to [d, prevStep] so a near-tangent sample pair (flat secant) can't extrapolate
-				// further than the step that produced it; the first sample has no pair -> plain +d.
+				// HARD CAP at 3d (≤ 3·eps): the secant trusts local planarity, but a displaced (boiling)
+				// field's gradient noise can make prevD−d spuriously small, and an uncapped secant then
+				// extrapolates hitP a whole step INSIDE the surface — curvature/AO/triplanar all sample
+				// around hitP, so interior hits paint lump-shaped albedo blotches (seen on raw props
+				// 2026-08-15). 3d keeps the grazing win down to cosθ≈⅓ while bounding the overshoot to
+				// the same order as the old "+d" refine. The first sample has no pair -> plain +d.
 				float refine = ( prevStep > 0.0 && prevD > d )
-					? clamp( d * prevStep / ( prevD - d ), d, prevStep )
+					? clamp( d * prevStep / ( prevD - d ), d, min( prevStep, 3.0 * d ) )
 					: d;
 				hitP = ro + rd * ( t + refine );
 				return true;
