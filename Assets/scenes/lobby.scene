@@ -663,9 +663,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "-129.566132,5.16229248,-66.9217987",
+      "Position": "-129.566132,5.16229248,-64.6177216",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "0.970029473,1,1",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -688,7 +688,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "ef6ee3ff-2bc4-8eb4-bd8e-f7be1d790ca5"
+              "$blob": "757b77a6-f094-862f-af8e-6420f1572594"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -1177,7 +1177,7 @@
               "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
             },
             "Property": "Position",
-            "Value": "14.5761719,138.649734,-8.53728867"
+            "Value": "14.5761719,138.649734,-3.15852761"
           },
           {
             "Target": {
@@ -1763,7 +1763,7 @@
               "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
             },
             "Property": "Position",
-            "Value": "-157.964355,74.8463745,36.5192337"
+            "Value": "-157.964355,74.8463745,41.3455963"
           },
           {
             "Target": {
@@ -2334,6 +2334,52 @@
         "cd4fbd2e-5e91-4801-ad6b-1e90d8314895": "f68bf6e2-6b44-4934-aaae-d9e1fc80df95",
         "db48c1f6-f208-4752-a9f1-e5896c493e3a": "0032d163-52ee-4f25-bc96-b9e5412a9b51"
       }
+    },
+    {
+      "__guid": "17a2e951-b8e0-4b22-b1cf-962a0fca80ee",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "cuttingmat",
+      "Position": "-61.1519012,51.231308,0",
+      "Rotation": "0,0,-0.141825393,0.989891708",
+      "Scale": "0.0683828518,0.0683828518,0.0683828518",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "469f9856-5046-4eaa-9048-eef26990505f",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "prefabs/lobby/cuttingmat/cuttingmat.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
