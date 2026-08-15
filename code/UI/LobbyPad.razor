@@ -1,0 +1,233 @@
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading
+@using System.Threading.Tasks
+@using Sandbox
+@using Sandbox.Network
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The lobby pad — a tablet standing in the lobby scene, rendered by the WorldPanel component on the same
+	GameObject. This is the session's front desk: the host starts the game from it, anyone can browse and join
+	other public sessions. It exists to pull those flows OUT of the full-screen main menu and into the world.
+
+	Input comes from the engine's WorldInput component on the scene camera: with the mouse captured
+	(first-person) it rays from the camera centre, so the crosshair IS the pointer — within the WorldPanel's
+	InteractionRange the dot hands over to the .pad-cursor drawn here at the same ray point (HunterCrosshair
+	hides behind WorldUi.Hovering, and the hunter's trigger is suppressed by the same flag so clicking the
+	screen never fires the gun). The whole .screen surface takes pointer-events, deliberately: it keeps the
+	hover latched (cursor + gates stable) while the ray roams between buttons — and it's a screen in the world,
+	not a HUD overlay, so swallowing the click actions over it is correct here (contrast the EditHud rule).
+
+	The cursor panel is positioned imperatively (Style.Left/Top in OnUpdate) rather than through BuildHash, so
+	tracking the pointer doesn't rebuild the tree every frame.
+*@
+
+<root class="lobby-pad">
+	<div class="screen">
+
+		@if ( _page == Page.Home )
+		{
+			<WobbleText Text="Mimiclay" class="pad-title" />
+
+			<div class="status-row">
+				<div class="mi">group</div>
+				<span>@PlayerCount in the lobby</span>
+				@if ( Lobby is not null )
+				{
+					var info = GameModes.Get( Lobby.SelectedGame );
+					<div class="mi">@info.Icon</div>
+					<span>@info.Label</span>
+				}
+			</div>
+
+			@if ( Launching )
+			{
+				<div class="paper-card launch-card">
+					<span class="launch-label">Launching in</span>
+					<span class="launch-count">@CountdownSeconds</span>
+				</div>
+			}
+			else
+			{
+				@if ( IsHost )
+				{
+					<div class="btn btn-action start" @onclick=@StartGame>
+						<div class="mi">play_arrow</div>
+						<span>Start Game</span>
+					</div>
+				}
+				else
+				{
+					<div class="host-hint">The host starts the game from here.</div>
+				}
+
+				<div class="btn browse" @onclick=@OpenSessions>
+					<div class="mi">travel_explore</div>
+					<span>Browse Sessions</span>
+				</div>
+			}
+		}
+		else
+		{
+			<div class="sessions-head">
+				<div class="btn nav" @onclick=@OpenHome><div class="mi">arrow_back</div></div>
+				<WobbleText Text="Sessions" class="pad-title small" />
+				<div class="btn nav" @onclick=@Refresh><div class="mi">refresh</div></div>
+			</div>
+
+			@if ( _loading )
+			{
+				<div class="pad-busy">
+					<div class="mi spinner">progress_activity</div>
+					<span>Finding games…</span>
+				</div>
+			}
+			else if ( _lobbies.Count == 0 )
+			{
+				<div class="pad-busy">
+					<span>No public games right now.</span>
+				</div>
+			}
+			else
+			{
+				<div class="lobby-list">
+					@foreach ( var lobby in _lobbies )
+					{
+						var l = lobby;
+						var info = GameModes.Get( MenuNetworking.ModeOf( l ) );
+						<div class="paper-card lobby-row" @onclick=@(() => Join( l ))>
+							<div class="lobby-name">@NameOf( l )</div>
+							<div class="lobby-mode"><div class="mi">@info.Icon</div></div>
+							<div class="lobby-players"><div class="mi">group</div><span>@l.Members/@l.MaxMembers</span></div>
+						</div>
+					}
+				</div>
+			}
+		}
+
+		@if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) )
+		{
+			<div class="pad-error" @key=@MenuNetworking.ErrorStamp>@MenuNetworking.LastError</div>
+		}
+	</div>
+
+	<div class="pad-cursor" @ref="CursorPanel" />
+</root>
+
+@code
+{
+	enum Page { Home, Sessions }
+	Page _page = Page.Home;
+
+	Panel CursorPanel { get; set; } // bound via @ref, like EditHud's floats
+	Sandbox.WorldInput _worldInput; // fully qualified: Sandbox.UI also has a (dead, obsolete) WorldInput
+
+	// Session browser state — a slimmed-down SessionsPage (no sorting/selection; a row IS the join button).
+	readonly List<LobbyInformation> _lobbies = new();
+	bool _loading;
+	CancellationTokenSource _cts;
+
+	static LobbyManager Lobby => LobbyManager.Current;
+	static bool IsHost => !Networking.IsActive || Networking.IsHost;
+	static bool Launching => Lobby.IsValid() && Lobby.Launching;
+	static int CountdownSeconds => Lobby.IsValid() ? (int)MathF.Ceiling( MathF.Max( 0f, Lobby.LaunchEndsAt ) ) : 0;
+	static int PlayerCount => Lobby.IsValid() ? Lobby.Players.Count : Connection.All.Count;
+
+	static string NameOf( LobbyInformation l ) => string.IsNullOrWhiteSpace( l.Name ) ? "Mimiclay Game" : l.Name;
+
+	// The camera's WorldInput — the single pointer source for every world panel (see the class comment).
+	Sandbox.WorldInput Pointer => _worldInput.IsValid() ? _worldInput : _worldInput = Scene.GetAllComponents<Sandbox.WorldInput>().FirstOrDefault();
+
+	protected override void OnUpdate()
+	{
+		UpdateCursor();
+	}
+
+	// Draw our on-screen cursor at the pointer's ray point while the ray is over THIS pad (checked by root —
+	// another world panel's hover must not light this one's cursor). Style px are layout units, the mouse is in
+	// bounds px: the engine's own recipe is MousePosition * ScaleFromScreen (see Panel.IPanel.cs).
+	void UpdateCursor()
+	{
+		if ( !CursorPanel.IsValid() || Panel is null )
+			return;
+
+		var hovered = Pointer?.Hovered;
+		var onPad = hovered is not null && hovered.FindRootPanel() == Panel.FindRootPanel();
+		CursorPanel.SetClass( "visible", onPad );
+
+		if ( !onPad )
+			return;
+
+		var mp = Panel.MousePosition * Panel.ScaleFromScreen;
+		CursorPanel.Style.Left = Length.Pixels( mp.x );
+		CursorPanel.Style.Top = Length.Pixels( mp.y );
+		CursorPanel.Style.Dirty();
+	}
+
+	void StartGame() => Lobby?.RequestStart();
+
+	void OpenHome()
+	{
+		_page = Page.Home;
+		StateHasChanged();
+	}
+
+	void OpenSessions()
+	{
+		_page = Page.Sessions;
+		StateHasChanged();
+		_ = Load();
+	}
+
+	void Refresh()
+	{
+		if ( !_loading )
+			_ = Load();
+	}
+
+	async Task Load()
+	{
+		_cts?.Cancel();
+		_cts = new CancellationTokenSource();
+		var token = _cts.Token;
+
+		_loading = true;
+		StateHasChanged();
+
+		var results = await MenuNetworking.QueryGames( token );
+		if ( token.IsCancellationRequested )
+			return;
+
+		_lobbies.Clear();
+		_lobbies.AddRange( results );
+		_loading = false;
+		StateHasChanged();
+	}
+
+	// Joining tears this whole scene down on success (disconnect → connect → the new host's scene streams in),
+	// so there's no "after" to handle here — on failure MenuNetworking.LastError surfaces in the footer.
+	async void Join( LobbyInformation lobby )
+	{
+		if ( MenuNetworking.Busy )
+			return;
+
+		await MenuNetworking.Join( lobby );
+		StateHasChanged();
+	}
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		_cts?.Cancel();
+	}
+
+	protected override int BuildHash()
+	{
+		var hash = HashCode.Combine( _page, _loading, _lobbies.Count, IsHost, Launching, CountdownSeconds, PlayerCount );
+		return HashCode.Combine( hash, MenuNetworking.Busy, MenuNetworking.LastError, MenuNetworking.ErrorStamp );
+	}
+}

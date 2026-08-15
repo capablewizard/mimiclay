@@ -615,8 +615,10 @@ public sealed class HunterController : Component
 			// which is converged onto the crosshair, so the trace always matches what the dot shows. During an
 			// alt-orbit the trigger is swallowed (no blip): alt+mouse is a camera gesture here — same as the
 			// hider — and the aim is frozen off-camera, so a shot would land somewhere the hidden crosshair
-			// can't show.
-			if ( Input.Pressed( "attack1" ) && !_altOrbiting )
+			// can't show. A press over a world panel (the lobby pad) belongs to the screen, not the trigger —
+			// WorldInput doesn't consume the click action, so without this gate using the pad would also fire.
+			// Swallowed silently (no denied blip), same as the alt-orbit case: the click isn't a shot attempt.
+			if ( Input.Pressed( "attack1" ) && !_altOrbiting && !WorldUi.Hovering )
 			{
 				if ( !locked && RoundManager.HuntingAllowed )
 				{

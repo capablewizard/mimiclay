@@ -1,0 +1,214 @@
+// =============================================================================
+//  Lobby pad — the tablet screen in the lobby scene (LobbyPad.razor).
+//
+//  Layout space: the WorldPanel is PanelSize 640x480 at RenderScale 0.5 with the
+//  engine's default world-panel Scale of 2, which nets out to a 640x480 layout
+//  viewport — design like a small window, not a full screen. Same theme kit as
+//  everything else; the dark slab around the screen is the "ink" tone so the
+//  device reads as drawn with the rest of the clay-craft look.
+// =============================================================================
+
+@import "/UI/_theme.scss";
+@import "/UI/_button.scss";
+
+.lobby-pad
+{
+	width: 100%;
+	height: 100%;
+	padding: 16px;
+	background-color: $paper-edge;   // the tablet body / bezel
+	border-radius: 24px;
+	flex-direction: column;
+
+	// The glass. pointer-events on the WHOLE surface is deliberate (see the razor comment): it latches the
+	// world-panel hover while the ray roams between buttons, which keeps the pad cursor + the crosshair/trigger
+	// gates stable anywhere on the screen — not just over buttons.
+	.screen
+	{
+		width: 100%;
+		height: 100%;
+		background-color: $paper-top;
+		border-radius: 12px;
+		padding: 18px;
+		flex-direction: column;
+		align-items: center;
+		pointer-events: all;
+	}
+
+	// --- Home ------------------------------------------------------------------
+	.pad-title
+	{
+		font-family: $header-font;
+		font-size: 52px;
+		color: $paper-ink;
+
+		&.small { font-size: 34px; }
+	}
+
+	.status-row
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: $space-sm;
+		margin-top: $space-xs;
+		margin-bottom: $space-lg;
+		font-family: $body-font;
+		font-weight: $body-weight;
+		font-size: 15px;
+		color: $paper-ink-soft;
+
+		.mi { font-size: 20px; }
+	}
+
+	.btn.start
+	{
+		font-size: 30px;
+		padding: 8px 22px;
+		margin-bottom: $space-lg;
+
+		.mi { font-size: 30px; }
+	}
+
+	.host-hint
+	{
+		font-family: $body-font;
+		font-weight: $body-weight;
+		font-size: 16px;
+		color: $paper-ink-soft;
+		margin: $space-lg 0;
+	}
+
+	.btn.browse
+	{
+		flex-direction: row;
+		gap: $space-sm;
+
+		.mi { font-size: 20px; }
+	}
+
+	.launch-card
+	{
+		flex-direction: column;
+		align-items: center;
+		gap: $space-xs;
+		padding: $space-lg 40px;
+		border-radius: $radius-lg;
+		margin-top: $space-md;
+
+		.launch-label
+		{
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 16px;
+			color: $paper-ink-soft;
+		}
+
+		.launch-count
+		{
+			font-family: $header-font;
+			font-size: 64px;
+			color: $craft-orange;
+		}
+	}
+
+	// --- Sessions ---------------------------------------------------------------
+	.sessions-head
+	{
+		width: 100%;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: $space-md;
+
+		.btn.nav
+		{
+			padding: 6px 10px;
+
+			.mi { font-size: 22px; }
+		}
+	}
+
+	.pad-busy
+	{
+		flex-direction: column;
+		align-items: center;
+		gap: $space-sm;
+		margin-top: 40px;
+		font-family: $body-font;
+		font-weight: $body-weight;
+		font-size: 16px;
+		color: $paper-ink-soft;
+
+		.spinner { font-size: 34px; animation: pad-spin 1s linear 0s infinite; }
+	}
+
+	.lobby-list
+	{
+		width: 100%;
+		flex-direction: column;
+		gap: $space-sm;
+		overflow-y: scroll;
+	}
+
+	.lobby-row
+	{
+		width: 100%;
+		flex-direction: row;
+		align-items: center;
+		padding: 10px 14px;
+		border-radius: $radius-md;
+		cursor: pointer;
+		pointer-events: all;
+		font-family: $body-font;
+		font-weight: $body-weight;
+		font-size: 15px;
+		color: $paper-ink;
+		transition: transform 0.1s ease-out, background-color 0.1s ease-out;
+
+		&:hover { background-color: #fff; transform: translateY( -1px ); sound-in: $sound-hover; }
+		&:active { sound-in: $sound-click; }
+
+		.lobby-name { flex-grow: 1; }
+		.lobby-mode { margin-right: $space-md; .mi { font-size: 18px; color: $craft-blue; } }
+		.lobby-players { flex-direction: row; align-items: center; gap: 4px; .mi { font-size: 18px; } }
+	}
+
+	.pad-error
+	{
+		margin-top: $space-sm;
+		font-family: $body-font;
+		font-weight: $body-weight;
+		font-size: 14px;
+		color: $craft-red;
+	}
+
+	// --- The pointer ------------------------------------------------------------
+	// Same art as the hunter crosshair dot, so looking at the screen reads as the reticle stepping onto it —
+	// the WorldPanel ray point and the hidden crosshair are the same spot by construction. Positioned from
+	// code (LobbyPad.UpdateCursor); events must pass through it or it would steal hover from the button
+	// underneath itself.
+	.pad-cursor
+	{
+		position: absolute;
+		width: 22px;
+		height: 22px;
+		margin-left: -11px;
+		margin-top: -11px;
+		background-image: url( "/pointers/dot_large.png" );
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		pointer-events: none;
+		z-index: 100;
+		opacity: 0;
+		transition: opacity 0.08s ease-out;
+
+		&.visible { opacity: 1; }
+	}
+}
+
+// Top-level so s&box registers it (same rule as the button kit's keyframes).
+@keyframes pad-spin
+{
+	0%   { transform: rotate( 0deg ); }
+	100% { transform: rotate( 360deg ); }
+}
