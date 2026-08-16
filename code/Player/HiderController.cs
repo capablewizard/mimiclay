@@ -232,15 +232,15 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 	// Released-and-claimable state deliberately does NOT live here: _dormant above is machine-local (no other
 	// machine can tell a released prop from a live one), and a [Sync] flag on the pawn would have to be written
-	// across the release's ownership edge. It's a registry on the host-owned manager instead — see
-	// CreativeManager.ReleasedProps / IsReleased.
+	// across the release's ownership edge. It's a registry on the host-owned claim service instead — see
+	// PropClaims.ReleasedProps / IsReleased.
 
 	// Set by BeginPossession, consumed in OnUpdate once ownership has actually replicated to us. A latch rather
 	// than acting inside the RPC because the ownership packet and the RPC race: acting while we're still a proxy
 	// would resume control of a pawn we can't drive yet.
 	bool _possessionPending;
 
-	/// <summary>Host→claimant (sent filtered to the new owner by <see cref="CreativeManager"/>): you've been
+	/// <summary>Host→claimant (sent filtered to the new owner by <see cref="PropClaims"/>): you've been
 	/// handed this released prop — resume control once the ownership change lands. Not IGameObjectNetworkEvents
 	/// .StartControl, deliberately: that fires on every normal spawn (owner handoff) and on the HOST when a
 	/// release's DropOwnership makes it the controller — both would wrongly resume a pawn.</summary>

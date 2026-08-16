@@ -53,6 +53,12 @@ public sealed class RoundRevealLifeSystem : GameObjectSystem
 
 		foreach ( var hider in Scene.GetAllComponents<HiderController>() )
 		{
+			// A RELEASED pawn (lobby prop editing — see PropClaims) is scenery, not a player's body: its boil
+			// is claim-hover feedback, owned by RoundOutlineSystem's claims branch, and asserting the dead
+			// state here would fight that assertion every frame.
+			if ( PropClaims.IsReleased( hider ) )
+				continue;
+
 			var boil = hider.Components.Get<ClayBoil>( FindMode.EverythingInSelfAndDescendants );
 			if ( boil.IsValid() )
 				boil.Activation = alive ? BoilActivation.Always : BoilActivation.Never;

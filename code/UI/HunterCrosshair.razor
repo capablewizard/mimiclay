@@ -12,7 +12,7 @@
 	play. Proxies draw nothing, and face-edit mode draws nothing either — the orbit camera frees the real cursor
 	there, so a crosshair would just be a second dot.
 
-	Also hosts creative mode's "E to Edit" prompt: when the dot is over claimable clay, the prop's COLLISION
+	Also hosts the claim service's "E to Edit" prompt (creative + lobby): when the dot is over claimable clay, the prop's COLLISION
 	GEOMETRY (SdfCollider.FramePoints) is projected into the screen rect it occupies, and a wobbling paper
 	toast hangs under that rect's bottom edge, centred. Carve-aware and pose-blind by construction — see
 	ResolvePrompt. Projection itself is the PlayerNameplates recipe. Debug the anchoring live with
@@ -108,7 +108,8 @@
 		if ( !Visible )
 			return null;
 
-		// Claimable clay under the crosshair — creative only; HoveredSculpture is never set in other modes.
+		// Claimable clay under the crosshair — only where a claim service is live (creative, the lobby);
+		// HoveredSculpture is never set elsewhere.
 		var hovered = Hunter.HoveredSculpture;
 		var cam = Scene.Camera;
 		if ( !hovered.IsValid() || !cam.IsValid() )

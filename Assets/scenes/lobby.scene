@@ -415,6 +415,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "PropHoverRange": 300,
           "PropPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/prop.prefab"
@@ -1168,7 +1169,39 @@
       "__version": 2,
       "__Prefab": "prefabs/saved/gameboy.prefab",
       "__PrefabInstancePatch": {
-        "AddedObjects": [],
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "0b3f17d0-e512-480c-a9e2-6263891db7d7"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "db48c1f6-f208-4752-a9f1-e5896c493e3a"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.DamageProfile",
+              "__guid": "0b3f17d0-e512-480c-a9e2-6263891db7d7",
+              "__enabled": true,
+              "Flags": 0,
+              "HealDelay": "1.5,3.5",
+              "HealDuration": "0.800000012,2.20000005",
+              "Heals": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
         "RemovedObjects": [],
         "PropertyOverrides": [
           {
@@ -1746,7 +1779,39 @@
       "__version": 2,
       "__Prefab": "prefabs/saved/gameboy.prefab",
       "__PrefabInstancePatch": {
-        "AddedObjects": [],
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "0e656899-e279-46c1-abc1-6514fa4a96fe"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "PreviousElement": {
+              "Type": "Component",
+              "IdValue": "db48c1f6-f208-4752-a9f1-e5896c493e3a"
+            },
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.DamageProfile",
+              "__guid": "0e656899-e279-46c1-abc1-6514fa4a96fe",
+              "__enabled": true,
+              "Flags": 0,
+              "HealDelay": "1.5,3.5",
+              "HealDuration": "0.800000012,2.20000005",
+              "Heals": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          }
+        ],
         "RemovedObjects": [],
         "PropertyOverrides": [
           {
@@ -2377,6 +2442,32 @@
           },
           "RenderType": "On",
           "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "96953274-17d4-4225-b2a3-d3d88de69a40",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "0.000244140625,-0.000244140625,18.6000137",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "5615.53369,7536.22314,37.2012177",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
         }
       ],
       "Children": []

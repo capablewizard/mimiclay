@@ -18,11 +18,16 @@ namespace Mimiclay;
 /// Owns: the roster (<see cref="Players"/>), the round config (<see cref="Settings"/>), the launch countdown,
 /// the client→host requests, and the host-side pawn spawning. Scene furniture (prefabs, spawn points, inspector
 /// defaults) stays on the scene-placed <see cref="LobbyController"/>, which exists on every machine.
+///
+/// Lobby scene props are EDITABLE, creative-style: this manager hosts a <see cref="PropClaims"/> service
+/// (spawned beside it by LobbyController) and implements <see cref="IPropClaimHost"/> for it — aim at clay,
+/// "E to Edit", possess, sculpt. A claimed prop is map furniture, so a role swap RELEASES it back into the
+/// world (see <see cref="RequestSwapRole"/>) instead of destroying it like a practice body.
 /// </summary>
 [Title( "Lobby Manager" )]
 [Category( "Mimiclay" )]
 [Icon( "groups" )]
-public sealed class LobbyManager : Component, IRoundContext
+public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 {
 	/// <summary>The live lobby manager (null in map scenes / the menu, and on a client until the host's spawn
 	/// replicates). The lobby UI + LobbyController's input forwarding read this.</summary>
@@ -97,6 +102,27 @@ public sealed class LobbyManager : Component, IRoundContext
 	RoundPhase IRoundContext.Phase => RoundPhase.Lobby;
 	float IRoundContext.TimeRemaining => Launching ? MathF.Max( 0f, LaunchEndsAt ) : 0f;
 	bool IRoundContext.HasTimer => Launching;
+
+	// ── IPropClaimHost (lobby prop editing — the claim flow lives in PropClaims, beside us) ────────────────────
+	// Claims close during the launch countdown: the scene is about to die, and a mid-countdown pawn swap
+	// would race the launch's roster snapshot.
+	bool IPropClaimHost.ClaimsAllowed => !Launching;
+
+	GameObject IPropClaimHost.PropPrefab
+		=> LobbyController.Current.IsValid() ? LobbyController.Current.PropPrefab : null;
+
+	GameObject IPropClaimHost.ClaimantPawn( Connection c ) => _pawns.GetValueOrDefault( c.Id );
+
+	void IPropClaimHost.OnClaimGranted( Connection c, GameObject hunterPawn, HiderController prop )
+	{
+		RememberPawn( c.Id, hunterPawn ); // the face — the hunter pawn dies right after this returns
+		if ( Players.TryGetValue( c.Id, out var row ) )
+		{
+			row.Role = PlayerRole.Prop;
+			Players[c.Id] = row;
+		}
+		_pawns[c.Id] = prop.GameObject;
+	}
 
 	protected override void OnEnabled()
 	{
@@ -280,6 +306,29 @@ public sealed class LobbyManager : Component, IRoundContext
 		row.Role = row.Role == PlayerRole.Prop ? PlayerRole.Hunter : PlayerRole.Prop;
 		Players[c.Id] = row;
 		_known.Add( c.Id );
+
+		// Leaving a CLAIMED prop (a scene prop the claim service converted — see PropClaims.IsConverted): it's
+		// map furniture, not a practice body, so it's RELEASED back into the world — claimable again — instead
+		// of destroyed, and the fresh hunter spawns stepped CLEAR of its hull (the usual in-place respawn would
+		// land inside the released disguise's collider and get solver-shoved, sometimes through the floor).
+		// Deliberately no RememberPawn: swap memory holds YOUR practice disguise, not borrowed furniture.
+		var claims = PropClaims.Current;
+		if ( row.Role == PlayerRole.Hunter
+			&& claims.IsValid()
+			&& _pawns.TryGetValue( c.Id, out var worn ) && worn.IsValid()
+			&& claims.IsConverted( worn ) )
+		{
+			var hider = worn.Components.Get<HiderController>();
+			if ( hider.IsValid() )
+			{
+				var at = claims.HunterSpotClearOf( hider, viewYaw );
+				_pawns.Remove( c.Id );
+				claims.Release( hider );
+				SpawnPawnFor( c.Id, c.DisplayName, PlayerRole.Hunter, c, viewYaw, at );
+				return;
+			}
+		}
+
 		SpawnPawn( c, row.Role, viewYaw );
 	}
 
@@ -468,7 +517,9 @@ public sealed class LobbyManager : Component, IRoundContext
 	// The one spawn path, for players and bots alike. A null <paramref name="owner"/> means a bot: the pawn stays
 	// host-owned and is prepared so nobody drives it (RoundBots.Prepare), instead of being handed to a connection.
 	// A non-null <paramref name="viewYaw"/> spawns the pawn facing it (a role swap carrying the caller's camera).
-	GameObject SpawnPawnFor( Guid id, string name, PlayerRole role, Connection owner, float? viewYaw = null )
+	// A non-null <paramref name="atOverride"/> spawns there instead of the slot/in-place spot — the release path
+	// uses it to step the fresh hunter clear of the prop it just let go of.
+	GameObject SpawnPawnFor( Guid id, string name, PlayerRole role, Connection owner, float? viewYaw = null, Transform? atOverride = null )
 	{
 		var lc = LobbyController.Current;
 		if ( !lc.IsValid() )
@@ -484,12 +535,12 @@ public sealed class LobbyManager : Component, IRoundContext
 			return null;
 		}
 
-		var at = lc.SpotAt( Players.TryGetValue( id, out var row ) ? row.SpawnIndex : 0 );
+		var at = atOverride ?? lc.SpotAt( Players.TryGetValue( id, out var row ) ? row.SpawnIndex : 0 );
 
 		// A role swap respawns IN PLACE — where the old pawn stands, not back at the spawn ring. Same buried-origin
 		// guard as RoundManager.EnsureOwnPawn: a sculpted prop's origin can sit under the floor, so ground the new
 		// pawn on the shape's feet (traced down onto whatever it stood on) rather than the raw origin.
-		if ( _pawns.TryGetValue( id, out var previous ) && previous.IsValid() )
+		if ( atOverride is null && _pawns.TryGetValue( id, out var previous ) && previous.IsValid() )
 		{
 			at = previous.WorldTransform;
 			var hider = previous.Components.Get<HiderController>();
@@ -608,6 +659,14 @@ public sealed class LobbyManager : Component, IRoundContext
 		if ( !hider.IsValid() )
 		{
 			pawn.Destroy();
+			return;
+		}
+
+		// With the claim service live, release properly: the same dormant + ownership drop as below, PLUS the
+		// registry entry that makes a leaver's surviving prop claimable by everyone else.
+		if ( PropClaims.Current.IsValid() )
+		{
+			PropClaims.Current.Release( hider );
 			return;
 		}
 

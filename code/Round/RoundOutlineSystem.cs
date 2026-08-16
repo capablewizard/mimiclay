@@ -29,9 +29,10 @@ namespace Mimiclay;
 /// components, so an outline this system disabled could never be found again to re-show at the Reveal.
 /// A GameObjectSystem, like <see cref="PauseMenuSystem"/>: exists in every scene with no wiring.
 ///
-/// In CREATIVE maps this is the hover presentation gate instead: the claimable clay under the local hunter's
-/// crosshair gets the outline glow AND the claymation boil (see <see cref="ApplyCreativeBoil"/>), everything
-/// else stays quiet.
+/// Wherever a claim service (<see cref="PropClaims"/>) is live without a round — creative maps, and the lobby
+/// with its editable props — this is the hover presentation gate instead: the claimable clay under the local
+/// hunter's crosshair gets the outline glow AND the claymation boil (see <see cref="ApplyClaimBoils"/>),
+/// everything else follows the Lobby-phase rules the claims branch subsumes.
 /// </summary>
 public sealed class RoundOutlineSystem : GameObjectSystem
 {
@@ -44,23 +45,27 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 	void Apply()
 	{
+		// A live claim service WITHOUT a round (creative maps; the lobby with prop editing) takes the
+		// hover-presentation rules — which subsume the Lobby-phase rules, so the lobby doesn't also run
+		// the phase path. It NEEDS gating just as much as a round: with no system writing Hidden, every
+		// prop in the map would wear its authored through-wall glow on every machine. A live round always
+		// wins (rounds never host claims; this is belt-and-braces).
+		if ( !RoundManager.Current.IsValid() && PropClaims.Current.IsValid() )
+		{
+			ApplyClaims();
+			return;
+		}
+
 		// A live round drives the phase. The lobby has no RoundManager, but its pawns are cloned from
 		// the SAME prefabs (which now ship their outline enabled for the Hunt), so it takes the rules
 		// too, as the Lobby phase — otherwise every lobby hunter would wear the red through-wall glow.
-		// Menu / debug scenes (neither manager present) keep their authored outline state untouched.
+		// (Reached in the lobby only in the replication gap before its PropClaims arrives.)
+		// Menu / debug scenes (no manager present) keep their authored outline state untouched.
 		RoundPhase phase;
 		if ( RoundManager.Current.IsValid() )
 			phase = RoundManager.Current.Phase;
 		else if ( LobbyManager.Current.IsValid() )
 			phase = RoundPhase.Lobby;
-		else if ( CreativeManager.Current.IsValid() )
-		{
-			// Creative has its own rules (no phases, and the hover glow) — and it NEEDS gating just as much:
-			// with no system writing Hidden, every prop in the map would wear its authored through-wall glow
-			// on every machine.
-			ApplyCreative();
-			return;
-		}
 		else
 			return;
 
@@ -79,7 +84,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		}
 	}
 
-	// ── Creative ───────────────────────────────────────────────────────────────────────────────────────────────
+	// ── Claims (creative maps + the lobby) ─────────────────────────────────────────────────────────────────────
 	// The hover-glow look, driven through the runtime OVERRIDE slots (never the authored [Property] colours —
 	// snapshot-carries-live-state) and restored to null when the crosshair moves off, the SdfOutlineFlash way.
 	// The authored prop outline is invisible in the open (alpha-0 colour, through-wall blue only), so without
@@ -136,13 +141,14 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		_hoverBoil = null;
 	}
 
-	// Creative visibility: your OWN live prop keeps the owner-only locator glow (same rule as the lobby), the
-	// hunter's SculptBounds warning outline keeps outranking everything, and the one claimable sculpture under
-	// the local hunter's crosshair — a released prop OR scene clay — glows as "you can take this". Everything
-	// else — other players' pawns, the rest of the released props and decoys — shows nothing.
-	void ApplyCreative()
+	// Claims visibility: your OWN live prop keeps the owner-only locator glow (same rule as the lobby phase),
+	// the hunter's SculptBounds warning outline keeps outranking everything, and the one claimable sculpture
+	// under the local hunter's crosshair — a released prop OR scene clay — glows as "you can take this".
+	// Everything else — other players' pawns, the rest of the released props and decoys — shows nothing.
+	// These ARE the Lobby-phase rules plus the hover, which is what lets the lobby take this branch wholesale.
+	void ApplyClaims()
 	{
-		var hover = CreativeManager.LocalHoverSculpture;
+		var hover = PropClaims.LocalHoverSculpture;
 
 		// Not every scene prop's prefab carries an outline — only some of the saved exports do (bear yes,
 		// alarmclock no), and the prop-builder clay has none. Give the hovered sculpture one ON DEMAND, and
@@ -198,7 +204,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			if ( hunter.IsValid() )
 			{
 				// Same as the round rules: the head-scoped invalid-face warning is owner-only information and
-				// the only hunter outline creative ever shows (there is no hunt, so no hunt glow).
+				// the only hunter outline the claims branch ever shows (no hunt here, so no hunt glow).
 				var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
 				outline.Hidden = !(bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid);
 			}
@@ -208,7 +214,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				hovered = sculpture.IsValid() && sculpture == hover;
 
 				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-				var own = hider.IsValid() && !hider.IsProxy && !CreativeManager.IsReleased( hider )
+				var own = hider.IsValid() && !hider.IsProxy && !PropClaims.IsReleased( hider )
 					&& !RoundManager.IsBotPawn( hider.GameObject );
 				outline.Hidden = !(hovered || own);
 			}
@@ -224,8 +230,17 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			}
 		}
 
-		ApplyCreativeBoil( hover );
+		ApplyClaimBoils( hover );
 		ApplySceneBoils( hover );
+
+		// The Reveal pulse never runs here (no phases reach Reveal) — asserted OFF the same both-ways way the
+		// round branch asserts it, so a snapshot that shipped a mid-Reveal flash can't leave one pulsing.
+		foreach ( var hider in Scene.GetAllComponents<HiderController>() )
+		{
+			var flash = hider.Components.Get<SdfOutlineFlash>( FindMode.EverythingInSelf );
+			if ( flash.IsValid() )
+				flash.Enabled = false;
+		}
 	}
 
 	// ── Runtime boils on SCENE clay: hovered = "you can take this", healing = "the wound is being smoothed" ──
@@ -241,7 +256,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	//
 	// A mapper-AUTHORED boil (RuntimeManaged false, includeDisabled — disabled is their kill switch, not an
 	// invitation to plant a second one beside it) is never touched here: its own Activation decides its damage
-	// response, and the hover flip goes through ApplyCreativeBoil's capture/restore slot instead.
+	// response, and the hover flip goes through ApplyClaimBoils' capture/restore slot instead.
 	void ApplySceneBoils( SdfSculpture hover )
 	{
 		foreach ( var sculpt in Scene.GetAllComponents<SdfSculpture>() )
@@ -259,7 +274,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 			var boil = sculpt.Components.Get<ClayBoil>( includeDisabled: true );
 			if ( boil.IsValid() && !boil.RuntimeManaged )
-				continue; // the mapper's look — ApplyCreativeBoil's slot handles its hover flip
+				continue; // the mapper's look — ApplyClaimBoils' slot handles its hover flip
 
 			if ( !boil.IsValid() )
 			{
@@ -281,19 +296,25 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	// The stop-motion churn is the same "you can take this" feedback as the outline (runtime-created scene
 	// boils live in ApplySceneBoils; this handles the components somebody AUTHORED). The disguise/hunter
 	// prefabs' dials ARE ClayBoil's defaults (fps 4, jitter 0.4, amp 1), only Activation differs.
-	void ApplyCreativeBoil( SdfSculpture hover )
+	void ApplyClaimBoils( SdfSculpture hover )
 	{
 		// PAWN props carry an authored boil on the disguise. Asserted continuously and in BOTH directions,
 		// the RoundRevealLifeSystem way: a network snapshot ships live component state, so a prop that was
 		// being hovered on the authority machine when a late-joiner connected would otherwise arrive boiling
-		// and never stop (the RunPFX lesson). RevealLife itself is inert here (no round/lobby manager), so
-		// nothing fights this. The rest state is WhileDamaged, not Never: creative shots always heal (see
-		// HunterController.TryCarve), and a crater silently easing out of perfectly still clay reads as a
-		// glitch — so a shot prop churns from impact through the heal and settles the moment it's whole,
-		// exactly the component's own damage fiction. On undamaged clay WhileDamaged is indistinguishable
-		// from Never, so the snapshot-leak reasoning above still holds.
+		// and never stop (the RunPFX lesson). In CREATIVE, RevealLife is inert (no round/lobby manager) and
+		// this owns every pawn's boil. In the LOBBY, RevealLife is live and owns the LIVE pawns' boils (the
+		// Lobby-phase dead state); only RELEASED pawns — scenery, which RevealLife deliberately skips — take
+		// the hover feedback here, so the two systems never write the same component. The rest state is
+		// WhileDamaged, not Never: creative shots always heal (see HunterController.TryCarve), and a crater
+		// silently easing out of perfectly still clay reads as a glitch — so a shot prop churns from impact
+		// through the heal and settles the moment it's whole, exactly the component's own damage fiction. On
+		// undamaged clay WhileDamaged is indistinguishable from Never, so the snapshot-leak reasoning above
+		// still holds.
 		foreach ( var hider in Scene.GetAllComponents<HiderController>() )
 		{
+			if ( LobbyManager.Current.IsValid() && !PropClaims.IsReleased( hider ) )
+				continue; // a live lobby pawn — RoundRevealLifeSystem's boil, not ours
+
 			var boil = hider.Components.Get<ClayBoil>( FindMode.EverythingInSelfAndDescendants );
 			if ( boil.IsValid() )
 				boil.Activation = hover.IsValid() && hider.DisguiseSculpture == hover

@@ -42,7 +42,7 @@ public sealed class RoundManagerSpawner : Component
 
 	/// <summary>Creative only: how close a hunter must be for clay to outline and offer "E to Edit" — measured
 	/// from the eye to the surface the crosshair lands on. Widen it for open maps where props sit far apart; see
-	/// <see cref="CreativeManager.HoverRange"/>, which this authors.</summary>
+	/// <see cref="PropClaims.HoverRange"/>, which this authors.</summary>
 	[Property, Group( "Creative" ), Range( 64f, 4096f )] public float CreativeHoverRange { get; set; } = 300f;
 
 	[Property, Group( "Scoring" )] public int FindReward { get; set; } = 50;
@@ -181,10 +181,13 @@ public sealed class RoundManagerSpawner : Component
 			if ( !CreativeManager.Current.IsValid() )
 			{
 				var go = new GameObject( true, "Creative Manager" );
-				var cm = go.Components.Create<CreativeManager>(); // pawn prefabs are read live off this spawner, like RoundManager's
-				// Set BEFORE NetworkSpawn: the spawn snapshot ships this component's live JSON, so the host's
-				// authored reach is the reach every client's hover uses — a client's own scene copy never applies.
-				cm.HoverRange = CreativeHoverRange;
+				go.Components.Create<CreativeManager>(); // pawn prefabs are read live off this spawner, like RoundManager's
+				// The claim service rides the same GameObject — one NetworkSpawn ships both, and its [Sync]
+				// registry + RPCs need the networked object. Reach set BEFORE the spawn: the snapshot ships
+				// this component's live JSON, so the host's authored value is the reach every client's hover
+				// uses — a client's own scene copy never applies.
+				var claims = go.Components.Create<PropClaims>();
+				claims.HoverRange = CreativeHoverRange;
 				go.NetworkSpawn();
 			}
 

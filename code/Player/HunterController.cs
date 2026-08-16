@@ -599,10 +599,11 @@ public sealed class HunterController : Component
 			if ( !_altOrbiting )
 				ResolveAim( eye );
 
-			// Creative: what's under the crosshair is a thing you can TAKE, not shoot — hover a released prop
-			// to outline it (+ the "E to Edit" prompt), press E to claim it. Runs on the fresh aim, so the
-			// prompt and the claim agree on what the dot shows.
-			UpdateCreativeHover( eye );
+			// Wherever a claim service is live (creative maps, the lobby): what's under the crosshair is a
+			// thing you can TAKE, not shoot — hover claimable clay to outline it (+ the "E to Edit" prompt),
+			// press E to claim it. Runs on the fresh aim, so the prompt and the claim agree on what the dot
+			// shows.
+			UpdateClaimHover( eye );
 
 			// Owner-only: otherwise every machine would shoot when ITS local player clicked, from a remote pawn's
 			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
@@ -631,19 +632,19 @@ public sealed class HunterController : Component
 		ComposePawn( eye );
 	}
 
-	/// <summary>The claimable clay under this hunter's crosshair, or null — creative mode only. A released pawn
-	/// prop OR any scene-placed sculpture (see <see cref="CreativeManager.IsClaimable"/>). The crosshair HUD
-	/// reads it for the "E to Edit" toast; the same value is published to <see cref="CreativeManager.LocalHover"/>
-	/// for the outline gate.</summary>
+	/// <summary>The claimable clay under this hunter's crosshair, or null — only while a claim service is live
+	/// (creative maps, the lobby). A released pawn prop OR any scene-placed sculpture (see
+	/// <see cref="PropClaims.IsClaimable"/>). The crosshair HUD reads it for the "E to Edit" toast; the same
+	/// value is published to <see cref="PropClaims.LocalHover"/> for the outline gate.</summary>
 	public SdfSculpture HoveredSculpture { get; private set; }
 
-	// Owner-only, creative-only: resolve what the crosshair is over (the same ray the shot would take), keep it
+	// Owner-only, claims-only: resolve what the crosshair is over (the same ray the shot would take), keep it
 	// if it's claimable clay, and claim it on E. "Use" is the E key; sculpt-mode's E-scrub can't collide with
 	// it because this whole path is inside the !EditMode block.
-	void UpdateCreativeHover( Vector3 eye )
+	void UpdateClaimHover( Vector3 eye )
 	{
-		var creative = CreativeManager.Current;
-		if ( !creative.IsValid() )
+		var claims = PropClaims.Current;
+		if ( !claims.IsValid() || !claims.ClaimsOpen )
 		{
 			HoveredSculpture = null;
 			return;
@@ -652,24 +653,24 @@ public sealed class HunterController : Component
 		SdfSculpture hover = null;
 		if ( !_altOrbiting && _aimDir.LengthSquared > 0.5f )
 		{
-			// The gun's ray, cut to arm's reach (CreativeManager.HoverRange): shortening the ray rather than
+			// The gun's ray, cut to arm's reach (PropClaims.HoverRange): shortening the ray rather than
 			// range-testing its hit keeps occlusion for free — whatever is first along it still blocks — and
 			// means a prop only lights up once you're actually close enough for E to be granted.
-			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, creative.HoverRange ) );
+			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, claims.HoverRange ) );
 			var sculpture = tr.Hit ? FindSculpture( tr.GameObject ) : null;
-			if ( CreativeManager.IsClaimable( sculpture ) )
+			if ( PropClaims.IsClaimable( sculpture ) )
 				hover = sculpture;
 		}
 
 		HoveredSculpture = hover;
-		CreativeManager.SetLocalHover( hover );
+		PropClaims.SetLocalHover( hover );
 
 		if ( hover.IsValid() && Input.Pressed( "Use" ) )
 		{
 			// Carry the view into the prop, same as a lobby swap: yaw+pitch stashed owner-side here, consumed
 			// by ResumeControl on the possessed pawn — whatever you were looking at, you still are.
 			LobbySwapCarry.Capture( Scene, null );
-			creative.RequestPossess( hover.GameObject );
+			claims.RequestPossess( hover.GameObject );
 		}
 	}
 

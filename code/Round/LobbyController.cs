@@ -57,6 +57,13 @@ public sealed class LobbyController : Component
 	/// <summary>Seconds between hitting Start and the scene change, so everyone sees the launch coming.</summary>
 	[Property, Group( "Round Defaults" )] public float LaunchCountdownSeconds { get; set; } = 10f;
 
+	// ── Prop editing ──────────────────────────────────────────────────────────────────────────────────────
+	/// <summary>Lobby scene props are editable exactly like creative's — aim, "E to Edit", possess. This is
+	/// how close a hunter must be for clay to outline and offer the prompt, measured eye-to-surface; it
+	/// authors <see cref="PropClaims.HoverRange"/> the way RoundManagerSpawner's CreativeHoverRange does for
+	/// creative maps.</summary>
+	[Property, Group( "Prop Editing" ), Range( 64f, 4096f )] public float PropHoverRange { get; set; } = 300f;
+
 	// ── Test bots ─────────────────────────────────────────────────────────────────────────────────────────
 	// Fake players so a solo editor session can see a full lobby: roster pips, names, a hunter count worth
 	// sliding, nominations. They're the same bots the round uses (RoundBots), just seated by LobbyManager
@@ -157,6 +164,11 @@ public sealed class LobbyController : Component
 		{
 			var go = new GameObject( true, "Lobby Manager" );
 			go.Components.Create<LobbyManager>();
+			// Lobby props are editable via the same claim service creative uses; the manager is its
+			// IPropClaimHost. Same GameObject so one NetworkSpawn ships both, and the reach is set BEFORE
+			// the spawn so the snapshot ships the authored value to every client's hover.
+			var claims = go.Components.Create<PropClaims>();
+			claims.HoverRange = PropHoverRange;
 			go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]
 		}
 

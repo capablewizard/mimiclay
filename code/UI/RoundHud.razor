@@ -419,12 +419,12 @@
 		// Prop players portray the disguise itself, from the angle its player last signed it off at. A prop the
 		// round is concealing from us never resolves — the cache can't leak what this machine was never shown —
 		// though in practice a concealed prop's pawn isn't even on this machine's network until the Reveal.
-		// Released props (creative scenery) belong to NOBODY and must never portray anyone — skipped before the
+		// Released props (creative/lobby scenery) belong to NOBODY and must never portray anyone — skipped before the
 		// owner resolve so no resolver quirk (an unowned pawn resolves null today, but a host-orphaned one
 		// answers the host) can pin scenery onto a player's row.
 		foreach ( var p in Scene.GetAllComponents<HiderController>() )
 		{
-			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed || CreativeManager.IsReleased( p ) )
+			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed || PropClaims.IsReleased( p ) )
 				continue;
 
 			var owner = RoundManager.RosterIdOf( p.GameObject );
