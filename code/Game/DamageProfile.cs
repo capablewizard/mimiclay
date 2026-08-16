@@ -9,10 +9,11 @@ namespace Mimiclay;
 ///
 /// ABSENT = the default: craters scar permanently. That default is also a game-integrity rule — player
 /// disguises must behave identically to decoys (both scar), or a healing crater would be an inverted tell
-/// exposing the player. Heads healing leaks nothing: hunters are public. CREATIVE mode overrides the
-/// default wholesale — every carve heals there (see HunterController.TryCarve), on this component's
-/// timing when present and on <see cref="DefaultHealDelay"/>/<see cref="DefaultHealDuration"/> otherwise:
-/// there is no hunt to keep honest, and shots must never permanently deface what people are building.
+/// exposing the player. Heads healing leaks nothing: hunters are public. The SANDBOX modes (creative and
+/// the lobby) override the default wholesale — every carve heals there (see HunterController.TryCarve),
+/// on this component's timing when present and on <see cref="DefaultHealDelay"/>/<see cref="DefaultHealDuration"/>
+/// otherwise: neither has a hunt to keep honest, and shots must never permanently deface what people are
+/// building. Scarring is strictly a prop-hunt ROUND rule.
 ///
 /// The shooter reads this off the target at carve time, rolls the timing ONCE, and ships concrete values
 /// with the carve — so every machine agrees on each crater's schedule (see HunterController.TryCarve; the

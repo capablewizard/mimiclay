@@ -2414,12 +2414,16 @@ public sealed class HunterController : Component
 		// concrete values — every machine must agree on when each crater vanishes, so the randomness can't
 		// be rolled per machine. Staggered, not lockstep.
 		//
-		// CREATIVE overrides the policy: everything heals. Scarring is a prop-hunt integrity rule (disguises
-		// must scar like decoys), and creative has no hunt to protect — but it does have builds to protect,
-		// and a stray shot permanently defacing someone's prop would be worse than the tell ever was. A
-		// profile still supplies its authored timing; bare clay heals on the profile defaults.
+		// The SANDBOX modes (creative AND the lobby) override the policy: everything heals. Scarring is a
+		// prop-hunt ROUND integrity rule (disguises must scar like decoys), and neither mode has a hunt to
+		// protect — but both have builds to protect, and a stray shot permanently defacing someone's prop
+		// would be worse than the tell ever was. Without the lobby leg, a possessed prop scarred there while
+		// the scene props around it healed: conversion swaps the scene object for a pawn clone whose disguise
+		// carries the round-rule Heals:false, and only the brushes survive the swap. A profile still supplies
+		// its authored timing; bare clay heals on the profile defaults.
 		var profile = sculpt.GameObject.Components.Get<DamageProfile>();
-		bool heals = CreativeManager.Current.IsValid() || (profile.IsValid() && profile.Heals);
+		bool sandbox = CreativeManager.Current.IsValid() || LobbyManager.Current.IsValid();
+		bool heals = sandbox || (profile.IsValid() && profile.Heals);
 		var healDelay = profile.IsValid() ? profile.HealDelay : DamageProfile.DefaultHealDelay;
 		var healDuration = profile.IsValid() ? profile.HealDuration : DamageProfile.DefaultHealDuration;
 		float delay = heals ? Game.Random.Float( healDelay.x, healDelay.y ) : 0f;
