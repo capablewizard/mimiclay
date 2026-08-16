@@ -6,17 +6,13 @@
 
 @*
 	The host's round-setup modal, opened with G in the lobby (host only — spawned by LobbyController.EnsureSetupHud,
-	which never makes one on a client). Styled to match the front-end Host Game page: a jittering WobbleText header,
-	cream paper-card panels, craft-blue setting icons, orange selection, and the shared clay "Start Game" action
-	button. Left panel = round settings (hunters + phase times), right panel = map picker (placeholder preview + the
-	catalogue list, Random on top).
+	which never makes one on a client). The dialog itself (header, settings, maps, Start) is the shared
+	SetupDialog component — the same panel the lobby pad's tablet screen shows — so this file is just the modal
+	chrome: the blurred backdrop, the open/close state, the G toggle, and the footer Back button.
 
 	While open it sets the static IsOpen, which PauseMenuSystem reads to force the cursor visible (the same hook the
 	pause menu uses) — that also stops the lobby pawn capturing look, since the controllers only read look while the
 	cursor is hidden.
-
-	PLACEHOLDER: the map preview is a flat tile, and every map button currently selects perftestdebug regardless of
-	which you click (we just highlight the clicked one). Wire real previews + per-map selection when maps land.
 *@
 
 <root class="round-setup @(_open ? "open" : "")">
@@ -24,144 +20,7 @@
 	{
 		<div class="backdrop"></div>
 
-		<div class="dialog">
-			<WobbleText Text="Set Up Game" class="dialog-title auto" />
-
-			@* .body shrink-wraps the columns so the actions row beneath stretches to exactly the panels' width,
-			   right-aligning Start to the maps panel's edge (independent of the wider title). *@
-			<div class="body">
-			<div class="columns">
-				@* ── Left: settings ─────────────────────────────────────────── *@
-				<div class="paper-card panel settings-panel">
-					<div class="section-label"><span>Settings</span></div>
-
-					@* The GAME at the top — prop hunt / creative. Everything below it is that game's own
-					   setup: prop hunt's rules variant + times + maps. *@
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">@Game.Icon</div><span>Game</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => CycleGame( -1 ))>chevron_left</div>
-							<div class="step-value mode-value">@Game.Label</div>
-							<div class="step-btn" @onclick=@(() => CycleGame( 1 ))>chevron_right</div>
-						</div>
-					</div>
-
-					@if ( G == GameModeKind.Creative )
-					{
-					@* Keep the map's pre-placed props, or start from a blank canvas. Yes/No through the same
-					   < value > scrubber as every other option — with two values, both arrows just flip it. *@
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">weekend</div><span>Spawn Props</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@ToggleSpawnProps>chevron_left</div>
-							<div class="step-value">@(C.SpawnProps ? "Yes" : "No")</div>
-							<div class="step-btn" @onclick=@ToggleSpawnProps>chevron_right</div>
-						</div>
-					</div>
-
-					@* Further creative options land here — the blank space is reserved so the panel keeps
-					   prop hunt's footprint (see .settings-panel min-height) instead of collapsing. *@
-					<div class="options-space">
-						<div class="options-hint">@Game.Blurb</div>
-					</div>
-					}
-					else
-					{
-					@* Prop hunt's mode-within-the-game — Infection / Teams (the second taxonomy level). *@
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">category</div><span>Mode</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => CycleMode( -1 ))>chevron_left</div>
-							<div class="step-value mode-value">@RoundModes.Get( S.Mode ).Label</div>
-							<div class="step-btn" @onclick=@(() => CycleMode( 1 ))>chevron_right</div>
-						</div>
-					</div>
-
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">group</div><span>Hunters</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => AddHunters( -1 ))>remove</div>
-							@* x / y — hunters out of the number of people currently in the lobby. *@
-							<div class="step-value">@((int)S.HunterCount)/@LobbyPlayerCount</div>
-							<div class="step-btn" @onclick=@(() => AddHunters( 1 ))>add</div>
-						</div>
-					</div>
-
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">schedule</div><span>Hide Time</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => AddHide( -15f ))>remove</div>
-							<div class="step-value">@Secs( S.HideSeconds )</div>
-							<div class="step-btn" @onclick=@(() => AddHide( 15f ))>add</div>
-						</div>
-					</div>
-
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">timer</div><span>Hunt Time</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => AddHunt( -15f ))>remove</div>
-							<div class="step-value">@Secs( S.HuntSeconds )</div>
-							<div class="step-btn" @onclick=@(() => AddHunt( 15f ))>add</div>
-						</div>
-					</div>
-
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">campaign</div><span>Taunt Timer</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => AddTaunt( -5f ))>remove</div>
-							<div class="step-value">@Secs( S.TauntSeconds )</div>
-							<div class="step-btn" @onclick=@(() => AddTaunt( 5f ))>add</div>
-						</div>
-					</div>
-
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">visibility</div><span>Reveal Time</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => AddReveal( -5f ))>remove</div>
-							<div class="step-value">@Secs( S.RevealSeconds )</div>
-							<div class="step-btn" @onclick=@(() => AddReveal( 5f ))>add</div>
-						</div>
-					</div>
-					}
-				</div>
-
-				@* ── Right: maps (from the Prop Hunt Map assets). Shared by every game that plays on a map —
-				   prop hunt launches into the pick; creative stores it for when its own launch path lands. *@
-				@if ( Game.UsesMaps )
-				{
-				<div class="paper-card panel maps-panel">
-					<div class="section-label"><span>Maps</span></div>
-
-					<div class="map-preview">
-						@* The picked map's preview image (set in code via @ref, like MiniMotors' MapCard). Falls back
-						   to a label when Random is picked or the map has no image yet. *@
-						<image @ref="PreviewImage" class="map-preview-img" />
-						@if ( SelectedMap?.Preview is null )
-						{
-							<div class="map-preview-label">@SelectedLabel</div>
-						}
-					</div>
-
-					<div class="map-list">
-						<div class="map-row @(IsPicked( MapCatalog.RandomIdent ) ? "selected" : "")"
-							 @onclick=@(() => PickMap( MapCatalog.RandomIdent ))>Random</div>
-
-						@foreach ( var m in MapCatalog.All )
-						{
-							<div class="map-row @(IsPicked( m.ResourcePath ) ? "selected" : "")"
-								 @onclick=@(() => PickMap( m.ResourcePath ))>@m.Title</div>
-						}
-					</div>
-				</div>
-				}
-			</div>
-
-			@* Start sits inside the menu (not the footer), right-aligned to the panels' edge. *@
-			<div class="dialog-actions">
-				<div class="btn btn-action" @onclick=@StartGame><span>Start Game</span></div>
-			</div>
-			</div>
-		</div>
+		<SetupDialog OnStarted=@(() => SetOpen( false )) />
 
 		@* Back reuses the front-end menu footer (text button, claymation jitter), bottom-left; closes the modal. *@
 		<div class="menu-footer">
@@ -180,37 +39,10 @@
 
 	bool _open;
 
-	// The picked map's ResourcePath (or RandomIdent). Mirrors LobbyManager.Settings.MapIdent, kept here so the
-	// row highlight + preview update instantly on click.
-	string _picked = MapCatalog.RandomIdent;
-
-	// The preview <image> (set in code, like MiniMotors' MapCard ThumbImage).
-	public Sandbox.UI.Image PreviewImage { get; set; }
-
 	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
-
-	// The live settings to display (host owns the LobbyManager, so its setters mutate the synced struct directly).
-	RoundSettings S => LobbyManager.Current.IsValid() ? LobbyManager.Current.Settings : RoundSettings.Default;
-
-	// The selected GAME (top taxonomy level) + its catalogue entry, and creative's live settings.
-	GameModeKind G => LobbyManager.Current.IsValid() ? LobbyManager.Current.SelectedGame : GameModeKind.PropHunt;
-	GameModeInfo Game => GameModes.Get( G );
-	CreativeSettings C => LobbyManager.Current.IsValid() ? LobbyManager.Current.CreativeCfg : CreativeSettings.Default;
-
-	// People currently in the lobby — the "y" in the hunters "x/y" readout.
-	int LobbyPlayerCount => Connection.All.Count;
-
-	// The picked map resource, or null for Random (or an unresolved path).
-	MapResource SelectedMap => MapCatalog.TryGet( _picked, out var m ) ? m : null;
-
-	string SelectedLabel => SelectedMap?.Title ?? "Random";
 
 	protected override void OnUpdate()
 	{
-		// Keep the preview image in sync with the picked map (the <image> Texture is driven from code).
-		if ( _open && PreviewImage is not null )
-			PreviewImage.Texture = SelectedMap?.Preview;
-
 		// Only the host configures. If a non-host somehow has this panel, keep it shut.
 		if ( !LocalIsHost )
 		{
@@ -234,70 +66,11 @@
 		StateHasChanged();
 	}
 
-	void StartGame()
-	{
-		LobbyManager.Current?.RequestStart();
-		SetOpen( false );
-	}
-
-	// ── Game (which game the session plays) ─────────────────────────────────────────────────────────────────
-	// Step forward/back through the games catalogue, wrapping around at the ends.
-	void CycleGame( int dir )
-	{
-		var games = GameModes.All;
-		if ( games.Length == 0 )
-			return;
-
-		var i = System.Array.FindIndex( games, g => g.Kind == G );
-		if ( i < 0 ) i = 0;
-		i = ((i + dir) % games.Length + games.Length) % games.Length; // wrap both directions
-		LobbyManager.Current?.SetGame( games[i].Kind );
-	}
-
-	// ── Prop hunt's mode-within-the-game (Infection / Teams) ────────────────────────────────────────────────
-	// Step forward/back through the variants, wrapping around at the ends.
-	void CycleMode( int dir )
-	{
-		var modes = RoundModes.All;
-		if ( modes.Length == 0 )
-			return;
-
-		var i = System.Array.FindIndex( modes, m => m.Kind == S.Mode );
-		if ( i < 0 ) i = 0;
-		i = ((i + dir) % modes.Length + modes.Length) % modes.Length; // wrap both directions
-		LobbyManager.Current?.SetRoundMode( modes[i].Kind );
-	}
-
-	// ── Settings steppers (clamped by the LobbyManager setters) ──────────────────────────────────────────────
-	void AddHunters( int d ) => LobbyManager.Current?.SetHunterCount( (int)S.HunterCount + d );
-	void AddHide( float d ) => LobbyManager.Current?.SetHideSeconds( S.HideSeconds + d );
-	void AddHunt( float d ) => LobbyManager.Current?.SetHuntSeconds( S.HuntSeconds + d );
-	void AddTaunt( float d ) => LobbyManager.Current?.SetTauntSeconds( S.TauntSeconds + d );
-	void AddReveal( float d ) => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d );
-
-	// Creative's toggle (host-authority enforced by the LobbyManager setter, like everything above).
-	void ToggleSpawnProps() => LobbyManager.Current?.SetSpawnProps( !C.SpawnProps );
-
-	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
-	void PickMap( string ident )
-	{
-		_picked = ident;
-		LobbyManager.Current?.SetMap( ident );
-	}
-
-	bool IsPicked( string ident ) => string.Equals( _picked, ident, StringComparison.OrdinalIgnoreCase );
-
-	static string Secs( float seconds ) => $"{(int)MathF.Round( seconds )}s";
-
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
 		IsOpen = false; // never leave the static stuck "open" if we're torn down (scene change)
 	}
 
-	protected override int BuildHash()
-		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
-			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.RevealSeconds ),
-			HashCode.Combine( G, C.SpawnProps ),
-			_picked, LobbyPlayerCount );
+	protected override int BuildHash() => HashCode.Combine( _open );
 }

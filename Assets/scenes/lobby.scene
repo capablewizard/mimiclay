@@ -2374,7 +2374,7 @@
           "Name": "Cube",
           "Position": "-8.56102753,0,0",
           "Rotation": "0,0,0,1",
-          "Scale": "0.287174404,4.55989695,2.82372046",
+          "Scale": "0.287174404,4.55989695,2.65637183",
           "Tags": "",
           "Enabled": true,
           "NetworkMode": 2,
@@ -2466,7 +2466,7 @@
           "Name": "LobbyPad",
           "Position": "0,0,0",
           "Rotation": "0,0,0,1",
-          "Scale": "1,1,1",
+          "Scale": "1.13999999,1.13999999,1.13999999",
           "Tags": "",
           "Enabled": true,
           "NetworkMode": 2,
@@ -2489,14 +2489,14 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "4387.91699,2681.41406",
+              "PanelSize": "3840,2160",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
                 "BloomLayer": false,
                 "AfterUILayer": false
               },
-              "RenderScale": 3,
+              "RenderScale": 1,
               "VerticalAlign": "Center"
             },
             {

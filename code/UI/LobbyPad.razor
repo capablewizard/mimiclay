@@ -11,8 +11,9 @@
 
 @*
 	The lobby pad — a tablet standing in the lobby scene, rendered by the WorldPanel component on the same
-	GameObject. This is the session's front desk: the host starts the game from it, anyone can browse and join
-	other public sessions. It exists to pull those flows OUT of the full-screen main menu and into the world.
+	GameObject. This is the session's front desk: home shows the shared round-setup dialog (SetupDialog — the
+	same component as the G-key modal, wobbling header and all), and a second page browses/joins other public
+	sessions. It exists to pull those flows OUT of the full-screen main menu and into the world.
 
 	Input comes from the engine's WorldInput component on the scene camera: with the mouse captured
 	(first-person) it rays from the camera centre, so the crosshair IS the pointer — within the WorldPanel's
@@ -31,21 +32,9 @@
 
 		@if ( _page == Page.Home )
 		{
-			<WobbleText Text="Mimiclay" class="pad-title" />
-
-			<div class="status-row">
-				<div class="mi">group</div>
-				<span>@PlayerCount in the lobby</span>
-				@if ( Lobby is not null )
-				{
-					var info = GameModes.Get( Lobby.SelectedGame );
-					<div class="mi">@info.Icon</div>
-					<span>@info.Label</span>
-				}
-			</div>
-
 			@if ( Launching )
 			{
+				<WobbleText Text="Mimiclay" class="pad-title" />
 				<div class="paper-card launch-card">
 					<span class="launch-label">Launching in</span>
 					<span class="launch-count">@CountdownSeconds</span>
@@ -53,21 +42,15 @@
 			}
 			else
 			{
-				@if ( IsHost )
-				{
-					<div class="btn btn-action start" @onclick=@StartGame>
-						<div class="mi">play_arrow</div>
-						<span>Start Game</span>
-					</div>
-				}
-				else
-				{
-					<div class="host-hint">The host starts the game from here.</div>
-				}
+				@* The shared round-setup dialog (same component as the G-key modal) — the pad's home IS the
+				   setup menu. Everyone sees it (the state is synced); non-hosts get a note in place of Start. *@
+				<SetupDialog />
 
-				<div class="btn browse" @onclick=@OpenSessions>
-					<div class="mi">travel_explore</div>
-					<span>Browse Sessions</span>
+				<div class="pad-footer">
+					<div class="btn browse" @onclick=@OpenSessions>
+						<div class="mi">travel_explore</div>
+						<span>Browse Sessions</span>
+					</div>
 				</div>
 			}
 		}
@@ -132,10 +115,8 @@
 	CancellationTokenSource _cts;
 
 	static LobbyManager Lobby => LobbyManager.Current;
-	static bool IsHost => !Networking.IsActive || Networking.IsHost;
 	static bool Launching => Lobby.IsValid() && Lobby.Launching;
 	static int CountdownSeconds => Lobby.IsValid() ? (int)MathF.Ceiling( MathF.Max( 0f, Lobby.LaunchEndsAt ) ) : 0;
-	static int PlayerCount => Lobby.IsValid() ? Lobby.Players.Count : Connection.All.Count;
 
 	static string NameOf( LobbyInformation l ) => string.IsNullOrWhiteSpace( l.Name ) ? "Mimiclay Game" : l.Name;
 
@@ -167,8 +148,6 @@
 		CursorPanel.Style.Top = Length.Pixels( mp.y );
 		CursorPanel.Style.Dirty();
 	}
-
-	void StartGame() => Lobby?.RequestStart();
 
 	void OpenHome()
 	{
@@ -227,7 +206,7 @@
 
 	protected override int BuildHash()
 	{
-		var hash = HashCode.Combine( _page, _loading, _lobbies.Count, IsHost, Launching, CountdownSeconds, PlayerCount );
+		var hash = HashCode.Combine( _page, _loading, _lobbies.Count, Launching, CountdownSeconds );
 		return HashCode.Combine( hash, MenuNetworking.Busy, MenuNetworking.LastError, MenuNetworking.ErrorStamp );
 	}
 }
