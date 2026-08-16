@@ -39,7 +39,9 @@ public sealed class SdfCollider : Component
 	List<Vector3> _footPoints = new();
 
 	/// <summary>Sculpture-local underside contact points captured when the collider was last built (empty until
-	/// the first build). Transform by <see cref="GameObject"/>'s world transform to probe the ground.</summary>
+	/// the first build). Transform by <see cref="GameObject"/>'s world transform to probe the ground. The
+	/// underside is WORLD-down at build time — a tilted sculpture's points sit on the face actually resting on
+	/// the floor — and stays valid while the pawn yaws (yaw cancels out of the tilt).</summary>
 	public IReadOnlyList<Vector3> FootPoints => _footPoints;
 
 	// Sculpture-local points outlining every shape the last build EMITTED — hull vertices, voxel-box corners,
@@ -123,10 +125,24 @@ public sealed class SdfCollider : Component
 
 		// Footprint snapshot for ground probes — computed AFTER the collider is fully set up, and guarded, so a
 		// problem here can NEVER stop the sculpture from being solid (the collider build must not depend on it).
+		//
+		// The probes trace WORLD-down, but the snapshot is sculpture-local: a sculpture standing tilted (a scene
+		// prop placed on its side — conversion moves that tilt onto the disguise child) has its real underside on
+		// a local side face. Hand the builder the local→down-aligned frame so the probes land on the face resting
+		// on the floor. Built from the CURRENT rotation, yet stable at runtime: the pawn only ever yaws, and yaw
+		// cancels out of world-down expressed locally. Near-upright snaps to null (the common case, and float
+		// noise in a live rotation must not perturb the standing behaviour).
 		try
 		{
+			var downLocal = WorldRotation.Inverse * Vector3.Down;
+			Rotation? probeFrame = null;
+			if ( downLocal.z > -0.9999f )
+				probeFrame = downLocal.z > 0.9999f
+					? Rotation.FromAxis( Vector3.Forward, 180f ) // upside-down: FromToRotation's axis degenerates
+					: Rotation.FromToRotation( downLocal, Vector3.Down );
+
 			_footPoints = brushes is not null
-				? SdfCollisionBuilder.ComputeFootPoints( brushes, FootProbeSpacing, carved )
+				? SdfCollisionBuilder.ComputeFootPoints( brushes, FootProbeSpacing, carved, probeFrame )
 				: new();
 		}
 		catch

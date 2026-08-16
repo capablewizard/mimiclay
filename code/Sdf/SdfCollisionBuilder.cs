@@ -886,13 +886,26 @@ public static class SdfCollisionBuilder
 	/// Pass the <paramref name="carvedCopies"/> list <see cref="Build"/> filled to keep the probes in lockstep
 	/// with a carved collider: every voxel box contributes its lowest corners as guaranteed contact probes, and
 	/// probes falling inside a voxelised copy's footprint snap onto the boxes' underside (or drop, if their
-	/// column was hollowed clean through) instead of using the smooth field the boxes only approximate.</summary>
+	/// column was hollowed clean through) instead of using the smooth field the boxes only approximate.
+	///
+	/// "Underside" means WORLD-down: a sculpture standing tilted (a scene prop placed on its side, whose tilt
+	/// conversion moves onto the disguise child) passes <paramref name="probeFrame"/> — the rotation taking
+	/// sculpture-local space to a frame whose −Z is world down — and the whole computation is conjugated through
+	/// it: geometry is rotated in, columns march that frame's Z, and the probes are rotated back, so they land
+	/// on the face actually resting on the floor. Null (upright) skips the conjugation entirely.</summary>
 	public static List<Vector3> ComputeFootPoints( List<SdfBrush> brushes, float spacing = 12f,
-		List<CarvedCopy> carvedCopies = null )
+		List<CarvedCopy> carvedCopies = null, Rotation? probeFrame = null )
 	{
 		var pts = new List<Vector3>();
 		if ( brushes is null || brushes.Count == 0 )
 			return pts;
+
+		// Conjugation frame (identity when upright): q takes sculpture-local points INTO the down-aligned probe
+		// frame, qi brings probes back out; downLocal is where the round shapes' "bottom point" really is.
+		bool tilted = probeFrame.HasValue;
+		var q = probeFrame ?? Rotation.Identity;
+		var qi = q.Inverse;
+		var downLocal = qi * Vector3.Down;
 
 		spacing = MathF.Max( spacing, 2f );
 		const int maxPerAxis = 10;            // bound the probe count for a huge brush (spacing just gets coarser)
@@ -930,9 +943,12 @@ public static class SdfCollisionBuilder
 			if ( TooSmall( b, minExtent, tmp, sweep ) )
 				continue; // Build emitted no collider here — probing it would hover the body on nothing
 
-			BrushVertices( b, verts, tmp, sweep, centres );
+			BrushVertices( b, verts, tmp, sweep, centres, downLocal );
 			if ( verts.Count == 0 )
 				continue;
+			if ( tilted )
+				for ( int i = 0; i < verts.Count; i++ )
+					verts[i] = q * verts[i];
 
 			// Subtracts that can hollow this brush (same list-order rule as the collider). The probes must read
 			// carved space as EMPTY: a chopped-off bottom otherwise leaves phantom probes floating below the real
@@ -955,7 +971,7 @@ public static class SdfCollisionBuilder
 					if ( e.BrushIndex != bi )
 						continue;
 					copyEntries.Add( e );
-					copyRects.Add( EntryRectXY( e ) );
+					copyRects.Add( EntryRectXY( e, q ) );
 				}
 			}
 
@@ -983,6 +999,23 @@ public static class SdfCollisionBuilder
 					hi = hi.WithZ( hi.z + 2f * maxR );
 				}
 			}
+			else if ( tilted )
+			{
+				// The analytic AABBs live in sculpture axes and mean nothing in the probe frame — span the
+				// (already rotated) hull points instead, padded because the round shapes' coarse point clouds sit
+				// up to ~8% inside the true surface (the pad only widens the grid/march range; always safe).
+				lo = new Vector3( float.MaxValue );
+				hi = new Vector3( float.MinValue );
+				foreach ( var v in verts )
+				{
+					lo = Vector3.Min( lo, v );
+					hi = Vector3.Max( hi, v );
+				}
+
+				var pad = new Vector3( 1f + 0.08f * (hi - lo).Length * 0.5f );
+				lo -= pad;
+				hi += pad;
+			}
 			else
 			{
 				var ext = b.AabbExtents( b.Rotation );
@@ -1006,7 +1039,7 @@ public static class SdfCollisionBuilder
 				cornerProbes.Clear();
 				foreach ( var e in copyEntries )
 					foreach ( var box in e.Boxes )
-						LowestBoxCorners( e, box, cornerProbes );
+						LowestBoxCorners( e, box, cornerProbes, q );
 				cornerProbes.Sort( ( u, v ) => u.z.CompareTo( v.z ) );
 				foreach ( var p in cornerProbes )
 					Add( p );
@@ -1025,10 +1058,10 @@ public static class SdfCollisionBuilder
 					continue;
 				if ( carvers.Count == 0 )
 					Add( v );
-				else if ( TryFindUnderside( b, carvers, v.x, v.y, lo.z, hi.z, out float vz ) )
+				else if ( TryFindUnderside( b, carvers, qi, v.x, v.y, lo.z, hi.z, out float vz ) )
 				{
 					var probe = new Vector3( v.x, v.y, vz );
-					if ( TrySyncToVoxels( copyEntries, copyRects, ref probe ) )
+					if ( TrySyncToVoxels( copyEntries, copyRects, ref probe, qi ) )
 						Add( probe );
 				}
 			}
@@ -1046,14 +1079,20 @@ public static class SdfCollisionBuilder
 				float x = lo.x + (ix + 0.5f) * cw;
 				float y = lo.y + (iy + 0.5f) * ch;
 				SnapToVertex( ref x, ref y, verts, snapRadius );
-				if ( TryFindUnderside( b, carvers, x, y, lo.z, hi.z, out float z ) )
+				if ( TryFindUnderside( b, carvers, qi, x, y, lo.z, hi.z, out float z ) )
 				{
 					var probe = new Vector3( x, y, z );
-					if ( TrySyncToVoxels( copyEntries, copyRects, ref probe ) )
+					if ( TrySyncToVoxels( copyEntries, copyRects, ref probe, qi ) )
 						Add( probe );
 				}
 			}
 		}
+
+		// Probes were placed in the down-aligned frame — bring them back to sculpture-local, the space the
+		// consumer transforms to world by the sculpture's transform.
+		if ( tilted )
+			for ( int i = 0; i < pts.Count; i++ )
+				pts[i] = qi * pts[i];
 
 		return pts;
 	}
@@ -1062,14 +1101,15 @@ public static class SdfCollisionBuilder
 	// the brush's own field (rotation + mirror symmetry already folded in) MINUS its carvers, so carved space
 	// reads EMPTY and a chopped-off bottom yields the new flat underside, not the vanished one. Columns the
 	// carved brush doesn't cover reach the top without crossing and return false; top surfaces are never
-	// reached, so they're discarded.
-	static bool TryFindUnderside( SdfBrush b, List<SdfBrush> carvers, float x, float y, float zmin, float zmax, out float z )
+	// reached, so they're discarded. The column lives in the probe frame; toSculpture (identity when upright)
+	// maps each sample back for evaluation — SDF distances are rotation-invariant, so the stepping is unchanged.
+	static bool TryFindUnderside( SdfBrush b, List<SdfBrush> carvers, Rotation toSculpture, float x, float y, float zmin, float zmax, out float z )
 	{
 		z = 0f;
 		float cz = zmin - 1f;
 		for ( int i = 0; i < 64; i++ )
 		{
-			var p = new Vector3( x, y, cz );
+			var p = toSculpture * new Vector3( x, y, cz );
 			float d = b.Distance( p );
 			foreach ( var s in carvers )
 				d = MathF.Max( d, -s.Distance( p ) ); // hard-subtract fold, same shape the collider voxelises
@@ -1082,10 +1122,10 @@ public static class SdfCollisionBuilder
 		return false;
 	}
 
-	// Sculpture-space XY bounds of one voxelised copy's boxes — the region whose probes must ride the emitted
+	// Probe-frame XY bounds of one voxelised copy's boxes — the region whose probes must ride the emitted
 	// collider. Spheres don't extend the rect: probes over a kept sphere OUTSIDE it keep their marched z (the
 	// pre-carve behaviour), while ones inside it join the underside min alongside the boxes.
-	static (Vector2 lo, Vector2 hi) EntryRectXY( CarvedCopy e )
+	static (Vector2 lo, Vector2 hi) EntryRectXY( CarvedCopy e, Rotation toProbe )
 	{
 		float lox = float.MaxValue, loy = float.MaxValue, hix = float.MinValue, hiy = float.MinValue;
 		foreach ( var (blo, bhi) in e.Boxes )
@@ -1096,7 +1136,7 @@ public static class SdfCollisionBuilder
 					(c & 1) != 0 ? bhi.x : blo.x,
 					(c & 2) != 0 ? bhi.y : blo.y,
 					(c & 4) != 0 ? bhi.z : blo.z );
-				var w = (e.Position + e.Rotation * corner) * e.Sign;
+				var w = toProbe * ((e.Position + e.Rotation * corner) * e.Sign);
 				lox = MathF.Min( lox, w.x );
 				loy = MathF.Min( loy, w.y );
 				hix = MathF.Max( hix, w.x );
@@ -1110,7 +1150,7 @@ public static class SdfCollisionBuilder
 	// approximate (they disagree by up to a voxel — enough to hover the body or bury a probe): snap its z to
 	// the boxes' underside along its column, or drop it (false) when the column is hollowed clean through.
 	// Probes outside every footprint pass through untouched.
-	static bool TrySyncToVoxels( List<CarvedCopy> entries, List<(Vector2 lo, Vector2 hi)> rects, ref Vector3 p )
+	static bool TrySyncToVoxels( List<CarvedCopy> entries, List<(Vector2 lo, Vector2 hi)> rects, ref Vector3 p, Rotation toSculpture )
 	{
 		if ( entries.Count == 0 )
 			return true;
@@ -1123,7 +1163,7 @@ public static class SdfCollisionBuilder
 
 		float best = float.MaxValue;
 		foreach ( var e in entries )
-			if ( TryCopyUnderside( e, p.x, p.y, out float z ) )
+			if ( TryCopyUnderside( e, p.x, p.y, out float z, toSculpture ) )
 				best = MathF.Min( best, z );
 
 		if ( best == float.MaxValue )
@@ -1132,28 +1172,33 @@ public static class SdfCollisionBuilder
 		return true;
 	}
 
-	// Lowest sculpture-space z where the vertical column (x,y) meets the copy's emitted collider — its boxes
+	// Lowest probe-frame z where the frame's vertical column (x,y) meets the copy's emitted collider — its boxes
 	// AND (spline copies) its kept spheres, so the underside is the FULL collider's, not just the voxels'.
-	// Column mapped to the entry frame: w = (Position + R·lp)·sign  ⇒  lp = R⁻¹(w·sign − Position) (sign is
-	// componentwise and its own inverse), so the column w = (x,y,t) becomes o + t·d below, with the world z
-	// as the ray parameter.
-	static bool TryCopyUnderside( CarvedCopy e, float x, float y, out float z )
+	// The column is expressed in sculpture space first (toSculpture, identity when upright), then mapped to the
+	// entry frame: w = (Position + R·lp)·sign  ⇒  lp = R⁻¹(w·sign − Position) (sign is componentwise and its
+	// own inverse), so the column becomes o + t·d below, with the probe-frame z as the ray parameter.
+	static bool TryCopyUnderside( CarvedCopy e, float x, float y, out float z, Rotation toSculpture )
 	{
 		z = float.MaxValue;
 
-		// Kept swept spheres (sculpture space, sign already folded): the column meets one where its horizontal
-		// distance to the centre is inside the radius; the underside there is centre.z − √(r² − dxy²).
+		// The column in sculpture space: origin at probe-frame z=0, direction = the frame's up.
+		var colO = toSculpture * new Vector3( x, y, 0f );
+		var colD = toSculpture * Vector3.Up;
+
+		// Kept swept spheres (sculpture space, sign already folded): standard ray–sphere, keeping the LOWER
+		// root — the underside. On an upright frame this reduces to centre.z − √(r² − dxy²).
 		foreach ( var s in e.Spheres )
 		{
-			float dx = x - s.x, dy = y - s.y;
-			float under = s.w * s.w - (dx * dx + dy * dy);
-			if ( under >= 0f )
-				z = MathF.Min( z, s.z - MathF.Sqrt( under ) );
+			var m = colO - new Vector3( s.x, s.y, s.z );
+			float half = Vector3.Dot( m, colD );
+			float disc = half * half - (m.LengthSquared - s.w * s.w);
+			if ( disc >= 0f )
+				z = MathF.Min( z, -half - MathF.Sqrt( disc ) );
 		}
 
 		var inv = e.Rotation.Inverse;
-		var o = inv * (new Vector3( x * e.Sign.x, y * e.Sign.y, 0f ) - e.Position);
-		var d = inv * new Vector3( 0f, 0f, e.Sign.z );
+		var o = inv * (colO * e.Sign - e.Position);
+		var d = inv * (colD * e.Sign);
 
 		foreach ( var (blo, bhi) in e.Boxes )
 		{
@@ -1183,9 +1228,9 @@ public static class SdfCollisionBuilder
 		return z < float.MaxValue;
 	}
 
-	// The four lowest sculpture-space corners of one voxel box — its resting contact candidates (for the
-	// common unrotated brush that's exactly the bottom face).
-	static void LowestBoxCorners( CarvedCopy e, (Vector3 lo, Vector3 hi) box, List<Vector3> dst )
+	// The four lowest probe-frame corners of one voxel box — its resting contact candidates (for the
+	// common unrotated brush on an upright frame that's exactly the bottom face).
+	static void LowestBoxCorners( CarvedCopy e, (Vector3 lo, Vector3 hi) box, List<Vector3> dst, Rotation toProbe )
 	{
 		Span<Vector3> c = stackalloc Vector3[8];
 		for ( int i = 0; i < 8; i++ )
@@ -1194,7 +1239,7 @@ public static class SdfCollisionBuilder
 				(i & 1) != 0 ? box.hi.x : box.lo.x,
 				(i & 2) != 0 ? box.hi.y : box.lo.y,
 				(i & 4) != 0 ? box.hi.z : box.lo.z );
-			c[i] = (e.Position + e.Rotation * corner) * e.Sign;
+			c[i] = toProbe * ((e.Position + e.Rotation * corner) * e.Sign);
 		}
 
 		// Insertion-sort the 8 by z, keep the lowest 4.
@@ -1211,7 +1256,9 @@ public static class SdfCollisionBuilder
 
 	// All of a brush's collider vertices in sculpture-local space (hull points + mirror copies; for a uniform
 	// sphere just its bottom point). Used to anchor probes to real corners and to find the lowest contact points.
-	static void BrushVertices( SdfBrush b, List<Vector3> dst, List<Vector3> tmp, List<Vector4> sweep, Span<Vector3> centres )
+	// "Bottom" for the round shapes is along `down` — sculpture-local world-down, so a tilted sculpture's sphere
+	// contact points sit where the sphere actually meets the floor (plain −Z when upright).
+	static void BrushVertices( SdfBrush b, List<Vector3> dst, List<Vector3> tmp, List<Vector4> sweep, Span<Vector3> centres, Vector3 down )
 	{
 		dst.Clear();
 
@@ -1220,7 +1267,7 @@ public static class SdfCollisionBuilder
 			float r = MathF.Max( b.Size.x, 0.5f );
 			int n = b.MirrorCentres( centres );
 			for ( int i = 0; i < n; i++ )
-				dst.Add( centres[i] - Vector3.Up * r );
+				dst.Add( centres[i] + down * r );
 			return;
 		}
 
@@ -1236,7 +1283,7 @@ public static class SdfCollisionBuilder
 			{
 				var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
 				foreach ( var pt in sweep )
-					dst.Add( new Vector3( pt.x, pt.y, pt.z ) * sign - Vector3.Up * MathF.Max( pt.w, 0.5f ) );
+					dst.Add( new Vector3( pt.x, pt.y, pt.z ) * sign + down * MathF.Max( pt.w, 0.5f ) );
 			}
 			return;
 		}
