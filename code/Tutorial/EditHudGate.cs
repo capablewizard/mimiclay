@@ -17,6 +17,13 @@ public enum HudSection
 	Picker,    // floating colour wheel + metal/rough column
 	Sliders,   // floating blend/round stack incl. the Add/Carve op chip (and the A key)
 	ShapeDock, // bottom-centre shape tiles (and the 1-7 hotkeys)
+	WorldSelect, // clicking clay in the world to select it, and the hover wireframe ghost that trails it
+
+	// The in-world gizmo's handle families (RuntimeBrushGizmo). Locked = drawn ghosted (very low alpha)
+	// and inert — the tutorial's "this one next" treatment while it teaches one transform at a time.
+	GizmoMove,   // axis arrows, plane squares, screen-move disc
+	GizmoRotate, // rings, trackball, screen ring
+	GizmoScale,  // axis dots, uniform-scale dot
 }
 
 public enum SectionState
@@ -86,12 +93,27 @@ public static class EditHudGate
 		_ => "",
 	};
 
+	/// <summary>Basic shapes only (sphere / box / cylinder / cone): trims the advanced tiles — extruded
+	/// profile, spline, text — from the shape dock AND their 5-7 hotkeys. The tutorial's first shape lesson
+	/// sets it; cleared by <see cref="Begin"/>/<see cref="End"/> so it can never outlive its step.</summary>
+	public static bool BasicShapesOnly { get; private set; }
+
+	public static void SetBasicShapesOnly( bool on )
+	{
+		if ( !Active || BasicShapesOnly == on )
+			return;
+
+		BasicShapesOnly = on;
+		Version++;
+	}
+
 	/// <summary>Start gating: every section drops to <paramref name="baseline"/> (a guided step then raises
 	/// the few it teaches). Callers follow with <see cref="Set"/> per exception.</summary>
 	public static void Begin( SectionState baseline = SectionState.Hidden )
 	{
 		Active = true;
 		_states.Clear();
+		BasicShapesOnly = false;
 		foreach ( var s in Enum.GetValues<HudSection>() )
 			_states[s] = baseline;
 		Version++;
@@ -100,6 +122,11 @@ public static class EditHudGate
 	public static void Set( HudSection section, SectionState state )
 	{
 		if ( !Active )
+			return;
+
+		// Idempotent, so per-frame assertions (a step's Tick driving a section off live state) don't bump
+		// the version — and so re-render the whole HUD — every frame.
+		if ( _states.TryGetValue( section, out var current ) && current == state )
 			return;
 
 		_states[section] = state;
@@ -111,6 +138,7 @@ public static class EditHudGate
 	{
 		Active = false;
 		_states.Clear();
+		BasicShapesOnly = false;
 		Version++;
 	}
 }

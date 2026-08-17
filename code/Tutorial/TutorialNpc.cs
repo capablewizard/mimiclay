@@ -111,11 +111,22 @@ public sealed class TutorialNpc : Component
 
 	protected override void OnEnabled() => _live.Add( this );
 
+	// The scene (or this object) is being torn down — editor Stop, scene change, destroy. Rebuild-ish work
+	// must NOT run then: his shadow ModelRenderer is authored disabled and (in DepthProxy+SdfShadows mode)
+	// never awoken, so any rebuild handoff that enables it inside the destroy callback batch fires its
+	// deferred OnAwake mid-Term and trips the engine's active-scene assert.
+	bool TearingDown => Game.IsClosing
+		|| !GameObject.IsValid() || GameObject.IsDestroyed
+		|| !Scene.IsValid() || Scene.IsDestroyed;
+
 	protected override void OnDisabled()
 	{
 		if ( Running == this )
 		{
-			if ( _session.IsValid() && _session.IsEditing )
+			// A LIVE-scene disable exits the session cleanly; during teardown, don't poke it — its exit
+			// flush (revert + pending commit) rebuilds the sculpture, exactly the work TearingDown forbids.
+			// Everything is dying anyway; bookkeeping only.
+			if ( !TearingDown && _session.IsValid() && _session.IsEditing )
 				_session.SetActive( false );
 			EndTutorial();
 		}
@@ -185,9 +196,12 @@ public sealed class TutorialNpc : Component
 		FrameNpc();
 
 		// The step machine, on the same rig — it can never outlive the session, and its OnStart (next tick)
-		// finds the session already editing.
+		// finds the session already editing. It speaks through his bubble (runtime override; the authored
+		// invite comes back when the run ends).
+		_bubble = _bubble.IsValid() ? _bubble : Components.Get<SpeechBubble>( FindMode.EverythingInSelfAndDescendants );
 		var director = _rig.Components.Create<TutorialDirector>();
 		director.Session = _session;
+		director.Bubble = _bubble;
 
 		Running = this;
 	}
@@ -245,7 +259,11 @@ public sealed class TutorialNpc : Component
 			!= SdfSculpture.ContentHash( _restore, Sculpture.Resolution, Sculpture.FlipFaces ) )
 		{
 			Sculpture.Brushes = _restore.Select( b => b.Copy() ).ToList();
-			Sculpture.Rebuild();
+
+			// The brush write above is the restore; the rebuild is only presentation, and in a dying scene
+			// it's exactly the forbidden work (see TearingDown) — the meshes are being destroyed anyway.
+			if ( !TearingDown )
+				Sculpture.Rebuild();
 		}
 
 		_restore = null;
@@ -257,10 +275,8 @@ public sealed class TutorialNpc : Component
 	{
 		bool hovered = Hovered && Running != this;
 
-		// The invite steps aside while you're actually in the lesson; everyone else's machine keeps it up.
-		_bubble = _bubble.IsValid() ? _bubble : Components.Get<SpeechBubble>( FindMode.EverythingInSelfAndDescendants );
-		if ( _bubble.IsValid() )
-			_bubble.Hidden = Running == this;
+		// The bubble stays up through the lesson — it's the tutorial's voice now (the director drives its
+		// TextOverride; the authored invite returns when the run ends). Nothing to hide any more.
 
 		// Boil churn while hovered, authored activation otherwise — captured once so teardown can put the
 		// mapper's dial back exactly.

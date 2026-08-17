@@ -172,7 +172,9 @@ public sealed class RuntimeBrushGizmo
 				h = HashCode.Combine( h, pt );
 			h = HashCode.Combine( h, b.Curvature, b.SplineClosed );
 		}
-		return HashCode.Combine( h, _hover, _active, _style.VisualHash(), (int)(_masterAlpha * 100) );
+		// EditHudGate.Version: the tutorial's family ghosting changes the rendered alphas — a missed hash
+		// here would leave the mesh stale until something else moved.
+		return HashCode.Combine( h, _hover, _active, _style.VisualHash(), (int)(_masterAlpha * 100), EditHudGate.Version );
 	}
 
 	/// <summary>Tear down the rendered mesh (call when leaving edit mode / disabling the session).</summary>
@@ -267,7 +269,48 @@ public sealed class RuntimeBrushGizmo
 		}
 	}
 
+	// ── Tutorial family gating (EditHudGate) ────────────────────────────────────────────────────────
+	// Handle families map to gate sections; outside a tutorial every section reports Normal and none of
+	// this changes a pixel. Locked = ghosted + inert; Hidden = gone. An in-flight drag isn't cut short —
+	// the gate only stops NEW hovers, so a step advancing mid-drag lets the drag finish naturally.
+
+	const float LockedHandleAlpha = 0.12f; // "very low opacity" — present, clearly not the lesson
+
+	static HudSection? FamilyOf( string name )
+	{
+		if ( name is null )
+			return null;
+		if ( name.StartsWith( "move" ) || name.StartsWith( "plane" ) || name == "screenMove" )
+			return HudSection.GizmoMove;
+		if ( name.StartsWith( "scale" ) || name == "uscale" )
+			return HudSection.GizmoScale;
+		if ( name.StartsWith( "rot" ) || name == "trackball" )
+			return HudSection.GizmoRotate;
+		return null; // spline handles etc. — ungated
+	}
+
+	static float FamilyAlpha( string name )
+		=> FamilyOf( name ) is { } s
+			? EditHudGate.Of( s ) switch
+			{
+				SectionState.Hidden => 0f,
+				SectionState.Locked => LockedHandleAlpha,
+				_ => 1f,
+			}
+			: 1f;
+
+	static bool FamilyInteractive( string name )
+		=> FamilyOf( name ) is not { } s || EditHudGate.Interactive( s );
+
 	void Hover( string name, float dist, float depth, float radius, int priority = 0 )
+	{
+		if ( !FamilyInteractive( name ) )
+			return; // ghosted/hidden family — never hoverable, so never grabbable
+
+		HoverInner( name, dist, depth, radius, priority );
+	}
+
+	void HoverInner( string name, float dist, float depth, float radius, int priority )
 	{
 		if ( dist > radius )
 			return;
@@ -1190,10 +1233,9 @@ public sealed class RuntimeBrushGizmo
 		v = Vector3.Cross( axis, u ).Normal;
 	}
 
-	// Handle colour through the gizmo's master fade. (The old per-family fade — dimming handle groups against
-	// each other during a drag — died with the 3D blend/round sliders; every handle is "transform" now. The
-	// name parameter stays so call sites read naturally and a future group fade has its hook back.)
-	Color Tint( Color c, string name ) => c.WithAlpha( c.a * _masterAlpha );
+	// Handle colour through the gizmo's master fade AND the tutorial's family gate (the group fade this
+	// hook was kept around for): a Locked family ghosts to LockedHandleAlpha, Hidden goes fully clear.
+	Color Tint( Color c, string name ) => c.WithAlpha( c.a * _masterAlpha * FamilyAlpha( name ) );
 
 	bool IsHot( string name ) => _active == name || (_hover == name && _active is null);
 

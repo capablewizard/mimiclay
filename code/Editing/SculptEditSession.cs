@@ -1374,9 +1374,15 @@ public sealed class SculptEditSession : Component
 			if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
 			if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
 			if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
-			if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
-			if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
-			if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+
+			// The advanced shapes follow the dock: the tutorial's first shape lesson trims their tiles,
+			// so their hotkeys stand down with them (key and dock must always agree).
+			if ( !EditHudGate.BasicShapesOnly )
+			{
+				if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
+				if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
+				if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+			}
 		}
 
 		// Delete removes the selected brush (gizmo mode only — in sculpt mode the pending ghost isn't a
@@ -1519,8 +1525,10 @@ public sealed class SculptEditSession : Component
 			_splineInsertArmed = true;
 
 		// Hover: the brush under the cursor (skipped while camera-navving, over a gizmo handle, over the UI, or
-		// paused — the pause overlay must not highlight shapes behind it).
-		int hover = (!overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing)
+		// paused — the pause overlay must not highlight shapes behind it; the tutorial gates it with selection,
+		// so pre-selection stages don't tease a hover ghost the click won't honour).
+		int hover = (!overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing
+			&& EditHudGate.Interactive( HudSection.WorldSelect ))
 			? PickBrush( tx ) : -1;
 		_worldHover = hover; // scene pick only — recorded BEFORE the layer-row fallback (see the field)
 
@@ -1595,7 +1603,8 @@ public sealed class SculptEditSession : Component
 		// exist if the press already landed clear of the HUD/gizmo/scrub; the gates here re-check the ones
 		// that can shift inside the window (and alt, whose own click has never meant select).
 		if ( AltNav.LmbTapped && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
-			&& !_gizmo.IsBusy && !IsScrubbing )
+			&& !_gizmo.IsBusy && !IsScrubbing
+			&& EditHudGate.Interactive( HudSection.WorldSelect ) ) // tutorial: no picking before the selection stage
 			Selected = hover; // hover is -1 on empty space → deselect
 
 		// Debug: render the shadow-proxy mesh AS the visible surface (raymarch + full mesh hidden).

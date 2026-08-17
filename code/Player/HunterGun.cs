@@ -330,6 +330,12 @@ public sealed class HunterGun : Component
 	/// the eye. It carries everything the body does that the view deliberately doesn't: the crouch lift (the eye
 	/// drops further than the chest, and the arm hangs off the chest), the jump's launch trail, and the walk bob.
 	/// The viewmodel keeps its own bob and springs, so nothing here double-counts.</summary>
+	/// <summary>Per-machine runtime hide for the WHOLE gun display (world model and viewmodel alike) — the
+	/// tutorial's edit session sets it on the owning machine, where the pawn's body is hidden too and a
+	/// floating gun beside the sculpture would just be clutter. Asserted every frame by
+	/// <see cref="HunterController.HideOwnBody"/>; never networked (proxies keep their view of the pawn).</summary>
+	public bool HideAll { get; set; }
+
 	public void Place( Vector3 eye, Angles aim, bool firstPerson, Vector3 armOffset = default )
 	{
 		// Scale-on-change, so the properties are live while playing. The world model on every machine; the
@@ -405,7 +411,7 @@ public sealed class HunterGun : Component
 
 		if ( _worldSdf.IsValid() )
 		{
-			_worldSdf.RenderHidden = firstPerson;
+			_worldSdf.RenderHidden = firstPerson || HideAll;
 			ApplyFieldResolution( _worldSdf, WorldFieldResolution );
 		}
 
@@ -419,7 +425,7 @@ public sealed class HunterGun : Component
 
 		if ( _view.IsValid() )
 		{
-			_view.Enabled = firstPerson;
+			_view.Enabled = firstPerson && !HideAll;
 			if ( firstPerson )
 			{
 				if ( _viewSdf.IsValid() )

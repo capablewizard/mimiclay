@@ -1767,6 +1767,12 @@ public sealed class HunterController : Component
 		bool externalEdit = ExternalSession.IsValid() && ExternalSession.IsEditing;
 		var hideOwn = Owned && (externalEdit || (!EditMode && !GameSettings.HunterThirdPerson));
 
+		// The gun goes with the body during the tutorial (external edit): the world model isn't in the
+		// body renderer sets below, and Place re-asserts its visibility every frame — so it takes its own
+		// per-frame flag. Own machine only; proxies keep seeing the pawn holding it.
+		if ( _gun.IsValid() )
+			_gun.HideAll = Owned && externalEdit;
+
 		// Run puffs go shadows-only in first person too. ParticleModelRenderer has no ShadowRenderType, but
 		// shadows-only IS just CastShadows + ExcludeGameLayer at the SceneObject level, and its RenderOptions.Game
 		// maps to ExcludeGameLayer — re-applied to every live particle each frame, so this flips existing puffs

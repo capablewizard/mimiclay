@@ -10,15 +10,19 @@
 	// Camera-nav / pause: click-through, same treatment as the EditHud root's alt-nav class.
 	&.alt-nav .guide-card { pointer-events: none; }
 
+	// Top-LEFT, flush with the HUD's panel inset — unoccupied space for most of the run (the layer stack,
+	// the one thing that lives there, stays hidden until its own stage).
 	.card-float {
 		position: absolute;
 		top: 26px;
-		left: 0;
-		width: 100%;
+		left: 24px; // $panel-inset, spelled out (s&box scss has no arithmetic)
 		flex-direction: row;
-		justify-content: center;
 		pointer-events: none;
 	}
+
+	// The layer stage: the stack owns the corner, so the card steps aside to its right, still top-aligned.
+	// 368 = panel inset (24) + layer panel width (330) + 14 gap.
+	&.beside-layers .card-float { left: 368px; }
 
 	.guide-card {
 		pointer-events: all;
@@ -121,27 +125,7 @@
 				&:active { sound-in: $sound-click; }
 			}
 
-			// Shares .btn's paper chip recipe (via the markup class) — just sized down from the menu buttons.
-			.finish {
-				font-size: 18px;
-				padding: 8px 22px;
-			}
 		}
 
-		// The praise beat: one big wobbling word, the card shrunk around it.
-		&.praise {
-			padding: $space-lg 44px;
-
-			// The jitter itself comes from WobbleText's "auto" class (set in the markup).
-			.praise-text {
-				flex-direction: row;
-				font-family: $header-font;
-				font-size: 40px;
-				font-weight: 800;
-				letter-spacing: 2px;
-				text-transform: uppercase;
-				color: $craft-orange;
-			}
-		}
 	}
 }

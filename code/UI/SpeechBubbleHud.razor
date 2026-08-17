@@ -127,7 +127,7 @@
 
 		foreach ( var bubble in Scene.GetAllComponents<SpeechBubble>() )
 		{
-			bool hasText = !string.IsNullOrWhiteSpace( bubble.Text );
+			bool hasText = !string.IsNullOrWhiteSpace( bubble.EffectiveText );
 			var world = bubble.WorldPosition;
 
 			// The presence verdict, with the range dead band keyed off the CURRENT state.
@@ -168,13 +168,13 @@
 				continue;
 
 			int gap = Math.Max( 0, bubble.SpaceTicks );
-			var words = bubble.Text.Split( (char[])null, StringSplitOptions.RemoveEmptyEntries );
+			var words = bubble.EffectiveText.Split( (char[])null, StringSplitOptions.RemoveEmptyEntries );
 
 			// The typewriter only runs while shown; a lingering card just holds its last reveal.
 			if ( state.Shown )
 				AdvanceTyping( bubble, state, words, gap );
 
-			_draw.Add( (bubble.Text, state.Whole, BuildParts( words, state.Whole, gap ), screen, state.Shown) );
+			_draw.Add( (bubble.EffectiveText, state.Whole, BuildParts( words, state.Whole, gap ), screen, state.Shown) );
 		}
 	}
 
@@ -186,9 +186,14 @@
 		// (the typewriter's breath) but never blip.
 		int total = words.Sum( w => w.Length ) + Math.Max( 0, words.Length - 1 ) * gap;
 
-		if ( state.Text != bubble.Text || state.SinceShown > RetypeAfterGone )
+		// A text change always restarts. The reappearance replay (absence > RetypeAfterGone) applies to
+		// AMBIENT text only: code-DRIVEN dialogue (TextOverride) is delivered once — replaying it on
+		// reappearance can type the PREVIOUS line straight through a transition, because the replay fires
+		// before the driver has swapped the text (praise beats, plus component order is a HashSet).
+		bool replay = bubble.TextOverride is null && state.SinceShown > RetypeAfterGone;
+		if ( state.Text != bubble.EffectiveText || replay )
 		{
-			state.Text = bubble.Text;
+			state.Text = bubble.EffectiveText;
 			state.Revealed = 0f;
 			state.Whole = 0;
 		}
@@ -205,6 +210,10 @@
 				PlayTypeBlip();
 			state.Whole = whole;
 		}
+
+		// Sequencing hooks (the tutorial's card-after-the-bubble) read this off the component. A text
+		// change lands false again on the next shown frame via the restart branch above.
+		bubble.FullyTyped = whole >= total;
 	}
 
 	// Split each word at the reveal cursor (the cursor walks the same virtual word+gap sequence the

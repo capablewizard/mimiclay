@@ -16,19 +16,15 @@
 	on Skip/Finish can never also select/stamp/orbit in the world behind it.
 *@
 
-<root class="tutorial-card @(Inert ? "alt-nav" : "")">
-	@if ( Director is { } d && d.Live )
+<root class="tutorial-card @(Inert ? "alt-nav" : "") @(BesideLayers ? "beside-layers" : "")">
+	@* CardVisible, not Live: while the character is typing a step's bubble line, the card holds back —
+	   the two voices take turns. *@
+	@if ( Director is { } d && d.CardVisible )
 	{
 		<div class="card-float">
-			@if ( d.State == TutorialDirector.Phase.Praise )
-			{
-				<div class="paper-card guide-card praise" @ref=CardPanel>
-					<div class="praise-text"><WobbleText Text=@d.PraiseText class="auto" /></div>
-				</div>
-			}
-			else
-			{
-				<div class="paper-card guide-card" @ref=CardPanel>
+			@* No praise view here — on completion the CHARACTER says the praise line in his speech bubble
+			   while this card holds its ticked hints through the beat. *@
+			<div class="paper-card guide-card" @ref=CardPanel>
 					<div class="guide-title"><WobbleText Text=@d.CardTitle Strength=@WobbleText.JitterStrength.Subtle /></div>
 
 					@if ( d.CardBody is { } body )
@@ -50,24 +46,18 @@
 						</div>
 					}
 
+					@* No Finish button anywhere — the Free sign-off is voice-only (this card never renders
+					   there) and Q is the exit, as his monologue says. *@
 					<div class="guide-footer">
-						@if ( d.State == TutorialDirector.Phase.Free )
-						{
-							<div class="btn finish" @onclick=@(() => Director?.RequestFinish())>Finish</div>
-						}
-						else
-						{
-							<div class="dots">
-								@for ( int i = 0; i < d.StepCount; i++ )
-								{
-									<div class="dot @(i < d.StepIndex ? "filled" : i == d.StepIndex ? "current" : "")"></div>
-								}
-							</div>
-							<div class="skip" @onclick=@(() => Director?.RequestSkip())>Skip tutorial</div>
-						}
+						<div class="dots">
+							@for ( int i = 0; i < d.StepCount; i++ )
+							{
+								<div class="dot @(i < d.StepIndex ? "filled" : i == d.StepIndex ? "current" : "")"></div>
+							}
+						</div>
+						<div class="skip" @onclick=@(() => Director?.RequestSkip())>Skip tutorial</div>
 					</div>
 				</div>
-			}
 		</div>
 	}
 </root>
@@ -86,6 +76,10 @@
 	// Click-through while camera-navving or paused, same reasoning (and class) as the EditHud root.
 	static bool Inert => AltNav.Held || PauseMenu.IsOpen;
 
+	// The card lives top-LEFT — empty space for most of the run — and steps aside to the right of the
+	// layer stack while that panel is up (its own stage; layers are hidden every other step).
+	static bool BesideLayers => EditHudGate.Active && EditHudGate.Visible( HudSection.Layers );
+
 	protected override void OnUpdate()
 	{
 		PointerOver = CardPanel is { IsValid: true, IsDeleting: false }
@@ -98,5 +92,5 @@
 	}
 
 	protected override int BuildHash()
-		=> HashCode.Combine( Director?.CardSignal ?? 0, Inert );
+		=> HashCode.Combine( Director?.CardSignal ?? 0, Inert, BesideLayers );
 }

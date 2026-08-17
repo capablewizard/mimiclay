@@ -602,8 +602,11 @@
 	SdfBrush Brush => Session?.ActiveBrush;
 
 	// The shape row's shapes — all of them; a spline is placed as a CHAIN of points rather than one stamp,
-	// but it's picked from the same row.
-	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes => AddShapes;
+	// but it's picked from the same row. The tutorial's first shape lesson trims to the primitives
+	// (the extruded profile, spline and text deserve their own lessons, not a first-contact wall of tiles).
+	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes => EditHudGate.BasicShapesOnly
+		? AddShapes.Where( e => e.Shape is not (SdfShape.Extruded or SdfShape.Spline or SdfShape.Text) )
+		: AddShapes;
 
 	// Shape-row click — shape is a brush PROPERTY, so the verb depends on the current subject:
 	// stamp held → re-mould the ghost; brush selected → convert it in place; nothing → pick up a new stamp.

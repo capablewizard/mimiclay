@@ -74,7 +74,10 @@
 		{
 			@* Lobby is its own shape, not the three-column layout with the split removed: there are no sides
 			   yet and nothing that has to hold screen centre, so it's the whole server on one centred row with
-			   the status underneath. *@
+			   the status underneath. Hidden while the tutorial runs — the top of the screen belongs to the
+			   instruction card, and the roster is lobby furniture the lesson doesn't need. *@
+			@if ( !TutorialDirector.IsRunning )
+			{
 			<div class="lobby-roster">
 				@foreach ( var player in LobbyRoster )
 				{
@@ -126,6 +129,7 @@
 					<div class="pip-more">+@HiddenLobbyPlayers</div>
 				}
 			</div>
+			}
 
 			@if ( ShowLobbyStatus )
 			{
@@ -663,7 +667,8 @@
 	protected override int BuildHash()
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
-				SculptEditSession.Current?.IsEditing ?? false ), // hotkey hints hide while sculpt-editing
+				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
+				TutorialDirector.IsRunning ), // lobby roster hides while the tutorial runs
 			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount ),
 			// Lobby roster: nothing else in the hash moves when someone joins or leaves the lobby, so without
 			// this the row would sit stale until the next unrelated rebuild. EditSignal is what re-renders on

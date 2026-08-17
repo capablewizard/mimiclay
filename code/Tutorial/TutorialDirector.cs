@@ -31,12 +31,23 @@ public sealed class TutorialDirector : Component
 	/// <summary>The guided session this run belongs to. Wired by TutorialNpc before enable.</summary>
 	public SculptEditSession Session { get; set; }
 
+	/// <summary>The character's speech bubble — the tutorial's friendly voice, driven through the bubble's
+	/// runtime TextOverride (never its serialized Text). Wired by TutorialNpc; null-safe throughout, so a
+	/// bubble-less character just skips straight to each step's card.</summary>
+	public SpeechBubble Bubble { get; set; }
+
 	/// <summary>Still driving a live edit session? The card renders nothing once this drops — the rig's
 	/// deferred destroy means the component can outlive the session by a frame.</summary>
 	public bool Live => Session.IsValid() && Session.IsEditing;
 
+	/// <summary>Should the instruction card render? The two voices take turns: while the character is
+	/// still typing a step's bubble line (<see cref="Phase.Speak"/>), the deadpan card holds back — and
+	/// the Free sign-off is voice-only (no window at all; Q is the exit, as the monologue says).</summary>
+	public bool CardVisible => Live && State is Phase.Step or Phase.Praise;
+
 	public enum Phase
 	{
+		Speak,  // the character is delivering the step's bubble line — the card waits
 		Step,   // a guided step is up, waiting on its actions
 		Praise, // the step just completed — a short "nice!" beat before the next
 		Free,   // guidance over (finished or skipped): full editor, "make it yours"
@@ -60,15 +71,16 @@ public sealed class TutorialDirector : Component
 
 	// ── What the card renders ────────────────────────────────────────────────────────────────────────────
 
-	public string CardTitle => State == Phase.Free ? "Make it yours" : CurrentStep?.Title ?? "";
+	// (No Free branches: the card never renders in the Free phase — the sign-off is voice-only.)
+	public string CardTitle => CurrentStep?.Title ?? "";
 
-	public string CardBody => State == Phase.Free
-		? "Play around with everything — press Finish (or Q) when you're done."
-		: CurrentStep?.Body;
+	public string CardBody => CurrentStep?.Body;
 
-	public string PraiseText => _praise[Math.Min( StepIndex, _praise.Length - 1 )];
+	string PraiseText => _praise[Math.Min( StepIndex, _praise.Length - 1 )];
 
-	public IReadOnlyList<Hint> CardHints => State == Phase.Step
+	// Praise included: the completed card holds its ticked hints through the beat while HE says the
+	// praise line in his bubble.
+	public IReadOnlyList<Hint> CardHints => State is Phase.Step or Phase.Praise
 		? CurrentStep?.Hints ?? (IReadOnlyList<Hint>)Array.Empty<Hint>()
 		: Array.Empty<Hint>();
 
@@ -91,12 +103,7 @@ public sealed class TutorialDirector : Component
 	/// from inside a UI click handler.</summary>
 	public void RequestSkip() => _skipRequested = true;
 
-	/// <summary>Leave the tutorial entirely (the Free card's button) — routes through the session's
-	/// dialog-aware exit, same as Q.</summary>
-	public void RequestFinish() => _finishRequested = true;
-
 	bool _skipRequested;
-	bool _finishRequested;
 
 	// ── Steps ────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -113,8 +120,15 @@ public sealed class TutorialDirector : Component
 	{
 		public string Title { get; init; }
 		public string Body { get; init; }
+		// The character's spoken intro for the step (typed into his speech bubble; the card waits for it).
+		// Null = no line, the card appears immediately.
+		public string Bubble { get; init; }
 		public Hint[] Hints { get; init; } = Array.Empty<Hint>();
+		// Runs at EnterStep (so the HUD gate applies while he's still talking) AND again when the card
+		// appears — snapshots and counters re-baseline then, so nothing done during the speech pre-ticks.
 		public Action<TutorialDirector> Enter { get; init; }
+		// Runs every frame while the step's card is up — for reactive dialogue (Say) and mid-step state.
+		public Action<TutorialDirector> Tick { get; init; }
 		// Extra completion gate beyond "every hint achieved" (null = hints alone decide).
 		public Func<TutorialDirector, bool> Done { get; init; }
 	}
@@ -124,20 +138,81 @@ public sealed class TutorialDirector : Component
 	// Per-run instances — hint latches are state, so the list can never be static.
 	readonly List<Step> _steps = new();
 
-	static readonly string[] _praise = { "Nice!", "Lovely!", "Got it!", "Beautiful!", "Perfect!" };
+	// One per step, in step order (clamps on the last) — spoken by HIM in the bubble on completion.
+	// INSTANCE, not static, deliberately: hotload preserves static field VALUES, so copy stored in a
+	// static array kept its old text across recompiles until an editor restart. A fresh director is made
+	// every run, so instance copy hotloads naturally. Same rule for every tutorial string below.
+	readonly string[] _praise =
+	{
+		"Nice!", "Lovely!", "Got it!", "Smooth!", "Beautiful!", "You're a natural!",
+		"Slick!", "Whoosh!", "Ooh, fancy!", "A transformation!", "Gorgeous!", "Masterful!", "An artist!", "Perfection!",
+	};
 
 	const float PraiseTime = 1.1f;
 	RealTimeUntil _praiseOver;
 
+	// The beat between the bubble line landing its last letter and the card appearing — a breath, so the
+	// window doesn't slam in on the final blip.
+	const float SpeakBeat = 0.35f;
+	bool _typedSeen;
+	RealTimeSince _sinceTyped;
+
 	// Camera-step travel, accumulated per gesture while AltNav drags (Delta is per-frame).
 	float _orbitTravel, _dollyTravel, _panTravel;
+
+	// Scroll-push notches, accumulated while the wheel can actually push (something selected, session
+	// live) — the depth lesson requires these AND a real position delta.
+	float _scrollTravel;
+
+	// ── Chained bubble monologues ────────────────────────────────────────────────────────────────────────
+	// One shared chain (there's only ever one monologue at a time): line N+1 begins ChainBeat after line N
+	// lands its LAST TYPED LETTER. Reset at every step entry; a step's Tick (or the Free phase) drives it.
+	// Copy lives in instance arrays — the hotload rule, see _praise.
+	const float ChainBeat = 1.5f;
+	int _chainStage;
+	bool _chainArmed;
+	RealTimeSince _chainTyped;
+	bool _chainDone; // latched by a step that WAITS on its chain — completing the task mustn't cut him off
+
+	readonly string[] _addPlacingLines =
+	{
+		"Click the shapes below to change the shape you're adding, or use the number keys.",
+		"All the hotkeys we used before work in this mode too!",
+		"E rotates, R scales and mousewheel moves forwards and backwards.",
+	};
+
+	readonly string[] _optionsLines =
+	{
+		"Shapes can have different qualities.",
+		"You can make them add, carve or change how they blend here.",
+		"These are hotkeyed to A, S, D and F.",
+	};
+
+	readonly string[] _layerLines =
+	{
+		"How the shapes are layered can have a big effect on your final sculpt.",
+		"Grab a layer to move it up or down the stack.",
+	};
+
+	readonly string[] _freeLines =
+	{
+		"And that's it! You've got full control so have a play with the tools, go wild!",
+		"Press Q when you're happy with your creation to return to the game.",
+	};
 
 	// Transform/paint-step baseline: authored brushes by index at step entry (damage + stamp ghost skipped).
 	readonly Dictionary<int, BrushSnap> _snap = new();
 	int _countAtEnter;
 
 	readonly record struct BrushSnap( Vector3 Position, Vector3 Size, Rotation Rotation,
-		Color Color, float Metallic, float Roughness );
+		Color Color, float Metallic, float Roughness,
+		SdfOperation Operation, float Blend, float Rounding, float Curvature, float Slice,
+		SdfShape Shape );
+
+	// The layer lesson's baseline: the authored brush objects in stack order at step entry. A genuine
+	// reorder = the SAME objects in a different sequence; an undo swaps the objects wholesale (the undo
+	// state stores copies) and deliberately doesn't count.
+	List<SdfBrush> _orderSnap;
 
 	protected override void OnStart()
 	{
@@ -152,6 +227,8 @@ public sealed class TutorialDirector : Component
 	protected override void OnDisabled()
 	{
 		EditHudGate.End();
+		if ( Bubble.IsValid() )
+			Bubble.TextOverride = null; // his bubble goes back to the authored invite
 		if ( Current == this )
 			Current = null;
 	}
@@ -161,6 +238,8 @@ public sealed class TutorialDirector : Component
 	internal static void SweepPlayEnd()
 	{
 		EditHudGate.End();
+		if ( Current.IsValid() && Current.Bubble.IsValid() )
+			Current.Bubble.TextOverride = null;
 		Current = null;
 	}
 
@@ -168,13 +247,6 @@ public sealed class TutorialDirector : Component
 	{
 		if ( !Live )
 			return; // the npc is about to tear the rig down; nothing to advance
-
-		if ( _finishRequested )
-		{
-			_finishRequested = false;
-			Session.RequestExit();
-			return;
-		}
 
 		if ( _skipRequested )
 		{
@@ -188,6 +260,30 @@ public sealed class TutorialDirector : Component
 
 		switch ( State )
 		{
+			case Phase.Speak:
+			{
+				// Wait for the bubble line to finish typing (plus a breath), then bring the card up. The
+				// step's Enter re-runs at that moment so snapshots/counters baseline against what the
+				// player did DURING the speech — an orbit while he talks must not pre-tick "look around".
+				bool typed = !Bubble.IsValid() || Bubble.FullyTyped;
+				if ( typed && !_typedSeen )
+				{
+					_typedSeen = true;
+					_sinceTyped = 0f;
+				}
+				else if ( !typed )
+				{
+					_typedSeen = false; // retyping (text changed under us) — wait again
+				}
+
+				if ( _typedSeen && _sinceTyped > SpeakBeat )
+				{
+					CurrentStep?.Enter?.Invoke( this );
+					State = Phase.Step;
+				}
+				break;
+			}
+
 			case Phase.Step:
 				var step = CurrentStep;
 				if ( step is null )
@@ -195,6 +291,9 @@ public sealed class TutorialDirector : Component
 					EnterFree();
 					break;
 				}
+
+				// Reactive dialogue first — a Say here retypes the bubble without re-gating the card.
+				step.Tick?.Invoke( this );
 
 				// Latch hints first, then judge completion off the latches + the step's own gate.
 				foreach ( var h in step.Hints )
@@ -208,6 +307,7 @@ public sealed class TutorialDirector : Component
 				{
 					State = Phase.Praise;
 					_praiseOver = PraiseTime;
+					SetBubble( PraiseText ); // HE does the praising — the card just holds its ticked hints
 				}
 				break;
 
@@ -222,8 +322,48 @@ public sealed class TutorialDirector : Component
 				break;
 
 			case Phase.Free:
+				// The sign-off monologue — full control is already live; he just talks you out the door.
+				SpeakChain( _freeLines );
 				break;
 		}
+	}
+
+	// ── The shared chain drive ───────────────────────────────────────────────────────────────────────────
+
+	void ResetChain()
+	{
+		_chainStage = 0;
+		_chainArmed = false;
+		_chainDone = false;
+	}
+
+	// Speak the chain's current line, stepping to the next a beat after each fully types. Returns true once
+	// the FINAL line has fully typed (the "he's finished talking" signal steps can wait on).
+	bool SpeakChain( string[] lines )
+	{
+		Say( lines[Math.Min( _chainStage, lines.Length - 1 )] );
+
+		bool typed = !Bubble.IsValid() || Bubble.FullyTyped;
+		if ( !typed )
+		{
+			_chainArmed = false;
+			return false;
+		}
+
+		if ( _chainStage >= lines.Length - 1 )
+			return true;
+
+		if ( !_chainArmed )
+		{
+			_chainArmed = true;
+			_chainTyped = 0f;
+		}
+		if ( _chainTyped > ChainBeat )
+		{
+			_chainStage++;
+			_chainArmed = false;
+		}
+		return false;
 	}
 
 	// A throwing predicate must never kill the whole tutorial loop — log once per offender and treat as false.
@@ -245,19 +385,46 @@ public sealed class TutorialDirector : Component
 	void EnterStep( int index )
 	{
 		StepIndex = index;
-		State = Phase.Step;
-		_steps[index].Enter?.Invoke( this );
+		var step = _steps[index];
+
+		ResetChain();
+
+		// Gate (and first baseline) immediately — the trimmed HUD is right for the speech too; the card
+		// waits on the bubble line when the step has one.
+		step.Enter?.Invoke( this );
+		SetBubble( step.Bubble );
+		_typedSeen = false;
+		State = step.Bubble is null ? Phase.Step : Phase.Speak;
 	}
 
 	void EnterFree()
 	{
 		StepIndex = _steps.Count;
 		State = Phase.Free;
+		ResetChain(); // the sign-off monologue (_freeLines) runs from the Free case each frame
 		EditHudGate.End(); // the full editor, exactly as the scene authored it
 	}
 
+	// Speak through the character's bubble — the runtime override channel, never its serialized Text (an
+	// in-editor play session would bake the line into the scene). Null step line = say nothing: an empty
+	// override pops the bubble out rather than falling back to the authored invite.
+	void SetBubble( string line )
+	{
+		if ( Bubble.IsValid() )
+			Bubble.TextOverride = line ?? "";
+	}
+
+	/// <summary>Mid-step dialogue: swap what he's saying without touching the card (the bubble retypes on
+	/// the change; setting the same line again is a no-op). For step Tick hooks.</summary>
+	public void Say( string line ) => SetBubble( line );
+
 	void TrackCameraTravel()
 	{
+		// Scroll-push notches — counted only when the wheel could genuinely push (selection held, no drag
+		// owning the wheel), mirroring the session's own gate loosely.
+		if ( Session.HasSelection && !Session.IsManipulating && !AltNav.Dragging )
+			_scrollTravel += MathF.Abs( Input.MouseWheel.y );
+
 		if ( !AltNav.Dragging )
 			return;
 
@@ -274,46 +441,210 @@ public sealed class TutorialDirector : Component
 
 	void BuildSteps()
 	{
+		// Two voices per step: the character's friendly bubble line first, then the deadpan card — header
+		// + key hints, no chatter (the chatter is his job).
+
 		_steps.Add( new Step
 		{
-			Title = "Look around",
-			Body = "Get a feel for the camera first.",
+			Bubble = "Welcome to the tutorial, let's learn how to move the camera first.",
+			Title = "Look Around",
 			Hints = new[]
 			{
-				new Hint { Key = "LMB drag", Label = "spin around him", Check = d => d._orbitTravel > 60f },
-				new Hint { Key = "RMB drag", Label = "zoom in and out", Check = d => d._dollyTravel > 40f },
-				new Hint { Key = "MMB drag", Label = "slide the view", Check = d => d._panTravel > 40f },
+				new Hint { Key = "LMB Drag", Label = "orbit the camera", Check = d => d._orbitTravel > 60f },
+				new Hint { Key = "MMB Drag", Label = "pan the camera", Check = d => d._panTravel > 40f },
+				new Hint { Key = "RMB Drag", Label = "zoom in / out", Check = d => d._dollyTravel > 40f },
 			},
-			Enter = d => d.ApplyGate(), // everything hidden — just him, the camera and the card
+			Enter = d =>
+			{
+				d.ApplyGate(); // everything hidden — just him, the camera and the voices
+				d.ResetCameraTravel();
+			},
 		} );
 
 		_steps.Add( new Step
 		{
-			Title = "Pick a piece",
-			Body = "He's made of simple shapes, blended together.",
+			Bubble = "I'm just a bunch of simple shapes, all blended together. Try clicking one!",
+			Title = "Pick a Shape",
 			Hints = new[]
 			{
-				new Hint { Key = "LMB", Label = "click a shape to select it", Check = d => d.Session.HasSelection },
+				new Hint { Key = "LMB", Label = "select a shape", Check = d => d.Session.HasSelection },
+			},
+			// Selection unlocks HERE — the camera stage keeps clicks pure camera (no picking, no hover
+			// ghost), so a stray tap can't select a shape before it's been introduced. The gizmo stays
+			// fully HIDDEN (the gate baseline) through this step and its praise — its first appearance is
+			// the move lesson's entry, landing exactly on "This is the gizmo!".
+			Enter = d => d.ApplyGate( (HudSection.WorldSelect, SectionState.Normal) ),
+		} );
+
+		// ── Section: the gizmo, one transform at a time. The families not being taught draw ghosted and
+		// inert (GizmoMove/Rotate/Scale gate sections → RuntimeBrushGizmo), and the checks require an
+		// actual gizmo drag (IsManipulating) so the W/R/E scrubs can't complete a gizmo lesson. ──────────
+
+		_steps.Add( new Step
+		{
+			Bubble = "This is the gizmo! Drag any of the handles to move the shape.",
+			Title = "Use the Gizmo",
+			Hints = new[]
+			{
+				new Hint
+				{
+					Key = "Handles", Label = "drag to move the shape",
+					Check = d => d.LockIn( d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ), d.Session.IsManipulating ),
+				},
+			},
+			Tick = NeedSelectionTick,
+			Enter = d =>
+			{
+				d.SnapshotBrushes();
+				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Normal),
+					(HudSection.GizmoRotate, SectionState.Locked),
+					(HudSection.GizmoScale, SectionState.Locked) );
 			},
 		} );
 
 		_steps.Add( new Step
 		{
-			Title = "Push it around",
-			Body = "Drag the gizmo to move it, or hold a key and move the mouse.",
+			Bubble = "Now twist it with the rings.",
+			Title = "Use the Gizmo",
 			Hints = new[]
 			{
-				new Hint { Key = "Drag / W", Label = "move it", Check = d => d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ) },
-				new Hint { Key = "R", Label = "scale it", Check = d => d.AnyBrush( ( b, s ) => (b.Size - s.Size).Length > 0.5f ) },
-				new Hint { Key = "E", Label = "spin it", Check = d => d.AnyBrush( ( b, s ) => RotationDelta( b.Rotation, s.Rotation ) > 0.03f ) },
+				new Hint
+				{
+					Key = "Rings", Label = "drag to spin it",
+					Check = d => d.LockIn( d.AnyBrush( ( b, s ) => RotationDelta( b.Rotation, s.Rotation ) > 0.03f ), d.Session.IsManipulating ),
+				},
 			},
+			Tick = NeedSelectionTick,
+			Enter = d =>
+			{
+				d.SnapshotBrushes();
+				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Locked),
+					(HudSection.GizmoRotate, SectionState.Normal),
+					(HudSection.GizmoScale, SectionState.Locked) );
+			},
+		} );
+
+		_steps.Add( new Step
+		{
+			Bubble = "And stretch it with the dots.",
+			Title = "Use the Gizmo",
+			Hints = new[]
+			{
+				new Hint
+				{
+					Key = "Dots", Label = "drag to scale it",
+					Check = d => d.LockIn( d.AnyBrush( ( b, s ) => (b.Size - s.Size).Length > 0.5f ), d.Session.IsManipulating ),
+				},
+			},
+			Tick = NeedSelectionTick,
+			Enter = d =>
+			{
+				d.SnapshotBrushes();
+				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Locked),
+					(HudSection.GizmoRotate, SectionState.Locked),
+					(HudSection.GizmoScale, SectionState.Normal) );
+			},
+		} );
+
+		// ── Section: the same transforms on the keyboard scrubs. The whole gizmo ghosts (all three
+		// families Locked) so the keys are the only way through; the checks require the matching scrub
+		// to be live, so a lingering gizmo drag can't tick them. ─────────────────────────────────────────
+
+		_steps.Add( new Step
+		{
+			Bubble = "Pros use the keyboard! Hold W and move the mouse.",
+			Title = "Push It Around",
+			Hints = new[]
+			{
+				new Hint
+				{
+					Key = "Hold W", Label = "move it",
+					Check = d => d.LockIn(
+						BrushScrub.Active == ScrubKind.Move && d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ),
+						d.Session.IsScrubbing ),
+				},
+			},
+			Tick = NeedSelectionTick,
+			Enter = d =>
+			{
+				d.SnapshotBrushes();
+				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Locked),
+					(HudSection.GizmoRotate, SectionState.Locked),
+					(HudSection.GizmoScale, SectionState.Locked) );
+			},
+		} );
+
+		_steps.Add( new Step
+		{
+			Bubble = "Hold E to spin it.",
+			Title = "Push It Around",
+			Hints = new[]
+			{
+				new Hint
+				{
+					Key = "Hold E", Label = "spin it",
+					Check = d => d.LockIn(
+						BrushScrub.Active == ScrubKind.Rotate && d.AnyBrush( ( b, s ) => RotationDelta( b.Rotation, s.Rotation ) > 0.03f ),
+						d.Session.IsScrubbing ),
+				},
+			},
+			Tick = NeedSelectionTick,
+			Enter = d => d.SnapshotBrushes(), // gate carries over from the step before
+		} );
+
+		_steps.Add( new Step
+		{
+			Bubble = "And R to scale it.",
+			Title = "Push It Around",
+			Hints = new[]
+			{
+				new Hint
+				{
+					Key = "Hold R", Label = "scale it",
+					Check = d => d.LockIn(
+						BrushScrub.Active == ScrubKind.Scale && d.AnyBrush( ( b, s ) => (b.Size - s.Size).Length > 0.5f ),
+						d.Session.IsScrubbing ),
+				},
+			},
+			Tick = NeedSelectionTick,
 			Enter = d => d.SnapshotBrushes(),
 		} );
 
 		_steps.Add( new Step
 		{
-			Title = "Paint it",
-			Body = "Give the selected shape a new colour.",
+			Bubble = "Scroll the mousewheel to push it away, or pull it closer.",
+			Title = "Push It Around",
+			Hints = new[]
+			{
+				new Hint
+				{
+					// Both halves required: notches scrolled AND the shape actually displaced — so a scrub
+					// can't tick it, and neither can dead scrolling with the push blocked.
+					Key = "Scroll", Label = "push / pull the shape",
+					Check = d => d._scrollTravel >= 2f
+						&& d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ),
+				},
+			},
+			Tick = NeedSelectionTick,
+			Enter = d =>
+			{
+				d.SnapshotBrushes();
+				d._scrollTravel = 0f;
+			},
+		} );
+
+		_steps.Add( new Step
+		{
+			Bubble = "How about a fresh coat of colour?",
+			Title = "Paint It",
 			Hints = new[]
 			{
 				new Hint
@@ -329,8 +660,12 @@ public sealed class TutorialDirector : Component
 			{
 				d.SnapshotBrushes();
 				// The palette is the lesson (ringed); the picker sits beside it visible but locked — "there's
-				// more here, not yet". Everything else stays gone.
+				// more here, not yet". Everything else stays gone; selection and the (learned) gizmo stay live.
 				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Normal),
+					(HudSection.GizmoRotate, SectionState.Normal),
+					(HudSection.GizmoScale, SectionState.Normal),
 					(HudSection.Palette, SectionState.Highlight),
 					(HudSection.Picker, SectionState.Locked) );
 			},
@@ -338,30 +673,174 @@ public sealed class TutorialDirector : Component
 
 		_steps.Add( new Step
 		{
-			Title = "Add a shape",
-			Body = "Stamp a new piece onto him — a hat, a nose, anything.",
+			Bubble = "Now add something new. A hat? A nose? Surprise me!",
+			Title = "Add a Shape",
 			Hints = new[]
 			{
 				new Hint { Key = "Space", Label = "open the shapes", Check = d => d.Session.Tool == SculptTool.Sculpt },
 				new Hint { Key = "LMB", Label = "stamp it on", Check = d => d.AuthoredCount() > d._countAtEnter },
 			},
+			// Reactive: the moment the Add tool is up (chip or Space), the shape dock appears and he runs
+			// the placing monologue (shapes line → hotkeys reminder, ChainBeat apart). Backing out
+			// (Done/Esc) without stamping hides the dock, resets the chain and returns to the step's own
+			// line. (Dock visibility also gates the 1-7 hotkeys, so key and dock agree.)
+			Tick = d =>
+			{
+				bool placing = d.Session.Tool == SculptTool.Sculpt;
+				// Highlighted, not just visible — the dock is what the dialogue is pointing at.
+				EditHudGate.Set( HudSection.ShapeDock, placing ? SectionState.Highlight : SectionState.Hidden );
+
+				if ( !placing )
+				{
+					d.ResetChain();
+					d.Say( d.CurrentStep.Bubble );
+					return;
+				}
+
+				d.SpeakChain( d._addPlacingLines );
+			},
 			Enter = d =>
 			{
 				d._countAtEnter = d.AuthoredCount();
 				// The Add chip is the lesson (ringed) inside a live Tools panel; the tools you haven't met
-				// yet sit locked beside it. Paint stays usable — colour the new piece as you place it.
+				// yet sit locked beside it. Paint stays usable — colour the new piece as you place it. The
+				// shape dock starts HIDDEN; the Tick above reveals it once the Add tool is up.
 				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Normal),
+					(HudSection.GizmoRotate, SectionState.Normal),
+					(HudSection.GizmoScale, SectionState.Normal),
 					(HudSection.Tools, SectionState.Normal),
 					(HudSection.AddChip, SectionState.Highlight),
 					(HudSection.UndoRedo, SectionState.Locked),
 					(HudSection.EditChips, SectionState.Locked),
 					(HudSection.Symmetry, SectionState.Locked),
-					(HudSection.ShapeDock, SectionState.Normal),
 					(HudSection.Palette, SectionState.Normal),
 					(HudSection.Picker, SectionState.Normal) );
+
+				// AFTER ApplyGate (Begin clears the flag): primitives only for the first shape lesson —
+				// the extruded/spline/text tiles and their 5-7 hotkeys wait for free play.
+				EditHudGate.SetBasicShapesOnly( true );
+			},
+		} );
+
+		_steps.Add( new Step
+		{
+			Bubble = "When a shape is selected, you can change its shape with these buttons.",
+			Title = "Change the Shape",
+			Hints = new[]
+			{
+				// Shape is a brush PROPERTY — a dock tile (or 1-4) with a selection CONVERTS it in place.
+				new Hint { Key = "Shape Tiles", Label = "convert the selected shape", Check = d => d.AnyBrush( ( b, s ) => b.Shape != s.Shape ) },
+			},
+			Tick = NeedSelectionTick,
+			Enter = d =>
+			{
+				// Out of the stamp tool first: the add step can leave Sculpt mode live with a fresh ghost,
+				// and dock tiles would re-mould THAT instead of converting a selection — the lesson here.
+				d.Session.SetTool( SculptTool.Gizmo );
+				d.SnapshotBrushes();
+				// The dock is the subject, ringed and PERSISTENT this time (it renders whenever a brush is
+				// active — the fresh stamp is still selected from the last step). Still primitives only.
+				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Normal),
+					(HudSection.GizmoRotate, SectionState.Normal),
+					(HudSection.GizmoScale, SectionState.Normal),
+					(HudSection.Tools, SectionState.Normal),
+					(HudSection.AddChip, SectionState.Locked),
+					(HudSection.UndoRedo, SectionState.Locked),
+					(HudSection.EditChips, SectionState.Locked),
+					(HudSection.Symmetry, SectionState.Locked),
+					(HudSection.ShapeDock, SectionState.Highlight),
+					(HudSection.Palette, SectionState.Normal),
+					(HudSection.Picker, SectionState.Normal) );
+				EditHudGate.SetBasicShapesOnly( true );
+			},
+		} );
+
+		// ── The full editor unveiled: a quick lap of what's left before he hands over the keys. ──────────
+
+		_steps.Add( new Step
+		{
+			Bubble = _optionsLines[0], // same string as the chain's first line, so the card-appear doesn't retype
+			Title = "Shape Options",
+			Hints = new[]
+			{
+				new Hint
+				{
+					Key = "Options", Label = "change any of them",
+					Check = d => d.AnyBrush( ( b, s ) =>
+						b.Operation != s.Operation
+						|| MathF.Abs( b.Blend - s.Blend ) > 0.05f
+						|| MathF.Abs( b.Rounding - s.Rounding ) > 0.02f
+						|| MathF.Abs( b.Curvature - s.Curvature ) > 0.02f
+						|| MathF.Abs( b.Slice - s.Slice ) > 0.02f ),
+				},
+			},
+			// The step also waits for the hotkey line to land — finishing the task mustn't cut him off.
+			Done = d => d._chainDone,
+			Tick = d =>
+			{
+				if ( !d.Session.HasSelection )
+				{
+					d._chainArmed = false;
+					d.Say( "You'll need to pick a piece first!" );
+					return;
+				}
+
+				if ( d.SpeakChain( d._optionsLines ) )
+					d._chainDone = true;
+			},
+			Enter = d =>
+			{
+				d.SnapshotBrushes();
+				// FULL editor from here on — this lap tours it rather than trimming it. The slider stack
+				// (op chip + blend/round/wildcard) is the subject; the layer stack alone stays back, so its
+				// own stage gets the reveal.
+				EditHudGate.Begin( SectionState.Normal );
+				EditHudGate.Set( HudSection.Sliders, SectionState.Highlight );
+				EditHudGate.Set( HudSection.Layers, SectionState.Hidden );
+			},
+		} );
+
+		_steps.Add( new Step
+		{
+			Bubble = _layerLines[0], // same string as the chain's first line, so the card-appear doesn't retype
+			Title = "The Layer Stack",
+			Hints = new[]
+			{
+				new Hint { Key = "Drag a Layer", Label = "move it up or down", Check = d => d.OrderChanged() },
+			},
+			// The instruction line chains in after the intro; completing early mustn't cut it off.
+			Done = d => d._chainDone,
+			Tick = d =>
+			{
+				if ( d.SpeakChain( d._layerLines ) )
+					d._chainDone = true;
+			},
+			Enter = d =>
+			{
+				d.SnapshotOrder();
+				EditHudGate.Begin( SectionState.Normal );
+				EditHudGate.Set( HudSection.Layers, SectionState.Highlight );
 			},
 		} );
 	}
+
+	void ResetCameraTravel()
+	{
+		_orbitTravel = 0f;
+		_dollyTravel = 0f;
+		_panTravel = 0f;
+	}
+
+	// Shared reactive line for every transform lesson: a right-click deselect leaves nothing to transform
+	// — coach the player back, then return to the step's own line once something is selected again.
+	// A static METHOD (not a stored delegate): hotload replaces method BODIES but preserves static field
+	// values, so a delegate cached in a static field would keep executing its pre-edit copy.
+	static void NeedSelectionTick( TutorialDirector d )
+		=> d.Say( d.Session.HasSelection ? d.CurrentStep.Bubble : "You'll need to pick a piece first!" );
 
 	// One call per step: baseline everything Hidden, then raise exactly the sections the step teaches.
 	void ApplyGate( params (HudSection Section, SectionState State)[] overrides )
@@ -372,6 +851,18 @@ public sealed class TutorialDirector : Component
 	}
 
 	// ── Step-detection helpers ───────────────────────────────────────────────────────────────────────────
+
+	// A transform lesson completes only when the operation is LOCKED IN — the delta must be seen while the
+	// gesture is live (that's what attributes it to the right tool), but the hint only ticks once the
+	// gesture has been released. Mid-drag praise felt like the tutorial snatching the mouse.
+	bool _gesturePending;
+
+	bool LockIn( bool deltaDuringGesture, bool gestureLive )
+	{
+		if ( gestureLive && deltaDuringGesture )
+			_gesturePending = true;
+		return _gesturePending && !gestureLive;
+	}
 
 	// Any live authored brush changed against its entry snapshot, index-matched. Reordering shifts indices
 	// and could over-trigger — acceptable: reordering IS an edit the player chose to make.
@@ -398,6 +889,10 @@ public sealed class TutorialDirector : Component
 
 	void SnapshotBrushes()
 	{
+		// Every transform lesson re-baselines through here (step entry AND card-appear), so the lock-in
+		// latch resets with the snapshots it's judged against.
+		_gesturePending = false;
+
 		_snap.Clear();
 
 		var target = Session.Target;
@@ -412,8 +907,44 @@ public sealed class TutorialDirector : Component
 			if ( b.Damage || b == ghost )
 				continue;
 
-			_snap[i] = new BrushSnap( b.Position, b.Size, b.Rotation, b.Color, b.Metallic, b.Roughness );
+			_snap[i] = new BrushSnap( b.Position, b.Size, b.Rotation, b.Color, b.Metallic, b.Roughness,
+				b.Operation, b.Blend, b.Rounding, b.Curvature, b.Slice, b.Shape );
 		}
+	}
+
+	// The layer lesson: capture the authored stack order (the brush OBJECTS in sequence), then detect a
+	// genuine reorder — the same objects, different sequence. An undo replaces the objects wholesale (the
+	// undo state stores copies), so it deliberately reads as "not a reorder".
+	void SnapshotOrder()
+	{
+		var target = Session.Target;
+		int authored = target.IsValid() && target.Brushes is not null
+			? Math.Min( target.AuthoredBrushCount, target.Brushes.Count ) : 0;
+		_orderSnap = target.IsValid()
+			? target.Brushes.Take( authored ).ToList()
+			: new List<SdfBrush>();
+	}
+
+	bool OrderChanged()
+	{
+		var target = Session.Target;
+		if ( _orderSnap is null || !target.IsValid() || target.Brushes is null )
+			return false;
+
+		int authored = Math.Min( target.AuthoredBrushCount, target.Brushes.Count );
+		if ( authored != _orderSnap.Count )
+			return false; // add/delete/undo — not a reorder
+
+		bool moved = false;
+		for ( int i = 0; i < authored; i++ )
+		{
+			var b = target.Brushes[i];
+			if ( !_orderSnap.Contains( b ) )
+				return false; // an object we never snapshotted — the list was rebuilt (undo), not reordered
+			if ( !ReferenceEquals( b, _orderSnap[i] ) )
+				moved = true;
+		}
+		return moved;
 	}
 
 	// Authored brush count with the pending stamp ghost excluded — the ghost is a REAL brush in the list

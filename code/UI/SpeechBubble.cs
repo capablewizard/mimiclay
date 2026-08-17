@@ -44,6 +44,21 @@ public sealed class SpeechBubble : Component
 	/// bake the flip into the scene on the next save.</summary>
 	public bool Hidden { get; set; }
 
+	/// <summary>Per-machine runtime replacement for <see cref="Text"/> — same reasoning as
+	/// <see cref="Hidden"/>: code that wants this bubble to say something else for a while (the tutorial
+	/// speaking through the character) writes HERE, never the serialized Text, which an in-editor play
+	/// session would bake into the scene. Null = the authored text; empty = say nothing (the bubble pops
+	/// out). Changing it retypes, exactly like a Text change.</summary>
+	public string TextOverride { get; set; }
+
+	/// <summary>What the bubble is actually saying this frame.</summary>
+	public string EffectiveText => TextOverride ?? Text;
+
+	/// <summary>The typewriter has fully revealed the current text (written by <see cref="SpeechBubbleHud"/>
+	/// each shown frame). Sequencing hooks read this — e.g. the tutorial holds its instruction card until
+	/// the character finishes talking.</summary>
+	public bool FullyTyped { get; internal set; }
+
 	// The overlay lives with the system, not the scene: first enabled bubble in a scene brings it up.
 	protected override void OnEnabled() => SpeechBubbleHud.Ensure( Scene );
 }
