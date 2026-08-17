@@ -2526,7 +2526,7 @@
               "__guid": "a3f61c29-7e84-4b0d-9c52-1de08f9b4a67",
               "__enabled": true,
               "Flags": 0,
-              "MaxDistance": 500,
+              "MaxDistance": 200,
               "OffsetRight": 10,
               "OffsetUp": 6,
               "OnComponentDestroy": null,
@@ -2536,7 +2536,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "SpaceTicks": 2,
-              "Text": "Hi, click on me for a tutorial",
+              "Text": "Hello and welcome to the tutorial",
               "TypeSpeed": 16
             }
           }

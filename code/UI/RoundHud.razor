@@ -130,7 +130,7 @@
 			@if ( ShowLobbyStatus )
 			{
 				@* Idle lobby (before the host starts): the jittering status line stands in for the timer. *@
-				<WobbleText Text=@LobbyStatus class="lobby-status auto" Strength=@WobbleText.JitterStrength.Soft @key=@LobbyStatus />
+				<WobbleText Text=@LobbyStatus class="lobby-status" LockStep=@true @key=@LobbyStatus />
 			}
 			else if ( RoundContext.Active?.HasTimer ?? false )
 			{

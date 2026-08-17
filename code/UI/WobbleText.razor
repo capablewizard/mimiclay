@@ -36,9 +36,61 @@
 	[Parameter] public string Text { get; set; } = "";
 	[Parameter] public JitterStrength Strength { get; set; } = JitterStrength.Full;
 
+	/// <summary>Drive the letter poses from <see cref="ClayClock"/> instead of CSS animation: the letters
+	/// snap on the SAME global tick the 3D clay boils on (phase-locked, not just rate-matched), each
+	/// holding a different pose from the shared table. Do NOT also pass class="auto" — the CSS animation
+	/// would fight the code-driven transform. Strength is ignored in this mode (amplitudes below are
+	/// tuned for small text, the speech-bubble case that wanted lockstep).</summary>
+	[Parameter] public bool LockStep { get; set; }
+
+	// Rotates the pose table per INSTANCE so parallel words don't mirror each other; letters within one
+	// stride further. Which pose, never when — lockstep timing is the whole point.
+	static int _instances;
+	readonly int _seed = _instances++ * 3;
+
+	int _lastTick = int.MinValue;
+
 	public WobbleText()
 	{
 		AddClass( "wobble-text" );
+	}
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		if ( !LockStep )
+			return;
+
+		// Re-pose only when the global tick rolls — held poses ARE the claymation; writing every frame
+		// would just dirty styles for nothing.
+		int tick = ClayClock.Tick;
+		if ( tick == _lastTick )
+			return;
+		_lastTick = tick;
+
+		int i = 0;
+		foreach ( var child in Children )
+		{
+			if ( child.HasClass( "letter" ) )
+				ApplyPose( child, _seed + i * 5 );
+			i++;
+		}
+	}
+
+	// Letter-scale amplitudes over the shared card-scale table: rotation up a touch (it's what reads on
+	// small glyphs), travel cut well down (sub-pixel-ish, so nothing smears), scale pulse softened.
+	static void ApplyPose( Panel letter, int seed )
+	{
+		var pose = ClayClock.Pose( seed );
+
+		float scale = 1f + (pose.Scale - 1f) * 0.7f;
+		var t = new PanelTransform();
+		t.AddRotation( 0f, 0f, pose.Rotation * 1.2f );
+		t.AddTranslateX( Length.Pixels( pose.Travel.x * 0.3f ) );
+		t.AddTranslateY( Length.Pixels( pose.Travel.y * 0.3f ) );
+		t.AddScale( new Vector3( scale, scale, 1f ) );
+		letter.Style.Transform = t;
 	}
 
 	// Map the strength to its modifier class; the SCSS swaps the keyframe by class. Full = no extra class.
