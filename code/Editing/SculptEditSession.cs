@@ -1833,15 +1833,14 @@ public sealed class SculptEditSession : Component
 	// the verdict can't disagree with what this session does with the same press, whichever component
 	// happens to update first.
 
-	/// <summary>Would a bare left-press at the current cursor start an edit DRAG gesture of its own (stamp
-	/// placement, gizmo handle grab, spline add-point)? False = the press enters AltNav's click-vs-drag
-	/// window: a drag becomes the orbit, a clean click comes back as <see cref="AltNav.LmbTapped"/> and runs
-	/// selection below. Deliberately NOT a hover/pick test — a press on top of a shape must still be able to
-	/// grow into an orbit (a room-sized invisible carve volume must not wall off the camera).</summary>
+	/// <summary>Would a bare left-press at the current cursor start an edit DRAG gesture of its own (gizmo
+	/// handle grab, spline add-point)? False = the press enters AltNav's click-vs-drag window: a drag becomes
+	/// the orbit, a clean click comes back as <see cref="AltNav.LmbTapped"/> — which runs selection in gizmo
+	/// mode and PLACES THE STAMP in add mode (the stamp rides the tap, not the press, so orbiting works the
+	/// same in both tools). Deliberately NOT a hover/pick test — a press on top of a shape must still be able
+	/// to grow into an orbit (a room-sized invisible carve volume must not wall off the camera).</summary>
 	internal bool LmbPressIsEdit()
 	{
-		if ( Tool == SculptTool.Sculpt )
-			return true; // the stamp ghost owns LMB everywhere — a click places it
 		return IsScrubbing || _gizmo.IsBusy || HoveringSplineLine;
 	}
 

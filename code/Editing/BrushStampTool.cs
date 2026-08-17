@@ -6,11 +6,12 @@ namespace Mimiclay;
 /// Add-mode stamp tool: a pending "ghost" brush that rides the cursor over the sculpture, previewing its
 /// add or carve LIVE in the real surface — the ghost is a real brush in <see cref="SdfSculpture.Brushes"/>,
 /// so the raymarcher/field/blend all show exactly what a commit will produce. The operation comes from the
-/// HUD's Add/Carve toggle (the A key flips it); left-release commits the stamp, and a fresh ghost
-/// (inheriting the committed material/params) spawns immediately so stamping flows: place, click, place,
-/// click. R + mouse movement scrubs scale (the same hold-key pattern as the rest of the edit row); a
-/// right-click TAP steps back out of placing (<see cref="AltNav.RmbTapped"/> — a right DRAG is the camera
-/// zoom).
+/// HUD's Add/Carve toggle (the A key flips it); a clean left TAP commits the stamp (<see
+/// cref="AltNav.LmbTapped"/> — a left DRAG is the camera orbit, same click-vs-drag window as selection), and
+/// a fresh ghost (inheriting the committed material/params) spawns immediately so stamping flows: place,
+/// click, place, click. R + mouse movement scrubs scale (the same hold-key pattern as the rest of the edit
+/// row); a right-click TAP steps back out of placing (<see cref="AltNav.RmbTapped"/> — a right DRAG is the
+/// camera zoom).
 ///
 /// Placement is physgun-style — ONE depth mechanism, no surface glue: the ghost's depth lives on a
 /// WORLD-space anchor point (cursor steering slides it in the camera-parallel plane through that point, so
@@ -48,7 +49,6 @@ public sealed class BrushStampTool
 	// the point along the view ray (or the held constraint axis).
 	Vector3 _anchor;
 	bool _seeded;
-	bool _holding;         // a stamp click is mid-gesture (commits on release)
 
 	// Camera-motion / gesture-end cursor resync. RULE: moving the camera must NEVER move the stamp, and no
 	// frozen-cursor gesture (camera move, param scrub, depth drag) may end with a snap — so while any of
@@ -236,7 +236,6 @@ public sealed class BrushStampTool
 		LastCommitted = _stamp;
 		_template = _stamp.Copy();
 		_stamp = null;
-		_holding = false;
 		_chain.Clear();
 		_chainLoop = false;
 		return true;
@@ -294,7 +293,6 @@ public sealed class BrushStampTool
 	{
 		var b = _stamp;
 		_stamp = null;
-		_holding = false;
 		_camSeen = false; // stale camera baseline must not read as "camera moved" (and warp) on re-entry
 		_resyncCursor = _resyncArmed = false;
 		_warpPending = null;
@@ -332,7 +330,6 @@ public sealed class BrushStampTool
 
 			_stamp = NewStamp();
 			brushes.Insert( target.AuthoredBrushCount, _stamp );
-			_holding = false;
 			changed = true;
 		}
 
@@ -434,14 +431,12 @@ public sealed class BrushStampTool
 
 		if ( interactive )
 		{
-			// Click stamps with the toggled operation: press keeps placing (you can slide it around while
-			// held), release commits. The op itself comes from the HUD's Add/Carve toggle, not the button.
-			if ( Input.Pressed( "Attack1" ) )
-				_holding = true;
-
-			if ( _holding && !Input.Down( "Attack1" ) )
+			// A clean left TAP stamps with the toggled operation — the same click-vs-drag window selection
+			// uses (see AltNav.LmbTapped): a press that travels becomes the camera ORBIT instead, so you can
+			// orbit from anywhere while placing, and only a genuine click commits. The op itself comes from
+			// the HUD's Add/Carve toggle, not the button.
+			if ( AltNav.LmbTapped )
 			{
-				_holding = false;
 				if ( Shape == SdfShape.Spline )
 				{
 					// Chain click: drop a control point — or finish, if it landed on the loop snap.
@@ -483,11 +478,6 @@ public sealed class BrushStampTool
 				}
 			}
 		}
-		else
-		{
-			// The gesture drifted into UI/alt-nav — drop it without stamping.
-			_holding = false;
-		}
 
 		return changed;
 	}
@@ -506,7 +496,6 @@ public sealed class BrushStampTool
 		LastCommitted = _stamp;
 		_template = _stamp.Copy();
 		_stamp = null;
-		_holding = false;
 	}
 
 	bool UpdatePlacement( SdfSculpture target, CameraComponent cam, Transform tx )

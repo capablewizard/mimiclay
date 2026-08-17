@@ -12,14 +12,15 @@ namespace Mimiclay;
 /// <item><b>LMB drag</b> = orbit, <b>MMB drag</b> = pan, <b>RMB drag</b> = zoom (dolly).</item>
 /// </list>
 /// A bare press only claims its gesture when it lands FREE: not over the HUD, and not on anything the edit
-/// layer would grab with that button — the stamp ghost, a gizmo handle, or the spline line (see <see
+/// layer would grab with that button — a gizmo handle or the spline line (see <see
 /// cref="SculptEditSession.LmbPressIsEdit"/> / <see cref="SculptEditSession.RmbPressIsEdit"/>, asked LIVE on
 /// the press edge so the answer can't go stale against component update order). A short zoom claim comes
 /// back as <see cref="RmbTapped"/> — the right-click step-back gesture (deselect / drop the stamp).
 ///
 /// A free LMB press doesn't commit immediately: it enters a short PENDING window and becomes the orbit only
 /// after <see cref="TapTravelPx"/> of travel — released inside that window it was a CLICK, surfaced as
-/// <see cref="LmbTapped"/>, which is what the edit session selects/deselects on. So a click-drag orbits from
+/// <see cref="LmbTapped"/>, which is what the edit session selects/deselects on (and what the stamp tool
+/// places on — in add mode a click stamps, a drag orbits). So a click-drag orbits from
 /// anywhere — including on top of a shape (a huge invisible carve volume must not wall off the camera) — while
 /// a clean click on that same shape still picks it. Alt + the same buttons ALWAYS navigates immediately — the
 /// Maya muscle-memory combo and the escape hatch while a tool owns the bare button. (The class keeps its name
