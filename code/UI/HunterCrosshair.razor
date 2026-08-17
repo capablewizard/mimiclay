@@ -30,7 +30,7 @@
 			<div class="possess-float" style=@PromptStyle( at )>
 				<div class="paper-card possess-toast">
 					<span class="key">E</span>
-					<span>Edit</span>
+					<span>@(_promptTutorial ? "Learn to sculpt" : "Edit")</span>
 				</div>
 			</div>
 		}
@@ -69,6 +69,9 @@
 	// Where the prompt is drawn, as viewport fractions (resolution-independent — see PromptStyle), or null when
 	// nothing claimable is under the dot. Recomputed every frame in OnUpdate, since it tracks the world.
 	Vector2? _promptAt;
+
+	// The prompt is for the tutorial character rather than claimable clay — same toast, his label.
+	bool _promptTutorial;
 
 	// Debug capture from the last ResolvePrompt (only filled while ToastDebug): the projected frame points and
 	// the screen rect they span — viewport fractions, the same space the anchor uses.
@@ -109,8 +112,11 @@
 			return null;
 
 		// Claimable clay under the crosshair — only where a claim service is live (creative, the lobby);
-		// HoveredSculpture is never set elsewhere.
-		var hovered = Hunter.HoveredSculpture;
+		// HoveredSculpture is never set elsewhere. The tutorial character rides the same toast with his own
+		// label (see TutorialNpc): anchored off HIS clay's collider frame, exactly like a claimable's.
+		var npc = Hunter.HoveredTutorial;
+		_promptTutorial = npc.IsValid();
+		var hovered = _promptTutorial ? npc.Sculpture : Hunter.HoveredSculpture;
 		var cam = Scene.Camera;
 		if ( !hovered.IsValid() || !cam.IsValid() )
 			return null;
@@ -184,5 +190,5 @@
 	// the prop (same reasoning as PlayerNameplates hashing its plate positions). The debug layer re-renders off
 	// the rect (the dots can't move without it moving).
 	protected override int BuildHash()
-		=> HashCode.Combine( Visible, _promptAt, ToastDebug, _debugValid, _debugMin, _debugMax, _debugPoints.Count );
+		=> HashCode.Combine( Visible, _promptAt, _promptTutorial, ToastDebug, _debugValid, _debugMin, _debugMax, _debugPoints.Count );
 }

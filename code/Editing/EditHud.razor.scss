@@ -474,6 +474,9 @@
 		color: $paper-edge;
 		opacity: 0.9;
 
+		// Guided tutorial: the card does the teaching, this strip stays out of the way (see the markup).
+		&.hidden { opacity: 0; }
+
 		.hint {
 			flex-direction: row;
 			align-items: center;

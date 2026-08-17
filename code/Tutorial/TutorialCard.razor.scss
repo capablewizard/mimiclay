@@ -1,0 +1,147 @@
+@import "/UI/_menu.scss"; // tokens + shared kit: .paper-card, .btn (+ the clay jitter keyframes)
+
+// The tutorial instruction card — top-centre, clear of the EditHud's edge panels ($hud-centre-safe).
+.tutorial-card {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+
+	// Camera-nav / pause: click-through, same treatment as the EditHud root's alt-nav class.
+	&.alt-nav .guide-card { pointer-events: none; }
+
+	.card-float {
+		position: absolute;
+		top: 26px;
+		left: 0;
+		width: 100%;
+		flex-direction: row;
+		justify-content: center;
+		pointer-events: none;
+	}
+
+	.guide-card {
+		pointer-events: all;
+		flex-direction: column;
+		align-items: center;
+		gap: $space-md;
+		padding: $space-lg;
+		border-radius: 22px; // match .shape-tile / the validity toast
+		max-width: 520px;
+
+		.guide-title {
+			flex-direction: row;
+			font-family: $header-font;
+			font-size: 30px;
+			font-weight: 800;
+			letter-spacing: 1px;
+			text-transform: uppercase; // house rule: all headers are uppercase
+			color: $paper-ink;
+		}
+
+		.guide-body {
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 17px;
+			color: $paper-ink-soft;
+			text-align: center;
+		}
+
+		.guide-hints {
+			flex-direction: column;
+			gap: 7px;
+			margin-top: 2px;
+
+			.hint {
+				flex-direction: row;
+				align-items: center;
+				gap: 10px;
+				font-family: Tahoma;
+				font-size: 14px;
+				font-weight: 700;
+				text-transform: uppercase;
+				color: $paper-ink-soft;
+
+				.key {
+					justify-content: center;
+					min-width: 86px;
+					padding: 3px 8px;
+					border-radius: 8px;
+					border: 2px solid $card-edge;
+					color: $craft-blue;
+					background-color: rgba( white, 0.5 );
+				}
+
+				.tick {
+					min-width: 22px;
+					justify-content: center;
+					color: $craft-green;
+					font-size: 17px;
+				}
+
+				&.done {
+					color: $paper-ink;
+					.key { color: $craft-green; border-color: $craft-green; }
+				}
+			}
+		}
+
+		.guide-footer {
+			flex-direction: row;
+			align-items: center;
+			gap: $space-lg;
+			margin-top: 4px;
+
+			.dots {
+				flex-direction: row;
+				align-items: center;
+				gap: 7px;
+
+				.dot {
+					width: 11px;
+					height: 11px;
+					border-radius: 50%;
+					border: 2px solid $card-edge;
+					background-color: rgba( white, 0.4 );
+
+					&.filled { background-color: $craft-green; border-color: $craft-green; }
+					&.current { background-color: $craft-orange; border-color: $craft-orange; }
+				}
+			}
+
+			.skip {
+				font-family: $body-font;
+				font-weight: $body-weight;
+				font-size: 14px;
+				color: $paper-ink-soft;
+				cursor: pointer;
+				padding: 4px 8px;
+
+				&:hover { color: $craft-orange; sound-in: $sound-hover; }
+				&:active { sound-in: $sound-click; }
+			}
+
+			// Shares .btn's paper chip recipe (via the markup class) — just sized down from the menu buttons.
+			.finish {
+				font-size: 18px;
+				padding: 8px 22px;
+			}
+		}
+
+		// The praise beat: one big wobbling word, the card shrunk around it.
+		&.praise {
+			padding: $space-lg 44px;
+
+			// The jitter itself comes from WobbleText's "auto" class (set in the markup).
+			.praise-text {
+				flex-direction: row;
+				font-family: $header-font;
+				font-size: 40px;
+				font-weight: 800;
+				letter-spacing: 2px;
+				text-transform: uppercase;
+				color: $craft-orange;
+			}
+		}
+	}
+}

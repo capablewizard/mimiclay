@@ -121,6 +121,9 @@ public sealed class PropClaims : Component
 		if ( sculpture.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
 			return false; // someone's face (or their gun's clay) — never claimable
 
+		if ( sculpture.Components.Get<TutorialNpc>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
+			return false; // the tutorial character: his E opens the guided session locally (see TutorialNpc), never a claim
+
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 			return IsReleased( hider ); // a pawn's body: only once released into the world

@@ -1,0 +1,102 @@
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The tutorial's instruction card — top-centre, inside the $hud-centre-safe corridor the EditHud keeps
+	clear. Binds to TutorialDirector.Current (the EditHud/Session pattern) and renders nothing when no
+	tutorial runs; the panel itself PERSISTS for the scene's lifetime, spawned once by the director's
+	EnsureCard — a card torn down while hovered would latch HasHovered + the press statics (the
+	panel-deletion trap), so it never unmounts, it just goes empty.
+
+	Its hover feeds EditHud.PointerOverUi (via PointerOver below, the same live-hit-test recipe), so a click
+	on Skip/Finish can never also select/stamp/orbit in the world behind it.
+*@
+
+<root class="tutorial-card @(Inert ? "alt-nav" : "")">
+	@if ( Director is { } d && d.Live )
+	{
+		<div class="card-float">
+			@if ( d.State == TutorialDirector.Phase.Praise )
+			{
+				<div class="paper-card guide-card praise" @ref=CardPanel>
+					<div class="praise-text"><WobbleText Text=@d.PraiseText class="auto" /></div>
+				</div>
+			}
+			else
+			{
+				<div class="paper-card guide-card" @ref=CardPanel>
+					<div class="guide-title"><WobbleText Text=@d.CardTitle Strength=@WobbleText.JitterStrength.Subtle /></div>
+
+					@if ( d.CardBody is { } body )
+					{
+						<div class="guide-body">@body</div>
+					}
+
+					@if ( d.CardHints.Count > 0 )
+					{
+						<div class="guide-hints">
+							@foreach ( var h in d.CardHints )
+							{
+								<div class="hint @(h.Achieved ? "done" : "")">
+									<span class="key">@h.Key</span>
+									<span class="label">@h.Label</span>
+									<span class="tick">@(h.Achieved ? "✓" : "")</span>
+								</div>
+							}
+						</div>
+					}
+
+					<div class="guide-footer">
+						@if ( d.State == TutorialDirector.Phase.Free )
+						{
+							<div class="btn finish" @onclick=@(() => Director?.RequestFinish())>Finish</div>
+						}
+						else
+						{
+							<div class="dots">
+								@for ( int i = 0; i < d.StepCount; i++ )
+								{
+									<div class="dot @(i < d.StepIndex ? "filled" : i == d.StepIndex ? "current" : "")"></div>
+								}
+							</div>
+							<div class="skip" @onclick=@(() => Director?.RequestSkip())>Skip tutorial</div>
+						}
+					</div>
+				</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	/// <summary>Cursor is over the card right now — ORed into <see cref="EditHud.PointerOverUi"/> so world
+	/// clicks/picks/gizmo-grabs/nav-claims can't fall through it. Live hit test ANDed with HasHovered, the
+	/// EditHud.Over recipe, so a stale hover bit can never latch this on.</summary>
+	public static bool PointerOver { get; private set; }
+
+	static TutorialDirector Director => TutorialDirector.Current;
+
+	Panel CardPanel { get; set; }
+
+	// Click-through while camera-navving or paused, same reasoning (and class) as the EditHud root.
+	static bool Inert => AltNav.Held || PauseMenu.IsOpen;
+
+	protected override void OnUpdate()
+	{
+		PointerOver = CardPanel is { IsValid: true, IsDeleting: false }
+			&& CardPanel.HasHovered && CardPanel.IsInside( Mouse.Position );
+	}
+
+	protected override void OnDisabled()
+	{
+		PointerOver = false; // never leave the world-click gate latched by a teardown
+	}
+
+	protected override int BuildHash()
+		=> HashCode.Combine( Director?.CardSignal ?? 0, Inert );
+}

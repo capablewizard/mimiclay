@@ -200,6 +200,16 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		{
 			var hovered = false;
 
+			// The tutorial character: visibility is his call (invitation pulse, tutorial hover, hidden while
+			// his guided session runs) and the LOOK is his own single-writer drive (see TutorialNpc) — never
+			// the claims hover tint below, which his exclusion from IsClaimable keeps him out of anyway.
+			var npc = outline.Components.Get<TutorialNpc>( FindMode.EverythingInSelfAndAncestors );
+			if ( npc.IsValid() )
+			{
+				outline.Hidden = !npc.OutlineVisible;
+				continue;
+			}
+
 			var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
 			if ( hunter.IsValid() )
 			{
@@ -351,6 +361,11 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 	static bool ShouldShow( SdfHighlightOutline outline, RoundPhase phase )
 	{
+		// The tutorial character's affordance exists only under the claims branch — any phase-ruled context
+		// (a live round, the lobby's pre-claims replication gap) hides him like any other scene glow.
+		if ( outline.Components.Get<TutorialNpc>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
+			return false;
+
 		// Hunter pawn: everyone sees its outlines once the Hunt is on — during Hide "no player can see
 		// another player", and that must hold even if pawns ever become visible to proxies before Hunt.
 		// Normally that's just the pawn-root glow: the head-scoped WARNING outline is WarningOnly —

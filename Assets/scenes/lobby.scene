@@ -2471,6 +2471,44 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "d2571f22-2fc3-445f-bd0a-d6e8d3d501c3",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/tutorialtestguy.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1e021d89-7786-47b2-ba05-c200e7600d86"
+            },
+            "Property": "Position",
+            "Value": "37.0267639,-17.8335304,19.3047771"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1e021d89-7786-47b2-ba05-c200e7600d86"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.840573668,0.541697264"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "1e021d89-7786-47b2-ba05-c200e7600d86": "d2571f22-2fc3-445f-bd0a-d6e8d3d501c3",
+        "de537e44-f2e4-4538-aa3c-7bd71be65d57": "c6a58035-4fa3-404f-b50d-5fa32ec97af5",
+        "82763f6d-ac90-496a-ba52-b6610a1b524f": "2fe93e83-db6a-4800-9ecc-9550d2327403",
+        "2f89e7b2-aa0b-4d08-af9f-7d086f9f2974": "f1f972ff-f1a3-4bdc-8042-7e967e175702",
+        "6847fed6-a645-4aa4-896c-1d62c9364b76": "8066cf7c-74d2-4aae-8dce-7ac70c6ecee4",
+        "40af4c49-40ff-4919-a56f-af96dd463dfa": "40756820-142f-4cef-b29c-6cee700f277f",
+        "32a9b36f-cf18-4db7-b4b8-c4a500ed0b0d": "c535e5bf-8412-4d8d-8daf-293dafc79008",
+        "979cf768-6bf0-42d3-a645-83ef8c83f8d9": "ba935657-305b-46bb-87fa-52b8fcb35fc6"
+      }
     }
   ],
   "SceneProperties": {
