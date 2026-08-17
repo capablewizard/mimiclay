@@ -13,6 +13,9 @@ public sealed class RoundDoor : Component
 	[Property, Range( -180f, 180f )]
 	public float OpenAngle { get; set; } = 90f;
 
+	/// <summary>Current open/closed state, kept in sync by <see cref="SetOpen"/>. Doors start closed.</summary>
+	public bool IsOpen { get; private set; }
+
 	Rotation _closedRotation;
 	bool _initialized;
 
@@ -33,6 +36,8 @@ public sealed class RoundDoor : Component
 	public void SetOpen( bool open )
 	{
 		Initialize();
+
+		IsOpen = open;
 
 		GameObject.LocalRotation = open
 			? Rotation.FromYaw( OpenAngle ) * _closedRotation
