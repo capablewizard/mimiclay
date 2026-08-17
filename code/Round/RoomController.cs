@@ -19,14 +19,21 @@ public sealed class RoomController : Component
 	/// <summary>The door(s) that lead into this room.</summary>
 	[Property] public List<RoundDoor> Doors { get; set; } = new();
 
-	/// <summary>If true, EVERY door must be open for the room to be considered accessible. If false (default),
-	/// the room is accessible as soon as ANY one of its doors is open.</summary>
-	[Property] public bool RequireAllDoorsOpen { get; set; }
+	/// <summary>If true (default), EVERY door must be open for the room to be considered accessible — closing
+	/// any single door disables the room. If false, the room stays accessible as long as ANY one of its doors
+	/// is open (only fully disabled once ALL doors are closed).</summary>
+	[Property] public bool RequireAllDoorsOpen { get; set; } = true;
 
 	/// <summary>Objects to enable/disable based on the room's accessibility (spawn points, spawners, loot, etc).</summary>
 	[Property] public List<GameObject> Members { get; set; } = new();
 
-	/// <summary>Whether this room is currently reachable (its door condition is satisfied).</summary>
+	/// <summary>Other rooms this one is nested inside/behind. This room is only accessible if ALL of these are
+	/// also accessible — e.g. a room inside another room should list the outer room here, so closing either
+	/// room's doors disables both. Chains naturally: A depends on B depends on C all resolve correctly.</summary>
+	[Property] public List<RoomController> DependsOn { get; set; } = new();
+
+	/// <summary>Whether this room is currently reachable (its own door condition AND every room in
+	/// <see cref="DependsOn"/> are satisfied).</summary>
 	public bool IsAccessible { get; private set; } = true;
 
 	bool? _appliedState;
@@ -35,13 +42,16 @@ public sealed class RoomController : Component
 	{
 		var doors = Doors.Where( d => d.IsValid() ).ToList();
 
-		// No doors configured -> nothing gates this room, leave members as authored.
-		if ( doors.Count == 0 )
-			return;
-
-		IsAccessible = RequireAllDoorsOpen
+		// Own doors: no doors configured -> this room's own condition is trivially satisfied.
+		var ownAccessible = doors.Count == 0 || (RequireAllDoorsOpen
 			? doors.All( d => d.IsOpen )
-			: doors.Any( d => d.IsOpen );
+			: doors.Any( d => d.IsOpen ));
+
+		var parentsAccessible = DependsOn
+			.Where( r => r.IsValid() )
+			.All( r => r.IsAccessible );
+
+		IsAccessible = ownAccessible && parentsAccessible;
 
 		if ( _appliedState == IsAccessible )
 			return;
@@ -86,6 +96,16 @@ public sealed class RoomController : Component
 				continue;
 
 			Gizmo.Draw.Line( WorldPosition, member.WorldPosition );
+		}
+
+		Gizmo.Draw.Color = Color.Yellow.WithAlpha( 0.6f );
+
+		foreach ( var parent in DependsOn )
+		{
+			if ( !parent.IsValid() )
+				continue;
+
+			Gizmo.Draw.Line( WorldPosition, parent.WorldPosition );
 		}
 	}
 }

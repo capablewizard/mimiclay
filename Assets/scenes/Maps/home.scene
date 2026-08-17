@@ -11375,8 +11375,14 @@
           "__guid": "f80a7775-9898-4655-9d71-c3579866eb65",
           "__enabled": true,
           "Flags": 0,
+          "DependsOn": [],
           "Doors": [
-            null
+            {
+              "_type": "component",
+              "component_id": "f46cd031-154f-4182-9160-dc7f208331cf",
+              "go": "f7a4bfce-180d-4ae7-940c-d59029f5c5e4",
+              "component_type": "RoundDoor"
+            }
           ],
           "Members": [
             {
@@ -11428,6 +11434,7 @@
           "__guid": "0f4d9b41-0100-41eb-9b98-fa166aad21d3",
           "__enabled": true,
           "Flags": 0,
+          "DependsOn": [],
           "Doors": [
             {
               "_type": "component",
@@ -11486,6 +11493,7 @@
           "__guid": "915e6fd1-5341-44f0-be1c-b7710872b6ac",
           "__enabled": true,
           "Flags": 0,
+          "DependsOn": [],
           "Doors": [
             {
               "_type": "component",
@@ -11544,17 +11552,19 @@
           "__guid": "a0d8e83b-baf4-4684-827d-b4f0fed08d65",
           "__enabled": true,
           "Flags": 0,
+          "DependsOn": [
+            {
+              "_type": "component",
+              "component_id": "61c71df2-6979-4a2e-99f5-61c83e3c5564",
+              "go": "d5d2cae9-c58d-44f7-b176-e99aafaaa297",
+              "component_type": "RoomController"
+            }
+          ],
           "Doors": [
             {
               "_type": "component",
               "component_id": "fe85db58-e734-4ace-a640-2232d530911e",
               "go": "c32be4d5-aeaf-4e12-bd9b-1bf78975c305",
-              "component_type": "RoundDoor"
-            },
-            {
-              "_type": "component",
-              "component_id": "1422600c-7d88-4778-b44d-8287259a0e44",
-              "go": "27ddaa29-e0b4-4fd4-bf12-beb49b03c509",
               "component_type": "RoundDoor"
             }
           ],
@@ -11608,6 +11618,7 @@
           "__guid": "61c71df2-6979-4a2e-99f5-61c83e3c5564",
           "__enabled": true,
           "Flags": 0,
+          "DependsOn": [],
           "Doors": [
             {
               "_type": "component",
@@ -11666,6 +11677,7 @@
           "__guid": "3b41f04f-57f3-41f5-94b5-89353823e5cf",
           "__enabled": true,
           "Flags": 0,
+          "DependsOn": [],
           "Doors": [
             {
               "_type": "component",
@@ -11730,6 +11742,7 @@
           "__guid": "852c63ae-02ea-494b-b3bb-89a0f12e8ac3",
           "__enabled": true,
           "Flags": 0,
+          "DependsOn": [],
           "Doors": [
             {
               "_type": "component",
