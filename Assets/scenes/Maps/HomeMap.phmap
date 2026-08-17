@@ -1,0 +1,9 @@
+{
+  "Title": "Home",
+  "Description": "Slip between the rooms of a quiet house.",
+  "Preview": "scenes/maps/home_thumb.vtex",
+  "Scene": "scenes/maps/home.scene",
+  "Hidden": false,
+  "__references": [],
+  "__version": 0
+}

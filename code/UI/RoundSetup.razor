@@ -208,8 +208,20 @@
 	protected override void OnUpdate()
 	{
 		// Keep the preview image in sync with the picked map (the <image> Texture is driven from code).
+		// MarkRenderDirty is not optional: a panel's draw is CACHED, and only a style/layout/opacity change
+		// rebuilds it (PanelRenderer.BuildDescriptors). Assigning Texture does none of those, so without this
+		// the <image> keeps the empty descriptors it cached on its first frame — when @ref had only just
+		// landed and Texture was still null — and no map preview ever draws. Engine's Image.SetTexture does
+		// the same thing right after it assigns.
 		if ( _open && PreviewImage is not null )
-			PreviewImage.Texture = SelectedMap?.Preview;
+		{
+			var tex = SelectedMap?.Preview;
+			if ( PreviewImage.Texture != tex )
+			{
+				PreviewImage.Texture = tex;
+				PreviewImage.MarkRenderDirty();
+			}
+		}
 
 		// Only the host configures. If a non-host somehow has this panel, keep it shut.
 		if ( !LocalIsHost )
