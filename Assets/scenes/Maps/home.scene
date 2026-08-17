@@ -6,9 +6,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "0,0,256",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -31,7 +31,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "0cccd466-0b16-8124-9ad9-cf72befd2ae0"
+              "$blob": "56fe0c09-06cc-854d-a792-6aec58973832"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat",
@@ -64,9 +64,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (1)",
-      "Position": "16,0,256",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -89,7 +89,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "41193504-30c6-8eba-8a51-5fb2803799dd"
+              "$blob": "72613cfb-8c24-8114-80d4-37cc3ee20280"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -120,9 +120,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (2)",
-      "Position": "400,111.999985,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106829,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -145,7 +145,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "fb2e2294-3d70-8c61-88e7-8d79c31659d7"
+              "$blob": "0fffcabb-2df6-816a-98eb-aa7795e998d4"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -176,9 +176,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (73)",
-      "Position": "272,-1024,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -201,7 +201,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "5987abaa-7a6e-82a8-a203-86b100844421"
+              "$blob": "5b314420-ed49-8173-a3d1-9f7547a14bfd"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -232,9 +232,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (74)",
-      "Position": "256,-1024,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -257,7 +257,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "73efc613-4450-811b-88c6-fe9eeded034f"
+              "$blob": "57fd3a07-2bcc-8eaf-8c5f-41905cac2441"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -288,9 +288,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (4)",
-      "Position": "400,128,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106829,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -313,7 +313,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "a3d8e6bb-c30c-8c38-a08b-e65659831315"
+              "$blob": "3a719c42-e04e-8553-afcb-9beb3098c5de"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -344,9 +344,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (5)",
-      "Position": "239.999985,-640,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106829,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -369,7 +369,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "75af8337-0719-837c-af1e-45cb7d959cd8"
+              "$blob": "9ecf5b99-fa82-8192-8ddd-fe9c27153211"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -400,9 +400,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (16)",
-      "Position": "272,-256,-1.552701E-05",
+      "Position": "0,0,0",
       "Rotation": "0,0,-1,0",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -425,7 +425,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f79b2000-2be9-8978-aa13-ecb11062a010"
+              "$blob": "901b9249-3f57-8e79-8237-35f0c77d1bd5"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -456,9 +456,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (61)",
-      "Position": "272,-496,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,-1,0",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -481,7 +481,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9b81bc41-7cf3-89c4-888f-5df3a662b335"
+              "$blob": "0da3feea-040f-8a04-96f8-b9c0a61be709"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -512,9 +512,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (65)",
-      "Position": "680,-640,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -537,7 +537,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "386bd896-ec1d-8f37-9b61-326b9fbbf2a7"
+              "$blob": "91d0282c-74c6-8476-bae4-27ad3dab5b23"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -568,9 +568,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (66)",
-      "Position": "680,-656,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -593,7 +593,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "fc64a0ba-3f88-842c-a4eb-13338273a50b"
+              "$blob": "160be801-0eb2-8ae0-9c32-874a4077cb5f"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -624,9 +624,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (62)",
-      "Position": "256,-496,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,-1,0",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -649,7 +649,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "b870dc75-e707-820d-9711-da9413e3e959"
+              "$blob": "8a8dbce2-9a27-8df4-a4f6-2f0155fab3dd"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -680,9 +680,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (67)",
-      "Position": "256,-288,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,-1,0",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -705,7 +705,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "ddac7388-21ee-8496-ae6d-9619411381bf"
+              "$blob": "9e396c34-385a-8ea7-a32c-85935d1670e3"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -736,9 +736,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (68)",
-      "Position": "272,-288,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,-1,0",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -761,7 +761,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "c4fab2fe-aaf5-851f-b5a9-2e4cc7a3c718"
+              "$blob": "9294ea0c-40f9-8e88-9a1d-8f4949062d37"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -792,9 +792,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (71)",
-      "Position": "424,-144,-271.999969",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,-0.707106709",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -817,7 +817,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "c8897ab5-5b9a-8e83-adf2-3ed62ce3cc1f"
+              "$blob": "f59ba109-c4a1-8af0-b451-08a7cb7255b7"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -848,9 +848,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (72)",
-      "Position": "424,-128,-271.999969",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,-0.707106709",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -873,7 +873,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "63daf9e2-2557-8b7d-9a7a-aceae4707a2e"
+              "$blob": "adc6692e-e25d-8cd0-9f9f-7ac468ac45ac"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -904,9 +904,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (18)",
-      "Position": "256,-256,-1.552701E-05",
+      "Position": "0,0,0",
       "Rotation": "0,0,-1,0",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -929,7 +929,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "88ad788f-2fc0-8c1e-8f4f-f8c7b47fb638"
+              "$blob": "8b849abd-e2d4-8703-9e72-be44409254b7"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -960,9 +960,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (6)",
-      "Position": "608,-160,8.64267349E-07",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -985,7 +985,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "f3100c03-ed64-8c56-b81f-12497443a121"
+              "$blob": "9cd32fa7-8244-8c68-8d17-7bd2693c06f0"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -1016,9 +1016,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (8)",
-      "Position": "624,-160,8.64267349E-07",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -1041,7 +1041,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "addc62be-4520-8d9f-87e3-e4151a067428"
+              "$blob": "e90de72e-4b99-8294-9a59-8d377fcf9a16"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -2296,9 +2296,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "256,-120,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2321,7 +2321,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "3217d8b3-003c-8f21-a2f6-b322d05353dc"
+              "$blob": "0cdb05ab-2434-8dfa-ae5b-ee619cfb5a2c"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2353,9 +2353,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (17)",
-      "Position": "256,-344,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2378,7 +2378,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "3217d8b3-003c-8f21-a2f6-b322d05353dc"
+              "$blob": "1fbb0edf-e93c-8c53-b627-ad716b421033"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2410,9 +2410,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (63)",
-      "Position": "256,-584,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2435,7 +2435,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "3217d8b3-003c-8f21-a2f6-b322d05353dc"
+              "$blob": "32bb6113-2000-86d0-9b18-017a149770c6"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2467,9 +2467,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (69)",
-      "Position": "256,-408,-272",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2492,7 +2492,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "3217d8b3-003c-8f21-a2f6-b322d05353dc"
+              "$blob": "cfcdd011-51e4-8b9d-9f37-490679850ec6"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2524,9 +2524,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (70)",
-      "Position": "304,-128,-271.999969",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106709,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2549,7 +2549,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "0f77d337-4e8c-8cd6-9d81-c998b328e247"
+              "$blob": "c4c3b3d8-8809-8b5e-8876-37e0a56fb2e7"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2581,9 +2581,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (64)",
-      "Position": "768,-656,-272.000031",
+      "Position": "0,0,0",
       "Rotation": "0,0,0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2606,7 +2606,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "4be68189-5795-8b34-a39b-cb3dda58a881"
+              "$blob": "895756c6-b2fa-8f6a-b9fe-bcc9fce409bd"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2638,9 +2638,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (78)",
-      "Position": "800,-608,-272.000031",
+      "Position": "0,0,0",
       "Rotation": "0,0,-8.49366188E-07,0.999999881",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2663,7 +2663,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "a6883c8c-9c88-866a-aaf2-4781daa62b3f"
+              "$blob": "fee47b3a-ff05-8270-bf10-a27af5bc3bee"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2695,9 +2695,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (79)",
-      "Position": "-144,-304,-272.000061",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2720,7 +2720,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "a6883c8c-9c88-866a-aaf2-4781daa62b3f"
+              "$blob": "cdb9612b-00bd-8005-9270-a0f1968c6fa7"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2752,9 +2752,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (3)",
-      "Position": "552,112,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2777,7 +2777,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "fc878950-1000-8b9c-8cf4-5dc03ca79848"
+              "$blob": "a4dc0a3a-c637-8a66-ba58-de965eabf969"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2809,9 +2809,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (20)",
-      "Position": "416,-656,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2834,7 +2834,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "fc878950-1000-8b9c-8cf4-5dc03ca79848"
+              "$blob": "ca30f975-e244-8a81-a2f1-477bb3260c6f"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2866,9 +2866,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (75)",
-      "Position": "272,-872,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0.99999994,0",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2891,7 +2891,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "d7e7e4b7-b0a8-8c49-9012-5ced4aa22563"
+              "$blob": "a09ae42d-6d3b-8ed6-9f33-1d17856d84c1"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2923,9 +2923,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (7)",
-      "Position": "608,-88,3.57627869E-06",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,0.99999994",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2948,7 +2948,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "49e7374b-e6fb-8acd-9ba2-0f1b1a9ae138"
+              "$blob": "8c429830-6bb7-8d35-9c28-5231adeb2a01"
             },
             "Materials": [
               "materials/dev/hs/reflectivity_hs_20.vmat",
@@ -2980,9 +2980,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "440,-24,120",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3005,7 +3005,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "43109c46-5ddf-888e-a24a-84d7cae4abab"
+              "$blob": "3004aa37-4ea3-82b6-b126-1de02a986ab0"
             },
             "Materials": [
               "materials/dev/simple/simple_tile.vmat",
@@ -3037,9 +3037,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "512,256,128",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3062,7 +3062,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "79dc12b9-5724-8ddf-a815-20012d7d772b"
+              "$blob": "b8a2d2d5-e0ea-8af6-8efa-43e5bee3bc7b"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat",
@@ -3094,9 +3094,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "712,-72,128",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3119,7 +3119,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "ba57a8cf-c4f3-8608-81fd-7bc49309b562"
+              "$blob": "343f3abe-4d65-8819-8e39-3ada34fdfdde"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat",
@@ -3151,9 +3151,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "456,-272,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3176,7 +3176,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "2808d79d-94b9-8c98-82c1-a65bbdff343a"
+              "$blob": "424ae0b5-e0af-8d43-97e1-050c64fcd5a9"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_hs.vmat"
@@ -3207,9 +3207,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (21)",
-      "Position": "648,-272,-128",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,0.99999994",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3232,7 +3232,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "dcb5a08e-a9ce-8df3-87e1-d033c9970b8d"
+              "$blob": "ebd12533-de55-8535-977c-d5903e31cc14"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_hs.vmat"
@@ -3263,9 +3263,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (23)",
-      "Position": "672,-272,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3288,7 +3288,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9bb6a9eb-7b3c-8674-9831-0f0f8d83d3f1"
+              "$blob": "02660392-1e3d-8b78-b9ac-d49a150565f5"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_hs.vmat"
@@ -3319,9 +3319,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "452,-468.965515,16",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3372,9 +3372,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "528,-168,128",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3397,7 +3397,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "6f91d081-d533-8c7c-ba3c-341f8e98d0d1"
+              "$blob": "b2e4f0fc-4126-8637-b58d-e4c5ba24cde2"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -3428,9 +3428,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "64,-408,128",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3453,7 +3453,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "a10d5242-ace9-8d16-9a68-1b8f34dc5740"
+              "$blob": "49880567-4872-8964-96e1-d7f16e5b4885"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat",
@@ -3530,9 +3530,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "ShadowBlocker",
-      "Position": "344,-248,136",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3555,7 +3555,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "c35a76ac-b4f8-8fa7-90ce-fbb8fd683b2d"
+              "$blob": "1dd6be64-605f-81a7-b6fc-4b363d94a976"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat"
@@ -3571,7 +3571,7 @@
           "OnObjectTriggerExit": null,
           "OnTriggerEnter": null,
           "OnTriggerExit": null,
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "RollingResistance": null,
           "SmoothingAngle": 40,
           "Static": true,
@@ -3586,7 +3586,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Spot Light",
-      "Position": "80,128,240",
+      "Position": "192,256,480",
       "Rotation": "0,0.707106769,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "light_spot,light",
@@ -3602,9 +3602,9 @@
           "__guid": "f2b48a44-3f9e-46c7-a3dd-7c8ebe16c9cb",
           "__enabled": true,
           "Flags": 0,
-          "Attenuation": 0.23498696,
-          "ConeInner": 55.45692,
-          "ConeOuter": 63.446472,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
           "Contribution": "Diffuse, Specular, Transmissive",
           "Cookie": null,
           "FogMode": "Enabled",
@@ -3616,7 +3616,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Radius": 500,
+          "Radius": 1000,
           "ShadowBias": 0,
           "ShadowHardness": 0,
           "Shadows": true
@@ -3625,11 +3625,140 @@
       "Children": []
     },
     {
-      "__guid": "7d61bcf4-ae77-4e6e-a41c-a9cd5a4bc531",
+      "__guid": "98581dd3-8b3e-4ec2-9009-bbcc6f1f471a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (5)",
+      "Position": "896,-64,480.000092",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "b31a1b92-4eb7-4ae4-9078-727f69cadf5e",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 1000,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "be8bc761-d140-4c9d-ad1e-de50f81f6a05",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (6)",
+      "Position": "1216,448,480.000092",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "710934f4-9b86-4f6c-adb1-f94a4dd17698",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 1000,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "dd469b2a-551f-4789-ad74-8a2d72a34fe5",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (7)",
+      "Position": "1376,-64,480.000092",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "a5fd02ad-29f6-41d8-a79c-a7c5ae887274",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.5483029,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 750,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "94344f0a-7a0e-450a-bedc-cbe582d27b3b",
       "__version": 2,
       "Flags": 0,
       "Name": "Spot Light (1)",
-      "Position": "576,256,240",
+      "Position": "160,-864,480",
       "Rotation": "0,0.707106769,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "light_spot,light",
@@ -3642,12 +3771,12 @@
       "Components": [
         {
           "__type": "Sandbox.SpotLight",
-          "__guid": "bfb84df2-a02b-43d6-a525-ec1d92cfdc12",
+          "__guid": "7d8600cf-8a03-401d-8e0e-188b6c2ebff2",
           "__enabled": true,
           "Flags": 0,
-          "Attenuation": 0.23498696,
-          "ConeInner": 55.45692,
-          "ConeOuter": 63.446472,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
           "Contribution": "Diffuse, Specular, Transmissive",
           "Cookie": null,
           "FogMode": "Enabled",
@@ -3659,7 +3788,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Radius": 500,
+          "Radius": 1000,
           "ShadowBias": 0,
           "ShadowHardness": 0,
           "Shadows": true
@@ -3668,11 +3797,11 @@
       "Children": []
     },
     {
-      "__guid": "ac2f1ef1-db34-4e5f-9d07-7780ed26c0aa",
+      "__guid": "1578bab2-750c-47a1-a8bc-6d5005cbd663",
       "__version": 2,
       "Flags": 0,
       "Name": "Spot Light (2)",
-      "Position": "432,-48,240",
+      "Position": "96,-1696,480",
       "Rotation": "0,0.707106769,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "light_spot,light",
@@ -3685,12 +3814,12 @@
       "Components": [
         {
           "__type": "Sandbox.SpotLight",
-          "__guid": "77ac12ae-a150-4a08-9df3-e9a0ee08e40e",
+          "__guid": "169ff8fd-6e4d-427c-9c70-8b1d18317d8e",
           "__enabled": true,
           "Flags": 0,
-          "Attenuation": 0.23498696,
-          "ConeInner": 48.172325,
-          "ConeOuter": 62.741516,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
           "Contribution": "Diffuse, Specular, Transmissive",
           "Cookie": null,
           "FogMode": "Enabled",
@@ -3702,7 +3831,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Radius": 500,
+          "Radius": 1000,
           "ShadowBias": 0,
           "ShadowHardness": 0,
           "Shadows": true
@@ -3711,11 +3840,11 @@
       "Children": []
     },
     {
-      "__guid": "036573f7-a935-4ea6-ae30-3b324731f99a",
+      "__guid": "b4e5ea0c-4e46-47f7-a297-fa447b60cc8f",
       "__version": 2,
       "Flags": 0,
       "Name": "Spot Light (3)",
-      "Position": "360,-376,240",
+      "Position": "1024,-1632,480",
       "Rotation": "0,0.707106769,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "light_spot,light",
@@ -3728,12 +3857,12 @@
       "Components": [
         {
           "__type": "Sandbox.SpotLight",
-          "__guid": "ba55d7ba-ad3c-47c5-aea7-06d5c9ae873c",
+          "__guid": "1e2571d4-420a-4e8f-863a-eaed366596b7",
           "__enabled": true,
           "Flags": 0,
-          "Attenuation": 0.23498696,
-          "ConeInner": 48.172325,
-          "ConeOuter": 62.741516,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
           "Contribution": "Diffuse, Specular, Transmissive",
           "Cookie": null,
           "FogMode": "Enabled",
@@ -3745,7 +3874,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Radius": 500,
+          "Radius": 1000,
           "ShadowBias": 0,
           "ShadowHardness": 0,
           "Shadows": true
@@ -3754,11 +3883,11 @@
       "Children": []
     },
     {
-      "__guid": "05a4f000-62a6-45c2-8a9b-66feecc9cdbe",
+      "__guid": "a66d421a-15b5-44d9-9f30-5b18d84ded7e",
       "__version": 2,
       "Flags": 0,
-      "Name": "Spot Light (4)",
-      "Position": "640,-376,176",
+      "Name": "Spot Light (8)",
+      "Position": "1216,-1664,-64",
       "Rotation": "0,0.707106769,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "light_spot,light",
@@ -3771,12 +3900,12 @@
       "Components": [
         {
           "__type": "Sandbox.SpotLight",
-          "__guid": "a8dc98ca-f0cf-47af-941d-390b9c0fa267",
+          "__guid": "c9d89f5f-8e29-4f9d-8313-a38215bed999",
           "__enabled": true,
           "Flags": 0,
-          "Attenuation": 0.23498696,
-          "ConeInner": 48.172325,
-          "ConeOuter": 62.741516,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
           "Contribution": "Diffuse, Specular, Transmissive",
           "Cookie": null,
           "FogMode": "Enabled",
@@ -3788,7 +3917,265 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Radius": 500,
+          "Radius": 1000,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "9bb2dc31-62fe-4e7d-adc1-23996ebbd104",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (13)",
+      "Position": "704,-544,-64",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "6081f5e9-e412-4cd9-b537-edd61bf60683",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.5483029,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 750,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "25ad4f9f-96f2-4236-aaa5-96027d46f38b",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (9)",
+      "Position": "224,-1664,-64",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "d909eb62-3473-40d8-99c9-ca1a2f5efadd",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 1000,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "af6c5399-83e8-44a9-9502-bc5106e69dfc",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (10)",
+      "Position": "224,-832,-64",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "75f9e04c-6b1f-4bfe-b870-ef898184c54d",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 1000,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c810661f-507b-4dbc-a25a-867c92a63cd8",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (11)",
+      "Position": "128,224,-64",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "2eb6ce61-093c-49fe-bd64-c8e772b67ebb",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 1000,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "42891627-4901-4ff4-9c21-d4dcc88a2132",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (12)",
+      "Position": "1024,224,-64",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "c0207adc-abf7-4475-a616-d73b806eef5a",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.1305483,
+          "ConeInner": 60.391647,
+          "ConeOuter": 67.911224,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 1000,
+          "ShadowBias": 0,
+          "ShadowHardness": 0,
+          "Shadows": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "f1efb9b5-7ffe-4185-9619-f7f6b5ea99a7",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Spot Light (4)",
+      "Position": "1120,-832,429.750092",
+      "Rotation": "0,0.707106769,0,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "light_spot,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "8a2232c6-8b56-4790-9579-3f4e7ec905ab",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 0.1,
+          "ConeInner": 54.75196,
+          "ConeOuter": 61.331596,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "Cookie": null,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.91373,0.98039,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 1500,
           "ShadowBias": 0,
           "ShadowHardness": 0,
           "Shadows": true
@@ -3801,9 +4188,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "160,-840,128",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3826,7 +4213,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "fe0c38b7-77af-83c2-93ba-09fa0950027c"
+              "$blob": "b9514650-92c7-80a7-8092-f2e8c2834d0c"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat",
@@ -3859,9 +4246,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "624,-648,127.999992",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3884,7 +4271,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "2ea2e3e4-02e5-8b37-a218-cf2e51261159"
+              "$blob": "a7d2563f-9a70-86a0-a9cc-a702ee464095"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -3915,9 +4302,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "456,-480,127.999992",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3940,7 +4327,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "8988f384-0050-8031-9621-60a4dccc2a60"
+              "$blob": "e22214b5-7c76-8231-9b25-82d7ad55cbb9"
             },
             "Materials": [
               "materials/dev/simple/simple_tile.vmat"
@@ -3971,9 +4358,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "632,-128,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -3996,7 +4383,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "babac368-220a-82f4-a5d7-e9c3763d2efd"
+              "$blob": "2e81309c-e2ed-8fb3-83e3-92d61b138ad7"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat",
@@ -4028,9 +4415,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "744,-208,-16.0000076",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4053,7 +4440,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "c706377d-5e20-8936-936b-4a0b250450fc"
+              "$blob": "65bf8d6f-a9d9-884a-903d-b6691105724b"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat"
@@ -4084,9 +4471,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (24)",
-      "Position": "624,-656,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4109,7 +4496,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "ca1e66aa-5153-8f60-ba3b-8762614e03fd"
+              "$blob": "3dc1ecd2-effa-83fe-ad8e-7321802ed388"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat",
@@ -4142,9 +4529,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "680,-452,-264",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4167,7 +4554,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "0b813e83-3a02-8be1-8eaa-cb62ec8dffdf"
+              "$blob": "33a35f8d-7130-889b-a0f3-d5fed09593b7"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4198,9 +4585,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (25)",
-      "Position": "660,-264,-136",
+      "Position": "0,0,0",
       "Rotation": "0,0,0.707106709,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4223,7 +4610,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "ab39be34-e50f-89ae-b4ca-1c5c0b9d7f6d"
+              "$blob": "176c14e8-9980-802b-b43c-ab2a18405b2d"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4254,9 +4641,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "660,-264,-128",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4279,7 +4666,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "e835fdfd-8708-8b03-a424-a4c9c1ea1138"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4310,9 +4697,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (26)",
-      "Position": "636,-264,-112",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4335,7 +4722,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "498f5ef2-56ac-84d7-bef3-5c088f4332a9"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4366,9 +4753,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (27)",
-      "Position": "612,-264,-96",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4391,7 +4778,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "1d48ba81-0c07-85a0-89f7-6e14123d4c60"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4422,9 +4809,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (30)",
-      "Position": "588,-264,-80",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4447,7 +4834,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "b8993a57-710a-82a6-8770-b71b1e0b56ae"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4478,9 +4865,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (29)",
-      "Position": "564,-264,-64",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4503,7 +4890,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "b7617bab-2a81-8dfa-8491-6c61e9347bf3"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4534,9 +4921,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (28)",
-      "Position": "540,-264,-48",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4559,7 +4946,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "613a5395-59b4-8216-8f08-31c153dfc4b8"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4590,9 +4977,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (39)",
-      "Position": "680,-404,-224",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4615,7 +5002,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "057aa21e-6a68-8183-a3e8-cced7450811d"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4646,9 +5033,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (38)",
-      "Position": "680,-380,-208",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4671,7 +5058,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "5027872a-f3db-8b24-9846-c5a21fc8e1be"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4702,9 +5089,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (41)",
-      "Position": "680,-452,-256",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4727,7 +5114,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "17c9bc63-96da-877d-b866-97fd38354037"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4758,9 +5145,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (40)",
-      "Position": "680,-428,-240",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4783,7 +5170,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "c5515e78-31a3-8a7f-adc0-ada387c0a172"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4814,9 +5201,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (37)",
-      "Position": "680,-356,-192",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4839,7 +5226,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "d2afc49a-3f77-8a4c-b70f-5d8d5688f2fe"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4870,9 +5257,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (36)",
-      "Position": "680,-332,-176",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4895,7 +5282,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "307749a2-4833-8f4a-a4e5-2f00050b1bf0"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4926,9 +5313,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (35)",
-      "Position": "680,-308,-160",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -4951,7 +5338,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "be8257b5-5238-8429-a0d2-d7d47d68f104"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -4982,9 +5369,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (34)",
-      "Position": "680,-284,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5007,7 +5394,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "a9b9d809-4c98-8111-8eb3-ae43976e8c66"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5038,9 +5425,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (42)",
-      "Position": "680,-264,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5063,7 +5450,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "6d2476a5-d14f-8b04-9016-d0da543768b3"
+              "$blob": "06ecde19-ce85-8427-88a7-d9696cc5c624"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5094,9 +5481,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (33)",
-      "Position": "516,-264,-32",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5119,7 +5506,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "2a99b4c0-6dd8-85c4-ba99-6cebcd160f6a"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5150,9 +5537,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (32)",
-      "Position": "492,-264,-16",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5175,7 +5562,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "afb8bc25-d35a-8650-8c77-878cb2038605"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5206,9 +5593,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (31)",
-      "Position": "468,-264,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5231,7 +5618,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "96e980d0-aa03-8989-a3c4-920a35e8c6ec"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5262,9 +5649,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (47)",
-      "Position": "456,-264,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5287,7 +5674,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "3c272674-0627-8fe0-99ff-38c076ea8986"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5318,9 +5705,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (48)",
-      "Position": "456,-280,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5343,7 +5730,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "8e650555-3f1c-871c-a950-03e6e2280b98"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5374,9 +5761,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (49)",
-      "Position": "456,-312,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5399,7 +5786,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "eabb5a6e-581c-82aa-ba7a-ff179f8a3ed8"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5430,9 +5817,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (51)",
-      "Position": "456,-344,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5455,7 +5842,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "50000943-5cab-8c27-917e-eae851a943bf"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5486,9 +5873,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (50)",
-      "Position": "456,-376,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5511,7 +5898,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "e8c5852f-cf03-8fa3-8cfe-0bc38727b59a"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5542,9 +5929,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (53)",
-      "Position": "456,-408,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5567,7 +5954,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "8ea00c2e-d1ac-883a-90cc-5129bf4142f2"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5598,9 +5985,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (52)",
-      "Position": "456,-440,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5623,7 +6010,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "90ba1ed4-5120-8049-b112-7c1ce9adebac"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5654,9 +6041,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (55)",
-      "Position": "456,-472,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5679,7 +6066,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "539bc3a1-ae78-8db9-a1b4-bed3c9b531f9"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5710,9 +6097,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (54)",
-      "Position": "456,-504,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5735,7 +6122,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "68e4aef8-4aa4-8fc2-904e-53a3e22577be"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5766,9 +6153,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (57)",
-      "Position": "456,-536,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5791,7 +6178,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "4b0fd89e-8832-82bf-a128-37e1b4bc62aa"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5822,9 +6209,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (56)",
-      "Position": "456,-568,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5847,7 +6234,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "6c3f8297-6f63-8b2c-a241-73af1868ecb9"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5878,9 +6265,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (59)",
-      "Position": "456,-600,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5903,7 +6290,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "99e4d8cf-3d48-8111-9dba-ea41fb52990f"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5934,9 +6321,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (58)",
-      "Position": "456,-632,0",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -5959,7 +6346,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "9c43fb4f-722f-8c29-bb4d-64efd4dedfe7"
+              "$blob": "49fba2f0-65a4-8a21-bd88-5e1cc1863fc9"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat"
@@ -5990,9 +6377,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "498,-264,74",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6015,7 +6402,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "c9ce94e9-7924-88d5-9f29-1eb4df0fab25"
+              "$blob": "59f88af0-8340-8f14-96c6-280b1ae8754b"
             },
             "Materials": [
               "materials/dev/simple/floor_simple_hs.vmat"
@@ -6046,9 +6433,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (43)",
-      "Position": "690,-264,-54",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6071,7 +6458,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "a0a153f2-93b9-82f6-a8c1-d6417f02dc31"
+              "$blob": "3112fbc0-3a86-841d-81c8-75398d89e0de"
             },
             "Materials": [
               "materials/dev/simple/floor_simple_hs.vmat"
@@ -6102,9 +6489,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (46)",
-      "Position": "690,-280,-54",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6155,9 +6542,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (44)",
-      "Position": "679.999817,-314,-70",
+      "Position": "0,0,0",
       "Rotation": "0,0,0.707106709,-0.707106888",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6180,7 +6567,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "fb0e72d6-dfd0-82eb-9216-745e5264e3e5"
+              "$blob": "c8f46082-3da5-8d75-bb87-735aa0f38169"
             },
             "Materials": [
               "materials/dev/simple/floor_simple_hs.vmat"
@@ -6211,9 +6598,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (45)",
-      "Position": "679.999756,-134,50",
+      "Position": "0,0,0",
       "Rotation": "0,0,0.707106709,-0.707106888",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6236,7 +6623,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "08ae3250-8503-8fcb-8792-221de034491b"
+              "$blob": "4069e6dc-56a0-868d-a3a4-004bf4f1021c"
             },
             "Materials": [
               "materials/dev/simple/floor_simple_hs.vmat"
@@ -6267,9 +6654,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "632,-456,-236",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6292,7 +6679,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "b6dd6d17-426a-818c-88fb-2e2690628d59"
+              "$blob": "e0ab92f4-ca13-8757-9d38-ceebbcb2277e"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat"
@@ -6323,9 +6710,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "336,-832,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6348,7 +6735,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "d8272d3d-a1f4-8a3c-9d13-682c9df12ec9"
+              "$blob": "51f10bd9-1fcf-8bdb-a3b7-f47176a1215b"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat",
@@ -6381,9 +6768,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (60)",
-      "Position": "64,-464,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6406,7 +6793,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "aec62566-45dc-81db-8fcd-15b53e42c0e1"
+              "$blob": "b12862d0-6831-8494-a8b7-e7a1d13cb8be"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat",
@@ -6439,9 +6826,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "336,128,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6464,7 +6851,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "2cef58ae-4fcf-8e2e-b82b-36db38995a4e"
+              "$blob": "19b96dbc-a718-82e4-8f18-dadcd0df9308"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat",
@@ -6497,9 +6884,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "360.000031,-280,-144",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6522,7 +6909,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "11c36061-0c27-8fd1-9b8d-deac3292cc95"
+              "$blob": "2568b5ff-fe50-8754-9110-3b4f059f0641"
             },
             "Materials": [
               "materials/dev/reflectivity_30.vmat",
@@ -6555,9 +6942,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "car_dev",
-      "Position": "576,242.549683,-270.555206",
+      "Position": "997.495422,448.369141,-544",
       "Rotation": "0,0,0.99949342,-0.0318261981",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6648,9 +7035,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "car_dev (1)",
-      "Position": "576,32,-270.555206",
+      "Position": "996.887268,56.3910713,-544",
       "Rotation": "0,0,-0.0198926255,0.999802113",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6741,9 +7128,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "-140,-408,152",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6766,7 +7153,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "854768b5-ddd9-893b-adc6-4a88fac30afd"
+              "$blob": "0b008bc4-eae5-8e27-820e-2360911b6530"
             },
             "Materials": [
               "materials/glass/glass_b.vmat"
@@ -6797,9 +7184,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (76)",
-      "Position": "-140,0,152",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6822,7 +7209,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "b21715a4-6207-890c-8391-95d36c83fde6"
+              "$blob": "e0d75b53-1bf3-8306-afa6-52b7cf63e73f"
             },
             "Materials": [
               "materials/glass/glass_b.vmat"
@@ -6853,9 +7240,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (77)",
-      "Position": "-140,256,152",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -6878,7 +7265,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "b21715a4-6207-890c-8391-95d36c83fde6"
+              "$blob": "e6b6794c-19f4-8d8c-a4f0-df5acd37b831"
             },
             "Materials": [
               "materials/glass/glass_b.vmat"
@@ -6909,9 +7296,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "bed_frame_01",
-      "Position": "48,252,0",
+      "Position": "48,496,0",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -7002,9 +7389,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "mattress",
-      "Position": "48,244,36.3199387",
+      "Position": "48,488,36.3199387",
       "Rotation": "0,0,0,1",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -7130,7 +7517,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (4)",
-          "Position": "0,0,0",
+          "Position": "8,-480,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7149,8 +7536,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-184,-304,-112",
-                "Maxs": "208,256,160"
+                "Mins": "-336,-576,-240",
+                "Maxs": "464,576,304"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7182,7 +7569,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (3)",
-          "Position": "80,648,0",
+          "Position": "80,648,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7201,8 +7588,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-264,-376,-112",
-                "Maxs": "248,168,160"
+                "Mins": "-416,-560,-240",
+                "Maxs": "640,560,304"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7234,7 +7621,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (7)",
-          "Position": "-16,-456,0",
+          "Position": "24,-1328,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7253,8 +7640,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-168,-136,-112",
-                "Maxs": "224,144,160"
+                "Mins": "-352,-304,-240",
+                "Maxs": "448,272,320"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7286,7 +7673,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (6)",
-          "Position": "496,-408,0",
+          "Position": "1064,-1280,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7305,8 +7692,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-288,-192,-112",
-                "Maxs": "248,192,160"
+                "Mins": "-592,-352,-240",
+                "Maxs": "496,416,304"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7338,7 +7725,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (11)",
-          "Position": "8,8,-280",
+          "Position": "88,-448,-448",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7357,8 +7744,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-192,-224,-112",
-                "Maxs": "200,280,160"
+                "Mins": "-448,-416,-224",
+                "Maxs": "384,608,320"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7390,7 +7777,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (10)",
-          "Position": "286.19104,-408,-280",
+          "Position": "504,-1248,-432",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7409,60 +7796,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-478.19104,-184,-112",
-                "Maxs": "457.80896,192,160"
-              },
-              "DelayBetweenUpdates": 0.1,
-              "Feathering": 8,
-              "FrameInterval": 5,
-              "MaxDistance": 512,
-              "Mode": "Baked",
-              "MultiBounce": false,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Priority": 0,
-              "Projection": "Box",
-              "RenderExcludeTags": "",
-              "Resolution": "Small",
-              "Texture": null,
-              "TintColor": "1,1,1,1",
-              "UpdateStrategy": "OnEnabled",
-              "ZFar": 4096,
-              "ZNear": 16
-            }
-          ],
-          "Children": []
-        },
-        {
-          "__guid": "38878ba8-b414-415e-bb70-0661283c249d",
-          "__version": 2,
-          "Flags": 0,
-          "Name": "Object (9)",
-          "Position": "496,32,-280",
-          "Rotation": "0,0,0,1",
-          "Scale": "1,1,1",
-          "Tags": "",
-          "Enabled": true,
-          "NetworkMode": 2,
-          "NetworkFlags": 0,
-          "NetworkOrphaned": 0,
-          "NetworkTransmit": true,
-          "OwnerTransfer": 1,
-          "Components": [
-            {
-              "__type": "Sandbox.EnvmapProbe",
-              "__guid": "447767e0-2b6e-4288-ab3a-90f6213b16e2",
-              "__enabled": true,
-              "Flags": 0,
-              "__version": 1,
-              "BakedTexture": null,
-              "Bounds": {
-                "Mins": "-288,-248,-112",
-                "Maxs": "248,264,160"
+                "Mins": "-832,-384,-240",
+                "Maxs": "1056,384,304"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7494,7 +7829,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (5)",
-          "Position": "496,32,0",
+          "Position": "1032,-368,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7513,8 +7848,60 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-288,-248,-112",
-                "Maxs": "248,264,160"
+                "Mins": "-560,-496,-224",
+                "Maxs": "528,528,288"
+              },
+              "DelayBetweenUpdates": 0.1,
+              "Feathering": 8,
+              "FrameInterval": 5,
+              "MaxDistance": 512,
+              "Mode": "Baked",
+              "MultiBounce": false,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "Priority": 0,
+              "Projection": "Box",
+              "RenderExcludeTags": "",
+              "Resolution": "Small",
+              "Texture": null,
+              "TintColor": "1,1,1,1",
+              "UpdateStrategy": "OnEnabled",
+              "ZFar": 4096,
+              "ZNear": 16
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "cd6af418-35ef-40e2-81be-a6bd7ffd9e48",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Object (1)",
+          "Position": "1032,-368,-416",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.EnvmapProbe",
+              "__guid": "9416307e-6379-45c9-9be4-d428072aff40",
+              "__enabled": true,
+              "Flags": 0,
+              "__version": 1,
+              "BakedTexture": null,
+              "Bounds": {
+                "Mins": "-560,-496,-240",
+                "Maxs": "528,528,288"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7546,7 +7933,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (2)",
-          "Position": "384,416,0",
+          "Position": "824,416,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7565,8 +7952,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-176,-120,-112",
-                "Maxs": "176,136,160"
+                "Mins": "-352,-256,-240",
+                "Maxs": "352,256,304"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7598,7 +7985,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (1)",
-          "Position": "648,388,0",
+          "Position": "1368,368,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7617,8 +8004,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-88,-80,-112",
-                "Maxs": "96,96,160"
+                "Mins": "-192,-208,-240",
+                "Maxs": "192,176,304"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7650,7 +8037,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object (8)",
-          "Position": "192,560,-288",
+          "Position": "192,720,-496",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7669,8 +8056,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-376,-268,-112",
-                "Maxs": "560,260,160"
+                "Mins": "-512,-560,-176",
+                "Maxs": "1376,480,368"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7702,7 +8089,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Object",
-          "Position": "536,676,0",
+          "Position": "1176,928,112",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -7721,8 +8108,8 @@
               "__version": 1,
               "BakedTexture": null,
               "Bounds": {
-                "Mins": "-196,-176,-112",
-                "Maxs": "204,144,160"
+                "Mins": "-448,-384,-240",
+                "Maxs": "384,288,304"
               },
               "DelayBetweenUpdates": 0.1,
               "Feathering": 8,
@@ -7756,9 +8143,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block",
-      "Position": "810,-552,-156.000015",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -7781,7 +8168,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "af20a884-fff4-8a9f-88c9-62e2b6df937f"
+              "$blob": "077af6a6-f648-8c68-b92e-5b32f89788a7"
             },
             "Materials": [
               "materials/dev/simple/simple_tile.vmat"
@@ -7812,9 +8199,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Block (80)",
-      "Position": "-144,-248,-156.000015",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
+      "Scale": "2,2,2",
       "Tags": "world",
       "Enabled": true,
       "NetworkMode": 2,
@@ -7837,7 +8224,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "af20a884-fff4-8a9f-88c9-62e2b6df937f"
+              "$blob": "126b7e43-06e6-87aa-9229-0c3eed0ac6b1"
             },
             "Materials": [
               "materials/dev/simple/simple_tile.vmat"
@@ -7868,9 +8255,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c",
-      "Position": "406,-646,1.83344346E-05",
+      "Position": "812,-1292,2.06590521E-05",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -7974,9 +8361,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (6)",
-      "Position": "758,-646,-272",
+      "Position": "1516,-1292,-544.000061",
       "Rotation": "0,0,-0.707106769,0.707106769",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8080,9 +8467,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (7)",
-      "Position": "266,-574,-272",
+      "Position": "528,-1148,-544.000061",
       "Rotation": "0,0,-0.99999994,0",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8186,9 +8573,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (8)",
-      "Position": "262,-306,-272",
+      "Position": "524,-612,-544.000061",
       "Rotation": "0,0,4.37113847E-08,0.99999994",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8292,9 +8679,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (9)",
-      "Position": "314,-138,-272",
+      "Position": "628,-272,-543.999878",
       "Rotation": "0,0,0.707106709,0.707106769",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8398,9 +8785,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (4)",
-      "Position": "450,118,1.83344346E-05",
+      "Position": "900,240,1.83344346E-05",
       "Rotation": "0,0,0.707106769,0.70710665",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8504,9 +8891,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (1)",
-      "Position": "266,-334,1.83344346E-05",
+      "Position": "528,-668,2.06590521E-05",
       "Rotation": "0,0,-0.99999994,0",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8610,9 +8997,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (5)",
-      "Position": "266,-974,1.83344346E-05",
+      "Position": "528,-1948,2.06590521E-05",
       "Rotation": "0,0,-0.99999994,0",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8716,9 +9103,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (2)",
-      "Position": "262,-18,1.83344346E-05",
+      "Position": "520,-36,1.83344346E-05",
       "Rotation": "0,0,4.37113847E-08,0.99999994",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -8822,9 +9209,9 @@
       "__version": 2,
       "Flags": 0,
       "Name": "wooden_door_01c (3)",
-      "Position": "614,14,1.83344346E-05",
+      "Position": "1232,28,1.83344346E-05",
       "Rotation": "0,0,0,1",
-      "Scale": "2,2,2",
+      "Scale": "4,4,4",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
