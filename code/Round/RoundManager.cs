@@ -119,6 +119,13 @@ public sealed class RoundManager : Component, IRoundContext
 	/// to everyone (incl. late-joiners). Fixed for the round once set.</summary>
 	[Sync] public RoundSettings Settings { get; set; }
 
+	/// <summary>
+	/// Host-generated seed used to select identical starting door states on every client.
+	/// Zero means the door layout has not been initialized.
+	/// </summary>
+	[Sync]
+	public int DoorSeed { get; set; }
+
 	// ── Host-only bookkeeping (not networked) ────────────────────────────────────────────────────────────────
 	readonly Dictionary<Guid, float> _scoreAccum = new();      // fractional prop score carried between integer ticks
 
@@ -179,6 +186,8 @@ public sealed class RoundManager : Component, IRoundContext
 		var lobbyBots = Networking.GetData( BotCountKey );
 		if ( int.TryParse( lobbyBots, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n ) )
 			BotCount = Math.Max( 0, n );
+
+		DoorSeed = Random.Shared.Next( 1, int.MaxValue );
 
 		AssignRoles();
 		TransitionTo( RoundPhase.Starting );
