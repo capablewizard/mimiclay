@@ -2691,6 +2691,63 @@
       "Children": []
     },
     {
+      "__guid": "7420915b-851f-44ce-accc-c82bccb2d4cc",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block (79)",
+      "Position": "-144,-304,-272.000061",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "93a415c9-cdfb-4d51-a4a5-30c764e825f5",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "a6883c8c-9c88-866a-aaf2-4781daa62b3f"
+            },
+            "Materials": [
+              "materials/dev/hs/reflectivity_hs_20.vmat",
+              "materials/dev/reflectivity_30.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
       "__guid": "3fa56da5-d819-4b68-87a9-3e26c690d63e",
       "__version": 2,
       "Flags": 0,
@@ -6349,7 +6406,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "126a9038-d3dc-8915-954a-e9e46f4b79f3"
+              "$blob": "aec62566-45dc-81db-8fcd-15b53e42c0e1"
             },
             "Materials": [
               "materials/dev/simple/wall_simple_128.vmat",
@@ -7713,6 +7770,62 @@
         {
           "__type": "Sandbox.MeshComponent",
           "__guid": "54a696c9-19c2-4773-bdcc-deb915327f64",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,0.13023,0.13023,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "af20a884-fff4-8a9f-88c9-62e2b6df937f"
+            },
+            "Materials": [
+              "materials/dev/simple/simple_tile.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "6f04f2c2-b6bf-4f86-9f07-5e0ada1693cf",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block (80)",
+      "Position": "-144,-248,-156.000015",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "c7fd5a31-4891-42b3-8065-dab411580f2e",
           "__enabled": true,
           "Flags": 0,
           "ColliderFlags": 0,
