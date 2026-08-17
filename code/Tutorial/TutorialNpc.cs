@@ -16,9 +16,7 @@ namespace Mimiclay;
 /// Division of labour: <see cref="PropClaims.IsClaimable"/> excludes him (this component is the marker);
 /// <see cref="HunterController.UpdateClaimHover"/> publishes the hover and routes E here;
 /// <see cref="RoundOutlineSystem"/> arbitrates outline VISIBILITY through <see cref="OutlineVisible"/>, while
-/// this component is the single writer of the outline's LOOK (invitation pulse / hover glow) — the pulse is
-/// self-driven rather than an <see cref="SdfOutlineFlash"/> because hover and pulse would be two components
-/// writing one override slot, and component update order is a HashSet.
+/// this component is the single writer of the outline's LOOK (the hover glow).
 ///
 /// Snapshot caveat, accepted for now: he's a scene object, so a late joiner receives the HOST's live brush
 /// state — if the host is mid-tutorial at that instant the joiner sees the host's edits until the host exits
@@ -39,13 +37,11 @@ public sealed class TutorialNpc : Component
 	/// <summary>Pitch the edit camera opens at (degrees; positive looks slightly down at him).</summary>
 	[Property] public float EntryPitch { get; set; } = 10f;
 
-	// The look: the claims hover amber — hover means the same thing here ("E works on this"), and the idle
-	// pulse breathes the same colour so the invitation and the hover read as one affordance.
-	static readonly Color GlowColor = new( 1f, 0.65f, 0.15f );
+	// The hover look: the theme's craft green ($craft-green, "additive / positive") — deliberately NOT the
+	// claims hover amber, so "learn here" and "take this" never read as the same offer. Same width so the
+	// two prompts still feel like one family of affordance.
+	static readonly Color GlowColor = new( 0.275f, 0.635f, 0.243f );
 	const float HoverWidth = 5f;
-	const float PulseWidth = 3f;
-	const float PulseFrequency = 0.5f;
-	const float PulseFloor = 0.15f;
 
 	/// <summary>The tutorial running on THIS machine, or null — one at a time, its session owns the screen.</summary>
 	public static TutorialNpc Running { get; private set; }
@@ -72,12 +68,9 @@ public sealed class TutorialNpc : Component
 			: null;
 
 	/// <summary>Should his outline render right now? Read by <see cref="RoundOutlineSystem"/>'s claims branch
-	/// (which asserts Hidden on every outline in the scene each frame): the invitation pulse or the hover glow
-	/// while he's idle, nothing while his guided session runs (the editor's own selection takes over).</summary>
-	public bool OutlineVisible => Running != this && (Hovered || InvitePulse);
-
-	// Until completion persistence exists (plan M4), the invitation pulse is always on.
-	bool InvitePulse => true;
+	/// (which asserts Hidden on every outline in the scene each frame): the hover glow while he's idle,
+	/// nothing while his guided session runs (the editor's own selection takes over).</summary>
+	public bool OutlineVisible => Running != this && Hovered;
 
 	bool Hovered => LocalHover == this;
 
@@ -254,7 +247,7 @@ public sealed class TutorialNpc : Component
 		_restore = null;
 	}
 
-	// ── Presentation: the invitation pulse, the hover glow, the hover boil ─────────────────────────────────
+	// ── Presentation: the hover glow + the hover boil ──────────────────────────────────────────────────────
 
 	void UpdatePresentation()
 	{
@@ -286,29 +279,13 @@ public sealed class TutorialNpc : Component
 		if ( !_outline.IsValid() )
 			return;
 
+		// The claims hover look in the tutorial green — same alphas/width, different offer.
 		_outline.Hidden = false;
-
-		if ( hovered )
-		{
-			// The claims hover look, verbatim — the prompt means the same thing.
-			_outline.ColorOverride = GlowColor;
-			_outline.ObscuredColorOverride = GlowColor.WithAlpha( 0.35f );
-			_outline.InsideColorOverride = GlowColor.WithAlpha( 0.08f );
-			_outline.InsideObscuredColorOverride = GlowColor.WithAlpha( 0.08f );
-			_outline.WidthOverride = HoverWidth;
-		}
-		else
-		{
-			// Raised-cosine breath (the SdfOutlineFlash math), opacity only — the hue never moves, so the
-			// pulse reads as one colour fading, not a colour cycle.
-			float wave = (1f + MathF.Cos( Time.Now * PulseFrequency * MathF.Tau )) * 0.5f;
-			float t = PulseFloor + (1f - PulseFloor) * wave;
-			_outline.ColorOverride = GlowColor.WithAlpha( 0.9f * t );
-			_outline.ObscuredColorOverride = GlowColor.WithAlpha( 0.25f * t );
-			_outline.InsideColorOverride = Color.Transparent;
-			_outline.InsideObscuredColorOverride = Color.Transparent;
-			_outline.WidthOverride = PulseWidth;
-		}
+		_outline.ColorOverride = GlowColor;
+		_outline.ObscuredColorOverride = GlowColor.WithAlpha( 0.35f );
+		_outline.InsideColorOverride = GlowColor.WithAlpha( 0.08f );
+		_outline.InsideObscuredColorOverride = GlowColor.WithAlpha( 0.08f );
+		_outline.WidthOverride = HoverWidth;
 	}
 
 	void EnsureOutline()

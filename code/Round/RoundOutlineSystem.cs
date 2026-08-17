@@ -200,9 +200,9 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		{
 			var hovered = false;
 
-			// The tutorial character: visibility is his call (invitation pulse, tutorial hover, hidden while
-			// his guided session runs) and the LOOK is his own single-writer drive (see TutorialNpc) — never
-			// the claims hover tint below, which his exclusion from IsClaimable keeps him out of anyway.
+			// The tutorial character: visibility is his call (tutorial hover only, hidden while his guided
+			// session runs) and the LOOK is his own single-writer drive (see TutorialNpc) — never the claims
+			// hover tint below, which his exclusion from IsClaimable keeps him out of anyway.
 			var npc = outline.Components.Get<TutorialNpc>( FindMode.EverythingInSelfAndAncestors );
 			if ( npc.IsValid() )
 			{

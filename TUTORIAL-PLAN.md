@@ -8,10 +8,10 @@ highlighted, and each step advances when the player actually performs the action
 
 ## 1. UX flow
 
-1. **Discovery.** The NPC stands on/near the cutting mat in `lobby.scene`. Until the local
-   player has completed the tutorial, he pulses a soft outline (`SdfOutlineFlash`) so new
-   players notice him. Hovering shows the existing possess-toast style prompt
-   (`HunterCrosshair` `paper-card possess-toast`), but with tutorial copy: **"E — Learn to sculpt"**.
+1. **Discovery.** The NPC stands on/near the cutting mat in `lobby.scene`. Hovering him
+   shows a green outline glow (craft-green — distinct from the amber "take this" claims
+   hover) plus the possess-toast style prompt with tutorial copy: **"E — Learn to sculpt"**.
+   (An idle invitation pulse was tried and cut — hover-only.)
 2. **Enter.** Pressing E does *not* go through `PropClaims.RequestPossess`. Instead a
    local-only edit session opens on the NPC in place (see §3). The pawn freezes exactly as
    it does for face editing; an orbit rig frames the NPC (pivot pinned to his bounds centre
@@ -209,6 +209,17 @@ layer reordering. Candidates for an "advanced tips" replay.
   hint-strip hidden while guiding. Fine-grained `EditHudGate` (lock vs hide, highlight,
   input gating) remains M3.
 - **M3 — Gating**: `EditHudGate` + section states + input gating + highlight styling.
+  **STATUS 2026-08-17: implemented** — `EditHudGate.cs` (enum-keyed `HudSection` ×10,
+  `Hidden/Locked/Normal/Highlight`, Version folded into EditHud BuildHash; pure runtime
+  static, nothing to restore — replaces the director's Show*-flag capture/restore
+  entirely). EditHud consults it at every section; Locked panels keep pointer events +
+  mount a last-child `tutorial-lock-shield` (never pointer-events:none on a panel — world
+  clicks would fall through), locked chips get pointer-events:none (safe inside a live
+  panel) + `GateClick` belt-and-braces; Highlight = breathing craft-orange ring. Hotkeys
+  gated by owning section (A/Space/1-7/Del/Drop/Ctrl+Z-Y) in `SculptEditSession`; lobby
+  G (open only), P, N stand down while `TutorialDirector.IsRunning`. Steps upgraded:
+  paint = palette ringed + picker locked; add-shape = Add chip ringed in a live Tools
+  panel with undo/dup/symmetry locked. Not gated (deliberate): BrushScrub S/D/F scrubs.
 - **M4 — Curriculum**: all nine steps, predicates tuned, completion persistence, pulse
   outline, praise beats, copy pass.
 - **M5 — Polish** (playtest-driven): pacing, free-play beat, whether the NPC keeps your

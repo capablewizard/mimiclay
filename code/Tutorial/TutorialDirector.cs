@@ -14,11 +14,11 @@ namespace Mimiclay;
 /// for the delta (the codebase's per-frame-assertion style; there is no "which property changed" signal to
 /// subscribe to). Per-hint results LATCH — a scrub that happened stays counted even if the value scrubs back.
 ///
-/// While a guided step runs, the EditHud is trimmed with its existing per-scene Show* panel flags (the
-/// MenuCustomise precedent — flipped on the LIVE component) plus its hint-strip gate; every authored value is
-/// captured at start and restored on EVERY exit path — OnDisabled for normal teardown and
-/// <see cref="SweepPlayEnd"/> for editor Stop, where an interrupted teardown would otherwise bake the trimmed
-/// flags into lobby.scene (exactly how the menu once shipped broken — see MenuCustomise.OnStart).
+/// While a guided step runs, the EditHud is shaped through <see cref="EditHudGate"/> — per-section
+/// Hidden/Locked/Normal/Highlight, plus the hint-strip gate here. The gate is a pure runtime static (nothing
+/// authored, nothing serialized), so ending a run is just <see cref="EditHudGate.End"/> — called from
+/// OnDisabled for normal teardown and <see cref="SweepPlayEnd"/> for editor Stop (statics survive Stop→Play,
+/// the MenuCustomise-bake class of bug this design retires).
 /// </summary>
 [Title( "Tutorial Director" )]
 [Category( "Mimiclay" )]
@@ -49,10 +49,14 @@ public sealed class TutorialDirector : Component
 
 	public int StepCount => _steps.Count;
 
+	/// <summary>A tutorial is live on this machine, any phase (free-play included). Screen furniture that
+	/// would fight the card or make no sense mid-tutorial — the lobby's "Press G" status line — gates on
+	/// this.</summary>
+	public static bool IsRunning => Current.IsValid() && Current.Live;
+
 	/// <summary>Hide the EditHud's own hint-strip while guidance runs — the card is doing the teaching, and
 	/// the full key list underneath it would drown each step's one instruction.</summary>
-	public static bool HintStripHidden
-		=> Current.IsValid() && Current.Live && Current.State != Phase.Free;
+	public static bool HintStripHidden => IsRunning && Current.State != Phase.Free;
 
 	// ── What the card renders ────────────────────────────────────────────────────────────────────────────
 
@@ -135,18 +139,9 @@ public sealed class TutorialDirector : Component
 	readonly record struct BrushSnap( Vector3 Position, Vector3 Size, Rotation Rotation,
 		Color Color, float Metallic, float Roughness );
 
-	// The scene EditHud (always exists here — the session's EnsureHud ran) and the authored panel flags,
-	// captured once so every exit puts back exactly what the scene shipped.
-	EditHud _hud;
-	bool _flagsCaptured;
-	(bool Tools, bool Layers, bool Palette, bool Picker, bool Sliders) _authored;
-
-	EditHud Hud => _hud.IsValid() ? _hud : (_hud = Scene.GetAllComponents<EditHud>().FirstOrDefault());
-
 	protected override void OnStart()
 	{
 		BuildSteps();
-		CaptureHudFlags();
 
 		EnsureCard();
 		Current = this;
@@ -156,17 +151,16 @@ public sealed class TutorialDirector : Component
 
 	protected override void OnDisabled()
 	{
-		RestoreHudFlags();
+		EditHudGate.End();
 		if ( Current == this )
 			Current = null;
 	}
 
-	/// <summary>Play is ending — put the HUD flags back however teardown fell out (see the class doc).
+	/// <summary>Play is ending — drop the HUD gate however teardown fell out (see the class doc).
 	/// Called from <see cref="TutorialNpc.SweepPlayEnd"/>.</summary>
 	internal static void SweepPlayEnd()
 	{
-		if ( Current.IsValid() )
-			Current.RestoreHudFlags();
+		EditHudGate.End();
 		Current = null;
 	}
 
@@ -259,7 +253,7 @@ public sealed class TutorialDirector : Component
 	{
 		StepIndex = _steps.Count;
 		State = Phase.Free;
-		RestoreHudFlags(); // the full editor, exactly as the scene authored it
+		EditHudGate.End(); // the full editor, exactly as the scene authored it
 	}
 
 	void TrackCameraTravel()
@@ -290,7 +284,7 @@ public sealed class TutorialDirector : Component
 				new Hint { Key = "RMB drag", Label = "zoom in and out", Check = d => d._dollyTravel > 40f },
 				new Hint { Key = "MMB drag", Label = "slide the view", Check = d => d._panTravel > 40f },
 			},
-			Enter = d => d.ApplyHudFlags( tools: false, layers: false, palette: false, picker: false, sliders: false ),
+			Enter = d => d.ApplyGate(), // everything hidden — just him, the camera and the card
 		} );
 
 		_steps.Add( new Step
@@ -334,7 +328,11 @@ public sealed class TutorialDirector : Component
 			Enter = d =>
 			{
 				d.SnapshotBrushes();
-				d.ApplyHudFlags( tools: false, layers: false, palette: true, picker: true, sliders: false );
+				// The palette is the lesson (ringed); the picker sits beside it visible but locked — "there's
+				// more here, not yet". Everything else stays gone.
+				d.ApplyGate(
+					(HudSection.Palette, SectionState.Highlight),
+					(HudSection.Picker, SectionState.Locked) );
 			},
 		} );
 
@@ -350,9 +348,27 @@ public sealed class TutorialDirector : Component
 			Enter = d =>
 			{
 				d._countAtEnter = d.AuthoredCount();
-				d.ApplyHudFlags( tools: true, layers: false, palette: true, picker: true, sliders: false );
+				// The Add chip is the lesson (ringed) inside a live Tools panel; the tools you haven't met
+				// yet sit locked beside it. Paint stays usable — colour the new piece as you place it.
+				d.ApplyGate(
+					(HudSection.Tools, SectionState.Normal),
+					(HudSection.AddChip, SectionState.Highlight),
+					(HudSection.UndoRedo, SectionState.Locked),
+					(HudSection.EditChips, SectionState.Locked),
+					(HudSection.Symmetry, SectionState.Locked),
+					(HudSection.ShapeDock, SectionState.Normal),
+					(HudSection.Palette, SectionState.Normal),
+					(HudSection.Picker, SectionState.Normal) );
 			},
 		} );
+	}
+
+	// One call per step: baseline everything Hidden, then raise exactly the sections the step teaches.
+	void ApplyGate( params (HudSection Section, SectionState State)[] overrides )
+	{
+		EditHudGate.Begin();
+		foreach ( var o in overrides )
+			EditHudGate.Set( o.Section, o.State );
 	}
 
 	// ── Step-detection helpers ───────────────────────────────────────────────────────────────────────────
@@ -420,44 +436,6 @@ public sealed class TutorialDirector : Component
 
 	static float ColorDelta( Color a, Color b )
 		=> MathF.Abs( a.r - b.r ) + MathF.Abs( a.g - b.g ) + MathF.Abs( a.b - b.b );
-
-	// ── EditHud trim (coarse, via the existing per-scene panel flags; the finer per-section gate is M3) ──
-
-	void CaptureHudFlags()
-	{
-		var hud = Hud;
-		if ( !hud.IsValid() || _flagsCaptured )
-			return;
-
-		_authored = (hud.ShowTools, hud.ShowLayers, hud.ShowPalette, hud.ShowPicker, hud.ShowSliders);
-		_flagsCaptured = true;
-	}
-
-	void ApplyHudFlags( bool tools, bool layers, bool palette, bool picker, bool sliders )
-	{
-		var hud = Hud;
-		if ( !hud.IsValid() )
-			return;
-
-		hud.ShowTools = tools;
-		hud.ShowLayers = layers;
-		hud.ShowPalette = palette;
-		hud.ShowPicker = picker;
-		hud.ShowSliders = sliders;
-	}
-
-	void RestoreHudFlags()
-	{
-		var hud = Hud;
-		if ( !hud.IsValid() || !_flagsCaptured )
-			return;
-
-		hud.ShowTools = _authored.Tools;
-		hud.ShowLayers = _authored.Layers;
-		hud.ShowPalette = _authored.Palette;
-		hud.ShowPicker = _authored.Picker;
-		hud.ShowSliders = _authored.Sliders;
-	}
 
 	// One instruction card per scene, spawned on first use and kept — the EnsureHud pattern. A PERSISTENT
 	// panel, deliberately: a card torn down while hovered would latch HasHovered + the press statics (the

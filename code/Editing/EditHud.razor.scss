@@ -15,6 +15,30 @@
 	// Material-icon glyph (ligature name → glyph); size + colour are set per context below.
 	.icon { font-family: Material Icons; }
 
+	// ── Tutorial gating (EditHudGate) ────────────────────────────────────────────────────────────────────
+	// Locked PANEL: dimmed via .tutorial-dim (floats with an inline opacity bake LockDim in instead), and a
+	// full-card shield as the LAST child eats every click/hover beneath it — the panel keeps its own
+	// pointer-events, so PointerOverUi still protects the world behind it. Locked CHIP inside a live panel:
+	// pointer-events:none is safe there (the click lands on the panel behind it, not the world) and it kills
+	// the hover sound/lift for free. Highlight: a breathing craft-orange ring.
+	.tutorial-dim { opacity: 0.45; }
+
+	.tutorial-locked {
+		opacity: 0.45;
+		pointer-events: none;
+	}
+
+	.tutorial-lock-shield {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: all;
+	}
+
+	.tutorial-highlight { animation: tutorial-glow 1.2s ease-in-out 0s infinite; }
+
 	// Alt-nav view hints, top-right — mirrors the menu's .menu-controls (_menu.scss); keep the two in step.
 	.view-controls {
 		position: absolute;
@@ -1027,4 +1051,11 @@
 @keyframes edit-hud-slide-right {
 	from { transform: translateX( 100% ); }
 	to { transform: translateX( 0 ); }
+}
+
+// The tutorial highlight's breathing ring — only the shadow moves (alpha + spread), never the layout.
+@keyframes tutorial-glow {
+	0% { box-shadow: 0 0 0 3px rgba( $craft-orange, 0.95 ); }
+	50% { box-shadow: 0 0 0 8px rgba( $craft-orange, 0.35 ); }
+	100% { box-shadow: 0 0 0 3px rgba( $craft-orange, 0.95 ); }
 }

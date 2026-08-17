@@ -1761,8 +1761,11 @@ public sealed class HunterController : Component
 	{
 		// Hidden in first person — but while editing your own face you need to SEE yourself, so show it then,
 		// and in third person the whole point is seeing your own hunter, so show it there too. Always false
-		// on proxies: other players' hunters render fully.
-		var hideOwn = Owned && !EditMode && !GameSettings.HunterThirdPerson;
+		// on proxies: other players' hunters render fully. The tutorial (an EXTERNAL session editing the
+		// tutorial character) hides us again: the orbit camera would otherwise stare at our own frozen body
+		// standing beside him — locally only, everyone else still sees us standing there.
+		bool externalEdit = ExternalSession.IsValid() && ExternalSession.IsEditing;
+		var hideOwn = Owned && (externalEdit || (!EditMode && !GameSettings.HunterThirdPerson));
 
 		// Run puffs go shadows-only in first person too. ParticleModelRenderer has no ShadowRenderType, but
 		// shadows-only IS just CastShadows + ExcludeGameLayer at the SceneObject level, and its RenderOptions.Game

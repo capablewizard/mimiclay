@@ -200,6 +200,11 @@ public sealed class LobbyController : Component
 		if ( !lm.IsValid() || !Networking.IsActive || RoundSetup.IsOpen )
 			return;
 
+		// Mid-tutorial both keys stand down: P would swap the pawn out from under the guided session (a
+		// forced exit mid-lesson), and a nomination toggle is invisible noise behind the card.
+		if ( TutorialDirector.IsRunning )
+			return;
+
 		// The swap keeps the CAMERA continuous: whatever the view was pointing at, the new pawn's view points
 		// at too. The yaw rides the request (the host aims the new HUNTER's spawn rotation with it — a prop's
 		// body ignores it and keeps its remembered facing instead); the pitch and the prop-orbit zoom are
