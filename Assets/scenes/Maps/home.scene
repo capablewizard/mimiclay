@@ -11297,6 +11297,513 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "68d9b048-03cb-4053-b48c-21c18bed5d88",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block",
+      "Position": "-1096,-640,-520",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "0edbe9e7-0421-4d0c-8391-d9891b7b2917",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "0.22176,0.71163,0.26259,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "997f5dde-a1d5-85a4-b819-a37e92133d3a"
+            },
+            "Materials": [
+              "materials/dev/simple/simple_tile.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "8b056237-79ef-48c3-8933-de9a2c135eb9",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoomControl",
+      "Position": "256,320,304",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoomController",
+          "__guid": "f80a7775-9898-4655-9d71-c3579866eb65",
+          "__enabled": true,
+          "Flags": 0,
+          "Doors": [
+            null
+          ],
+          "Members": [
+            {
+              "_type": "gameobject",
+              "go": "6ca3e219-c24d-4690-b172-a1d287f55f7c"
+            },
+            {
+              "_type": "gameobject",
+              "go": "781221db-84e6-4e9c-b025-60dd159527d1"
+            },
+            {
+              "_type": "gameobject",
+              "go": "b65dd779-b2f7-4d24-913d-5531b62e3955"
+            },
+            {
+              "_type": "gameobject",
+              "go": "df284fff-054f-4e66-a4cb-5d479d807c9d"
+            }
+          ],
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RequireAllDoorsOpen": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "2377dfca-d761-47fe-b74b-c3f876ed45a2",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoomControl (1)",
+      "Position": "1216,512,304",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoomController",
+          "__guid": "0f4d9b41-0100-41eb-9b98-fa166aad21d3",
+          "__enabled": true,
+          "Flags": 0,
+          "Doors": [
+            {
+              "_type": "component",
+              "component_id": "2cd92e12-7edd-4895-8cd6-550308f9a00f",
+              "go": "3c295a2d-e6e9-42be-82e7-f78f8531ac11",
+              "component_type": "RoundDoor"
+            }
+          ],
+          "Members": [
+            {
+              "_type": "gameobject",
+              "go": "48746f2f-2676-480d-9537-d337573bb4e3"
+            },
+            {
+              "_type": "gameobject",
+              "go": "50098676-b02a-4998-9fa6-3be3b64bb4ca"
+            },
+            {
+              "_type": "gameobject",
+              "go": "06141726-1783-4df0-834d-019a177a4f27"
+            },
+            {
+              "_type": "gameobject",
+              "go": "b0b57110-b083-44b6-9577-30002f7ba3f5"
+            }
+          ],
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RequireAllDoorsOpen": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "f5ceef81-f066-4c03-94e4-e874172b9c49",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoomControl (2)",
+      "Position": "128,-1024,304",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoomController",
+          "__guid": "915e6fd1-5341-44f0-be1c-b7710872b6ac",
+          "__enabled": true,
+          "Flags": 0,
+          "Doors": [
+            {
+              "_type": "component",
+              "component_id": "0d8c9911-9041-4151-8f4c-63a764937ab1",
+              "go": "9e12e159-b411-4a75-b89f-47b4f191f9bf",
+              "component_type": "RoundDoor"
+            }
+          ],
+          "Members": [
+            {
+              "_type": "gameobject",
+              "go": "417b1c17-bc98-4d10-b644-3bfe8eb005cf"
+            },
+            {
+              "_type": "gameobject",
+              "go": "42d8247e-1dbd-47e5-8f4b-156cc89876a6"
+            },
+            {
+              "_type": "gameobject",
+              "go": "6f562aeb-4289-4bd3-962f-8a29ca106498"
+            },
+            {
+              "_type": "gameobject",
+              "go": "d3a7f00d-35df-4fd0-81be-c223aed6a7bb"
+            }
+          ],
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RequireAllDoorsOpen": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "537cc1b8-f60c-453b-99cd-b52e363c09a0",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoomControl (3)",
+      "Position": "192,-1792,304",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoomController",
+          "__guid": "a0d8e83b-baf4-4684-827d-b4f0fed08d65",
+          "__enabled": true,
+          "Flags": 0,
+          "Doors": [
+            {
+              "_type": "component",
+              "component_id": "fe85db58-e734-4ace-a640-2232d530911e",
+              "go": "c32be4d5-aeaf-4e12-bd9b-1bf78975c305",
+              "component_type": "RoundDoor"
+            },
+            {
+              "_type": "component",
+              "component_id": "1422600c-7d88-4778-b44d-8287259a0e44",
+              "go": "27ddaa29-e0b4-4fd4-bf12-beb49b03c509",
+              "component_type": "RoundDoor"
+            }
+          ],
+          "Members": [
+            {
+              "_type": "gameobject",
+              "go": "9110a29a-06a5-486b-8ae6-f32a6e048949"
+            },
+            {
+              "_type": "gameobject",
+              "go": "0f9b42d5-be10-430a-aa02-e6f39e77ec6c"
+            },
+            {
+              "_type": "gameobject",
+              "go": "62f5a574-770b-4456-8097-f36fbec17d5e"
+            },
+            {
+              "_type": "gameobject",
+              "go": "c75ed1e3-bdda-4a03-992e-0980504432c5"
+            }
+          ],
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RequireAllDoorsOpen": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "d5d2cae9-c58d-44f7-b176-e99aafaaa297",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoomControl (4)",
+      "Position": "1024,-1792,304",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoomController",
+          "__guid": "61c71df2-6979-4a2e-99f5-61c83e3c5564",
+          "__enabled": true,
+          "Flags": 0,
+          "Doors": [
+            {
+              "_type": "component",
+              "component_id": "1422600c-7d88-4778-b44d-8287259a0e44",
+              "go": "27ddaa29-e0b4-4fd4-bf12-beb49b03c509",
+              "component_type": "RoundDoor"
+            }
+          ],
+          "Members": [
+            {
+              "_type": "gameobject",
+              "go": "36146d97-3aeb-42c3-b1f2-388b6ddf43f1"
+            },
+            {
+              "_type": "gameobject",
+              "go": "7e1f75fd-926d-47d1-980e-eb0b75423c79"
+            },
+            {
+              "_type": "gameobject",
+              "go": "3b318ded-db6e-4045-846f-8741e0f28b2c"
+            },
+            {
+              "_type": "gameobject",
+              "go": "fa859748-8da6-46a0-8a6e-e284ccf861e8"
+            }
+          ],
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RequireAllDoorsOpen": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "a1db2b19-ffb7-4128-b01b-0f1fcafba20a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoomControl (5)",
+      "Position": "640,256,-384",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoomController",
+          "__guid": "3b41f04f-57f3-41f5-94b5-89353823e5cf",
+          "__enabled": true,
+          "Flags": 0,
+          "Doors": [
+            {
+              "_type": "component",
+              "component_id": "33fab9de-b5c4-450e-880f-521fc2d09274",
+              "go": "ac344bc6-5a12-408f-ae4b-c01d1bd1e950",
+              "component_type": "RoundDoor"
+            },
+            {
+              "_type": "component",
+              "component_id": "8802ec50-6f0f-4072-b550-e158b7626843",
+              "go": "3466440c-811c-4733-b024-2e46701d61a7",
+              "component_type": "RoundDoor"
+            }
+          ],
+          "Members": [
+            {
+              "_type": "gameobject",
+              "go": "d8e6928c-03fa-4690-b77e-67562f8cc195"
+            },
+            {
+              "_type": "gameobject",
+              "go": "af5638e7-1720-49ff-8699-25bc22f769c7"
+            },
+            {
+              "_type": "gameobject",
+              "go": "ce218c02-7e0e-4425-b7b8-c1d69eb5cf85"
+            },
+            {
+              "_type": "gameobject",
+              "go": "b6567620-c0b5-4a48-a769-e0026eb65be3"
+            }
+          ],
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RequireAllDoorsOpen": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "d9d90a99-4a8c-49da-b751-e3ae16db4aa1",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoomControl (6)",
+      "Position": "640,-1600,-384",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoomController",
+          "__guid": "852c63ae-02ea-494b-b3bb-89a0f12e8ac3",
+          "__enabled": true,
+          "Flags": 0,
+          "Doors": [
+            {
+              "_type": "component",
+              "component_id": "32e0876f-f78e-45dc-8596-4e085325531f",
+              "go": "1ba79116-f80d-4597-9ebf-3e5e68cfd536",
+              "component_type": "RoundDoor"
+            },
+            {
+              "_type": "component",
+              "component_id": "c340d9c3-58ec-4d7c-b10f-0f52f831f3ef",
+              "go": "fe137bdf-e8ac-46e7-88e9-6050733c6fe2",
+              "component_type": "RoundDoor"
+            }
+          ],
+          "Members": [
+            {
+              "_type": "gameobject",
+              "go": "bf0f9f83-bb58-4054-8d1b-7a652c582729"
+            },
+            {
+              "_type": "gameobject",
+              "go": "53c1d703-04db-41f6-9aa2-d5adf7295ec3"
+            },
+            {
+              "_type": "gameobject",
+              "go": "3a6c4405-3db7-4931-978b-f4707b15d869"
+            },
+            {
+              "_type": "gameobject",
+              "go": "53cd677f-f1c4-4d29-b2d7-5871db83689b"
+            },
+            {
+              "_type": "gameobject",
+              "go": "041f0da3-aa74-4d72-a2df-20c02c1d8d98"
+            },
+            {
+              "_type": "gameobject",
+              "go": "69b1cd48-1c5b-4bb7-9a30-9b87d5e4102a"
+            },
+            {
+              "_type": "gameobject",
+              "go": "99c7e64e-5bfb-4311-8856-91e950db893f"
+            },
+            {
+              "_type": "gameobject",
+              "go": "82f101e5-93a6-42d5-b98c-7262d026b647"
+            },
+            {
+              "_type": "gameobject",
+              "go": "1b39d958-5de5-4ac8-a2e7-381bfda17ccb"
+            },
+            {
+              "_type": "gameobject",
+              "go": "ab335cc1-c360-4bd7-b688-5fd56ad91bc0"
+            },
+            {
+              "_type": "gameobject",
+              "go": "da888183-c0d5-49e0-abfc-3d9124c26d49"
+            },
+            {
+              "_type": "gameobject",
+              "go": "e4ba25de-ceb1-4160-917d-d331f78e95e8"
+            }
+          ],
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RequireAllDoorsOpen": true
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
