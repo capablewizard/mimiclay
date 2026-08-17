@@ -1,0 +1,100 @@
+@import "/UI/_menu.scss"; // tokens + .paper-card (+ the action-jitter keyframes)
+
+// World-anchored speech bubbles — scenery, never interactive.
+.speech-bubbles {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+
+	// Carries the projected CARD position (the anchor plus the bubble's world-space offset — see
+	// SpeechBubbleHud.OnUpdate; how far the card sits from the speaker is authored on the SpeechBubble
+	// component in world units, never here in pixels). The translate hangs the card fully above the
+	// point; the small bottom padding is just the tail's own clearance.
+	.bubble-float {
+		position: absolute;
+		flex-direction: row;
+		transform: translateY( -100% );
+		padding-bottom: 12px;
+		pointer-events: none;
+	}
+
+	.speech-bubble {
+		position: relative;
+		flex-direction: row;
+		justify-content: center;
+		padding: $space-md $space-lg;
+		border-radius: 18px;
+		max-width: 300px;
+		pointer-events: none;
+
+		// A wrapping row of per-word WobbleTexts (each word an unbreakable strip of jittering letters);
+		// font/colour inherit into the letters. The word gap replaces WobbleText's own .space spans —
+		// spaces never reach it, the Split eats them.
+		.text {
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 5px;
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 17px;
+			color: $paper-ink;
+		}
+
+		// WobbleText's letter drop-shadow is tuned for big headers floating over the scene — on the cream
+		// card it reads as dirt, so pull it right down.
+		.letter { text-shadow: 0px 2px 0px rgba( black, 0.15 ); }
+
+		// A word = revealed half + ghost half side by side; the ghost holds the word's full footprint so
+		// the card never reflows while the typewriter runs.
+		.word { flex-direction: row; }
+		.ghost { opacity: 0; }
+
+		// Bubble-strength jitter: swap only the animation NAME (duration/stagger stay WobbleText's own).
+		// This selector must out-rank .wobble-text.auto .letter, which is why the markup uses default
+		// strength — a .soft/.subtle class would add a fourth class to WobbleText's rule and win back.
+		.text .letter { animation-name: bubble-jitter; }
+
+		// The tail: a rotated square hanging half off the card's bottom edge, near the anchor-side corner —
+		// cream fill with the card's ink edge on its two EXPOSED sides (post-rotation, border-right +
+		// border-bottom); drawn after the text so it paints over the card's own bottom border and the
+		// outline flows into the point. Rotation stays EXACTLY 45deg (the square's side corners lie flush
+		// ON the edge line and stay hidden; more rotation dips a second corner into view — tried it). The
+		// lean toward the anchor comes from the OUTER skewx instead: it shears the rotated diamond
+		// horizontally, sliding the down-point left while the side corners sit on the shear axis and never
+		// move. First-listed transform is outermost (engine composes m*tx, CSS order) — rotate must stay
+		// the inner function. Left offset clears the card's 18px corner radius.
+		.tail {
+			position: absolute;
+			bottom: -9px;
+			left: 16px;
+			width: 18px;
+			height: 18px;
+			background-color: $paper-tile;
+			border-right: 2px solid $card-edge;
+			border-bottom: 2px solid $card-edge;
+			transform: skewx( -25deg ) rotate( 45deg );
+		}
+	}
+}
+
+// Bubble-text jitter — between WobbleText's Soft and Subtle: rotation big enough to read on 17px glyphs,
+// position travel a hair (≤0.05vh ≈ half a pixel at 1080p) so nothing smears. Same held-pose/snap rhythm
+// and single-% blocks as the clay-jitter family (see WobbleText.razor.scss for the parser notes).
+@keyframes bubble-jitter
+{
+	0%   { transform: rotate( -2.5deg ) translate( 0vh,      0vh ) scale( 1 ); }
+	15%  { transform: rotate( -2.5deg ) translate( 0vh,      0vh ) scale( 1 ); }
+	16%  { transform: rotate(  2deg )   translate( 0.05vh,  -0.05vh ) scale( 1 ); }
+	31%  { transform: rotate(  2deg )   translate( 0.05vh,  -0.05vh ) scale( 1 ); }
+	32%  { transform: rotate( -1.5deg ) translate( -0.05vh,  0.03vh ) scale( 1 ); }
+	47%  { transform: rotate( -1.5deg ) translate( -0.05vh,  0.03vh ) scale( 1 ); }
+	48%  { transform: rotate(  3deg )   translate( 0.05vh,   0.03vh ) scale( 1.02 ); }
+	64%  { transform: rotate(  3deg )   translate( 0.05vh,   0.03vh ) scale( 1.02 ); }
+	65%  { transform: rotate( -3deg )   translate( -0.03vh, -0.03vh ) scale( 1 ); }
+	81%  { transform: rotate( -3deg )   translate( -0.03vh, -0.03vh ) scale( 1 ); }
+	82%  { transform: rotate(  1.5deg ) translate( 0.03vh,   0.05vh ) scale( 1 ); }
+	99%  { transform: rotate(  1.5deg ) translate( 0.03vh,   0.05vh ) scale( 1 ); }
+	100% { transform: rotate( -2.5deg ) translate( 0vh,      0vh ) scale( 1 ); }
+}

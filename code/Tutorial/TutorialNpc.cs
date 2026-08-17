@@ -100,6 +100,10 @@ public sealed class TutorialNpc : Component
 	BoilActivation _boilRest;
 	bool _boilCaptured;
 
+	// His speech bubble (the scene-authored invite on the SpeechBubbleAnchor child), stepped aside while the
+	// tutorial runs on THIS machine — via the bubble's per-machine Hidden, never .Enabled (which serializes).
+	SpeechBubble _bubble;
+
 	protected override void OnAwake()
 	{
 		Sculpture ??= Components.Get<SdfSculpture>();
@@ -252,6 +256,11 @@ public sealed class TutorialNpc : Component
 	void UpdatePresentation()
 	{
 		bool hovered = Hovered && Running != this;
+
+		// The invite steps aside while you're actually in the lesson; everyone else's machine keeps it up.
+		_bubble = _bubble.IsValid() ? _bubble : Components.Get<SpeechBubble>( FindMode.EverythingInSelfAndDescendants );
+		if ( _bubble.IsValid() )
+			_bubble.Hidden = Running == this;
 
 		// Boil churn while hovered, authored activation otherwise — captured once so teardown can put the
 		// mapper's dial back exactly.

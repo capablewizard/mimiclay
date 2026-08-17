@@ -83,7 +83,14 @@ $panel-inset: 24px;   // inset from the screen edge so cards float off the corne
 // --- Motion ------------------------------------------------------------------
 // One speed for the claymation wobble everywhere (the title's continuous jitter AND the menu-button hover
 // jitter), so they always match. Lower = faster/jitterier.
-$wobble-duration: 1s;
+//
+// 1.5s is not arbitrary: every jitter keyframe family (clay-jitter*, action-jitter, bubble-jitter) holds
+// 6 poses per loop, so 6 / 1.5s = 4 pose-changes per second — the SAME cadence as the 3D clay's boil
+// (ClayBoil.Fps = 4, the world's stop-motion heartbeat). Change either rate and the UI visibly wobbles
+// out of step with the clay again (it shipped that way at 1s = 6/sec, and the mismatch read as three
+// different effects). Phase stays per-element on purpose — poses snapping in perfect unison across the
+// screen reads mechanical, and per-letter stagger depends on offsets.
+$wobble-duration: 1.5s;
 
 // --- UI sounds ---------------------------------------------------------------
 // Two built-in s&box menu sound events, played via CSS `sound-in` on a button's :hover / :active. `sound-in`

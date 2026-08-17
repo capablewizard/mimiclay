@@ -2477,7 +2477,70 @@
       "__version": 2,
       "__Prefab": "prefabs/saved/tutorialtestguy.prefab",
       "__PrefabInstancePatch": {
-        "AddedObjects": [],
+        "AddedObjects": [
+          {
+            "Id": {
+              "Type": "GameObject",
+              "IdValue": "39585ae9-7da9-4eb8-9111-00f0db606d2d"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "1e021d89-7786-47b2-ba05-c200e7600d86"
+            },
+            "PreviousElement": null,
+            "ContainerProperty": "Children",
+            "IsContainerArray": true,
+            "Data": {
+              "__guid": "39585ae9-7da9-4eb8-9111-00f0db606d2d",
+              "__version": 2,
+              "Flags": 0,
+              "Name": "SpeechBubbleAnchor",
+              "Position": "-12.0399399,1.43051147E-06,53.8260803",
+              "Rotation": "0,0,0,1",
+              "Scale": "1,1,1",
+              "Tags": "",
+              "Enabled": true,
+              "NetworkMode": 2,
+              "NetworkFlags": 0,
+              "NetworkOrphaned": 0,
+              "NetworkTransmit": true,
+              "OwnerTransfer": 1,
+              "Components": [],
+              "Children": []
+            }
+          },
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "a3f61c29-7e84-4b0d-9c52-1de08f9b4a67"
+            },
+            "Parent": {
+              "Type": "GameObject",
+              "IdValue": "39585ae9-7da9-4eb8-9111-00f0db606d2d"
+            },
+            "PreviousElement": null,
+            "ContainerProperty": "Components",
+            "IsContainerArray": true,
+            "Data": {
+              "__type": "Mimiclay.SpeechBubble",
+              "__guid": "a3f61c29-7e84-4b0d-9c52-1de08f9b4a67",
+              "__enabled": true,
+              "Flags": 0,
+              "MaxDistance": 500,
+              "OffsetRight": 10,
+              "OffsetUp": 6,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SpaceTicks": 2,
+              "Text": "Hi, click on me for a tutorial",
+              "TypeSpeed": 16
+            }
+          }
+        ],
         "RemovedObjects": [],
         "PropertyOverrides": [
           {
@@ -2507,7 +2570,8 @@
         "6847fed6-a645-4aa4-896c-1d62c9364b76": "8066cf7c-74d2-4aae-8dce-7ac70c6ecee4",
         "40af4c49-40ff-4919-a56f-af96dd463dfa": "40756820-142f-4cef-b29c-6cee700f277f",
         "32a9b36f-cf18-4db7-b4b8-c4a500ed0b0d": "c535e5bf-8412-4d8d-8daf-293dafc79008",
-        "979cf768-6bf0-42d3-a645-83ef8c83f8d9": "ba935657-305b-46bb-87fa-52b8fcb35fc6"
+        "979cf768-6bf0-42d3-a645-83ef8c83f8d9": "ba935657-305b-46bb-87fa-52b8fcb35fc6",
+        "367cabeb-1e65-44c2-ad72-7b200af93c21": "e6f101ee-eb5b-8ad8-bf00-64d17da2cc7c"
       }
     }
   ],

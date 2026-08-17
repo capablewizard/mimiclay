@@ -1,0 +1,260 @@
+@using System
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The shared speech-bubble overlay: one screen panel, spawned on demand by the first enabled
+	<SpeechBubble> in the scene (Ensure below), drawing every live bubble at its anchor's projected screen
+	position — the HunterCrosshair possess-toast recipe, generalised. Two elements per bubble on purpose:
+	the float carries the position (and the centring translate), the card carries the look — they'd fight
+	over `transform` on one element.
+
+	Entirely non-interactive (pointer-events none throughout): bubbles are scenery, they can never eat a
+	click. No viewport clamping either — a bubble belongs to its anchor and slides off screen with it,
+	unlike the possess prompt (which annotates something you're already looking at).
+
+	TYPEWRITER: each bubble types its text out (per-letter blip) whenever it APPEARS — first sight, back
+	in range, un-hidden, or its text changed — advancing only while it's actually drawn on this screen.
+	The reveal state lives here, not on the component, because visibility is this panel's verdict. Unrevealed
+	letters render INVISIBLE rather than absent, so the card holds its final size from the first frame
+	instead of reflowing under the typing.
+*@
+
+<root class="speech-bubbles">
+	@foreach ( var d in _draw )
+	{
+		<div class="bubble-float" style=@FloatStyle( d.At, d.Opacity )>
+			<div class="paper-card speech-bubble">
+				@* One WobbleText per WORD, in a wrapping row: WobbleText itself is a non-wrapping strip of
+				   per-letter spans, so wrapping between whole components is what keeps words intact. Each
+				   word splits into a revealed half (jittering — the bubble sheet swaps the animation to
+				   bubble-jitter; Soft/Subtle are invisible/smeary at 17px) and a ghost half holding the
+				   layout. *@
+				<div class="text">
+					@foreach ( var w in d.Words )
+					{
+						<div class="word">
+							@if ( w.Shown.Length > 0 )
+							{
+								<WobbleText Text=@w.Shown class="auto" />
+							}
+							@if ( w.Ghost.Length > 0 )
+							{
+								<WobbleText Text=@w.Ghost class="ghost" />
+							}
+						</div>
+					}
+				</div>
+				<div class="tail"></div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	/// <summary>Bring the overlay up in this scene if it isn't already — called by
+	/// <see cref="SpeechBubble.OnEnabled"/>, the EnsureHud pattern (NotSaved, one per scene, persists).</summary>
+	public static void Ensure( Scene scene )
+	{
+		if ( scene is null || scene.GetAllComponents<SpeechBubbleHud>().Any() )
+			return;
+
+		var go = new GameObject( true, "Speech Bubble HUD" );
+		go.Flags |= GameObjectFlags.NotSaved; // runtime-only: never let this end up serialised into an asset
+		var panel = go.Components.Create<ScreenPanel>();
+		panel.ZIndex = 50; // ambient scenery UI: under the EditHud (100) and every dialog
+		go.Components.Create<SpeechBubbleHud>();
+	}
+
+	// The per-letter blip: the menu hover sound pitched up into a typing tick. One blip per frame at most,
+	// however many characters that frame revealed — per-char at typing speed is machine-gun fire.
+	const string TypeSound = "ui.button.over";
+	const float TypeSoundVolume = 0.4f;
+
+	// How long a bubble must be OFF screen (hidden, out of range, behind the camera) before its next
+	// appearance re-types — hysteresis so a flicker at the range boundary doesn't restart the line.
+	const float RetypeAfterGone = 0.6f;
+
+	// Per-bubble typewriter state, keyed by component; entries for dead components are pruned each frame.
+	class TypeState
+	{
+		public string Text;              // what the reveal was measured against — a change restarts it
+		public float Revealed;           // fractional characters revealed (over words + one virtual space each)
+		public int Whole;                // floor(Revealed) last frame, for the blip edge
+		public RealTimeSince SinceDrawn; // stamped every drawn frame; the retype hysteresis reads it
+	}
+
+	readonly Dictionary<SpeechBubble, TypeState> _typing = new();
+
+	// This frame's visible bubbles: per-word (revealed, ghost) splits + projected spot + eased opacity.
+	readonly List<(string Text, int Revealed, List<(string Shown, string Ghost)> Words, Vector2 At, float Opacity)> _draw = new();
+
+	protected override void OnUpdate()
+	{
+		_draw.Clear();
+		PruneTyping();
+
+		var cam = Scene.Camera;
+		if ( !cam.IsValid() )
+			return;
+
+		foreach ( var bubble in Scene.GetAllComponents<SpeechBubble>() )
+		{
+			if ( bubble.Hidden || string.IsNullOrWhiteSpace( bubble.Text ) )
+				continue;
+
+			var world = bubble.WorldPosition;
+
+			// Distance cull with an ease-out over the last 20% so it never pops.
+			float opacity = 1f;
+			if ( bubble.MaxDistance > 0f )
+			{
+				float dist = cam.WorldPosition.Distance( world );
+				if ( dist > bubble.MaxDistance )
+					continue;
+				float fadeFrom = bubble.MaxDistance * 0.8f;
+				if ( dist > fadeFrom )
+					opacity = 1f - (dist - fadeFrom) / (bubble.MaxDistance - fadeFrom);
+			}
+
+			// The card's spot: the anchor pushed along the camera's screen plane by the bubble's WORLD
+			// offset, then projected. Because the offset rides the projection, the card sits a constant
+			// world distance from the speaker — near, it clears the face; far, it stays glued to them
+			// instead of hanging a fixed 56px out in space.
+			var camRot = cam.WorldRotation;
+			var cardWorld = world + camRot.Right * bubble.OffsetRight + camRot.Up * bubble.OffsetUp;
+			var screen = cam.PointToScreenNormal( cardWorld, out var behind );
+			if ( behind )
+				continue;
+
+			var (revealed, words) = AdvanceTyping( bubble );
+			_draw.Add( (bubble.Text, revealed, words, screen, opacity) );
+		}
+	}
+
+	// Advance this bubble's reveal for a frame it IS drawn: restart on text change or after an absence,
+	// step by TypeSpeed, blip once if any word character became visible. Returns the whole-character count
+	// and the per-word (shown, rest) split the markup renders.
+	(int Revealed, List<(string Shown, string Ghost)> Words) AdvanceTyping( SpeechBubble bubble )
+	{
+		if ( !_typing.TryGetValue( bubble, out var state ) )
+		{
+			state = new TypeState();
+			_typing[bubble] = state;
+			state.Text = null; // force the restart branch below
+		}
+
+		var words = bubble.Text.Split( (char[])null, StringSplitOptions.RemoveEmptyEntries );
+
+		// Timing runs over the words plus SpaceTicks of virtual space after each — word gaps take a beat
+		// (the typewriter's breath) but never blip. Per-bubble, clamped sane.
+		int gap = Math.Max( 0, bubble.SpaceTicks );
+		int total = words.Sum( w => w.Length ) + Math.Max( 0, words.Length - 1 ) * gap;
+
+		if ( state.Text != bubble.Text || state.SinceDrawn > RetypeAfterGone )
+		{
+			state.Text = bubble.Text;
+			state.Revealed = 0f;
+			state.Whole = 0;
+		}
+		state.SinceDrawn = 0f;
+
+		state.Revealed = bubble.TypeSpeed <= 0f
+			? total
+			: MathF.Min( total, state.Revealed + Time.Delta * bubble.TypeSpeed );
+
+		int whole = (int)state.Revealed;
+		if ( whole > state.Whole )
+		{
+			if ( AnyWordCharBetween( words, state.Whole, whole, gap ) )
+				PlayTypeBlip();
+			state.Whole = whole;
+		}
+
+		// Split each word at the reveal cursor (cursor walks the same virtual sequence the timing used).
+		var parts = new List<(string Shown, string Ghost)>( words.Length );
+		int at = 0;
+		foreach ( var w in words )
+		{
+			int shown = Math.Clamp( whole - at, 0, w.Length );
+			parts.Add( (w[..shown], w[shown..]) );
+			at += w.Length + gap; // the word, then its virtual gap
+		}
+
+		return (whole, parts);
+	}
+
+	// Did any index in [from, to) land on an actual character (not virtual gap)?
+	static bool AnyWordCharBetween( string[] words, int from, int to, int gap )
+	{
+		int at = 0;
+		foreach ( var w in words )
+		{
+			if ( at >= to )
+				return false;
+			if ( from < at + w.Length && to > at )
+				return true; // overlaps this word's characters
+			at += w.Length + gap;
+		}
+		return false;
+	}
+
+	void PlayTypeBlip()
+	{
+		var snd = Sound.Play( TypeSound );
+		if ( snd is null )
+			return;
+
+		snd.Volume = TypeSoundVolume;
+		snd.Pitch = Game.Random.Float( 1.15f, 1.35f ); // pitched up out of "button hover", into "type tick"
+	}
+
+	// Typewriter entries for destroyed/removed bubbles — swept so the dictionary can't grow for a scene's
+	// lifetime. (An entry for a merely-hidden bubble stays: its SinceDrawn is what times the retype.)
+	void PruneTyping()
+	{
+		if ( _typing.Count == 0 )
+			return;
+
+		List<SpeechBubble> dead = null;
+		foreach ( var key in _typing.Keys )
+		{
+			if ( !key.IsValid() )
+				(dead ??= new()).Add( key );
+		}
+
+		if ( dead is not null )
+		{
+			foreach ( var key in dead )
+				_typing.Remove( key );
+		}
+	}
+
+	// left/top as viewport percentages, invariant-formatted so the style parses on any system locale
+	// (the HunterCrosshair PromptStyle recipe). The SCSS translate hangs the bubble ABOVE the point.
+	static string FloatStyle( Vector2 at, float opacity )
+		=> $"left: {(at.x * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
+			$"top: {(at.y * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
+			$"opacity: {opacity.ToString( "0.###", CultureInfo.InvariantCulture )};";
+
+	// Anchors track the world and the reveal advances per frame, so both belong in the hash — same
+	// reasoning as the possess toast.
+	protected override int BuildHash()
+	{
+		var hc = new HashCode();
+		foreach ( var d in _draw )
+		{
+			hc.Add( d.Text );
+			hc.Add( d.Revealed );
+			hc.Add( d.At );
+			hc.Add( d.Opacity );
+		}
+		return hc.ToHashCode();
+	}
+}
