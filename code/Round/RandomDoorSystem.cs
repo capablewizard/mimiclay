@@ -8,7 +8,8 @@ namespace Mimiclay;
 /// Selects how many scene doors begin open using the round's synchronized seed. Only the host decides and
 /// applies door state — <see cref="RoundDoor.SetOpen"/> is a <see cref="Rpc.Broadcast"/> call, so the resulting
 /// rotation is explicitly replicated to every client rather than relying on each machine independently
-/// re-deriving the same result from <see cref="RoundManager.DoorSeed"/>.
+/// re-deriving the same result from <see cref="RoundManager.DoorSeed"/>. In creative mode (no <see cref="RoundManager"/>,
+/// no seed) every door is simply forced open instead, so builders always have full access to every room.
 /// </summary>
 [Title( "Random Door System" )]
 [Category( "Mimiclay" )]
@@ -24,6 +25,7 @@ public sealed class RandomDoorSystem : Component
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
 	int _appliedSeed;
+	bool _appliedCreative;
 	TimeSince _sinceResync;
 
 	/// <summary>How often the host re-sends every door's current state regardless of change, so a player who
@@ -34,6 +36,18 @@ public sealed class RandomDoorSystem : Component
 	{
 		if ( !IsHostAuthority )
 			return;
+
+		// Creative maps never spawn a RoundManager, so there's no DoorSeed to react to — instead just force
+		// every door open so builders always have full access to every room.
+		if ( CreativeManager.Current.IsValid() )
+		{
+			if ( !_appliedCreative || _sinceResync >= ResyncInterval )
+				OpenAll();
+
+			return;
+		}
+
+		_appliedCreative = false;
 
 		var manager = RoundManager.Current;
 		if ( !manager.IsValid() || manager.DoorSeed == 0 )
@@ -50,6 +64,22 @@ public sealed class RandomDoorSystem : Component
 		Apply( manager.DoorSeed );
 		_appliedSeed = manager.DoorSeed;
 		_sinceResync = 0;
+	}
+
+	/// <summary>Forces every door open, for creative mode. Re-run periodically (like <see cref="Resync"/>) so
+	/// late joiners converge quickly.</summary>
+	void OpenAll()
+	{
+		_appliedCreative = true;
+		_sinceResync = 0;
+
+		foreach ( var door in Scene.GetAllComponents<RoundDoor>() )
+		{
+			if ( !door.IsValid() )
+				continue;
+
+			door.SetOpen( true );
+		}
 	}
 
 	/// <summary>Re-sends the already-decided state of every door, without re-rolling anything — catches up
