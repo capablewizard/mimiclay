@@ -1343,7 +1343,9 @@ public sealed class SculptEditSession : Component
 
 		// A flips add/carve — the head of the A/S/D/F "edit keys" row, matching the strip's chip order
 		// (op · blend · round · wildcard). Stamp's op in sculpt mode, the SELECTED brush's in gizmo mode.
-		bool opKey = keysLive && Input.Keyboard.Down( "a" );
+		// Tutorial-gated with the op chip's section (EditHudGate) — the keyboard can never do what the
+		// hidden/locked chip can't; same rule for every gated key below.
+		bool opKey = keysLive && EditHudGate.Interactive( HudSection.Sliders ) && Input.Keyboard.Down( "a" );
 		if ( opKey && !_opKeyWas )
 		{
 			if ( Tool == SculptTool.Sculpt )
@@ -1358,7 +1360,7 @@ public sealed class SculptEditSession : Component
 		// owns Space instead (it finishes the chain, like Enter) — toggling the tool here would silently
 		// drop the half-built chain. Held off during a drag or scrub so the tool can't switch out from
 		// under a live gesture. Manual edge detection like the keys below.
-		bool addKey = keysLive && Input.Keyboard.Down( "space" )
+		bool addKey = keysLive && EditHudGate.Interactive( HudSection.AddChip ) && Input.Keyboard.Down( "space" )
 			&& !IsScrubbing && !_gizmo.IsDragging
 			&& !(Tool == SculptTool.Sculpt && ActiveShape == SdfShape.Spline);
 		if ( addKey && !_addKeyWas )
@@ -1366,34 +1368,41 @@ public sealed class SculptEditSession : Component
 		_addKeyWas = addKey;
 
 		// Number keys follow the shape row left-to-right, so the tile order IS the hotkey order.
-		if ( keysLive )
+		if ( keysLive && EditHudGate.Interactive( HudSection.ShapeDock ) )
 		{
 			if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
 			if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
 			if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
 			if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
-			if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
-			if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
-			if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+
+			// The advanced shapes follow the dock: the tutorial's first shape lesson trims their tiles,
+			// so their hotkeys stand down with them (key and dock must always agree).
+			if ( !EditHudGate.BasicShapesOnly )
+			{
+				if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
+				if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
+				if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+			}
 		}
 
 		// Delete removes the selected brush (gizmo mode only — in sculpt mode the pending ghost isn't a
 		// real shape yet, and Esc/right-click is how you drop that). Manual edge detection on Down, like
 		// the other keys here: Keyboard.Pressed doesn't fire reliably in this context. Both spellings are
 		// asked for since an unknown key name just resolves to invalid (false), never throws.
-		bool del = keysLive
+		bool del = keysLive && EditHudGate.Interactive( HudSection.EditChips )
 			&& (Input.Keyboard.Down( "delete" ) || Input.Keyboard.Down( "del" ));
 		if ( del && !_delWas && Tool == SculptTool.Gizmo )
 			RemoveSelected();
 		_delWas = del;
-		if ( keysLive && Input.Pressed( "Drop" ) ) RemoveLast();
+		if ( keysLive && EditHudGate.Interactive( HudSection.EditChips ) && Input.Pressed( "Drop" ) ) RemoveLast();
 
 		// Undo / redo: Ctrl+Z back, Ctrl+Shift+Z or Ctrl+Y forward. Manual edge detection like the keys above
 		// (Keyboard.Pressed doesn't fire reliably in this context), and held off whenever a gesture owns the
 		// mouse — stepping the shape out from under a live drag or scrub would leave it editing a brush that
 		// no longer exists. The InputFocus guard leaves Ctrl+Z to the text field while typing.
 		bool undoMod = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "ctrl" )
-			&& !PauseMenu.IsOpen && !IsScrubbing && !_gizmo.IsDragging;
+			&& !PauseMenu.IsOpen && !IsScrubbing && !_gizmo.IsDragging
+			&& EditHudGate.Interactive( HudSection.UndoRedo );
 		bool undoShift = Input.Keyboard.Down( "shift" );
 		bool zKey = undoMod && Input.Keyboard.Down( "z" );
 		bool undoKey = zKey && !undoShift;
@@ -1516,8 +1525,10 @@ public sealed class SculptEditSession : Component
 			_splineInsertArmed = true;
 
 		// Hover: the brush under the cursor (skipped while camera-navving, over a gizmo handle, over the UI, or
-		// paused — the pause overlay must not highlight shapes behind it).
-		int hover = (!overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing)
+		// paused — the pause overlay must not highlight shapes behind it; the tutorial gates it with selection,
+		// so pre-selection stages don't tease a hover ghost the click won't honour).
+		int hover = (!overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing
+			&& EditHudGate.Interactive( HudSection.WorldSelect ))
 			? PickBrush( tx ) : -1;
 		_worldHover = hover; // scene pick only — recorded BEFORE the layer-row fallback (see the field)
 
@@ -1592,7 +1603,8 @@ public sealed class SculptEditSession : Component
 		// exist if the press already landed clear of the HUD/gizmo/scrub; the gates here re-check the ones
 		// that can shift inside the window (and alt, whose own click has never meant select).
 		if ( AltNav.LmbTapped && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
-			&& !_gizmo.IsBusy && !IsScrubbing )
+			&& !_gizmo.IsBusy && !IsScrubbing
+			&& EditHudGate.Interactive( HudSection.WorldSelect ) ) // tutorial: no picking before the selection stage
 			Selected = hover; // hover is -1 on empty space → deselect
 
 		// Debug: render the shadow-proxy mesh AS the visible surface (raymarch + full mesh hidden).

@@ -81,7 +81,9 @@
 
 		@* Hotkey hint strip, bottom-centre — contextual: the stamp scheme while placing, the selection
 		   scheme while editing. The S/D labels live-update with the active shape. *@
-		<div class="hint-strip">
+		@* Hidden while a guided tutorial step runs — the tutorial card teaches one thing at a time, and the
+		   full key list underneath it would drown that. Back the moment guidance ends (free-play included). *@
+		<div class="hint-strip @(TutorialDirector.HintStripHidden ? "hidden" : "")">
 			@if ( Session.Tool == SculptTool.Sculpt && Session.ActiveShape == SdfShape.Spline )
 			{
 				@* Chain placement has its own verbs: click points along the curve, right-click/Enter ends it. *@
@@ -149,9 +151,9 @@
 
 		@* The left column is just the layer stack now — shape choice moved to the bottom dock (it's a
 		   property of the brush, not a tool), and the Add/Edit mode toggle is gone entirely. *@
-		@if ( ShowLayers )
+		@if ( ShowLayers && EditHudGate.Visible( HudSection.Layers ) )
 		{
-		<div class="panel left" @ref="LeftPanel">
+		<div class="panel left @EditHudGate.PanelClass( HudSection.Layers )" @ref="LeftPanel">
 			<div class="section-title"><div class="icon">layers</div><span>Shapes</span></div>
 
 			<div class="layers">
@@ -191,15 +193,20 @@
 				</div>
 			}
 
+			@if ( EditHudGate.Of( HudSection.Layers ) == SectionState.Locked )
+			{
+				<div class="tutorial-lock-shield"></div>
+			}
+
 		</div>
 		}
 
 		@* Per-axis symmetry for the selected brush. The row's symmetry button is a quick on/off (X);
 		   this section picks which axes when you want quadrant/octant mirroring. Lives in its own right-hand
 		   panel so the left column's full height is free for the layer stack. *@
-		@if ( ShowTools )
+		@if ( ShowTools && EditHudGate.Visible( HudSection.Tools ) )
 		{
-			<div class="panel right" @ref="RightPanel">
+			<div class="panel right @EditHudGate.PanelClass( HudSection.Tools )" @ref="RightPanel">
 				<div class="section-title"><span>Tools</span><div class="icon">auto_awesome</div></div>
 				@* Vertical list: Add Shape keeps the SAME spot whatever the state; the selection-only tools
 				   grow downward beneath it instead of shoving it sideways. *@
@@ -207,40 +214,50 @@
 					@* Toggles placing on/off — while a stamp is held it's the way back to plain editing
 					   (same as a right-click or Esc). Stays the top button: it's the one users reach for
 					   without looking. *@
-					@{ var placing = Session.Tool == SculptTool.Sculpt; }
-					<div class="chip action @(placing ? "on" : "")" @onclick=@(() => Session.SetTool( placing ? SculptTool.Gizmo : SculptTool.Sculpt ))>
-						<div class="icon">@(placing ? "check_circle" : "add_circle")</div><span>@(placing ? "Done" : "Add Shape")</span>
-					</div>
+					@if ( EditHudGate.Visible( HudSection.AddChip ) )
+					{
+						var placing = Session.Tool == SculptTool.Sculpt;
+						<div class="chip action @(placing ? "on" : "") @EditHudGate.ChipClass( HudSection.AddChip )" @onclick=@(() => GateClick( HudSection.AddChip, () => Session.SetTool( placing ? SculptTool.Gizmo : SculptTool.Sculpt ) ))>
+							<div class="icon">@(placing ? "check_circle" : "add_circle")</div><span>@(placing ? "Done" : "Add Shape")</span>
+						</div>
+					}
 
 					@* Undo / redo pair up on one row directly under Add Shape, so both keep a fixed home and
 					   the selection-only tools still grow downward beneath them. Dimmed (and inert) at the
 					   ends of the history rather than hidden — a button that vanishes reads as a bug. *@
+					@if ( EditHudGate.Visible( HudSection.UndoRedo ) )
+					{
 					<div class="undo-row">
-						<div class="chip action @(Session.CanUndo ? "" : "disabled")" @onclick=@(() => Session.Undo())>
+						<div class="chip action @(Session.CanUndo ? "" : "disabled") @EditHudGate.ChipClass( HudSection.UndoRedo )" @onclick=@(() => GateClick( HudSection.UndoRedo, () => Session.Undo() ))>
 							<div class="icon">@SdfIcons.Undo</div><span>Undo</span>
 						</div>
-						<div class="chip action @(Session.CanRedo ? "" : "disabled")" @onclick=@(() => Session.Redo())>
+						<div class="chip action @(Session.CanRedo ? "" : "disabled") @EditHudGate.ChipClass( HudSection.UndoRedo )" @onclick=@(() => GateClick( HudSection.UndoRedo, () => Session.Redo() ))>
 							<div class="icon">@SdfIcons.Redo</div><span>Redo</span>
 						</div>
 					</div>
-					@if ( Session.Tool == SculptTool.Gizmo && Brush is not null )
+					}
+					@if ( Session.Tool == SculptTool.Gizmo && Brush is not null && EditHudGate.Visible( HudSection.EditChips ) )
 					{
-						<div class="chip action" @onclick=@(() => Session.DuplicateSelected())>
+						<div class="chip action @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.DuplicateSelected() ))>
 							<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
 						</div>
-						<div class="chip action danger" @onclick=@(() => Session.RemoveSelected())>
+						<div class="chip action danger @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.RemoveSelected() ))>
 							<div class="icon">delete</div><span>Delete</span>
 						</div>
 					}
 				</div>
-				@if ( Brush is not null )
+				@if ( Brush is not null && EditHudGate.Visible( HudSection.Symmetry ) )
 				{
 				<div class="section-title"><span>Symmetry</span><div class="icon">@SdfIcons.Symmetry</div></div>
 				<div class="shape-grid">
-					<div class="chip @(Brush.MirrorX ? "on" : "")" @onclick=@(() => ToggleMirror( 0 ))>X</div>
-					<div class="chip @(Brush.MirrorY ? "on" : "")" @onclick=@(() => ToggleMirror( 1 ))>Y</div>
-					<div class="chip @(Brush.MirrorZ ? "on" : "")" @onclick=@(() => ToggleMirror( 2 ))>Z</div>
+					<div class="chip @(Brush.MirrorX ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 0 ) ))>X</div>
+					<div class="chip @(Brush.MirrorY ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 1 ) ))>Y</div>
+					<div class="chip @(Brush.MirrorZ ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 2 ) ))>Z</div>
 				</div>
+				}
+				@if ( EditHudGate.Of( HudSection.Tools ) == SectionState.Locked )
+				{
+					<div class="tutorial-lock-shield"></div>
 				}
 			</div>
 		}
@@ -326,12 +343,15 @@
 		if ( palettePos.HasValue )
 			_palettePos = palettePos.Value;
 
-		if ( ShowPalette )
+		if ( ShowPalette && EditHudGate.Visible( HudSection.Palette ) )
 		{
+			var paletteGate = EditHudGate.Of( HudSection.Palette );
 			var paletteShown = Brush is not null && palettePos.HasValue;
-			var paletteOpacity = !paletteShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f);
+			@* The lock dim rides the inline opacity (a class can't override an inline style). *@
+			var paletteOpacity = (!paletteShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f))
+				* (paletteGate == SectionState.Locked ? LockDim : 1f);
 			var mats = ClayPalette.Default.Materials;
-			<div @ref="PalettePanel" class="palette-float" style="left: @((int)_palettePos.x)px; top: @((int)_palettePos.y)px; width: @(PaletteWidth)px; opacity: @(paletteOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(paletteOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			<div @ref="PalettePanel" class="palette-float @(paletteGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_palettePos.x)px; top: @((int)_palettePos.y)px; width: @(PaletteWidth)px; opacity: @(paletteOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(paletteOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				@for ( int i = 0; i < mats.Count; i++ )
 				{
 					var idx = i;
@@ -348,6 +368,11 @@
 						<div class="swatch" style="width: @((int)SwatchVisual)px; height: @((int)SwatchVisual)px; border-radius: @((int)SwatchRoundness)px; @SwatchBorder( m, sel ) @SwatchBg( m ) transform: scale(@(sc.ToString( "0.##", CultureInfo.InvariantCulture )));"></div>
 					</div>
 				}
+				@* Last child so it paints (and hit-tests) ABOVE the swatches. *@
+				@if ( paletteGate == SectionState.Locked )
+				{
+					<div class="tutorial-lock-shield"></div>
+				}
 			</div>
 		}
 
@@ -358,12 +383,14 @@
 		if ( pickerPos.HasValue )
 			_pickerPos = pickerPos.Value;
 
-		if ( ShowPicker )
+		if ( ShowPicker && EditHudGate.Visible( HudSection.Picker ) )
 		{
+			var pickerGate = EditHudGate.Of( HudSection.Picker );
 			var pickerShown = Brush is not null && pickerPos.HasValue;
-			var pickerOpacity = !pickerShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f);
+			var pickerOpacity = (!pickerShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f))
+				* (pickerGate == SectionState.Locked ? LockDim : 1f);
 			var pfb = _fadeBrush;
-			<div @ref="PickerPanel" class="picker-float" style="left: @((int)_pickerPos.x)px; top: @((int)_pickerPos.y)px; width: @((int)PickerSize)px; opacity: @(pickerOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(pickerOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			<div @ref="PickerPanel" class="picker-float @(pickerGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_pickerPos.x)px; top: @((int)_pickerPos.y)px; width: @((int)PickerSize)px; opacity: @(pickerOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(pickerOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				<ClayColorPicker Size=@PickerSize Value=@(pfb?.Color ?? Color.White) OnInput=@((Color c) => SetColor( c )) OnCommit=@CommitEdit />
 				<ClaySlider Label="Metal" Value=@(pfb?.Metallic ?? 0f) Min=@(0f) Max=@(1f)
 					OnInput=@((float v) => SetMetallic( v )) OnCommit=@CommitEdit />
@@ -377,6 +404,11 @@
 						<div class="icon">@SdfIcons.Paste</div><span>Paste</span>
 					</div>
 				</div>
+				@* Last child so it paints (and hit-tests) above the wheel/sliders. *@
+				@if ( pickerGate == SectionState.Locked )
+				{
+					<div class="tutorial-lock-shield"></div>
+				}
 			</div>
 		}
 
@@ -387,13 +419,14 @@
 		if ( sliderPos.HasValue )
 			_sliderPos = sliderPos.Value;
 
-		if ( ShowSliders )
+		if ( ShowSliders && EditHudGate.Visible( HudSection.Sliders ) )
 		{
+			var sliderGate = EditHudGate.Of( HudSection.Sliders );
 			var slidersShown = Brush is not null && sliderPos.HasValue;
 			// No manipulation fade (unlike the palette/picker): the sliders sit BELOW the gizmo, so a drag
 			// doesn't need them cleared out of the way — and the validity toast anchors off this stack's
 			// slot, so keeping it solid keeps that anchor readable too.
-			var sliderOpacity = slidersShown ? 1f : 0f;
+			var sliderOpacity = (slidersShown ? 1f : 0f) * (sliderGate == SectionState.Locked ? LockDim : 1f);
 			var fb = _fadeBrush;
 			@* The first additive brush's blend folds against empty space — a field no-op that would only
 			   inflate the SculptBounds size padding — so its slider parks at 0, greyed (mirror symmetry
@@ -411,7 +444,7 @@
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
-			<div @ref="SliderStackPanel" class="slider-stack" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				@* Add/Carve toggle for the active brush (ghost or selection) — same flip the A key does. *@
 				@{ var opCarve = (fb?.Operation ?? SdfOperation.Add) == SdfOperation.Subtract; }
 				<div class="chip op-chip @(opCarve ? "carve" : "")" @onclick=@ToggleActiveOperation>
@@ -475,6 +508,11 @@
 						<TextEntry @ref="TextInput" class="text-input" Value:bind=@SelectedText onblur=@OnTextEntryBlur />
 					</div>
 				}
+				@* Last child so it paints (and hit-tests) above the sliders/chips. *@
+				@if ( sliderGate == SectionState.Locked )
+				{
+					<div class="tutorial-lock-shield"></div>
+				}
 			</div>
 		}
 
@@ -482,7 +520,7 @@
 		   with a stamp held it re-moulds the ghost, with a selection it converts the brush in place.
 		   Hidden with no active brush — the Tools panel's "Add Shape" button (or Q / number keys) is the
 		   entry point then. *@
-		@if ( ShowTools && Brush is not null )
+		@if ( ShowTools && Brush is not null && EditHudGate.Visible( HudSection.ShapeDock ) )
 		{
 			var shapeDockPos = ShapeDockPos();
 			if ( shapeDockPos.HasValue )
@@ -490,13 +528,13 @@
 
 			@* No manipulation fade — the dock sits well below the gizmo, and the validity toast anchors
 			   above this row, so both stay solid through a handle drag. *@
-			<div @ref="ShapeDockPanel" class="shape-dock" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px;">
+			<div @ref="ShapeDockPanel" class="shape-dock @EditHudGate.PanelClass( HudSection.ShapeDock )" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px;">
 				<div class="shape-grid">
 					@foreach ( var entry in VisibleShapes )
 					{
 						var shape = entry.Shape;
 						var active = Brush?.Shape == shape;
-						<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => ShapeClicked( shape ))>
+						<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => ShapeClicked( shape ) ))>
 							<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
 							<span class="label">@entry.Label</span>
 						</div>
@@ -504,6 +542,11 @@
 				</div>
 				@* (No Add/Carve chips — the A key toggles the op, and the 3D preview + red carve wireframe
 				   already make the mode obvious.) *@
+				@* Last child so it paints (and hit-tests) above the tiles. *@
+				@if ( EditHudGate.Of( HudSection.ShapeDock ) == SectionState.Locked )
+				{
+					<div class="tutorial-lock-shield"></div>
+				}
 			</div>
 		}
 	}
@@ -559,8 +602,11 @@
 	SdfBrush Brush => Session?.ActiveBrush;
 
 	// The shape row's shapes — all of them; a spline is placed as a CHAIN of points rather than one stamp,
-	// but it's picked from the same row.
-	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes => AddShapes;
+	// but it's picked from the same row. The tutorial's first shape lesson trims to the primitives
+	// (the extruded profile, spline and text deserve their own lessons, not a first-contact wall of tiles).
+	IEnumerable<(SdfShape Shape, string Label)> VisibleShapes => EditHudGate.BasicShapesOnly
+		? AddShapes.Where( e => e.Shape is not (SdfShape.Extruded or SdfShape.Spline or SdfShape.Text) )
+		: AddShapes;
 
 	// Shape-row click — shape is a brush PROPERTY, so the verb depends on the current subject:
 	// stamp held → re-mould the ghost; brush selected → convert it in place; nothing → pick up a new stamp.
@@ -662,6 +708,22 @@
 	[Property, Group( "Panels" )] public bool ShowSliders { get; set; } = true;
 	/// <summary>Draw the selected shape's bounding-sphere silhouette (toggled by the Bounds chip in Tools).</summary>
 	[Property, Group( "Panels" )] public bool ShowBounds { get; set; }
+
+	// --- Tutorial gating (EditHudGate): every gated section consults the static gate in the markup; while no
+	// tutorial is active it reports Normal everywhere and none of this changes a pixel. ---
+
+	// How far a Locked section dims. The floats bake it into their INLINE opacity (a class can't override an
+	// inline style); .tutorial-dim carries the same value for panels styled without one.
+	const float LockDim = 0.45f;
+
+	// A chip in a gated section routes its click through this: Locked/Hidden swallow it. Belt-and-braces on
+	// top of .tutorial-locked's pointer-events:none — a latched hover bit or a same-frame gate flip can't
+	// sneak a click through.
+	static void GateClick( HudSection section, Action action )
+	{
+		if ( EditHudGate.Interactive( section ) )
+			action();
+	}
 
 	/// <summary>When set, a "Back" button (footer-style WobbleText) mounts under the layer stack and invokes
 	/// this on click. Wired by the menu customiser — whose session has no pawn and so no Q toggler, and whose
@@ -1511,6 +1573,8 @@
 		hc.Add( s?.ExitConfirmTooBig ?? false );
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
+		hc.Add( TutorialDirector.HintStripHidden ); // the tutorial hides the hint-strip while guiding
+		hc.Add( EditHudGate.Version ); // per-section tutorial gating (hide/lock/highlight) — bumped on every change
 		hc.Add( BackAction is not null ); // the customiser's Back button mounts/unmounts with its wiring
 		hc.Add( WorkshopSave is not null ); // ditto the customiser's Workshop column
 		hc.Add( WorkshopBrowserOpen );     // the library window mounts/unmounts

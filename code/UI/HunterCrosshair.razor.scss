@@ -57,9 +57,9 @@
 		white-space: nowrap;               // never wrap "E Edit" when the float sits near a screen edge
 		pointer-events: none;
 
-		// Same stop-motion clay wobble as the edit HUD's validity toast (keyframes come from _button.scss via
-		// _menu.scss). This element owns its transform — see the note on .possess-float.
-		animation: action-jitter $wobble-duration linear 0s infinite;
+		// The stop-motion wobble is CODE-driven here (HunterCrosshair.UpdateToastPose writes this element's
+		// transform from ClayClock each global tick — phase-locked to the 3D clay's boil, which a CSS
+		// animation can't be). This element still owns its transform — see the note on .possess-float.
 
 		// The keyboard-key chip, same language as the round HUD's hotkey hints.
 		.key {

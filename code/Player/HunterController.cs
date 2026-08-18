@@ -243,7 +243,17 @@ public sealed class HunterController : Component
 	Vector3 _visualAimDir;
 
 	// Internal: the crosshair HUD (HunterCrosshair) reads this to hide the dot while sculpting.
-	internal bool EditMode => _session?.IsEditing ?? false;
+	// Covers BOTH sessions that can own this pawn's screen: the face session, and an external one (the lobby
+	// tutorial editing the tutorial character in place) — either way the pawn freezes, drops the camera and
+	// hides the crosshair identically.
+	internal bool EditMode => (_session?.IsEditing ?? false)
+		|| (ExternalSession.IsValid() && ExternalSession.IsEditing);
+
+	/// <summary>An edit session driving this pawn's screen that ISN'T the face session — the tutorial
+	/// character's guided session (see <see cref="TutorialNpc"/>), which targets HIS clay while this pawn
+	/// stands frozen. Set/cleared by TutorialNpc, only ever on the owning machine's pawn; folded into
+	/// <see cref="EditMode"/> so every freeze/camera/HUD gate applies unchanged.</summary>
+	internal SculptEditSession ExternalSession { get; set; }
 
 
 	/// <summary>True while this pawn's player is in face-edit mode, on every machine — the roster HUD badges
@@ -511,13 +521,20 @@ public sealed class HunterController : Component
 	{
 		// Owner-only: toggle face-edit mode (Q, the same "Edit" action the hider uses). Done before the input
 		// gates below so entering/leaving takes effect this same frame (no one-frame camera gap on exit).
+		// While the tutorial session owns the screen, Q asks IT to leave instead (dialog-aware, like any
+		// player-driven exit) — face-edit can never be entered over it.
 		if ( Owned && Input.Pressed( "Edit" ) )
-			ToggleEdit();
+		{
+			if ( ExternalSession.IsValid() && ExternalSession.IsEditing )
+				ExternalSession.Toggle();
+			else
+				ToggleEdit();
+		}
 
-		// Tab toggles the brush wireframe overlay, same as the hider's props. The session no-ops this unless it's
-		// actually editing, so it's only meaningful in face-edit mode.
+		// Tab toggles the brush wireframe overlay, same as the hider's props. Routed to whichever session owns
+		// the screen; the session no-ops this unless it's actually editing, so it's only meaningful in edit mode.
 		if ( Owned && Input.Pressed( "ToggleWireframes" ) )
-			_session?.ToggleWireframes();
+			(ExternalSession.IsValid() && ExternalSession.IsEditing ? ExternalSession : _session)?.ToggleWireframes();
 
 		// Keep the wire in step with the session, whatever path entered or left edit mode (see NetEditing).
 		if ( Owned )
@@ -638,19 +655,26 @@ public sealed class HunterController : Component
 	/// value is published to <see cref="PropClaims.LocalHover"/> for the outline gate.</summary>
 	public SdfSculpture HoveredSculpture { get; private set; }
 
+	/// <summary>The tutorial character under the crosshair (see <see cref="TutorialNpc"/>), or null. Same ray
+	/// and reach as the claim hover — he wears the same affordance — but his E opens the guided session on
+	/// this machine instead of a possession.</summary>
+	public TutorialNpc HoveredTutorial { get; private set; }
+
 	// Owner-only, claims-only: resolve what the crosshair is over (the same ray the shot would take), keep it
 	// if it's claimable clay, and claim it on E. "Use" is the E key; sculpt-mode's E-scrub can't collide with
 	// it because this whole path is inside the !EditMode block.
-	void UpdateClaimHover( Vector3 eye )
+	internal void UpdateClaimHover( Vector3 eye )
 	{
 		var claims = PropClaims.Current;
 		if ( !claims.IsValid() || !claims.ClaimsOpen )
 		{
 			HoveredSculpture = null;
+			HoveredTutorial = null;
 			return;
 		}
 
 		SdfSculpture hover = null;
+		TutorialNpc npc = null;
 		if ( !_altOrbiting && _aimDir.LengthSquared > 0.5f )
 		{
 			// The gun's ray, cut to arm's reach (PropClaims.HoverRange): shortening the ray rather than
@@ -658,14 +682,24 @@ public sealed class HunterController : Component
 			// means a prop only lights up once you're actually close enough for E to be granted.
 			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, claims.HoverRange ) );
 			var sculpture = tr.Hit ? FindSculpture( tr.GameObject ) : null;
-			if ( PropClaims.IsClaimable( sculpture ) )
+
+			// The tutorial character outranks the claim classification (he IS scenery, but IsClaimable
+			// excludes him): his E stays local, so he never enters the claims hover either.
+			npc = TutorialNpc.Of( sculpture );
+			if ( !npc.IsValid() && PropClaims.IsClaimable( sculpture ) )
 				hover = sculpture;
 		}
 
 		HoveredSculpture = hover;
+		HoveredTutorial = npc;
 		PropClaims.SetLocalHover( hover );
+		TutorialNpc.SetLocalHover( npc );
 
-		if ( hover.IsValid() && Input.Pressed( "Use" ) )
+		if ( npc.IsValid() && Input.Pressed( "Use" ) )
+		{
+			npc.BeginTutorial( this );
+		}
+		else if ( hover.IsValid() && Input.Pressed( "Use" ) )
 		{
 			// Carry the view into the prop, same as a lobby swap: yaw+pitch stashed owner-side here, consumed
 			// by ResumeControl on the possessed pawn — whatever you were looking at, you still are.
@@ -1727,8 +1761,17 @@ public sealed class HunterController : Component
 	{
 		// Hidden in first person — but while editing your own face you need to SEE yourself, so show it then,
 		// and in third person the whole point is seeing your own hunter, so show it there too. Always false
-		// on proxies: other players' hunters render fully.
-		var hideOwn = Owned && !EditMode && !GameSettings.HunterThirdPerson;
+		// on proxies: other players' hunters render fully. The tutorial (an EXTERNAL session editing the
+		// tutorial character) hides us again: the orbit camera would otherwise stare at our own frozen body
+		// standing beside him — locally only, everyone else still sees us standing there.
+		bool externalEdit = ExternalSession.IsValid() && ExternalSession.IsEditing;
+		var hideOwn = Owned && (externalEdit || (!EditMode && !GameSettings.HunterThirdPerson));
+
+		// The gun goes with the body during the tutorial (external edit): the world model isn't in the
+		// body renderer sets below, and Place re-asserts its visibility every frame — so it takes its own
+		// per-frame flag. Own machine only; proxies keep seeing the pawn holding it.
+		if ( _gun.IsValid() )
+			_gun.HideAll = Owned && externalEdit;
 
 		// Run puffs go shadows-only in first person too. ParticleModelRenderer has no ShadowRenderType, but
 		// shadows-only IS just CastShadows + ExcludeGameLayer at the SceneObject level, and its RenderOptions.Game

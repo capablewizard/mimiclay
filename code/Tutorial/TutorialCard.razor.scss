@@ -1,0 +1,158 @@
+@import "/UI/_menu.scss"; // tokens + shared kit: .paper-card, .btn (+ the clay jitter keyframes)
+
+// The tutorial instruction card — top-centre, clear of the EditHud's edge panels ($hud-centre-safe).
+.tutorial-card {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+
+	// The whole card is DISPLAY-ONLY since the Skip button went — nothing here ever takes a click, so
+	// nothing here may ever take pointer events: a hovered pointer-events surface swallows the mouse
+	// buttons from the game input (the documented Attack1 trap), which read as "camera dead while the
+	// card is up". No alt-nav special case needed either — click-through is the permanent state.
+
+	// Top-LEFT, flush with the HUD's panel inset — unoccupied space for most of the run (the layer stack,
+	// the one thing that lives there, stays hidden until its own stage).
+	.card-float {
+		position: absolute;
+		top: 26px;
+		left: 24px; // $panel-inset, spelled out (s&box scss has no arithmetic)
+		flex-direction: row;
+		pointer-events: none;
+	}
+
+	// The layer stage: the stack owns the corner, so the card steps aside to its right, still top-aligned.
+	// 368 = panel inset (24) + layer panel width (330) + 14 gap.
+	&.beside-layers .card-float { left: 368px; }
+
+	.guide-card {
+		pointer-events: none;
+		flex-direction: column;
+		align-items: center;
+		gap: $space-md;
+		padding: $space-lg;
+		border-radius: 22px; // match .shape-tile / the validity toast
+		max-width: 520px;
+
+		.guide-title {
+			flex-direction: row;
+			font-family: $header-font;
+			font-size: 30px;
+			font-weight: 800;
+			letter-spacing: 1px;
+			text-transform: uppercase; // house rule: all headers are uppercase
+			color: $paper-ink;
+		}
+
+		.guide-body {
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 17px;
+			color: $paper-ink-soft;
+			text-align: center;
+		}
+
+		.guide-hints {
+			flex-direction: column;
+			gap: 7px;
+			margin-top: 2px;
+
+			.hint {
+				flex-direction: row;
+				align-items: center;
+				gap: 10px;
+				font-family: Tahoma;
+				font-size: 14px;
+				font-weight: 700;
+				text-transform: uppercase;
+				color: $paper-ink-soft;
+
+				// Input-prompt icon, bare — no cap chrome, the art carries itself (background-image comes
+				// inline from the markup). Slightly larger than it was on the cap, since it's the whole glyph.
+				.icon-key {
+					min-width: 64px;
+					width: 64px;
+					height: 64px;
+					background-size: 64px 64px;
+					background-position: center;
+					background-repeat: no-repeat;
+					// The house icon shadow, softened for the bigger art: nudged right, dropped 5px, with a
+					// little blur. A FILTER so it falls from the art's alpha silhouette, not the panel box.
+					filter: drop-shadow( 3px 5px 3px rgba( black, 0.3 ) );
+				}
+
+				// Keyboard prompt: the possess-toast's E-cap, replicated (HunterCrosshair .possess-toast
+				// .key — keep the two in step). min-width rather than width so "Space" fits.
+				.keycap {
+					min-width: 40px;
+					height: 40px;
+					padding: 0 8px;
+					align-items: center;
+					justify-content: center;
+					border-radius: $radius-md;
+					background-color: $paper-top;
+					border: 2px solid $card-edge;
+					font-family: $header-font;
+					font-size: 24px;
+					color: $paper-ink;
+				}
+
+				// The done-mark: colour emoji, bare (an outline ring was tried and cut — the glyph carries
+				// itself), popping in on the badge spring. Parked at scale(0) and revealed by .shown; the
+				// transition covers any un-achieve shrink.
+				.tick {
+					min-width: 22px;
+					justify-content: center;
+					font-size: 17px;
+					transform: scale( 0 );
+					transition: transform 0.16s ease;
+
+					&.shown {
+						transform: scale( 1 );
+						animation: tick-pop 0.34s ease-out;
+					}
+				}
+
+				&.done { color: $paper-ink; }
+			}
+		}
+
+		.guide-footer {
+			flex-direction: row;
+			align-items: center;
+			gap: $space-lg;
+			margin-top: 4px;
+
+			.dots {
+				flex-direction: row;
+				align-items: center;
+				gap: 7px;
+
+				.dot {
+					width: 11px;
+					height: 11px;
+					border-radius: 50%;
+					border: 2px solid $card-edge;
+					background-color: rgba( white, 0.4 );
+
+					&.filled { background-color: $craft-green; border-color: $craft-green; }
+					&.current { background-color: $craft-orange; border-color: $craft-orange; }
+				}
+			}
+
+		}
+
+	}
+}
+
+// The tick's entrance — hud-hand-raise's spring poses (RoundHud), duplicated by name here because
+// keyframes are only trusted within their own sheet. Overshoot spelled out: no `back` easing in-engine.
+@keyframes tick-pop
+{
+	0%   { transform: scale( 0 ); }
+	55%  { transform: scale( 1.38 ); }
+	75%  { transform: scale( 0.87 ); }
+	90%  { transform: scale( 1.08 ); }
+	100% { transform: scale( 1 ); }
+}

@@ -15,6 +15,57 @@
 	// Material-icon glyph (ligature name → glyph); size + colour are set per context below.
 	.icon { font-family: Material Icons; }
 
+	// ── Tutorial gating (EditHudGate) ────────────────────────────────────────────────────────────────────
+	// Locked PANEL: dimmed via .tutorial-dim (floats with an inline opacity bake LockDim in instead), and a
+	// full-card shield as the LAST child eats every click/hover beneath it — the panel keeps its own
+	// pointer-events, so PointerOverUi still protects the world behind it. Locked CHIP inside a live panel:
+	// pointer-events:none is safe there (the click lands on the panel behind it, not the world) and it kills
+	// the hover sound/lift for free. Highlight: a breathing craft-orange ring.
+	.tutorial-dim { opacity: 0.45; }
+
+	.tutorial-locked {
+		opacity: 0.45;
+		pointer-events: none;
+	}
+
+	.tutorial-lock-shield {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: all;
+	}
+
+	.tutorial-highlight { animation: tutorial-glow 1.2s ease-in-out 0s infinite; }
+
+	// The ring follows the element's border-radius, and the FLOATS it lands on (palette, picker, sliders,
+	// shape dock) are square layout boxes — round them to the house card radius so the glow hugs the paper
+	// cards inside. Scoped per float rather than on .tutorial-highlight itself, which would also override
+	// the chips' own smaller radii while ringed.
+	.palette-float.tutorial-highlight,
+	.picker-float.tutorial-highlight,
+	.slider-stack.tutorial-highlight,
+	.shape-dock.tutorial-highlight { border-radius: 22px; }
+
+	// The palette's box is deliberately WIDER than its cells — PaletteWidth carries anti-wrap slack on the
+	// right (see the code comment on it) — and the ring hugs the BOX, so it read offset right of the
+	// swatches. Centering the rows splits that slack evenly onto both sides, re-centering the ring on the
+	// visible grid; the vertical padding then matches the top/bottom breathing room to the sides' surplus
+	// (the WIDTH can't be touched — the slack is what stops columns wrapping on rounded physical pixels —
+	// but the height is content-driven, so padding it is safe). Highlight-only: at rest the cells stay
+	// left-aligned with the width math untouched.
+	.palette-float.tutorial-highlight {
+		justify-content: center;
+		padding-top: 4px;
+		padding-bottom: 4px;
+	}
+
+	// Same breathing room for the ringed shape dock — its box is fully content-sized (no wrap-slack maths
+	// to respect), so a uniform pad works; the ring gets the palette's gap on every side instead of
+	// hugging the tiles' edges. Highlight-only, like everything here.
+	.shape-dock.tutorial-highlight { padding: 6px; }
+
 	// Alt-nav view hints, top-right — mirrors the menu's .menu-controls (_menu.scss); keep the two in step.
 	.view-controls {
 		position: absolute;
@@ -375,6 +426,17 @@
 		&.right.workshop-col {
 			right: 228px;
 		}
+
+		// Highlighted panel: the slide-in above OWNS the `animation` shorthand and out-ranks the generic
+		// .tutorial-highlight rule (animations replace, never merge) — so the ringed state re-declares the
+		// glow at higher specificity, forfeiting a slide it has already played. Rounded like the other
+		// ringed surfaces.
+		&.left.tutorial-highlight,
+		&.right.tutorial-highlight {
+			animation: tutorial-glow 1.2s ease-in-out 0s infinite;
+			border-radius: 22px;
+			padding: 6px; // the ring breathes around the rows, matching the ringed palette/dock
+		}
 	}
 
 	// Section header: a small icon + bold label (e.g. "✦ ADD SHAPE").
@@ -473,6 +535,9 @@
 		text-transform: uppercase;
 		color: $paper-edge;
 		opacity: 0.9;
+
+		// Guided tutorial: the card does the teaching, this strip stays out of the way (see the markup).
+		&.hidden { opacity: 0; }
 
 		.hint {
 			flex-direction: row;
@@ -1024,4 +1089,13 @@
 @keyframes edit-hud-slide-right {
 	from { transform: translateX( 100% ); }
 	to { transform: translateX( 0 ); }
+}
+
+// The tutorial highlight's breathing ring — only the shadow moves (alpha + spread), never the layout.
+// The HI orange (the action button's hover colour) at full strength: the base craft orange read muddy
+// as a thin ring over the bright scene.
+@keyframes tutorial-glow {
+	0% { box-shadow: 0 0 0 3px rgba( $craft-orange-hi, 1 ); }
+	50% { box-shadow: 0 0 0 8px rgba( $craft-orange-hi, 0.55 ); }
+	100% { box-shadow: 0 0 0 3px rgba( $craft-orange-hi, 1 ); }
 }

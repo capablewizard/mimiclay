@@ -1,0 +1,137 @@
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The tutorial's instruction card — top-centre, inside the $hud-centre-safe corridor the EditHud keeps
+	clear. Binds to TutorialDirector.Current (the EditHud/Session pattern) and renders nothing when no
+	tutorial runs; the panel itself PERSISTS for the scene's lifetime, spawned once by the director's
+	EnsureCard — a card torn down while hovered would latch HasHovered + the press statics (the
+	panel-deletion trap), so it never unmounts, it just goes empty.
+
+	DISPLAY-ONLY, pointer-events none throughout: since the Skip button went there is nothing clickable
+	here, and an interactive surface would swallow the mouse buttons from the game input (the Attack1
+	trap) — which presented as "camera dead while the card is up".
+*@
+
+<root class="tutorial-card @(Inert ? "alt-nav" : "") @(BesideLayers ? "beside-layers" : "")">
+	@* CardVisible, not Live: while the character is typing a step's bubble line, the card holds back —
+	   the two voices take turns. *@
+	@if ( Director is { } d && d.CardVisible )
+	{
+		<div class="card-float">
+			@* No praise view here — on completion the CHARACTER says the praise line in his speech bubble
+			   while this card holds its ticked hints through the beat. *@
+			<div class="paper-card guide-card" @ref=CardPanel>
+					<div class="guide-title"><WobbleText Text=@d.CardTitle Strength=@WobbleText.JitterStrength.Subtle /></div>
+
+					@if ( d.CardBody is { } body )
+					{
+						<div class="guide-body">@body</div>
+					}
+
+					@if ( d.CardHints.Count > 0 )
+					{
+						<div class="guide-hints">
+							@foreach ( var h in d.CardHints )
+							{
+								<div class="hint @(h.Achieved ? "done" : "")">
+									@if ( h.Icon is not null )
+									{
+										@* Input-prompt art, bare. "jig" = posing from the clay clock until
+										   the action lands; see PoseIcons. *@
+										<div class="icon-key @(h.Achieved ? "" : "jig")" style=@($"background-image: url( /{h.Icon} );")></div>
+									}
+									else if ( h.KeyCap is not null )
+									{
+										@* Keyboard prompt: the possess-toast's E-cap, replicated — jigs
+										   like the icons. No icon/cap = label-only (an action isn't a
+										   button — that framing was cut). *@
+										<div class="keycap @(h.Achieved ? "" : "jig")">@h.KeyCap</div>
+									}
+									<span class="label">@h.Label</span>
+									@* A colour emoji (system emoji font via Skia's fallback) — CSS `color` can't
+								   touch it; drawn bare. ALWAYS mounted and revealed by the class, the badge
+								   recipe: a removed element can't animate, and the pop needs somewhere to
+								   spring from. *@
+								<span class="tick @(h.Achieved ? "shown" : "")">✅</span>
+								</div>
+							}
+						</div>
+					}
+
+					@* No buttons at all — Q is the only exit (his sign-off says so), and the guidance runs
+					   its full course. Just the progress dots. *@
+					<div class="guide-footer">
+						<div class="dots">
+							@for ( int i = 0; i < d.StepCount; i++ )
+							{
+								<div class="dot @(i < d.StepIndex ? "filled" : i == d.StepIndex ? "current" : "")"></div>
+							}
+						</div>
+					</div>
+				</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	static TutorialDirector Director => TutorialDirector.Current;
+
+	Panel CardPanel { get; set; }
+
+	// Click-through while camera-navving or paused, same reasoning (and class) as the EditHud root.
+	static bool Inert => AltNav.Held || PauseMenu.IsOpen;
+
+	// The card lives top-LEFT — empty space for most of the run — and steps aside to the right of the
+	// layer stack while that panel is up (its own stage; layers are hidden every other step).
+	static bool BesideLayers => EditHudGate.Active && EditHudGate.Visible( HudSection.Layers );
+
+	protected override void OnUpdate()
+	{
+		PoseIcons();
+	}
+
+	// The un-achieved hint icons jitter on the SAME global clay tick as everything else (bubble letters,
+	// the possess toast, the boil). Driven by a walk rather than refs — the icons live in a render loop —
+	// re-posed only when the tick rolls; an achieved icon gets its transform cleared and sits still.
+	int _lastPoseTick = int.MinValue;
+
+	void PoseIcons()
+	{
+		if ( CardPanel is not { IsValid: true } )
+			return;
+
+		int tick = ClayClock.Tick;
+		if ( tick == _lastPoseTick )
+			return;
+		_lastPoseTick = tick;
+
+		int seed = 0;
+		PoseIconsIn( CardPanel, ref seed );
+	}
+
+	static void PoseIconsIn( Panel panel, ref int seed )
+	{
+		foreach ( var child in panel.Children )
+		{
+			if ( child.HasClass( "icon-key" ) || child.HasClass( "keycap" ) )
+			{
+				// Prompt amplitudes: full rotation snap, half travel, soft scale pulse.
+				child.Style.Transform = child.HasClass( "jig" )
+					? ClayClock.BuildPose( seed, rotationScale: 1f, travelScale: 0.5f, scalePulse: 0.8f )
+					: null;
+				seed += 5; // stride the table so side-by-side prompts hold different poses
+			}
+
+			PoseIconsIn( child, ref seed );
+		}
+	}
+
+	protected override int BuildHash()
+		=> HashCode.Combine( Director?.CardSignal ?? 0, Inert, BesideLayers );
+}

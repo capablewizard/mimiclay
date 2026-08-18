@@ -230,10 +230,12 @@
 			return;
 		}
 
-		// G toggles the panel — but don't reopen once the launch countdown is already running.
+		// G toggles the panel — but don't reopen once the launch countdown is already running, and never
+		// OPEN over a running tutorial (its card owns the screen; closing stays allowed so a panel that was
+		// already up when the tutorial started can't trap G).
 		if ( Input.Keyboard.Pressed( "G" ) )
 		{
-			if ( !_open && (LobbyManager.Current?.Launching ?? false) )
+			if ( !_open && ((LobbyManager.Current?.Launching ?? false) || TutorialDirector.IsRunning) )
 				return;
 			SetOpen( !_open );
 		}

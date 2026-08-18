@@ -14,15 +14,21 @@
 	big landing title and small page headers — just style the class you pass it.
 *@
 
-@foreach ( var ch in Text ?? "" )
+@{ var text = Text ?? ""; }
+@for ( int i = 0; i < text.Length; i++ )
 {
+	var ch = text[i];
 	@if ( ch == ' ' )
 	{
 		<span class="space"></span>
 	}
 	else
 	{
-		<span class="letter">@ch</span>
+		@* Unrevealed letters stay MOUNTED at opacity 0 (the typewriter's trailing half): hiding by
+		   opacity instead of splitting/unmounting keeps the measured layout identical through the whole
+		   reveal — a word split across two panels rounds to physical pixels per panel and could wrap a
+		   line the intact word doesn't. *@
+		<span class="letter @(i >= Revealed ? "unrevealed" : "")">@ch</span>
 	}
 }
 
@@ -36,10 +42,56 @@
 	[Parameter] public string Text { get; set; } = "";
 	[Parameter] public JitterStrength Strength { get; set; } = JitterStrength.Full;
 
+	/// <summary>Drive the letter poses from <see cref="ClayClock"/> instead of CSS animation: the letters
+	/// snap on the SAME global tick the 3D clay boils on (phase-locked, not just rate-matched), each
+	/// holding a different pose from the shared table. Do NOT also pass class="auto" — the CSS animation
+	/// would fight the code-driven transform. Strength is ignored in this mode (amplitudes below are
+	/// tuned for small text, the speech-bubble case that wanted lockstep).</summary>
+	[Parameter] public bool LockStep { get; set; }
+
+	/// <summary>Typewriter support: letters at index ≥ this render INVISIBLE (opacity, still laid out) —
+	/// see the markup comment for why hiding beats splitting. Default = everything shown.</summary>
+	[Parameter] public int Revealed { get; set; } = int.MaxValue;
+
+	// Rotates the pose table per INSTANCE so parallel words don't mirror each other; letters within one
+	// stride further. Which pose, never when — lockstep timing is the whole point.
+	static int _instances;
+	readonly int _seed = _instances++ * 3;
+
+	int _lastTick = int.MinValue;
+
 	public WobbleText()
 	{
 		AddClass( "wobble-text" );
 	}
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		if ( !LockStep )
+			return;
+
+		// Re-pose only when the global tick rolls — held poses ARE the claymation; writing every frame
+		// would just dirty styles for nothing.
+		int tick = ClayClock.Tick;
+		if ( tick == _lastTick )
+			return;
+		_lastTick = tick;
+
+		int i = 0;
+		foreach ( var child in Children )
+		{
+			if ( child.HasClass( "letter" ) )
+				ApplyPose( child, _seed + i * 5 );
+			i++;
+		}
+	}
+
+	// Letter-scale amplitudes over the shared card-scale table: rotation up a touch (it's what reads on
+	// small glyphs), travel cut well down (sub-pixel-ish, so nothing smears), scale pulse softened.
+	static void ApplyPose( Panel letter, int seed )
+		=> letter.Style.Transform = ClayClock.BuildPose( seed, rotationScale: 1.2f, travelScale: 0.3f, scalePulse: 0.7f );
 
 	// Map the strength to its modifier class; the SCSS swaps the keyframe by class. Full = no extra class.
 	protected override void OnParametersSet()
@@ -49,5 +101,5 @@
 		SetClass( "subtle", Strength == JitterStrength.Subtle );
 	}
 
-	protected override int BuildHash() => HashCode.Combine( Text, Strength );
+	protected override int BuildHash() => HashCode.Combine( Text, Strength, Revealed );
 }

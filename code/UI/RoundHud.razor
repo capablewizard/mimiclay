@@ -74,7 +74,10 @@
 		{
 			@* Lobby is its own shape, not the three-column layout with the split removed: there are no sides
 			   yet and nothing that has to hold screen centre, so it's the whole server on one centred row with
-			   the status underneath. *@
+			   the status underneath. Hidden while the tutorial runs — the top of the screen belongs to the
+			   instruction card, and the roster is lobby furniture the lesson doesn't need. *@
+			@if ( !TutorialDirector.IsRunning )
+			{
 			<div class="lobby-roster">
 				@foreach ( var player in LobbyRoster )
 				{
@@ -126,11 +129,12 @@
 					<div class="pip-more">+@HiddenLobbyPlayers</div>
 				}
 			</div>
+			}
 
 			@if ( ShowLobbyStatus )
 			{
 				@* Idle lobby (before the host starts): the jittering status line stands in for the timer. *@
-				<WobbleText Text=@LobbyStatus class="lobby-status auto" Strength=@WobbleText.JitterStrength.Soft @key=@LobbyStatus />
+				<WobbleText Text=@LobbyStatus class="lobby-status" LockStep=@true @key=@LobbyStatus />
 			}
 			else if ( RoundContext.Active?.HasTimer ?? false )
 			{
@@ -507,9 +511,11 @@
 	// Idle lobby — no phase timer running. The status line replaces the timer here; the moment the host starts, the
 	// launch countdown sets HasTimer and the timer takes back over. A real lobby only: creative reports the Lobby
 	// phase too (for the roster layout), but "Press G to set up game" would be a lie there — there's no setup HUD
-	// in a map scene.
+	// in a map scene. Hidden while the tutorial runs: it sits where the tutorial card teaches, and "go set up a
+	// game" is exactly the wrong invitation mid-lesson.
 	bool ShowLobbyStatus => Phase == RoundPhase.Lobby && LobbyManager.Current.IsValid()
-		&& !(RoundContext.Active?.HasTimer ?? false);
+		&& !(RoundContext.Active?.HasTimer ?? false)
+		&& !TutorialDirector.IsRunning;
 
 	// True for the host (and for the non-networked editor session, which is effectively the host).
 	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
@@ -661,7 +667,8 @@
 	protected override int BuildHash()
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
-				SculptEditSession.Current?.IsEditing ?? false ), // hotkey hints hide while sculpt-editing
+				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
+				TutorialDirector.IsRunning ), // lobby roster hides while the tutorial runs
 			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount ),
 			// Lobby roster: nothing else in the hash moves when someone joins or leaves the lobby, so without
 			// this the row would sit stale until the next unrelated rebuild. EditSignal is what re-renders on

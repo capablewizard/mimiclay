@@ -274,6 +274,7 @@ public sealed class SessionResetSystem : GameObjectSystem
 		{
 			MenuNetworking.NoteSessionEnded();
 			SculptBounds.ResetBypass(); // the dev size-limit bypass never outlives the play session
+			TutorialNpc.SweepPlayEnd(); // restore the tutorial character's shape + drop runtime outlines, however teardown fell out
 		}
 
 		base.Dispose();

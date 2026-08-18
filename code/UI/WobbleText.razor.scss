@@ -16,6 +16,10 @@
 	{
 		text-shadow: 0px 5px 0px rgba( 0, 0, 0, 0.22 ); // doesn't inherit, so it's per-letter
 		transform-origin: center;
+
+		// The typewriter's not-yet-revealed tail (the Revealed parameter): invisible but fully laid out,
+		// so the reveal never moves a single glyph.
+		&.unrevealed { opacity: 0; }
 	}
 
 	// Word gap (spaces don't wobble). Sized in em so it scales with the header's font-size.

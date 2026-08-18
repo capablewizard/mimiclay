@@ -1,0 +1,103 @@
+@import "/UI/_menu.scss"; // tokens + .paper-card (+ the action-jitter keyframes)
+
+// World-anchored speech bubbles — scenery, never interactive.
+.speech-bubbles {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+
+	// Carries the projected CARD position (the anchor plus the bubble's world-space offset — see
+	// SpeechBubbleHud.OnUpdate; how far the card sits from the speaker is authored on the SpeechBubble
+	// component in world units, never here in pixels). The translate hangs the card fully above the
+	// point; the small bottom padding is just the tail's own clearance.
+	.bubble-float {
+		position: absolute;
+		flex-direction: row;
+		transform: translateY( -100% );
+		padding-bottom: 12px;
+		pointer-events: none;
+	}
+
+	.speech-bubble {
+		position: relative;
+		flex-direction: row;
+		justify-content: center;
+		padding: $space-sm $space-md;
+		border-radius: 22px; // the house radius — matches the possess toast / validity toast / shape tiles
+		max-width: 300px;
+		pointer-events: none;
+
+		// The nominate-hand pop lifecycle: parked at scale(0), revealed by .shown. Going DOWN is the quick
+		// decisive shrink (the transition — fires on the class change; the razor keeps the card mounted
+		// through it, see OffLinger). Going UP is the spring keyframes, because the engine has no overshoot
+		// easing to transition with — the spring is spelled out as poses.
+		//
+		// Pivot at the bottom-LEFT corner — the tail side, so the card grows out of (and collapses back
+		// toward) the point nearest the speaker. Engine takes the origin as two longhands, not the
+		// `transform-origin` shorthand.
+		transform-origin-x: 0%;
+		transform-origin-y: 100%;
+		transform: scale( 0 );
+		transition: transform 0.16s ease;
+
+		&.shown {
+			transform: scale( 1 );
+			animation: bubble-pop 0.34s ease-out;
+		}
+
+		// A wrapping row of per-word WobbleTexts (each word an unbreakable strip of jittering letters);
+		// font/colour inherit into the letters. The word gap replaces WobbleText's own .space spans —
+		// spaces never reach it, the Split eats them.
+		.text {
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 6px;
+			font-family: $body-font;
+			font-weight: $body-weight;
+			font-size: 21px;
+			color: $paper-ink;
+		}
+
+		// WobbleText's letter drop-shadow is tuned for big headers floating over the scene — on the cream
+		// card it reads as dirt, so pull it right down.
+		.letter { text-shadow: 0px 2px 0px rgba( black, 0.15 ); }
+
+		// (Each word is a single WobbleText for its whole life — the unrevealed tail hides via the
+		// component's own Revealed parameter, so the typewriter never changes the measured layout. The
+		// letters pose from ClayClock via LockStep, phase-locked to the clay.)
+
+		// The tail: a rotated square hanging half off the card's bottom edge, near the anchor-side corner —
+		// cream fill with the card's ink edge on its two EXPOSED sides (post-rotation, border-right +
+		// border-bottom); drawn after the text so it paints over the card's own bottom border and the
+		// outline flows into the point. Rotation stays EXACTLY 45deg (the square's side corners lie flush
+		// ON the edge line and stay hidden; more rotation dips a second corner into view — tried it). The
+		// lean toward the anchor comes from the OUTER skewx instead: it shears the rotated diamond
+		// horizontally, sliding the down-point left while the side corners sit on the shear axis and never
+		// move. First-listed transform is outermost (engine composes m*tx, CSS order) — rotate must stay
+		// the inner function. Left offset clears the card's 22px corner radius.
+		.tail {
+			position: absolute;
+			bottom: -9px;
+			left: 20px;
+			width: 18px;
+			height: 18px;
+			background-color: $paper-tile;
+			border-right: 2px solid $card-edge;
+			border-bottom: 2px solid $card-edge;
+			transform: skewx( -25deg ) rotate( 45deg );
+		}
+	}
+}
+
+// The spring — hud-hand-raise's poses (RoundHud), duplicated by name here because keyframes are only
+// trusted within their own sheet. Overshoot spelled out: no `back`/cubic-bezier easing in the engine.
+@keyframes bubble-pop
+{
+	0%   { transform: scale( 0 ); }
+	55%  { transform: scale( 1.38 ); }
+	75%  { transform: scale( 0.87 ); }
+	90%  { transform: scale( 1.08 ); }
+	100% { transform: scale( 1 ); }
+}
