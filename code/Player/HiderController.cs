@@ -155,6 +155,13 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	Rigidbody Body;          // our physics body (the disguise's ModelCollider aggregates into it)
 	SdfSculpture _body;      // the sculpted disguise
 
+	/// <summary>External access to the simulated physics body — e.g. <see cref="JumpPad"/> setting an outright
+	/// launch velocity, same as it does via <c>PlayerController.Body</c> on the hunter side. Only meaningful
+	/// (and safe to write) on the owning machine — see <see cref="Component.IsProxy"/> gating elsewhere in this
+	/// file: a proxy's body isn't simulated, so a write here would just be overwritten by the next networked
+	/// transform update.</summary>
+	public Rigidbody PhysicsBody => Body;
+
 	// Internal: the disguise sculpture, for code that needs THE pawn's body explicitly (PlayerNameplates
 	// anchors above it) — resolved on every machine in OnStart, so proxies can read it too.
 	internal SdfSculpture DisguiseSculpture => _body;

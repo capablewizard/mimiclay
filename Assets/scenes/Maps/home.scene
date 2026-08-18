@@ -1047,7 +1047,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "SpawnPoint (8)",
-          "Position": "1568,-1888,-544",
+          "Position": "1536,-1856,-544",
           "Rotation": "0,0,1,0",
           "Scale": "1,1,1",
           "Tags": "",
@@ -1079,7 +1079,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "SpawnPoint (7)",
-          "Position": "1504,-1760,-544",
+          "Position": "1472,-1728,-544",
           "Rotation": "0,0,1,0",
           "Scale": "1,1,1",
           "Tags": "",
@@ -1111,7 +1111,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "SpawnPoint (6)",
-          "Position": "1504,-1632,-544",
+          "Position": "1472,-1600,-544",
           "Rotation": "0,0,1,0",
           "Scale": "1,1,1",
           "Tags": "",
@@ -1143,7 +1143,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "SpawnPoint (5)",
-          "Position": "1568,-1504,-544",
+          "Position": "1536,-1472,-544",
           "Rotation": "0,0,1,0",
           "Scale": "1,1,1",
           "Tags": "",
@@ -14958,6 +14958,189 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "4c2c9f07-fb5d-4246-a6ce-7afceb61fee4",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block (100)",
+      "Position": "280,-344,-472",
+      "Rotation": "-0,0,-0.707106829,0.707106769",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "d1be9697-bcc2-4fc5-bdcf-1f5ef297949c",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "f29a46a4-4ac1-8405-acf1-a5a3d52286ab"
+            },
+            "Materials": [
+              "materials/dev/simple/simple_tile.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "bb82214f-e954-4fd4-93c4-aa7e2c7b0481",
+      "__version": 2,
+      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Name",
+            "Value": "Jumppad"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Position",
+            "Value": "1056,-576,-544"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b3116030-50d0-45cf-9576-f0b8c5ea110c"
+            },
+            "Property": "LaunchSpeed",
+            "Value": 850
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "bb82214f-e954-4fd4-93c4-aa7e2c7b0481",
+        "013b3e1a-3893-442e-84f4-f1b2cd3b74f2": "bef66a93-2a00-413e-b05b-bef4dc55e015",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "9d5534b9-6549-40b1-b4a8-fd54fe08b0b7",
+        "97a69543-6a10-4597-a66e-7377c2ab6abb": "657452fa-57a5-4c7a-a63d-73faf0fe6f11",
+        "66df4479-c713-46b1-989e-76ed1b6d84bc": "8699414f-0e2a-427a-86e3-7d59c4306835",
+        "b07c2bba-e2e7-4f08-a98c-27a38a1103c4": "4238ae12-d4d5-4940-a0d3-cec5e2dc2c81",
+        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "8b06ec5c-c0a8-4de6-af00-03496421530c"
+      }
+    },
+    {
+      "__guid": "ee35ff1b-db15-4162-8971-6ff9b63106a3",
+      "__version": 2,
+      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Name",
+            "Value": "Jumppad (2)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Position",
+            "Value": "448,288,-0.0122070312"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b3116030-50d0-45cf-9576-f0b8c5ea110c"
+            },
+            "Property": "LaunchSpeed",
+            "Value": 850
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "ee35ff1b-db15-4162-8971-6ff9b63106a3",
+        "013b3e1a-3893-442e-84f4-f1b2cd3b74f2": "d5419060-ef12-40aa-881e-8c8643cbac75",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "41c03b1a-d382-4fd9-9a27-3313f96b1a6b",
+        "97a69543-6a10-4597-a66e-7377c2ab6abb": "d331f5e8-ccd8-41c1-8345-88567a2ac657",
+        "66df4479-c713-46b1-989e-76ed1b6d84bc": "11301f41-687a-4cc6-a058-38bbfd54e82c",
+        "b07c2bba-e2e7-4f08-a98c-27a38a1103c4": "20bd106e-98c1-4859-bf31-cee6f4c27cff",
+        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "979c9326-b20b-4d6d-8a2b-3f399bf3e712"
+      }
+    },
+    {
+      "__guid": "d049da4d-dca6-4deb-80f8-6feb0d68196c",
+      "__version": 2,
+      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Name",
+            "Value": "Jumppad (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Position",
+            "Value": "1232,-2000,-544"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "d049da4d-dca6-4deb-80f8-6feb0d68196c",
+        "013b3e1a-3893-442e-84f4-f1b2cd3b74f2": "fcebfd54-314e-47af-9254-d32766a49395",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "04382f5f-16c3-4f23-bd46-9d3c7bc86f70",
+        "97a69543-6a10-4597-a66e-7377c2ab6abb": "d598bb54-4354-48f7-a0ed-81e53a8bc01e",
+        "66df4479-c713-46b1-989e-76ed1b6d84bc": "8c0d6a63-01e3-4577-a5aa-06f231504d3c",
+        "b07c2bba-e2e7-4f08-a98c-27a38a1103c4": "94009467-60ce-4619-9c9f-f48e8db75c0c",
+        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "d3c36533-7e24-4f9b-8d37-5ecb990a6fea"
+      }
     }
   ],
   "SceneProperties": {
