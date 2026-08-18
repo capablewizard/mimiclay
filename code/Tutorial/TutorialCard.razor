@@ -12,8 +12,9 @@
 	EnsureCard — a card torn down while hovered would latch HasHovered + the press statics (the
 	panel-deletion trap), so it never unmounts, it just goes empty.
 
-	Its hover feeds EditHud.PointerOverUi (via PointerOver below, the same live-hit-test recipe), so a click
-	on Skip/Finish can never also select/stamp/orbit in the world behind it.
+	DISPLAY-ONLY, pointer-events none throughout: since the Skip button went there is nothing clickable
+	here, and an interactive surface would swallow the mouse buttons from the game input (the Attack1
+	trap) — which presented as "camera dead while the card is up".
 *@
 
 <root class="tutorial-card @(Inert ? "alt-nav" : "") @(BesideLayers ? "beside-layers" : "")">
@@ -38,16 +39,32 @@
 							@foreach ( var h in d.CardHints )
 							{
 								<div class="hint @(h.Achieved ? "done" : "")">
-									<span class="key">@h.Key</span>
+									@if ( h.Icon is not null )
+									{
+										@* Input-prompt art, bare. "jig" = posing from the clay clock until
+										   the action lands; see PoseIcons. *@
+										<div class="icon-key @(h.Achieved ? "" : "jig")" style=@($"background-image: url( /{h.Icon} );")></div>
+									}
+									else if ( h.KeyCap is not null )
+									{
+										@* Keyboard prompt: the possess-toast's E-cap, replicated — jigs
+										   like the icons. No icon/cap = label-only (an action isn't a
+										   button — that framing was cut). *@
+										<div class="keycap @(h.Achieved ? "" : "jig")">@h.KeyCap</div>
+									}
 									<span class="label">@h.Label</span>
-									<span class="tick">@(h.Achieved ? "✓" : "")</span>
+									@* A colour emoji (system emoji font via Skia's fallback) — CSS `color` can't
+								   touch it; drawn bare. ALWAYS mounted and revealed by the class, the badge
+								   recipe: a removed element can't animate, and the pop needs somewhere to
+								   spring from. *@
+								<span class="tick @(h.Achieved ? "shown" : "")">✅</span>
 								</div>
 							}
 						</div>
 					}
 
-					@* No Finish button anywhere — the Free sign-off is voice-only (this card never renders
-					   there) and Q is the exit, as his monologue says. *@
+					@* No buttons at all — Q is the only exit (his sign-off says so), and the guidance runs
+					   its full course. Just the progress dots. *@
 					<div class="guide-footer">
 						<div class="dots">
 							@for ( int i = 0; i < d.StepCount; i++ )
@@ -55,7 +72,6 @@
 								<div class="dot @(i < d.StepIndex ? "filled" : i == d.StepIndex ? "current" : "")"></div>
 							}
 						</div>
-						<div class="skip" @onclick=@(() => Director?.RequestSkip())>Skip tutorial</div>
 					</div>
 				</div>
 		</div>
@@ -64,11 +80,6 @@
 
 @code
 {
-	/// <summary>Cursor is over the card right now — ORed into <see cref="EditHud.PointerOverUi"/> so world
-	/// clicks/picks/gizmo-grabs/nav-claims can't fall through it. Live hit test ANDed with HasHovered, the
-	/// EditHud.Over recipe, so a stale hover bit can never latch this on.</summary>
-	public static bool PointerOver { get; private set; }
-
 	static TutorialDirector Director => TutorialDirector.Current;
 
 	Panel CardPanel { get; set; }
@@ -82,13 +93,43 @@
 
 	protected override void OnUpdate()
 	{
-		PointerOver = CardPanel is { IsValid: true, IsDeleting: false }
-			&& CardPanel.HasHovered && CardPanel.IsInside( Mouse.Position );
+		PoseIcons();
 	}
 
-	protected override void OnDisabled()
+	// The un-achieved hint icons jitter on the SAME global clay tick as everything else (bubble letters,
+	// the possess toast, the boil). Driven by a walk rather than refs — the icons live in a render loop —
+	// re-posed only when the tick rolls; an achieved icon gets its transform cleared and sits still.
+	int _lastPoseTick = int.MinValue;
+
+	void PoseIcons()
 	{
-		PointerOver = false; // never leave the world-click gate latched by a teardown
+		if ( CardPanel is not { IsValid: true } )
+			return;
+
+		int tick = ClayClock.Tick;
+		if ( tick == _lastPoseTick )
+			return;
+		_lastPoseTick = tick;
+
+		int seed = 0;
+		PoseIconsIn( CardPanel, ref seed );
+	}
+
+	static void PoseIconsIn( Panel panel, ref int seed )
+	{
+		foreach ( var child in panel.Children )
+		{
+			if ( child.HasClass( "icon-key" ) || child.HasClass( "keycap" ) )
+			{
+				// Prompt amplitudes: full rotation snap, half travel, soft scale pulse.
+				child.Style.Transform = child.HasClass( "jig" )
+					? ClayClock.BuildPose( seed, rotationScale: 1f, travelScale: 0.5f, scalePulse: 0.8f )
+					: null;
+				seed += 5; // stride the table so side-by-side prompts hold different poses
+			}
+
+			PoseIconsIn( child, ref seed );
+		}
 	}
 
 	protected override int BuildHash()

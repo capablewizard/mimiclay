@@ -7,8 +7,10 @@
 	height: 100%;
 	pointer-events: none;
 
-	// Camera-nav / pause: click-through, same treatment as the EditHud root's alt-nav class.
-	&.alt-nav .guide-card { pointer-events: none; }
+	// The whole card is DISPLAY-ONLY since the Skip button went — nothing here ever takes a click, so
+	// nothing here may ever take pointer events: a hovered pointer-events surface swallows the mouse
+	// buttons from the game input (the documented Attack1 trap), which read as "camera dead while the
+	// card is up". No alt-nav special case needed either — click-through is the permanent state.
 
 	// Top-LEFT, flush with the HUD's panel inset — unoccupied space for most of the run (the layer stack,
 	// the one thing that lives there, stays hidden until its own stage).
@@ -25,7 +27,7 @@
 	&.beside-layers .card-float { left: 368px; }
 
 	.guide-card {
-		pointer-events: all;
+		pointer-events: none;
 		flex-direction: column;
 		align-items: center;
 		gap: $space-md;
@@ -66,27 +68,53 @@
 				text-transform: uppercase;
 				color: $paper-ink-soft;
 
-				.key {
-					justify-content: center;
-					min-width: 86px;
-					padding: 3px 8px;
-					border-radius: 8px;
-					border: 2px solid $card-edge;
-					color: $craft-blue;
-					background-color: rgba( white, 0.5 );
+				// Input-prompt icon, bare — no cap chrome, the art carries itself (background-image comes
+				// inline from the markup). Slightly larger than it was on the cap, since it's the whole glyph.
+				.icon-key {
+					min-width: 64px;
+					width: 64px;
+					height: 64px;
+					background-size: 64px 64px;
+					background-position: center;
+					background-repeat: no-repeat;
+					// The house icon shadow, softened for the bigger art: nudged right, dropped 5px, with a
+					// little blur. A FILTER so it falls from the art's alpha silhouette, not the panel box.
+					filter: drop-shadow( 3px 5px 3px rgba( black, 0.3 ) );
 				}
 
+				// Keyboard prompt: the possess-toast's E-cap, replicated (HunterCrosshair .possess-toast
+				// .key — keep the two in step). min-width rather than width so "Space" fits.
+				.keycap {
+					min-width: 40px;
+					height: 40px;
+					padding: 0 8px;
+					align-items: center;
+					justify-content: center;
+					border-radius: $radius-md;
+					background-color: $paper-top;
+					border: 2px solid $card-edge;
+					font-family: $header-font;
+					font-size: 24px;
+					color: $paper-ink;
+				}
+
+				// The done-mark: colour emoji, bare (an outline ring was tried and cut — the glyph carries
+				// itself), popping in on the badge spring. Parked at scale(0) and revealed by .shown; the
+				// transition covers any un-achieve shrink.
 				.tick {
 					min-width: 22px;
 					justify-content: center;
-					color: $craft-green;
 					font-size: 17px;
+					transform: scale( 0 );
+					transition: transform 0.16s ease;
+
+					&.shown {
+						transform: scale( 1 );
+						animation: tick-pop 0.34s ease-out;
+					}
 				}
 
-				&.done {
-					color: $paper-ink;
-					.key { color: $craft-green; border-color: $craft-green; }
-				}
+				&.done { color: $paper-ink; }
 			}
 		}
 
@@ -113,19 +141,18 @@
 				}
 			}
 
-			.skip {
-				font-family: $body-font;
-				font-weight: $body-weight;
-				font-size: 14px;
-				color: $paper-ink-soft;
-				cursor: pointer;
-				padding: 4px 8px;
-
-				&:hover { color: $craft-orange; sound-in: $sound-hover; }
-				&:active { sound-in: $sound-click; }
-			}
-
 		}
 
 	}
+}
+
+// The tick's entrance — hud-hand-raise's spring poses (RoundHud), duplicated by name here because
+// keyframes are only trusted within their own sheet. Overshoot spelled out: no `back` easing in-engine.
+@keyframes tick-pop
+{
+	0%   { transform: scale( 0 ); }
+	55%  { transform: scale( 1.38 ); }
+	75%  { transform: scale( 0.87 ); }
+	90%  { transform: scale( 1.08 ); }
+	100% { transform: scale( 1 ); }
 }

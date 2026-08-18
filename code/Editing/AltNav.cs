@@ -65,6 +65,12 @@ public static class AltNav
 	/// <see cref="Mouse.CursorType"/> every frame, so setting it anywhere else just gets clobbered by Tick.</summary>
 	public static string HoverCursor { get; set; }
 
+	/// <summary>Console: <c>mimiclay_nav_debug 1</c> — log every bare nav press edge with the full verdict
+	/// chain (which pointer-over term or session claim refused it), so "the camera won't move" is
+	/// diagnosable in one press instead of by bisection.</summary>
+	[ConVar( "mimiclay_nav_debug" )]
+	public static bool NavDebug { get; set; }
+
 	const float TapTravelPx = 6f; // matches BrushScrub's tap threshold — one "that was a click" feel
 
 	static Gesture _active;
@@ -76,8 +82,21 @@ public static class AltNav
 	/// <summary>Advance one frame: read the nav input and update the shared state + cursor dot. Call once per frame
 	/// from the single active consumer. (Idempotent-ish if double-called — it just re-reads the same input — but the
 	/// invariant is one consumer per scene: the edit-mode orbit camera, or the menu's sculpt view.)</summary>
+	static RealTimeSince _dbgBeat;
+
 	public static void Tick()
 	{
+		// Heartbeat (mimiclay_nav_debug 1): proves Tick is RUNNING and shows whether a held button even
+		// reaches the input layer — a press that logs no edge AND reads Down=false here was swallowed by
+		// a hovered pointer-events surface before the game input ever saw it.
+		if ( NavDebug && _dbgBeat > 1f )
+		{
+			_dbgBeat = 0f;
+			Log.Info( $"AltNav alive: pause={PauseMenu.IsOpen} active={_active} pending={_pending} " +
+				$"lmbDown={Input.Down( "Attack1" )} mmbDown={Input.Down( "CameraPan" )} rmbDown={Input.Down( "Attack2" )} " +
+				$"overUi={EditHud.PointerOverUi}" );
+		}
+
 		LmbTapped = false;
 		RmbTapped = false;
 
@@ -140,6 +159,20 @@ public static class AltNav
 			// refused here never turns into a drag later by the cursor merely drifting free.
 			bool overUi = EditHud.PointerOverUi;
 			var session = SculptEditSession.Current is { IsEditing: true } cur ? cur : null;
+
+			// The full verdict chain for any press edge this frame — one line tells you exactly which gate
+			// refused a camera claim (mimiclay_nav_debug 1).
+			if ( NavDebug && ((lmb && !_lmbWas) || (mmb && !_mmbWas) || (rmb && !_rmbWas)) )
+			{
+				Log.Info(
+					$"AltNav press: lmb={lmb && !_lmbWas} mmb={mmb && !_mmbWas} rmb={rmb && !_rmbWas} alt={alt} | " +
+					$"overUi={overUi} (palette={EditHud.PointerOverPalette} sliders={EditHud.PointerOverSliders} " +
+					$"picker={EditHud.PointerOverPicker} panels={EditHud.PointerOverPanels} " +
+					$"sliderPress={ClaySlider.Pressed} wheelPress={ClayColorPicker.Pressed} " +
+					$"exitDialog={session?.ExitConfirmPending ?? false}) | " +
+					$"lmbEdit={session?.LmbPressIsEdit()} rmbEdit={session?.RmbPressIsEdit()} " +
+					$"scrub={BrushScrub.Active} session={(session.IsValid() ? "editing" : "none")}" );
+			}
 
 			if ( lmb && !_lmbWas )
 			{

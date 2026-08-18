@@ -1,4 +1,5 @@
 using System;
+using Sandbox.UI;
 
 namespace Mimiclay;
 
@@ -47,5 +48,21 @@ public static class ClayClock
 		if ( idx < 0 )
 			idx += _poses.Length;
 		return _poses[idx];
+	}
+
+	/// <summary>The current pose as a ready-to-assign <c>Style.Transform</c>, scaled per element size —
+	/// the shared builder every lock-stepped panel uses (bubble letters, hint-icon caps). The scales trim
+	/// the card-sized table down: rotation reads at any size, travel wants sub-pixel on small elements.</summary>
+	public static PanelTransform BuildPose( int seed, float rotationScale = 1f, float travelScale = 1f, float scalePulse = 1f )
+	{
+		var pose = Pose( seed );
+		float s = 1f + (pose.Scale - 1f) * scalePulse;
+
+		var t = new PanelTransform();
+		t.AddRotation( 0f, 0f, pose.Rotation * rotationScale );
+		t.AddTranslateX( Length.Pixels( pose.Travel.x * travelScale ) );
+		t.AddTranslateY( Length.Pixels( pose.Travel.y * travelScale ) );
+		t.AddScale( new Vector3( s, s, 1f ) );
+		return t;
 	}
 }

@@ -99,18 +99,22 @@ public sealed class TutorialDirector : Component
 		}
 	}
 
-	/// <summary>Skip the rest of the guidance (the card's button). Processed next update — never torn into
-	/// from inside a UI click handler.</summary>
-	public void RequestSkip() => _skipRequested = true;
-
-	bool _skipRequested;
 
 	// ── Steps ────────────────────────────────────────────────────────────────────────────────────────────
 
-	/// <summary>One row on the card: a key glyph, its label, and whether the player has done it (latched).</summary>
+	/// <summary>One row on the card: an optional input-prompt icon, the action label, and whether the
+	/// player has done it (latched). No key-chip text — an action isn't a button (that framing was tried
+	/// and cut); where no icon fits, the label alone carries the row.</summary>
 	public sealed class Hint
 	{
-		public string Key { get; init; }
+		/// <summary>Input-prompt art (path under Assets, e.g. "inputicons/mouse_left.png") — jittering on
+		/// the clay clock until achieved. For MOUSE prompts; keyboard prompts use <see cref="KeyCap"/>.</summary>
+		public string Icon { get; init; }
+
+		/// <summary>Keyboard prompt drawn as the possess-toast's key cap (cream chip, header-font letter)
+		/// — same jitter-until-achieved as the icons. Null + null Icon = label-only row.</summary>
+		public string KeyCap { get; init; }
+
 		public string Label { get; init; }
 		internal Func<TutorialDirector, bool> Check { get; init; }
 		public bool Achieved { get; internal set; }
@@ -188,6 +192,12 @@ public sealed class TutorialDirector : Component
 		"These are hotkeyed to A, S, D and F.",
 	};
 
+	readonly string[] _selectLines =
+	{
+		"I'm just a bunch of simple shapes, all blended together. Try clicking one!",
+		"Pressing Tab toggles the shape wireframes.",
+	};
+
 	readonly string[] _layerLines =
 	{
 		"How the shapes are layered can have a big effect on your final sculpt.",
@@ -247,14 +257,6 @@ public sealed class TutorialDirector : Component
 	{
 		if ( !Live )
 			return; // the npc is about to tear the rig down; nothing to advance
-
-		if ( _skipRequested )
-		{
-			_skipRequested = false;
-			if ( State != Phase.Free )
-				EnterFree();
-			return;
-		}
 
 		TrackCameraTravel();
 
@@ -450,9 +452,9 @@ public sealed class TutorialDirector : Component
 			Title = "Look Around",
 			Hints = new[]
 			{
-				new Hint { Key = "LMB Drag", Label = "orbit the camera", Check = d => d._orbitTravel > 60f },
-				new Hint { Key = "MMB Drag", Label = "pan the camera", Check = d => d._panTravel > 40f },
-				new Hint { Key = "RMB Drag", Label = "zoom in / out", Check = d => d._dollyTravel > 40f },
+				new Hint { Icon = "inputicons/mouse_left.png", Label = "Orbit the camera", Check = d => d._orbitTravel > 60f },
+				new Hint { Icon = "inputicons/mouse_scroll.png", Label = "Pan the camera", Check = d => d._panTravel > 40f },
+				new Hint { Icon = "inputicons/mouse_right.png", Label = "Zoom in / out", Check = d => d._dollyTravel > 40f },
 			},
 			Enter = d =>
 			{
@@ -463,11 +465,18 @@ public sealed class TutorialDirector : Component
 
 		_steps.Add( new Step
 		{
-			Bubble = "I'm just a bunch of simple shapes, all blended together. Try clicking one!",
+			Bubble = _selectLines[0], // same string as the chain's first line, so the card-appear doesn't retype
 			Title = "Pick a Shape",
 			Hints = new[]
 			{
-				new Hint { Key = "LMB", Label = "select a shape", Check = d => d.Session.HasSelection },
+				new Hint { Icon = "inputicons/mouse_left.png", Label = "Select a shape", Check = d => d.Session.HasSelection },
+			},
+			// The Tab tip chains in after the intro; a quick click mustn't cut it off.
+			Done = d => d._chainDone,
+			Tick = d =>
+			{
+				if ( d.SpeakChain( d._selectLines ) )
+					d._chainDone = true;
 			},
 			// Selection unlocks HERE — the camera stage keeps clicks pure camera (no picking, no hover
 			// ghost), so a stray tap can't select a shape before it's been introduced. The gizmo stays
@@ -488,7 +497,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Handles", Label = "drag to move the shape",
+					Label = "Drag the handles to move the shape",
 					Check = d => d.LockIn( d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ), d.Session.IsManipulating ),
 				},
 			},
@@ -512,7 +521,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Rings", Label = "drag to spin it",
+					Label = "Drag the rings to spin it",
 					Check = d => d.LockIn( d.AnyBrush( ( b, s ) => RotationDelta( b.Rotation, s.Rotation ) > 0.03f ), d.Session.IsManipulating ),
 				},
 			},
@@ -536,7 +545,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Dots", Label = "drag to scale it",
+					Label = "Drag the dots to scale it",
 					Check = d => d.LockIn( d.AnyBrush( ( b, s ) => (b.Size - s.Size).Length > 0.5f ), d.Session.IsManipulating ),
 				},
 			},
@@ -564,7 +573,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Hold W", Label = "move it",
+					KeyCap = "W", Label = "Move it",
 					Check = d => d.LockIn(
 						BrushScrub.Active == ScrubKind.Move && d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ),
 						d.Session.IsScrubbing ),
@@ -590,7 +599,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Hold E", Label = "spin it",
+					KeyCap = "E", Label = "Spin it",
 					Check = d => d.LockIn(
 						BrushScrub.Active == ScrubKind.Rotate && d.AnyBrush( ( b, s ) => RotationDelta( b.Rotation, s.Rotation ) > 0.03f ),
 						d.Session.IsScrubbing ),
@@ -608,7 +617,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Hold R", Label = "scale it",
+					KeyCap = "R", Label = "Scale it",
 					Check = d => d.LockIn(
 						BrushScrub.Active == ScrubKind.Scale && d.AnyBrush( ( b, s ) => (b.Size - s.Size).Length > 0.5f ),
 						d.Session.IsScrubbing ),
@@ -628,7 +637,7 @@ public sealed class TutorialDirector : Component
 				{
 					// Both halves required: notches scrolled AND the shape actually displaced — so a scrub
 					// can't tick it, and neither can dead scrolling with the push blocked.
-					Key = "Scroll", Label = "push / pull the shape",
+					Icon = "inputicons/mouse_scroll_vertical.png", Label = "Push / pull the shape",
 					Check = d => d._scrollTravel >= 2f
 						&& d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ),
 				},
@@ -649,7 +658,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Palette", Label = "pick a colour",
+					Label = "Pick a colour",
 					Check = d => d.AnyBrush( ( b, s ) =>
 						ColorDelta( b.Color, s.Color ) > 0.01f
 						|| MathF.Abs( b.Metallic - s.Metallic ) > 0.01f
@@ -677,8 +686,8 @@ public sealed class TutorialDirector : Component
 			Title = "Add a Shape",
 			Hints = new[]
 			{
-				new Hint { Key = "Space", Label = "open the shapes", Check = d => d.Session.Tool == SculptTool.Sculpt },
-				new Hint { Key = "LMB", Label = "stamp it on", Check = d => d.AuthoredCount() > d._countAtEnter },
+				new Hint { KeyCap = "Space", Label = "Open the shapes", Check = d => d.Session.Tool == SculptTool.Sculpt },
+				new Hint { Icon = "inputicons/mouse_left.png", Label = "Stamp it on", Check = d => d.AuthoredCount() > d._countAtEnter },
 			},
 			// Reactive: the moment the Add tool is up (chip or Space), the shape dock appears and he runs
 			// the placing monologue (shapes line → hotkeys reminder, ChainBeat apart). Backing out
@@ -731,7 +740,7 @@ public sealed class TutorialDirector : Component
 			Hints = new[]
 			{
 				// Shape is a brush PROPERTY — a dock tile (or 1-4) with a selection CONVERTS it in place.
-				new Hint { Key = "Shape Tiles", Label = "convert the selected shape", Check = d => d.AnyBrush( ( b, s ) => b.Shape != s.Shape ) },
+				new Hint { Label = "Convert the selected shape", Check = d => d.AnyBrush( ( b, s ) => b.Shape != s.Shape ) },
 			},
 			Tick = NeedSelectionTick,
 			Enter = d =>
@@ -769,7 +778,7 @@ public sealed class TutorialDirector : Component
 			{
 				new Hint
 				{
-					Key = "Options", Label = "change any of them",
+					Label = "Change any shape option",
 					Check = d => d.AnyBrush( ( b, s ) =>
 						b.Operation != s.Operation
 						|| MathF.Abs( b.Blend - s.Blend ) > 0.05f
@@ -810,7 +819,7 @@ public sealed class TutorialDirector : Component
 			Title = "The Layer Stack",
 			Hints = new[]
 			{
-				new Hint { Key = "Drag a Layer", Label = "move it up or down", Check = d => d.OrderChanged() },
+				new Hint { Icon = "inputicons/mouse_left.png", Label = "Drag a layer up or down", Check = d => d.OrderChanged() },
 			},
 			// The instruction line chains in after the intro; completing early mustn't cut it off.
 			Done = d => d._chainDone,

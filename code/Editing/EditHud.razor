@@ -845,7 +845,6 @@
 	/// slider is pressed/scrubbing, so a drag that drifts off the thin track still can't highlight world shapes.</summary>
 	public static bool PointerOverUi => PointerOverPalette || PointerOverSliders || PointerOverPicker
 		|| PointerOverPanels || ClaySlider.Pressed || ClayColorPicker.Pressed
-		|| TutorialCard.PointerOver // the tutorial's instruction card swallows world clicks/nav-claims the same way
 		|| (Session?.ExitConfirmPending ?? false); // the exit-confirm scrim owns ALL input while it's up
 
 	// Is the cursor over this card RIGHT NOW? HasHovered alone can't answer that: it's a stored pseudo-class

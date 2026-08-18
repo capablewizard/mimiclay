@@ -64,11 +64,9 @@
 		// card it reads as dirt, so pull it right down.
 		.letter { text-shadow: 0px 2px 0px rgba( black, 0.15 ); }
 
-		// A word = revealed half + ghost half side by side; the ghost holds the word's full footprint so
-		// the card never reflows while the typewriter runs. (No CSS jitter here at all any more — the
-		// revealed letters pose from ClayClock via WobbleText's LockStep mode, phase-locked to the clay.)
-		.word { flex-direction: row; }
-		.ghost { opacity: 0; }
+		// (Each word is a single WobbleText for its whole life — the unrevealed tail hides via the
+		// component's own Revealed parameter, so the typewriter never changes the measured layout. The
+		// letters pose from ClayClock via LockStep, phase-locked to the clay.)
 
 		// The tail: a rotated square hanging half off the card's bottom edge, near the anchor-side corner —
 		// cream fill with the card's ink edge on its two EXPOSED sides (post-rotation, border-right +

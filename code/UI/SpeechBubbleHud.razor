@@ -36,23 +36,16 @@
 		<div class="bubble-float" style=@FloatStyle( d.At )>
 			<div class="paper-card speech-bubble @(d.Shown ? "shown" : "")">
 				@* One WobbleText per WORD, in a wrapping row: WobbleText itself is a non-wrapping strip of
-				   per-letter spans, so wrapping between whole components is what keeps words intact. Each
-				   word splits into a revealed half and a ghost half holding the layout. LockStep (not the
-				   "auto" CSS animation): the letters pose from ClayClock, snapping on the same global tick
-				   the 3D clay boils on. *@
+				   per-letter spans, so wrapping between whole components is what keeps words intact. The
+				   typewriter rides WobbleText's Revealed parameter — every word is ONE panel for its whole
+				   life with the unrevealed tail at opacity 0, never a revealed/ghost split: two panels
+				   round their widths to physical pixels separately, and the extra pixel could wrap an
+				   extra line for the frames a word straddled the split (the typing flicker). LockStep:
+				   letters pose from ClayClock, snapping on the same global tick the 3D clay boils on. *@
 				<div class="text">
 					@foreach ( var w in d.Words )
 					{
-						<div class="word">
-							@if ( w.Shown.Length > 0 )
-							{
-								<WobbleText Text=@w.Shown LockStep=@true />
-							}
-							@if ( w.Ghost.Length > 0 )
-							{
-								<WobbleText Text=@w.Ghost class="ghost" />
-							}
-						</div>
+						<WobbleText Text=@w.Word Revealed=@w.Shown LockStep=@true />
 					}
 				</div>
 				<div class="tail"></div>
@@ -112,9 +105,9 @@
 
 	readonly Dictionary<SpeechBubble, BubbleState> _states = new();
 
-	// This frame's rendered bubbles: per-word (revealed, ghost) splits + projected spot + shown flag
+	// This frame's rendered bubbles: per-word reveal counts + projected spot + shown flag
 	// (false = lingering through its exit shrink).
-	readonly List<(string Text, int Revealed, List<(string Shown, string Ghost)> Words, Vector2 At, bool Shown)> _draw = new();
+	readonly List<(string Text, int Revealed, List<(string Word, int Shown)> Words, Vector2 At, bool Shown)> _draw = new();
 
 	protected override void OnUpdate()
 	{
@@ -216,16 +209,15 @@
 		bubble.FullyTyped = whole >= total;
 	}
 
-	// Split each word at the reveal cursor (the cursor walks the same virtual word+gap sequence the
-	// timing uses).
-	static List<(string Shown, string Ghost)> BuildParts( string[] words, int whole, int gap )
+	// Per-word revealed-character counts at the current cursor (the cursor walks the same virtual
+	// word+gap sequence the timing uses).
+	static List<(string Word, int Shown)> BuildParts( string[] words, int whole, int gap )
 	{
-		var parts = new List<(string Shown, string Ghost)>( words.Length );
+		var parts = new List<(string Word, int Shown)>( words.Length );
 		int at = 0;
 		foreach ( var w in words )
 		{
-			int shown = Math.Clamp( whole - at, 0, w.Length );
-			parts.Add( (w[..shown], w[shown..]) );
+			parts.Add( (w, Math.Clamp( whole - at, 0, w.Length )) );
 			at += w.Length + gap; // the word, then its virtual gap
 		}
 		return parts;
