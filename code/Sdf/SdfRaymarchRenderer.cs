@@ -76,6 +76,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// at 0 and raise slightly only if a prop shows shadow acne on itself.</summary>
 	[Property, Group( "Shadows" ), Range( 0f, 4f )] public float ShadowBias { get; set; }
 
+	/// <summary>Slope-scaled caster bias for PERSPECTIVE (spot/point) shadow views — the SV_Depth
+	/// march bypasses the rasterizer's slope-scale bias meshes get (r.shadows.slopescale = 1.5), so
+	/// the shader replicates it: the push grows by this many multiples of the measured per-texel
+	/// depth slope at the surface. 1.5 matches the engine's mesh value; raise if grazing surfaces
+	/// still band under spotlights, drop toward 0 if spot shadows visibly detach from the prop.</summary>
+	[Property, Group( "Shadows" ), Range( 0f, 8f )] public float ShadowSlopeScale { get; set; } = 1.5f;
+
 	/// <summary>Bake the whole brush field to a 3D distance texture and march by sampling it (one trilinear
 	/// fetch per step) instead of re-evaluating every brush each step. Decouples render cost from brush
 	/// count — the headline win for multi-brush props (a 31-brush giraffe then marches like a 1-brush blob).
@@ -854,6 +861,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "SdfVmFovScale", MathF.Max( ViewmodelFovScale, 0.01f ) );
 		_so.Attributes.Set( "SdfShadowOnly", shadowOnly ? 1 : 0 );
 		_so.Attributes.Set( "SdfShadowBias", ShadowBias );
+		_so.Attributes.Set( "SdfShadowSlopeScale", ShadowSlopeScale );
 		_so.Attributes.Set( "BrushData", _dataTex );
 		_so.Attributes.Set( "SplineData", _splineTex );
 		_so.Attributes.Set( "TextSdf", _textAtlas.Texture );

@@ -163,6 +163,10 @@ PS
 	// (camera forward, camera depth prepass, spot-light shadows) is clipped — the RenderHidden pawn
 	// body, mirroring ModelRenderer.ShadowsOnly.
 	float     g_flSdfShadowBias < Attribute( "SdfShadowBias" ); Default( 0.0 ); >;
+	// Slope-scale for the PERSPECTIVE shadow-view caster bias (multiples of the measured per-texel
+	// depth slope — mirrors the rasterizer slope-scale meshes get, which SV_Depth bypasses).
+	// 1.5 = engine parity.
+	float     g_flSdfShadowSlopeScale < Attribute( "SdfShadowSlopeScale" ); Default( 1.5 ); >;
 	int       g_nSdfShadowOnly  < Attribute( "SdfShadowOnly" ); Default( 0 ); >;
 	// Viewmodel (the hunter's first-person gun, drawn via the overlay layer): 1 = viewmodel-FOV warp on,
 	// and the material AO swaps to a 5-tap AO computed from the DISTANCE FIELD itself (the engine min()s
@@ -893,6 +897,15 @@ PS
 		return saturate( (g_flLodFar - ratio) / max( g_flLodFar - g_flLodNear, 0.001 ) );
 	}
 
+	// The hit epsilon THIS view's march actually ran at (RayMarchHit fills it; the perspective
+	// shadow-view caster bias reads it back — the march's depth error is bounded by this).
+	static float s_marchEps = 0.05;
+	// Perspective SHADOW view (spot / point-light face)? Detected in RayMarchHit: only in a shadow
+	// view does the view camera (rebound to the LIGHT) differ from the high-precision offset, which
+	// stays the frame's GAME camera; in every camera-driven view (forward, prepass, overlay, editor
+	// viewport) the two are identical. Drives the caster bias in MainPs' Depth output.
+	static bool s_shadowView = false;
+
 	// Sphere-trace the field along the current view ray (camera in the forward pass, light
 	// in the shadow/depth pass). Returns false on a miss, else the world-space hit point.
 	bool RayMarchHit( PixelInput i, out float3 hitP )
@@ -926,9 +939,10 @@ PS
 			// zero and this matches the original camera-relative ray bit-for-bit. In a PERSPECTIVE
 			// shadow view (spot light) ro rebinds to the light while the offset stays the game
 			// camera — the correction re-bases the interpolant onto the light so the ray is right
-			// there too.
+			// there too. That same divergence is the shadow-view tell (see s_shadowView).
 			ro = g_vCameraPositionWs;
 			rd = normalize( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
+			s_shadowView = length( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) > 0.5;
 		}
 
 		// Bracket the march: a tight bounding sphere (round props) or the bounds AABB. Runtime-branched
@@ -985,10 +999,14 @@ PS
 		// when small/far. Per object (LodQuality uses the bounds centre), so every pixel of one
 		// object marches at the same budget. Ortho (shadow) views have no meaningful camera
 		// distance — the pulled-back per-pixel origin would read as "far" and melt the shadow to
-		// the quality floor — so they march at full quality.
+		// the quality floor — so they march at full quality. PERSPECTIVE shadow views keep LOD
+		// (their "camera" is the LIGHT, so a far spot marches its shadow coarse — that's fine and
+		// cheap): the caster bias below scales its world term by the eps this view actually
+		// marched at, so coarse shadow depth stays acne-safe without full-quality marching.
 		float q = ortho ? 1.0 : LodQuality( ro );
 		int   maxSteps = (int)lerp( (float)g_nMinSteps, (float)g_nMaxSteps, q );
 		float eps      = lerp( g_flFarEpsilon, g_flEpsilon, q );
+		s_marchEps = eps;
 
 		float stepScale = 1.0;
 	#if ( D_FIELD_TEX )
@@ -1142,16 +1160,53 @@ PS
 		// depth is the shadow map. The optional caster bias pushes it a touch deeper along the light
 		// ray there — acne insurance the camera prepass must never get (its depth must stay exact,
 		// the forward pass depth-tests against it).
+		float3 n = SdfNormal( p ); // shared by both output paths below
 		float3 pd = p;
 		if ( IsOrthoView() )
 			pd += normalize( g_vCameraDirWs ) * g_flSdfShadowBias;
+		// Perspective SHADOW view (spot / point light face): meshes land in this shadow map with the
+		// engine's rasterizer depth bias + slope-scale baked in (r.shadows.bias/slopescale), but
+		// writing SV_Depth BYPASSES the rasterizer bias stage entirely — and the march's own error
+		// is systematically on the LIGHT side of the surface, so unbiased SDF depth self-shadows:
+		// concentric acne bands tracking iso-distance from the light.
+		//
+		// The bias must live in DEPTH-VALUE space, not world space. The engine's shadow maps are
+		// D16 (see ShadowMapper's pool: 2 bytes/px): 65536 depth levels, and under a PERSPECTIVE
+		// projection with a ~unit near plane the world size of one level grows with the SQUARE of
+		// distance from the light — ~0.15 units at 100, ~1.4 units at 300. A world-space push of
+		// sane magnitude therefore rounds to ZERO stored levels at room distances (why cranked
+		// world bias barely moved the bands), while the sun stays clean because its cascades are
+		// ORTHO — linear depth, uniformly tiny steps. The rasterizer bias meshes get is specified
+		// in format ULPs and depth-slope units, so it scales with this automatically; we mirror
+		// that: convert to depth first, then push by whole D16 ULPs (store-rounding insurance) plus
+		// slope × the MEASURED per-texel depth slope (quad derivatives — this pixel IS one shadow
+		// texel; a first cut reconstructed texel size from projection-matrix rows and was silently
+		// ~10× small, engine code mixes both mul conventions). Direction ("away from the light" in
+		// depth values) is MEASURED too — probe a point deeper along the ray — so no reverse-Z /
+		// viewport-range convention is assumed. The world-space part keeps only the march error
+		// (~2× eps) + the authored escape hatch, which matter near the light where ULPs are fine.
+		// The slope term is capped: at silhouette quads a neighbour lane may have MISSED (its hitP
+		// never converged), making the derivative garbage — the cap turns that into a bounded
+		// over-push on a rim texel (hidden by PCF blur) instead of a detached shadow.
+		else if ( s_shadowView )
+		{
+			float3 rd = normalize( p - g_vCameraPositionWs );
+			pd += rd * ( 2.0 * s_marchEps + g_flSdfShadowBias );
+			float z   = DepthFromWorld( pd );
+			float dir = sign( DepthFromWorld( pd + rd * 8.0 ) - z ); // away-from-light, in depth units
+			const float ulp = 1.0 / 65535.0; // D16 shadow target
+			float zSlope = min( max( abs( ddx( z ) ), abs( ddy( z ) ) ), 32.0 * ulp );
+			o.vColor  = DepthNormals::Output( n );
+			o.flDepth = z + dir * ( 2.0 * ulp + g_flSdfShadowSlopeScale * zSlope );
+			return o;
+		}
 		// Viewmodel: REAL depth, on purpose. This Depth pass runs in the engine's dedicated OVERLAY
 		// prepass (GameOverlayLayer flag), which runs before the world prepasses and stencil-claims
 		// these pixels (bit 0x80) — nearer world depth can't overwrite them, so the forward overlay
 		// pass wins here at true depth and the gun still never clips into geometry. Real depth also
 		// keeps the depth chain honest for its consumers: screen UI (which depth-tests, and which the
 		// old near-camera squash used to lose against), contact shadows and screen AO.
-		o.vColor = DepthNormals::Output( SdfNormal( p ) );
+		o.vColor = DepthNormals::Output( n );
 		o.flDepth = DepthFromWorld( pd );
 		return o;
 	#endif
