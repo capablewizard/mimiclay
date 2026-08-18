@@ -33,10 +33,27 @@ public sealed class RoundDoor : Component
 		_initialized = true;
 	}
 
+	/// <summary>Call this to open/close the door. Applies immediately on the calling machine, then replicates
+	/// to every other machine via <see cref="Rpc.Broadcast"/>. The broadcast body is guarded by
+	/// <see cref="Component.IsProxy"/> so the caller — which already applied the change directly — doesn't
+	/// double-apply it again when its own broadcast round-trips back (that guard is the same pattern used by
+	/// <c>SdfNetworkSync.Stream</c>; without it the caller's door would rotate twice, e.g. 90° becoming 180°).</summary>
 	public void SetOpen( bool open )
 	{
 		Initialize();
+		Apply( open );
+		BroadcastOpen( open );
+	}
 
+	[Rpc.Broadcast]
+	void BroadcastOpen( bool open )
+	{
+		if ( IsProxy )
+			Apply( open );
+	}
+
+	void Apply( bool open )
+	{
 		IsOpen = open;
 
 		GameObject.LocalRotation = open

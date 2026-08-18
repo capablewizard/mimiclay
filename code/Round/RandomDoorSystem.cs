@@ -5,7 +5,10 @@ using System.Linq;
 namespace Mimiclay;
 
 /// <summary>
-/// Selects how many scene doors begin open using the round's synchronized seed.
+/// Selects how many scene doors begin open using the round's synchronized seed. Only the host decides and
+/// applies door state — <see cref="RoundDoor.SetOpen"/> is a <see cref="Rpc.Broadcast"/> call, so the resulting
+/// rotation is explicitly replicated to every client rather than relying on each machine independently
+/// re-deriving the same result from <see cref="RoundManager.DoorSeed"/>.
 /// </summary>
 [Title( "Random Door System" )]
 [Category( "Mimiclay" )]
@@ -18,19 +21,50 @@ public sealed class RandomDoorSystem : Component
 	[Property, Range( 0, 128 )]
 	public int MaximumOpen { get; set; } = 4;
 
+	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
+
 	int _appliedSeed;
+	TimeSince _sinceResync;
+
+	/// <summary>How often the host re-sends every door's current state regardless of change, so a player who
+	/// joins mid-round (and therefore missed the original seed-triggered broadcasts) converges within this long.</summary>
+	const float ResyncInterval = 2f;
 
 	protected override void OnUpdate()
 	{
+		if ( !IsHostAuthority )
+			return;
+
 		var manager = RoundManager.Current;
 		if ( !manager.IsValid() || manager.DoorSeed == 0 )
 			return;
 
 		if ( _appliedSeed == manager.DoorSeed )
+		{
+			if ( _sinceResync >= ResyncInterval )
+				Resync();
+
 			return;
+		}
 
 		Apply( manager.DoorSeed );
 		_appliedSeed = manager.DoorSeed;
+		_sinceResync = 0;
+	}
+
+	/// <summary>Re-sends the already-decided state of every door, without re-rolling anything — catches up
+	/// late joiners who missed the broadcasts from <see cref="Apply"/>.</summary>
+	void Resync()
+	{
+		_sinceResync = 0;
+
+		foreach ( var door in Scene.GetAllComponents<RoundDoor>() )
+		{
+			if ( !door.IsValid() )
+				continue;
+
+			door.SetOpen( door.IsOpen );
+		}
 	}
 
 	void Apply( int seed )

@@ -47,7 +47,7 @@ public sealed class RoundSpawnPoint : Component
 		base.DrawGizmos();
 
 		var spawnpointModel = Model.Load( "models/editor/spawnpoint.vmdl" );
-		Gizmo.Draw.Color = Color.Green;
+		Gizmo.Draw.Color = HunterStart ? Color.Green : Color.Blue;
 		Gizmo.Hitbox.Model( spawnpointModel );
 		Gizmo.Draw.Color = Gizmo.Draw.Color.WithAlpha( (Gizmo.IsHovered || Gizmo.IsSelected) ? 0.7f : 0.5f );
 		var so = Gizmo.Draw.Model( spawnpointModel );

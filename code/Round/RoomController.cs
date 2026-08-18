@@ -9,6 +9,14 @@ namespace Mimiclay;
 /// <see cref="RoundDoor"/>(s) that lead into it, and list whatever should be turned off in <see cref="Members"/>
 /// (spawn points, loot, monster spawners, etc). Checked every tick so it reacts to whatever opens/closes the
 /// doors — <see cref="RandomDoorSystem"/>, a lever, a keycard, whatever.
+///
+/// <see cref="GameObject.Enabled"/> is NOT a networked property, and door state (<see cref="RoundDoor.IsOpen"/>)
+/// is only guaranteed deterministic across clients once every machine has applied the same synced
+/// <c>RoundManager.DoorSeed</c> — relying on that timing for something as load-bearing as "is this spawn point
+/// in play" is fragile (e.g. a late-joiner, or a frame where one client's <see cref="RandomDoorSystem"/> hasn't
+/// applied yet, could disagree with everyone else). So only the host decides room accessibility, and the actual
+/// <see cref="Members"/> enable/disable is replicated to everyone via <see cref="Rpc.Broadcast"/> — every machine
+/// ends up with the exact same state the host computed, instead of independently re-deriving it.
 /// </summary>
 [Title( "Room Controller" )]
 [Category( "Mimiclay" )]
@@ -32,36 +40,63 @@ public sealed class RoomController : Component
 	/// room's doors disables both. Chains naturally: A depends on B depends on C all resolve correctly.</summary>
 	[Property] public List<RoomController> DependsOn { get; set; } = new();
 
-	/// <summary>Whether this room is currently reachable (its own door condition AND every room in
-	/// <see cref="DependsOn"/> are satisfied).</summary>
+	/// <summary>Whether this room is currently reachable. Host-computed, replicated to every machine via
+	/// <see cref="BroadcastAccessibility"/> — read this instead of recomputing it locally.</summary>
 	public bool IsAccessible { get; private set; } = true;
 
+	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
+
 	bool? _appliedState;
+	TimeSince _sinceResync;
+
+	/// <summary>How often the host re-broadcasts current state regardless of change, so a player who joins
+	/// mid-round (and therefore missed the original change-triggered broadcast) converges within this long.</summary>
+	const float ResyncInterval = 2f;
 
 	protected override void OnUpdate()
 	{
+		if ( !IsHostAuthority )
+			return;
+
+		var accessible = ComputeAccessible( new HashSet<RoomController>() );
+
+		if ( _appliedState == accessible && _sinceResync < ResyncInterval )
+			return;
+
+		_appliedState = accessible;
+		_sinceResync = 0;
+		BroadcastAccessibility( accessible );
+	}
+
+	/// <summary>Recursively evaluates own door condition AND every <see cref="DependsOn"/> room, rather than
+	/// reading their cached <see cref="IsAccessible"/> — avoids depending on component update order between
+	/// different GameObjects on the host, since this all runs synchronously in one call.</summary>
+	bool ComputeAccessible( HashSet<RoomController> visited )
+	{
+		if ( !visited.Add( this ) )
+			return true; // cycle guard — a room can't gate itself
+
 		var doors = Doors.Where( d => d.IsValid() ).ToList();
 
-		// Own doors: no doors configured -> this room's own condition is trivially satisfied.
 		var ownAccessible = doors.Count == 0 || (RequireAllDoorsOpen
 			? doors.All( d => d.IsOpen )
 			: doors.Any( d => d.IsOpen ));
 
-		var parentsAccessible = DependsOn
+		if ( !ownAccessible )
+			return false;
+
+		return DependsOn
 			.Where( r => r.IsValid() )
-			.All( r => r.IsAccessible );
-
-		IsAccessible = ownAccessible && parentsAccessible;
-
-		if ( _appliedState == IsAccessible )
-			return;
-
-		Apply( IsAccessible );
-		_appliedState = IsAccessible;
+			.All( r => r.ComputeAccessible( visited ) );
 	}
 
-	void Apply( bool accessible )
+	/// <summary>Host decides, then this replicates the exact result (and applies it) on every machine —
+	/// including the host itself, since <see cref="Rpc.Broadcast"/> runs locally too.</summary>
+	[Rpc.Broadcast]
+	void BroadcastAccessibility( bool accessible )
 	{
+		IsAccessible = accessible;
+
 		foreach ( var member in Members )
 		{
 			if ( !member.IsValid() )
