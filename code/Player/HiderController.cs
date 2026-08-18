@@ -38,7 +38,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// Applied at RUNTIME to the pawn's disguise clone rather than authored on disguise.prefab: saved props and
 	/// decoys are exported from that same template, and they must stay solid to players. Physics shapes take
 	/// their tags from the collider's GameObject and follow it live, so tagging the object is enough however the
-	/// collider was built.</summary>
+	/// collider was built.
+	///
+	/// The tag means "this disguise is currently someone's BODY", so a RELEASED prop (creative P-drop, lobby
+	/// furniture hand-back) must LOSE it — it's scenery now, and scenery is solid to props. Asserted per-frame on
+	/// every machine from <see cref="PropClaims.IsReleased"/> (see <see cref="UpdateReleasedSolidity"/>), so a
+	/// claim re-tags it everywhere just as automatically.</summary>
 	public const string PropBodyTag = "propbody";
 
 	// ── Movement ──────────────────────────────────────────────────────────────────────────────────────
@@ -326,6 +331,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			// Asserted on EVERY machine, before the collider is built: a proxy's disguise may have arrived in the
 			// pawn's spawn snapshot (already tagged by its owner) or been cloned fresh here, and prop-vs-prop
 			// contacts are only ignored when BOTH shapes carry the tag. Tags.Add is idempotent either way.
+			// From here on UpdateReleasedSolidity keeps the tag tracking the released/body state per-frame.
 			_body.GameObject.Tags.Add( PropBodyTag );
 
 			_collider = _body.GameObject.Components.GetOrCreate<SdfCollider>();
@@ -399,9 +405,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 	protected override void OnUpdate()
 	{
-		// FIRST, and before every gate below: concealment is the one thing here that exists to run on OTHER
-		// players' pawns (see UpdateConcealment). Everything after this point is owner-only.
+		// FIRST, and before every gate below: these two exist to run on OTHER players' pawns too — concealment
+		// (see UpdateConcealment) and the released-vs-body collision tag (see UpdateReleasedSolidity). Everything
+		// after this point is owner-only.
 		UpdateConcealment();
+		UpdateReleasedSolidity();
 
 		// A granted possession resumes here — before the dormant gate, because a HOST possessing a prop it
 		// released itself still has _dormant latched on its own copy (ResumeControl clears it).
@@ -501,6 +509,24 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		var branch = _body.GameObject;
 		if ( branch.IsValid() && branch.Enabled == conceal )
 			branch.Enabled = !conceal;
+	}
+
+	// The propbody tag tracks "this disguise is someone's BODY" (see PropBodyTag): released scenery must shed it
+	// so player props collide with it (and can stand on it — ProbeGround skips the tag). Asserted per-frame on
+	// EVERY machine from PropClaims.IsReleased — the one released-state signal that provably replicates — rather
+	// than written at the release/claim seams: those run host-side across an ownership edge, and the contacts
+	// that matter happen on OTHER machines (each machine simulates its own dynamic pawn against its local copy
+	// of this prop). Same assert-everywhere shape as UpdateConcealment above. Modes with no claim service never
+	// register a release (bots and DebugGameMode retirees included), so there the tag simply stays on.
+	void UpdateReleasedSolidity()
+	{
+		if ( !_body.IsValid() )
+			return;
+
+		bool isBody = !PropClaims.IsReleased( this );
+		var tags = _body.GameObject.Tags;
+		if ( tags.Has( PropBodyTag ) != isBody )
+			tags.Set( PropBodyTag, isBody );
 	}
 
 	// ── Taunts ────────────────────────────────────────────────────────────────────────────────────────
@@ -764,7 +790,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// right at the floor (a generous probe hovers). Ignores our own hierarchy (the disguise collider is a child),
 	// and every OTHER player prop: traces don't consult the collision rules unless they opt in, so without this a
 	// prop would read as grounded on a fellow prop that its physics passes straight through — hovering inside one,
-	// then dropping when that player walked off. Decoys and saved props are untagged and still hold us up.
+	// then dropping when that player walked off. Decoys, saved props and RELEASED props are untagged (the last
+	// per UpdateReleasedSolidity) and still hold us up.
 	const float GroundProbeRadius = 3f, GroundProbeUp = 3f, GroundProbeDown = 4f;
 
 	SceneTraceResult ProbeGround( Vector3 p ) => Scene.Trace
