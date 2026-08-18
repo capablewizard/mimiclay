@@ -735,12 +735,20 @@ public sealed class TutorialDirector : Component
 
 		_steps.Add( new Step
 		{
-			Bubble = "When a shape is selected, you can change its shape with these buttons.",
-			Title = "Change the Shape",
+			Bubble = "When a shape is selected, you can change its shape or colour with these buttons.",
+			Title = "Shape or Colour",
 			Hints = new[]
 			{
-				// Shape is a brush PROPERTY — a dock tile (or 1-4) with a selection CONVERTS it in place.
-				new Hint { Label = "Convert the selected shape", Check = d => d.AnyBrush( ( b, s ) => b.Shape != s.Shape ) },
+				// Shape is a brush PROPERTY — a dock tile (or 1-4) with a selection CONVERTS it in place;
+				// colour covers the palette swatches AND the wheel/metal/rough column.
+				new Hint
+				{
+					Label = "Change its shape or colour",
+					Check = d => d.AnyBrush( ( b, s ) => b.Shape != s.Shape
+						|| ColorDelta( b.Color, s.Color ) > 0.01f
+						|| MathF.Abs( b.Metallic - s.Metallic ) > 0.01f
+						|| MathF.Abs( b.Roughness - s.Roughness ) > 0.01f ),
+				},
 			},
 			Tick = NeedSelectionTick,
 			Enter = d =>
@@ -749,8 +757,9 @@ public sealed class TutorialDirector : Component
 				// and dock tiles would re-mould THAT instead of converting a selection — the lesson here.
 				d.Session.SetTool( SculptTool.Gizmo );
 				d.SnapshotBrushes();
-				// The dock is the subject, ringed and PERSISTENT this time (it renders whenever a brush is
-				// active — the fresh stamp is still selected from the last step). Still primitives only.
+				// The dock AND the whole colour section (palette + wheel column) are the subject, all
+				// ringed and persistent (they render whenever a brush is active — the fresh stamp is
+				// still selected from the last step). Still primitives only.
 				d.ApplyGate(
 					(HudSection.WorldSelect, SectionState.Normal),
 					(HudSection.GizmoMove, SectionState.Normal),
@@ -762,8 +771,8 @@ public sealed class TutorialDirector : Component
 					(HudSection.EditChips, SectionState.Locked),
 					(HudSection.Symmetry, SectionState.Locked),
 					(HudSection.ShapeDock, SectionState.Highlight),
-					(HudSection.Palette, SectionState.Normal),
-					(HudSection.Picker, SectionState.Normal) );
+					(HudSection.Palette, SectionState.Highlight),
+					(HudSection.Picker, SectionState.Highlight) );
 				EditHudGate.SetBasicShapesOnly( true );
 			},
 		} );
