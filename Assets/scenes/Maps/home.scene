@@ -8994,10 +8994,10 @@
       "Children": []
     },
     {
-      "__guid": "db59b930-7e73-4671-841f-deb9282d97ff",
+      "__guid": "2c263b64-249b-4be2-b22a-50e00b1e5818",
       "__version": 2,
       "Flags": 0,
-      "Name": "Block",
+      "Name": "Block (99)",
       "Position": "0,0,0",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
@@ -9011,7 +9011,7 @@
       "Components": [
         {
           "__type": "Sandbox.MeshComponent",
-          "__guid": "fea1d0a9-df43-4e63-87f0-0926bd773f02",
+          "__guid": "7cd81ba6-6230-46cb-a084-fdce7a7eccc3",
           "__enabled": true,
           "Flags": 0,
           "ColliderFlags": 0,
@@ -13329,7 +13329,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "Health": 15,
-          "IsStatic": false,
+          "IsStatic": true,
           "MaterialGroup": null,
           "Model": "models/sbox_props/tv/tv.vmdl",
           "OnComponentDestroy": null,
@@ -13346,7 +13346,7 @@
         },
         {
           "__type": "Sandbox.ModelRenderer",
-          "__guid": "913802a6-3b96-4f9e-8efa-882f13120c8b",
+          "__guid": "8e60cee2-4025-42e9-a176-01ff6569ea64",
           "__enabled": true,
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
@@ -13373,7 +13373,7 @@
         },
         {
           "__type": "Sandbox.ModelCollider",
-          "__guid": "99243741-7142-4993-928e-1d3f78543647",
+          "__guid": "0641341c-6e6d-4d3c-9356-bf202ecda319",
           "__enabled": true,
           "Flags": 0,
           "ColliderFlags": 0,
@@ -13392,44 +13392,9 @@
           "OnTriggerEnter": null,
           "OnTriggerExit": null,
           "RollingResistance": null,
-          "Static": false,
+          "Static": true,
           "Surface": null,
           "SurfaceVelocity": "0,0,0"
-        },
-        {
-          "__type": "Sandbox.Rigidbody",
-          "__guid": "995d8275-b5ea-4024-b02b-89ea6fc49802",
-          "__enabled": true,
-          "Flags": 0,
-          "AngularDamping": 0,
-          "EnableImpactDamage": true,
-          "EnhancedCcd": false,
-          "Gravity": true,
-          "GravityScale": 1,
-          "ImpactDamage": 15,
-          "LinearDamping": 0,
-          "Locking": {
-            "X": false,
-            "Y": false,
-            "Z": false,
-            "Pitch": false,
-            "Yaw": false,
-            "Roll": false
-          },
-          "MassCenterOverride": "0,0,0",
-          "MassOverride": 20,
-          "MinImpactDamageSpeed": 600,
-          "MotionEnabled": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OverrideMassCenter": false,
-          "RigidbodyFlags": 0,
-          "SleepThreshold": 2,
-          "StartAsleep": false
         }
       ],
       "Children": []
@@ -14952,6 +14917,47 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "6b510c33-4dab-47a3-b605-9ad33184defe",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object",
+      "Position": "832,-1120,-32",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SoundscapeTrigger",
+          "__guid": "b16aa158-3e83-44f6-852e-0cc9c575fa83",
+          "__enabled": true,
+          "Flags": 0,
+          "BoxSize": "50,50,50",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Radius": 5000,
+          "Soundscape": "soundscapes/field/field_day_01a.sndscape",
+          "StayActiveOnExit": true,
+          "TargetMixer": {
+            "Name": "game",
+            "Id": "ed1481f6-82d3-47c0-bf84-3be85d957393"
+          },
+          "Type": "Sphere",
+          "Volume": 1
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -15021,7 +15027,8 @@
     "facepunch.wardrobe01#275721",
     "facepunch.washingmachine#279042",
     "facepunch.wooden_chair_a#274758",
-    "facepunch.wooden_door_01c#275040"
+    "facepunch.wooden_door_01c#275040",
+    "rust.field_day_01a#43853"
   ],
   "__version": 3
 }
