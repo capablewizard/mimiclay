@@ -3189,7 +3189,7 @@
   "SceneProperties": {
     "NetworkInterpolation": true,
     "TimeScale": 1,
-    "WantsSystemScene": true,
+    "WantsSystemScene": false,
     "Metadata": {
       "Title": "minimal"
     },
