@@ -478,9 +478,12 @@ public sealed class TutorialDirector : Component
 				// He still SAYS the Tab tip (the chain's second line), but a spoken aside got missed — so it
 				// also gets a checklist row: the wireframes are how you SEE the shapes you're picking
 				// between. (The key is owned by the controllers, not a gated HUD section, so it always works.)
-				// It's the round TRIP that ticks — seen on, then off again — so nobody sculpts the rest of
-				// the tutorial through a wireframe overlay they left switched on.
-				new Hint { KeyCap = "Tab", Label = "Toggle Wireframe on/off", Check = d => d._wireSeenOn && !d.Session.WireframesOn },
+				// Two rows, not one: the round trip is what matters (nobody should sculpt the rest of the
+				// tutorial through an overlay they left switched on), but a single row that only ticks at
+				// the END gives no sign the first press did anything. The "off" row can't run ahead of the
+				// "on" one — it wants the same latch.
+				new Hint { KeyCap = "Tab", Label = "Toggle Wireframe on", Check = d => d._wireSeenOn },
+				new Hint { KeyCap = "Tab", Label = "Toggle Wireframe off", Check = d => d._wireSeenOn && !d.Session.WireframesOn },
 			},
 			// The Tab tip chains in after the intro; finishing the rows early mustn't cut it off.
 			Done = d => d._chainDone,
