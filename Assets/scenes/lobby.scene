@@ -2560,7 +2560,9 @@
               "OnComponentUpdate": null,
               "SpaceTicks": 2,
               "Text": "I can show you how to sculpt",
-              "TypeSpeed": 16
+              "TypeSpeed": 18,
+              "TypeVolume": 0.4,
+              "TypeVolumeJitter": 0.5
             }
           }
         ],

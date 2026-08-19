@@ -353,6 +353,10 @@ public sealed class HunterController : Component
 		// next render — the first one anybody sees — is already correct.
 		RevealAfterSpawn();
 
+		// Where a fall respawn returns this pawn: the spawn placement, until an authoritative Teleport (the
+		// hunt-start return) re-anchors it. See the fall check at the top of OnUpdate.
+		_fallAnchor = WorldTransform;
+
 		// Cache what we hide in first person (see HideOwnBody). SDF visuals manage their own sibling mesh
 		// ModelRenderer per-frame (raymarch vs. shadow-only by LOD band), so we must NOT sweep those into
 		// _bodyRenderers — forcing their RenderType from here would fight that and double-draw on proxies.
@@ -519,6 +523,17 @@ public sealed class HunterController : Component
 
 	protected override void OnUpdate()
 	{
+		// Fell out of the world (blockout floor holes, physics tunnelling): back to the anchor, at rest.
+		// Teleport (not a raw transform write) so a mid-edit fall carries the face-edit camera across the
+		// jump; EyeAngles are untouched, so the view direction survives either way. !IsProxy rather than
+		// Owned: the host simulates its bots' bodies too, so it must also be the one to rescue them.
+		if ( !IsProxy && FallRespawn.Fell( WorldPosition.z, _fallAnchor.Position.z ) )
+		{
+			if ( _controller.IsValid() && _controller.Body.IsValid() )
+				_controller.Body.Velocity = Vector3.Zero;
+			Teleport( _fallAnchor.Position, _fallAnchor.Rotation );
+		}
+
 		// Owner-only: toggle face-edit mode (Q, the same "Edit" action the hider uses). Done before the input
 		// gates below so entering/leaving takes effect this same frame (no one-frame camera gap on exit).
 		// While the tutorial session owns the screen, Q asks IT to leave instead (dialog-aware, like any
@@ -766,6 +781,9 @@ public sealed class HunterController : Component
 	/// Read LIVE every frame, never cached in OnStart: a host-spawned pawn runs OnStart on the owning client BEFORE
 	/// ownership replicates, so a one-shot read is stale. (IsProxy is false in non-networked play, so solo works.)</summary>
 	bool Owned => !IsProxy && !Bot;
+
+	// Spawn placement (re-anchored by Teleport) — where the fall-respawn check in OnUpdate returns the pawn.
+	Transform _fallAnchor;
 
 	// The body, resolved once so EnsureVisualPivot can move it under the pivot.
 	GameObject _bodyObject;
@@ -2075,6 +2093,9 @@ public sealed class HunterController : Component
 	public void Teleport( Vector3 position, Rotation rotation )
 	{
 		var view = EditMode && _orbit.IsValid() ? CaptureEditView() : ((Angles, float, Vector3)?)null;
+
+		// An authoritative move is the new "safe ground" — a fall respawn returns here, not the stale spawn.
+		_fallAnchor = new Transform( position, rotation );
 
 		WorldPosition = position;
 		WorldRotation = rotation;

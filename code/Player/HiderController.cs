@@ -158,6 +158,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	public bool IsGrounded { get; private set; }
 
 	Rigidbody Body;          // our physics body (the disguise's ModelCollider aggregates into it)
+	Transform _fallAnchor;   // spawn placement, recorded in OnStart — where a fall respawn puts us back
 	SdfSculpture _body;      // the sculpted disguise
 
 	/// <summary>External access to the simulated physics body — e.g. <see cref="JumpPad"/> setting an outright
@@ -395,6 +396,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// mid-drag — so both sides rebase on the same settled shape states (see RecenterOriginOnShape).
 		if ( _body.IsValid() )
 			_body.Committed += RecenterOriginOnShape;
+
+		// Where a fall respawn returns this body: the spawn placement (every mode hands the clone its spot as
+		// the spawn transform, so recording it here needs no mode-specific wiring). See OnFixedUpdate.
+		_fallAnchor = WorldTransform;
 	}
 
 	protected override void OnDestroy()
@@ -601,6 +606,20 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// character physics entirely so we don't run ground-probe traces for a body we're not simulating.
 		if ( IsProxy )
 			return;
+
+		// Fell out of the world (blockout floor holes, physics tunnelling): put the body back at its spawn
+		// spot, upright and at rest — keeping its current heading so the player's camera relation survives.
+		// After the proxy gate so it runs exactly on the machine simulating this body: the owner, or the
+		// host for its bots and released scenery props. Dormant/editing states included on purpose — a
+		// scenery prop that escapes the map should come back too.
+		if ( FallRespawn.Fell( WorldPosition.z, _fallAnchor.Position.z ) )
+		{
+			WorldPosition = _fallAnchor.Position;
+			WorldRotation = Rotation.FromYaw( WorldRotation.Angles().yaw );
+			Body.Velocity = Vector3.Zero;
+			Body.AngularVelocity = Vector3.Zero;
+			return; // let the teleport land before running movement against stale ground probes
+		}
 
 		if ( !Body.MotionEnabled )
 			Body.MotionEnabled = true;

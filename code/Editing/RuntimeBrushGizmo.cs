@@ -274,7 +274,8 @@ public sealed class RuntimeBrushGizmo
 	// this changes a pixel. Locked = ghosted + inert; Hidden = gone. An in-flight drag isn't cut short —
 	// the gate only stops NEW hovers, so a step advancing mid-drag lets the drag finish naturally.
 
-	const float LockedHandleAlpha = 0.12f; // "very low opacity" — present, clearly not the lesson
+	const float LockedHandleAlpha = 0.3f;  // present, clearly not the lesson
+	const float LockedHandleGrey = 1f;     // 1 = the axis colours drain to flat grey while locked
 
 	static HudSection? FamilyOf( string name )
 	{
@@ -1234,8 +1235,19 @@ public sealed class RuntimeBrushGizmo
 	}
 
 	// Handle colour through the gizmo's master fade AND the tutorial's family gate (the group fade this
-	// hook was kept around for): a Locked family ghosts to LockedHandleAlpha, Hidden goes fully clear.
-	Color Tint( Color c, string name ) => c.WithAlpha( c.a * _masterAlpha * FamilyAlpha( name ) );
+	// hook was kept around for): a Locked family drains to grey and ghosts to LockedHandleAlpha, Hidden
+	// goes fully clear. Greyed rather than merely dim on purpose — a dim RED axis still reads as "an axis
+	// I could grab"; a grey one reads as dead, which is the whole point of the locked state.
+	Color Tint( Color c, string name )
+	{
+		if ( FamilyOf( name ) is { } s && EditHudGate.Of( s ) == SectionState.Locked )
+		{
+			float g = c.r * 0.299f + c.g * 0.587f + c.b * 0.114f;
+			c = Color.Lerp( c, new Color( g, g, g, c.a ), LockedHandleGrey );
+		}
+
+		return c.WithAlpha( c.a * _masterAlpha * FamilyAlpha( name ) );
+	}
 
 	bool IsHot( string name ) => _active == name || (_hover == name && _active is null);
 

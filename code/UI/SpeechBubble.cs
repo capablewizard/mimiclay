@@ -39,6 +39,15 @@ public sealed class SpeechBubble : Component
 	/// 3 ≈ a 100ms beat at the default speed. 0 = word gaps are free.</summary>
 	[Property] public int SpaceTicks { get; set; } = 3;
 
+	/// <summary>Loudness of the per-letter typing blip. 0 = types silently — a bubble that shouldn't be
+	/// heard (a distant bark, an ambient sign) turns the voice off here rather than in the overlay.</summary>
+	[Property, Range( 0f, 1f )] public float TypeVolume { get; set; } = 0.4f;
+
+	/// <summary>Per-blip loudness wobble, as a ± fraction of <see cref="TypeVolume"/> (0.15 = ±15%). Rolled
+	/// fresh for every blip alongside the pitch: a fixed pair reads as one sample retriggering, the jitter
+	/// makes it a voice. 0 = every letter exactly as loud as the last.</summary>
+	[Property, Range( 0f, 1f )] public float TypeVolumeJitter { get; set; } = 0.15f;
+
 	/// <summary>Per-machine runtime hide — the <see cref="SdfHighlightOutline.Hidden"/> pattern. Drive THIS
 	/// from code, never <c>Enabled</c>: Enabled serializes, so an in-editor play session flipping it would
 	/// bake the flip into the scene on the next save.</summary>

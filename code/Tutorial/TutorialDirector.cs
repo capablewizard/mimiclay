@@ -493,15 +493,20 @@ public sealed class TutorialDirector : Component
 					d._chainDone = true;
 			},
 			// Selection unlocks HERE — the camera stage keeps clicks pure camera (no picking, no hover
-			// ghost), so a stray tap can't select a shape before it's been introduced. The gizmo stays
-			// fully HIDDEN (the gate baseline) through this step and its praise — its first appearance is
-			// the move lesson's entry, landing exactly on "This is the gizmo!".
+			// ghost), so a stray tap can't select a shape before it's been introduced. The gizmo comes up
+			// LOCKED (greyed, inert): with it fully hidden there was no confirmation that the click had
+			// landed at all. It stays grey through the praise; the move lesson's entry is what brings it
+			// to life, landing exactly on "This is the gizmo!".
 			Enter = d =>
 			{
 				// Seeded from the LIVE state, not false: flick it on during his speech and turning it back
 				// off still completes the row (rather than demanding a second on-off).
 				d._wireSeenOn = d.Session.WireframesOn;
-				d.ApplyGate( (HudSection.WorldSelect, SectionState.Normal) );
+				d.ApplyGate(
+					(HudSection.WorldSelect, SectionState.Normal),
+					(HudSection.GizmoMove, SectionState.Locked),
+					(HudSection.GizmoRotate, SectionState.Locked),
+					(HudSection.GizmoScale, SectionState.Locked) );
 			},
 		} );
 
