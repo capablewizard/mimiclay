@@ -3,6 +3,18 @@ using System.Linq;
 
 namespace Mimiclay;
 
+/// <summary>How a room's <see cref="RoomController.Doors"/> combine to decide accessibility.</summary>
+public enum DoorRequirement
+{
+	/// <summary>Any ONE of the listed doors being open is enough — only disables once ALL are closed. Use this
+	/// for a room with multiple separate entrances (either one gets you in).</summary>
+	AnyOpen,
+
+	/// <summary>EVERY listed door must be open — closing any single one disables the room. Use this when all
+	/// the listed doors gate the SAME entrance (e.g. a door plus a vent cover over the same opening).</summary>
+	AllOpen,
+}
+
 /// <summary>
 /// Disables spawn points and other gameplay objects inside a room while its door(s) are closed, and re-enables
 /// them once the room is accessible again. Drop one of these per room, point <see cref="Doors"/> at the
@@ -27,10 +39,12 @@ public sealed class RoomController : Component
 	/// <summary>The door(s) that lead into this room.</summary>
 	[Property] public List<RoundDoor> Doors { get; set; } = new();
 
-	/// <summary>If true (default), EVERY door must be open for the room to be considered accessible — closing
-	/// any single door disables the room. If false, the room stays accessible as long as ANY one of its doors
-	/// is open (only fully disabled once ALL doors are closed).</summary>
-	[Property] public bool RequireAllDoorsOpen { get; set; } = true;
+	/// <summary>How <see cref="Doors"/> combine — <see cref="DoorRequirement.AllOpen"/> (default, matches this
+	/// component's original behavior) for doors that all gate the same entrance, <see cref="DoorRequirement.AnyOpen"/>
+	/// for a room with separate entrances. NOTE: this replaces the old <c>RequireAllDoorsOpen</c> bool — any
+	/// room configured before this change needs its <see cref="Requirement"/> re-set in the inspector (the old
+	/// serialized bool won't carry over automatically).</summary>
+	[Property] public DoorRequirement Requirement { get; set; } = DoorRequirement.AllOpen;
 
 	/// <summary>Objects to enable/disable based on the room's accessibility (spawn points, spawners, loot, etc).</summary>
 	[Property] public List<GameObject> Members { get; set; } = new();
@@ -78,7 +92,7 @@ public sealed class RoomController : Component
 
 		var doors = Doors.Where( d => d.IsValid() ).ToList();
 
-		var ownAccessible = doors.Count == 0 || (RequireAllDoorsOpen
+		var ownAccessible = doors.Count == 0 || (Requirement == DoorRequirement.AllOpen
 			? doors.All( d => d.IsOpen )
 			: doors.Any( d => d.IsOpen ));
 
