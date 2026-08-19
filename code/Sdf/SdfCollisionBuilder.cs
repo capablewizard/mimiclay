@@ -40,7 +40,12 @@ public static class SdfCollisionBuilder
 	const float SplineSweepSpacing = 1.0f; // swept-sphere step, in local radii (hover ghost uses 0.6)
 
 	// Carve-aware path (see BuildCarved). All biases are fractions of the smallest voxel edge.
-	const float CarveGateFraction = 0.10f; // swap to voxels only when subtracts remove at least this fraction
+	const float CarveGateFraction = 0.005f; // swap to voxels only when subtracts remove at least this fraction.
+	                                        // Deliberately near zero — just a guard against a lone noisy sample.
+	                                        // A kept-exact copy still collides with its carved-off volume (a
+	                                        // flattened sphere rests on the missing pole and visibly hovers), so
+	                                        // any carve that registers at all should swap; the real "too shallow
+	                                        // to matter" filter is CarveBias, not this.
 	const float VoxelTarget = 5f;          // target voxel edge (sculpture units)
 	const int VoxelMaxPerAxis = 14;        // grid cap — 14³ ≈ 2.7k field samples per copy, commit-time only
 	const float SolidBias = 0.25f;         // a cell centre must be this deep INSIDE the brush to count as solid
