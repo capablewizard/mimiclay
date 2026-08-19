@@ -491,7 +491,7 @@ public static class SdfCollisionBuilder
 				record = new CarvedCopy { BrushIndex = index, Sign = sign, Position = b.Position, Rotation = b.Rotation };
 				carvedCopies.Add( record );
 			}
-			any |= GreedyBoxes( b.Position, b.Rotation, sign, lo, cell, solid, nx, ny, nz, builder, record );
+			any |= GreedyBoxes( b.Position, b.Rotation, sign, lo, cell, solid, nx, ny, nz, builder, record, carvers );
 		}
 
 		return any;
@@ -600,7 +600,7 @@ public static class SdfCollisionBuilder
 
 		if ( kept == 0 )
 			return false; // biased sampling ate it whole — close enough to fully swallowed
-		return GreedyBoxes( Vector3.Zero, Rotation.Identity, Vector3.One, lo, new Vector3( cell ), solid, n, n, n, builder, record );
+		return GreedyBoxes( Vector3.Zero, Rotation.Identity, Vector3.One, lo, new Vector3( cell ), solid, n, n, n, builder, record, carvers );
 	}
 
 	// One mirror copy's EXACT convex collider — the same shapes the uncarved path builds, emitted for a
@@ -635,9 +635,10 @@ public static class SdfCollisionBuilder
 	// Merge the solid cells into as few boxes as possible (greedy run → rect → slab growth, consuming cells
 	// as it goes) and emit each as an 8-corner hull in sculpture space. Merging matters beyond shape count:
 	// an unmerged floor is a row of boxes whose internal seams catch anything sliding across them — merged,
-	// a bin floor is ONE box.
+	// a bin floor is ONE box. Each box is then face-clipped against the carvers (ClipBoxToCarvers) — the
+	// clipped extents are what's emitted AND recorded, so the foot probes ride the clipped collider.
 	static bool GreedyBoxes( Vector3 framePos, Rotation frameRot, Vector3 sign, Vector3 lo, Vector3 cell,
-		bool[] solid, int nx, int ny, int nz, ModelBuilder builder, CarvedCopy record )
+		bool[] solid, int nx, int ny, int nz, ModelBuilder builder, CarvedCopy record, List<SdfBrush> carvers )
 	{
 		bool any = false;
 		for ( int iz = 0; iz < nz; iz++ )
@@ -666,6 +667,7 @@ public static class SdfCollisionBuilder
 
 			var blo = new Vector3( lo.x + ix * cell.x, lo.y + iy * cell.y, lo.z + iz * cell.z );
 			var bhi = new Vector3( lo.x + (ex + 1) * cell.x, lo.y + (ey + 1) * cell.y, lo.z + (ez + 1) * cell.z );
+			ClipBoxToCarvers( ref blo, ref bhi, framePos, frameRot, sign, cell, carvers );
 
 			var hull = new List<Vector3>( 8 );
 			for ( int c = 0; c < 8; c++ )
@@ -682,6 +684,77 @@ public static class SdfCollisionBuilder
 			any = true;
 		}
 		return any;
+	}
+
+	// Sub-cell refinement of one merged box against the carve surface. Cell-centre occupancy leaves each face
+	// up to half a cell PLUS the CarveBias skin inside a subtract (~0.85× a cell edge) — on a flat bottom cut
+	// that whole overlap is resting height, so the prop visibly hovers. Shrink each face inward by the depth
+	// the carve union is GUARANTEED to reach across the whole face — the min over its corner+centre samples,
+	// which is exact for a face-parallel flat cut and conservative (never eats true solid; SDF Lipschitz ≤ 1)
+	// for oblique or curved ones. Per-face shrink is capped at the overlap the kept boundary cell permits, and
+	// opposing faces can't cross — a thin wall still survives, same philosophy as CarveBias itself.
+	static void ClipBoxToCarvers( ref Vector3 blo, ref Vector3 bhi, Vector3 framePos, Rotation frameRot, Vector3 sign,
+		Vector3 cell, List<SdfBrush> carvers )
+	{
+		if ( carvers is null || carvers.Count == 0 )
+			return;
+
+		float cellMin = MathF.Min( cell.x, MathF.Min( cell.y, cell.z ) );
+		var mid = (blo + bhi) * 0.5f;
+		Span<float> shrink = stackalloc float[6]; // -x, +x, -y, +y, -z, +z
+
+		for ( int a = 0; a < 3; a++ )
+		{
+			float ca = a == 0 ? cell.x : a == 1 ? cell.y : cell.z;
+			float maxShrink = 0.5f * ca + CarveBias * cellMin; // deeper would contradict the kept boundary cell
+			for ( int side = 0; side < 2; side++ )
+			{
+				float fa = side == 0
+					? (a == 0 ? blo.x : a == 1 ? blo.y : blo.z)
+					: (a == 0 ? bhi.x : a == 1 ? bhi.y : bhi.z);
+
+				// 4 face corners + face centre; the min depth over them bounds the depth over the whole face
+				// for any near-linear carve field (a plane cut exactly, a convex carver conservatively).
+				float depth = float.MaxValue;
+				for ( int k = 0; k < 5 && depth > 0f; k++ )
+				{
+					float u = k == 4 ? (a == 0 ? mid.y : mid.x) : ((k & 1) != 0 ? (a == 0 ? bhi.y : bhi.x) : (a == 0 ? blo.y : blo.x));
+					float v = k == 4 ? (a == 2 ? mid.y : mid.z) : ((k & 2) != 0 ? (a == 2 ? bhi.y : bhi.z) : (a == 2 ? blo.y : blo.z));
+					var lp = a == 0 ? new Vector3( fa, u, v ) : a == 1 ? new Vector3( u, fa, v ) : new Vector3( u, v, fa );
+					var p = (framePos + frameRot * lp) * sign;
+
+					float d = float.MinValue; // how deep inside the carve union this sample sits
+					foreach ( var s in carvers )
+						d = MathF.Max( d, -s.Distance( p ) );
+					depth = MathF.Min( depth, d );
+				}
+
+				shrink[a * 2 + side] = Math.Clamp( depth, 0f, maxShrink );
+			}
+		}
+
+		for ( int a = 0; a < 3; a++ )
+		{
+			float ca = a == 0 ? cell.x : a == 1 ? cell.y : cell.z;
+			float loS = shrink[a * 2], hiS = shrink[a * 2 + 1];
+			float la = a == 0 ? blo.x : a == 1 ? blo.y : blo.z;
+			float ha = a == 0 ? bhi.x : a == 1 ? bhi.y : bhi.z;
+
+			float room = (ha - la) - 0.25f * ca; // keep at least a quarter-cell of thickness
+			if ( room <= 0f )
+				continue;
+			float sum = loS + hiS;
+			if ( sum > room )
+			{
+				float k = room / sum;
+				loS *= k;
+				hiS *= k;
+			}
+
+			if ( a == 0 ) { blo.x += loS; bhi.x -= hiS; }
+			else if ( a == 1 ) { blo.y += loS; bhi.y -= hiS; }
+			else { blo.z += loS; bhi.z -= hiS; }
+		}
 	}
 
 	static bool RunSolid( bool[] solid, int nx, int ny, int x0, int x1, int y, int z )
