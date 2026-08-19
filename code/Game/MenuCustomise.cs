@@ -1,7 +1,4 @@
 using System;
-using System.Threading.Tasks;
-using Sandbox.Modals;
-using Sandbox.UI;
 
 namespace Mimiclay;
 
@@ -55,6 +52,7 @@ public sealed class MenuCustomise : Component
 	OrbitCameraController _orbit;
 	SdfSculpture _face;
 	SdfSculpture[] _bodySculpts; // everything sculpted on the model EXCEPT the face — mirrors the face's clay
+	SculptWorkshop _workshop;    // the Workshop column's save/load/browse flow (shared with creative mode)
 	EditHud _hud;
 	bool _frameQueued;           // frame-on-the-head still pending (waits for the session to self-activate)
 	Vector3 _cameraReturnPos;    // the menu camera's pose before customise — the orbit rig moves AND rotates
@@ -104,9 +102,14 @@ public sealed class MenuCustomise : Component
 			Hud.ShowLayers = true;
 			Hud.ShowTools = true;
 			Hud.BackAction = () => MainMenuNav.Instance?.GoBackOrHome();
-			Hud.WorkshopSave = SaveToWorkshop;
-			Hud.WorkshopLoad = LoadFromWorkshop;
-			Hud.WorkshopClose = CloseWorkshopBrowser;
+
+			// The Workshop column — head flavor, save/load/browse in SculptWorkshop (creative mode wires
+			// the same class prop-flavored). Closures read the LIVE fields, and Alive = IsOpen abandons
+			// any in-flight async op once the page is left.
+			_workshop = SculptWorkshop.ForHeads( () => Hud, () => _session, () => IsOpen );
+			Hud.WorkshopSave = _workshop.Save;
+			Hud.WorkshopLoad = _workshop.Load;
+			Hud.WorkshopClose = _workshop.Close;
 		}
 
 		var cam = Scene.Camera;
@@ -158,6 +161,7 @@ public sealed class MenuCustomise : Component
 		_orbit = null;
 		_face = null;
 		_bodySculpts = null;
+		_workshop = null;
 
 		// Put the camera back exactly as the menu had it — the orbit rig moved and rotated it, and the home
 		// page should come back framed as if we never left. (FOV needs no restore: the rig asserts it through
@@ -203,249 +207,6 @@ public sealed class MenuCustomise : Component
 		Hud.WorkshopBrowserOpen = false;
 		Hud.WorkshopStatus = null;
 		Hud.WorkshopItems = null;
-	}
-
-	// Save To Workshop: pack the current head into a Storage entry (the same JSON a local .sculpt save
-	// carries) and hand it to the Steam Workshop publish overlay — user-confirmed every time, by Steam's
-	// design (the silent UgcPublisher is engine-internal on purpose). Every save is a FRESH entry and so a
-	// NEW workshop item: the workshop is a library of heads, and the earlier update-in-place behaviour (one
-	// reused entry carrying a _workshopId) meant each save — or a save after a load — silently overwrote an
-	// existing item. An explicit "update this item" flow can come later; overwriting must never be implicit.
-
-	bool _thumbCapturing;
-
-	async void SaveToWorkshop()
-	{
-		if ( _thumbCapturing || !_face.IsValid() || _face.Brushes is not { Count: > 0 } )
-			return;
-
-		// Render the thumbnail first — it spans a few frames, and the modal should open showing it.
-		_thumbCapturing = true;
-		Bitmap thumb;
-		try
-		{
-			thumb = await CaptureHeadBitmap();
-		}
-		finally
-		{
-			_thumbCapturing = false;
-		}
-
-		// The capture awaited across frames — bail if the page was left (model torn down) meanwhile.
-		if ( !IsOpen || !_face.IsValid() || _face.Brushes is not { Count: > 0 } )
-			return;
-
-		var entry = Storage.CreateEntry( "head" );
-		entry.Files.WriteAllText( "head.sculpt", Json.Serialize( new SculptLibrary.Entry
-		{
-			Name = "Head",
-			Resolution = _face.Resolution,
-			FlipFaces = _face.FlipFaces,
-			Brushes = _face.Brushes,
-		} ) );
-
-		// Stored ON the entry (not just passed to the modal): Publish reads the entry's _thumb.png into the
-		// options itself, and the saved file doubles as the local gallery icon for the future Library page.
-		if ( thumb is not null )
-			entry.SetThumbnail( thumb );
-
-		entry.Publish( new WorkshopPublishOptions
-		{
-			Title = "My Mimiclay Head",
-			Description = "A head sculpted in Mimiclay.",
-			Visibility = Storage.Visibility.Private, // preset only — the modal's visibility selector is left on
-		} );
-	}
-
-	// Render the current head through the roster-icon pipeline (SdfThumbnail → SdfStage: same rig prefab,
-	// same ink outline, prop on transparency) and read the pixels back as a workshop-ready Bitmap. A
-	// ScenePanel is the only sanctioned runtime render-to-texture route (see SdfThumbnail's header), so the
-	// capture rig IS a panel — parked invisible on the EditHud, ticked by the UI for a few frames while it
-	// stages and renders, then read back and deleted.
-	async Task<Bitmap> CaptureHeadBitmap()
-	{
-		var host = Hud.IsValid() ? Hud.Panel : null;
-		if ( host is null )
-			return null;
-
-		var thumb = new SdfThumbnail
-		{
-			Parent = host,
-			Brushes = _face.Brushes.Where( b => !b.Damage ).Select( b => b.Copy() ).ToList(),
-		};
-
-		// Invisible but laid out: the panel needs a real rect to size its render target. Opacity only hides
-		// the on-screen draw — the offscreen render still happens. (Panels don't take pointer events unless
-		// styled to, so this can't block the HUD while it exists.)
-		thumb.Style.Position = PositionMode.Absolute;
-		thumb.Style.Left = 0;
-		thumb.Style.Top = 0;
-		thumb.Style.Width = 512;
-		thumb.Style.Height = 512;
-		thumb.Style.Opacity = 0;
-
-		try
-		{
-			// A few UI ticks: layout a rect, stage the brushes, render. HasSubject + a live RenderTexture is
-			// the "picture landed" signal; the deadline covers a stage that can't come up without hanging.
-			for ( int i = 0; i < 30; i++ )
-			{
-				await Task.Frame();
-				if ( thumb.HasSubject && thumb.RenderTexture is not null )
-					break;
-			}
-
-			await Task.Frame(); // one more so the render queued by the final stage/frame change has landed
-
-			var tex = thumb.RenderTexture;
-			if ( tex is null )
-				return null;
-
-			// Keep the stage's transparency: the head floats on alpha with its ink outline, so the library
-			// tiles show no backdrop square. (Steam's docs suggest opaque previews but alpha PNGs are
-			// accepted fine — the workshop site just draws its own ground behind them.) Then square it to
-			// the 512×512 the workshop asks for.
-			var src = tex.GetPixels();
-			var pixels = new Color[src.Length];
-
-			for ( int i = 0; i < src.Length; i++ )
-				pixels[i] = src[i].ToColor();
-
-			var bitmap = new Bitmap( tex.Width, tex.Height );
-			bitmap.SetPixels( pixels );
-
-			return tex.Width == 512 && tex.Height == 512 ? bitmap : bitmap.Resize( 512, 512 );
-		}
-		finally
-		{
-			// NOT Delete(): this finally runs in an await continuation, which the engine can resume from
-			// inside the capture panel's own internal-scene tick — a synchronous delete there destroys that
-			// scene mid-tick and the resumed tick NREs in Nav_Update. DeleteSoon defers to the panel's own
-			// next tick, where its scene is guaranteed idle.
-			thumb.DeleteSoon();
-		}
-	}
-
-	// Load From Workshop: entirely silent API (only PUBLISHING is overlay-mediated), so the browser is our
-	// own UI — result rows in the EditHud's workshop column. The query can only ever return the player's own
-	// mimiclay heads: it's scoped to this app's workshop, filtered to the "head" tag our publisher stamps,
-	// and restricted to Author = the local player (which is also what lets it see Private items).
-	bool _workshopBusy;
-
-	async void LoadFromWorkshop()
-	{
-		if ( !Hud.IsValid() )
-			return;
-
-		// Second click toggles the window closed (the window's own X routes here too, via WorkshopClose).
-		if ( Hud.WorkshopBrowserOpen )
-		{
-			CloseWorkshopBrowser();
-			return;
-		}
-
-		if ( _workshopBusy )
-			return;
-
-		_workshopBusy = true;
-		Hud.WorkshopBrowserOpen = true;
-		Hud.WorkshopItems = null;
-		Hud.WorkshopStatus = "Searching…";
-
-		try
-		{
-			var query = new Storage.Query
-			{
-				Author = Game.SteamId,
-				TagsRequired = { "head" },
-				SortOrder = Storage.SortOrder.RankedByPublicationDate,
-			};
-
-			var result = await query.Run();
-
-			if ( !IsOpen || !Hud.IsValid() || !Hud.WorkshopBrowserOpen )
-				return; // page left or window closed while searching
-
-			var items = result?.Items?.Where( i => !i.Banned ).ToList();
-			if ( items is not { Count: > 0 } )
-			{
-				Hud.WorkshopStatus = "No saved heads found";
-				return;
-			}
-
-			Hud.WorkshopStatus = null;
-			Hud.WorkshopItems = items
-				.Select( i => (
-					string.IsNullOrWhiteSpace( i.Title ) ? "Head" : i.Title,
-					i.Preview,
-					(Action)(() => ApplyWorkshopItem( i )) ) )
-				.ToList();
-		}
-		catch ( Exception e )
-		{
-			Log.Warning( $"MenuCustomise: workshop query failed — {e.Message}" );
-			if ( Hud.IsValid() )
-				Hud.WorkshopStatus = "Workshop unavailable";
-		}
-		finally
-		{
-			_workshopBusy = false;
-		}
-	}
-
-	void CloseWorkshopBrowser()
-	{
-		if ( !Hud.IsValid() )
-			return;
-
-		Hud.WorkshopBrowserOpen = false;
-		Hud.WorkshopItems = null;
-		Hud.WorkshopStatus = null;
-	}
-
-	// Download the picked item (silent) and wear it — through the session's Load funnel, so it's undoable,
-	// rebuilds/commits, and the per-commit persist hook writes it straight into the local head slot.
-	async void ApplyWorkshopItem( Storage.QueryItem item )
-	{
-		if ( _workshopBusy || !Hud.IsValid() )
-			return;
-
-		_workshopBusy = true;
-		Hud.WorkshopStatus = "Downloading…"; // tiles stay up; the busy flag blanks double-clicks
-
-		try
-		{
-			var installed = await item.Install();
-
-			if ( !IsOpen || !Hud.IsValid() )
-				return;
-
-			var json = installed?.Files.FileExists( "head.sculpt" ) == true
-				? installed.Files.ReadAllText( "head.sculpt" )
-				: null;
-			var entry = json is null ? null : Json.Deserialize<SculptLibrary.Entry>( json );
-
-			if ( entry is null || !_session.IsValid() || !_session.Load( entry ) )
-			{
-				Hud.WorkshopStatus = "Couldn't load that head";
-				return;
-			}
-
-			// Success — the head is on; close the window so the player sees it. (Deliberately NOT remembering
-			// the item's id for the next save: saves always mint a new item — sculpting over a loaded head
-			// and saving must never silently overwrite the original.)
-			CloseWorkshopBrowser();
-		}
-		catch ( Exception e )
-		{
-			Log.Warning( $"MenuCustomise: workshop install failed — {e.Message}" );
-			if ( Hud.IsValid() )
-				Hud.WorkshopStatus = "Couldn't load that head";
-		}
-		finally
-		{
-			_workshopBusy = false;
-		}
 	}
 
 	// Bring the sculpt toy back and re-enter its always-on edit mode. OnStart only ever runs once, so the

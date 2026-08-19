@@ -93,6 +93,7 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 	{
 		if ( Current == this ) Current = null;
 		if ( ReferenceEquals( RoundContext.Active, this ) ) RoundContext.Active = null;
+		ClearWorkshopUi();
 	}
 
 	protected override void OnStart()
@@ -120,11 +121,70 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 	protected override void OnUpdate()
 	{
 		HandleInput();
+		UpdateWorkshopUi();
 
 		if ( !IsHostAuthority )
 			return;
 
 		ReconcileConnections();
+	}
+
+	// ── Workshop column on the edit HUD (local UI, every machine) ─────────────────────────────────────────────
+	// Creative mounts the customiser's Save/Load To Workshop buttons on the in-game EditHud whenever the local
+	// player is editing: prop-flavored on a prop pawn, head-flavored on a hunter's face edit (recognised by the
+	// head persist slot) — so a face saved here lands in the same workshop library the menu customiser browses,
+	// and props keep a library of their own. The wiring is rebuilt per SESSION: a P/E swap tears the old session
+	// down, and any async op it left in flight is abandoned by its alive check the moment IsEditing drops.
+
+	EditHud _hud;
+	SculptWorkshop _workshop;
+	SculptEditSession _workshopSession; // the session the current wiring was built for
+
+	// The scene's EditHud, found once (it's scene-placed in the map scenes; null-safe if a map lacks one).
+	EditHud Hud => _hud.IsValid() ? _hud : (_hud = Scene.GetAllComponents<EditHud>().FirstOrDefault());
+
+	void UpdateWorkshopUi()
+	{
+		var session = SculptEditSession.Current;
+		if ( session.IsValid() && session.IsEditing )
+		{
+			if ( session == _workshopSession || !Hud.IsValid() )
+				return;
+
+			ClearWorkshopUi(); // a different session was wired — drop its browser state before rebinding
+
+			var s = session; // captured per wiring, so a later Current can't be answered for
+			Func<bool> alive = () => s.IsValid() && s.IsEditing;
+			_workshopSession = s;
+			_workshop = s.PersistSlot == SculptLibrary.HeadSlot
+				? SculptWorkshop.ForHeads( () => Hud, () => s, alive )
+				: SculptWorkshop.ForProps( () => Hud, () => s, alive );
+
+			Hud.WorkshopSave = _workshop.Save;
+			Hud.WorkshopLoad = _workshop.Load;
+			Hud.WorkshopClose = _workshop.Close;
+			return;
+		}
+
+		if ( _workshopSession is not null )
+			ClearWorkshopUi();
+	}
+
+	void ClearWorkshopUi()
+	{
+		_workshopSession = null;
+		_workshop = null;
+
+		// _hud directly, not the finder: on teardown there's nothing to search the scene for.
+		if ( !_hud.IsValid() )
+			return;
+
+		_hud.WorkshopSave = null;
+		_hud.WorkshopLoad = null;
+		_hud.WorkshopClose = null;
+		_hud.WorkshopBrowserOpen = false;
+		_hud.WorkshopItems = null;
+		_hud.WorkshopStatus = null;
 	}
 
 	// A P press parked on the edit session's revert confirmation (see TrySwap). Local UI state, resolved when

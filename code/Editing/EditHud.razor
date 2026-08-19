@@ -262,8 +262,9 @@
 			</div>
 		}
 
-		@* Workshop column (menu customiser only) — a second card stack just LEFT of the Tools panel, same
-		   paper style. Only mounted when the customiser wires the actions; the in-game HUD never does. *@
+		@* Workshop column — a second card stack just LEFT of the Tools panel, same paper style. Only mounted
+		   when an owner wires the actions: the menu customiser (heads) and creative mode (props / faces —
+		   see CreativeManager.UpdateWorkshopUi); round HUDs never do. *@
 		@if ( WorkshopSave is not null )
 		{
 			<div class="panel right workshop-col">
@@ -731,7 +732,8 @@
 	public Action BackAction { get; set; }
 
 	/// <summary>When set, a Workshop column (Save To Workshop / Load From Workshop) mounts just left of the
-	/// Tools panel. Wired by the menu customiser; null everywhere else, including in game.</summary>
+	/// Tools panel. Wired by the menu customiser and by creative mode while editing (both through
+	/// <see cref="SculptWorkshop"/>); null everywhere else — round HUDs never mount it.</summary>
 	public Action WorkshopSave { get; set; }
 
 	/// <summary>The Workshop column's second button — see <see cref="WorkshopSave"/>.</summary>
