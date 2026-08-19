@@ -123,10 +123,14 @@ public class SdfBrush
 	/// <summary>Hard cap on <see cref="Blend"/> — beyond this the smooth-union bulge balloons the shape.</summary>
 	public const float MaxBlend = 15f;
 
-	/// <summary>Floor for <see cref="Rounding"/> — SDF shapes look odd perfectly sharp, so every clamp and
-	/// slider starts here. <see cref="MaxRounding"/> is floored at it too: a brush small enough that its
-	/// inscribed limit falls below this would otherwise invert every range built from the pair.</summary>
-	public const float MinRounding = 0.75f;
+	/// <summary>Floor for <see cref="Rounding"/> — 0, matching <see cref="Blend"/>'s floor, so a slice rim
+	/// (whose fillet IS the Rounding value) can be dialled just as sharp as a zero-blend boolean cut.
+	/// <see cref="MaxRounding"/> is still floored at it so ranges built from the pair can never invert.</summary>
+	public const float MinRounding = 0f;
+
+	/// <summary>Default <see cref="Rounding"/> for a fresh brush — the old floor. Perfectly sharp looks odd
+	/// as a DEFAULT, but the slider now reaches 0 for deliberate hard edges (boolean-crisp slices/corners).</summary>
+	public const float DefaultRounding = 0.75f;
 
 	/// <summary>Ceiling for <see cref="Slice"/>: the deepest allowed cut still leaves a sliver of shape, so a
 	/// maxed slider can never make the brush vanish (an empty field would just silently drop the brush).</summary>
@@ -153,9 +157,9 @@ public class SdfBrush
 	/// the inspector range and the gizmo slider max (kept an auto-property so it serialises like the rest).</summary>
 	[Property, Range( 0f, MaxBlend )] public float Blend { get; set; } = 6f;
 
-	/// <summary>Corner-rounding radius (box and future shapes). Kept at a <see cref="MinRounding"/> minimum —
-	/// SDF shapes look odd perfectly sharp.</summary>
-	[Property, Range( MinRounding, 64f )] public float Rounding { get; set; } = MinRounding;
+	/// <summary>Corner-rounding radius (box and future shapes) — also the slice rim's fillet on the sliceable
+	/// shapes. 0 = perfectly sharp (a hard boolean-style cut); defaults to <see cref="DefaultRounding"/>.</summary>
+	[Property, Range( MinRounding, 64f )] public float Rounding { get; set; } = DefaultRounding;
 
 	[Property] public Color Color { get; set; } = Color.White;
 

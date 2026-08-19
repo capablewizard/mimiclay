@@ -2538,7 +2538,7 @@
           "SliderBlendMax": 15,
           "SliderBuffer": 8,
           "SliderOffset": 204.72023,
-          "SliderRoundingMin": 0.5,
+          "SliderRoundingMin": 0,
           "SliderSpacing": 36.36675,
           "SliderThickness": 6,
           "Thickness": 2.2660944,

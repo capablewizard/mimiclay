@@ -4966,7 +4966,7 @@
           "SliderBlendMax": 15,
           "SliderBuffer": 8,
           "SliderOffset": 255,
-          "SliderRoundingMin": 0.5,
+          "SliderRoundingMin": 0,
           "SliderSpacing": 36.36675,
           "SliderThickness": 6,
           "SplineLineColor": "0.85,0.85,0.9,1",
