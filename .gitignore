@@ -17,6 +17,10 @@ code/Properties/*
 *.generated.*
 *.*_c
 !*.shader_c
+
+# Compiled map assets ARE committed (unlike other *_c files).
+!Assets/scenes/Maps/**/*_c
+
 *.los
 *.vpk
 *launchSettings.json
