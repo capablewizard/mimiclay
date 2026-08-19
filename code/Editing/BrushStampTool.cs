@@ -595,13 +595,18 @@ public sealed class BrushStampTool
 			float t = denom > 1e-4f ? Vector3.Dot( _anchor - o, fwd ) / denom : -1f;
 			pos = t >= 8f ? o + d * t : _anchor; // degenerate / camera zoomed past the plane: hold position
 
-			// The depth must never sit BEHIND world geometry the view passes through (scrolled past the
-			// floor, or a stale anchor from an earlier ghost): sweep a sphere of the ghost's rough size
-			// from the CAMERA to the steered position and stop at the first thing the world clamp
-			// considers solid. The ANCHOR adopts the capped value below, so the depth self-heals every
-			// frame — you can't scroll the target behind a wall, and a fresh ghost can never inherit an
-			// anchor on the wrong side of one. StartedSolid (the camera itself inside geometry) skips the
-			// cap — the session's world clamp still protects the brush itself.
+			// Depth MEMORY keeps the raw steered value: the anchor may sit behind geometry, but only as a
+			// remembered depth — the PRESENTED position below is always capped to the near side, so the
+			// stored depth comes back the moment the view ray clears the obstacle.
+			_anchor = pos;
+
+			// The PRESENTED position must never sit BEHIND world geometry the view passes through
+			// (scrolled past the floor, or a stale anchor from an earlier ghost): sweep a sphere of the
+			// ghost's rough size from the CAMERA to the steered position and stop at the first thing the
+			// world clamp considers solid. Capping runs every placement frame, fresh ghosts included, so a
+			// wrong-side anchor is harmless — the ghost is always shown (and clamped, and committed) on
+			// the near side. StartedSolid (the camera itself inside geometry) skips the cap — the
+			// session's world clamp still protects the brush itself.
 			var scene = target.Scene;
 			if ( scene.IsValid() )
 			{
@@ -615,8 +620,6 @@ public sealed class BrushStampTool
 				if ( trc.Hit && !trc.StartedSolid )
 					pos = tx.PointToLocal( trc.EndPosition );
 			}
-
-			_anchor = pos;
 		}
 
 		// Shift held = rough grid snap (the shared sculpture-local, origin-centred grid every editing tool
