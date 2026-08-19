@@ -179,18 +179,39 @@ public static class SculptSceneLibrary
 		if ( !FileSystem.Data.FileExists( path ) )
 			return null;
 
+		string json;
 		try
 		{
-			var save = Json.Deserialize<SceneSave>( FileSystem.Data.ReadAllText( path ) );
-			if ( save?.Props is not { Count: > 0 } )
-				return null;
-
-			save.Name ??= name;
-			return save;
+			json = FileSystem.Data.ReadAllText( path );
 		}
 		catch ( Exception e )
 		{
 			Log.Warning( $"SculptSceneLibrary: failed to load scene '{name}' — {e.Message}" );
+			return null;
+		}
+
+		var save = SceneFromJson( json, name );
+		if ( save is null )
+			return null;
+
+		save.Name ??= name;
+		return save;
+	}
+
+	/// <summary>Parse a serialized <see cref="SceneSave"/> with the validation <see cref="Load"/> applies — null
+	/// (never a throw) on corrupt or empty data. Shared with the editor's cross-root reader, which finds the same
+	/// files under a data root FileSystem.Data does not point at. <paramref name="context"/> is only for the
+	/// warning log (which file was bad).</summary>
+	public static SceneSave SceneFromJson( string json, string context )
+	{
+		try
+		{
+			var save = Json.Deserialize<SceneSave>( json );
+			return save?.Props is { Count: > 0 } ? save : null;
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"SculptSceneLibrary: failed to load scene '{context}' — {e.Message}" );
 			return null;
 		}
 	}

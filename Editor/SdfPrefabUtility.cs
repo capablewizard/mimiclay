@@ -53,27 +53,20 @@ public static class SdfPrefabUtility
 	}
 
 	/// <summary>Export a shape saved to the local library (route B: a player saved a <c>.sculpt</c> on any
-	/// build; turn it into a curated scene asset here on the dev machine).</summary>
+	/// build; turn it into a curated scene asset here on the dev machine). Searches EVERY data root — the game
+	/// and the editor write to different ones (see <see cref="SculptDataRoots"/>).</summary>
 	public static bool ExportFromSave( string saveName )
-	{
-		var entry = SculptLibrary.Load( saveName );
-		if ( entry is null )
-		{
-			Log.Warning( $"[SDF Export] no saved sculpture '{saveName}'." );
-			return false;
-		}
-
-		return Export( entry.Name ?? saveName, entry.Brushes, entry.Resolution, entry.FlipFaces );
-	}
+		=> ExportAssetFromSave( saveName ) is not null;
 
 	/// <summary>Export a saved sculpture to a prefab and hand back the registered <see cref="Asset"/> (for
 	/// instantiating it straight into a scene). Null if the save is missing or the write failed.</summary>
 	public static Asset ExportAssetFromSave( string saveName )
 	{
-		var entry = SculptLibrary.Load( saveName );
+		var found = SculptDataRoots.FindSculpt( saveName );
+		var entry = found is null ? null : SculptDataRoots.Read( found.Value );
 		if ( entry is null )
 		{
-			Log.Warning( $"[SDF Export] no saved sculpture '{saveName}'." );
+			Log.Warning( $"[SDF Export] no saved sculpture '{saveName}' in any data root." );
 			return null;
 		}
 

@@ -58,6 +58,15 @@ public class SavedSculptsWindow : BaseWindow
 	/// something's been saved there).</summary>
 	internal static void OpenDataFolder( string relative )
 	{
+		// With both data roots live (the editor writes to one, a standalone build to the other — see
+		// SculptDataRoots) there is no single right folder to open, so show the parent that holds both.
+		var roots = SculptDataRoots.All;
+		if ( roots.Count > 1 )
+		{
+			EditorUtility.OpenFolder( Path.GetDirectoryName( roots[0] ) );
+			return;
+		}
+
 		var dir = Sandbox.FileSystem.Data.GetFullPath( relative );
 		Directory.CreateDirectory( dir );
 		EditorUtility.OpenFolder( dir );
@@ -130,44 +139,61 @@ abstract class SavedListPage : Widget
 	}
 }
 
-/// <summary>The Sculpts tab: one row per saved <c>.sculpt</c>, plus the pinned head slot.</summary>
+
+/// <summary>The Sculpts tab: one row per saved <c>.sculpt</c> in either data root, plus the pinned head slot.</summary>
 class SavedSculptsPage : SavedListPage
 {
 	public SavedSculptsPage() : base( "Saved sculptures", SculptLibrary.Folder ) { }
 
 	protected override void Fill()
 	{
-		var names = SculptLibrary.List();
+		var saves = SculptDataRoots.ListSculpts();
 
-		// The head slot is filtered out of List() (leading underscore = reserved), but it's the one sculpt every
-		// player has — pin it on top so there's always something here to look at.
-		var hasHead = SculptLibrary.Exists( SculptLibrary.HeadSlot );
-		if ( hasHead )
-			AddSculptRow( SculptLibrary.HeadSlot, "(your head)", canDelete: false );
+		// The head slot is hidden from the named library (leading underscore = reserved), but it's the one sculpt
+		// every player has — pin it on top so there's always something here to look at. One row per root: the
+		// editor's head and the standalone build's head are genuinely different files.
+		var heads = saves.Where( s => s.Name == SculptLibrary.HeadSlot ).ToList();
+		foreach ( var head in heads )
+			AddSculptRow( head, "(your head)", canDelete: false );
 
-		if ( names.Count == 0 && !hasHead )
+		var named = saves.Where( s => !s.Name.StartsWith( '_' ) ).ToList();
+		if ( named.Count == 0 && heads.Count == 0 )
 		{
 			ListLayout.Add( new Label.Body( "No saved sculptures yet.\nSave one in-game with  mimi_sculpt_save <name>." ) );
 			return;
 		}
 
-		foreach ( var name in names )
-			AddSculptRow( name, name, canDelete: true );
+		foreach ( var save in named )
+			AddSculptRow( save, save.Name, canDelete: true );
 	}
 
-	void AddSculptRow( string name, string label, bool canDelete )
+	void AddSculptRow( SculptDataRoots.SculptRef save, string label, bool canDelete )
 	{
-		var n = name; // capture per row for the button lambdas
+		var s = save; // capture per row for the button lambdas
+		var entry = SculptDataRoots.Read( s );
 
-		var row = AddRow( SdfThumbnailRender.RenderSaved( n, SavedSculptsWindow.ThumbnailSize ), label );
-		row.Add( new Button( "Prefab", "deployed_code" ) { ToolTip = "Export to a .prefab asset", Clicked = () => SdfPrefabUtility.ExportFromSave( n ) } );
-		row.Add( new Button( "Scene", "add_box" ) { ToolTip = "Add to the current scene", Clicked = () => AddToScene( n ) } );
+		var row = AddRow( SdfThumbnailRender.Render( entry?.Brushes, SavedSculptsWindow.ThumbnailSize ), $"{label}\n{s.Label}" );
+		row.Add( new Button( "Prefab", "deployed_code" ) { ToolTip = "Export to a .prefab asset", Clicked = () => ExportPrefab( s, entry ) } );
+		row.Add( new Button( "Scene", "add_box" ) { ToolTip = "Add to the current scene", Clicked = () => AddToScene( s, entry ) } );
 
 		if ( canDelete )
-			row.Add( new Button( "Delete", "delete" ) { ToolTip = "Delete this save", Clicked = () => Delete( n ) } );
+			row.Add( new Button( "Delete", "delete" ) { ToolTip = "Delete this save", Clicked = () => Delete( s ) } );
 	}
 
-	void AddToScene( string name )
+	// The entry is already in hand from building the row, so these go straight to the shape exporter rather than
+	// back through a name lookup — a name alone can't say WHICH root's copy this row is.
+	static Asset ExportPrefab( SculptDataRoots.SculptRef save, SculptLibrary.Entry entry )
+	{
+		if ( entry is null )
+		{
+			Log.Warning( $"[Mimiclay] '{save.Label}/{save.Name}' is missing or unreadable." );
+			return null;
+		}
+
+		return SdfPrefabUtility.ExportAsset( entry.Name ?? save.Name, entry.Brushes, entry.Resolution, entry.FlipFaces );
+	}
+
+	void AddToScene( SculptDataRoots.SculptRef save, SculptLibrary.Entry entry )
 	{
 		var session = SceneEditorSession.Active;
 		if ( session is null )
@@ -178,78 +204,77 @@ class SavedSculptsPage : SavedListPage
 
 		// Ensure a prefab exists (and reflects the latest save), then instantiate it into the open scene —
 		// the same path the engine uses for a prefab drag-drop, so it lands with undo + fresh GUIDs.
-		var asset = SdfPrefabUtility.ExportAssetFromSave( name );
-		var prefab = asset?.LoadResource<PrefabFile>();
+		var prefab = ExportPrefab( save, entry )?.LoadResource<PrefabFile>();
 		if ( prefab is null )
 		{
-			Log.Warning( $"[Mimiclay] couldn't prepare a prefab for '{name}'." );
+			Log.Warning( $"[Mimiclay] couldn't prepare a prefab for '{save.Name}'." );
 			return;
 		}
 
 		using var scope = SceneEditorSession.Scope();
-		using ( session.UndoScope( $"Add Sculpt '{name}'" ).WithGameObjectCreations().Push() )
+		using ( session.UndoScope( $"Add Sculpt '{save.Name}'" ).WithGameObjectCreations().Push() )
 		{
 			var go = SceneUtility.GetPrefabScene( prefab )?.Clone();
 			if ( go.IsValid() )
 			{
-				go.Name = name;
+				go.Name = save.Name;
 				session.Selection.Set( go );
 			}
 		}
 	}
 
-	void Delete( string name )
+	void Delete( SculptDataRoots.SculptRef save )
 	{
-		if ( SculptLibrary.Delete( name ) )
+		if ( SculptDataRoots.Delete( save ) )
 		{
-			Log.Info( $"[Mimiclay] deleted saved sculpture '{name}'." );
+			Log.Info( $"[Mimiclay] deleted saved sculpture '{save.Label}/{save.Name}'." );
 			Rebuild();
 		}
 	}
 }
 
-/// <summary>The Scenes tab: one row per scene save. Thumbnail is the save's first placed shape — enough to tell
-/// saves apart without rendering a whole diorama.</summary>
+/// <summary>The Scenes tab: one row per scene save in either data root. Thumbnail is the save's first placed
+/// shape — enough to tell saves apart without rendering a whole diorama.</summary>
 class SavedScenesPage : SavedListPage
 {
 	public SavedScenesPage() : base( "Saved scenes", SculptSceneLibrary.Folder ) { }
 
 	protected override void Fill()
 	{
-		var names = SculptSceneLibrary.List();
-		if ( names.Count == 0 )
+		var scenes = SculptDataRoots.ListScenes();
+		if ( scenes.Count == 0 )
 		{
 			ListLayout.Add( new Label.Body( "No saved scenes yet.\nBuild one in creative mode, then save it with  mimi_scene_save <name>." ) );
 			return;
 		}
 
-		foreach ( var name in names )
+		foreach ( var scene in scenes )
 		{
-			var n = name; // capture per row for the button lambdas
+			var s = scene; // capture per row for the button lambdas
 
-			var save = SculptSceneLibrary.Load( n );
+			var save = SculptDataRoots.Read( s );
 			if ( save is null )
 			{
-				AddRow( null, $"{n}  (unreadable)" );
+				AddRow( null, $"{s.Name}  (unreadable)\n{s.Label}" );
 				continue;
 			}
 
 			var shapes = save.Props.Select( p => p.Sculpt ).Distinct().Count();
 			var thumbnail = SdfThumbnailRender.Render(
-				SculptSceneLibrary.LoadSculpt( n, save.Props[0].Sculpt )?.Brushes, SavedSculptsWindow.ThumbnailSize );
+				SculptDataRoots.ReadSculpt( s, save.Props[0].Sculpt )?.Brushes, SavedSculptsWindow.ThumbnailSize );
 
-			var row = AddRow( thumbnail, $"{n}\n{save.Props.Count} prop(s), {shapes} shape(s)\nmap: {save.Map}" );
-			row.Add( new Button( "Prefab", "deployed_code" ) { ToolTip = "Export every sculpt in this save to .prefab assets", Clicked = () => SdfSceneUtility.ExportPrefabs( n ) } );
-			row.Add( new Button( "Scene", "add_box" ) { ToolTip = "Export the prefabs and place them in the current scene at their saved positions", Clicked = () => SdfSceneUtility.AddToScene( n ) } );
-			row.Add( new Button( "Delete", "delete" ) { ToolTip = "Delete this scene save", Clicked = () => Delete( n ) } );
+			var row = AddRow( thumbnail, $"{s.Name}\n{save.Props.Count} prop(s), {shapes} shape(s)\nmap: {save.Map}\n{s.Label}" );
+			row.Add( new Button( "Prefab", "deployed_code" ) { ToolTip = "Export every sculpt in this save to .prefab assets", Clicked = () => SdfSceneUtility.ExportPrefabs( s ) } );
+			row.Add( new Button( "Scene", "add_box" ) { ToolTip = "Export the prefabs and place them in the current scene at their saved positions", Clicked = () => SdfSceneUtility.AddToScene( s ) } );
+			row.Add( new Button( "Delete", "delete" ) { ToolTip = "Delete this scene save", Clicked = () => Delete( s ) } );
 		}
 	}
 
-	void Delete( string name )
+	void Delete( SculptDataRoots.SceneRef scene )
 	{
-		if ( SculptSceneLibrary.Delete( name ) )
+		if ( SculptDataRoots.Delete( scene ) )
 		{
-			Log.Info( $"[Mimiclay] deleted scene save '{name}'." );
+			Log.Info( $"[Mimiclay] deleted scene save '{scene.Label}/{scene.Name}'." );
 			Rebuild();
 		}
 	}
