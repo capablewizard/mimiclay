@@ -476,16 +476,21 @@ public sealed class RuntimeBrushGizmo
 
 			for ( int i = 0; i < pts.Count; i++ )
 			{
+				// Radius BEFORE move, so the ring reads the point's last ACCEPTED value: a move drag writes
+				// the raw mouse-derived position, which the session's world clamp only corrects AFTER this
+				// update — drawn the other way round, a floor-clamped point kept its dot on the floor while
+				// the ring chased the cursor underground. The radius handle never mutates the list, so the
+				// delete guard below still sees every shrink.
+				changed |= SplinePointRadius( tx, brush, i, gs, n );
+
 				// A right-click inside SplinePointMove DELETES point i, shrinking the list under us — the
-				// radius handle would then index a point that's gone (out of range on the last one) and
+				// next iteration would then index a point that's gone (out of range on the last one) and
 				// every later index has shifted. Bail out for this frame; the delete already cleared the
 				// hover and flagged the mesh stale, so next frame redraws cleanly from the new list.
 				int before = pts.Count;
 				changed |= SplinePointMove( tx, brush, i, gs, n );
 				if ( pts.Count != before )
 					break;
-
-				changed |= SplinePointRadius( tx, brush, i, gs, n );
 			}
 
 			// Close-loop and per-point-radius are HUD chips now (next to the sliders), not 3D handles.

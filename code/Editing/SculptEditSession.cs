@@ -1059,6 +1059,14 @@ public sealed class SculptEditSession : Component
 	// not sweep against geometry along the way) is decided inside by the move's distance.
 	void ClampActiveBrush() => _worldClamp.Apply( Target, ActiveBrush );
 
+	/// <summary>Chain-placement hook: tube-aware clamp of the spline ghost's live point (see
+	/// <see cref="BrushWorldClamp.ClampTubePoint"/>) — its move from <paramref name="fromLocal"/> (last
+	/// frame's accepted preview) is restricted so the whole curve stays clear. The stamp tool calls this
+	/// while rebuilding the ghost, so the point its chain commits on a click is legal including the
+	/// curve's dip into the world.</summary>
+	internal void ClampGhostChainPoint( SdfBrush ghost, int idx, Vector3 fromLocal ) =>
+		_worldClamp.ClampTubePoint( Target, ghost, idx, fromLocal );
+
 	/// <summary>A HUD control is mid-gesture (slider drag, colour-wheel scrub, text typing): update only the
 	/// LIVE surface — the raymarcher reads the brushes directly each frame, and the shadow proxy keeps shadows
 	/// plus the 20 Hz network preview stream moving — and defer the expensive commit until the gesture ends.
@@ -1840,6 +1848,13 @@ public sealed class SculptEditSession : Component
 
 		if ( committed )
 		{
+			// The commit frame's placement mutated the brush AFTER the last preview clamp ran, and by now
+			// it isn't the active stamp any more (Stamp is null), so NotifyChanged's clamp can't see it —
+			// clamp the placed brush explicitly or what LANDS can differ from what the preview showed
+			// (the stamp-under-the-floor exploit). Same instance the clamp was watching as the ghost, so
+			// its last-clear snapshot (and the revert fallback) carry straight across.
+			_worldClamp.Apply( Target, _stampTool.LastCommitted );
+
 			NotifyChanged(); // the stamp is real now (StampBrush is null until the next ghost spawns) → full commit
 
 			// Place-then-tweak: a stamp drops you straight into the EDIT tool with the new brush selected,

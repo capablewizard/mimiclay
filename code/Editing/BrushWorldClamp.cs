@@ -59,10 +59,27 @@ public sealed class BrushWorldClamp
 	/// enough that a brush can't visibly bury itself.</summary>
 	public const float ClampInset = 1f;
 
-	/// <summary>Shape inset for the commit-time backstop — more tolerant than the live clamp so the two can
-	/// never disagree the wrong way round (everything the clamp allows, the backstop accepts) and so contact
-	/// noise from a settling body can't freeze collider rebuilds.</summary>
+	/// <summary>Extra inset the live clamp grants a SPLINE's tube spheres on top of <see cref="ClampInset"/>
+	/// — the curve-dip allowance. A control point resting on the floor consumes its whole own-sphere inset
+	/// (its real sphere sits ~ClampInset deep), so at equal insets the interpolated spheres between two
+	/// resting points had ZERO room below the endpoint line — and the Catmull-Rom tangent after a descent
+	/// always bows the next span down a little, which made drawing along the floor impossibly strict. The
+	/// grace lets the curve bow this much below the resting line; deeper dips still deflect/lift/restrict.
+	/// Applied to EVERY clamp-side spline tube test (gestures, verify, uniform moves) — a graced-in state
+	/// must never be vetoed or whole-shifted by a stricter re-test later. Sized to stay under
+	/// <see cref="BackstopInset"/>, so the commit backstop still accepts everything the clamp allows.</summary>
+	const float SplineTubeInset = ClampInset + 2.5f;
+
+	/// <summary>Shape inset for the commit-time backstop — more tolerant than the live clamp (the spline
+	/// tube's graced inset included) so the two can never disagree the wrong way round (everything the
+	/// clamp allows, the backstop accepts) and so contact noise from a settling body can't freeze collider
+	/// rebuilds.</summary>
 	public const float BackstopInset = 4f;
+
+	// The live clamp's inset for a whole-brush test: splines get the tube grace, everything else the
+	// strict inset. The point's OWN sphere always tests strict (SlidePointSphere) — the grace is only for
+	// the curve BETWEEN points.
+	static float InsetFor( SdfBrush b ) => b.Shape == SdfShape.Spline ? SplineTubeInset : ClampInset;
 
 	/// <summary>The most world-space correction the endpoint resolve may apply in one frame. Small on
 	/// purpose: the minimum-translation direction is only trustworthy while penetration is shallow — deeper
@@ -114,8 +131,7 @@ public sealed class BrushWorldClamp
 		// Only clamp shapes that will actually become SOLID physics. The hunter's face (trigger collider,
 		// bullet detection only) and the menu head (no collider at all) sculpt free — their clay can't shove
 		// anything, so pressing it into scenery is cosmetic and allowed.
-		var collider = target.GameObject.Components.Get<SdfCollider>();
-		if ( !collider.IsValid() || !collider.Active || collider.BuildAsTrigger )
+		if ( !ClampsApply( target ) )
 		{
 			_watched = null;
 			_lastClear = null;
@@ -153,14 +169,16 @@ public sealed class BrushWorldClamp
 		EnsureScratch( scene.PhysicsWorld ); // both phases bake shapes onto it
 
 		// 1) Anti-tunnel: a continuous translation sweeps from the last clear state and deflects along
-		//    whatever it hits, so travel can never cross a wall and drags glide along surfaces.
+		//    whatever it hits, so travel can never cross a wall and drags glide along surfaces. A
+		//    single-spline-point gesture comes back fully constrained against its own curve (pointGesture)
+		//    — for those the endpoint may only be VERIFIED, never shifted: no gesture on one point is ever
+		//    allowed to move the others.
 		var prev = _lastClear;
-		if ( prev is not null )
-			SweepPhase( scene, target, brush, prev );
+		bool pointGesture = prev is not null && SweepPhase( scene, target, brush, prev );
 
 		// 2) The guarantee: actively depenetrate whatever state the tools (and the slide) produced. This is
 		//    the layer with no start-state sensitivity — an accepted state is always a proved-clear state.
-		if ( ResolveEndpoint( scene, target, brush ) )
+		if ( ResolveEndpoint( scene, target, brush, allowShift: !pointGesture ) )
 		{
 			_lastClear = brush.Copy();
 			_lastHash = GeometryHash( brush );
@@ -237,24 +255,26 @@ public sealed class BrushWorldClamp
 	// Classify this frame's change; pure TRANSLATIONS under the travel cap get swept from the last clear
 	// state and deflected along whatever they hit. Mutates the brush to the furthest legal spot — the
 	// resolve phase then proves (or corrects) the result. Shape changes and teleports pass through
-	// untouched: resolve alone handles them.
-	void SweepPhase( Scene scene, SdfSculpture target, SdfBrush brush, SdfBrush prev )
+	// untouched: resolve alone handles them. Returns TRUE only for a single-spline-point gesture, which
+	// comes back fully constrained against its own curve — the caller must then verify the endpoint
+	// WITHOUT shifting anything (no gesture on one point may ever move the others).
+	bool SweepPhase( Scene scene, SdfSculpture target, SdfBrush brush, SdfBrush prev )
 	{
 		if ( brush.Shape != SdfShape.Spline )
 		{
 			// Rigid move of a solid: everything but Position must match the last clear state.
 			if ( !SameShapeIgnoringPosition( brush, prev ) )
-				return;
+				return false;
 
 			var delta = brush.Position - prev.Position;
 			if ( delta.IsNearZeroLength || delta.Length > SweepMaxTravel )
-				return;
+				return false;
 
 			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, ClampInset ) )
-				return;
+				return false;
 			if ( SlideAnchor( scene, target, prev.Position, brush.Position ) is { } pos )
 				brush.Position = pos;
-			return;
+			return false;
 		}
 
 		// Splines: geometry lives in Points. Two sweepable cases — the WHOLE curve moved by one delta (the
@@ -263,30 +283,31 @@ public sealed class BrushWorldClamp
 		if ( prev.Points is not { Count: > 0 } pp || brush.Points is not { } cp || cp.Count != pp.Count
 			|| brush.Curvature != prev.Curvature || brush.SplineClosed != prev.SplineClosed
 			|| brush.MirrorX != prev.MirrorX || brush.MirrorY != prev.MirrorY || brush.MirrorZ != prev.MirrorZ )
-			return;
+			return false;
 
-		int moved = -1;
-		bool uniform = true;
+		int moved = -1;        // the one point whose position and/or radius changed (-2 = several)
+		bool anyRadius = false;
+		bool uniform = true;   // all xyz deltas equal — the rigid whole-curve move (invalid with radius edits)
 		var delta0 = P( cp[0] ) - P( pp[0] );
 		for ( int i = 0; i < cp.Count; i++ )
 		{
-			if ( MathF.Abs( cp[i].w - pp[i].w ) > 1e-4f )
-				return; // a radius change rode along — not a translation
+			bool wDiff = MathF.Abs( cp[i].w - pp[i].w ) > 1e-4f;
+			anyRadius |= wDiff;
 
 			var di = P( cp[i] ) - P( pp[i] );
 			if ( (di - delta0).Length > 1e-3f )
 				uniform = false;
-			if ( !di.IsNearZeroLength )
-				moved = moved == -1 ? i : -2; // -2 = more than one point moved
+			if ( wDiff || !di.IsNearZeroLength )
+				moved = moved == -1 ? i : -2; // -2 = several points changed
 		}
 
-		if ( uniform && !delta0.IsNearZeroLength && delta0.Length <= SweepMaxTravel )
+		if ( uniform && !anyRadius && !delta0.IsNearZeroLength && delta0.Length <= SweepMaxTravel )
 		{
 			// Whole-curve move: rigid, so the full-shape sweep applies. Anchor on point 0.
-			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, ClampInset ) )
-				return;
+			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset ) )
+				return false;
 			if ( SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) ) is not { } slid )
-				return;
+				return false;
 
 			var net = slid - P( pp[0] );
 			for ( int i = 0; i < cp.Count; i++ )
@@ -294,40 +315,262 @@ public sealed class BrushWorldClamp
 				var q = P( pp[i] ) + net;
 				cp[i] = new Vector4( q.x, q.y, q.z, pp[i].w );
 			}
-			return;
+			return false;
 		}
 
 		if ( moved < 0 )
-			return; // nothing / several points moved — not a sweepable gesture
+			return false; // nothing / several points changed — not a sweepable gesture (resolve handles it)
 
-		// One control point dragged: the tube deforms non-rigidly, so sweep just that point's sphere as a
-		// guide (the rest of the tube didn't move) — resolve then judges the whole re-shaped tube.
+		// One control point changed — moved, resized, or both. Handle it as a fully-constrained POINT
+		// gesture: first the point's own sphere slides along surfaces and lifts out of shallow overlap,
+		// then the gesture slides against the WHOLE tube (deflect → lift → restrict, see
+		// SlidePointInTube) — the curve is part of the moving shape, and only the edited point ever moves.
 		var from3 = P( pp[moved] );
 		var to3 = P( cp[moved] );
 		if ( (to3 - from3).Length > SweepMaxTravel )
+			return false;
+
+		var fixed3 = SlidePointSphere( scene, target, from3, to3, cp[moved].w );
+		cp[moved] = new Vector4( fixed3.x, fixed3.y, fixed3.z, cp[moved].w );
+
+		SlidePointInTube( scene, target, brush, moved, from3, pp[moved].w );
+		return true;
+	}
+
+	/// <summary>Tube-aware clamp for ONE spline point from outside the Apply flow — the stamp tool's chain
+	/// placement calls this on the live point after rebuilding the ghost list, sliding the point's move
+	/// from <paramref name="fromPos"/> against the whole curve so the value a click commits into its
+	/// private chain is legal INCLUDING the curve's dip (see <see cref="SlidePointInTube"/>).</summary>
+	internal void ClampTubePoint( SdfSculpture target, SdfBrush brush, int idx, Vector3 fromPos )
+	{
+		if ( !target.IsValid() || !ClampsApply( target ) )
+			return;
+		if ( brush?.Points is not { } pts || idx < 0 || idx >= pts.Count )
 			return;
 
-		float r = MathF.Max( pp[moved].w - ClampInset, 0.5f );
+		var scene = target.Scene;
+		if ( !scene.IsValid() )
+			return;
+
+		EnsureScratch( scene.PhysicsWorld );
+		SlidePointInTube( scene, target, brush, idx, fromPos, pts[idx].w );
+	}
+
+	// Bisection resolution of the last-resort restriction: 5 halvings lands within ~3% of the exact
+	// stopping fraction — per-frame gesture deltas are small, so that's sub-pixel.
+	const int TubeBisectSteps = 5;
+
+	// SLIDE one point's gesture against the WHOLE tube. The curve between control points (Catmull-Rom)
+	// can contact the world while every control point is clear, and no correction may touch the other
+	// points — so the gesture itself adapts, in order of preference:
+	//   (A) DEFLECT: drop the motion component driving the tube into the contact (the drag glides along
+	//       the surface instead of sticking on the curve's graze);
+	//   (B) LIFT: move the edited point out along the tube's minimum-translation vector — a radius grown
+	//       against the floor raises ITS point, and a horizontal drag over uneven contact rides up over
+	//       it; converges geometrically (the curve moves by less than the point, Catmull-Rom basis < 1);
+	//   (C) RESTRICT: bisect toward last frame's accepted state (t=0 — always a valid bracket).
+	// Every state this lands on has itself been tube-tested, and the caller verifies WITHOUT shifting, so
+	// the other points are immovable by construction.
+	void SlidePointInTube( Scene scene, SdfSculpture target, SdfBrush brush, int idx, Vector3 fromPos, float fromW )
+	{
+		var pts = brush.Points;
+		var cand = pts[idx];
+		var candPos = new Vector3( cand.x, cand.y, cand.z );
+		float candW = cand.w;
+
+		// Set the point and test the full tube. On failure _scratch keeps the failed state's shapes, so a
+		// follow-up MTV query reads exactly THAT contact.
+		bool TestAt( Vector3 p, float w )
+		{
+			pts[idx] = new Vector4( p.x, p.y, p.z, w );
+			return !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset )
+				|| ShapesClear( scene, target ); // no collision shapes at all = nothing can clip
+		}
+
+		if ( TestAt( candPos, candW ) )
+			return; // the candidate's full tube is clear — the gesture goes through whole
+
+		// (A) Deflect the positional part along the contact plane. Two planes — a corner's second face
+		// just stops what's left.
+		var pos = candPos;
+		var delta = candPos - fromPos;
+		for ( int i = 0; i < 2 && !delta.IsNearZeroLength; i++ )
+		{
+			var n = TubeContactDirection( scene, target );
+			if ( n.IsNearZeroLength )
+				break;
+			n = n.Normal;
+
+			var slid = delta - n * Vector3.Dot( delta, n );
+			if ( (slid - delta).Length < 1e-3f )
+				break; // the contact isn't opposing this motion — deflecting again changes nothing
+
+			delta = slid;
+			pos = fromPos + delta;
+			if ( TestAt( pos, candW ) )
+				return;
+		}
+
+		// (B) Lift the edited point out along the tube's MTV.
+		for ( int i = 0; i < ResolveIterations; i++ )
+		{
+			var correction = TubeContactDirection( scene, target );
+			if ( correction.IsNearZeroLength || correction.Length > MaxResolve )
+				break; // clear (caught below) or too deep to trust the direction
+
+			var tx = target.WorldTransform;
+			pos += tx.PointToLocal( tx.Position + correction ); // world vec → sculpture-local vec
+			if ( TestAt( pos, candW ) )
+				return;
+		}
+
+		// (C) Restrict: largest fraction of (from → best attempt), radius included, that tests clear.
+		float lo = 0f, hi = 1f; // lo = last frame's accepted state (proven clear), hi = blocked
+		bool ClearAt( float t ) => TestAt( Vector3.Lerp( fromPos, pos, t ), MathX.Lerp( fromW, candW, t ) );
+		for ( int i = 0; i < TubeBisectSteps; i++ )
+		{
+			float mid = (lo + hi) * 0.5f;
+			if ( ClearAt( mid ) )
+				lo = mid;
+			else
+				hi = mid;
+		}
+		ClearAt( lo ); // land on the biggest fraction that tested clear
+	}
+
+	// The tube's accumulated minimum-translation vector OUT of the world, at the state currently baked
+	// into _scratch (world space; zero = no contact). Skin included so a resolved state isn't
+	// kiss-touching the surface it just cleared.
+	Vector3 TubeContactDirection( Scene scene, SdfSculpture target )
+	{
+		var tx = target.WorldTransform;
+		var query = QueryBounds( _scratch, tx, Vector3.Zero );
+		var correction = Vector3.Zero;
+		foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
+		{
+			if ( !body.ComputePenetration( _scratch, tx, out var dir, out var dist ) )
+				continue;
+			correction -= dir * (dist + SlideSkin);
+		}
+		return correction;
+	}
+
+	// Pure overlap check of the scratch shapes at the sculpture's transform — no correction applied.
+	bool ShapesClear( Scene scene, SdfSculpture target )
+	{
+		var tx = target.WorldTransform;
+		var query = QueryBounds( _scratch, tx, Vector3.Zero );
+		foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
+			if ( body.CheckOverlap( _scratch, tx ) )
+				return false;
+		return true;
+	}
+
+	/// <summary>Slide-and-resolve ONE sphere (a spline control point) against the world, in sculpture-local
+	/// space: sweep <paramref name="from"/>→<paramref name="to"/> deflecting along surfaces, then
+	/// depenetrate the endpoint with the native MTV query (so a sphere GROWN into the floor lifts out of
+	/// it). The shared primitive behind the clamp's single-point gestures and the stamp tool's chain
+	/// placement — the chain list must never hold an illegal point, because a chain click copies the live
+	/// point BEFORE the session clamp can correct that frame's mutation. Returns the furthest
+	/// provably-legal position, falling back to <paramref name="from"/> when the endpoint can't be made
+	/// clear; a no-op (returns <paramref name="to"/>) when the target doesn't build solid physics.</summary>
+	public static Vector3 SlidePointSphere( Scene scene, SdfSculpture target, Vector3 from, Vector3 to, float radius )
+	{
+		if ( !scene.IsValid() || !ClampsApply( target ) )
+			return to;
+
+		float r = MathF.Max( radius - ClampInset, 0.5f );
 		var tx = target.WorldTransform;
 
-		var pos3 = from3;
-		var remaining = to3 - from3;
+		var pos = from;
+		var remaining = to - from;
 		for ( int i = 0; i < SlideIterations && !remaining.IsNearZeroLength; i++ )
 		{
 			var tr = Filtered( scene, target )
-				.Sphere( r, tx.PointToWorld( pos3 ), tx.PointToWorld( pos3 + remaining ) )
+				.Sphere( r, tx.PointToWorld( pos ), tx.PointToWorld( pos + remaining ) )
 				.Run();
 			if ( tr.StartedSolid )
-				return; // degenerate start — leave the candidate for resolve to fix or veto
+				break; // degenerate start — the resolve below is the authority
 			if ( !tr.Hit )
 			{
-				pos3 += remaining;
+				pos += remaining;
 				break;
 			}
-			Deflect( tx, ref pos3, ref remaining, tr.Fraction, tr.Normal );
+			Deflect( tx, ref pos, ref remaining, tr.Fraction, tr.Normal );
 		}
 
-		cp[moved] = new Vector4( pos3.x, pos3.y, pos3.z, pp[moved].w );
+		return ResolveSphere( scene, target, pos, r ) ?? from;
+	}
+
+	// Depenetrate a single sculpture-local sphere with the native MTV query. Null = can't be made clear
+	// within MaxResolve (caller falls back). The probe body is only created once something's bounds
+	// actually overlap the query — a point in open air (most frames) never touches physics at all.
+	static Vector3? ResolveSphere( Scene scene, SdfSculpture target, Vector3 localPos, float r )
+	{
+		var tx = target.WorldTransform;
+		if ( scene.PhysicsWorld is not { } world )
+			return localPos;
+
+		PhysicsBody probe = null;
+		var candidates = new List<PhysicsBody>();
+		try
+		{
+			var offset = Vector3.Zero;
+			for ( int i = 0; i < ResolveIterations; i++ )
+			{
+				var centre = tx.PointToWorld( localPos ) + offset;
+				var query = new BBox( centre - (r + 16f), centre + (r + 16f) );
+
+				// Materialize the candidates BEFORE creating the probe: constructing a PhysicsBody
+				// registers it into the world's body set — the very collection WorldBodies enumerates —
+				// and mutating it mid-enumeration throws.
+				candidates.Clear();
+				foreach ( var body in WorldBodies( scene, target, query, null ) )
+					candidates.Add( body );
+
+				if ( candidates.Count == 0 )
+					return localPos + tx.PointToLocal( tx.Position + offset );
+
+				if ( probe is null )
+				{
+					probe = new PhysicsBody( world ) { BodyType = PhysicsBodyType.Static, Position = ParkingSpot };
+					probe.AddSphereShape( Vector3.Zero, r, rebuildMass: false );
+				}
+
+				bool any = false;
+				var correction = Vector3.Zero;
+				foreach ( var body in candidates )
+				{
+					if ( !body.ComputePenetration( probe, new Transform( centre ), out var dir, out var dist ) )
+						continue;
+					any = true;
+					correction -= dir * (dist + SlideSkin);
+				}
+
+				if ( !any )
+					return localPos + tx.PointToLocal( tx.Position + offset );
+
+				offset += correction;
+				if ( offset.Length > MaxResolve )
+					return null;
+			}
+			return null;
+		}
+		finally
+		{
+			if ( probe is not null && probe.IsValid() )
+				probe.Remove();
+		}
+	}
+
+	// The clamp only exists for shapes that become SOLID physics — see Apply's gate.
+	static bool ClampsApply( SdfSculpture target )
+	{
+		if ( !target.IsValid() )
+			return false;
+
+		var collider = target.GameObject.Components.Get<SdfCollider>();
+		return collider.IsValid() && collider.Active && !collider.BuildAsTrigger;
 	}
 
 	// Sweep the scratch shapes (baked at the CANDIDATE state, anchored on `candAnchor`) from the last clear
@@ -385,10 +628,16 @@ public sealed class BrushWorldClamp
 	// nearby world body and shift the brush by the accumulated correction (world-space, applied back in
 	// sculpture-local). True = the state is now proved clear (possibly after correction); false = it needed
 	// more than MaxResolve, where the MTV direction stops being trustworthy — the caller reverts.
-	bool ResolveEndpoint( Scene scene, SdfSculpture target, SdfBrush brush )
+	// allowShift false = VERIFY ONLY, no correction ever applied: the single-spline-point path, where the
+	// gesture was already restricted against the tube and any residual must become a revert — a whole-shape
+	// shift would move points the player isn't touching.
+	bool ResolveEndpoint( Scene scene, SdfSculpture target, SdfBrush brush, bool allowShift )
 	{
-		if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, ClampInset ) )
+		if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, InsetFor( brush ) ) )
 			return true; // no collision shapes — nothing can embed
+
+		if ( !allowShift )
+			return ShapesClear( scene, target );
 
 		var tx = target.WorldTransform;
 		var offset = Vector3.Zero; // accumulated world-space correction

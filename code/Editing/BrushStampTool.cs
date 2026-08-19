@@ -164,9 +164,17 @@ public sealed class BrushStampTool
 
 	// Rebuild the ghost's point list = committed chain + the live preview point at `pos`, snapping onto the
 	// first point (and arming the loop) when the cursor comes close enough. Returns true if anything moved.
-	bool UpdateChainGhost( Vector3 pos )
+	bool UpdateChainGhost( SdfSculpture target, Vector3 pos )
 	{
 		float radius = Math.Clamp( _stamp.Size.x, 1f, SdfBrush.MaxSplineRadius );
+
+		// Clamp the live point against the world AT THE SOURCE, swept from last frame's preview so it
+		// glides along the floor like a dragged point. This can't be left to the session's clamp: a chain
+		// click copies the live point into _chain BEFORE the session sees this frame's mutation, so a raw
+		// under-floor cursor position would poison the committed chain — which the clamp can never reach,
+		// and every later ghost rebuild then reverts against it (the stuck-chain bug).
+		var chainFrom = _stamp.Points is { Count: > 0 } ? _chainPreview : pos;
+		pos = BrushWorldClamp.SlidePointSphere( target.Scene, target, chainFrom, pos, radius );
 
 		// Loop snap: needs 3+ committed points to be a ring at all.
 		_chainLoop = false;
@@ -196,7 +204,19 @@ public sealed class BrushStampTool
 		pts.Clear();
 		pts.AddRange( _chain );
 		if ( !_chainLoop )
+		{
 			pts.Add( preview );
+
+			// Tube-aware pass: the CURVE into the live point can dip into the floor even when the point
+			// itself is clear (Catmull-Rom overshoot) — restrict the live point's move (from last frame's
+			// accepted preview) so the tube stays clear, and the value a click commits into _chain is
+			// legal INCLUDING its curvature. Without this the dip rides into the committed chain, where no
+			// later gesture can reach it, and the whole-ghost resolve then fights this per-frame rebuild.
+			// Track the restricted value as the preview so the next frame's gesture starts from it.
+			SculptEditSession.Current?.ClampGhostChainPoint( _stamp, pts.Count - 1, chainFrom );
+			var accepted = pts[^1];
+			_chainPreview = new Vector3( accepted.x, accepted.y, accepted.z );
+		}
 		_stamp.SplineClosed = _chainLoop;
 		return true;
 	}
@@ -586,7 +606,7 @@ public sealed class BrushStampTool
 		// A spline lives in its points, not its transform: steer the PREVIEW point (the sphere under the
 		// cursor) and leave Position alone.
 		if ( _stamp.Shape == SdfShape.Spline )
-			return UpdateChainGhost( pos );
+			return UpdateChainGhost( target, pos );
 
 		var old = _stamp.Position;
 		_stamp.Position = pos;
