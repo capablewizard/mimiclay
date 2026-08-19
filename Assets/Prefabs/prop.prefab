@@ -90,59 +90,7 @@
         "OnComponentUpdate": null
       }
     ],
-    "Children": [
-      {
-        "__guid": "dfb05857-98ad-4ce8-9b9e-e1b3c3fec726",
-        "__version": 2,
-        "Flags": 0,
-        "Name": "Pawn HUD",
-        "Position": "0,0,0",
-        "Rotation": "0,0,0,1",
-        "Scale": "1,1,1",
-        "Tags": "",
-        "Enabled": true,
-        "NetworkMode": 2,
-        "NetworkFlags": 0,
-        "NetworkOrphaned": 0,
-        "NetworkTransmit": true,
-        "OwnerTransfer": 1,
-        "Components": [
-          {
-            "__type": "Sandbox.ScreenPanel",
-            "__guid": "f6d58ff7-bd6c-49fa-b9a1-4a8d1f1c1e43",
-            "__enabled": true,
-            "Flags": 0,
-            "AutoScreenScale": true,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null,
-            "Opacity": 1,
-            "Scale": 1,
-            "ScaleStrategy": "ConsistentHeight",
-            "TargetCamera": null,
-            "ZIndex": 50
-          },
-          {
-            "__type": "Mimiclay.PlayerNameplates",
-            "__guid": "b47e2d09-5c31-4f8a-8e92-6a1d3c7f50b4",
-            "__enabled": true,
-            "Flags": 0,
-            "HeadClearance": 5,
-            "NameplateScale": 2,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null
-          }
-        ],
-        "Children": []
-      }
-    ],
+    "Children": [],
     "__properties": {
       "NetworkInterpolation": true,
       "TimeScale": 1,

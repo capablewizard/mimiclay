@@ -646,20 +646,6 @@
             "OnComponentFixedUpdate": null,
             "OnComponentStart": null,
             "OnComponentUpdate": null
-          },
-          {
-            "__type": "Mimiclay.PlayerNameplates",
-            "__guid": "3a9c1f72-8b4e-4d1a-9f6e-2c7b5d804a91",
-            "__enabled": true,
-            "Flags": 0,
-            "HeadClearance": 5,
-            "NameplateScale": 2,
-            "OnComponentDestroy": null,
-            "OnComponentDisabled": null,
-            "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": null,
-            "OnComponentStart": null,
-            "OnComponentUpdate": null
           }
         ],
         "Children": []

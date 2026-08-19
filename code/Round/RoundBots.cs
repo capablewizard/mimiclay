@@ -48,13 +48,13 @@ public static class RoundBots
 		Strip( pawn );
 	}
 
-	// A bot has no screen and no microphone. Both pawn prefabs carry per-player hardware that only makes sense for
-	// the person holding the controller, and every piece of it decides "is this mine?" by asking whether the pawn is
-	// a proxy — which a host-owned bot is NOT. Left alone, eight bots means eight full-screen HUD overlays stacked
-	// on the real player's (the tell: nameplates painted once per overlay look heavier than a real player's, which
-	// every overlay skips as its own pawn), eight crosshairs, eight pause menus racing for Escape, and eight voices
-	// broadcasting whenever the host holds push-to-talk. Taking the hardware away is both cheaper and more honest
-	// than teaching each consumer what a bot is.
+	// A bot has no screen and no microphone. The hunter prefab carries per-player hardware that only makes sense
+	// for the person holding the controller, and every piece of it decides "is this mine?" by asking whether the
+	// pawn is a proxy — which a host-owned bot is NOT. Left alone, eight bot hunters means eight crosshair
+	// overlays stacked on the host's screen and eight voices broadcasting whenever the host holds push-to-talk.
+	// Taking the hardware away is both cheaper and more honest than teaching each consumer what a bot is.
+	// (Nameplates used to be on this list too — they're a machine-level singleton now, see NameplateSystem,
+	// after released props hit the exact same not-a-proxy trap and stacked overlays on the host.)
 	static void Strip( GameObject pawn )
 	{
 		// The whole HUD branch, not just the panel: its UI components run per-frame scene scans of their own.

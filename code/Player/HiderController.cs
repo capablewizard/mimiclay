@@ -228,6 +228,15 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	public void ReleaseControl()
 	{
 		_dormant = true;
+
+		// Scenery holds no microphone. This runs on the HOST, where the about-to-be-unowned pawn will read
+		// !IsProxy — without the mute, the engine Voice on every released prop opens the host's mic (see
+		// PlayerVoice.Muted). Machine-local on purpose: the ex-owner's copy becomes a proxy (never records)
+		// and needs nothing.
+		var voice = Components.Get<PlayerVoice>();
+		if ( voice.IsValid() )
+			voice.Muted = true;
+
 		if ( EditMode )
 			_session?.SetActive( false ); // forced teardown — no exit-confirm dialog, revert runs silently
 	}
@@ -275,6 +284,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	{
 		_dormant = false;
 		_jumpQueued = false;
+
+		// Somebody's driving again — give the voice back (a no-op on a claimant whose copy was never muted;
+		// the mute only ever landed on the machine that ran the release).
+		var voice = Components.Get<PlayerVoice>();
+		if ( voice.IsValid() )
+			voice.Muted = false;
 
 		EyeAngles = WorldRotation.Angles() with { pitch = 0f, roll = 0f };
 		_bodyYaw = EyeAngles.yaw;

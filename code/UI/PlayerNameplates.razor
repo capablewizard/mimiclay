@@ -9,15 +9,23 @@
 @*
 	Player nameplates — team names floated above other players' heads. SCREEN panels, not world panels: each
 	visible pawn's head anchor is projected to the screen every frame and a label is absolutely positioned there
-	on the pawn's HUD ScreenPanel. Lives on the "Pawn HUD" child of BOTH pawn prefabs so it exists exactly when
-	a pawn does; only the OWNING pawn's copy draws anything (a proxy's copy renders nothing — same live gate as
-	HunterCrosshair, because ownership replicates after OnStart).
+	on the overlay.
+
+	ONE overlay per machine, spawned by NameplateSystem — never on a pawn. It used to live on a "Pawn HUD" child
+	of both pawn prefabs, each copy gated to draw only when its pawn was "ours" (!IsProxy) — and an UNOWNED pawn
+	slips that gate: released props (creative pop-outs, decoys, a leaver's surviving work) are networked but
+	ownerless, and ownerless reads !IsProxy on the HOST (engine NetworkObject.UpdateIsProxy). Every prop a player
+	released woke another dormant full-screen copy on the host's machine — identical plates stacked per overlay,
+	scene scans multiplied per overlay — which is what melted the host's framerate late in long creative
+	sessions. A machine-level singleton has no dormant copies to wake and needs no ownership gate at all.
 
 	Everything shown is networked state: pawns are enumerated from the scene's networked proxies (a hidden PROP is
 	simply not on the wire, so its name can't leak; a concealed HUNTER is networked but filtered by
-	HunterController.Concealed — see ProxyPawns), the role IS the replicated pawn type
-	(HunterController vs HiderController — more truthful than the roster row, and it works in debug scenes too),
-	and the name comes from the round's [Sync]'d roster, falling back to the pawn's Network.Owner display name.
+	HunterController.Concealed), the role IS the replicated pawn type (HunterController vs HiderController — more
+	truthful than the roster row, and it works in debug scenes too), and the name comes from the round's [Sync]'d
+	roster, falling back to the pawn's Network.Owner display name. A released prop draws nothing anywhere: on the
+	host it's neither a proxy nor a bot pawn, and on clients it's a proxy with no owner and no roster row, so it
+	has no name to show.
 
 	Visibility is team-scoped per RoundMode:
 	  • Infection — hunter names show to EVERYONE (hunters see each other; a prop sees the hunters), and prop
@@ -25,11 +33,12 @@
 	  • Teams — you see your own team only (hunters see hunters, props see props).
 	No RoundManager (debug scenes, lobby) falls back to the Infection rule.
 
-	Voice indicators live here too, since this is the pawn's full-screen owner-only overlay:
+	Voice indicators live here too, since this is the machine's full-screen player overlay:
 	  • A speaker icon on a plate while that player's voice is playing (PlayerVoice.IsSpeaking — playback-driven,
 	    so it works for any proxy). Icons only ever appear on plates that render at all, so a hidden infection
 	    prop's speech reveals it by EAR (the 3D voice), never by UI.
-	  • A fixed mic icon bottom-centre while OUR OWN mic is transmitting (IsRecording is owner-only truth).
+	  • A fixed mic icon bottom-centre while OUR OWN mic is transmitting (IsRecording is owner-only truth, read
+	    off our own pawn's voice).
 *@
 
 <root class="player-nameplates">
@@ -51,12 +60,15 @@
 
 @code
 {
+	/// <summary>The one live overlay, or null. <see cref="NameplateSystem"/> spawns one when this is empty.</summary>
+	public static PlayerNameplates Current { get; private set; }
+
 	/// <summary>Extra world-space clearance between the top of the head/disguise bounds and the label.</summary>
-	[Property] public float HeadClearance { get; set; } = 10f;
+	[Property] public float HeadClearance { get; set; } = 5f;
 
 	/// <summary>Uniform scale on the nameplate text. 1 = the base size (<see cref="BaseNameSize"/> px, before the
 	/// ScreenPanel's resolution scaling); 2 = double, etc.</summary>
-	[Property] public float NameplateScale { get; set; } = 1f;
+	[Property] public float NameplateScale { get; set; } = 2f;
 
 	// The un-scaled label size in panel px. Set here (not the SCSS) so NameplateScale has a base to multiply —
 	// the inline style below always overrides a stylesheet font-size anyway.
@@ -69,48 +81,68 @@
 
 	readonly List<Plate> _plates = new();
 
-	HunterController _hunter;
-	HiderController _hider;
+	// Other players' pawns gathered this frame, before plates are built — the pass that finds them is also the
+	// pass that finds OUR pawn, and TeamVisible needs our role before any plate can be judged.
+	readonly List<(GameObject Pawn, PlayerRole Role)> _candidates = new();
 
-	// The pawn this HUD hangs off, resolved from the prefab hierarchy (this panel sits on the HUD child). One of
-	// these is null depending on which prefab we're on.
-	HunterController Hunter => _hunter.IsValid() ? _hunter : _hunter = Components.Get<HunterController>( FindMode.InAncestors );
-	HiderController Hider => _hider.IsValid() ? _hider : _hider = Components.Get<HiderController>( FindMode.InAncestors );
-
-	// Gate LIVE, not in OnStart — a pawn runs OnStart on the owning client before ownership replicates, so an
-	// early IsProxy read is stale (same reasoning as HunterCrosshair).
-	bool IsOwnHud => (Hunter.IsValid() && !Hunter.IsProxy) || (Hider.IsValid() && !Hider.IsProxy);
+	// OUR pawn this frame — the body we're actually driving, re-resolved every update because pawns respawn,
+	// convert and swap constantly. Sources the local role (team visibility) and the self-mic indicator.
+	GameObject _ownPawn;
+	PlayerRole _ownRole;
 
 	// OUR pawn's voice, for the self-mic indicator. IsRecording = the mic is genuinely open and capturing right
 	// now (it already folds in push-to-talk state and the user's voip_mode preference — a disabled/undepressed
-	// mic never records). Owner-only truth, but this panel only draws on the owning pawn anyway.
-	PlayerVoice _ownVoice;
-	PlayerVoice OwnVoice => _ownVoice.IsValid() ? _ownVoice
-		: _ownVoice = Hunter.IsValid() ? Hunter.Components.Get<PlayerVoice>()
-		: Hider.IsValid() ? Hider.Components.Get<PlayerVoice>() : null;
+	// mic never records). Owner-only truth, and _ownPawn is the one body we own.
+	PlayerVoice OwnVoice => _ownPawn.IsValid() ? _ownPawn.Components.Get<PlayerVoice>() : null;
 
-	bool SelfMicLive => IsOwnHud && OwnVoice.IsValid() && OwnVoice.IsRecording;
-
-	// Our team, straight from which pawn prefab this HUD belongs to.
-	PlayerRole LocalRole => Hunter.IsValid() ? PlayerRole.Hunter : Hider.IsValid() ? PlayerRole.Prop : PlayerRole.Unassigned;
+	bool SelfMicLive => OwnVoice.IsValid() && OwnVoice.IsRecording;
 
 	// Settings is [Sync]'d, so this reads correctly on every machine incl. late-joiners.
 	RoundMode Mode => RoundManager.Current.IsValid() ? RoundManager.Current.Settings.Mode : RoundMode.Infection;
 
+	// There can only be one — the same self-healing PauseMenu uses, in case a stale copy is ever serialised into
+	// an asset again (this component used to live on both pawn prefabs).
+	protected override void OnAwake()
+	{
+		base.OnAwake();
+
+		if ( Current.IsValid() && Current != this )
+		{
+			Log.Warning( $"PlayerNameplates: a second instance appeared on '{GameObject.Name}' — destroying it. " +
+				"NameplateSystem spawns the only one; nothing else should carry this component." );
+			Destroy();
+			return;
+		}
+
+		Current = this;
+	}
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+
+		if ( Current == this )
+			Current = null;
+	}
+
 	protected override void OnUpdate()
 	{
 		_plates.Clear();
+		_candidates.Clear();
+		_ownPawn = null;
+		_ownRole = PlayerRole.Unassigned;
 
 		var cam = Scene.Camera;
-		if ( !IsOwnHud || !cam.IsValid() )
+		if ( !cam.IsValid() )
 			return;
 
-		var localRole = LocalRole;
+		GatherPawns();
+
 		var mode = Mode;
 
-		foreach ( var (pawn, role) in ProxyPawns() )
+		foreach ( var (pawn, role) in _candidates )
 		{
-			if ( !TeamVisible( role, localRole, mode ) )
+			if ( !TeamVisible( role, _ownRole, mode ) )
 				continue;
 
 			var name = NameFor( pawn );
@@ -129,23 +161,56 @@
 		_plates.Sort( ( a, b ) => a.PawnId.CompareTo( b.PawnId ) );
 	}
 
-	// Every OTHER player's pawn in the scene, with its role read from the pawn type. Never our own pawn — but that
-	// isn't quite "proxies only", because on the HOST a test bot's pawn is host-owned and so isn't a proxy either.
-	// IsBotPawn covers that second way a body can belong to someone who isn't us.
+	// One walk over every pawn controller in the scene, sorting each body into exactly one of three bins:
+	//
+	//   • Somebody else's → a plate candidate. "(IsProxy || IsBotPawn)": another player's pawn is a proxy, and a
+	//     host-held test bot is neither a proxy nor ours (see RoundManager.IsBotPawn).
+	//   • OURS → the local role + the self-mic voice. Resolved through RosterIdOf, which already encodes the
+	//     awkward cases: an un-networked pawn on this machine answers as ours (a concealed infection prop before
+	//     the Hunt), and an ownerless orphan on the wire answers as NOBODY's (a released prop on the host reads
+	//     !IsProxy but is not our body and must never source our role).
+	//   • Nobody's (that released prop, on any machine) → ignored entirely.
 	//
 	// PROPS conceal by never being networked, so a hidden one doesn't exist here at all and its name cannot leak.
 	// HUNTERS are networked throughout (the round needs to address them, and their own RPCs have to resolve) and
 	// conceal by rendering instead — so they ARE enumerable during prep and have to be filtered explicitly. That
 	// asymmetry is deliberate; the two roles hide by different means.
-	IEnumerable<(GameObject Pawn, PlayerRole Role)> ProxyPawns()
+	void GatherPawns()
 	{
+		var localId = Connection.Local?.Id;
+
 		foreach ( var h in Scene.GetAllComponents<HunterController>() )
-			if ( h.IsValid() && (h.IsProxy || RoundManager.IsBotPawn( h.GameObject )) && !h.Concealed )
-				yield return (h.GameObject, PlayerRole.Hunter);
+		{
+			if ( !h.IsValid() )
+				continue;
+
+			if ( h.IsProxy || RoundManager.IsBotPawn( h.GameObject ) )
+			{
+				if ( !h.Concealed )
+					_candidates.Add( (h.GameObject, PlayerRole.Hunter) );
+			}
+			else if ( !_ownPawn.IsValid() && RoundManager.RosterIdOf( h.GameObject ) == localId )
+			{
+				_ownPawn = h.GameObject;
+				_ownRole = PlayerRole.Hunter;
+			}
+		}
 
 		foreach ( var h in Scene.GetAllComponents<HiderController>() )
-			if ( h.IsValid() && (h.IsProxy || RoundManager.IsBotPawn( h.GameObject )) )
-				yield return (h.GameObject, PlayerRole.Prop);
+		{
+			if ( !h.IsValid() )
+				continue;
+
+			if ( h.IsProxy || RoundManager.IsBotPawn( h.GameObject ) )
+			{
+				_candidates.Add( (h.GameObject, PlayerRole.Prop) );
+			}
+			else if ( !_ownPawn.IsValid() && RoundManager.RosterIdOf( h.GameObject ) == localId )
+			{
+				_ownPawn = h.GameObject;
+				_ownRole = PlayerRole.Prop;
+			}
+		}
 	}
 
 	// The mode's team rule. Infection: hunters are public — everyone sees their names — and props are secret from

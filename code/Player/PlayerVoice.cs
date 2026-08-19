@@ -27,6 +27,30 @@ public sealed class PlayerVoice : Voice
 	/// <summary>True while this player's voice is actually coming out of the speakers — drives the nameplate icon.</summary>
 	public bool IsSpeaking => LastPlayed < SpeakingWindow;
 
+	/// <summary>Per-machine mute for a body nobody is driving. The engine gates recording on !IsProxy alone —
+	/// and an UNOWNED pawn reads !IsProxy on the HOST, so every released prop would otherwise open the host's
+	/// mic through itself (and race the host's real pawn for the engine's single recorder slot). Set true on
+	/// release (<see cref="HiderController.ReleaseControl"/>), false on possession
+	/// (<see cref="HiderController.ResumeControl"/>).
+	///
+	/// The engine seals Voice.OnUpdate and IsListening isn't virtual, but IsListening reads two plain local
+	/// properties we can starve instead — nothing here is [Sync]'d, so the write only ever affects the machine
+	/// that makes it, which is exactly the machine that could wrongly record:
+	///   • open-mic voip_mode is gated by Mode — Manual only listens when IsListening is set (we never set it);
+	///   • push-to-talk voip_mode is gated by the input action alone (Mode is ignored on that branch!) — an
+	///     empty action name is Input.Down == false, always.
+	/// Playback of OTHER people's voice through this component consults neither property, so a muted copy still
+	/// hears everything.</summary>
+	public bool Muted
+	{
+		get => Mode == ActivateMode.Manual; // Manual is only ever set by the mute — see the setter
+		set
+		{
+			Mode = value ? ActivateMode.Manual : ActivateMode.PushToTalk;
+			PushToTalkInput = value ? "" : "voice";
+		}
+	}
+
 	// Constructor, not OnAwake: these are DEFAULTS. Deserialization runs after construction, so a prefab or
 	// inspector tweak (or the owner's snapshot state on a proxy) still wins over them.
 	public PlayerVoice()
