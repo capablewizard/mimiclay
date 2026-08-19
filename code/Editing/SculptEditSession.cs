@@ -1055,9 +1055,9 @@ public sealed class SculptEditSession : Component
 	readonly BrushWorldClamp _worldClamp = new();
 
 	// Clamp this frame's state of the active brush (stamp ghost in Add mode, selection otherwise) BEFORE any
-	// rebuild renders/records/streams it. The travel sweep is off for the stamp ghost — its cursor jumps
-	// across the scene are teleports, not travel, and must not be blocked by geometry along the way.
-	void ClampActiveBrush() => _worldClamp.Apply( Target, ActiveBrush, sweepFromLast: Tool != SculptTool.Sculpt );
+	// rebuild renders/records/streams it. Travel-vs-teleport (the stamp cursor jumping across the scene must
+	// not sweep against geometry along the way) is decided inside by the move's distance.
+	void ClampActiveBrush() => _worldClamp.Apply( Target, ActiveBrush );
 
 	/// <summary>A HUD control is mid-gesture (slider drag, colour-wheel scrub, text typing): update only the
 	/// LIVE surface — the raymarcher reads the brushes directly each frame, and the shadow proxy keeps shadows
