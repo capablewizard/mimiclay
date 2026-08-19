@@ -607,12 +607,37 @@ PS
 			// here either. Add: a brush only matters within blend of becoming the new nearest (bd >= d+k).
 			// Subtract: a carver only matters while material is within blend. One threshold covers both:
 			// k+d for add, k-d for subtract (a single k+d over-culls subtracts where d is negative).
+			// Cutout carves the shell |bd| >= bd, so the subtract bound stays conservative for it too (its
+			// recolour reaches at most 0.5 units OUTSIDE the brush, well inside the AABB's blend padding).
 			if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > (D.w < 0.5 ? d + B.w : B.w - d) )
 				continue;
 
 			float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
 
 			float kk = B.w;
+
+			if ( D.w >= 1.5 )
+			{
+				// Cutout: groove the brush boundary (the same shell subtract as SdfDist) WITHOUT tinting
+				// the cut walls, then recolour the clay inside the brush — the "cut out and set back in
+				// place" look. The recolour edge sits at bd = 0, the groove's centre, so each wall wears
+				// the colour of the side it belongs to.
+				float shell = abs( bd );
+				if ( kk <= 0.0 )
+					d = max( d, -shell );
+				else
+				{
+					float hs = saturate( 0.5 - 0.5 * (d + shell) / kk );
+					d = lerp( d, -shell, hs ) + kk * hs * (1.0 - hs);
+				}
+
+				// Small fixed AA band on the colour edge — must match SdfBrush.CutoutColorEdge (1 unit).
+				float hc = saturate( 0.5 - bd / 1.0 );
+				s.col = lerp( s.col, D.rgb, hc );
+				s.metal = lerp( s.metal, E.y, hc );
+				s.rough = lerp( s.rough, E.z, hc );
+				continue;
+			}
 
 			if ( D.w >= 0.5 )
 			{

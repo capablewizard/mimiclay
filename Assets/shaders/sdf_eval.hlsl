@@ -463,11 +463,17 @@ float SdfDist( float3 lp )
 		float4 F = LoadBrush( k, 5 ); // cull AABB min .xyz, extruded cross-section id .w
 		float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
 
+		// Cull threshold per op: add matters within blend of becoming the nearest (d + k), subtract while
+		// material is within blend (k − d). Cutout carves the shell |bd| ≥ bd, so the subtract bound stays
+		// conservative for it too.
 		if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > (D.w < 0.5 ? d + B.w : B.w - d) )
 			continue;
 
 		float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
-		d = (D.w < 0.5) ? smin( d, bd, B.w ) : ssub( d, bd, B.w );
+		// Op (D.w): 0 add, 1 subtract, 2 cutout. Cutout subtracts a thin SHELL of the brush boundary (|bd|)
+		// — a groove where the brush surface crosses the clay, sized by Blend (0 = geometric no-op; the
+		// recolour half of the op lives in sdf_raymarch's SdfShade).
+		d = (D.w < 0.5) ? smin( d, bd, B.w ) : ssub( d, (D.w < 1.5) ? bd : abs( bd ), B.w );
 	}
 	return d;
 }

@@ -168,6 +168,10 @@ public sealed class TutorialDirector : Component
 	// live) — the depth lesson requires these AND a real position delta.
 	float _scrollTravel;
 
+	// The Tab lesson's half-latch: wireframes have been SEEN on this step. The row itself wants the round
+	// trip (this, plus them being off again), so the overlay doesn't ride along for the whole tutorial.
+	bool _wireSeenOn;
+
 	// ── Chained bubble monologues ────────────────────────────────────────────────────────────────────────
 	// One shared chain (there's only ever one monologue at a time): line N+1 begins ChainBeat after line N
 	// lands its LAST TYPED LETTER. Reset at every step entry; a step's Tick (or the Free phase) drives it.
@@ -188,9 +192,10 @@ public sealed class TutorialDirector : Component
 	readonly string[] _optionsLines =
 	{
 		"Shapes can have different qualities.",
-		"You can make them add, carve or change how they blend here.",
+		"You can make them add, carve, cutout or change how they blend here.",
 		"These are hotkeyed to A, S, D and F.",
 	};
+
 
 	readonly string[] _selectLines =
 	{
@@ -470,11 +475,20 @@ public sealed class TutorialDirector : Component
 			Hints = new[]
 			{
 				new Hint { Icon = "inputicons/mouse_left.png", Label = "Select a shape", Check = d => d.Session.HasSelection },
+				// He still SAYS the Tab tip (the chain's second line), but a spoken aside got missed — so it
+				// also gets a checklist row: the wireframes are how you SEE the shapes you're picking
+				// between. (The key is owned by the controllers, not a gated HUD section, so it always works.)
+				// It's the round TRIP that ticks — seen on, then off again — so nobody sculpts the rest of
+				// the tutorial through a wireframe overlay they left switched on.
+				new Hint { KeyCap = "Tab", Label = "Toggle Wireframe on/off", Check = d => d._wireSeenOn && !d.Session.WireframesOn },
 			},
-			// The Tab tip chains in after the intro; a quick click mustn't cut it off.
+			// The Tab tip chains in after the intro; finishing the rows early mustn't cut it off.
 			Done = d => d._chainDone,
 			Tick = d =>
 			{
+				if ( d.Session.WireframesOn )
+					d._wireSeenOn = true;
+
 				if ( d.SpeakChain( d._selectLines ) )
 					d._chainDone = true;
 			},
@@ -482,7 +496,13 @@ public sealed class TutorialDirector : Component
 			// ghost), so a stray tap can't select a shape before it's been introduced. The gizmo stays
 			// fully HIDDEN (the gate baseline) through this step and its praise — its first appearance is
 			// the move lesson's entry, landing exactly on "This is the gizmo!".
-			Enter = d => d.ApplyGate( (HudSection.WorldSelect, SectionState.Normal) ),
+			Enter = d =>
+			{
+				// Seeded from the LIVE state, not false: flick it on during his speech and turning it back
+				// off still completes the row (rather than demanding a second on-off).
+				d._wireSeenOn = d.Session.WireframesOn;
+				d.ApplyGate( (HudSection.WorldSelect, SectionState.Normal) );
+			},
 		} );
 
 		// ── Section: the gizmo, one transform at a time. The families not being taught draw ghosted and
@@ -668,15 +688,15 @@ public sealed class TutorialDirector : Component
 			Enter = d =>
 			{
 				d.SnapshotBrushes();
-				// The palette is the lesson (ringed); the picker sits beside it visible but locked — "there's
-				// more here, not yet". Everything else stays gone; selection and the (learned) gizmo stay live.
+				// The palette is the whole lesson (ringed) — the wheel/metal/rough column isn't shown at all
+				// yet; it turns up from the next step on. Everything else stays gone; selection
+				// and the (learned) gizmo stay live.
 				d.ApplyGate(
 					(HudSection.WorldSelect, SectionState.Normal),
 					(HudSection.GizmoMove, SectionState.Normal),
 					(HudSection.GizmoRotate, SectionState.Normal),
 					(HudSection.GizmoScale, SectionState.Normal),
-					(HudSection.Palette, SectionState.Highlight),
-					(HudSection.Picker, SectionState.Locked) );
+					(HudSection.Palette, SectionState.Highlight) );
 			},
 		} );
 
@@ -783,23 +803,26 @@ public sealed class TutorialDirector : Component
 		{
 			Bubble = _optionsLines[0], // same string as the chain's first line, so the card-appear doesn't retype
 			Title = "Shape Options",
+			// One row per operation, then the blend — the whole A-cycle gets walked instead of any single
+			// option ticking the step. The op rows read the tracker (a genuine switch INTO that op), not
+			// the brush's current value, so the op it already had can't tick its own row.
 			Hints = new[]
 			{
+				new Hint { KeyCap = "A", Label = "Set a shape to Add", Check = d => d._opsSet.Contains( SdfOperation.Add ) },
+				new Hint { KeyCap = "A", Label = "Set a shape to Carve", Check = d => d._opsSet.Contains( SdfOperation.Subtract ) },
+				new Hint { KeyCap = "A", Label = "Set a shape to Cutout", Check = d => d._opsSet.Contains( SdfOperation.Cutout ) },
 				new Hint
 				{
-					Label = "Change any shape option",
-					Check = d => d.AnyBrush( ( b, s ) =>
-						b.Operation != s.Operation
-						|| MathF.Abs( b.Blend - s.Blend ) > 0.05f
-						|| MathF.Abs( b.Rounding - s.Rounding ) > 0.02f
-						|| MathF.Abs( b.Curvature - s.Curvature ) > 0.02f
-						|| MathF.Abs( b.Slice - s.Slice ) > 0.02f ),
+					KeyCap = "S", Label = "Adjust the blend amount",
+					Check = d => d.AnyBrush( ( b, s ) => MathF.Abs( b.Blend - s.Blend ) > 0.05f ),
 				},
 			},
 			// The step also waits for the hotkey line to land — finishing the task mustn't cut him off.
 			Done = d => d._chainDone,
 			Tick = d =>
 			{
+				d.TrackOperations();
+
 				if ( !d.Session.HasSelection )
 				{
 					d._chainArmed = false;
@@ -813,6 +836,7 @@ public sealed class TutorialDirector : Component
 			Enter = d =>
 			{
 				d.SnapshotBrushes();
+				d.ResetOperationTracking();
 				// FULL editor from here on — this lap tours it rather than trimming it. The slider stack
 				// (op chip + blend/round/wildcard) is the subject; the layer stack alone stays back, so its
 				// own stage gets the reveal.
@@ -884,6 +908,45 @@ public sealed class TutorialDirector : Component
 
 	// Any live authored brush changed against its entry snapshot, index-matched. Reordering shifts indices
 	// and could over-trigger — acceptable: reordering IS an edit the player chose to make.
+	// ── Operation tracking (the shape-options checklist) ─────────────────────────────────────────────────
+	// Which ops the player has actively switched a shape INTO during the step. Polled, like everything
+	// else here: a change of Operation on the SAME brush = they cycled it (A key, op chip or layer-row
+	// button). Re-seating on a DIFFERENT brush only re-baselines — selecting a shape that already carves
+	// must not tick the carve row.
+
+	readonly HashSet<SdfOperation> _opsSet = new();
+	SdfBrush _opWatch;          // the brush being watched (reference, so a reorder doesn't confuse it)
+	SdfOperation _opWatchWas;
+
+	void ResetOperationTracking()
+	{
+		_opsSet.Clear();
+		_opWatch = null;
+	}
+
+	void TrackOperations()
+	{
+		var b = Session.SelectedBrush;
+		if ( b is null )
+		{
+			_opWatch = null;
+			return;
+		}
+
+		if ( b != _opWatch )
+		{
+			_opWatch = b;
+			_opWatchWas = b.Operation;
+			return;
+		}
+
+		if ( b.Operation != _opWatchWas )
+		{
+			_opWatchWas = b.Operation;
+			_opsSet.Add( b.Operation );
+		}
+	}
+
 	bool AnyBrush( Func<SdfBrush, BrushSnap, bool> changed )
 	{
 		var target = Session.Target;

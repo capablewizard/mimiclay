@@ -665,6 +665,7 @@
 
 		.op.add { color: $craft-green; }
 		.op.sub { color: $craft-red; }
+		.op.cut { color: $craft-blue; }
 
 		// Combined shape + colour cell: the small white shape icon (background-image set inline), tinted by
 		// the brush colour (background-tint, a multiply) so it reads as both shape and swatch.
@@ -909,8 +910,8 @@
 		// extruded "Shape" brush's profile chip row, whose chips flex to share that width evenly.
 		> .clay-slider, .slider-row, .text-row, .xsection-row { width: 250px; flex-shrink: 0; }
 
-		// Add/Carve toggle chip at the strip's head — green while adding, red while carving, cream text.
-		// Fixed width so the strip doesn't shift as the label changes between Add and Carve.
+		// Add/Carve/Cutout cycle chip at the strip's head — green adding, red carving, blue cutout,
+		// cream text. Fixed width so the strip doesn't shift as the label changes.
 		.op-chip {
 			width: 80px;
 			flex-grow: 0;
@@ -928,6 +929,12 @@
 				background-color: $craft-red;
 
 				&:hover { background-color: $craft-red; }
+			}
+
+			&.cutout {
+				background-color: $craft-blue;
+
+				&:hover { background-color: $craft-blue; }
 			}
 		}
 

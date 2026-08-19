@@ -858,16 +858,26 @@ public sealed class SculptEditSession : Component
 		NotifyChanged();
 	}
 
-	/// <summary>Flip a brush between additive and subtractive (the +/- button) and rebuild. Refused (with
-	/// the toast) when carving it would leave no solid shape.</summary>
+	/// <summary>Cycle a brush's operation (the layer-row op button): Add → Carve → Cutout → Add. Refused
+	/// (with the toast) when leaving Add would strip the last solid shape — Carve and Cutout both add no
+	/// geometry, so neither can be the sculpt's remaining solid.</summary>
 	public void ToggleOperation( int index )
 	{
 		if ( BrushAt( index ) is not { } b || RefuseIfLastSolid( b ) )
 			return;
 
-		b.Operation = b.Operation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add;
+		b.Operation = NextOperation( b.Operation );
 		NotifyChanged();
 	}
+
+	/// <summary>The op cycle every add/carve toggle steps through (A key, op chip, layer-row button):
+	/// Add → Subtract (carve) → Cutout → back to Add.</summary>
+	public static SdfOperation NextOperation( SdfOperation op ) => op switch
+	{
+		SdfOperation.Add => SdfOperation.Subtract,
+		SdfOperation.Subtract => SdfOperation.Cutout,
+		_ => SdfOperation.Add,
+	};
 
 	// Each brush's axis combo from the last time the layer-row toggle turned its symmetry OFF, so turning
 	// it back on restores that combo instead of defaulting to X. Keyed by brush reference (survives
@@ -1349,7 +1359,7 @@ public sealed class SculptEditSession : Component
 		if ( opKey && !_opKeyWas )
 		{
 			if ( Tool == SculptTool.Sculpt )
-				SetStampOperation( StampOperation == SdfOperation.Add ? SdfOperation.Subtract : SdfOperation.Add );
+				SetStampOperation( NextOperation( StampOperation ) );
 			else if ( Selected >= 0 )
 				ToggleOperation( Selected );
 		}
@@ -1582,9 +1592,9 @@ public sealed class SculptEditSession : Component
 		if ( _ghostOutAlpha <= 0f )
 			_ghostOutBrush = null;
 
-		// A selected CARVE brush has no surface of its own (it's a hole) — draw its red wireframe so you
-		// can see what you're moving. Same single-brush wire the carve stamp uses.
-		if ( SelectedBrush is { Operation: SdfOperation.Subtract } carveSel )
+		// A selected CARVE or CUTOUT brush has no surface of its own (a hole / a scored recolour) — draw
+		// its wireframe so you can see what you're moving. Same single-brush wire the stamp uses.
+		if ( SelectedBrush is { Operation: SdfOperation.Subtract or SdfOperation.Cutout } carveSel )
 		{
 			_stampWireList.Clear();
 			_stampWireList.Add( carveSel );
@@ -1688,9 +1698,13 @@ public sealed class SculptEditSession : Component
 		}
 	}
 
-	// Faint translucent overlay tint — cyan for additive brushes, red for subtractive (matches the editor).
-	static Color HoverColor( SdfBrush b ) =>
-		(b.Operation == SdfOperation.Subtract ? Color.Red : Color.Cyan).WithAlpha( 0.2f );
+	// Faint translucent overlay tint — cyan additive, red subtractive, blue cutout (matches the wires).
+	static Color HoverColor( SdfBrush b ) => (b.Operation switch
+	{
+		SdfOperation.Subtract => Color.Red,
+		SdfOperation.Cutout => Color.Blue,
+		_ => Color.Cyan,
+	}).WithAlpha( 0.2f );
 
 	// Draw one hover ghost at the given opacity (fades the base hover tint), or hide it when invisible.
 	void DrawGhost( BrushGhost ghost, SdfBrush brush, float alpha, Transform tx )
@@ -1775,10 +1789,11 @@ public sealed class SculptEditSession : Component
 
 		bool changed = _stampTool.Update( Target, Scene, interactive, out bool committed );
 
-		// No overlay for an additive stamp — the live surface IS the preview. A carve stamp is the exception:
-		// hovering empty space it removes nothing, so it'd be invisible — give it the red editor wireframe.
+		// No overlay for an additive stamp — the live surface IS the preview. Carve and cutout stamps are
+		// the exception: hovering empty space they change nothing, so they'd be invisible — give them the
+		// editor wireframe (red carve / blue cutout, from BrushWireframes' op colour).
 		var stamp = StampBrush;
-		if ( stamp is not null && stamp.Operation == SdfOperation.Subtract )
+		if ( stamp is not null && stamp.Operation != SdfOperation.Add )
 		{
 			_stampWireList.Clear();
 			_stampWireList.Add( stamp );
@@ -1895,6 +1910,11 @@ public sealed class SculptEditSession : Component
 		if ( IsEditing )
 			_wireframesOn = !_wireframesOn;
 	}
+
+	/// <summary>Is the Tab wireframe overlay switched on? The preference alone — what actually renders also
+	/// needs <see cref="IsEditing"/> and <see cref="ShowWireframes"/>. Read by the tutorial's "press Tab"
+	/// checklist row.</summary>
+	public bool WireframesOn => _wireframesOn;
 
 	void UpdateWireframes()
 	{

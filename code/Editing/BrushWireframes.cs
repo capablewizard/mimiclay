@@ -109,7 +109,7 @@ public sealed class BrushWireframes
 			hc.Add( (int)b.CrossSection ); // extruded profile swap rebuilds the wire
 			hc.Add( b.Text ); hc.Add( b.Font );
 			hc.Add( b.TextData is not null ); // ink-rect wire: rebuild when the bake lands (quad → ink box)
-			hc.Add( (int)b.Operation ); // colour depends on add/subtract
+			hc.Add( (int)b.Operation ); // colour depends on the op (add/carve/cutout)
 			hc.Add( b.Position );
 			hc.Add( b.Rotation );
 			hc.Add( b.Size );
@@ -151,7 +151,12 @@ public sealed class BrushWireframes
 			// and drag-opacity passed in). An out-of-bounds brush (SculptBounds blame, fixed regions only)
 			// wears the warn colour near-full regardless of selection — the culprit has to pop.
 			float stateAlpha = i == selected ? 1f : (i == hovered ? 0.7f : 0.3f);
-			var baseCol = b.Operation == SdfOperation.Subtract ? Color.Red : Color.Cyan;
+			var baseCol = b.Operation switch
+			{
+				SdfOperation.Subtract => Color.Red,
+				SdfOperation.Cutout => Color.Blue,
+				_ => Color.Cyan,
+			};
 			if ( IndexIn( warn, i ) )
 			{
 				baseCol = warnColor;

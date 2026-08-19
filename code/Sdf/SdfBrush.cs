@@ -33,6 +33,11 @@ public enum SdfOperation
 {
 	Add,
 	Subtract,
+	/// <summary>Score-and-recolour ("cut out and set back in place"): carves a thin groove where the brush's
+	/// BOUNDARY crosses the clay — the shell subtract <c>max(d, -(|bd|))</c> smoothed by Blend, so Blend is
+	/// the groove size and 0 is a pure recolour — and paints the clay INSIDE the brush with the brush's
+	/// material. Adds no geometry of its own, so bounds/collision treat it like Subtract.</summary>
+	Cutout,
 }
 
 /// <summary>
@@ -1243,9 +1248,10 @@ public static class Sdf
 {
 	/// <summary>
 	/// Pick the brush under a cursor ray (origin/dir in SCULPTURE-LOCAL space). Returns the brush index or
-	/// -1. It hits the combined visible surface (the additive result), but ALSO lets a SUBTRACTIVE brush be
-	/// picked by its own primitive volume — so a negative volume is selectable even with nothing behind it
-	/// (carved empty space has no surface to trace). The nearest of {surface owner, subtractive volume} wins.
+	/// -1. It hits the combined visible surface (the additive result), but ALSO lets a SUBTRACTIVE or CUTOUT
+	/// brush be picked by its own primitive volume — a carved volume is selectable even with nothing behind
+	/// it (empty space has no surface to trace), and a cutout's volume entry sits in front of the clay it
+	/// recolours, so clicking the recoloured piece selects the cutout. The nearest volume wins.
 	/// </summary>
 	public static int PickBrush( List<SdfBrush> brushes, Vector3 o, Vector3 d )
 	{
@@ -1269,14 +1275,14 @@ public static class Sdf
 			}
 		}
 
-		// 2) Nearest SUBTRACTIVE brush whose own primitive volume the ray enters (additive brushes already
-		//    show up as surface above; only carvers need this fallback).
+		// 2) Nearest NON-ADDITIVE brush whose own primitive volume the ray enters (additive brushes already
+		//    show up as surface above; carvers and cutouts need this fallback).
 		float tSub = float.MaxValue;
 		int subBrush = -1;
 		for ( int i = 0; i < brushes.Count; i++ )
 		{
 			var b = brushes[i];
-			if ( !b.Enabled || b.Operation != SdfOperation.Subtract )
+			if ( !b.Enabled || b.Operation == SdfOperation.Add )
 				continue;
 
 			if ( RayMarch( b.Distance, o, d, out float te ) && te < tSub )
@@ -1286,7 +1292,7 @@ public static class Sdf
 			}
 		}
 
-		// A subtractive volume in front of the visible surface (or when there's no surface) wins.
+		// A carve/cutout volume in front of the visible surface (or when there's no surface) wins.
 		return (subBrush >= 0 && tSub < tSurface) ? subBrush : surfaceBrush;
 	}
 
@@ -1316,15 +1322,24 @@ public static class Sdf
 				continue; // hidden brush — skip (eye toggle)
 
 			float bd = b.Distance( p );
-			d = b.Operation == SdfOperation.Add
-				? SmoothUnion( d, bd, b.Blend )
-				: SmoothSubtract( d, bd, b.Blend );
+			d = b.Operation switch
+			{
+				SdfOperation.Add => SmoothUnion( d, bd, b.Blend ),
+				SdfOperation.Subtract => SmoothSubtract( d, bd, b.Blend ),
+				// Cutout: subtract a thin SHELL of the brush boundary (|bd|) — a groove where the brush
+				// surface crosses the clay, sized by Blend (0 = pure recolour, no geometry change).
+				_ => SmoothSubtract( d, MathF.Abs( bd ), b.Blend ),
+			};
 		}
 		return d;
 	}
 
 	/// <summary>Colour blended across smooth-union seams by the same factor as the geometry.</summary>
 	public static Color SampleColor( List<SdfBrush> brushes, Vector3 p ) => SampleSurface( brushes, p ).Color;
+
+	/// <summary>Width (world units) of a Cutout brush's recolour edge — a small fixed AA band so the colour
+	/// boundary doesn't shimmer at distance. Must match the literal in sdf_raymarch's SdfShade.</summary>
+	const float CutoutColorEdge = 1f;
 
 	/// <summary>The full per-point surface — colour, metalness and roughness — each blended across
 	/// smooth-union seams by the SAME smooth-min factor as the geometry, so material attributes share
@@ -1342,6 +1357,27 @@ public static class Sdf
 
 			float bd = b.Distance( p );
 			float k = b.Blend;
+
+			if ( b.Operation == SdfOperation.Cutout )
+			{
+				// Cutout: groove the brush boundary (the same shell subtract as Sample) WITHOUT tinting the
+				// cut walls, then recolour the clay inside the brush. The recolour edge sits at bd = 0 — the
+				// groove's centre — so each wall naturally wears the colour of the side it belongs to.
+				float shell = MathF.Abs( bd );
+				if ( k <= 0f )
+					d = MathF.Max( d, -shell );
+				else
+				{
+					float hs = Math.Clamp( 0.5f - 0.5f * (d + shell) / k, 0f, 1f );
+					d = (d * (1f - hs) + (-shell) * hs) + k * hs * (1f - hs);
+				}
+
+				float hc = Math.Clamp( 0.5f - bd / CutoutColorEdge, 0f, 1f );
+				col = Color.Lerp( col, b.Color, hc );
+				metal = MathX.Lerp( metal, b.Metallic, hc );
+				rough = MathX.Lerp( rough, b.Roughness, hc );
+				continue;
+			}
 
 			if ( b.Operation == SdfOperation.Subtract )
 			{
