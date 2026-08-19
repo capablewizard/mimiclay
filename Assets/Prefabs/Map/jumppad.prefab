@@ -3,7 +3,7 @@
     "__guid": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72",
     "__version": 2,
     "Flags": 0,
-    "Name": "Jumppad",
+    "Name": "jumppad",
     "Position": "0,0,0",
     "Rotation": "0,0,0,1",
     "Scale": "1,1,1",
@@ -65,6 +65,32 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null
+      },
+      {
+        "__type": "Sandbox.BoxCollider",
+        "__guid": "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad",
+        "__enabled": true,
+        "Flags": 0,
+        "Center": "0,0,12.5",
+        "ColliderFlags": 0,
+        "Elasticity": null,
+        "Friction": null,
+        "IsTrigger": true,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "OnObjectTriggerEnter": null,
+        "OnObjectTriggerExit": null,
+        "OnTriggerEnter": null,
+        "OnTriggerExit": null,
+        "RollingResistance": null,
+        "Scale": "50,50,25",
+        "Static": false,
+        "Surface": null,
+        "SurfaceVelocity": "0,0,0"
       }
     ],
     "Children": [
@@ -76,7 +102,7 @@
         "Position": "0,0,10",
         "Rotation": "0,0,0,1",
         "Scale": "1,1,1",
-        "Tags": "world",
+        "Tags": "",
         "Enabled": true,
         "NetworkMode": 2,
         "NetworkFlags": 0,
@@ -130,7 +156,7 @@
         "Position": "0,0,8",
         "Rotation": "0,0,0,1",
         "Scale": "1,1,1",
-        "Tags": "world",
+        "Tags": "",
         "Enabled": true,
         "NetworkMode": 2,
         "NetworkFlags": 0,
@@ -176,7 +202,28 @@
         ],
         "Children": []
       }
-    ]
+    ],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
   },
   "ResourceVersion": 2,
   "ShowInMenu": false,

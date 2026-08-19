@@ -50,8 +50,16 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 		if ( Components.Get<Collider>() is null )
 		{
 			var box = Components.Create<BoxCollider>();
-			box.Center = Vector3.Up * 16f;
-			box.Scale = new Vector3( 64f, 64f, 32f );
+
+			// Bottom face sits BELOW ground level (not flush with it) on purpose: a standing/walking pawn's
+			// capsule bottom rests exactly AT ground level, so a trigger box starting exactly there only ever
+			// TOUCHES it rather than genuinely overlapping — which many physics engines don't count as an
+			// "enter" (resting contact isn't penetration). That's why this only fired for a jump: falling
+			// into it has real downward velocity that visibly penetrates before the ground-snap stops it. Going
+			// 16 units underground guarantees real overlap the instant a pawn's footprint steps onto the pad,
+			// standing still or not.
+			box.Center = new Vector3( 0f, 0f, 8f );
+			box.Scale = new Vector3( 64f, 64f, 48f ); // spans z -16..32 (Scale is full corner-to-corner size)
 		}
 
 		foreach ( var col in Components.GetAll<Collider>() )
@@ -59,8 +67,19 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 	}
 
 	void Component.ITriggerListener.OnTriggerEnter( Collider other )
+		=> TryLaunchFrom( other.GameObject );
+
+	// Component.ITriggerListener also has a separate GameObject-keyed overload family (OnTriggerEnter(GameObject)),
+	// which some trigger pairings surface INSTEAD of the Collider one depending on how the other body's colliders
+	// are set up — implementing only one meant pads worked for some pawns/players but silently did nothing for
+	// others. Handling both (TryLaunchFrom is idempotent per pawn thanks to the cooldown dictionary, so no harm
+	// if the engine happens to call both for the same overlap) makes this reliable for every pawn kind.
+	void Component.ITriggerListener.OnTriggerEnter( GameObject other )
+		=> TryLaunchFrom( other );
+
+	void TryLaunchFrom( GameObject other )
 	{
-		var root = other.GameObject?.Root;
+		var root = other?.Root;
 		if ( !root.IsValid() )
 			return;
 
@@ -94,6 +113,15 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 			return;
 		_lastLaunch[go] = 0;
 
+		// PlayerController re-snaps to the ground and ZEROES vertical velocity every physics tick while
+		// IsOnGround is true (MoveModeWalk.PostPhysicsStep -> StickToGround -> PlayerController.Reground) — a
+		// plain Body.Velocity write here would get cancelled out again before it ever visibly moved the hunter
+		// (this is exactly what "just resets to 0" was). PreventGrounding is the engine's own public escape
+		// hatch for this — its Jump(Vector3) helper uses the same call internally. Estimate enough airtime to
+		// clear the ground trace: a touch more than the time to rise back to launch height under gravity.
+		if ( pawn is PlayerController pc )
+			pc.PreventGrounding( AirborneEstimate( LaunchSpeed ) );
+
 		var vel = body.Velocity.WithZ( LaunchSpeed );
 		if ( ForwardSpeed > 0f )
 			vel += WorldRotation.Forward * ForwardSpeed;
@@ -101,6 +129,15 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 		body.Velocity = vel;
 
 		BroadcastBoing();
+	}
+
+	// HiderController's Rigidbody has no such ground-snap fighting it (its own OnFixedUpdate ground-probe/
+	// grounding logic is IsProxy-gated the same way ours is, so it simply won't run this same tick), so only
+	// the PlayerController side needs the PreventGrounding escape hatch.
+	static float AirborneEstimate( float launchSpeed )
+	{
+		const float gravity = 800f; // s&box's default PlayerController.Gravity magnitude
+		return launchSpeed / gravity + 0.2f; // time to apex, plus a little slack
 	}
 
 	[Rpc.Broadcast]
@@ -115,7 +152,7 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 		base.DrawGizmos();
 
 		Gizmo.Draw.Color = Color.Cyan.WithAlpha( (Gizmo.IsSelected || Gizmo.IsHovered) ? 0.9f : 0.5f );
-		Gizmo.Draw.LineBBox( new BBox( new Vector3( -32f, -32f, 0f ), new Vector3( 32f, 32f, 32f ) ) );
+		Gizmo.Draw.LineBBox( new BBox( new Vector3( -32f, -32f, -16f ), new Vector3( 32f, 32f, 32f ) ) );
 
 		// Launch direction preview: straight up, kicked toward Forward if this pad also shoves horizontally.
 		// Plain lines only (Gizmo.Draw.Line/LineBBox — the only draw primitives already proven elsewhere in
