@@ -116,9 +116,9 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// distance and clips through walls instead.</summary>
 	[Property, Group( "Camera" )] public bool CameraCollision { get; set; } = true;
 
-	/// <summary>In play mode, holding Alt orbits the camera without also holding a mouse button (alt+RMB still
-	/// dollies, alt+MMB still pans). Off = Maya-style alt+LMB to orbit. Edit mode always needs the click (so the
-	/// cursor stays free for the gizmo).</summary>
+	/// <summary>In play mode, holding Alt alone orbits the camera (no mouse button needed) — a shortcut on top
+	/// of the bare drag gestures (LMB orbit / MMB pan / RMB zoom, which never need alt). Off = only the drags
+	/// navigate.</summary>
 	[Property, Group( "Camera" )] public bool AltHoldOrbits { get; set; } = true;
 
 	/// <summary>The disguise the hider sculpts. A prefab so its mesh/SDF renderer + materials are authored in the
@@ -195,7 +195,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// modes, so toggling edit never jumps the view and our camera runs the exact same code as the hunter's
 	// face-edit camera. We Tick it ourselves rather than letting it run its own OnUpdate (see UpdateCamera).
 	OrbitCameraController _orbit;
-	float _bodyYaw;   // disguise + movement yaw — turns with the camera unless alt holds it still
+	float _bodyYaw;   // disguise + movement yaw — turns with the camera unless a camera-only orbit holds it still
 
 	// Jump is an edge event read on the frame; consumed on the next fixed step so it can't be missed.
 	bool _jumpQueued;
@@ -881,29 +881,37 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		}
 		else
 		{
-			PlayCamera();                        // free-look + alt dolly/pan feed the rig; may turn the disguise too
+			PlayCamera();                        // free-look + bare drag nav feed the rig; may turn the disguise too
 			_orbit.Tick( handleAltDrag: false );
 		}
 	}
 
 	// Play: free mouse-look turns the camera AND disguise together (same delta to both, so the camera's offset from
-	// the body is preserved). Alt + a mouse button switches to Maya nav (camera moves alone, disguise stays put, no
-	// snap on release). Alt with NO button still free-looks as normal.
+	// the body is preserved). A bare mouse-button drag switches to Maya nav, no alt needed — LMB orbits (camera
+	// moves alone, disguise stays put, no snap on release), RMB dollies, MMB pans — the same button mapping the
+	// edit mode / menu use (see AltNav), so the vocabulary is one scheme everywhere. The mouse is captured out
+	// here (no cursor, no UI to click), which is why the buttons are simply free to claim on Down, without the
+	// press-edge/claim machinery the cursor modes need.
 	void PlayCamera()
 	{
+		// A cursor overlay owns the mouse — don't hide it or let its clicks/drags navigate the camera behind it
+		// (the same panels PauseMenuSystem forces the cursor visible for).
+		if ( PauseMenu.IsOpen || RoundSetup.IsOpen )
+			return;
+
 		Mouse.Visibility = MouseVisibility.Hidden;
-		bool alt = Input.Down( "Walk" );
 
-		// Dolly / pan are drag-based (alt + RMB/MMB) and don't rotate.
-		if ( alt && Input.Down( "Attack2" ) ) { _orbit.Dolly( Mouse.Delta ); return; }
-		if ( alt && Input.Down( "CameraPan" ) ) { _orbit.Pan( Mouse.Delta ); return; }
+		// Dolly / pan are drag-based (RMB/MMB) and don't rotate.
+		if ( Input.Down( "Attack2" ) ) { _orbit.Dolly( Mouse.Delta ); return; }
+		if ( Input.Down( "CameraPan" ) ) { _orbit.Pan( Mouse.Delta ); return; }
 
-		// Free mouse-look turns the camera; the disguise comes along UNLESS we're orbiting camera-only (alt-hold,
-		// or alt+LMB). The same look input drives both, so an alt-orbit and a free-look turn at the identical speed.
+		// Free mouse-look turns the camera; the disguise comes along UNLESS we're orbiting camera-only (LMB drag,
+		// or the alt-hold shortcut). The same look input drives both, so an orbit and a free-look turn at the
+		// identical speed.
 		var look = Input.AnalogLook;
 		_orbit.ApplyLook( look );
 
-		bool cameraOnly = alt && (AltHoldOrbits || Input.Down( "Attack1" ));
+		bool cameraOnly = Input.Down( "Attack1" ) || (AltHoldOrbits && Input.Down( "Walk" ));
 		if ( !cameraOnly )
 			_bodyYaw += look.yaw;
 	}
