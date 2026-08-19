@@ -594,6 +594,28 @@ public sealed class BrushStampTool
 			float denom = Vector3.Dot( d, fwd );
 			float t = denom > 1e-4f ? Vector3.Dot( _anchor - o, fwd ) / denom : -1f;
 			pos = t >= 8f ? o + d * t : _anchor; // degenerate / camera zoomed past the plane: hold position
+
+			// The depth must never sit BEHIND world geometry the view passes through (scrolled past the
+			// floor, or a stale anchor from an earlier ghost): sweep a sphere of the ghost's rough size
+			// from the CAMERA to the steered position and stop at the first thing the world clamp
+			// considers solid. The ANCHOR adopts the capped value below, so the depth self-heals every
+			// frame — you can't scroll the target behind a wall, and a fresh ghost can never inherit an
+			// anchor on the wrong side of one. StartedSolid (the camera itself inside geometry) skips the
+			// cap — the session's world clamp still protects the brush itself.
+			var scene = target.Scene;
+			if ( scene.IsValid() )
+			{
+				float sweepR = _stamp.Shape == SdfShape.Spline
+					? Math.Clamp( _stamp.Size.x, 1f, SdfBrush.MaxSplineRadius ) // the chain point's radius
+					: Math.Clamp( MathF.Min( _stamp.Size.x, MathF.Min( _stamp.Size.y, _stamp.Size.z ) ), 2f, 64f );
+
+				var trc = BrushWorldClamp.Filtered( scene, target )
+					.Sphere( sweepR, cam.WorldPosition, tx.PointToWorld( pos ) )
+					.Run();
+				if ( trc.Hit && !trc.StartedSolid )
+					pos = tx.PointToLocal( trc.EndPosition );
+			}
+
 			_anchor = pos;
 		}
 

@@ -50,13 +50,17 @@ namespace Mimiclay;
 ///    backstop gates on !IsProxy. Proxies always build what they received.
 ///  • Never traps: a brush that STARTS blocked (loaded embedded, revealed by an eye-toggle) is resolved if
 ///    it can be, and moves freely until it first comes up clear otherwise.
-///  • Contact is not penetration: shapes are tested inset by <see cref="ClampInset"/> so clay resting
-///    flush on the floor — which ground-snap actively produces — always reads clear.
+///  • Contact is not penetration: resting contact (solver slop included) never triggers corrections or
+///    refusals — solids via the <see cref="RestTolerance"/> deadband on full-size shapes, splines via the
+///    graced tube inset — while what actually RESTS on a surface is the real geometry, so a commit never
+///    builds an embedded collider (which physics would answer by lifting the whole prop on release).
 /// </summary>
 public sealed class BrushWorldClamp
 {
-	/// <summary>Shape inset for the LIVE clamp — deep enough that flush floor contact reads clear, shallow
-	/// enough that a brush can't visibly bury itself.</summary>
+	/// <summary>Base tolerance unit of the live clamp. Solids no longer test at this inset — their gestures
+	/// run FULL-SIZE shapes with <see cref="RestTolerance"/> as the contact deadband, so what rests on the
+	/// floor is the REAL surface and commits never build an embedded collider (the release pop). It
+	/// survives as the base of <see cref="SplineTubeInset"/>'s curve-dip grace.</summary>
 	public const float ClampInset = 1f;
 
 	/// <summary>Extra inset the live clamp grants a SPLINE's tube spheres on top of <see cref="ClampInset"/>
@@ -76,10 +80,20 @@ public sealed class BrushWorldClamp
 	/// rebuilds.</summary>
 	public const float BackstopInset = 4f;
 
-	// The live clamp's inset for a whole-brush test: splines get the tube grace, everything else the
-	// strict inset. The point's OWN sphere always tests strict (SlidePointSphere) — the grace is only for
-	// the curve BETWEEN points.
-	static float InsetFor( SdfBrush b ) => b.Shape == SdfShape.Spline ? SplineTubeInset : ClampInset;
+	// The live clamp's inset for a whole-brush test: splines get the tube grace; solids test FULL SIZE.
+	// Full size matters for where gestures come to REST: shapes swept/resolved at an inset rest with the
+	// REAL primitive that far inside the floor, and the commit then builds the real collider embedded —
+	// which physics answers by lifting the whole prop on release (the release pop). Full-size gestures
+	// rest a skin's breadth ABOVE the surface instead; RestTolerance below keeps resting contact from
+	// being endlessly re-corrected.
+	static float InsetFor( SdfBrush b ) => b.Shape == SdfShape.Spline ? SplineTubeInset : 0f;
+
+	/// <summary>Penetration depth (of FULL-SIZE shapes) the resolve treats as resting contact, not error —
+	/// no correction below it. Without this, solver slop on a settled body (≤~0.5u of contact penetration
+	/// is normal) would re-trigger a lift on every later edit of a floor-resting brush, ratcheting it
+	/// upward in local space while ground-snap lowered the body to match. Also the worst embed a commit
+	/// can now carry: within solver slop, so releases no longer pop the prop.</summary>
+	const float RestTolerance = 0.5f;
 
 	/// <summary>The most world-space correction the endpoint resolve may apply in one frame. Small on
 	/// purpose: the minimum-translation direction is only trustworthy while penetration is shallow — deeper
@@ -270,7 +284,9 @@ public sealed class BrushWorldClamp
 			if ( delta.IsNearZeroLength || delta.Length > SweepMaxTravel )
 				return false;
 
-			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, ClampInset ) )
+			// FULL-SIZE sweep, so the drag rests the real surface a skin above the floor — an inset here
+			// let the real shape sink by the inset, and the commit's real collider then popped the prop.
+			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, 0f ) )
 				return false;
 			if ( SlideAnchor( scene, target, prev.Position, brush.Position ) is { } pos )
 				brush.Position = pos;
@@ -303,13 +319,19 @@ public sealed class BrushWorldClamp
 
 		if ( uniform && !anyRadius && !delta0.IsNearZeroLength && delta0.Length <= SweepMaxTravel )
 		{
-			// Whole-curve move: rigid, so the full-shape sweep applies. Anchor on point 0.
-			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset ) )
-				return false;
-			if ( SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) ) is not { } slid )
+			// Whole-curve move: rigid, so the full-shape sweep applies. Anchor on point 0. FULL SIZE first
+			// (rests the real tube on real contact — no release pop); a tube whose curve already dips
+			// within the grace starts solid at full size, so retry with the graced shapes it was accepted
+			// under rather than losing the slide entirely.
+			Vector3? slid = null;
+			if ( SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, 0f ) )
+				slid = SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) );
+			if ( slid is null && SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset ) )
+				slid = SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) );
+			if ( slid is not { } anchor )
 				return false;
 
-			var net = slid - P( pp[0] );
+			var net = anchor - P( pp[0] );
 			for ( int i = 0; i < cp.Count; i++ )
 			{
 				var q = P( pp[i] ) + net;
@@ -479,7 +501,9 @@ public sealed class BrushWorldClamp
 		if ( !scene.IsValid() || !ClampsApply( target ) )
 			return to;
 
-		float r = MathF.Max( radius - ClampInset, 0.5f );
+		// FULL radius: the sweep/resolve place the point where its REAL sphere rests a skin above the
+		// surface — an inset here let the real sphere sink by the inset, popping the prop at commit.
+		float r = MathF.Max( radius, 0.5f );
 		var tx = target.WorldTransform;
 
 		var pos = from;
@@ -543,6 +567,8 @@ public sealed class BrushWorldClamp
 				{
 					if ( !body.ComputePenetration( probe, new Transform( centre ), out var dir, out var dist ) )
 						continue;
+					if ( dist <= RestTolerance )
+						continue; // resting contact of the full-size sphere, not an error — leave it be
 					any = true;
 					correction -= dir * (dist + SlideSkin);
 				}
@@ -617,8 +643,9 @@ public sealed class BrushWorldClamp
 	// The world as the clamp sees it — the ground-probe filter: ignore our own pawn hierarchy (the disguise
 	// IS the shape being edited) and everything that isn't really scenery — fellow prop bodies (our physics
 	// ignores them too) and the hunter's trace-only trigger colliders. Released props, decoys and the map
-	// itself all block, exactly like they block feet.
-	static SceneTrace Filtered( Scene scene, SdfSculpture target ) => scene.Trace
+	// itself all block, exactly like they block feet. Internal so the stamp tool's anchor validation sees
+	// the same world the clamp does.
+	internal static SceneTrace Filtered( Scene scene, SdfSculpture target ) => scene.Trace
 		.IgnoreGameObjectHierarchy( target.GameObject.Root )
 		.WithoutTags( HiderController.PropBodyTag, "movecollider", "headcollider", "trigger", "water" );
 
@@ -641,6 +668,13 @@ public sealed class BrushWorldClamp
 
 		var tx = target.WorldTransform;
 		var offset = Vector3.Zero; // accumulated world-space correction
+
+		// Solids run FULL-SIZE shapes, so resting contact reads as tiny penetrations — the deadband keeps
+		// those from being endlessly "fixed" (see RestTolerance). Splines run their GRACED shapes here, and
+		// their deadband must stay zero: the point-gesture verify (ShapesClear, no deadband) tests the same
+		// graced shapes, and a state this loop accepted must never read dirty there.
+		float deadband = brush.Shape == SdfShape.Spline ? 0f : RestTolerance;
+
 		for ( int i = 0; i < ResolveIterations; i++ )
 		{
 			var at = new Transform( tx.Position + offset, tx.Rotation, tx.Scale );
@@ -652,6 +686,8 @@ public sealed class BrushWorldClamp
 			{
 				if ( !body.ComputePenetration( _scratch, at, out var dir, out var dist ) )
 					continue;
+				if ( dist <= deadband )
+					continue; // resting contact, not an error — leave it be
 				any = true;
 				// dir·dist moves the WORLD body clear (see the engine's ComputePenetration contract) —
 				// the brush moves the opposite way, plus a skin so the settled state isn't kiss-touching.
