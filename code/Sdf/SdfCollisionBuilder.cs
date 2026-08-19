@@ -294,6 +294,120 @@ public static class SdfCollisionBuilder
 		return any;
 	}
 
+	/// <summary>Populate <paramref name="body"/> with ONE brush's collision shapes (all mirror copies), in
+	/// SCULPTURE-LOCAL space, for <c>Scene.Trace.Sweep</c> world-overlap tests — the edit-time world clamp and
+	/// the commit-time embed backstop (see <see cref="BrushWorldClamp"/>). Any shapes already on the body are
+	/// cleared first. Returns false when the brush yields no collision at all (disabled, subtractive, or under
+	/// the detail gate) — such a brush can never embed the pawn, so it's free to go anywhere.
+	///
+	/// Deliberately the UNCARVED primitives — same point clouds / spheres as <see cref="Build"/>'s exact path,
+	/// so the tests agree with the real collider by construction. Carved voxel boxes are always INSIDE the
+	/// uncarved primitive, so testing the primitive is only ever stricter, never leakier. Two other deliberate
+	/// over-covers, same one-sided logic: the concave star tests as its filled convex hull (no kite
+	/// decomposition), and the detail gate here is the SOLO <see cref="MinBrushExtent"/> check without
+	/// <see cref="EffectiveMinExtent"/>'s all-detail fallback — an all-tiny sculpt goes untested, and the worst
+	/// an untested brush can embed is under 10 units, a gentle depenetration rather than a through-wall eject.
+	///
+	/// <paramref name="inset"/> shrinks every shape (sphere radii down, hull points scaled toward their bounds
+	/// centre) so CONTACT never reads as PENETRATION: clay resting flush on the floor — which ground-snap
+	/// actively produces — must test clear, or the clamp would disable itself (a blocked baseline releases the
+	/// brush) and the backstop would freeze every commit of a grounded prop.</summary>
+	public static bool BuildSweepShapes( SdfBrush b, PhysicsBody body, float inset )
+	{
+		body.ClearShapes();
+		if ( b is null || !b.Enabled || b.Operation != SdfOperation.Add )
+			return false;
+
+		var pts = new List<Vector3>( 32 );
+		var sweep = new List<Vector4>( 64 );
+		if ( TooSmall( b, MinBrushExtent, pts, sweep ) )
+			return false;
+
+		bool any = false;
+
+		// Spline: the same swept spheres the collider emits, per mirror copy (sweep was already filled by
+		// TooSmall's measurement above — same call, same spacing).
+		if ( b.Shape == SdfShape.Spline )
+		{
+			int snx = b.EffectiveMirrorX ? 1 : 0, sny = b.EffectiveMirrorY ? 1 : 0, snz = b.EffectiveMirrorZ ? 1 : 0;
+			for ( int sx = 0; sx <= snx; sx++ )
+			for ( int sy = 0; sy <= sny; sy++ )
+			for ( int sz = 0; sz <= snz; sz++ )
+			{
+				var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
+				foreach ( var pt in sweep )
+				{
+					body.AddSphereShape( new Vector3( pt.x, pt.y, pt.z ) * sign,
+						MathF.Max( pt.w - inset, 0.5f ), rebuildMass: false );
+					any = true;
+				}
+			}
+			return any;
+		}
+
+		// Uniform unsliced sphere: exact primitive, one per mirror centre (same special case as Build).
+		if ( b.Shape == SdfShape.Sphere && IsUniform( b.Size ) && b.Slice <= 0f )
+		{
+			Span<Vector3> centres = stackalloc Vector3[8];
+			int n = b.MirrorCentres( centres );
+			float r = MathF.Max( b.Size.x - inset, 0.5f );
+			for ( int i = 0; i < n; i++ )
+			{
+				body.AddSphereShape( centres[i], r, rebuildMass: false );
+				any = true;
+			}
+			return any;
+		}
+
+		// Everything else: the shared brush-local point cloud, inset, then one hull per mirror copy — the
+		// exact mapping Build uses ((Position + Rotation·p) · sign; hulls are orientation-agnostic under
+		// reflection). pts was filled by TooSmall above.
+		if ( pts.Count < 4 )
+			return false;
+		InsetLocalPoints( pts, inset );
+
+		int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
+		for ( int sx = 0; sx <= nx; sx++ )
+		for ( int sy = 0; sy <= ny; sy++ )
+		for ( int sz = 0; sz <= nz; sz++ )
+		{
+			var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
+			var hull = new List<Vector3>( pts.Count );
+			foreach ( var lp in pts )
+				hull.Add( (b.Position + b.Rotation * lp) * sign );
+
+			body.AddHullShape( Vector3.Zero, Rotation.Identity, hull, rebuildMass: false );
+			any = true;
+		}
+		return any;
+	}
+
+	// Shrink a brush-local point cloud by `inset` per axis, toward its own bounds centre (the cloud isn't
+	// always centred — the base-pivot cone runs 0..2h). Clamped so a thin axis never inverts: past the floor
+	// the shape just stops shrinking on that axis, which only makes the test stricter.
+	static void InsetLocalPoints( List<Vector3> pts, float inset )
+	{
+		if ( inset <= 0f || pts.Count == 0 )
+			return;
+
+		Vector3 lo = new( float.MaxValue ), hi = new( float.MinValue );
+		foreach ( var p in pts )
+		{
+			lo = Vector3.Min( lo, p );
+			hi = Vector3.Max( hi, p );
+		}
+
+		var centre = (lo + hi) * 0.5f;
+		var half = (hi - lo) * 0.5f;
+		var scale = new Vector3(
+			half.x > 1e-3f ? MathF.Max( half.x - inset, 0.25f ) / half.x : 1f,
+			half.y > 1e-3f ? MathF.Max( half.y - inset, 0.25f ) / half.y : 1f,
+			half.z > 1e-3f ? MathF.Max( half.z - inset, 0.25f ) / half.z : 1f );
+
+		for ( int i = 0; i < pts.Count; i++ )
+			pts[i] = centre + (pts[i] - centre) * scale;
+	}
+
 	// Subtractive brushes AFTER index that could overlap brushes[index] — any mirror copy of either side.
 	// The order constraint mirrors SdfBrush.Sample's list-order fold: a subtract only carves what's already
 	// there, and an add placed after a subtract re-fills the hole (with its own collider, so it needs no

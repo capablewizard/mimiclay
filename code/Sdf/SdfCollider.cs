@@ -112,6 +112,18 @@ public sealed class SdfCollider : Component
 		if ( !IsProxy && _bounds.IsValid() && standing.IsValid() && standing.Model is not null && !_bounds.EvaluateNow() )
 			return;
 
+		// NEVER swap in a collider whose clay is EMBEDDED in the world (deeper than the backstop tolerance).
+		// An embedded collider is what the physics solver depenetrates by shoving the whole prop — with deep
+		// penetration, straight through thin walls and floors (the clip-through exploit). The live drag paths
+		// can't get here (BrushWorldClamp stops the active brush at the surface), so this catches the
+		// discrete bypasses: undo/redo splices, layer-row toggles, conversions, loads. Same freeze semantics
+		// and the same owner-side/standing-collider gating as the bounds check above — the standing collider
+		// keeps the prop solid on its last good shape, and the next clean commit rebuilds as normal. Trigger
+		// builds (the hunter head) are exempt: they generate no contacts, so embedding them shoves nothing.
+		if ( !IsProxy && !BuildAsTrigger && standing.IsValid() && standing.Model is not null
+			&& BrushWorldClamp.EmbeddedInWorld( _sculpture ) )
+			return;
+
 		// The carved-copy record keeps the foot probes in lockstep with the collider: any copy Build swaps to
 		// voxel boxes gets its probes placed ON those boxes (see ComputeFootPoints), not on the smooth field.
 		// The frame points ride the same build (see FramePoints).

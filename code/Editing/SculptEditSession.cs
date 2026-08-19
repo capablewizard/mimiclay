@@ -569,6 +569,7 @@ public sealed class SculptEditSession : Component
 				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit (saves the slot too)
 			UnhookPersistSlot();
 			_undo.Clear(); // history is per-session — the next one re-baselines on whatever it opens on
+			_worldClamp.Dispose(); // scratch physics body + watch state die with the session
 			_gizmo.Hide();
 			HideGhosts();
 			// No DoF restore needed: we just stop asserting, and MainCamera eases back to its baseline.
@@ -595,6 +596,7 @@ public sealed class SculptEditSession : Component
 			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown (saves the slot too)
 		UnhookPersistSlot();
 		_undo.Clear();
+		_worldClamp.Dispose();
 		_gizmo.Hide();
 		HideGhosts();
 		_wireframes.Hide();
@@ -1022,6 +1024,10 @@ public sealed class SculptEditSession : Component
 		if ( !Target.IsValid() )
 			return;
 
+		// BEFORE the undo record: a blocked edit reverts here, so the clamped state is what becomes the
+		// step, the mesh, the network snapshot and the persist save.
+		ClampActiveBrush();
+
 		// THE undo record site. Every authored edit — gizmo release, stamp commit, scrub release, debounced
 		// HUD gesture, add/remove/duplicate/reorder/convert/toggle — funnels through here, and nothing else
 		// does: damage carves, shrink healing and remote shapes all call Target.Rebuild() directly, so they
@@ -1040,6 +1046,19 @@ public sealed class SculptEditSession : Component
 	RealTimeSince _sincePreview;
 	const float CommitDebounce = 0.5f;
 
+	// ── World clamp ──────────────────────────────────────────────────────────────────────────────────
+	// The active brush's own collision against the map: an additive brush can't be dragged/grown through
+	// walls or floors, and because it's OUR test (not real physics) the contact never pushes the prop. See
+	// BrushWorldClamp for the whole story. Fed from the preview/commit funnel + the two direct shadow-proxy
+	// sites, so every continuous edit path passes through it; discrete bypasses are caught by the
+	// commit-time backstop in SdfCollider.Rebuild.
+	readonly BrushWorldClamp _worldClamp = new();
+
+	// Clamp this frame's state of the active brush (stamp ghost in Add mode, selection otherwise) BEFORE any
+	// rebuild renders/records/streams it. The travel sweep is off for the stamp ghost — its cursor jumps
+	// across the scene are teleports, not travel, and must not be blocked by geometry along the way.
+	void ClampActiveBrush() => _worldClamp.Apply( Target, ActiveBrush, sweepFromLast: Tool != SculptTool.Sculpt );
+
 	/// <summary>A HUD control is mid-gesture (slider drag, colour-wheel scrub, text typing): update only the
 	/// LIVE surface — the raymarcher reads the brushes directly each frame, and the shadow proxy keeps shadows
 	/// plus the 20 Hz network preview stream moving — and defer the expensive commit until the gesture ends.
@@ -1049,6 +1068,8 @@ public sealed class SculptEditSession : Component
 	{
 		if ( !Target.IsValid() )
 			return;
+
+		ClampActiveBrush(); // before the proxy build, so the reverted state is what previews + streams
 
 		Target.RebuildShadowProxy();
 		_pendingCommit = true;
@@ -1636,6 +1657,10 @@ public sealed class SculptEditSession : Component
 
 		if ( changed )
 		{
+			// A gizmo/scrub drag mutates the brush directly (it doesn't go through PreviewChanged) — clamp
+			// here, before the proxy build, so a blocked drag reverts before anything renders or streams it.
+			ClampActiveBrush();
+
 			// While dragging a handle (or running a hold-key scrub), skip the heavy surface-nets remesh: the
 			// raymarcher shows the live surface, so the meshed model only matters for SHADOWS — use a cheap
 			// union-of-primitives proxy. The scrub's key release commits via CommitChanged above.
@@ -1827,6 +1852,7 @@ public sealed class SculptEditSession : Component
 		}
 		else if ( changed )
 		{
+			ClampActiveBrush(); // the stamp ghost mutates directly too — never let it rest inside a wall
 			Target.RebuildShadowProxy(); // live preview: the raymarcher reads the brushes; shadows + net stream follow
 		}
 	}
