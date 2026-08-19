@@ -834,6 +834,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
+              "RuntimeManaged": false,
               "TextureJitter": 0.02
             }
           }
@@ -1454,7 +1455,7 @@
   "SceneProperties": {
     "NetworkInterpolation": true,
     "TimeScale": 1,
-    "WantsSystemScene": true,
+    "WantsSystemScene": false,
     "Metadata": {
       "Title": "menu",
       "Description": "Front-end main menu."
