@@ -704,7 +704,13 @@ public sealed class HunterController : Component
 			// Carry the view into the prop, same as a lobby swap: yaw+pitch stashed owner-side here, consumed
 			// by ResumeControl on the possessed pawn — whatever you were looking at, you still are.
 			LobbySwapCarry.Capture( Scene, null );
-			claims.RequestPossess( hover.GameObject );
+
+			// Claim by the pawn ROOT when the hover is a pawn prop, not the sculpture: the Disguise child is
+			// created per-machine in OnStart (it's not in the spawn snapshot), so its id only resolves locally —
+			// a client sending it would no-op on the host. The root is the networked object; scene clay has no
+			// root and its own scene-file id resolves everywhere. Same rule as the shot's ReportPropHit.
+			var claimHider = hover.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+			claims.RequestPossess( claimHider.IsValid() ? claimHider.GameObject : hover.GameObject );
 		}
 	}
 
