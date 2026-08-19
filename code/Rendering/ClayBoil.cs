@@ -12,9 +12,11 @@ namespace Mimiclay;
 /// meant to draw the eye.
 ///
 /// The mechanism: each tick, the displacement noise (and optionally the surface maps) are sampled at
-/// a slightly different offset, held for the whole tick, then jumped. It rides the existing
-/// displacement, so it only does anything on a renderer with Displace on — <see cref="TextureJitter"/>
-/// is the exception and works regardless, since it shifts the triplanar maps rather than the field.
+/// a slightly different offset, held for the whole tick, then jumped. It rides displacement — on a
+/// renderer with Displace OFF, <see cref="ForceDisplace"/> (default on) borrows it for the boil's
+/// duration, so the lumps appear while the clay is handled and settle away with the boil.
+/// <see cref="TextureJitter"/> works regardless either way, since it shifts the triplanar maps
+/// rather than the field.
 ///
 /// Disabling the component turns the boil off (the lookup is enabled-only), so it doubles as a toggle.
 ///
@@ -65,6 +67,15 @@ public sealed class ClayBoil : Component
 	/// are baked into the field that is the whole cost — the noise itself is paid at bake, not per
 	/// march step.</summary>
 	[Property, Range( 0f, 1f ), Group( "Boil" )] public float AmpJitter { get; set; } = 1f;
+
+	/// <summary>If the renderer's Displace is OFF, turn displacement ON for the duration of the boil.
+	/// The churn IS displacement movement, so a smooth prop would otherwise only boil via
+	/// <see cref="TextureJitter"/> — near-invisible at the default. The borrowed lumps use the
+	/// renderer's DispAmp/DispFreq (those dials stay meaningful with Displace off — tune the boil's
+	/// lump look there), land with the boil's first tick and vanish the frame it settles: the clay
+	/// roughens while the animator's hands are on it and is smoothed flat when they let go. No effect
+	/// on a renderer that already displaces. Turn OFF to author a maps-only boil on smooth clay.</summary>
+	[Property, Group( "Boil" )] public bool ForceDisplace { get; set; } = true;
 
 	/// <summary>When this prop's clay counts as "being handled" (see the class doc for the fiction).
 	/// <see cref="BoilActivation.Always"/> for things that move — characters, held guns.

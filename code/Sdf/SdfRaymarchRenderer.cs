@@ -940,7 +940,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// two-octave noise per march step in every view every frame. The shared CPU bake (SdfFieldBaker) is
 		// retired for now (see the note in that file).
 		float bakeAmp = 0f, bakeFreq = 0.25f, bakeTick = -1f, bakeJitter = 0f, bakeAmpJitter = 0f;
-		if ( Displace )
+		// An ACTIVE boil borrows displacement for its duration (ClayBoil.ForceDisplace): the churn is
+		// displacement movement, so on a smooth prop there'd be nothing to move. Both edges are just
+		// bakeAmp changing in the field hash below — the lumps land with the boil's first tick and
+		// settle with its last, no extra machinery.
+		bool displace = Displace || (boilActive && boil.Fps > 0f && boil.ForceDisplace);
+		if ( displace )
 		{
 			bakeAmp = DispAmp;
 			bakeFreq = DispFreq;
@@ -1005,11 +1010,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.SetCombo( "D_FIELD_TEX", _fieldReady ? 1 : 0 );
 		// Live per-step displacement ONLY as the analytic fallback: with a baked field the lumps are
 		// already in the texture, and the live subtract would displace the surface twice.
-		_so.Attributes.SetCombo( "D_DISPLACE", Displace && !_fieldReady ? 1 : 0 );
+		_so.Attributes.SetCombo( "D_DISPLACE", displace && !_fieldReady ? 1 : 0 );
 		// Baked-field gradient safety: subtracting the noise at bake steepens the field's slope by up
 		// to L = bound·freq·4 (bound = the worst boil tick's amp), so the march understeps by 1/(1+L)
 		// and grows its budget to match — the same insurance the live path computes for itself.
-		_so.Attributes.Set( "DispGradL", Displace && _fieldReady
+		_so.Attributes.Set( "DispGradL", displace && _fieldReady
 			? bakeAmp * (1f + MathF.Max( bakeAmpJitter, 0f ) * 0.5f) * bakeFreq * 4f : 0f );
 
 		if ( DebugLiveField && _fieldGpu is { IsValid: true } )
@@ -1314,13 +1319,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// march must understep by the same 1/(1+L) the main march uses. PER-SLOT, because one group can
 		// mix a displaced member with a smooth one and the steepest member has to win.
 		float gradL = 0f;
-		if ( Displace )
+		// Active-gated: a dormant WhileDamaged boil mustn't tax the outline march with the
+		// worst-tick understep. Re-pushed per frame, so an activation flip retightens it in step
+		// with the field re-bake. A boil can also BORROW displacement while active (ForceDisplace) —
+		// the same condition the field bake uses, so this bound tracks that field exactly.
+		var boil = GameObject.Components.Get<ClayBoil>();
+		bool boiling = boil is { Boiling: true } && boil.Fps > 0f;
+		if ( Displace || (boiling && boil.ForceDisplace) )
 		{
-			// Active-gated: a dormant WhileDamaged boil mustn't tax the outline march with the
-			// worst-tick understep. Re-pushed per frame, so an activation flip retightens it in step
-			// with the field re-bake.
-			var boil = GameObject.Components.Get<ClayBoil>();
-			float ampJitter = boil is { Boiling: true } ? MathF.Max( boil.AmpJitter, 0f ) : 0f;
+			float ampJitter = boiling ? MathF.Max( boil.AmpJitter, 0f ) : 0f;
 			gradL = DispAmp * (1f + ampJitter * 0.5f) * DispFreq * 4f;
 		}
 		a.Set( $"DispGradL{slot}", gradL );

@@ -1753,14 +1753,6 @@
             },
             "Property": "__enabled",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
-            },
-            "Property": "Displace",
-            "Value": true
           }
         ],
         "MovedObjects": []
