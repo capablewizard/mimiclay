@@ -6385,7 +6385,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Spot Light (10)",
-      "Position": "224,-832,-64",
+      "Position": "128,-832,-64",
       "Rotation": "0,0.707106769,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "light_spot,light",
@@ -11284,7 +11284,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": false
+          "Requirement": "AllOpen"
         }
       ],
       "Children": []
@@ -11343,7 +11343,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": false
+          "Requirement": "AllOpen"
         }
       ],
       "Children": []
@@ -11402,7 +11402,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": false
+          "Requirement": "AllOpen"
         }
       ],
       "Children": []
@@ -11468,7 +11468,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": false
+          "Requirement": "AllOpen"
         }
       ],
       "Children": []
@@ -11527,7 +11527,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": false
+          "Requirement": "AllOpen"
         }
       ],
       "Children": []
@@ -11558,6 +11558,12 @@
               "_type": "component",
               "component_id": "fba77bba-fb43-4f52-bbc2-954d27a15a14",
               "go": "3ff520c4-9f77-4af9-b994-8b93cc28c173",
+              "component_type": "RoomController"
+            },
+            {
+              "_type": "component",
+              "component_id": "852c63ae-02ea-494b-b3bb-89a0f12e8ac3",
+              "go": "d9d90a99-4a8c-49da-b751-e3ae16db4aa1",
               "component_type": "RoomController"
             }
           ],
@@ -11593,7 +11599,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": false
+          "Requirement": "AllOpen"
         }
       ],
       "Children": []
@@ -11635,7 +11641,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": false
+          "Requirement": "AllOpen"
         }
       ],
       "Children": []
@@ -11732,7 +11738,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RequireAllDoorsOpen": true
+          "Requirement": "AnyOpen"
         }
       ],
       "Children": []
@@ -15647,7 +15653,8 @@
         "97a69543-6a10-4597-a66e-7377c2ab6abb": "657452fa-57a5-4c7a-a63d-73faf0fe6f11",
         "66df4479-c713-46b1-989e-76ed1b6d84bc": "8699414f-0e2a-427a-86e3-7d59c4306835",
         "b07c2bba-e2e7-4f08-a98c-27a38a1103c4": "4238ae12-d4d5-4940-a0d3-cec5e2dc2c81",
-        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "8b06ec5c-c0a8-4de6-af00-03496421530c"
+        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "8b06ec5c-c0a8-4de6-af00-03496421530c",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "18f30a99-c5f8-8f65-98ce-a7aed09802d9"
       }
     },
     {
@@ -15692,7 +15699,8 @@
         "97a69543-6a10-4597-a66e-7377c2ab6abb": "d331f5e8-ccd8-41c1-8345-88567a2ac657",
         "66df4479-c713-46b1-989e-76ed1b6d84bc": "11301f41-687a-4cc6-a058-38bbfd54e82c",
         "b07c2bba-e2e7-4f08-a98c-27a38a1103c4": "20bd106e-98c1-4859-bf31-cee6f4c27cff",
-        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "979c9326-b20b-4d6d-8a2b-3f399bf3e712"
+        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "979c9326-b20b-4d6d-8a2b-3f399bf3e712",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "fc109374-99a6-800b-bdb3-436a6612d91a"
       }
     },
     {
@@ -15729,7 +15737,8 @@
         "97a69543-6a10-4597-a66e-7377c2ab6abb": "d598bb54-4354-48f7-a0ed-81e53a8bc01e",
         "66df4479-c713-46b1-989e-76ed1b6d84bc": "8c0d6a63-01e3-4577-a5aa-06f231504d3c",
         "b07c2bba-e2e7-4f08-a98c-27a38a1103c4": "94009467-60ce-4619-9c9f-f48e8db75c0c",
-        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "d3c36533-7e24-4f9b-8d37-5ecb990a6fea"
+        "65e93179-4ec3-42f7-bc5c-fb190e525ab0": "d3c36533-7e24-4f9b-8d37-5ecb990a6fea",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "9d27c552-5987-83e2-b1f7-6294b6c28414"
       }
     },
     {
@@ -16066,6 +16075,666 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "a036e439-515c-47a6-8fe2-c79f4272d0de",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block",
+      "Position": "1024,-2048,-168",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "b1881d05-d680-4cce-9c6e-80f082e3371e",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "644a0d8b-36bc-8356-8496-3ffe0e20235a"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "972f8d3f-1d7a-4bdc-98cb-f211b33b8a13",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block (102)",
+      "Position": "416,-2048,-168",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "edfd1ee9-8f34-40f7-b002-e94bd636a9a8",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "644a0d8b-36bc-8356-8496-3ffe0e20235a"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "cbd928fa-1585-49d3-8496-f5d594431607",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "ceilingfan_a",
+      "Position": "704,-1663.99976,-32",
+      "Rotation": "0,-4.37113847E-08,-0.99999994,0",
+      "Scale": "4,4,4",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.Prop",
+          "__guid": "38d9da7d-724d-4adb-ae25-997f8fabae13",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "Health": 0,
+          "IsStatic": true,
+          "MaterialGroup": null,
+          "Model": "models/props/trim_sheets/ceiling_fixtures/ceilingfan_a.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnGibsCreated": null,
+          "OnPropBreak": null,
+          "OnPropTakeDamage": null,
+          "StartAsleep": false,
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.SkinnedModelRenderer",
+          "__guid": "104863f8-c821-4ce7-b967-a898244fde77",
+          "__enabled": true,
+          "Flags": 0,
+          "AnimationGraph": null,
+          "BodyGroups": 18446744073709551615,
+          "BoneMergeTarget": null,
+          "CreateAttachments": false,
+          "CreateBoneObjects": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/props/trim_sheets/ceiling_fixtures/ceilingfan_a.vmdl",
+          "Morphs": {},
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Parameters": {
+            "bools": {},
+            "ints": {},
+            "floats": {},
+            "vectors": {},
+            "rotations": {}
+          },
+          "PlaybackRate": 1,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Sequence": {
+            "Name": null,
+            "Looping": true,
+            "Blending": false
+          },
+          "Tint": "1,1,1,1",
+          "UseAnimGraph": true
+        },
+        {
+          "__type": "Sandbox.ModelCollider",
+          "__guid": "8ebbc4c7-d861-45c7-99ef-edca13fab0eb",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "Model": "models/props/trim_sheets/ceiling_fixtures/ceilingfan_a.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "9108c9db-73d6-401b-8005-f63493e5da1c",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "ceilingfan_a (1)",
+      "Position": "1216,-1663.99976,-32",
+      "Rotation": "-0.99999994,1.91068525E-15,4.37113847E-08,4.37113847E-08",
+      "Scale": "4,4,4",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "08be7e39-50ed-4c11-bebc-10ae239a20ef",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": "metal_on",
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "Off",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.ModelCollider",
+          "__guid": "d1069f48-c738-43df-884c-96e34685babe",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "e403f72b-78db-44a4-b9bb-4eb5a669fef5",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "ceilingfan_a (2)",
+      "Position": "224,-1663.99976,-32",
+      "Rotation": "-0.99999994,1.91068525E-15,4.37113847E-08,4.37113847E-08",
+      "Scale": "4,4,4",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "46b24371-60d4-4e7b-b5e4-b915924a8532",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": "metal_on",
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "Off",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.ModelCollider",
+          "__guid": "11b228a0-03c9-448a-be65-164faf3d137d",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "b131bfdf-f93b-4bc9-8928-4544b8b96e1d",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "ceilingfan_a (3)",
+      "Position": "128,-831.999756,-32",
+      "Rotation": "-0.99999994,1.91068525E-15,4.37113847E-08,4.37113847E-08",
+      "Scale": "4,4,4",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "a9b68679-7f22-49a5-ba1d-e1a93927f739",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": "metal_on",
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "Off",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.ModelCollider",
+          "__guid": "d21b29df-3777-4161-b1d4-288510c82606",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c39101e5-c062-471f-8d56-d6835607c065",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "3",
+      "Position": "452,-1296,-288",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "ca16ad27-8f1b-496b-88d2-b1785146feb0",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "c8e006e3-f6aa-8d54-93ad-27586d8cc0c4"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "610a92a8-10e4-4b0c-a191-685c399bbd2f",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "3 (1)",
+      "Position": "-196,-1296,-288",
+      "Rotation": "0,0,1,0",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "c130c4dc-9c73-4d43-acb2-2cb814d94e23",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "f53b48f6-1043-829a-868b-eb35069aa1b0"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "482cb435-f313-42ea-ac15-c194dbd9e110",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "3 (2)",
+      "Position": "128.000031,-1296,-56",
+      "Rotation": "0.707106769,0,0.707106769,0",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "fccb2443-7093-4df5-b11f-b8a4d9d02260",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "1419ff33-edc9-8325-8221-3066420f916f"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "743cd945-48ad-4824-9584-7815e9fcc161",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block",
+      "Position": "-74.7009048,-1144.06616,-468.358398",
+      "Rotation": "0,-0.376003146,0,0.926618397",
+      "Scale": "1.01444948,1.53393984,1.01405346",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "0431969c-c6a2-43af-b5ca-9deb240feedd",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "28c136e7-36e8-8f2c-9e7c-bc5e8f6f453a"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -16113,6 +16782,7 @@
     "facepunch.cabinet_a2#282187",
     "facepunch.cabinetb#282188",
     "facepunch.car_dev#139202",
+    "facepunch.ceilingfana#274703",
     "facepunch.coffeetablea#274713",
     "facepunch.couch#279771",
     "facepunch.drawera#274718",
