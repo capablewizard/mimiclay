@@ -322,7 +322,19 @@ public sealed class BrushWorldClamp
 					if ( dist <= deadband )
 						continue; // resting contact, not an error
 					any = true;
-					correction -= dir * (dist + SlideSkin);
+
+					// Combine by DEFICIT, never by blind sum: several members resting on the SAME floor each
+					// report a near-parallel penetration, and summing them lifts the group by the TOTAL — an
+					// overshoot the next pass then accepts, leaving the group hovering above the surface.
+					// Extend the pooled correction only by what this contact still needs beyond what it
+					// already provides along its own direction: parallel duplicates add ~nothing, a corner's
+					// orthogonal contact still gets its full push, and genuinely opposed contacts (squeezed
+					// between floor and ceiling) still grow past MaxResolve into the revert.
+					var outDir = -dir; // dir·dist moves the WORLD body clear — the brush moves the opposite way
+					float need = dist + SlideSkin;
+					float have = Vector3.Dot( correction, outDir );
+					if ( have < need )
+						correction += outDir * (need - have);
 				}
 			}
 
