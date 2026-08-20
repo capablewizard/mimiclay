@@ -593,6 +593,8 @@
 	{
 		get
 		{
+			// CreativeManager always reports Phase == RoundPhase.Lobby (it never runs a round timer), so it
+			// shares this lobby-only hint set rather than the in-round one below.
 			if ( Phase == RoundPhase.Lobby )
 			{
 				yield return new( "P", LocalRole == PlayerRole.Prop ? "Swap to Hunter" : "Swap to Prop" );
@@ -601,6 +603,8 @@
 				if ( LobbyManager.Current.IsValid() )
 					yield return new( "G", "Set Up Game (Host)" ); // the setup HUD only exists in the real lobby
 				yield return new( "Q", "Edit Mode" );
+				if ( CreativeManager.Current.IsValid() && LocalRole == PlayerRole.Prop )
+					yield return new( "F", "Free Cam" );
 				yield break;
 			}
 
@@ -610,6 +614,9 @@
 
 			if ( LocalRole == PlayerRole.Hunter )
 				yield return new( "LMB", "Shoot" );
+
+			if ( LocalRole == PlayerRole.Prop )
+				yield return new( "F", "Free Cam" );
 
 			yield return new( "Q", LocalRole == PlayerRole.Prop ? "Edit Disguise" : "Edit Face" );
 			yield return new( "Tab", "Toggle Wireframes" );
