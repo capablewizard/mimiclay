@@ -32,6 +32,12 @@ namespace Mimiclay;
 /// Scope is deliberately local: only edits made on this machine, through this session, are recorded. Damage,
 /// shrink healing and remotely-authored shapes all reach the sculpture without passing through the commit
 /// funnel, so they can never become undo steps — you can't undo another player's edit, which is correct.
+///
+/// The history SURVIVES leaving edit mode: exit seals the final shape as a step, and <see cref="Activate"/>
+/// resumes the stack (redo tail included) when it finds that same shape on the same sculpture — so you can
+/// step out, look your work over, come back and still Ctrl+Z. Anything else it finds means the shape changed
+/// while no session was watching, and the local-scope rule above is exactly why that resumes NOTHING: applying
+/// a stored state over an externally-changed shape would silently revert work that wasn't ours to undo.
 /// </summary>
 sealed class SculptUndo
 {
@@ -61,6 +67,11 @@ sealed class SculptUndo
 	readonly List<State> _stack = new();
 	int _cursor = -1;
 
+	/// <summary>The sculpture every stored state was recorded from. A history is only ever resumed — or even
+	/// appended to — for this exact component; any other target self-heals to a fresh stack in
+	/// <see cref="Record"/>, so states can never be applied across sculptures however alike their hashes.</summary>
+	SdfSculpture _target;
+
 	/// <summary>True while the session is applying an undo/redo. The record site checks it so a rebuild
 	/// triggered by an apply can't push the state it just restored straight back onto the stack.</summary>
 	public bool IsApplying { get; set; }
@@ -72,21 +83,38 @@ sealed class SculptUndo
 	/// <summary>An undone step exists ahead of the cursor.</summary>
 	public bool CanRedo => _cursor >= 0 && _cursor < _stack.Count - 1;
 
-	/// <summary>Drop the whole history (session exit / teardown), so a later session on a different sculpture
-	/// can never inherit and apply this one's states.</summary>
+	/// <summary>Drop the whole history. Session TEARDOWN only (component death) — leaving edit mode keeps the
+	/// stack so the next <see cref="Activate"/> can resume it.</summary>
 	public void Clear()
 	{
 		_stack.Clear();
 		_cursor = -1;
+		_target = null;
 	}
 
-	/// <summary>Start a fresh history whose first entry is the target's CURRENT shape. Called when a session
-	/// activates, so there's always a baseline to undo back to and the first Ctrl+Z after one edit returns to
-	/// the shape the session opened on.</summary>
+	/// <summary>Start a fresh history whose first entry is the target's CURRENT shape, so there's always a
+	/// baseline to undo back to and the first Ctrl+Z after one edit returns to the shape this history opened
+	/// on.</summary>
 	public void Reset( SdfSculpture target, int selected )
 	{
 		Clear();
 		Record( target, selected );
+	}
+
+	/// <summary>A session is entering edit mode: resume or re-baseline. The history resumes — cursor position
+	/// and redo tail intact — when the target is the sculpture it was recorded from AND the current shape is
+	/// the entry under the cursor; the exit path seals the final shape as a step, so any clean leave-and-return
+	/// matches. A mismatch means the shape changed while no session was watching (a remote author, a wholesale
+	/// replace) — the stored states no longer describe this shape's lineage, so start over from what's there
+	/// now rather than offer undo steps that would revert work that wasn't made here.</summary>
+	public void Activate( SdfSculpture target, int selected )
+	{
+		if ( _cursor >= 0 && target == _target && target.IsValid() && target.Brushes is { } brushes
+			&& SdfSculpture.ContentHashPrefix( brushes, target.AuthoredBrushCount, target.Resolution, target.FlipFaces )
+				== _stack[_cursor].Hash )
+			return;
+
+		Reset( target, selected );
 	}
 
 	/// <summary>Record the target's current shape as a new step, unless it's identical to the one on top.
@@ -100,6 +128,14 @@ sealed class SculptUndo
 		var brushes = target.Brushes;
 		if ( brushes is null )
 			return;
+
+		// A different sculpture than the history was recorded from: its states must never sit on this stack
+		// (an undo would apply one sculpture's shape to another). Self-healing, not an error — start over.
+		if ( target != _target )
+		{
+			Clear();
+			_target = target;
+		}
 
 		int authored = target.AuthoredBrushCount;
 		int hash = SdfSculpture.ContentHashPrefix( brushes, authored, target.Resolution, target.FlipFaces );

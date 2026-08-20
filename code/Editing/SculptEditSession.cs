@@ -768,7 +768,7 @@ public sealed class SculptEditSession : Component
 	// Restore the bounds' last valid authored shape, spliced onto the LIVE damage tail (the same rule as
 	// ApplyUndoState), and push it through the commit funnel — the revert IS an edit as far as the remesh,
 	// collider, network publish and persist slot are concerned. Runs with IsEditing already false, so
-	// NotifyChanged records no undo step (the history is being dropped anyway).
+	// NotifyChanged records no undo step here; SetActive's single exit-time record seals the reverted shape.
 	void RevertIfInvalid()
 	{
 		var bounds = Bounds;
@@ -818,7 +818,9 @@ public sealed class SculptEditSession : Component
 			EnsureHud(); // the edit system brings its own HUD — no scene setup needed (and works in any game mode)
 			ApplyEditDof();
 			HookPersistSlot(); // save the slot on every commit while editing (see HookPersistSlot for why)
-			_undo.Reset( Target, Selected ); // baseline = the shape the session opens on; undo stops there
+			_undo.Activate( Target, Selected ); // resume the history from the last edit session when the shape
+			                                    // is untouched since (undo survives leaving edit mode to look
+			                                    // around); re-baseline if it changed while away
 		}
 		else if ( Current == this )
 		{
@@ -834,7 +836,11 @@ public sealed class SculptEditSession : Component
 			if ( _pendingCommit )
 				CommitChanged(); // never leave a previewed-but-uncommitted edit behind on exit (saves the slot too)
 			UnhookPersistSlot();
-			_undo.Clear(); // history is per-session — the next one re-baselines on whatever it opens on
+			// Seal the exit shape as the history's final step: the revert/commit just above ran with IsEditing
+			// already false (unrecorded by the funnel), and _undo.Activate resumes this history on re-entry
+			// only when the shape it finds is the entry under the cursor. Dedup makes this a no-op — redo tail
+			// preserved — when nothing actually changed on the way out.
+			_undo.Record( Target, Selected );
 			_worldClamp.Dispose(); // scratch physics body + watch state die with the session
 			_gizmo.Hide();
 			HideGhosts();
@@ -861,7 +867,7 @@ public sealed class SculptEditSession : Component
 		if ( _pendingCommit )
 			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown (saves the slot too)
 		UnhookPersistSlot();
-		_undo.Clear();
+		_undo.Clear(); // teardown proper (unlike leaving edit mode) drops the history with the component
 		_worldClamp.Dispose();
 		_gizmo.Hide();
 		HideGhosts();
@@ -1548,8 +1554,9 @@ public sealed class SculptEditSession : Component
 		// HUD gesture, add/remove/duplicate/reorder/convert/toggle — funnels through here, and nothing else
 		// does: damage carves, shrink healing and remote shapes all call Target.Rebuild() directly, so they
 		// can't become undo steps. Recording in the SESSION rather than on SdfSculpture.Committed is what
-		// buys those exclusions for free. Gated on IsEditing so the commit run during teardown (where the
-		// stack is about to be dropped anyway) doesn't push a final step.
+		// buys those exclusions for free. Gated on IsEditing so the several redundant commits an exit runs
+		// (stamp cancel, invalid-shape revert, the exit commit) don't each push a step — SetActive seals the
+		// final exit shape as exactly one record instead, which is what lets the history resume on re-entry.
 		if ( IsEditing )
 			_undo.Record( Target, Selected );
 
