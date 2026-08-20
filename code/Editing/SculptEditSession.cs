@@ -354,7 +354,7 @@ public sealed class SculptEditSession : Component
 		centrePx = default;
 		radiusPx = 0f;
 
-		var brush = SelectedBrush;
+		var brush = IsMultiSelection ? _multiProxy : SelectedBrush; // multi: the circle sits on the pivot
 		var cam = Scene?.Camera;
 		if ( !IsEditing || !ShowGizmo || brush is null || cam is null || !Target.IsValid() )
 			return false;
@@ -375,14 +375,33 @@ public sealed class SculptEditSession : Component
 		return true;
 	}
 
-	/// <summary>Index of the brush the gizmo acts on, or -1 for no selection (the default). With nothing
-	/// selected the gizmo, palette and sliders all hide; click a shape to select it.</summary>
-	public int Selected { get; private set; } = -1;
+	/// <summary>Index of the PRIMARY selected brush, or -1 for no selection (the default). With nothing
+	/// selected the gizmo, palette and sliders all hide; click a shape to select it. Ctrl/shift clicks grow
+	/// the selection beyond one brush (see <see cref="Selection"/>); assigning here — which every legacy
+	/// path does (add, stamp commit, undo restore, load, remove…) — collapses it back to just this brush,
+	/// so single-selection behaviour is exactly what it always was.</summary>
+	public int Selected
+	{
+		get => _selected;
+		private set
+		{
+			_selected = value >= 0 ? value : -1;
+			_selection.Clear();
+			if ( _selected >= 0 )
+				_selection.Add( _selected );
+			_anchor = _selected;
+		}
+	}
+
+	int _selected = -1;
+	readonly List<int> _selection = new(); // every selected index (primary included), ascending
+	int _anchor = -1;                      // shift-range pivot: the row last plainly/ctrl-clicked
 
 	/// <summary>True when a brush is selected (the gizmo/HUD are shown).</summary>
 	public bool HasSelection => Selected >= 0;
 
-	/// <summary>The brush the gizmo/properties panel act on, or null when nothing is selected.</summary>
+	/// <summary>The PRIMARY selected brush — what the property panels display — or null when nothing is
+	/// selected. Group edits act on <see cref="SelectedBrushes"/> / <see cref="EditTargets"/> instead.</summary>
 	public SdfBrush SelectedBrush
 	{
 		get
@@ -392,11 +411,257 @@ public sealed class SculptEditSession : Component
 		}
 	}
 
+	/// <summary>Every selected brush index (the primary included), ascending. One entry on a plain click;
+	/// ctrl/shift grow it, s&amp;box-hierarchy style — see <see cref="Select(int,bool,bool)"/>.</summary>
+	public IReadOnlyList<int> Selection => _selection;
+
+	/// <summary>Is this brush index part of the selection (primary or not)? Drives the layer-row highlight.</summary>
+	public bool IsSelected( int index ) => index >= 0 && _selection.Contains( index );
+
+	/// <summary>More than one brush is selected — the gizmo drives the whole group through the pivot proxy
+	/// and property edits fan out to every member.</summary>
+	public bool IsMultiSelection => _selection.Count > 1;
+
+	/// <summary>The selected brushes themselves, in stack order (out-of-range entries skipped).</summary>
+	public IEnumerable<SdfBrush> SelectedBrushes
+	{
+		get
+		{
+			var b = Target.IsValid() ? Target.Brushes : null;
+			if ( b is null )
+				yield break;
+
+			foreach ( var i in _selection )
+			{
+				if ( i >= 0 && i < b.Count )
+					yield return b[i];
+			}
+		}
+	}
+
+	/// <summary>The brushes a HUD property edit (palette click, colour wheel, blend/round sliders, symmetry
+	/// chips…) applies to: the stamp ghost in sculpt mode, otherwise EVERY selected brush. Displayed values
+	/// still come from <see cref="ActiveBrush"/> (the primary), like any multi-object inspector.</summary>
+	public IEnumerable<SdfBrush> EditTargets
+	{
+		get
+		{
+			if ( Tool == SculptTool.Sculpt && IsEditing )
+			{
+				if ( StampBrush is { } ghost )
+					yield return ghost;
+				yield break;
+			}
+
+			foreach ( var b in SelectedBrushes )
+				yield return b;
+		}
+	}
+
+	/// <summary>Ctrl is held (sampled once per frame in component context, where Input reads reliably —
+	/// UI event handlers read this instead of Input directly). The multi-select toggle modifier.</summary>
+	public static bool CtrlHeld { get; private set; }
+
+	/// <summary>Shift is held — the range-select modifier on layer rows (everywhere else it stays the snap
+	/// hold, exactly as before; the two never collide because selection is a click and snap is a drag).</summary>
+	public static bool ShiftHeld { get; private set; }
+
 	readonly RuntimeBrushGizmo _gizmo = new();
 	float _gizmoAlpha;        // current gizmo opacity, eased toward 1 (selected) / 0 (not) for the fade
 	SdfBrush _gizmoBrush;     // last selected brush, kept so the gizmo can keep drawing while it fades out
 	bool _splineInsertArmed;  // spline add-point is armed only after the cursor sits on the line with Attack1 released,
 	                          // so the click that SELECTS a spline can't also insert (one click select, one to add)
+
+	// ── Multi-selection pivot proxy ──────────────────────────────────────────────────────────────────
+	// With 2+ brushes selected the gizmo (and the W/R/E/S/D scrubs) never touch a real brush: they drive
+	// this synthetic one — pivot at the selection's average centre, OBJECT-SPACE axes (its rotation resets
+	// to identity whenever no gesture is running) — and the per-frame delta fans out to every selected
+	// brush: positions orbit the pivot, rotations compose, a UNIFORM scale scales sizes/positions/spline
+	// radii together, and a single-axis scale stretches the ARRANGEMENT along that object axis (a rotated
+	// brush's own size can't scale along an arbitrary world axis, so per-brush sizes sit that one out).
+	// Never a member of Target.Brushes, so no commit path can ever bake it.
+	readonly SdfBrush _multiProxy = new() { Shape = SdfShape.Box, Size = new Vector3( 50f ) };
+	Vector3 _proxyPrePos;
+	Rotation _proxyPreRot = Rotation.Identity;
+	Vector3 _proxyPreSize = new( 50f );
+	float _proxyPreBlend, _proxyPreRound, _proxyPreSlice;
+
+	// Re-seat the proxy on the selection while nothing is mid-gesture (a drag/scrub owns it then): pivot =
+	// average centre of every VISIBLE shape — mirror copies included, so a mirrored pair contributes its
+	// on-plane midpoint (a face's eye pair pulls the pivot between the eyes, not onto the authored eye) —
+	// axes = the sculpture's own (identity), scale baseline reset.
+	void RefreshMultiProxy()
+	{
+		if ( _gizmo.IsDragging || _gizmo.IsUiDragging || IsScrubbing )
+			return;
+
+		_multiProxy.Position = SelectionPivot();
+		_multiProxy.Rotation = Rotation.Identity; // object-space axes, always — the pivot never keeps a tilt
+		_multiProxy.Size = new Vector3( 50f );    // arbitrary baseline — the scale handles apply the RATIO
+
+		// Seed the property scrubs (S/D/F) from the primary, so a hold starts at its current value.
+		if ( SelectedBrush is { } p )
+		{
+			_multiProxy.Blend = p.Blend;
+			_multiProxy.Rounding = p.Rounding;
+			_multiProxy.Slice = p.Slice;
+		}
+	}
+
+	// The selection's pivot in sculpture space: the average centre of every VISIBLE shape, mirror copies
+	// included — so a mirrored pair contributes its on-plane midpoint and a face's eye pair pulls the pivot
+	// between the eyes rather than onto the authored one.
+	Vector3 SelectionPivot()
+	{
+		Vector3 sum = Vector3.Zero;
+		int n = 0;
+		Span<Vector3> mirrorCentres = stackalloc Vector3[8];
+		foreach ( var b in SelectedBrushes )
+		{
+			if ( b.Shape == SdfShape.Spline && b.Points is { Count: > 0 } )
+			{
+				// MirrorCentres reads the (inert) transform — reflect the curve's own centre instead.
+				var c = SplineCentre( b );
+				int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
+				for ( int sx = 0; sx <= nx; sx++ )
+				for ( int sy = 0; sy <= ny; sy++ )
+				for ( int sz = 0; sz <= nz; sz++ )
+				{
+					sum += new Vector3( sx == 1 ? -c.x : c.x, sy == 1 ? -c.y : c.y, sz == 1 ? -c.z : c.z );
+					n++;
+				}
+			}
+			else
+			{
+				int count = b.MirrorCentres( mirrorCentres );
+				for ( int i = 0; i < count; i++ )
+				{
+					sum += mirrorCentres[i];
+					n++;
+				}
+			}
+		}
+
+		return n > 0 ? sum / n : Vector3.Zero;
+	}
+
+	// Snapshot the proxy just before the gizmo/scrubs run, so ApplyMultiDelta can diff one frame's change.
+	void SnapshotMultiProxy()
+	{
+		_proxyPrePos = _multiProxy.Position;
+		_proxyPreRot = _multiProxy.Rotation;
+		_proxyPreSize = _multiProxy.Size;
+		_proxyPreBlend = _multiProxy.Blend;
+		_proxyPreRound = _multiProxy.Rounding;
+		_proxyPreSlice = _multiProxy.Slice;
+	}
+
+	// Fan one frame's proxy delta out to the whole selection: rigid orbit about the pivot, optional scale,
+	// and absolute property sync for the scrubs (what a shared slider drag does too). Shift-snap already
+	// happened on the proxy, so the group snaps as one — relative offsets survive, like the editors do it.
+	void ApplyMultiDelta()
+	{
+		var pivot = _proxyPrePos;
+		var dPos = _multiProxy.Position - _proxyPrePos;
+		var dq = _multiProxy.Rotation * _proxyPreRot.Inverse;
+		var f = new Vector3(
+			_multiProxy.Size.x / MathF.Max( _proxyPreSize.x, 1e-3f ),
+			_multiProxy.Size.y / MathF.Max( _proxyPreSize.y, 1e-3f ),
+			_multiProxy.Size.z / MathF.Max( _proxyPreSize.z, 1e-3f ) );
+
+		bool moved = dPos != Vector3.Zero;
+		bool rotated = dq != Rotation.Identity;
+		bool scaled = f != Vector3.One;
+		bool uniform = scaled && MathF.Abs( f.x - f.y ) < 1e-4f && MathF.Abs( f.y - f.z ) < 1e-4f;
+
+		if ( moved || rotated || scaled )
+		{
+			foreach ( var b in SelectedBrushes )
+			{
+				// SCALING a mirrored brush measures its mirrored axes from the brush's own mirror planes,
+				// not the group pivot: the visible pair's centroid sits ON the plane, so this is the only
+				// pivot that scales the pair's spread proportionally — the group pivot would creep pairs
+				// inward/outward whenever it sits off-plane (the shrinking-eyes bug). ROTATION keeps the
+				// group pivot untouched: the authored half must stay rigid with the rest of the selection
+				// (its derived copies mirror whatever it does — and about the plane's NORMAL axis that
+				// reflection provably moves the pair as one, any pivot). The gizmo runs one handle at a
+				// time, so scale and rotate never land in the same frame.
+				// Raw toggles, not Effective*: a brush scaling across the deadzone must not flip pivots mid-drag.
+				var bp = pivot;
+				if ( scaled && !rotated )
+				{
+					if ( b.MirrorX ) bp.x = 0f;
+					if ( b.MirrorY ) bp.y = 0f;
+					if ( b.MirrorZ ) bp.z = 0f;
+				}
+
+				if ( b.Shape == SdfShape.Spline && b.Points is { Count: > 0 } pts )
+				{
+					// A spline's transform is inert — carry its control points through the same orbit.
+					for ( int i = 0; i < pts.Count; i++ )
+					{
+						var rel = new Vector3( pts[i].x, pts[i].y, pts[i].z ) - bp;
+						if ( rotated ) rel = dq * rel;
+						if ( scaled ) rel *= f;
+						var np = bp + rel + dPos;
+						float r = uniform
+							? Math.Clamp( pts[i].w * f.x, 1f, SdfBrush.MaxSplineRadius )
+							: pts[i].w;
+						pts[i] = new Vector4( np.x, np.y, np.z, r );
+					}
+				}
+				else
+				{
+					var rel = b.Position - bp;
+					if ( rotated ) rel = dq * rel;
+					if ( scaled ) rel *= f;
+					b.Position = bp + rel + dPos;
+					if ( rotated )
+						b.Rotation = dq * b.Rotation;
+					if ( uniform )
+					{
+						float floor = b.Shape == SdfShape.Text ? 0.6f : 1f; // the gizmo's own scale floor
+						b.Size = Vector3.Max( b.Size * f.x, new Vector3( floor ) );
+						b.Rounding = Math.Clamp( b.Rounding * f.x, SdfBrush.MinRounding, b.MaxRounding() );
+					}
+				}
+			}
+		}
+
+		// Property scrubs ran on the proxy — sync the ABSOLUTE value across, clamped per brush.
+		if ( _multiProxy.Blend != _proxyPreBlend )
+		{
+			foreach ( var b in SelectedBrushes )
+				b.Blend = Math.Clamp( _multiProxy.Blend, 0f, SdfBrush.MaxBlend );
+		}
+		if ( _multiProxy.Rounding != _proxyPreRound )
+		{
+			foreach ( var b in SelectedBrushes )
+				b.Rounding = Math.Clamp( _multiProxy.Rounding, SdfBrush.MinRounding, b.MaxRounding() );
+		}
+		if ( _multiProxy.Slice != _proxyPreSlice )
+		{
+			foreach ( var b in SelectedBrushes )
+			{
+				if ( b.Shape is SdfShape.Sphere or SdfShape.Cone )
+					b.Slice = Math.Clamp( _multiProxy.Slice, 0f, SdfBrush.MaxSlice );
+			}
+		}
+	}
+
+	// Shift one brush by a sculpture-local offset (a spline's geometry lives in its points).
+	static void OffsetBrush( SdfBrush b, Vector3 offset )
+	{
+		if ( b.Shape == SdfShape.Spline && b.Points is { } opts )
+		{
+			for ( int i = 0; i < opts.Count; i++ )
+				opts[i] = new Vector4( opts[i].x + offset.x, opts[i].y + offset.y, opts[i].z + offset.z, opts[i].w );
+		}
+		else
+		{
+			b.Position += offset;
+		}
+	}
 	// Two hover ghosts so hovering straight from one shape to another cross-fades: the incoming brush fades in on
 	// _ghost while the one you left fades out on _ghostOut.
 	readonly BrushGhost _ghost = new();        // incoming (currently hovered) brush, fading toward 1
@@ -410,6 +675,7 @@ public sealed class SculptEditSession : Component
 	// gets its own single-brush wireframe (red, editor-style). Additive stamps draw nothing extra.
 	readonly BrushWireframes _stampWire = new();
 	readonly List<SdfBrush> _stampWireList = new();
+	readonly List<int> _stampWireSel = new(); // which _stampWireList entries draw at selected opacity
 	float _wireAlpha;
 	bool _wireframesOn = false; // off by default; toggled by Tab, but only while edit mode is active
 	int _hoverBrush = -1;      // brush under the cursor while editing (for the wireframe hover highlight)
@@ -629,15 +895,24 @@ public sealed class SculptEditSession : Component
 			Selected = Target.AuthoredBrushCount - 1; // the insert lands just below the damage tail, not at the raw end
 	}
 
-	/// <summary>Convert the selected brush to a different primitive IN PLACE — position, size, material,
+	/// <summary>Convert every selected brush to a different primitive IN PLACE — position, size, material,
 	/// blend and symmetry all carry over; only the shape swaps (shape is a brush property, like colour).
-	/// Splines are excluded both ways (their geometry lives in control points, not a transform). Converting
-	/// TO text bakes the glyph field and adopts the glyph slot's fixed 2:1 aspect from the current height
-	/// (anything else stretches the letters).</summary>
+	/// Converting TO text bakes the glyph field and adopts the glyph slot's fixed 2:1 aspect from the
+	/// current height (anything else stretches the letters). One commit for the whole group.</summary>
 	public void ConvertSelectedShape( SdfShape shape )
 	{
-		if ( SelectedBrush is not { } b || b.Shape == shape )
-			return;
+		bool changed = false;
+		foreach ( var sel in SelectedBrushes )
+			changed |= ConvertBrushShape( sel, shape );
+		if ( changed )
+			NotifyChanged();
+	}
+
+	// One brush's share of the shape conversion (no commit — the wrapper above runs one for the group).
+	bool ConvertBrushShape( SdfBrush b, SdfShape shape )
+	{
+		if ( b is null || b.Shape == shape )
+			return false;
 
 		// Keep the shape's world-space VOLUME CENTRE fixed across the swap. LocalCentre is each shape's
 		// centre offset from its pivot — zero for the centred shapes, +Size.z for the base-pivoted cone —
@@ -667,8 +942,7 @@ public sealed class SculptEditSession : Component
 			}
 
 			SplineFromSolid( b );
-			NotifyChanged();
-			return;
+			return true;
 		}
 
 		// FROM a spline: a curve has no transform to inherit. A brush that WAS a solid gets its exact Size
@@ -728,7 +1002,7 @@ public sealed class SculptEditSession : Component
 
 		// Different shapes cap rounding differently (a star's erosion limit << a box's inscribed radius).
 		b.Rounding = Math.Clamp( b.Rounding, SdfBrush.MinRounding, b.MaxRounding() );
-		NotifyChanged();
+		return true;
 	}
 
 	// Rebuild a solid brush as a 2-point spline occupying the same space: a control point at each EXTREME
@@ -786,23 +1060,134 @@ public sealed class SculptEditSession : Component
 		Selected = ( b is { Count: > 0 } && index >= 0 ) ? Math.Clamp( index, 0, b.Count - 1 ) : -1;
 	}
 
+	/// <summary>Modifier-aware selection — the s&amp;box hierarchy scheme, shared by layer-row clicks and
+	/// world picks: plain = just this brush; ctrl = toggle it in/out of the group; shift = select the whole
+	/// range between the anchor (the last plain/ctrl click) and this row, keeping the anchor put so the next
+	/// shift-click re-pivots off the same row. Ctrl/shift on an out-of-range index leave the selection alone
+	/// (a plain one clears it, matching the empty-space click).</summary>
+	public void Select( int index, bool ctrl, bool shift )
+	{
+		var b = Target.IsValid() ? Target.Brushes : null;
+		int authored = Target.IsValid() ? Target.AuthoredBrushCount : 0;
+
+		if ( b is not { Count: > 0 } || index < 0 || index >= authored )
+		{
+			if ( !ctrl && !shift )
+				Selected = -1;
+			return;
+		}
+
+		if ( shift )
+		{
+			int anchor = Math.Clamp( _anchor >= 0 ? _anchor : index, 0, authored - 1 );
+			int lo = Math.Min( anchor, index ), hi = Math.Max( anchor, index );
+			_selection.Clear();
+			for ( int i = lo; i <= hi; i++ )
+				_selection.Add( i );
+			_selected = index;
+			_anchor = anchor;
+			return;
+		}
+
+		if ( ctrl )
+		{
+			int at = _selection.BinarySearch( index );
+			if ( at >= 0 )
+			{
+				// Toggle OFF. The primary hops to the nearest remaining member (or nothing is left).
+				_selection.RemoveAt( at );
+				if ( _selection.Count == 0 )
+				{
+					Selected = -1;
+					return;
+				}
+				if ( _selected == index )
+					_selected = _selection[Math.Min( at, _selection.Count - 1 )];
+				_anchor = _selected;
+			}
+			else
+			{
+				_selection.Insert( ~at, index );
+				_selected = index;
+				_anchor = index;
+			}
+			return;
+		}
+
+		Selected = index; // collapses the group to this row + re-seats the anchor
+	}
+
+	// Keep every selected index inside the authored prefix (undo/load/shrink can shorten the list under
+	// it), and the primary a member of the set. The multi-select equivalent of the old bounds check.
+	void PruneSelection()
+	{
+		int authored = Target.IsValid() ? Target.AuthoredBrushCount : 0;
+		for ( int k = _selection.Count - 1; k >= 0; k-- ) // manual: this runs per frame, no closure alloc
+		{
+			if ( _selection[k] < 0 || _selection[k] >= authored )
+				_selection.RemoveAt( k );
+		}
+		if ( _selection.Count == 0 )
+		{
+			_selected = -1;
+			_anchor = -1;
+			return;
+		}
+
+		if ( !_selection.Contains( _selected ) )
+			_selected = _selection[^1];
+		if ( _anchor >= authored )
+			_anchor = _selected;
+	}
+
+	// Re-point the selection at the same brushes after an index shuffle (the layer-list reorder).
+	void RemapSelection( List<SdfBrush> selectedRefs, SdfBrush primary, List<SdfBrush> list )
+	{
+		_selection.Clear();
+		foreach ( var r in selectedRefs )
+		{
+			int ni = list.IndexOf( r );
+			if ( ni >= 0 && !_selection.Contains( ni ) )
+				_selection.Add( ni );
+		}
+		_selection.Sort();
+
+		int np = primary is not null ? list.IndexOf( primary ) : -1;
+		_selected = np >= 0 ? np : (_selection.Count > 0 ? _selection[^1] : -1);
+		if ( _selected >= 0 && !_selection.Contains( _selected ) )
+		{
+			_selection.Add( _selected );
+			_selection.Sort();
+		}
+		_anchor = _selected;
+	}
+
 	/// <summary>Clear the selection (gizmo/palette/sliders hide).</summary>
 	public void Deselect() => Selected = -1;
 
-	/// <summary>Remove the selected brush (keeps at least one AUTHORED brush — damage craters don't count
+	/// <summary>Remove every selected brush (keeps at least one AUTHORED brush — damage craters don't count
 	/// toward that minimum — and never the last SOLID one, see <see cref="RefuseIfLastSolid"/>) and rebuild.
 	/// Leaves nothing selected.</summary>
 	public void RemoveSelected()
 	{
 		var b = Target.IsValid() ? Target.Brushes : null;
-		if ( Selected < 0 || b is not { Count: > 1 } || Target.AuthoredBrushCount <= 1 )
+		if ( Selected < 0 || b is not { Count: > 1 } )
 			return;
 
-		int i = Math.Clamp( Selected, 0, b.Count - 1 );
-		if ( RefuseIfLastSolid( b[i] ) )
+		var doomed = new List<SdfBrush>( SelectedBrushes );
+		if ( doomed.Count == 0 )
 			return;
 
-		b.RemoveAt( i );
+		if ( Target.AuthoredBrushCount - doomed.Count < 1 )
+		{
+			SinceNoSolidRefusal = 0f; // same "must have at least 1 shape" story as the solids guard
+			return;
+		}
+
+		if ( RefuseIfLosingSolids( doomed ) )
+			return;
+
+		b.RemoveAll( doomed.Contains );
 		Selected = -1;
 		NotifyChanged();
 	}
@@ -849,23 +1234,85 @@ public sealed class SculptEditSession : Component
 		return true;
 	}
 
-	/// <summary>Toggle a brush's visibility (the eye button) and rebuild. Refused (with the toast) when
-	/// hiding it would leave no solid shape.</summary>
+	// The GROUP form of RefuseIfLastSolid: would losing ALL of `losing` at once (deleting, hiding or
+	// carving the whole selection) leave no enabled additive brush? Same toast, same self-filtering — a
+	// group with no solid in it can't empty the sculpt, so it always passes.
+	bool RefuseIfLosingSolids( IReadOnlyList<SdfBrush> losing )
+	{
+		bool losesSolid = false;
+		foreach ( var l in losing )
+			losesSolid |= l is { Enabled: true, Operation: SdfOperation.Add };
+		if ( !losesSolid )
+			return false;
+
+		var list = Target.IsValid() ? Target.Brushes : null;
+		if ( list is null )
+			return false;
+
+		var ghost = PendingStamp( Target );
+		int authored = Target.AuthoredBrushCount;
+		for ( int i = 0; i < Math.Min( authored, list.Count ); i++ )
+		{
+			var o = list[i];
+			if ( o != ghost && o.Enabled && o.Operation == SdfOperation.Add && !losing.Contains( o ) )
+				return false; // a solid outside the group survives — the edit is safe
+		}
+
+		SinceNoSolidRefusal = 0f;
+		return true;
+	}
+
+	/// <summary>Toggle a brush's visibility (the eye button) and rebuild. On a multi-selected row the eye
+	/// drives the WHOLE selection to one state (the clicked row's flip). Refused (with the toast) when
+	/// hiding would leave no solid shape.</summary>
 	public void ToggleEnabled( int index )
 	{
-		if ( BrushAt( index ) is not { } b || RefuseIfLastSolid( b ) )
+		if ( BrushAt( index ) is not { } b )
+			return;
+
+		if ( IsMultiSelection && IsSelected( index ) )
+		{
+			bool on = !b.Enabled;
+			var group = new List<SdfBrush>( SelectedBrushes );
+			if ( !on && RefuseIfLosingSolids( group ) )
+				return;
+
+			foreach ( var s in group )
+				s.Enabled = on;
+			NotifyChanged();
+			return;
+		}
+
+		if ( RefuseIfLastSolid( b ) )
 			return;
 
 		b.Enabled = !b.Enabled;
 		NotifyChanged();
 	}
 
-	/// <summary>Cycle a brush's operation (the layer-row op button): Add → Carve → Cutout → Add. Refused
-	/// (with the toast) when leaving Add would strip the last solid shape — Carve and Cutout both add no
-	/// geometry, so neither can be the sculpt's remaining solid.</summary>
+	/// <summary>Cycle a brush's operation (the layer-row op button): Add → Carve → Cutout → Add. On a
+	/// multi-selected row the whole selection lands on ONE op — the clicked row's next. Refused (with the
+	/// toast) when leaving Add would strip the last solid shape — Carve and Cutout both add no geometry,
+	/// so neither can be the sculpt's remaining solid.</summary>
 	public void ToggleOperation( int index )
 	{
-		if ( BrushAt( index ) is not { } b || RefuseIfLastSolid( b ) )
+		if ( BrushAt( index ) is not { } b )
+			return;
+
+		if ( IsMultiSelection && IsSelected( index ) )
+		{
+			var op = NextOperation( b.Operation );
+			var group = new List<SdfBrush>( SelectedBrushes );
+			if ( op != SdfOperation.Add && RefuseIfLosingSolids( group ) )
+				return;
+
+			foreach ( var s in group )
+				s.Operation = op;
+			NotifyChanged();
+			return;
+		}
+
+		if ( RefuseIfLastSolid( b ) )
 			return;
 
 		b.Operation = NextOperation( b.Operation );
@@ -897,14 +1344,41 @@ public sealed class SculptEditSession : Component
 	readonly Dictionary<SdfBrush, (SdfShape Shape, Vector3 Size, Rotation Rotation)> _preSplineSolid = new();
 
 	/// <summary>Toggle symmetry on a brush (the symmetry button): clears all axes if any are on, else
-	/// restores the combo it had when last toggled off (left/right X for a brush with no history).
+	/// restores the combo it had when last toggled off (left/right X for a brush with no history). On a
+	/// multi-selected row the clicked row picks the DIRECTION and the whole selection follows it.
 	/// Per-axis control still lives in the Symmetry section.</summary>
 	public void ToggleSymmetry( int index )
 	{
 		if ( BrushAt( index ) is not { } b )
 			return;
 
-		if ( b.MirrorX || b.MirrorY || b.MirrorZ )
+		bool turnOn = !(b.MirrorX || b.MirrorY || b.MirrorZ);
+		bool changed;
+		if ( IsMultiSelection && IsSelected( index ) )
+		{
+			changed = false;
+			foreach ( var s in SelectedBrushes )
+				changed |= ApplySymmetryToggle( s, turnOn );
+		}
+		else
+		{
+			changed = ApplySymmetryToggle( b, turnOn );
+		}
+
+		if ( changed )
+			NotifyChanged();
+	}
+
+	// One brush's share of the symmetry button: off stores the combo for the trip back; on restores it (X
+	// for a brush with no history). Already in the target state = untouched, so a mixed group converges
+	// without scrambling anyone's remembered axes.
+	bool ApplySymmetryToggle( SdfBrush b, bool on )
+	{
+		bool anyOn = b.MirrorX || b.MirrorY || b.MirrorZ;
+		if ( on == anyOn )
+			return false;
+
+		if ( !on )
 		{
 			_mirrorMemory[b] = (b.MirrorX, b.MirrorY, b.MirrorZ);
 			b.MirrorX = b.MirrorY = b.MirrorZ = false;
@@ -918,50 +1392,88 @@ public sealed class SculptEditSession : Component
 		}
 
 		b.SnapToMirrorPlanes(); // symmetry turned on near the plane = "centre this" — magnetize now
-		NotifyChanged();
+		return true;
 	}
 
 	/// <summary>Delete a specific brush (the bin button), keeping at least one — and never the last SOLID
-	/// one (see <see cref="RefuseIfLastSolid"/>) — and rebuild.</summary>
+	/// one (see <see cref="RefuseIfLastSolid"/>) — and rebuild. The bin on a row that's part of a
+	/// multi-selection deletes the whole selection (hierarchy-style).</summary>
 	public void Remove( int index )
 	{
+		if ( IsMultiSelection && IsSelected( index ) )
+		{
+			RemoveSelected();
+			return;
+		}
+
 		var b = Target.IsValid() ? Target.Brushes : null;
 		if ( b is not { Count: > 1 } || index < 0 || index >= b.Count || RefuseIfLastSolid( b[index] ) )
 			return;
 
 		b.RemoveAt( index );
 
-		// Keep the same brush selected (its index may have shifted down); deselect if we removed the selected one.
-		if ( Selected == index ) Selected = -1;
-		else if ( Selected > index ) Selected--;
+		// Keep the same brushes selected (indices above the removal shift down one); drop the removed row.
+		_selection.Remove( index );
+		for ( int k = 0; k < _selection.Count; k++ )
+		{
+			if ( _selection[k] > index )
+				_selection[k]--;
+		}
+		if ( _selected == index ) _selected = -1;
+		else if ( _selected > index ) _selected--;
+		if ( _selected < 0 && _selection.Count > 0 ) _selected = _selection[^1];
+		if ( _selected < 0 ) _selection.Clear();
+		_anchor = _selected;
 
 		NotifyChanged();
 	}
 
-	/// <summary>Duplicate the selected brush: insert an independent copy right above it in the stack — exactly
-	/// in place — then select the copy and rebuild. The clone carries every property (shape, transform, size,
-	/// material and symmetry), so it sits on top of the original until you drag it off.</summary>
+	/// <summary>Duplicate the selection: an independent copy of every selected brush, inserted as a block
+	/// just above the topmost selected row — each copy exactly in place — then select the copies and
+	/// rebuild. The clones carry every property (shape, transform, size, material and symmetry), so they
+	/// sit on top of the originals until you drag them off. Refused past the brush cap.</summary>
 	public void DuplicateSelected()
 	{
 		var b = Target.IsValid() ? Target.Brushes : null;
-		if ( Selected < 0 || b is not { Count: > 0 } || Selected >= b.Count )
+		if ( Selected < 0 || b is not { Count: > 0 } )
 			return;
 
-		int i = Selected;
-		b.Insert( i + 1, b[i].Copy() );
-		Selected = i + 1;
+		var src = new List<int>();
+		foreach ( var i in _selection )
+		{
+			if ( i >= 0 && i < b.Count )
+				src.Add( i );
+		}
+		if ( src.Count == 0 || b.Count + src.Count > SdfBrushPacker.MaxBrushes )
+			return;
+
+		int insert = src[^1] + 1; // just above the topmost selected — still below the damage tail
+		for ( int k = 0; k < src.Count; k++ )
+			b.Insert( insert + k, b[src[k]].Copy() );
+
+		// The copies become the selection (their block), the last one the primary — the single-brush case
+		// lands exactly where it always did (copy right above, selected).
+		_selection.Clear();
+		for ( int k = 0; k < src.Count; k++ )
+			_selection.Add( insert + k );
+		_selected = _selection[^1];
+		_anchor = _selected;
 		NotifyChanged();
 	}
 
-	/// <summary>Reset the selected brush's rotation to its shape's spawn orientation (the "Rotate" tool
+	/// <summary>Reset every selected brush's rotation to its shape's spawn orientation (the "Rotate" tool
 	/// button) and rebuild — identity for most shapes, face-forward for the flat-profile ones.</summary>
 	public void ResetRotationSelected()
 	{
-		if ( BrushAt( Selected ) is not { } b )
-			return;
+		bool changed = false;
+		foreach ( var b in SelectedBrushes )
+		{
+			b.Rotation = SdfSculpture.SpawnRotation( b.Shape );
+			changed = true;
+		}
 
-		b.Rotation = SdfSculpture.SpawnRotation( b.Shape );
-		NotifyChanged();
+		if ( changed )
+			NotifyChanged();
 	}
 
 	/// <summary>Reorder the layer list: move the brush at <paramref name="from"/> so it lands at
@@ -978,17 +1490,21 @@ public sealed class SculptEditSession : Component
 		if ( from == to )
 			return;
 
-		// Remember the selected brush so we can keep IT selected after the indices shuffle.
+		// Remember the selected brushes so we can keep THEM selected after the indices shuffle.
 		var selectedBrush = (Selected >= 0 && Selected < b.Count) ? b[Selected] : null;
+		var selectedRefs = new List<SdfBrush>( _selection.Count );
+		foreach ( var i in _selection )
+		{
+			if ( i >= 0 && i < b.Count )
+				selectedRefs.Add( b[i] );
+		}
 
 		var item = b[from];
 		b.RemoveAt( from );
 		b.Insert( to, item );
 
-		// Re-point the selection at the same brush it was on (its index may have shifted).
-		int ni = selectedBrush is not null ? b.IndexOf( selectedBrush ) : -1;
-		if ( ni >= 0 )
-			Selected = ni;
+		// Re-point the selection at the same brushes (their indices may have shifted).
+		RemapSelection( selectedRefs, selectedBrush, b );
 
 		NotifyChanged();
 	}
@@ -1057,7 +1573,35 @@ public sealed class SculptEditSession : Component
 	// Clamp this frame's state of the active brush (stamp ghost in Add mode, selection otherwise) BEFORE any
 	// rebuild renders/records/streams it. Travel-vs-teleport (the stamp cursor jumping across the scene must
 	// not sweep against geometry along the way) is decided inside by the move's distance.
-	void ClampActiveBrush() => _worldClamp.Apply( Target, ActiveBrush );
+	//
+	// A MULTI-selection gesture clamps as a GROUP instead — one shared correction for every member, so the
+	// arrangement keeps its formation (see BrushWorldClamp.ApplyGroup). It must not simply be skipped: clay
+	// pushed into the world makes SdfCollider.Rebuild refuse the embedded collider, which silently freezes
+	// the prop's physics on its last good shape. Each path drops the other's watch state on the way past,
+	// so switching between them always re-baselines rather than restoring a stale pose.
+	void ClampActiveBrush()
+	{
+		if ( Tool == SculptTool.Gizmo && IsMultiSelection )
+		{
+			_clampGroup.Clear();
+			foreach ( var b in SelectedBrushes )
+				_clampGroup.Add( b );
+
+			// The clamp translates the group rigidly (or reverts it) — carry the gizmo along, or a
+			// correction would leave the pivot floating off the shapes it drives.
+			var pivotBefore = SelectionPivot();
+			_worldClamp.Apply( Target, null );
+			_worldClamp.ApplyGroup( Target, _clampGroup );
+			_multiProxy.Position += SelectionPivot() - pivotBefore;
+			return;
+		}
+
+		_worldClamp.ApplyGroup( Target, null );
+		_worldClamp.Apply( Target, ActiveBrush );
+	}
+
+	// Reusable buffer for the group clamp's member list (no per-frame allocation during a drag).
+	readonly List<SdfBrush> _clampGroup = new();
 
 	/// <summary>Chain-placement hook: tube-aware clamp of the spline ghost's live point (see
 	/// <see cref="BrushWorldClamp.ClampTubePoint"/>) — its move from <paramref name="fromLocal"/> (last
@@ -1362,6 +1906,11 @@ public sealed class SculptEditSession : Component
 
 	protected override void OnUpdate()
 	{
+		// Sample the selection modifiers here (component context — Input reads reliably) for the HUD's
+		// layer-row clicks, which run inside UI event dispatch where it doesn't.
+		CtrlHeld = Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "ctrl" );
+		ShiftHeld = SnapHeld;
+
 		UpdateWireframes(); // runs even when not editing so it can fade OUT after exit
 
 		if ( !IsEditing || !Target.IsValid() )
@@ -1463,8 +2012,7 @@ public sealed class SculptEditSession : Component
 			return;
 
 		// Keep the selection valid; -1 (nothing selected) is allowed and is the default — never force one.
-		if ( Selected >= brushes.Count )
-			Selected = -1;
+		PruneSelection();
 
 		var tx = Target.WorldTransform;
 
@@ -1481,13 +2029,23 @@ public sealed class SculptEditSession : Component
 		// The gizmo fades in/out with the selection (matching the HUD palette/sliders). While fading out after a
 		// deselect it keeps drawing the LAST brush at falling opacity, then tears down once invisible; it only
 		// hovers/grabs while actually selected. ShowGizmo off (view-only) just fades it out and leaves it gone.
-		if ( Selected >= 0 )
+		// With 2+ selected the gizmo's subject is the pivot PROXY, not a real brush (see the proxy fields).
+		bool multi = IsMultiSelection;
+		if ( multi )
+		{
+			RefreshMultiProxy();
+			_gizmoBrush = _multiProxy;
+		}
+		else if ( Selected >= 0 )
 			_gizmoBrush = brushes[Selected]; // remember so the fade-out has something to draw
 
 		float gizmoTarget = (ShowGizmo && Selected >= 0) ? 1f : 0f;
 		_gizmoAlpha = MathX.Lerp( _gizmoAlpha, gizmoTarget, 1f - MathF.Exp( -GizmoFadeSpeed * Time.Delta ) );
 
 		bool changed = false;
+		if ( multi )
+			SnapshotMultiProxy(); // before the gizmo AND the scrubs — ApplyMultiDelta diffs against this
+
 		if ( ShowGizmo && _gizmoBrush is not null && (gizmoTarget > 0f || _gizmoAlpha > 0.01f) )
 		{
 			changed = _gizmo.Update( tx, _gizmoBrush, Scene, Style,
@@ -1506,11 +2064,17 @@ public sealed class SculptEditSession : Component
 		// cursor). Continuous changes preview; the key release runs the full commit.
 		// Gated on IsDragging, NOT IsBusy: merely HOVERING a gizmo handle (which covers most of the shape)
 		// must not eat the scrub keys — only an actual handle drag owns the mouse.
-		changed |= BrushScrub.Update( SelectedBrush, tx, Scene.Camera,
+		changed |= BrushScrub.Update( multi ? _multiProxy : SelectedBrush, tx, Scene.Camera,
 			allow: !overUi && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsDragging,
 			out bool scrubEnded,
-			blendLocked: Sdf.BlendInert( Target.Brushes, SelectedBrush ),
+			blendLocked: !multi && Sdf.BlendInert( Target.Brushes, SelectedBrush ),
 			allowMove: true );
+
+		// Multi-selection: the gizmo/scrubs moved the PROXY — fan its delta out to every selected brush
+		// before anything previews, commits or streams this frame's state.
+		if ( multi && changed )
+			ApplyMultiDelta();
+
 		if ( scrubEnded )
 			CommitChanged();
 
@@ -1533,14 +2097,22 @@ public sealed class SculptEditSession : Component
 		{
 			// A spline's transform is inert (its geometry lives in the control points), so pushing Position
 			// would do nothing visible — shift every point instead, measured from the curve's centre.
-			bool spline = pushB.Shape == SdfShape.Spline && pushB.Points is { Count: > 0 };
-			var local = spline ? SplineCentre( pushB ) : pushB.Position;
+			// A multi-selection pushes the whole group by one shared offset, measured from the pivot.
+			bool multiPush = IsMultiSelection;
+			bool spline = !multiPush && pushB.Shape == SdfShape.Spline && pushB.Points is { Count: > 0 };
+			var local = multiPush ? _multiProxy.Position : (spline ? SplineCentre( pushB ) : pushB.Position);
 			var world = tx.PointToWorld( local );
 			var toCam = world - pushCam.WorldPosition;
 			var dir = (tx.Rotation.Inverse * toCam).Normal;
 			var offset = dir * pushWheel * _stampTool.AcceleratedDepthStep( DepthSizeRef( pushB ), toCam.Length );
 
-			if ( spline )
+			if ( multiPush )
+			{
+				_multiProxy.Position += offset; // the pivot rides along, so repeat notches stay anchored
+				foreach ( var gb in SelectedBrushes )
+					OffsetBrush( gb, offset );
+			}
+			else if ( spline )
 			{
 				var pts = pushB.Points;
 				for ( int i = 0; i < pts.Count; i++ )
@@ -1578,10 +2150,10 @@ public sealed class SculptEditSession : Component
 
 		_hoverBrush = hover; // for the wireframe's hover highlight
 
-		// Ghost the hovered brush (unless it's the selected one — that shows the gizmo instead). Hovering straight
+		// Ghost the hovered brush (unless it's already selected — that shows the gizmo/wires instead). Hovering straight
 		// from one shape to another cross-fades: the brush you left slides to the outgoing slot and fades out while
 		// the new one fades in. Both keep drawing while they fade, then tear down once invisible.
-		int ghostHover = (hover >= 0 && hover != Selected) ? hover : -1;
+		int ghostHover = (hover >= 0 && !IsSelected( hover )) ? hover : -1;
 		var hoverBrush = ghostHover >= 0 ? brushes[ghostHover] : null;
 
 		if ( hoverBrush != _ghostBrush )
@@ -1622,13 +2194,22 @@ public sealed class SculptEditSession : Component
 			_ghostOutBrush = null;
 
 		// A selected CARVE or CUTOUT brush has no surface of its own (a hole / a scored recolour) — draw
-		// its wireframe so you can see what you're moving. Same single-brush wire the stamp uses.
-		if ( SelectedBrush is { Operation: SdfOperation.Subtract or SdfOperation.Cutout } carveSel )
+		// its wireframe so you can see what you're moving. Covers every such brush in the selection.
+		_stampWireList.Clear();
+		_stampWireSel.Clear();
+		foreach ( var sel in SelectedBrushes )
 		{
-			_stampWireList.Clear();
-			_stampWireList.Add( carveSel );
+			if ( sel.Operation is SdfOperation.Subtract or SdfOperation.Cutout )
+			{
+				_stampWireSel.Add( _stampWireList.Count );
+				_stampWireList.Add( sel );
+			}
+		}
+		if ( _stampWireList.Count > 0 )
+		{
 			_stampWire.Draw( _stampWireList, tx, Scene, Scene.Camera,
-				selected: 0, hovered: -1, masterAlpha: 0.9f, Style.OutlineThickness, WireframeDepthBias );
+				selected: 0, hovered: -1, masterAlpha: 0.9f, Style.OutlineThickness, WireframeDepthBias,
+				selectedMulti: _stampWireSel );
 		}
 		else
 		{
@@ -1644,7 +2225,12 @@ public sealed class SculptEditSession : Component
 		if ( AltNav.LmbTapped && !overUi && !Input.Down( "Walk" ) && !PauseMenu.IsOpen
 			&& !_gizmo.IsBusy && !IsScrubbing
 			&& EditHudGate.Interactive( HudSection.WorldSelect ) ) // tutorial: no picking before the selection stage
-			Selected = hover; // hover is -1 on empty space → deselect
+		{
+			if ( CtrlHeld || ShiftHeld )
+				Select( hover, ctrl: true, shift: false ); // additive toggle (a scene has no row order to range over)
+			else
+				Selected = hover; // hover is -1 on empty space → deselect
+		}
 
 		// Debug: render the shadow-proxy mesh AS the visible surface (raymarch + full mesh hidden).
 		if ( ShowShadowProxy )
@@ -1660,7 +2246,8 @@ public sealed class SculptEditSession : Component
 
 		// Magnetic centre snap: a mirrored brush moved (gizmo drag) or resized (scrub) into the symmetry
 		// deadzone physically centres on the plane instead of just quietly losing its mirror copy.
-		if ( changed )
+		// (Single-selection only — magnetizing members of a group drag would pop them out of formation.)
+		if ( changed && !multi )
 			SelectedBrush?.SnapToMirrorPlanes();
 
 		if ( changed )
@@ -1993,7 +2580,8 @@ public sealed class SculptEditSession : Component
 
 		_wireframes.Draw( Target.Brushes, Target.WorldTransform, Scene, Scene.Camera,
 			Selected, hover, master, st.OutlineThickness, WireframeDepthBias,
-			warn, bounds.IsValid() ? bounds.WarnColor : default );
+			warn, bounds.IsValid() ? bounds.WarnColor : default,
+			IsMultiSelection ? _selection : null );
 	}
 
 	// ── Depth of field (main camera) ─────────────────────────────────────────────────────────────────

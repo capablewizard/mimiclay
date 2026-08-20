@@ -125,6 +125,7 @@
 					<div class="hint hot"><span class="key">Release</span><span>close loop</span></div>
 				}
 				<div class="hint"><span class="key">LMB</span><span>select</span></div>
+				<div class="hint"><span class="key">Ctrl+LMB</span><span>multi-select</span></div>
 				@if ( Session.SelectedBrush is not null )
 				{
 					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
@@ -431,8 +432,10 @@
 			var fb = _fadeBrush;
 			@* The first additive brush's blend folds against empty space — a field no-op that would only
 			   inflate the SculptBounds size padding — so its slider parks at 0, greyed (mirror symmetry
-			   un-parks it: the blend then smooths the copies' seams; see Sdf.BlendInert). *@
-			var blendLocked = fb is not null && Session.Target?.Brushes is { } blendList && Sdf.BlendInert( blendList, fb );
+			   un-parks it: the blend then smooths the copies' seams; see Sdf.BlendInert). A multi-selection
+			   un-greys it — the edit fans out to the whole group, and SetBlend skips the inert member. *@
+			var blendLocked = fb is not null && !Session.IsMultiSelection
+				&& Session.Target?.Brushes is { } blendList && Sdf.BlendInert( blendList, fb );
 			var blendVal = blendLocked ? 0f : fb?.Blend ?? 0f;
 			var roundVal = fb?.Rounding ?? GizmoSettingsRoundingMin;
 			var roundMax = fb is not null ? fb.MaxRounding() : 1f;
@@ -903,7 +906,7 @@
 	string LayerClass( int idx )
 	{
 		string c = "paper-card layer";
-		if ( idx == Session.Selected ) c += " selected";
+		if ( Session.IsSelected( idx ) ) c += " selected";
 
 		if ( _dragIndex >= 0 )
 			c += idx == _dragIndex ? " dragging" : " shuffle"; // dragged row tracks instantly; others ease
@@ -975,11 +978,13 @@
 	// OnMouseDown on a row: a fresh gesture — assume it's a click until a drag actually starts.
 	void HandlePressStart() => _gestureDragged = false;
 
-	// Click on a row: select it, unless this gesture was a drag (drag only reorders).
+	// Click on a row: select it — ctrl toggles it in/out of the group, shift range-selects from the anchor
+	// (the s&box hierarchy scheme) — unless this gesture was a drag (drag only reorders). Modifiers come
+	// from the session's per-frame samples: Input doesn't read reliably inside UI event dispatch.
 	void HandlePick( int idx )
 	{
 		if ( !_gestureDragged )
-			Session?.Select( idx );
+			Session?.Select( idx, SculptEditSession.CtrlHeld, SculptEditSession.ShiftHeld );
 	}
 
 	// Per-row icon buttons.
@@ -1148,14 +1153,29 @@
 	// edits (palette click, cross-section swap) still commit directly via NotifyChanged.
 	void CommitEdit() => Session?.CommitChanged();
 
+	// Property edits fan out to every brush the session says they act on — the stamp ghost in add mode, or
+	// the WHOLE selection in edit mode (multi-select edits every member, per-brush clamps intact). `Brush`
+	// (the primary) still provides the panels' displayed values, like any multi-object inspector.
+	void EditEach( Action<SdfBrush> edit )
+	{
+		if ( Session is null || Brush is null )
+			return;
+		foreach ( var b in Session.EditTargets )
+			edit( b );
+	}
+
 	void SetBlend( float v )
 	{
 		if ( Brush is null )
 			return;
-		// Belt-and-braces behind the greyed slider: the first additive brush's blend stays untouched.
-		if ( Session?.Target?.Brushes is { } bl && Sdf.BlendInert( bl, Brush ) )
-			return;
-		Brush.Blend = Math.Clamp( v, 0f, SdfBrush.MaxBlend );
+		var list = Session?.Target?.Brushes;
+		EditEach( b =>
+		{
+			// Belt-and-braces behind the greyed slider: a blend-inert brush's blend stays untouched.
+			if ( list is not null && Sdf.BlendInert( list, b ) )
+				return;
+			b.Blend = Math.Clamp( v, 0f, SdfBrush.MaxBlend );
+		} );
 		Session?.PreviewChanged();
 	}
 
@@ -1163,7 +1183,7 @@
 	{
 		if ( Brush is null )
 			return;
-		Brush.Rounding = Math.Clamp( v, GizmoSettingsRoundingMin, Brush.MaxRounding() );
+		EditEach( b => b.Rounding = Math.Clamp( v, GizmoSettingsRoundingMin, b.MaxRounding() ) );
 		Session?.PreviewChanged();
 	}
 
@@ -1171,7 +1191,11 @@
 	{
 		if ( Brush is null )
 			return;
-		Brush.Curvature = Math.Clamp( v, 0f, 1f );
+		EditEach( b =>
+		{
+			if ( b.Shape == SdfShape.Spline )
+				b.Curvature = Math.Clamp( v, 0f, 1f );
+		} );
 		Session?.PreviewChanged();
 	}
 
@@ -1179,16 +1203,26 @@
 	{
 		if ( Brush is null )
 			return;
-		Brush.Slice = Math.Clamp( v, 0f, SdfBrush.MaxSlice );
+		EditEach( b =>
+		{
+			if ( b.Shape is SdfShape.Sphere or SdfShape.Cone )
+				b.Slice = Math.Clamp( v, 0f, SdfBrush.MaxSlice );
+		} );
 		Session?.PreviewChanged();
 	}
 
-	// Close/open the spline ring (the old gizmo gap-midpoint handle, now a chip). Needs 3+ points to be a ring.
+	// Close/open the spline ring (the old gizmo gap-midpoint handle, now a chip). Needs 3+ points to be a
+	// ring. The primary picks the direction; every selected spline that CAN loop follows it.
 	void ToggleSplineClosed()
 	{
 		if ( Brush is null || Brush.Points is not { Count: >= 3 } )
 			return;
-		Brush.SplineClosed = !Brush.SplineClosed;
+		bool closed = !Brush.SplineClosed;
+		EditEach( b =>
+		{
+			if ( b.Shape == SdfShape.Spline && b.Points is { Count: >= 3 } )
+				b.SplineClosed = closed;
+		} );
 		Session?.NotifyChanged();
 	}
 
@@ -1235,14 +1269,20 @@
 			TextInput.Text = SelectedText;
 	}
 
-	// Swap the extruded brush's 2D profile. Rounding is re-clamped because the profiles have different
-	// caps (a star's erosion limit is far smaller than a hexagon's apothem), so the slider stays honest.
+	// Swap the extruded brush's 2D profile — every selected extruded brush takes it. Rounding is re-clamped
+	// because the profiles have different caps (a star's erosion limit is far smaller than a hexagon's
+	// apothem), so the slider stays honest.
 	void SetCrossSection( SdfCrossSection cs )
 	{
-		if ( Brush is null || Brush.CrossSection == cs )
+		if ( Brush is null || (Brush.CrossSection == cs && !(Session?.IsMultiSelection ?? false)) )
 			return;
-		Brush.CrossSection = cs;
-		Brush.Rounding = Math.Clamp( Brush.Rounding, GizmoSettingsRoundingMin, Brush.MaxRounding() );
+		EditEach( b =>
+		{
+			if ( b.Shape != SdfShape.Extruded )
+				return;
+			b.CrossSection = cs;
+			b.Rounding = Math.Clamp( b.Rounding, GizmoSettingsRoundingMin, b.MaxRounding() );
+		} );
 		Session?.NotifyChanged();
 	}
 
@@ -1303,42 +1343,48 @@
 
 	float PaletteHeight => PaletteRows * CellPx;
 
-	// Toggle a mirror-symmetry axis (0=X, 1=Y, 2=Z) on the selected brush and rebuild.
+	// Toggle a mirror-symmetry axis (0=X, 1=Y, 2=Z): the chip flips the PRIMARY's axis and the whole
+	// selection lands on that same state, then rebuild.
 	void ToggleMirror( int axis )
 	{
 		if ( Brush is null )
 			return;
 
-		switch ( axis )
+		bool on = axis switch { 0 => !Brush.MirrorX, 1 => !Brush.MirrorY, _ => !Brush.MirrorZ };
+		EditEach( b =>
 		{
-			case 0: Brush.MirrorX = !Brush.MirrorX; break;
-			case 1: Brush.MirrorY = !Brush.MirrorY; break;
-			default: Brush.MirrorZ = !Brush.MirrorZ; break;
-		}
+			switch ( axis )
+			{
+				case 0: b.MirrorX = on; break;
+				case 1: b.MirrorY = on; break;
+				default: b.MirrorZ = on; break;
+			}
 
-		Brush.SnapToMirrorPlanes(); // symmetry turned on near the plane = "centre this" — magnetize now
+			b.SnapToMirrorPlanes(); // symmetry turned on near the plane = "centre this" — magnetize now
+		} );
+
 		Session?.NotifyChanged();
 	}
 
-	// Apply a palette preset (colour + metalness + roughness) to the selected brush.
+	// Apply a palette preset (colour + metalness + roughness) to every selected brush.
 	void ApplyMaterial( ClayMaterial m )
 	{
 		if ( Brush is null )
 			return;
 
-		m.ApplyTo( Brush );
+		EditEach( m.ApplyTo );
 		SculptEditSession.RememberMaterial( Brush ); // becomes the material new shapes are born with
 		Session?.NotifyChanged();
 	}
 
-	// Apply colour-wheel / metal / rough edits from the picker column straight onto the selected brush.
+	// Apply colour-wheel / metal / rough edits from the picker column onto every selected brush.
 	// These scrub continuously, so they PREVIEW; the control's OnCommit fires the full commit on release.
 	// Each also updates the remembered "current material" (see SculptEditSession.LastMaterial).
 	void SetColor( Color c )
 	{
 		if ( Brush is null )
 			return;
-		Brush.Color = c.WithAlpha( 1f );
+		EditEach( b => b.Color = c.WithAlpha( 1f ) );
 		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 	}
@@ -1347,7 +1393,7 @@
 	{
 		if ( Brush is null )
 			return;
-		Brush.Metallic = Math.Clamp( v, 0f, 1f );
+		EditEach( b => b.Metallic = Math.Clamp( v, 0f, 1f ) );
 		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 	}
@@ -1356,7 +1402,7 @@
 	{
 		if ( Brush is null )
 			return;
-		Brush.Roughness = Math.Clamp( v, 0f, 1f );
+		EditEach( b => b.Roughness = Math.Clamp( v, 0f, 1f ) );
 		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 	}
@@ -1376,9 +1422,12 @@
 	{
 		if ( Brush is null || _materialClipboard is not { } m )
 			return;
-		Brush.Color = m.Color;
-		Brush.Metallic = m.Metallic;
-		Brush.Roughness = m.Roughness;
+		EditEach( b =>
+		{
+			b.Color = m.Color;
+			b.Metallic = m.Metallic;
+			b.Roughness = m.Roughness;
+		} );
 		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
 		CommitEdit();
@@ -1612,6 +1661,12 @@
 		hc.Add( s?.CanUndo ?? false ); // undo/redo buttons dim at the ends of the history
 		hc.Add( s?.CanRedo ?? false );
 		hc.Add( s?.Selected ?? -1 );
+		// The whole multi-selection: rows highlight off membership, and group ops re-target with it.
+		if ( s is not null )
+		{
+			foreach ( var selIdx in s.Selection )
+				hc.Add( selIdx );
+		}
 		hc.Add( s?.Target?.AuthoredBrushCount ?? 0 ); // damage-tail changes (a shot landing) don't churn the rows
 
 		// Each row shows per-brush state (shape / op / colour / visibility / symmetry), so fold all of it in

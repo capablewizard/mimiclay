@@ -210,6 +210,181 @@ public sealed class BrushWorldClamp
 		_lastHash = GeometryHash( brush );
 	}
 
+	// ── Group clamp (multi-selection) ────────────────────────────────────────────────────────────────
+
+	/// <summary>The multi-selection form of <see cref="Apply"/>: clamp a whole GROUP of brushes as ONE
+	/// rigid body. A group gesture has to keep its formation — correcting members individually would shear
+	/// the arrangement apart — so the resolve pools every member's penetration into ONE shared world-space
+	/// correction, and a frame it can't resolve reverts the WHOLE group to its last clear pose.
+	///
+	/// Not optional: without it a group drag pushes clay through the floor, and the commit backstop then
+	/// refuses to swap in the embedded collider (see <see cref="EmbeddedInWorld"/>) — so the prop's physics
+	/// silently freezes on its last good shape while the visible clay keeps moving. Pass a null/empty list
+	/// to drop the watch (the group path's equivalent of <c>Apply(target, null)</c>).</summary>
+	public void ApplyGroup( SdfSculpture target, IReadOnlyList<SdfBrush> brushes )
+	{
+		if ( !target.IsValid() || brushes is not { Count: > 0 } || !ClampsApply( target ) )
+		{
+			ClearGroupWatch();
+			return;
+		}
+
+		// Only members that become SOLID physics take part; disabled/carve members ride along untouched
+		// (same exemption the single-brush path makes, and the same reason: they shove nothing).
+		_groupLive.Clear();
+		foreach ( var b in brushes )
+		{
+			if ( b is { Enabled: true, Operation: SdfOperation.Add } )
+				_groupLive.Add( b );
+		}
+
+		if ( _groupLive.Count == 0 )
+		{
+			ClearGroupWatch();
+			return;
+		}
+
+		// Re-baseline whenever the MEMBERSHIP changes — identity-keyed, like the single-brush watch, so an
+		// undo splicing in fresh instances (or a selection change) can't restore a stale pose.
+		if ( !SameMembers( _groupLive, _groupWatched ) )
+		{
+			_groupWatched.Clear();
+			_groupWatched.AddRange( _groupLive );
+			_groupClear.Clear();
+			_groupHash = 0;
+		}
+
+		int hash = GroupHash( _groupLive );
+		if ( hash == _groupHash )
+			return; // nothing changed since the last verdict — idle frames cost nothing
+
+		var scene = target.Scene;
+		if ( !scene.IsValid() )
+		{
+			_groupHash = hash;
+			return;
+		}
+
+		EnsureScratch( scene.PhysicsWorld );
+
+		// No sweep phase here (unlike Apply): the members of a group gesture each travel the same short
+		// per-frame step, so the endpoint resolve below — which has no start-state sensitivity — is the
+		// whole guarantee. Tunnelling would need one frame's step to exceed the thinnest wall.
+		if ( ResolveGroup( scene, target ) )
+		{
+			SnapshotGroup();
+			_groupHash = GroupHash( _groupLive );
+			return;
+		}
+
+		// Unresolvable. Revert the whole group together (never a partial revert — that IS shearing).
+		if ( _groupClear.Count != _groupLive.Count )
+		{
+			_groupHash = GroupHash( _groupLive );
+			return; // started blocked with nothing clear to fall back to — free until it comes up clear
+		}
+
+		for ( int i = 0; i < _groupLive.Count; i++ )
+			RestorePose( _groupLive[i], _groupClear[i] );
+		_groupHash = GroupHash( _groupLive );
+	}
+
+	// The group's shared depenetration. Same contract as ResolveEndpoint (true = proved clear, possibly
+	// after a correction; false = needed more than MaxResolve, so the caller reverts) — the difference is
+	// that every member's correction accumulates into ONE offset applied to ALL of them, so the
+	// arrangement translates rigidly instead of each brush finding its own way out.
+	bool ResolveGroup( Scene scene, SdfSculpture target )
+	{
+		var tx = target.WorldTransform;
+		var offset = Vector3.Zero; // accumulated world-space correction, shared by the whole group
+
+		for ( int iter = 0; iter < ResolveIterations; iter++ )
+		{
+			var at = new Transform( tx.Position + offset, tx.Rotation, tx.Scale );
+
+			bool any = false;
+			var correction = Vector3.Zero;
+			foreach ( var b in _groupLive )
+			{
+				if ( !SdfCollisionBuilder.BuildSweepShapes( b, _scratch, InsetFor( b ) ) )
+					continue; // no collision shapes — nothing that can embed
+
+				// Per-shape deadband, exactly as ResolveEndpoint splits it: solids run full-size shapes so
+				// resting contact reads as a tiny penetration (RestTolerance absorbs it); splines run their
+				// already-graced shapes, so theirs must stay zero.
+				float deadband = b.Shape == SdfShape.Spline ? 0f : RestTolerance;
+				var query = QueryBounds( _scratch, tx, offset );
+
+				foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
+				{
+					if ( !body.ComputePenetration( _scratch, at, out var dir, out var dist ) )
+						continue;
+					if ( dist <= deadband )
+						continue; // resting contact, not an error
+					any = true;
+					correction -= dir * (dist + SlideSkin);
+				}
+			}
+
+			if ( !any )
+			{
+				if ( !offset.IsNearZeroLength )
+				{
+					foreach ( var b in _groupLive )
+						ApplyWorldOffset( b, tx, offset );
+				}
+				return true;
+			}
+
+			offset += correction;
+			if ( offset.Length > MaxResolve )
+				return false;
+		}
+
+		return false; // still overlapping after the passes — unresolvable this frame
+	}
+
+	// Group watch state — the multi-selection twin of _watched / _lastClear / _lastHash. _groupClear runs
+	// index-parallel to _groupLive, which the membership re-baseline above keeps honest.
+	readonly List<SdfBrush> _groupLive = new();    // this frame's clampable members
+	readonly List<SdfBrush> _groupWatched = new(); // the membership the snapshot belongs to (identity)
+	readonly List<SdfBrush> _groupClear = new();   // Copy() of the last pose that tested clear, per member
+	int _groupHash;
+
+	void ClearGroupWatch()
+	{
+		_groupWatched.Clear();
+		_groupClear.Clear();
+		_groupHash = 0;
+	}
+
+	void SnapshotGroup()
+	{
+		_groupClear.Clear();
+		foreach ( var b in _groupLive )
+			_groupClear.Add( b.Copy() );
+	}
+
+	static bool SameMembers( List<SdfBrush> a, List<SdfBrush> b )
+	{
+		if ( a.Count != b.Count )
+			return false;
+		for ( int i = 0; i < a.Count; i++ )
+		{
+			if ( !ReferenceEquals( a[i], b[i] ) )
+				return false;
+		}
+		return true;
+	}
+
+	static int GroupHash( List<SdfBrush> brushes )
+	{
+		int h = unchecked( (int)2166136261 );
+		foreach ( var b in brushes )
+			b.HashInto( ref h );
+		return h;
+	}
+
 	/// <summary>Drop the watch state and the scratch physics body. Call on session teardown.</summary>
 	public void Dispose()
 	{
@@ -220,6 +395,8 @@ public sealed class BrushWorldClamp
 		_watched = null;
 		_lastClear = null;
 		_lastHash = 0;
+		ClearGroupWatch();
+		_groupLive.Clear();
 	}
 
 	// ── Backstop ─────────────────────────────────────────────────────────────────────────────────────
