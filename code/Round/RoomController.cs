@@ -49,6 +49,10 @@ public sealed class RoomController : Component
 	/// <summary>Objects to enable/disable based on the room's accessibility (spawn points, spawners, loot, etc).</summary>
 	[Property] public List<GameObject> Members { get; set; } = new();
 
+	/// <summary>Objects enabled only while this room is inaccessible, such as blockers, warning lights,
+	/// or alternate spawn points. Do not include the same object in both member lists.</summary>
+	[Property] public List<GameObject> InaccessibleMembers { get; set; } = new();
+
 	/// <summary>Other rooms this one is nested inside/behind. This room is only accessible if ALL of these are
 	/// also accessible — e.g. a room inside another room should list the outer room here, so closing either
 	/// room's doors disables both. Chains naturally: A depends on B depends on C all resolve correctly.</summary>
@@ -61,7 +65,7 @@ public sealed class RoomController : Component
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
 	bool? _appliedState;
-	TimeSince _sinceResync;
+	TimeSince _sinceResync;	
 
 	/// <summary>How often the host re-broadcasts current state regardless of change, so a player who joins
 	/// mid-round (and therefore missed the original change-triggered broadcast) converges within this long.</summary>
@@ -113,10 +117,14 @@ public sealed class RoomController : Component
 
 		foreach ( var member in Members )
 		{
-			if ( !member.IsValid() )
-				continue;
+			if ( member.IsValid() )
+				member.Enabled = accessible;
+		}
 
-			member.Enabled = accessible;
+		foreach ( var member in InaccessibleMembers )
+		{
+			if ( member.IsValid() )
+				member.Enabled = !accessible;
 		}
 	}
 
@@ -156,5 +164,15 @@ public sealed class RoomController : Component
 
 			Gizmo.Draw.Line( WorldPosition, parent.WorldPosition );
 		}
+
+		Gizmo.Draw.Color = Color.Orange.WithAlpha( 0.6f );
+
+		foreach ( var member in InaccessibleMembers )
+		{
+			if ( member.IsValid() )
+				Gizmo.Draw.Line( WorldPosition, member.WorldPosition );
+		}
+
+		Gizmo.Draw.Color = Color.Yellow.WithAlpha( 0.6f );
 	}
 }
