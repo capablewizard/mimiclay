@@ -6,7 +6,9 @@ namespace Mimiclay;
 /// Undo/redo history for one <see cref="SculptEditSession"/>. A plain STATE stack — the baseline shape plus one
 /// entry per commit, with a cursor. Undo steps the cursor back and hands the session that state to apply; redo
 /// steps forward. Recording whole states after the fact (rather than deltas) is what makes redo fall out for
-/// free and keeps every entry independently applicable, however the shape got there.
+/// free and keeps every entry independently applicable, however the shape got there. Selection travels with
+/// the steps too — each entry keeps the selection its command started from and ended on, so undo lands you on
+/// the selection you had before the command and redo on the one it left you with.
 ///
 /// Three decisions carry most of the weight:
 ///
@@ -41,8 +43,18 @@ namespace Mimiclay;
 /// </summary>
 sealed class SculptUndo
 {
-	/// <summary>One recorded shape: the authored brushes plus the build settings and selection that went with
-	/// them. Handed to the session to apply — treat it as immutable.</summary>
+	/// <summary>A selection frozen in time: every selected index (ascending), the primary, and the shift
+	/// anchor — the session's full selection model, so a multi-selection survives the round trip intact.
+	/// The list is a copy taken at capture; treat it as immutable like everything else on the stack.</summary>
+	public sealed class SelectionState
+	{
+		public List<int> Indices { get; init; }
+		public int Primary { get; init; }
+		public int Anchor { get; init; }
+	}
+
+	/// <summary>One recorded shape: the authored brushes plus the build settings and the selections around
+	/// the command that produced it. Handed to the session to apply — treat it as immutable.</summary>
 	public sealed class State
 	{
 		/// <summary>Deep copies of the authored brushes, in stack order. Never the damage tail.</summary>
@@ -51,9 +63,14 @@ sealed class SculptUndo
 		public int Resolution { get; init; }
 		public bool FlipFaces { get; init; }
 
-		/// <summary>Selected index within <see cref="Authored"/>, or -1 for no selection. Re-clamped on apply,
-		/// since the damage tail (and so the authored count) can have moved underneath it.</summary>
-		public int Selected { get; init; }
+		/// <summary>The selection the command that produced this state STARTED from. Undoing this state
+		/// restores it — so stepping a command off also steps off the selection change it caused (undoing a
+		/// duplicate re-selects the originals; undoing an add re-selects what the add replaced).</summary>
+		public SelectionState Before { get; init; }
+
+		/// <summary>The selection the command ENDED on, as committed. Redoing onto this state restores it
+		/// (redoing an add re-selects the added brush).</summary>
+		public SelectionState After { get; init; }
 
 		/// <summary>Content hash of <see cref="Authored"/> + the build settings — the dedup key.</summary>
 		public int Hash { get; init; }
@@ -94,11 +111,11 @@ sealed class SculptUndo
 
 	/// <summary>Start a fresh history whose first entry is the target's CURRENT shape, so there's always a
 	/// baseline to undo back to and the first Ctrl+Z after one edit returns to the shape this history opened
-	/// on.</summary>
-	public void Reset( SdfSculpture target, int selected )
+	/// on. The baseline had no command, so its Before and After are both just the current selection.</summary>
+	public void Reset( SdfSculpture target, SelectionState selection )
 	{
 		Clear();
-		Record( target, selected );
+		Record( target, selection, selection );
 	}
 
 	/// <summary>A session is entering edit mode: resume or re-baseline. The history resumes — cursor position
@@ -107,20 +124,21 @@ sealed class SculptUndo
 	/// matches. A mismatch means the shape changed while no session was watching (a remote author, a wholesale
 	/// replace) — the stored states no longer describe this shape's lineage, so start over from what's there
 	/// now rather than offer undo steps that would revert work that wasn't made here.</summary>
-	public void Activate( SdfSculpture target, int selected )
+	public void Activate( SdfSculpture target, SelectionState selection )
 	{
 		if ( _cursor >= 0 && target == _target && target.IsValid() && target.Brushes is { } brushes
 			&& SdfSculpture.ContentHashPrefix( brushes, target.AuthoredBrushCount, target.Resolution, target.FlipFaces )
 				== _stack[_cursor].Hash )
 			return;
 
-		Reset( target, selected );
+		Reset( target, selection );
 	}
 
 	/// <summary>Record the target's current shape as a new step, unless it's identical to the one on top.
 	/// Driven from the session's single commit funnel, so every discrete edit and every ended gesture lands
-	/// here exactly once.</summary>
-	public void Record( SdfSculpture target, int selected )
+	/// here exactly once. <paramref name="before"/> is the selection the command started from (the session's
+	/// pre-command snapshot), <paramref name="after"/> the one it's committing with.</summary>
+	public void Record( SdfSculpture target, SelectionState before, SelectionState after )
 	{
 		if ( IsApplying || !target.IsValid() )
 			return;
@@ -159,7 +177,8 @@ sealed class SculptUndo
 			Authored = snapshot,
 			Resolution = target.Resolution,
 			FlipFaces = target.FlipFaces,
-			Selected = selected < authored ? selected : -1,
+			Before = before,
+			After = after,
 			Hash = hash,
 		} );
 
@@ -171,27 +190,34 @@ sealed class SculptUndo
 		_cursor = _stack.Count - 1;
 	}
 
-	/// <summary>Step the cursor back one entry and hand out the state to apply. False (nothing touched) when
-	/// already at the baseline.</summary>
-	public bool Undo( out State state )
+	/// <summary>Step the cursor back one entry: hand out the previous state's SHAPE to apply, and the
+	/// SELECTION the undone command started from (the stepped-OFF state's Before) — together they put
+	/// everything back as it stood the moment before that command ran. False (nothing touched) when already
+	/// at the baseline.</summary>
+	public bool Undo( out State state, out SelectionState selection )
 	{
 		state = null;
+		selection = null;
 		if ( !CanUndo )
 			return false;
 
+		selection = _stack[_cursor].Before; // the command being undone — the selection it was run from
 		state = _stack[--_cursor];
 		return true;
 	}
 
-	/// <summary>Step the cursor forward one entry and hand out the state to apply. False when already at the
-	/// newest state.</summary>
-	public bool Redo( out State state )
+	/// <summary>Step the cursor forward one entry: hand out that state's shape and the selection its command
+	/// ended on (its After), re-running the command's selection change along with its shape change. False
+	/// when already at the newest state.</summary>
+	public bool Redo( out State state, out SelectionState selection )
 	{
 		state = null;
+		selection = null;
 		if ( !CanRedo )
 			return false;
 
 		state = _stack[++_cursor];
+		selection = state.After;
 		return true;
 	}
 }

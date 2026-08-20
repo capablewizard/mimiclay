@@ -397,6 +397,24 @@ public sealed class SculptEditSession : Component
 	readonly List<int> _selection = new(); // every selected index (primary included), ascending
 	int _anchor = -1;                      // shift-range pivot: the row last plainly/ctrl-clicked
 
+	// The selection the NEXT command will be recorded as starting from (SculptUndo.State.Before). Refreshed
+	// by every USER pick, after every commit, and after every undo/redo apply — but never by a command's own
+	// mid-flight selection mutations (add/remove/duplicate/stamp all select their result before committing).
+	// That distinction is the whole feature: it's what lets undoing a command also take the selection back to
+	// where it stood when the command was run, instead of wherever the command left it.
+	SculptUndo.SelectionState _preSel = new() { Indices = new List<int>(), Primary = -1, Anchor = -1 };
+
+	SculptUndo.SelectionState CaptureSelection() => new()
+	{
+		Indices = new List<int>( _selection ),
+		Primary = _selected,
+		Anchor = _anchor,
+	};
+
+	// A user pick (or a commit/undo landing) just settled the selection: this is now what the next command
+	// starts from.
+	void MarkSelectionBaseline() => _preSel = CaptureSelection();
+
 	/// <summary>True when a brush is selected (the gizmo/HUD are shown).</summary>
 	public bool HasSelection => Selected >= 0;
 
@@ -818,9 +836,10 @@ public sealed class SculptEditSession : Component
 			EnsureHud(); // the edit system brings its own HUD — no scene setup needed (and works in any game mode)
 			ApplyEditDof();
 			HookPersistSlot(); // save the slot on every commit while editing (see HookPersistSlot for why)
-			_undo.Activate( Target, Selected ); // resume the history from the last edit session when the shape
-			                                    // is untouched since (undo survives leaving edit mode to look
-			                                    // around); re-baseline if it changed while away
+			_undo.Activate( Target, CaptureSelection() ); // resume the history from the last edit session when
+			                                              // the shape is untouched since (undo survives leaving
+			                                              // edit mode to look around); re-baseline if it changed
+			MarkSelectionBaseline(); // whatever is selected on entry is what the first command starts from
 		}
 		else if ( Current == this )
 		{
@@ -840,7 +859,7 @@ public sealed class SculptEditSession : Component
 			// already false (unrecorded by the funnel), and _undo.Activate resumes this history on re-entry
 			// only when the shape it finds is the entry under the cursor. Dedup makes this a no-op — redo tail
 			// preserved — when nothing actually changed on the way out.
-			_undo.Record( Target, Selected );
+			_undo.Record( Target, _preSel, CaptureSelection() );
 			_worldClamp.Dispose(); // scratch physics body + watch state die with the session
 			_gizmo.Hide();
 			HideGhosts();
@@ -1064,6 +1083,7 @@ public sealed class SculptEditSession : Component
 	{
 		var b = Target.IsValid() ? Target.Brushes : null;
 		Selected = ( b is { Count: > 0 } && index >= 0 ) ? Math.Clamp( index, 0, b.Count - 1 ) : -1;
+		MarkSelectionBaseline();
 	}
 
 	/// <summary>Modifier-aware selection — the s&amp;box hierarchy scheme, shared by layer-row clicks and
@@ -1072,6 +1092,12 @@ public sealed class SculptEditSession : Component
 	/// shift-click re-pivots off the same row. Ctrl/shift on an out-of-range index leave the selection alone
 	/// (a plain one clears it, matching the empty-space click).</summary>
 	public void Select( int index, bool ctrl, bool shift )
+	{
+		SelectCore( index, ctrl, shift );
+		MarkSelectionBaseline(); // every exit of the core is a settled user pick, early returns included
+	}
+
+	void SelectCore( int index, bool ctrl, bool shift )
 	{
 		var b = Target.IsValid() ? Target.Brushes : null;
 		int authored = Target.IsValid() ? Target.AuthoredBrushCount : 0;
@@ -1169,7 +1195,11 @@ public sealed class SculptEditSession : Component
 	}
 
 	/// <summary>Clear the selection (gizmo/palette/sliders hide).</summary>
-	public void Deselect() => Selected = -1;
+	public void Deselect()
+	{
+		Selected = -1;
+		MarkSelectionBaseline();
+	}
 
 	/// <summary>Remove every selected brush (keeps at least one AUTHORED brush — damage craters don't count
 	/// toward that minimum — and never the last SOLID one, see <see cref="RefuseIfLastSolid"/>) and rebuild.
@@ -1558,7 +1588,10 @@ public sealed class SculptEditSession : Component
 		// (stamp cancel, invalid-shape revert, the exit commit) don't each push a step — SetActive seals the
 		// final exit shape as exactly one record instead, which is what lets the history resume on re-entry.
 		if ( IsEditing )
-			_undo.Record( Target, Selected );
+		{
+			_undo.Record( Target, _preSel, CaptureSelection() ); // Before = the pre-command snapshot, After = now
+			MarkSelectionBaseline(); // where this commit landed is what the NEXT command starts from
+		}
 
 		Target.Rebuild();
 	}
@@ -1671,19 +1704,21 @@ public sealed class SculptEditSession : Component
 			CommitChanged(); // fold an unfinished gesture into its own step before stepping off it
 
 		SculptUndo.State state;
-		if ( !(redo ? _undo.Redo( out state ) : _undo.Undo( out state )) )
+		SculptUndo.SelectionState selection;
+		if ( !(redo ? _undo.Redo( out state, out selection ) : _undo.Undo( out state, out selection )) )
 			return false;
 
-		ApplyUndoState( state );
+		ApplyUndoState( state, selection );
 		return true;
 	}
 
 	/// <summary>Apply a recorded state: splice its authored brushes onto the LIVE damage tail, restore the
-	/// build settings and selection, then run the one full commit. This deliberately goes through
+	/// build settings and the handed-down selection (undo: the one the undone command started from; redo: the
+	/// one it ended on), then run the one full commit. This deliberately goes through
 	/// <see cref="SdfSculpture.Rebuild"/> like any other edit, so the remesh, collider, network push and
 	/// persist-slot save all follow exactly as they would for a normal change — an undo IS an edit as far as
 	/// the rest of the system is concerned.</summary>
-	void ApplyUndoState( SculptUndo.State state )
+	void ApplyUndoState( SculptUndo.State state, SculptUndo.SelectionState selection )
 	{
 		if ( state is null || !Target.IsValid() )
 			return;
@@ -1728,8 +1763,17 @@ public sealed class SculptEditSession : Component
 			_hoverBrush = -1;
 			_worldHover = -1;
 
-			int authored = Target.AuthoredBrushCount;
-			Selected = (state.Selected >= 0 && state.Selected < authored) ? state.Selected : -1;
+			// Restore the handed-down selection — multi-selection, primary and anchor intact. Recorded
+			// selections were valid on the shape they were captured against (undo's Before was captured ON
+			// the shape being restored), so the prune is only a safety net for the damage tail shifting the
+			// authored count underneath a stale snapshot.
+			_selection.Clear();
+			if ( selection?.Indices is { } picked )
+				_selection.AddRange( picked );
+			_selected = selection?.Primary ?? -1;
+			_anchor = selection?.Anchor ?? -1;
+			PruneSelection();
+			MarkSelectionBaseline(); // the restored selection is what the next command starts from
 
 			_pendingCommit = false;
 			Target.Rebuild();
@@ -1820,9 +1864,13 @@ public sealed class SculptEditSession : Component
 		_preSplineSolid.Clear();
 
 		// This path sets the brushes directly rather than going through the commit funnel, so record here
-		// explicitly — loading over your work is exactly the kind of thing you want to be able to take back.
+		// explicitly — loading over your work is exactly the kind of thing you want to be able to take back
+		// (undoing a load also restores the selection you had before it).
 		if ( IsEditing )
-			_undo.Record( Target, Selected );
+		{
+			_undo.Record( Target, _preSel, CaptureSelection() );
+			MarkSelectionBaseline();
+		}
 
 		Target.Rebuild();
 		return true;
@@ -2234,9 +2282,14 @@ public sealed class SculptEditSession : Component
 			&& EditHudGate.Interactive( HudSection.WorldSelect ) ) // tutorial: no picking before the selection stage
 		{
 			if ( CtrlHeld || ShiftHeld )
+			{
 				Select( hover, ctrl: true, shift: false ); // additive toggle (a scene has no row order to range over)
+			}
 			else
+			{
 				Selected = hover; // hover is -1 on empty space → deselect
+				MarkSelectionBaseline();
+			}
 		}
 
 		// Debug: render the shadow-proxy mesh AS the visible surface (raymarch + full mesh hidden).
@@ -2449,15 +2502,17 @@ public sealed class SculptEditSession : Component
 			// its last-clear snapshot (and the revert fallback) carry straight across.
 			_worldClamp.Apply( Target, _stampTool.LastCommitted );
 
-			NotifyChanged(); // the stamp is real now (StampBrush is null until the next ghost spawns) → full commit
-
 			// Place-then-tweak: a stamp drops you straight into the EDIT tool with the new brush selected,
-			// gizmo up. Back to Add via Q, a shape tile, or a number key.
+			// gizmo up. Selected BEFORE the commit below so the undo step records landing on the placed brush
+			// (redo re-selects it; undo restores the pre-stamp selection). Back to Add via Q, a shape tile, or
+			// a number key.
 			var placed = _stampTool.LastCommitted;
-			SetTool( SculptTool.Gizmo );
 			int idx = placed is not null ? (Target.Brushes?.IndexOf( placed ) ?? -1) : -1;
 			if ( idx >= 0 )
 				Selected = idx;
+
+			NotifyChanged(); // the stamp is real now (StampBrush is null until the next ghost spawns) → full commit
+			SetTool( SculptTool.Gizmo );
 		}
 		else if ( changed )
 		{
