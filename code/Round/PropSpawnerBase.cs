@@ -11,13 +11,17 @@ namespace Mimiclay;
 /// roll (<see cref="RollSlotCount"/>, base = always exactly 1) and WHERE within its own local space each one
 /// can land (<see cref="RollLocalOffset"/>, base = always <see cref="Vector3.Zero"/>).
 ///
-/// <b>Networking.</b> Every pick is plain <c>[Sync]</c> state (a slot-indexed <see cref="NetDictionary{K,V}"/>
-/// per field — the same synced-collection type already used by <c>RoundManager.Players</c>), NOT an RPC — an
-/// RPC only ever reaches whoever's connected at the moment it fires, so a player joining mid-match would
-/// simply never receive it and see empty spots forever. Only the HOST ever writes it (see
-/// <c>IsHostAuthority</c>); every machine, host included, just reacts to whatever it currently holds via
-/// <see cref="Apply"/> — the same "poll for change, don't assume a callback" pattern <see cref="RandomDoorSystem"/>
-/// uses for <c>RoundManager.DoorSeed</c>.
+/// <b>Networking.</b> The host is the only machine that ever rolls a pick or builds a prop (see
+/// <see cref="IsHostAuthority"/>) — clients don't independently decide anything, and don't need to: each
+/// built prop is handed to <see cref="GameObject.NetworkSpawn()"/>, so the engine itself ships it to every
+/// connected client, AND to late joiners via the spawn snapshot, exactly like every other host-built object
+/// in this project (see <c>LobbyController</c>/<c>PropClaims</c>). This is simpler and more robust than
+/// syncing the DECISION (indices/yaws/offsets) and having every machine independently rebuild from it — that
+/// was tried first and doesn't actually work here, because this component is scene-placed, and a scene-placed
+/// component's own <c>[Sync]</c> changes don't replicate (only a NetworkSpawn'd object's do — see the comments
+/// on <c>RoundManager</c>/<c>LobbyManager</c>/<c>PropClaims</c>); syncing the RESULT instead sidesteps that
+/// entirely. Outside a live networked round (editor preview, or a non-networked local session) there's only
+/// one machine anyway, so the same code path just runs locally without ever calling NetworkSpawn.
 /// </summary>
 public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 {
@@ -37,18 +41,31 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	const int Undecided = -1;  // ChosenSlotCount hasn't been rolled at all yet (distinct meaning, same sentinel
 	                            // value is fine since they're never compared against each other)
 
-	/// <summary>How many slots were actually rolled this decide — <see cref="Undecided"/> (-1) until the host's
-	/// first <see cref="Decide"/>. Each slot 0..ChosenSlotCount-1 has its own entry in <see cref="ChosenIndices"/>/
-	/// <see cref="ChosenYaws"/>/<see cref="ChosenOffsets"/> (a slot's OWN index can independently be
-	/// <see cref="None"/> to mean that particular slot rolled empty).</summary>
-	[Sync] public int ChosenSlotCount { get; private set; } = Undecided;
+	// Purely local bookkeeping now — only the host (or the one machine in a non-networked session) ever reads
+	// or writes these; nothing here needs to be [Sync] (see class doc).
+	int ChosenSlotCount = Undecided;
+	readonly Dictionary<int, int> ChosenIndices = new();
+	readonly Dictionary<int, float> ChosenYaws = new();
+	readonly Dictionary<int, Vector3> ChosenOffsets = new();
 
-	[Sync] public NetDictionary<int, int> ChosenIndices { get; private set; } = new();
-	[Sync] public NetDictionary<int, float> ChosenYaws { get; private set; } = new();
-	[Sync] public NetDictionary<int, Vector3> ChosenOffsets { get; private set; } = new();
+	// Retry list: a prop that was built but couldn't NetworkSpawn yet (GameObject.NetworkSpawn() can return
+	// false — e.g. Connection.Local.CanSpawnObjects isn't granted the instant a freshly-loaded map scene
+	// starts ticking, a real observed race, not just theoretical) — see OnUpdate(). Kept SEPARATELY from
+	// _spawned's own lifetime: the object stays right where BuildAndAlign put it and is simply re-offered to
+	// NetworkSpawn() every subsequent frame until it succeeds, rather than silently staying host-only forever
+	// (which is exactly the "only spawns for the host" bug this whole mechanism replaced).
+	readonly List<GameObject> _pendingNetworkSpawn = new();
 
-	int _appliedSlotCount = Undecided;
 	readonly List<GameObject> _spawned = new();
+
+	// On the host, this component's very first OnUpdate can tick BEFORE Networking.IsActive flips true on
+	// the host's own machine (the scene starts ticking before the network session finishes activating) — so
+	// a Decide()+Apply() that happens to land on that exact frame builds everything with Networking.IsActive
+	// still false, meaning Apply() never calls NetworkSpawn() at all (props built host-only forever, since
+	// ChosenSlotCount is no longer Undecided afterward so OnUpdate never revisits that branch). Tracked here
+	// so the false->true transition can retroactively NetworkSpawn what was already (correctly) built,
+	// instead of re-rolling anything.
+	bool _lastNetworkingActive;
 
 	protected override void OnUpdate()
 	{
@@ -61,11 +78,60 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 			return;
 		}
 
-		if ( IsHostAuthority && ChosenSlotCount == Undecided )
-			Decide();
+		// Only the host (or the sole machine in a non-networked session) ever decides or builds anything —
+		// a client just receives the host's already-built, NetworkSpawn'd props automatically (see Apply()).
+		// There's nothing to poll for here on a client: it isn't tracking any synced decision state at all.
+		if ( !IsHostAuthority )
+			return;
 
-		if ( _appliedSlotCount != ChosenSlotCount )
+		if ( ChosenSlotCount == Undecided )
+		{
+			Decide();
 			Apply();
+		}
+		else if ( Networking.IsActive && !_lastNetworkingActive )
+		{
+			// Networking just flipped on AFTER we already built everything locally (see _lastNetworkingActive's
+			// doc) — the props exist and are correct, they just never actually went out over the wire. Spawn
+			// the SAME already-built objects now rather than re-rolling anything.
+			NetworkSpawnAlreadyBuilt();
+		}
+
+		_lastNetworkingActive = Networking.IsActive;
+
+		if ( _pendingNetworkSpawn.Count > 0 )
+			RetryPendingNetworkSpawns();
+	}
+
+	// See _lastNetworkingActive's doc.
+	void NetworkSpawnAlreadyBuilt()
+	{
+		foreach ( var go in _spawned )
+		{
+			if ( !go.IsValid() )
+				continue;
+
+			if ( !go.NetworkSpawn() )
+				_pendingNetworkSpawn.Add( go );
+		}
+	}
+
+	// See _pendingNetworkSpawn's doc — keeps trying until every prop this spawner built has actually gone
+	// out over the wire, instead of a single attempt that can silently leave it host-only forever.
+	void RetryPendingNetworkSpawns()
+	{
+		for ( int i = _pendingNetworkSpawn.Count - 1; i >= 0; i-- )
+		{
+			var go = _pendingNetworkSpawn[i];
+			if ( !go.IsValid() )
+			{
+				_pendingNetworkSpawn.RemoveAt( i );
+				continue;
+			}
+
+			if ( go.NetworkSpawn() )
+				_pendingNetworkSpawn.RemoveAt( i );
+		}
 	}
 
 	/// <summary>How many prefabs to try to place this decide. Base (a single fixed point) always rolls
@@ -201,6 +267,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		ChosenSlotCount = count;
 	}
 
+
 	static bool OverlapsAnySpawnedBounds( BBox candidate, List<BBox> bounds )
 	{
 		foreach ( var b in bounds )
@@ -234,17 +301,16 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		return false;
 	}
 
-	// Applies whatever ChosenIndices/ChosenYaws/ChosenOffsets currently hold — called on every machine (the
-	// host included) once its local _appliedSlotCount falls out of sync with ChosenSlotCount, whether that's
-	// from Decide() just above (host, same frame) or the synced state simply arriving/changing (everyone else,
-	// and late joiners).
+		// Builds whatever ChosenIndices/ChosenYaws/ChosenOffsets currently hold. Only ever called on the host (or
+	// the sole machine in a non-networked session) — see OnUpdate(). Each real placement is NetworkSpawn'd
+	// (when actually networked) so the engine ships it to every client, including late joiners via the spawn
+	// snapshot — see the class doc for why that's the mechanism instead of syncing the decision itself.
 	void Apply()
 	{
-		_appliedSlotCount = ChosenSlotCount;
-
 		foreach ( var go in _spawned )
 			go?.Destroy();
 		_spawned.Clear();
+		_pendingNetworkSpawn.Clear();
 
 		int count = Math.Max( 0, ChosenSlotCount );
 		for ( int slot = 0; slot < count; slot++ )
@@ -265,8 +331,17 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 			ChosenOffsets.TryGetValue( slot, out var offset );
 
 			var (go, _) = BuildAndAlign( prefab, offset, yaw );
-			if ( go.IsValid() )
-				_spawned.Add( go );
+			if ( !go.IsValid() )
+				continue;
+
+			// host-owned; ships to every client (and late-joiners) automatically. Can transiently fail (e.g.
+			// Connection.Local.CanSpawnObjects not granted yet the instant a freshly-loaded map starts
+			// ticking) — queued for a retry every frame until it actually goes out, rather than silently
+			// staying host-only forever (see _pendingNetworkSpawn's doc, and RetryPendingNetworkSpawns()).
+			if ( Networking.IsActive && !go.NetworkSpawn() )
+				_pendingNetworkSpawn.Add( go );
+
+			_spawned.Add( go );
 		}
 	}
 
@@ -399,7 +474,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		_spawned.Clear();
 
 		ChosenSlotCount = Undecided;
-		_appliedSlotCount = Undecided;
+		_pendingNetworkSpawn.Clear();
 		_previewSuppressed = true;
 	}
 
