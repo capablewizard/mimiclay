@@ -106,12 +106,33 @@ public sealed class ClayBoil : Component
 
 	/// <summary>Set (only) by the runtime presentation systems that CREATE boils on scene clay (creative's
 	/// hover/heal churn — see RoundOutlineSystem.ApplySceneBoils): marks the component as system-owned, so
-	/// its <see cref="Activation"/> is ASSERTED both ways every frame and the component is destroyed once
-	/// dormant. Never author this — a mapper's hand-placed boil keeps it false and its Activation is
+	/// its <see cref="Activation"/> is ASSERTED (WhileDamaged) every frame and the component is destroyed
+	/// once dormant. Never author this — a mapper's hand-placed boil keeps it false and its Activation is
 	/// treated as the authored look. A durable flag on the COMPONENT rather than bookkeeping in a system:
 	/// a hotload rebuilds GameObjectSystems with empty memory, and a runtime boil orphaned mid-hover that
 	/// way had its transient Always latched in forever (the creative stuck-boiling-props bug).</summary>
 	[Property, Hide] public bool RuntimeManaged { get; set; }
+
+	/// <summary>The hover churn — "you can take this", the boil half of the claim affordance (the outline is
+	/// the other). A FRESHNESS STAMP, the LocalHoverSculpture idiom, for the same reason: the stamper
+	/// (RoundOutlineSystem's claims branch, TutorialNpc's own hover) can die mid-hover — a hotload rebuilds
+	/// GameObjectSystems with empty memory, a poisoned Listen delegate stops one cold — and a stamp that
+	/// merely expires can't latch. The predecessor here wrote Always onto <see cref="Activation"/> and kept
+	/// the captured dial to put back in system RAM; lose that RAM mid-hover and the prop churned forever,
+	/// with the next hover re-capturing the leaked Always as "authored" (the SECOND stuck-boiling-props
+	/// bug — RuntimeManaged killed the first). Overrides Activation entirely while fresh, Never included —
+	/// hover feedback is the system's affordance, not the mapper's look. Deliberately NOT a [Property]:
+	/// per-machine presentation that must never serialize (the old flip baked leaked Activation overrides
+	/// into home.scene's prop prefab instances).</summary>
+	public void StampHover() => _hoverUntil = Time.Now + HoverGrace;
+
+	/// <summary>Is a hover stamp fresh? Exposed for the destroy-when-dormant check and the debug dump.</summary>
+	public bool HoverBoiling => Time.Now < _hoverUntil;
+
+	// Comfortably past one frame at any playable rate, comfortably under a tick at the default Fps 4 —
+	// unhover settles within the pose it happened in.
+	const float HoverGrace = 0.2f;
+	float _hoverUntil = float.NegativeInfinity;
 
 	/// <summary>The boil pose (unseeded, wrapped tick) at a given time — THE clock. Consumed by the
 	/// renderer's field bake, the shader's live tick (pushed as the BoilTick attribute) and the heal's
@@ -139,6 +160,10 @@ public sealed class ClayBoil : Component
 	{
 		get
 		{
+			// The hover churn outranks the dial, Never included — see StampHover.
+			if ( HoverBoiling )
+				return true;
+
 			if ( Activation == BoilActivation.Always )
 				return true;
 			if ( Activation == BoilActivation.Never )
@@ -241,8 +266,9 @@ public sealed class ClayBoil : Component
 		foreach ( var boil in scene.GetAllComponents<ClayBoil>() )
 		{
 			float burst = MathF.Max( 0f, boil._burstUntil - Time.Now );
+			float hover = MathF.Max( 0f, boil._hoverUntil - Time.Now );
 			Log.Info( $"[boil] {Describe( boil.GameObject )}: {boil.Activation}{(boil.RuntimeManaged ? " (runtime)" : "")} " +
-				$"Fps={boil.Fps} Boiling={boil.Boiling} burst={burst:0.00}s lastCount={boil._lastBrushCount}" );
+				$"Fps={boil.Fps} Boiling={boil.Boiling} hover={hover:0.00}s burst={burst:0.00}s lastCount={boil._lastBrushCount}" );
 			DumpShrinks( boil.GameObject.Components.Get<SdfSculpture>() );
 		}
 

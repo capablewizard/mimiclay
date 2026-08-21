@@ -98,18 +98,10 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	// Outlines we CREATED for a hover (see below) — these are destroyed on unhover, not restored.
 	readonly HashSet<SdfHighlightOutline> _hoverSpawned = new();
 
-	// The hovered SCENE prop's mapper-AUTHORED ClayBoil we're driving, and the activation to put back on
-	// unhover. Single slot — there's only ever one hover — and it only ever holds authored components:
-	// runtime-created boils are asserted wholesale in ApplySceneBoils and never enter capture/restore
-	// (a restore latches whatever value it happened to see, so a transient Always — e.g. a hotload
-	// rebuilding this system with empty memory mid-hover — would become permanent; that was the
-	// stuck-boiling-props bug).
-	ClayBoil _hoverBoil;
-	BoilActivation _hoverBoilWas;
-
-	// Stopping play mid-hover must not leave runtime-created components behind (or a flipped authored dial):
-	// in-editor play mutates the OPEN scene, so survivors bake into the .scene on the next save. Swept here
-	// because Dispose is the one hook that runs however play ends.
+	// Stopping play mid-hover must not leave runtime-created components behind: in-editor play mutates the
+	// OPEN scene, so survivors bake into the .scene on the next save. Swept here because Dispose is the one
+	// hook that runs however play ends. (The hover CHURN needs no sweep of its own any more: it's a freshness
+	// stamp on the component — ClayBoil.StampHover — never a written dial, so there is nothing to put back.)
 	public override void Dispose()
 	{
 		foreach ( var o in _hoverSpawned )
@@ -118,8 +110,6 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				o.Destroy();
 		}
 		_hoverSpawned.Clear();
-
-		ReleaseHoverBoil();
 
 		// Runtime-created boils are found by their component FLAG, never a remembered set: a hotload
 		// rebuilds this system with empty memory, and only a scan survives that.
@@ -130,15 +120,6 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		}
 
 		base.Dispose();
-	}
-
-	// Put the hovered scene prop's authored boil back the way the mapper set it.
-	void ReleaseHoverBoil()
-	{
-		if ( _hoverBoil.IsValid() )
-			_hoverBoil.Activation = _hoverBoilWas;
-
-		_hoverBoil = null;
 	}
 
 	// Claims visibility: your OWN live prop keeps the owner-only locator glow (same rule as the lobby phase),
@@ -256,17 +237,17 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	// ── Runtime boils on SCENE clay: hovered = "you can take this", healing = "the wound is being smoothed" ──
 	// Most scene clay (decoys, prop-builder balls, blockset pieces) carries no ClayBoil at all, so one is
 	// created on demand — for the hover churn, and because creative shots always heal (HunterController.TryCarve
-	// forces it) and a crater easing out of perfectly still clay reads as a glitch. Created RuntimeManaged, and
-	// from then on its Activation is ASSERTED both ways every frame (hovered = Always, else WhileDamaged) and it
-	// is retired the moment it's neither hovered nor Boiling — !Boiling rather than "no shrinking brush left",
-	// so the final removal's follow-through jolt (ClayBoil.ImpactTicks) plays out instead of being cut
-	// mid-shudder. Everything derives from durable state (the flag on the component, the hover, the brushes) —
-	// no system memory is load-bearing, so a hotload rebuilding this system can't orphan one mid-hover with
-	// Always latched in (the stuck-boiling-props bug this replaced).
+	// forces it) and a crater easing out of perfectly still clay reads as a glitch. Created RuntimeManaged, its
+	// Activation ASSERTED to WhileDamaged every frame (the hover churn is the freshness stamp, never the dial —
+	// see ClayBoil.StampHover) and retired the moment it stops Boiling — !Boiling rather than "no shrinking
+	// brush left", so the hover stamp's decay and the final removal's follow-through jolt (ClayBoil.ImpactTicks)
+	// play out instead of being cut mid-shudder. Everything derives from durable state (the flag on the
+	// component, the hover, the brushes) — no system memory is load-bearing, so a hotload rebuilding this
+	// system can't orphan one mid-hover with Always latched in (the stuck-boiling-props bug this replaced).
 	//
 	// A mapper-AUTHORED boil (RuntimeManaged false, includeDisabled — disabled is their kill switch, not an
-	// invitation to plant a second one beside it) is never touched here: its own Activation decides its damage
-	// response, and the hover flip goes through ApplyClaimBoils' capture/restore slot instead.
+	// invitation to plant a second one beside it) keeps its Activation untouched here: its own dial decides its
+	// damage response, and the hover churn reaches it through ApplyClaimBoils' stamp instead.
 	void ApplySceneBoils( SdfSculpture hover )
 	{
 		foreach ( var sculpt in Scene.GetAllComponents<SdfSculpture>() )
@@ -284,7 +265,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 			var boil = sculpt.Components.Get<ClayBoil>( includeDisabled: true );
 			if ( boil.IsValid() && !boil.RuntimeManaged )
-				continue; // the mapper's look — ApplyClaimBoils' slot handles its hover flip
+				continue; // the mapper's look — ApplyClaimBoils' stamp handles its hover churn
 
 			if ( !boil.IsValid() )
 			{
@@ -296,13 +277,15 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				boil.RuntimeManaged = true;
 			}
 
-			boil.Activation = hovered ? BoilActivation.Always : BoilActivation.WhileDamaged;
-			if ( !hovered && !boil.Boiling )
+			boil.Activation = BoilActivation.WhileDamaged;
+			if ( hovered )
+				boil.StampHover();
+			else if ( !boil.Boiling )
 				boil.Destroy();
 		}
 	}
 
-	// ── Authored boils: pawn assertion + the hovered scene prop's mapper-authored flip ────────────────────────
+	// ── Authored boils: pawn assertion + the hovered scene prop's mapper-authored churn stamp ─────────────────
 	// The stop-motion churn is the same "you can take this" feedback as the outline (runtime-created scene
 	// boils live in ApplySceneBoils; this handles the components somebody AUTHORED). The disguise/hunter
 	// prefabs' dials ARE ClayBoil's defaults (fps 4, jitter 0.4, amp 1), only Activation differs.
@@ -326,37 +309,32 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				continue; // a live lobby pawn — RoundRevealLifeSystem's boil, not ours
 
 			var boil = hider.Components.Get<ClayBoil>( FindMode.EverythingInSelfAndDescendants );
-			if ( boil.IsValid() )
-				boil.Activation = hover.IsValid() && hider.DisguiseSculpture == hover
-					? BoilActivation.Always
-					: BoilActivation.WhileDamaged;
+			if ( !boil.IsValid() )
+				continue;
+
+			boil.Activation = BoilActivation.WhileDamaged;
+			if ( hover.IsValid() && hider.DisguiseSculpture == hover )
+				boil.StampHover();
 		}
 
-		// SCENE props with a mapper-AUTHORED boil: flip the hovered one Always and restore the mapper's
-		// activation on the way out — their authoring isn't ours to assert wholesale, so capture/restore
-		// is the only option here (acceptable: authored scene boils are rare and deliberate). Everything
-		// runtime-created is handled by ApplySceneBoils' both-ways assertion and must NEVER enter this
-		// slot — see the field doc.
+		// SCENE props with a mapper-AUTHORED boil: the hover churn is a freshness stamp on the component
+		// (ClayBoil.StampHover), never a write to their Activation dial. The capture/restore this replaces
+		// latched a transient Always in whenever this system lost its memory mid-hover (a hotload rebuild,
+		// a poisoned Listen delegate) — and the next hover then re-captured the leaked Always as "authored",
+		// making it permanent; that was the second stuck-boiling-props bug, and how leaked Activation
+		// overrides got baked into home.scene. A stamp expires by itself: there is no restore step to miss.
+		// Enabled-only Get, matching the old flip: a DISABLED authored boil is the mapper's kill switch and
+		// gets no hover churn. Everything runtime-created gets its stamp in ApplySceneBoils.
 		var sceneHover = hover.IsValid()
 			&& !hover.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ).IsValid()
 			? hover : null;
 
-		if ( _hoverBoil is not null
-			&& (!_hoverBoil.IsValid() || !sceneHover.IsValid() || _hoverBoil.GameObject != sceneHover.GameObject) )
-			ReleaseHoverBoil();
-
-		if ( sceneHover.IsValid() && _hoverBoil is null )
+		if ( sceneHover.IsValid() )
 		{
 			var existing = sceneHover.Components.Get<ClayBoil>();
 			if ( existing.IsValid() && !existing.RuntimeManaged )
-			{
-				_hoverBoil = existing;
-				_hoverBoilWas = existing.Activation;
-			}
+				existing.StampHover();
 		}
-
-		if ( _hoverBoil.IsValid() )
-			_hoverBoil.Activation = BoilActivation.Always;
 	}
 
 	static bool ShouldShow( SdfHighlightOutline outline, RoundPhase phase )

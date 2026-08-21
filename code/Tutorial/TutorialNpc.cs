@@ -93,12 +93,10 @@ public sealed class TutorialNpc : Component
 	SdfHighlightOutline _outline;
 	bool _outlineMade;
 
-	// His authored ClayBoil, churned while hovered — same "you can take this" juice as claimable clay. Safe as
-	// single writer: RoundOutlineSystem never touches an authored boil that isn't the CLAIMS hover, and he's
-	// excluded from claims entirely. The authored activation is captured once and restored on teardown.
+	// His authored ClayBoil, churned while hovered — same "you can take this" juice as claimable clay, via the
+	// same freshness stamp (ClayBoil.StampHover): re-stamped each hovered frame, expires by itself, and never
+	// touches his authored Activation dial — nothing to capture, nothing a mid-hover death can latch in.
 	ClayBoil _boil;
-	BoilActivation _boilRest;
-	bool _boilCaptured;
 
 	// His speech bubble (the scene-authored invite on the SpeechBubbleAnchor child), stepped aside while the
 	// tutorial runs on THIS machine — via the bubble's per-machine Hidden, never .Enabled (which serializes).
@@ -278,18 +276,11 @@ public sealed class TutorialNpc : Component
 		// The bubble stays up through the lesson — it's the tutorial's voice now (the director drives its
 		// TextOverride; the authored invite returns when the run ends). Nothing to hide any more.
 
-		// Boil churn while hovered, authored activation otherwise — captured once so teardown can put the
-		// mapper's dial back exactly.
+		// Boil churn while hovered — the freshness stamp; unhovered, the stamp expires and his authored
+		// Activation (untouched) is the look again.
 		_boil = _boil.IsValid() ? _boil : Components.Get<ClayBoil>( includeDisabled: true );
-		if ( _boil.IsValid() )
-		{
-			if ( !_boilCaptured )
-			{
-				_boilRest = _boil.Activation;
-				_boilCaptured = true;
-			}
-			_boil.Activation = hovered ? BoilActivation.Always : _boilRest;
-		}
+		if ( _boil.IsValid() && hovered )
+			_boil.StampHover();
 
 		if ( !OutlineVisible )
 		{
@@ -330,7 +321,8 @@ public sealed class TutorialNpc : Component
 
 	// Drop everything presentation-related the way we found it: a runtime-created outline is destroyed (a
 	// survivor on a scene object bakes into the .scene on an in-editor save), an authored one gets its
-	// overrides nulled; the authored boil dial goes back.
+	// overrides nulled. The boil needs nothing — the hover stamp expires by itself and his dial was never
+	// written.
 	void TeardownPresentation()
 	{
 		if ( _outline.IsValid() )
@@ -350,10 +342,6 @@ public sealed class TutorialNpc : Component
 		}
 		_outline = null;
 		_outlineMade = false;
-
-		if ( _boil.IsValid() && _boilCaptured )
-			_boil.Activation = _boilRest;
-		_boilCaptured = false;
 	}
 
 	// ── Entry framing: pivot on his sculpted centre, fit distance, approached from where the player stands ──

@@ -19,6 +19,10 @@ namespace Mimiclay;
 /// promotes a save into project assets: prefabs for every sculpt, optionally instantiated into the open scene
 /// at their saved transforms — turning a co-op creative session into a real map. See
 /// [[sculpt-save-and-prefab-export]] for the one-sculpt version of this bridge.
+///
+/// <c>mimi_scene_autosave &lt;minutes&gt;</c> puts that same save on a timer for the current PLAY SESSION: each
+/// session autosaves into its own timestamped folder, overwritten every interval, so an editor Stop, a crash or
+/// a dropped host costs at most one interval of the group's building. Off unless the command turns it on.
 /// </summary>
 public static class SculptSceneLibrary
 {
@@ -74,6 +78,18 @@ public static class SculptSceneLibrary
 			return false;
 		}
 
+		if ( !Write( name, save, sculpts ) )
+			return false;
+
+		Log.Info( $"SculptSceneLibrary: saved scene \"{name}\" — {save.Props.Count} prop(s), {sculpts.Count} unique shape(s) — to \"{FullPath( name )}\"." );
+		return true;
+	}
+
+	// The write half of a save, shared by the manual command and the autosave tick. The folder is REPLACED
+	// wholesale, so a shrunken re-save can't leave stale sculpt files behind. Any IO failure is logged and
+	// swallowed: a save that can't be written must never take the session down with it.
+	static bool Write( string name, SceneSave save, List<(string Stem, SculptLibrary.Entry Entry)> sculpts )
+	{
 		var dir = DirFor( name );
 		try
 		{
@@ -92,7 +108,6 @@ public static class SculptSceneLibrary
 			return false;
 		}
 
-		Log.Info( $"SculptSceneLibrary: saved scene \"{name}\" — {save.Props.Count} prop(s), {sculpts.Count} unique shape(s) — to \"{FullPath( name )}\"." );
 		return true;
 	}
 
@@ -102,7 +117,7 @@ public static class SculptSceneLibrary
 	// furniture — and skipping them also keeps a mid-edit shape out of the save); outside creative there's no
 	// release concept, so every prop pawn counts (debug-mode convenience). Scene-placed clay is NOT captured:
 	// it's already part of the map asset, so saving it would duplicate it on re-import.
-	static (SceneSave Save, List<(string Stem, SculptLibrary.Entry Entry)> Sculpts) Capture( string name, Scene scene )
+	static (SceneSave Save, List<(string Stem, SculptLibrary.Entry Entry)> Sculpts) Capture( string name, Scene scene, bool quiet = false )
 	{
 		var save = new SceneSave
 		{
@@ -166,7 +181,7 @@ public static class SculptSceneLibrary
 			} );
 		}
 
-		if ( worn > 0 )
+		if ( worn > 0 && !quiet )
 			Log.Info( $"SculptSceneLibrary: skipped {worn} prop(s) still being worn — press P to release them into the world, then save again." );
 
 		return (save, sculpts);
@@ -288,6 +303,110 @@ public static class SculptSceneLibrary
 		return slash >= 0 ? dir[(slash + 1)..] : dir;
 	}
 
+	// ── Autosave (per play session) ───────────────────────────────────────────────────────────────────────
+	// A creative group build only exists in RAM until someone remembers to type mimi_scene_save, so an editor
+	// Stop, a crash or a dropped host throws the whole session's work away. mimi_scene_autosave <minutes> puts
+	// that save on a timer: every interval the scene is captured into THIS play session's own folder, overwriting
+	// it, so the folder always holds the latest state of the session that made it and two sessions never mix
+	// their work into one save. It stays local to the machine that typed the command and needs no networking —
+	// released props are networked objects, so any machine's capture is the whole group's build (see Capture).
+	//
+	// The interval is a console setting: it deliberately survives an editor Stop→Play (statics do — see
+	// [[editor-static-persistence]]) so a dev iterating doesn't retype it every run, while the FOLDER NAME is
+	// cleared at play teardown, so the next session stamps itself a fresh one.
+
+	const string AutosavePrefix = "autosave";
+
+	/// <summary>Smallest interval the command accepts — 3 s, enough to exercise it without hammering the disk.</summary>
+	const float MinAutosaveMinutes = 0.05f;
+
+	static float _autosaveMinutes;  // 0 = off
+	static string _autosaveSession; // this play session's save name, stamped on demand
+	static int _autosaveSignature;  // what we last wrote, so an idle scene isn't rewritten
+	static int _autosaveCount;
+	static RealTimeSince _sinceAutosave;
+
+	/// <summary>Autosave interval in minutes, or 0 when it's off.</summary>
+	public static float AutosaveMinutes => _autosaveMinutes;
+
+	/// <summary>The save name this play session autosaves into — stamped the first time it's asked for and
+	/// cleared at play teardown, so every session gets its own folder and its repeat saves overwrite it.</summary>
+	public static string AutosaveSession => _autosaveSession ??= $"{AutosavePrefix} {DateTime.Now:yyyy-MM-dd HH-mm-ss}";
+
+	/// <summary>Turn autosave on (minutes &gt; 0, clamped up to <see cref="MinAutosaveMinutes"/>) or off (0), and
+	/// say which. Restarts the clock, so the first save lands one whole interval from now.</summary>
+	public static void SetAutosave( float minutes )
+	{
+		if ( minutes <= 0f )
+		{
+			var was = _autosaveMinutes > 0f;
+			_autosaveMinutes = 0f;
+			Log.Info( was ? "Scene autosave off." : "Scene autosave is already off." );
+			return;
+		}
+
+		_autosaveMinutes = Math.Max( minutes, MinAutosaveMinutes );
+		_autosaveSignature = 0; // the next tick writes even if nothing changed since an earlier run
+		_sinceAutosave = 0;
+
+		Log.Info( $"Scene autosave on: every {_autosaveMinutes:0.##} min into \"{AutosaveSession}\" (\"{FullPath( AutosaveSession )}\"), overwritten each time. A new play session gets a new folder; \"mimi_scene_autosave 0\" turns it off." );
+	}
+
+	/// <summary>Interval check + save, driven once a frame by <see cref="SceneAutosaveSystem"/> in a live
+	/// gameplay scene. Cheap while off, and silent whenever there's nothing new to write.</summary>
+	internal static void TickAutosave( Scene scene )
+	{
+		if ( _autosaveMinutes <= 0f || scene is null )
+			return;
+
+		if ( _sinceAutosave < _autosaveMinutes * 60f )
+			return;
+
+		_sinceAutosave = 0;
+
+		var name = AutosaveSession;
+		var (save, sculpts) = Capture( name, scene, quiet: true );
+
+		// Nothing built yet (or everything still worn) — stay quiet and try again next interval, rather than
+		// nagging every tick the way the manual command warns once.
+		if ( save.Props.Count == 0 )
+			return;
+
+		// Don't rewrite what's already on disk: an idle session — everyone standing around, or off editing a
+		// prop they're still wearing — shouldn't churn the folder or spam the console every interval.
+		var signature = Signature( save, sculpts );
+		if ( signature == _autosaveSignature )
+			return;
+
+		if ( !Write( name, save, sculpts ) )
+			return;
+
+		_autosaveSignature = signature;
+		_autosaveCount++;
+		Log.Info( $"SculptSceneLibrary: autosaved \"{name}\" (#{_autosaveCount}) — {save.Props.Count} prop(s), {sculpts.Count} unique shape(s)." );
+	}
+
+	// Content hash of a capture — placements AND shapes, since editing a prop in place changes only its sculpt
+	// file. Compared in memory only (string hashes vary per process), never persisted.
+	static int Signature( SceneSave save, List<(string Stem, SculptLibrary.Entry Entry)> sculpts )
+	{
+		var hash = Json.Serialize( save ).GetHashCode();
+		foreach ( var (stem, entry) in sculpts )
+			hash = HashCode.Combine( hash, stem, Json.Serialize( entry ).GetHashCode() );
+
+		return hash;
+	}
+
+	/// <summary>Drop this play session's autosave folder name and counters, so the next session stamps a fresh
+	/// one. The interval itself is left alone — it's a setting the dev typed. Called by
+	/// <c>SessionResetSystem</c> at play teardown.</summary>
+	internal static void NotePlayEnded()
+	{
+		_autosaveSession = null;
+		_autosaveSignature = 0;
+		_autosaveCount = 0;
+	}
+
 	// ── Dev console commands (the whole runtime UI, for now) ──────────────────────────────────────────────
 
 	[ConCmd( "mimi_scene_save" )]
@@ -327,4 +446,56 @@ public static class SculptSceneLibrary
 	[ConCmd( "mimi_scene_delete" )]
 	public static void DeleteCmd( string name )
 		=> Log.Info( Delete( name ) ? $"Deleted scene save '{name}'." : $"No scene save '{name}'." );
+
+	[ConCmd( "mimi_scene_autosave" )]
+	public static void AutosaveCmd( float minutes = -1f )
+	{
+		// Bare "mimi_scene_autosave" reports instead of changing anything — 0 already means "off".
+		if ( minutes < 0f )
+		{
+			if ( _autosaveMinutes <= 0f )
+			{
+				Log.Info( "mimi_scene_autosave: off. \"mimi_scene_autosave 2\" saves the scene every 2 minutes." );
+				return;
+			}
+
+			var due = Math.Max( 0f, _autosaveMinutes * 60f - (float)_sinceAutosave );
+			Log.Info( $"mimi_scene_autosave: every {_autosaveMinutes:0.##} min into \"{AutosaveSession}\" — {_autosaveCount} save(s) this session, next in {due:0}s." );
+			return;
+		}
+
+		SetAutosave( minutes );
+	}
+}
+
+/// <summary>
+/// Drives <see cref="SculptSceneLibrary.TickAutosave"/> — the clock behind <c>mimi_scene_autosave</c>. A
+/// <see cref="GameObjectSystem"/> like <see cref="DeadSessionWatchdog"/>: in every scene with no wiring, and it
+/// survives in-session scene changes (lobby → map), so the interval keeps running straight across them.
+///
+/// Gated to live gameplay scenes: never in the editor's scene view (systems tick there too — see
+/// [[gameobjectsystem-ticks-in-editor]] — and an autosave must never capture a map being authored), and never in
+/// the front-end menu, whose sculpt toy is a face being customised rather than a group build.
+/// </summary>
+public sealed class SceneAutosaveSystem : GameObjectSystem
+{
+	public SceneAutosaveSystem( Scene scene ) : base( scene )
+	{
+		Listen( Stage.StartUpdate, 20, Tick, "SceneAutosave" );
+	}
+
+	void Tick()
+	{
+		// Off is the common case — check it before touching the scene.
+		if ( SculptSceneLibrary.AutosaveMinutes <= 0f )
+			return;
+
+		if ( Scene is null || Scene.IsEditor || !Game.IsPlaying )
+			return;
+
+		if ( Scene.GetAllComponents<MainMenu>().Any() )
+			return;
+
+		SculptSceneLibrary.TickAutosave( Scene );
+	}
 }
