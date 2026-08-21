@@ -44,6 +44,14 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 	/// currently being (hunter or prop) so the pips read right; nominations/scores don't exist here.</summary>
 	[Sync] public NetDictionary<Guid, PlayerInfo> Players { get; private set; } = new();
 
+	/// <summary>Session-wide sculpt size-limit bypass — the map-making tool. Host writes (via
+	/// <see cref="RequestBoundsBypass"/>), every machine mirrors it into
+	/// <see cref="SculptBounds.SessionBypass"/> per frame; late joiners get the current state off the spawn
+	/// snapshot. Session-wide is the point: it opens everyone's receive gate
+	/// (<see cref="SculptBounds.ValidateIncoming"/>), so oversized builds actually replicate instead of
+	/// being rejected on every other machine like the local-only bypass.</summary>
+	[Sync] public bool BoundsBypass { get; private set; }
+
 	// ── Host-only pawn bookkeeping ─────────────────────────────────────────────────────────────────────────────
 	// The pawn each player currently IS. Released props leave this map — they belong to nobody.
 	readonly Dictionary<Guid, GameObject> _pawns = new();
@@ -93,6 +101,7 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 	{
 		if ( Current == this ) Current = null;
 		if ( ReferenceEquals( RoundContext.Active, this ) ) RoundContext.Active = null;
+		SculptBounds.SetSessionBypass( false ); // the mirror dies with its source — limits back on outside creative
 		ClearWorkshopUi();
 	}
 
@@ -122,6 +131,10 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 	{
 		HandleInput();
 		UpdateWorkshopUi();
+
+		// Every machine: mirror the networked bypass into the static the checks read. Per-frame assert
+		// rather than a change hook, so a late joiner's snapshot value lands without any event plumbing.
+		SculptBounds.SetSessionBypass( BoundsBypass );
 
 		if ( !IsHostAuthority )
 			return;
@@ -357,6 +370,20 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 			Players[c.Id] = row;
 			SpawnProp( c, at );
 		}
+	}
+
+	/// <summary>Set the session-wide size-limit bypass (see <see cref="BoundsBypass"/>). Explicit state, not
+	/// a toggle, so two players flipping at once converge instead of double-flipping. Any player may call it —
+	/// creative is collaborative map-building, and the toggle is loudly logged on every machine by the mirror
+	/// (<see cref="SculptBounds.SetSessionBypass"/>).</summary>
+	[Rpc.Host]
+	public void RequestBoundsBypass( bool on )
+	{
+		if ( BoundsBypass == on )
+			return;
+
+		BoundsBypass = on;
+		Log.Info( $"CreativeManager: {Rpc.Caller?.DisplayName ?? "host"} turned the session size-limit bypass {(on ? "ON" : "OFF")}." );
 	}
 
 	// ── Spawning (host-only; prefabs + spawn points read off the scene) ────────────────────────────────────────

@@ -115,24 +115,59 @@ public sealed class SculptBounds : Component
 	const float VolumeCellTarget = 4f;
 	const int VolumeMaxCellsPerAxis = 36;
 
-	/// <summary>DEV: ignore every sculpt size limit on THIS machine — for authoring the game's own props
-	/// in-game without the gameplay restrictions getting in the way. Toggled by <c>mimi_bounds_bypass</c>.
-	/// Per-machine and local-only: while set, this machine's own checks all pass AND it accepts any
-	/// incoming shape, but OTHER machines still re-validate what it broadcasts unless they bypass too.
-	/// Cleared when play stops (<see cref="SessionResetSystem"/> — statics survive the editor's
-	/// Stop→Play), so a forgotten toggle can't quietly leak into the next playtest.</summary>
-	public static bool BypassAll { get; private set; }
+	/// <summary>DEV/CREATIVE: ignore every sculpt size limit on this machine — for authoring the game's own
+	/// props in-game without the gameplay restrictions getting in the way. Toggled by <c>mimi_bounds_bypass</c>.
+	/// Two layers OR'd together: <see cref="LocalBypass"/> (this machine only — its own checks pass and it
+	/// accepts any incoming shape, but OTHER machines still re-validate what it broadcasts) and
+	/// <see cref="SessionBypass"/> (creative sessions: mirrored from <see cref="CreativeManager.BoundsBypass"/>
+	/// on EVERY machine, so oversized map builds publish AND get accepted everywhere). Both cleared when play
+	/// stops (<see cref="SessionResetSystem"/> — statics survive the editor's Stop→Play), so a forgotten
+	/// toggle can't quietly leak into the next playtest.</summary>
+	public static bool BypassAll => LocalBypass || SessionBypass;
+
+	/// <summary>The machine-local bypass layer — see <see cref="BypassAll"/>.</summary>
+	public static bool LocalBypass { get; private set; }
+
+	/// <summary>The session-wide bypass layer, mirrored from the creative manager's networked flag — see
+	/// <see cref="BypassAll"/>. Never set directly; <see cref="SetSessionBypass"/> is the mirror's seam.</summary>
+	public static bool SessionBypass { get; private set; }
 
 	[ConCmd( "mimi_bounds_bypass" )]
 	public static void ToggleBypass()
 	{
-		BypassAll = !BypassAll;
-		Log.Info( BypassAll
+		// Creative sessions: the toggle is SESSION-WIDE, routed through the networked manager so every
+		// machine's receive gate opens too — a local-only bypass would still see its oversized broadcasts
+		// rejected by everyone else's ValidateIncoming. Any player may flip it: creative is collaborative
+		// map-building and this is dev tooling, not a gameplay rule.
+		if ( CreativeManager.Current.IsValid() && Networking.IsActive )
+		{
+			CreativeManager.Current.RequestBoundsBypass( !SessionBypass );
+			return;
+		}
+
+		LocalBypass = !LocalBypass;
+		Log.Info( LocalBypass
 			? "SculptBounds: size limits BYPASSED on this machine (mimi_bounds_bypass again to re-enforce)."
 			: "SculptBounds: size limits enforced again." );
 	}
 
-	internal static void ResetBypass() => BypassAll = false;
+	/// <summary>The creative manager's per-frame mirror (and its teardown clear). Logs the flips so every
+	/// machine sees the session's limits going off/on, whoever toggled them.</summary>
+	internal static void SetSessionBypass( bool on )
+	{
+		if ( SessionBypass == on )
+			return;
+		SessionBypass = on;
+		Log.Info( on
+			? "SculptBounds: size limits BYPASSED for the whole session (mimi_bounds_bypass to re-enforce)."
+			: "SculptBounds: size limits enforced again (session-wide bypass lifted)." );
+	}
+
+	internal static void ResetBypass()
+	{
+		LocalBypass = false;
+		SessionBypass = false;
+	}
 
 	/// <summary>The sculpt currently exceeds the max region (with hysteresis).</summary>
 	public bool TooBig { get; private set; }
