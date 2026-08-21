@@ -270,6 +270,7 @@
           "Flags": 0,
           "BackBlur": true,
           "BlurSize": 6.329114,
+          "DebugView": false,
           "FocalDistance": 704.9367,
           "FocusRange": 616.03375,
           "FrontBlur": false,
@@ -341,7 +342,7 @@
           "__enabled": true,
           "Flags": 0,
           "__version": 1,
-          "BakedTexture": "scenes/lobby_scene_data/envmap/bake_6f875215-779a-450b-883a-3f7271fa5391.vtex",
+          "BakedTexture": null,
           "Bounds": {
             "Mins": "-1038.05835,-1064.65027,-299.605408",
             "Maxs": "763.443054,936.406433,332.608093"
@@ -491,6 +492,7 @@
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
+          "Timing": "AfterPostProcess",
           "ZIndex": 100
         }
       ],
@@ -612,6 +614,7 @@
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
+          "Timing": "AfterPostProcess",
           "ZIndex": 100
         },
         {
@@ -662,7 +665,7 @@
     {
       "__guid": "dae9a651-543e-4d3a-b532-08c0c9800dff",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "Block",
       "Position": "-129.566132,5.16229248,-64.6177216",
       "Rotation": "0,0,0,1",
@@ -718,7 +721,7 @@
     {
       "__guid": "f90b1e11-10de-4f34-ab02-6dcef90ee75a",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "Block (1)",
       "Position": "-129.565994,-466.572418,-266.753174",
       "Rotation": "-0.707106769,0,0,0.707106769",
@@ -774,7 +777,7 @@
     {
       "__guid": "8b4fb5a1-eaa2-4b44-9e02-f0bf11db7d84",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "Block (2)",
       "Position": "-129.565994,489.457458,-266.753174",
       "Rotation": "-0.707106769,0,0,0.707106769",
@@ -830,7 +833,7 @@
     {
       "__guid": "1885c237-c6e4-406d-b982-b3c5e82d4d28",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "Block (4)",
       "Position": "-607.580933,11.4425354,-266.753174",
       "Rotation": "-0.49999997,0.49999997,-0.49999997,0.49999997",
@@ -886,7 +889,7 @@
     {
       "__guid": "cc208954-7ba7-4d4a-b0a5-38b6a39a9caf",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "Block (3)",
       "Position": "348.448914,11.4425354,-266.753174",
       "Rotation": "-0.49999997,0.49999997,-0.49999997,0.49999997",

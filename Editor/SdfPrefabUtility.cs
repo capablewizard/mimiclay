@@ -136,6 +136,21 @@ public static class SdfPrefabUtility
 		sculptNode["FlipFaces"] = flip;
 		sculptNode["BakedMesh"] = null; // stay live/editable; bake is a separate opt-in step
 
+		// The sibling ModelRenderer's Model field is ALSO a snapshot of whatever the template happened to be
+		// showing in the play session it was captured from — "sbox_procedural_model.vmdl", a stale reference
+		// that has nothing to do with THIS shape (same root cause already called out for ModelCollider above,
+		// just never applied here too). SdfSculpture.Rebuild()/RebuildSync() overwrites it at runtime/in a live
+		// scene either way, so this was harmless there — but anything reading the prefab's serialized data
+		// directly without running its components (an asset-browser thumbnail renderer being the prime
+		// suspect) would see that stale model straight from the file, explaining thumbnails that looked like
+		// they belonged to a completely different object. Null it so nothing can ever read a bogus reference
+		// off the exported file itself.
+		var modelRendererNode = components
+			.FirstOrDefault( c => c is JsonObject && (string)c["__type"] == "Sandbox.ModelRenderer" )
+			?.AsObject();
+		if ( modelRendererNode is not null )
+			modelRendererNode["Model"] = null;
+
 		// A clean scene prop: name it after the export and drop the disguise's runtime-only children (pause HUD).
 		var safe = SanitizeName( name );
 		rootObject["Name"] = safe;
@@ -261,6 +276,66 @@ public static class SdfPrefabUtility
 			foreach ( var entry in e.SelectedList )
 				SaveSculptFromPrefab( entry.Asset );
 		} );
+
+		// Export() (above) now nulls the sibling ModelRenderer's stale "sbox_procedural_model.vmdl" reference
+		// for NEW exports — but every prefab exported before that fix landed already has that bad reference
+		// baked directly into its file on disk, and nothing short-of re-writing the file fixes a value that's
+		// sitting in the JSON itself (no amount of runtime component logic can un-serialize a bad field).
+		// This patches the file in place (same JSON edit Export() does) and re-registers + rebuilds the
+		// thumbnail so it picks up the fixed data immediately, without needing a full re-export.
+		e.Menu.AddOption( "Fix Stale Model Reference", "build", action: () =>
+		{
+			foreach ( var entry in e.SelectedList )
+				FixStaleModelReference( entry.Asset );
+		} );
+	}
+
+	static void FixStaleModelReference( Asset asset )
+	{
+		JsonNode root;
+		try
+		{
+			root = JsonNode.Parse( File.ReadAllText( asset.AbsolutePath ) );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[SDF Fixup] couldn't read \"{asset.Path}\" — {e.Message}" );
+			return;
+		}
+
+		var components = root?["RootObject"]?["Components"]?.AsArray();
+		var modelRendererNode = components?
+			.FirstOrDefault( c => c is JsonObject && (string)c["__type"] == "Sandbox.ModelRenderer" )
+			?.AsObject();
+
+		if ( modelRendererNode is null )
+		{
+			Log.Warning( $"[SDF Fixup] \"{asset.Path}\" has no ModelRenderer component." );
+			return;
+		}
+
+		var existing = modelRendererNode["Model"]?.GetValue<string>();
+		if ( string.IsNullOrEmpty( existing ) )
+		{
+			Log.Info( $"[SDF Fixup] \"{asset.Path}\" — no stale Model reference to clear." );
+			return;
+		}
+
+		modelRendererNode["Model"] = null;
+
+		try
+		{
+			File.WriteAllText( asset.AbsolutePath, root.ToJsonString( new JsonSerializerOptions { WriteIndented = true } ) );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[SDF Fixup] writing \"{asset.Path}\" failed — {e.Message}" );
+			return;
+		}
+
+		AssetSystem.RegisterFile( asset.AbsolutePath );
+		asset.RebuildThumbnail();
+		Log.Info( $"[SDF Fixup] cleared stale Model reference (\"{existing}\") on \"{asset.Path}\" and rebuilt its thumbnail." );
 	}
 
 	static void SaveSculptFromPrefab( Asset asset )

@@ -12,7 +12,7 @@ namespace Mimiclay;
 [Title( "SDF Sculpture" )]
 [Category( "SDF" )]
 [Icon( "blur_on" )]
-public sealed class SdfSculpture : Component, Component.ExecuteInEditor
+public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Component.IHasBounds
 {
 	// Seed a default sphere as the initial value so a freshly added component always
 	// shows something and has a brush to click — edit-mode doesn't run OnStart/OnUpdate.
@@ -136,6 +136,29 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor
 	{
 		Rebuild();
 	}
+
+	// A sculpture with no SdfRaymarchRenderer sibling relies entirely on its ModelRenderer for both pixels
+	// AND editor click-selection, which normally works fine — but WITH a raymarch renderer present, that
+	// ModelRenderer is deliberately disabled by default (see SdfRaymarchRenderer.ApplyMeshMode), leaving
+	// nothing pickable at all. An explicit hitbox here means this GameObject stays clickable either way,
+	// regardless of which renderer sibling is actually doing the drawing.
+	protected override void DrawGizmos()
+	{
+		if ( Brushes is { Count: > 0 } && Sdf.TryGetBounds( Brushes, out var bounds ) )
+			Gizmo.Hitbox.BBox( bounds );
+	}
+
+	// GameObject.GetBounds() — which the editor's generic prefab-preview/asset-thumbnail camera framing
+	// (PreviewPrefab.LoadPrefabContent, engine-side) calls to size itself — ONLY ever looks at components
+	// implementing Component.IHasBounds. It has nothing to do with ModelRenderer, SceneObject.Bounds, Enabled,
+	// or RenderType at all (confirmed straight from GameObject.cs's own GetBounds() implementation). Without
+	// this, GetBounds() found nothing here and fell back to a ZERO-SIZE box at WorldPosition — which is what
+	// actually produced the "camera crammed inside the model" close-up thumbnails, regardless of anything
+	// about the renderer's readiness/visibility (all the earlier SdfRaymarchRenderer/timing fixes were solving
+	// real but ultimately unrelated problems). Sdf.TryGetBounds needs no mesh, no renderer, no async wait at
+	// all — just the brush list — so this is always correct the instant the component exists.
+	BBox Component.IHasBounds.LocalBounds =>
+		Brushes is { Count: > 0 } && Sdf.TryGetBounds( Brushes, out var bounds2 ) ? bounds2 : BBox.FromPositionAndSize( Vector3.Zero );
 
 	/// <summary>Rebuild the mesh and force any raymarch renderer on this object to repack.</summary>
 	[Button( "Refresh" )]

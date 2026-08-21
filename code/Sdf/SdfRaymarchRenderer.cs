@@ -647,6 +647,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// optional state label. Runs every frame while scene gizmos are enabled.
 	protected override void DrawGizmos()
 	{
+		// The visible surface is a hand-built raw SceneObject (_so, below), not the kind of renderer the
+		// editor's click-to-select path resolves back to a GameObject — and the one component that WOULD be
+		// pickable that way, the sibling ModelRenderer, is deliberately disabled by default (see
+		// ApplyMeshMode/ApplyVisibility: MeshMode defaults to DepthProxy with SdfShadows on). Without an
+		// explicit hitbox there was nothing under the cursor to click at all. Registered unconditionally
+		// (before the DistanceSwitching early-out below) so clicking still works even with that feature off.
+		if ( _curRadius > 0.01f )
+			Gizmo.Hitbox.BBox( new BBox( _curLocalMins, _curLocalMaxs ) );
+
 		if ( !DistanceSwitching || _released || !Scene.IsEditor )
 			return;
 
