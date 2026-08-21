@@ -214,8 +214,9 @@ public sealed class BrushWorldClamp
 
 	/// <summary>The multi-selection form of <see cref="Apply"/>: clamp a whole GROUP of brushes as ONE
 	/// rigid body. A group gesture has to keep its formation — correcting members individually would shear
-	/// the arrangement apart — so the resolve pools every member's penetration into ONE shared world-space
-	/// correction, and a frame it can't resolve reverts the WHOLE group to its last clear pose.
+	/// the arrangement apart — so the resolve pools the solid members' penetration into ONE shared
+	/// world-space correction applied to EVERY member (carves and disabled brushes included), and a frame
+	/// it can't resolve reverts the WHOLE group to its last clear pose.
 	///
 	/// Not optional: without it a group drag pushes clay through the floor, and the commit backstop then
 	/// refuses to swap in the embedded collider (see <see cref="EmbeddedInWorld"/>) — so the prop's physics
@@ -229,32 +230,37 @@ public sealed class BrushWorldClamp
 			return;
 		}
 
-		// Only members that become SOLID physics take part; disabled/carve members ride along untouched
-		// (same exemption the single-brush path makes, and the same reason: they shove nothing).
-		_groupLive.Clear();
+		// Only members that become SOLID physics generate contacts (same exemption the single-brush path
+		// makes, and the same reason: they shove nothing) — but every member MOVES with the group. The
+		// shared correction and the revert must cover disabled/carve members too, or a wall contact would
+		// shift the additive clay while the carves stayed put, shearing the arrangement the group clamp
+		// exists to keep rigid (the scale-next-to-a-wall misalignment bug).
+		_groupAll.Clear();
+		_groupAll.AddRange( brushes );
+		_groupSolid.Clear();
 		foreach ( var b in brushes )
 		{
 			if ( b is { Enabled: true, Operation: SdfOperation.Add } )
-				_groupLive.Add( b );
+				_groupSolid.Add( b );
 		}
 
-		if ( _groupLive.Count == 0 )
+		if ( _groupSolid.Count == 0 )
 		{
 			ClearGroupWatch();
-			return;
+			return; // nothing in the group can embed — carves are free to wave through walls, as ever
 		}
 
 		// Re-baseline whenever the MEMBERSHIP changes — identity-keyed, like the single-brush watch, so an
 		// undo splicing in fresh instances (or a selection change) can't restore a stale pose.
-		if ( !SameMembers( _groupLive, _groupWatched ) )
+		if ( !SameMembers( _groupAll, _groupWatched ) )
 		{
 			_groupWatched.Clear();
-			_groupWatched.AddRange( _groupLive );
+			_groupWatched.AddRange( _groupAll );
 			_groupClear.Clear();
 			_groupHash = 0;
 		}
 
-		int hash = GroupHash( _groupLive );
+		int hash = GroupHash( _groupAll );
 		if ( hash == _groupHash )
 			return; // nothing changed since the last verdict — idle frames cost nothing
 
@@ -273,26 +279,27 @@ public sealed class BrushWorldClamp
 		if ( ResolveGroup( scene, target ) )
 		{
 			SnapshotGroup();
-			_groupHash = GroupHash( _groupLive );
+			_groupHash = GroupHash( _groupAll );
 			return;
 		}
 
 		// Unresolvable. Revert the whole group together (never a partial revert — that IS shearing).
-		if ( _groupClear.Count != _groupLive.Count )
+		if ( _groupClear.Count != _groupAll.Count )
 		{
-			_groupHash = GroupHash( _groupLive );
+			_groupHash = GroupHash( _groupAll );
 			return; // started blocked with nothing clear to fall back to — free until it comes up clear
 		}
 
-		for ( int i = 0; i < _groupLive.Count; i++ )
-			RestorePose( _groupLive[i], _groupClear[i] );
-		_groupHash = GroupHash( _groupLive );
+		for ( int i = 0; i < _groupAll.Count; i++ )
+			RestorePose( _groupAll[i], _groupClear[i] );
+		_groupHash = GroupHash( _groupAll );
 	}
 
 	// The group's shared depenetration. Same contract as ResolveEndpoint (true = proved clear, possibly
 	// after a correction; false = needed more than MaxResolve, so the caller reverts) — the difference is
-	// that every member's correction accumulates into ONE offset applied to ALL of them, so the
-	// arrangement translates rigidly instead of each brush finding its own way out.
+	// that every solid member's correction accumulates into ONE offset applied to EVERY member (carves and
+	// disabled included), so the arrangement translates rigidly instead of each brush finding its own way
+	// out — or the contact-exempt members getting left behind.
 	bool ResolveGroup( Scene scene, SdfSculpture target )
 	{
 		var tx = target.WorldTransform;
@@ -304,7 +311,7 @@ public sealed class BrushWorldClamp
 
 			bool any = false;
 			var correction = Vector3.Zero;
-			foreach ( var b in _groupLive )
+			foreach ( var b in _groupSolid )
 			{
 				if ( !SdfCollisionBuilder.BuildSweepShapes( b, _scratch, InsetFor( b ) ) )
 					continue; // no collision shapes — nothing that can embed
@@ -342,7 +349,7 @@ public sealed class BrushWorldClamp
 			{
 				if ( !offset.IsNearZeroLength )
 				{
-					foreach ( var b in _groupLive )
+					foreach ( var b in _groupAll )
 						ApplyWorldOffset( b, tx, offset );
 				}
 				return true;
@@ -357,8 +364,9 @@ public sealed class BrushWorldClamp
 	}
 
 	// Group watch state — the multi-selection twin of _watched / _lastClear / _lastHash. _groupClear runs
-	// index-parallel to _groupLive, which the membership re-baseline above keeps honest.
-	readonly List<SdfBrush> _groupLive = new();    // this frame's clampable members
+	// index-parallel to _groupAll, which the membership re-baseline above keeps honest.
+	readonly List<SdfBrush> _groupAll = new();     // this frame's full membership — everything that MOVES
+	readonly List<SdfBrush> _groupSolid = new();   // the subset that generates contacts (enabled Adds)
 	readonly List<SdfBrush> _groupWatched = new(); // the membership the snapshot belongs to (identity)
 	readonly List<SdfBrush> _groupClear = new();   // Copy() of the last pose that tested clear, per member
 	int _groupHash;
@@ -373,7 +381,7 @@ public sealed class BrushWorldClamp
 	void SnapshotGroup()
 	{
 		_groupClear.Clear();
-		foreach ( var b in _groupLive )
+		foreach ( var b in _groupAll )
 			_groupClear.Add( b.Copy() );
 	}
 
@@ -408,7 +416,8 @@ public sealed class BrushWorldClamp
 		_lastClear = null;
 		_lastHash = 0;
 		ClearGroupWatch();
-		_groupLive.Clear();
+		_groupAll.Clear();
+		_groupSolid.Clear();
 	}
 
 	// ── Backstop ─────────────────────────────────────────────────────────────────────────────────────
