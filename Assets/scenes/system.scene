@@ -214,53 +214,6 @@
       "Children": []
     },
     {
-      "__guid": "68e4ccbd-d197-49ee-bcbe-7c85ee68b989",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "DebugGameMode",
-      "Position": "0,0,160",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": false,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.DebugGameMode",
-          "__guid": "b66d6984-8ed7-4262-8b7a-6bc0fb27e270",
-          "__enabled": true,
-          "Flags": 0,
-          "CaughtPuffPrefab": {
-            "_type": "gameobject",
-            "prefab": "prefabs/caught_puff.prefab"
-          },
-          "DefaultToProp": false,
-          "EnableNetworking": true,
-          "HunterPrefab": {
-            "_type": "gameobject",
-            "prefab": "prefabs/hunter.prefab"
-          },
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "PropPrefab": {
-            "_type": "gameobject",
-            "prefab": "prefabs/prop.prefab"
-          },
-          "SpawnOnJoin": true,
-          "SpawnPoint": null
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "686c897d-12a7-4f60-bc4a-13c3cd36ef6e",
       "__version": 2,
       "Flags": 0,
@@ -281,43 +234,27 @@
           "__guid": "cabbf6c6-e2b1-4126-87df-4c3154168fa9",
           "__enabled": true,
           "Flags": 0,
-          "BotCount": 0,
-          "BotHunterPawns": true,
-          "BotRandomDisguises": true,
           "CaughtPuffPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/caught_puff.prefab"
           },
-          "ConsolidationSeconds": 12,
-          "CreativeHoverRange": 300,
-          "DebugCreative": false,
-          "DebugSoloHide": false,
           "FindReward": 50,
-          "HideSeconds": 20,
-          "HunterCount": 1,
           "HunterPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/hunter.prefab"
           },
-          "HuntSeconds": 60,
           "LobbyScene": "scenes/lobby.scene",
-          "Mode": "Infection",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverrideRules": false,
-          "PlayAs": "Auto",
           "PropPointsPerSecond": 1,
           "PropPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/prop.prefab"
-          },
-          "RevealSeconds": 30,
-          "StartCountdownSeconds": 0,
-          "TauntSeconds": 35
+          }
         }
       ],
       "Children": []
