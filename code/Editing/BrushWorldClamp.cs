@@ -36,6 +36,17 @@ namespace Mimiclay;
 /// ratchet in through trace tolerances, and blocked shape changes (scale into the floor) get pushed out
 /// instead of sticking.
 ///
+/// BUT the native pair only sees CONVEX shapes. Against a triangle-MESH body — every MeshComponent block,
+/// every FBX-imported ModelCollider, i.e. most real map geometry — CheckOverlap and ComputePenetration both
+/// return nothing at all (verified empirically with mimi_clamp_probe; this had the whole clamp silently dead
+/// on any mesh-built map, the Kitchen first). Mesh bodies therefore take a parallel contact path built from
+/// the two primitives the probe PROVED against meshes — <see cref="PhysicsBody.FindClosestPoint"/> and
+/// zero-length SHAPE traces (reliable for start-solid, unlike the zero-length body sweeps above; the
+/// engine's own CharacterController leans on them) — driven by point samples of the scratch geometry that
+/// <see cref="SdfCollisionBuilder.BuildSweepShapes"/> emits alongside the shapes. See
+/// <see cref="MeshSampleContacts"/>. Convex bodies keep the native path untouched: each query runs where
+/// it's proven.
+///
 /// Additive brushes only, by construction — BuildSweepShapes yields nothing for carves/cutouts, which can
 /// only remove your own clay and are harmless (and satisfying) to wave through walls.
 ///
@@ -115,6 +126,17 @@ public sealed class BrushWorldClamp
 	// starts genuinely clear instead of oscillating between "touching" and "corrected".
 	const float SlideSkin = 0.1f;
 
+	/// <summary>Shape inset for a RETRY of a travel sweep whose full-size start read solid. Resting states
+	/// legitimately carry up to <see cref="RestTolerance"/> of real contact (the deadband accepts it — the
+	/// release-pop fix), and a full-size sweep from such a state is start-solid, killing the slide — on
+	/// convex worlds the documented unreliability of start-solid sweeps hid this (they false-negative, so
+	/// the sweep ran anyway), but MESH worlds report start-solid reliably, which turned every screen-plane
+	/// drag along a mesh floor into resolve-vs-revert: the gizmo square "sticking" instead of gliding.
+	/// Inset past the deadband, an accepted resting state can never read solid, so the slide survives; the
+	/// endpoint resolve (full-size + deadband) still owns where things finally rest, so nothing sinks and
+	/// commits still can't pop.</summary>
+	const float SweepStartInset = RestTolerance + 2f * SlideSkin;
+
 	// Primary hit + one deflection. A corner's second plane just stops the leftover motion — iterating
 	// further buys nothing a next frame's drag doesn't.
 	const int SlideIterations = 2;
@@ -129,6 +151,12 @@ public sealed class BrushWorldClamp
 	int _lastHash;        // geometry hash of the watched brush at the last verdict, so idle frames cost nothing
 	PhysicsBody _scratch;
 	PhysicsWorld _scratchWorld;
+
+	// Point-sample mirror of whatever geometry is currently baked into _scratch (sculpture-local; w = sphere
+	// radius, hull corners/centroids at 0) — the contact representation for MESH world bodies, which the
+	// native overlap/MTV queries can't see. Filled by the same BuildSweepShapes call that fills _scratch, so
+	// the two can never drift apart.
+	readonly List<Vector4> _samples = new();
 
 	/// <summary>Run the clamp for this frame's state of the active brush. Call AFTER the tools have mutated
 	/// it and BEFORE the surface rebuild, so the corrected state is what gets rendered, recorded and
@@ -313,7 +341,7 @@ public sealed class BrushWorldClamp
 			var correction = Vector3.Zero;
 			foreach ( var b in _groupSolid )
 			{
-				if ( !SdfCollisionBuilder.BuildSweepShapes( b, _scratch, InsetFor( b ) ) )
+				if ( !SdfCollisionBuilder.BuildSweepShapes( b, _scratch, InsetFor( b ), _samples ) )
 					continue; // no collision shapes — nothing that can embed
 
 				// Per-shape deadband, exactly as ResolveEndpoint splits it: solids run full-size shapes so
@@ -322,13 +350,11 @@ public sealed class BrushWorldClamp
 				float deadband = b.Shape == SdfShape.Spline ? 0f : RestTolerance;
 				var query = QueryBounds( _scratch, tx, offset );
 
+				bool sawMesh = false;
 				foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
 				{
-					if ( !body.ComputePenetration( _scratch, at, out var dir, out var dist ) )
-						continue;
-					if ( dist <= deadband )
-						continue; // resting contact, not an error
-					any = true;
+					ShapeKinds( body, out bool convex, out bool mesh );
+					sawMesh |= mesh;
 
 					// Combine by DEFICIT, never by blind sum: several members resting on the SAME floor each
 					// report a near-parallel penetration, and summing them lifts the group by the TOTAL — an
@@ -336,13 +362,22 @@ public sealed class BrushWorldClamp
 					// Extend the pooled correction only by what this contact still needs beyond what it
 					// already provides along its own direction: parallel duplicates add ~nothing, a corner's
 					// orthogonal contact still gets its full push, and genuinely opposed contacts (squeezed
-					// between floor and ceiling) still grow past MaxResolve into the revert.
-					var outDir = -dir; // dir·dist moves the WORLD body clear — the brush moves the opposite way
-					float need = dist + SlideSkin;
-					float have = Vector3.Dot( correction, outDir );
-					if ( have < need )
-						correction += outDir * (need - have);
+					// between floor and ceiling) still grow past MaxResolve into the revert. (The mesh path
+					// merges its samples by the same deficit rule, into the same pooled correction.)
+					if ( convex && body.ComputePenetration( _scratch, at, out var dir, out var dist )
+						&& dist > deadband )
+					{
+						any = true;
+						var outDir = -dir; // dir·dist moves the WORLD body clear — the brush moves the opposite way
+						Deficit( ref correction, outDir, dist + SlideSkin );
+					}
+
+					if ( mesh && MeshSampleContacts( scene, target, body, tx, offset, _samples, deadband, ref correction ) )
+						any = true;
 				}
+
+				if ( sawMesh && StraddleContacts( scene, target, tx, offset, _samples, deadband, ref correction ) )
+					any = true;
 			}
 
 			if ( !any )
@@ -415,6 +450,7 @@ public sealed class BrushWorldClamp
 		_watched = null;
 		_lastClear = null;
 		_lastHash = 0;
+		_samples.Clear();
 		ClearGroupWatch();
 		_groupAll.Clear();
 		_groupSolid.Clear();
@@ -426,9 +462,10 @@ public sealed class BrushWorldClamp
 	/// (deeper than <see cref="BackstopInset"/>)? <see cref="SdfCollider.Rebuild"/> consults this before
 	/// swapping in a new collider — a collider built embedded is what the physics solver depenetrates by
 	/// shoving the whole prop, potentially through the wall. Covers every path the live clamp can't see:
-	/// undo/redo, layer-row toggles on unselected brushes, conversions, loads. Uses the native overlap query
-	/// (<see cref="PhysicsBody.CheckOverlap"/>) — never a zero-length sweep, which can miss a body it
-	/// starts inside of.</summary>
+	/// undo/redo, layer-row toggles on unselected brushes, conversions, loads. Convex world bodies use the
+	/// native overlap query (<see cref="PhysicsBody.CheckOverlap"/>) — never a zero-length sweep, which can
+	/// miss a body it starts inside of; mesh bodies, which that query is blind to, use the sample path
+	/// (<see cref="MeshSampleContacts"/> + <see cref="StraddleContacts"/>) on the same inset geometry.</summary>
 	public static bool EmbeddedInWorld( SdfSculpture sculpture )
 	{
 		if ( !sculpture.IsValid() || sculpture.Brushes is not { Count: > 0 } brushes )
@@ -439,18 +476,31 @@ public sealed class BrushWorldClamp
 			return false;
 
 		var body = new PhysicsBody( world ) { BodyType = PhysicsBodyType.Static, Position = ParkingSpot };
+		var samples = new List<Vector4>( 64 );
 		try
 		{
 			var tx = sculpture.WorldTransform;
+			var discard = Vector3.Zero;
 			foreach ( var b in brushes )
 			{
-				if ( !SdfCollisionBuilder.BuildSweepShapes( b, body, BackstopInset ) )
+				if ( !SdfCollisionBuilder.BuildSweepShapes( b, body, BackstopInset, samples ) )
 					continue;
 
 				var query = QueryBounds( body, tx, Vector3.Zero );
+				bool sawMesh = false;
 				foreach ( var wb in WorldBodies( scene, sculpture, query, body ) )
-					if ( wb.CheckOverlap( body, tx ) )
+				{
+					ShapeKinds( wb, out bool convex, out bool mesh );
+					sawMesh |= mesh;
+					if ( convex && wb.CheckOverlap( body, tx ) )
 						return true;
+					// Zero deadband: the BackstopInset already provides all the tolerance this test means.
+					if ( mesh && MeshSampleContacts( scene, sculpture, wb, tx, Vector3.Zero, samples, 0f, ref discard ) )
+						return true;
+				}
+
+				if ( sawMesh && StraddleContacts( scene, sculpture, tx, Vector3.Zero, samples, 0f, ref discard ) )
+					return true;
 			}
 			return false;
 		}
@@ -482,11 +532,18 @@ public sealed class BrushWorldClamp
 			if ( delta.IsNearZeroLength || delta.Length > SweepMaxTravel )
 				return false;
 
-			// FULL-SIZE sweep, so the drag rests the real surface a skin above the floor — an inset here
-			// let the real shape sink by the inset, and the commit's real collider then popped the prop.
+			// FULL-SIZE sweep first, so the drag rests the real surface a skin above the floor — an inset
+			// here let the real shape sink by the inset, and the commit's real collider then popped the
+			// prop. A start-solid verdict (resting contact within the deadband — routine, not an error)
+			// retries at SweepStartInset rather than abandoning the slide: without the retry, the raw
+			// screen-plane write (which can sit far below the floor) goes to resolve-only and the frame
+			// REVERTS, eating the drag's lateral motion — the square-handle "stuck to the floor" bug.
 			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, 0f ) )
 				return false;
-			if ( SlideAnchor( scene, target, prev.Position, brush.Position ) is { } pos )
+			var slid = SlideAnchor( scene, target, prev.Position, brush.Position );
+			if ( slid is null && SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SweepStartInset ) )
+				slid = SlideAnchor( scene, target, prev.Position, brush.Position );
+			if ( slid is { } pos )
 				brush.Position = pos;
 			return false;
 		}
@@ -603,7 +660,7 @@ public sealed class BrushWorldClamp
 		bool TestAt( Vector3 p, float w )
 		{
 			pts[idx] = new Vector4( p.x, p.y, p.z, w );
-			return !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset )
+			return !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset, _samples )
 				|| ShapesClear( scene, target ); // no collision shapes at all = nothing can clip
 		}
 
@@ -668,21 +725,31 @@ public sealed class BrushWorldClamp
 		var correction = Vector3.Zero;
 		foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
 		{
-			if ( !body.ComputePenetration( _scratch, tx, out var dir, out var dist ) )
-				continue;
-			correction -= dir * (dist + SlideSkin);
+			ShapeKinds( body, out bool convex, out bool mesh );
+			if ( convex && body.ComputePenetration( _scratch, tx, out var dir, out var dist ) )
+				correction -= dir * (dist + SlideSkin);
+			if ( mesh )
+				MeshSampleContacts( scene, target, body, tx, Vector3.Zero, _samples, 0f, ref correction );
 		}
 		return correction;
 	}
 
 	// Pure overlap check of the scratch shapes at the sculpture's transform — no correction applied.
+	// _samples always holds the sample mirror of whatever's baked into _scratch (every build site fills
+	// both), so the mesh side tests the same geometry the native side does.
 	bool ShapesClear( Scene scene, SdfSculpture target )
 	{
 		var tx = target.WorldTransform;
 		var query = QueryBounds( _scratch, tx, Vector3.Zero );
+		var discard = Vector3.Zero;
 		foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
-			if ( body.CheckOverlap( _scratch, tx ) )
+		{
+			ShapeKinds( body, out bool convex, out bool mesh );
+			if ( convex && body.CheckOverlap( _scratch, tx ) )
 				return false;
+			if ( mesh && MeshSampleContacts( scene, target, body, tx, Vector3.Zero, _samples, 0f, ref discard ) )
+				return false;
+		}
 		return true;
 	}
 
@@ -706,13 +773,25 @@ public sealed class BrushWorldClamp
 
 		var pos = from;
 		var remaining = to - from;
+		float sweepR = r;
+		bool retried = false;
 		for ( int i = 0; i < SlideIterations && !remaining.IsNearZeroLength; i++ )
 		{
 			var tr = Filtered( scene, target )
-				.Sphere( r, tx.PointToWorld( pos ), tx.PointToWorld( pos + remaining ) )
+				.Sphere( sweepR, tx.PointToWorld( pos ), tx.PointToWorld( pos + remaining ) )
 				.Run();
 			if ( tr.StartedSolid )
-				break; // degenerate start — the resolve below is the authority
+			{
+				// Resting contact within the deadband reads start-solid (reliably so on mesh worlds) —
+				// retry the slide at a radius inset past it (see SweepStartInset) rather than abandoning
+				// the glide; the full-size resolve below still owns where the point finally rests.
+				if ( retried || r - SweepStartInset < 0.5f )
+					break; // genuinely blocked — the resolve below is the authority
+				retried = true;
+				sweepR = r - SweepStartInset;
+				i--;
+				continue;
+			}
 			if ( !tr.Hit )
 			{
 				pos += remaining;
@@ -735,6 +814,7 @@ public sealed class BrushWorldClamp
 
 		PhysicsBody probe = null;
 		var candidates = new List<PhysicsBody>();
+		var meshSample = new List<Vector4>( 1 ) { new( localPos.x, localPos.y, localPos.z, r ) };
 		try
 		{
 			var offset = Vector3.Zero;
@@ -763,12 +843,18 @@ public sealed class BrushWorldClamp
 				var correction = Vector3.Zero;
 				foreach ( var body in candidates )
 				{
-					if ( !body.ComputePenetration( probe, new Transform( centre ), out var dir, out var dist ) )
-						continue;
-					if ( dist <= RestTolerance )
-						continue; // resting contact of the full-size sphere, not an error — leave it be
-					any = true;
-					correction -= dir * (dist + SlideSkin);
+					ShapeKinds( body, out bool convex, out bool mesh );
+
+					// Resting contact of the full-size sphere (≤ RestTolerance) is not an error — leave it be.
+					if ( convex && body.ComputePenetration( probe, new Transform( centre ), out var dir, out var dist )
+						&& dist > RestTolerance )
+					{
+						any = true;
+						correction -= dir * (dist + SlideSkin);
+					}
+
+					if ( mesh && MeshSampleContacts( scene, target, body, tx, offset, meshSample, RestTolerance, ref correction ) )
+						any = true;
 				}
 
 				if ( !any )
@@ -858,7 +944,7 @@ public sealed class BrushWorldClamp
 	// shift would move points the player isn't touching.
 	bool ResolveEndpoint( Scene scene, SdfSculpture target, SdfBrush brush, bool allowShift )
 	{
-		if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, InsetFor( brush ) ) )
+		if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, InsetFor( brush ), _samples ) )
 			return true; // no collision shapes — nothing can embed
 
 		if ( !allowShift )
@@ -879,18 +965,30 @@ public sealed class BrushWorldClamp
 			var query = QueryBounds( _scratch, tx, offset );
 
 			bool any = false;
+			bool sawMesh = false;
 			var correction = Vector3.Zero;
 			foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
 			{
-				if ( !body.ComputePenetration( _scratch, at, out var dir, out var dist ) )
-					continue;
-				if ( dist <= deadband )
-					continue; // resting contact, not an error — leave it be
-				any = true;
+				ShapeKinds( body, out bool convex, out bool mesh );
+				sawMesh |= mesh;
+
 				// dir·dist moves the WORLD body clear (see the engine's ComputePenetration contract) —
 				// the brush moves the opposite way, plus a skin so the settled state isn't kiss-touching.
-				correction -= dir * (dist + SlideSkin);
+				// Contacts at or under the deadband are resting, not an error — left be.
+				if ( convex && body.ComputePenetration( _scratch, at, out var dir, out var dist ) && dist > deadband )
+				{
+					any = true;
+					correction -= dir * (dist + SlideSkin);
+				}
+
+				if ( mesh && MeshSampleContacts( scene, target, body, tx, offset, _samples, deadband, ref correction ) )
+					any = true;
 			}
+
+			// Only mesh worlds need the straddle rays — the native MTV already sees a thin CONVEX slab
+			// inside a hull.
+			if ( sawMesh && StraddleContacts( scene, target, tx, offset, _samples, deadband, ref correction ) )
+				any = true;
 
 			if ( !any )
 			{
@@ -962,6 +1060,169 @@ public sealed class BrushWorldClamp
 
 			yield return body;
 		}
+	}
+
+	// ── Mesh-world contacts ──────────────────────────────────────────────────────────────────────────
+
+	// Which query family a world body needs: convex shapes take the native CheckOverlap/ComputePenetration
+	// path, mesh shapes the sample path below, and a mixed body takes both — the native queries silently
+	// skip its mesh shapes, they don't fail on them.
+	static void ShapeKinds( PhysicsBody body, out bool convex, out bool mesh )
+	{
+		convex = false;
+		mesh = false;
+		foreach ( var shape in body.Shapes )
+		{
+			if ( shape.IsMeshShape )
+				mesh = true;
+			else
+				convex = true;
+		}
+	}
+
+	/// <summary>Contact test + correction against ONE mesh world body — the stand-in for the native
+	/// overlap/MTV pair, which returns nothing at all for triangle-mesh shapes (verified with
+	/// mimi_clamp_probe). Each sample of the scratch geometry resolves like this:
+	///
+	///  • sample centre BURIED in solid (<see cref="ProbeSolid"/> reads start-solid): push toward the body's
+	///    nearest surface point and out the far side — depth is the surface distance plus the radius.
+	///  • centre outside but the surface nearer than the radius: push away from the surface point by the
+	///    shortfall.
+	///
+	/// Contributions merge into <paramref name="correction"/> by DEFICIT along their own directions (see
+	/// ResolveGroup's reasoning) — a row of samples resting on the same floor must never stack into a
+	/// launch. Returns true if anything penetrated beyond <paramref name="deadband"/>, the same "any"
+	/// contract as the native path — including the rare sample that sits dead on a surface inside solid,
+	/// which contributes no direction (another sample, or the caller's revert, resolves it) but must still
+	/// keep the state reading dirty. A burial deeper than <see cref="MaxResolve"/> simply drives the
+	/// caller's accumulated offset over its cap, which reverts to the last clear state — same contract as
+	/// the native path.</summary>
+	static bool MeshSampleContacts( Scene scene, SdfSculpture target, PhysicsBody body, in Transform tx,
+		Vector3 offset, List<Vector4> samples, float deadband, ref Vector3 correction )
+	{
+		if ( samples is not { Count: > 0 } )
+			return false;
+
+		var bounds = body.GetBounds();
+		bool any = false;
+
+		foreach ( var s in samples )
+		{
+			// Positions go through the transform (scale included); radii scale uniformly — sculptures are
+			// only ever uniformly scaled, and the rest of the clamp already assumes the same. Hull centroid
+			// markers (w = -1, see BuildSweepShapes) test here as plain points; their marker role belongs
+			// to StraddleContacts.
+			float r = MathF.Max( s.w, 0f ) * tx.Scale.x;
+			var w = tx.PointToWorld( new Vector3( s.x, s.y, s.z ) ) + offset;
+
+			// Only samples near THIS body can contact it — and the probe below is scene-wide, so without
+			// this bound a sample buried in some other body would be "corrected" against this one's surface.
+			float pad = r + deadband + 1f;
+			if ( w.x < bounds.Mins.x - pad || w.y < bounds.Mins.y - pad || w.z < bounds.Mins.z - pad
+				|| w.x > bounds.Maxs.x + pad || w.y > bounds.Maxs.y + pad || w.z > bounds.Maxs.z + pad )
+				continue;
+
+			var p = body.FindClosestPoint( w );
+			var delta = w - p;
+			float d = delta.Length;
+
+			if ( d < 1e-3f )
+			{
+				// Dead on the surface — direction unknowable from here, and the penetration measure is just
+				// the radius. A corner sample (r = 0) exactly on a surface is resting contact inside any
+				// deadband — flagging it dirty would revert-freeze a grounded brush over a measure-zero
+				// alignment. A sphere CENTRE on a surface is a half-buried sphere: dirty, directionless
+				// (another sample, or the caller's revert, resolves it).
+				any |= r > deadband && ProbeSolid( scene, target, w );
+				continue;
+			}
+
+			if ( ProbeSolid( scene, target, w ) )
+			{
+				// Centre inside solid: out through the nearest face, plus the radius.
+				float pen = d + r;
+				if ( pen > deadband )
+				{
+					any = true;
+					Deficit( ref correction, -delta / d, pen + SlideSkin );
+				}
+				continue;
+			}
+
+			float shortfall = r - d;
+			if ( shortfall > deadband )
+			{
+				any = true;
+				Deficit( ref correction, delta / d, shortfall + SlideSkin );
+			}
+		}
+
+		return any;
+	}
+
+	/// <summary>The straddle belt — the one hole point sampling leaves open: a hull can cross a THIN mesh
+	/// slab (a tabletop, an FBX floor piece) with every corner AND the centroid sitting in open air on
+	/// either side, which no point query can see. So hull samples get one more test: a RAY from the hull's
+	/// centroid marker (w = -1, see BuildSweepShapes) to each of its corners. Crossing a world surface on
+	/// the way means a face passes INSIDE the hull — push out along that face's normal by how far the
+	/// corner sits past it. Reachable only by non-swept changes (scale/rotate gestures, the stamp ghost's
+	/// teleports) — travel is already blocked by the sweep phase. Scene-wide through the clamp's filter, so
+	/// it covers convex bodies too; the native MTV reports those as well, and the deficit merge makes the
+	/// duplicate free. Sphere samples carry no corners and need none — FindClosestPoint sees a slab poking
+	/// into a sphere just fine.</summary>
+	static bool StraddleContacts( Scene scene, SdfSculpture target, in Transform tx, Vector3 offset,
+		List<Vector4> samples, float deadband, ref Vector3 correction )
+	{
+		bool any = false;
+		Vector3 centroid = default;
+		bool haveCentroid = false;
+
+		foreach ( var s in samples )
+		{
+			if ( s.w < 0f )
+			{
+				centroid = tx.PointToWorld( new Vector3( s.x, s.y, s.z ) ) + offset;
+				haveCentroid = true;
+				continue;
+			}
+			if ( !haveCentroid || s.w > 0f )
+				continue; // not a hull corner
+
+			var corner = tx.PointToWorld( new Vector3( s.x, s.y, s.z ) ) + offset;
+			var tr = Filtered( scene, target ).Ray( centroid, corner ).Run();
+			if ( !tr.Hit )
+				continue; // no face between centroid and corner (a centroid itself buried in solid is the
+				          // probes' case — a ray from inside leaves through the backface unimpeded)
+
+			// How far past the crossed face the corner sits. Resting contact (solids embed up to the
+			// deadband by design) must not read as a straddle, or every later edit of a grounded brush
+			// would ratchet it upward.
+			float past = (1f - tr.Fraction) * Vector3.DistanceBetween( centroid, corner );
+			if ( past <= deadband )
+				continue;
+
+			any = true;
+			Deficit( ref correction, tr.Normal, past + SlideSkin );
+		}
+
+		return any;
+	}
+
+	// Is this world-space point inside SOLID scenery? Zero-length SHAPE traces report start-solid reliably —
+	// the engine's own CharacterController leans on exactly this, and mimi_clamp_probe confirmed it against
+	// mesh shapes — unlike zero-length BODY sweeps, which this file already caught lying once (see the
+	// class doc). Scene-wide through the clamp's own filter, so "solid" means what "solid" means everywhere
+	// else here.
+	static bool ProbeSolid( Scene scene, SdfSculpture target, Vector3 point ) =>
+		Filtered( scene, target ).Sphere( 0.05f, point, point ).Run().StartedSolid;
+
+	// Extend `correction` only by what this contact still needs along its own direction — parallel
+	// duplicates add ~nothing, orthogonal contacts get their full push (see ResolveGroup's reasoning).
+	static void Deficit( ref Vector3 correction, Vector3 dir, float need )
+	{
+		float have = Vector3.Dot( correction, dir );
+		if ( have < need )
+			correction += dir * (need - have);
 	}
 
 	// Shift the brush by a world-space correction, expressed back in sculpture-local space. Splines carry

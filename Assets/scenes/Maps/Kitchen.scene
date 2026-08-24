@@ -4459,7 +4459,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Spawn",
-      "Position": "182.646576,-875.458496,-412.466675",
+      "Position": "182.646576,-1164.77466,-392.552612",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -4839,7 +4839,7 @@
           "DefaultMaterial": "materials/plasticine_scene.vmat",
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "57 object(s), 69888 tris — 19:07:04",
+          "LastImport": "57 object(s), 62061 tris — 22:40:14",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -9072,8 +9072,8 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Cube.043",
-          "Position": "447.80722,-60.9903107,152.883179",
-          "Rotation": "-0.707106829,-0,0,0.707106709",
+          "Position": "369.581787,-302.61264,174.795929",
+          "Rotation": "-0.50000006,-0.49999997,0.499999911,0.49999997",
           "Scale": "1,1,1",
           "Tags": "",
           "Enabled": true,
@@ -9156,8 +9156,8 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Cube.044",
-          "Position": "506.309052,-172.951385,112.033287",
-          "Rotation": "-0.707106829,-0,0,0.707106709",
+          "Position": "481.542877,-244.110825,112.033287",
+          "Rotation": "-0.50000006,-0.49999997,0.499999911,0.49999997",
           "Scale": "1,1,1",
           "Tags": "",
           "Enabled": true,
@@ -9240,8 +9240,8 @@
           "__version": 2,
           "Flags": 0,
           "Name": "exported",
-          "Position": "103.129929,-45.0313339,0",
-          "Rotation": "0,0,0,1",
+          "Position": "353.622803,-647.289917,21.9127407",
+          "Rotation": "-2.66925451E-08,-2.66925415E-08,0.707106709,0.707106829",
           "Scale": "1,1,1",
           "Tags": "",
           "Enabled": true,
@@ -9457,7 +9457,7 @@
                 "AfterUILayer": false
               },
               "RenderType": "On",
-              "Tint": "1,1,1,1"
+              "Tint": "0.70588,0.58039,0.38824,1"
             },
             {
               "__type": "Sandbox.ModelCollider",
@@ -9541,7 +9541,7 @@
                 "AfterUILayer": false
               },
               "RenderType": "On",
-              "Tint": "1,1,1,1"
+              "Tint": "0.70588,0.58039,0.38824,1"
             },
             {
               "__type": "Sandbox.ModelCollider",
@@ -9625,7 +9625,7 @@
                 "AfterUILayer": false
               },
               "RenderType": "On",
-              "Tint": "1,1,1,1"
+              "Tint": "0.70588,0.58039,0.38824,1"
             },
             {
               "__type": "Sandbox.ModelCollider",

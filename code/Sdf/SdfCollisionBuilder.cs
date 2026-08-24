@@ -311,10 +311,18 @@ public static class SdfCollisionBuilder
 	/// <paramref name="inset"/> shrinks every shape (sphere radii down, hull points scaled toward their bounds
 	/// centre) so CONTACT never reads as PENETRATION: clay resting flush on the floor — which ground-snap
 	/// actively produces — must test clear, or the clamp would disable itself (a blocked baseline releases the
-	/// brush) and the backstop would freeze every commit of a grounded prop.</summary>
-	public static bool BuildSweepShapes( SdfBrush b, PhysicsBody body, float inset )
+	/// brush) and the backstop would freeze every commit of a grounded prop.
+	///
+	/// <paramref name="samples"/>, when supplied, is cleared and refilled with a point-sample mirror of the
+	/// SAME geometry (sculpture-local; xyz = position, w = sphere radius; each hull contributes its centroid
+	/// at w = -1 followed by its corners at w = 0) — the clamp's own contact math for MESH world bodies,
+	/// which the native overlap/MTV queries can't see (see <see cref="BrushWorldClamp"/>). Filled from the
+	/// same values the shapes are built from, insets included, so the two representations can never
+	/// disagree.</summary>
+	public static bool BuildSweepShapes( SdfBrush b, PhysicsBody body, float inset, List<Vector4> samples = null )
 	{
 		body.ClearShapes();
+		samples?.Clear();
 		if ( b is null || !b.Enabled || b.Operation != SdfOperation.Add )
 			return false;
 
@@ -337,8 +345,10 @@ public static class SdfCollisionBuilder
 				var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
 				foreach ( var pt in sweep )
 				{
-					body.AddSphereShape( new Vector3( pt.x, pt.y, pt.z ) * sign,
-						MathF.Max( pt.w - inset, 0.5f ), rebuildMass: false );
+					var c = new Vector3( pt.x, pt.y, pt.z ) * sign;
+					float r = MathF.Max( pt.w - inset, 0.5f );
+					body.AddSphereShape( c, r, rebuildMass: false );
+					samples?.Add( new Vector4( c.x, c.y, c.z, r ) );
 					any = true;
 				}
 			}
@@ -354,6 +364,7 @@ public static class SdfCollisionBuilder
 			for ( int i = 0; i < n; i++ )
 			{
 				body.AddSphereShape( centres[i], r, rebuildMass: false );
+				samples?.Add( new Vector4( centres[i].x, centres[i].y, centres[i].z, r ) );
 				any = true;
 			}
 			return any;
@@ -373,8 +384,23 @@ public static class SdfCollisionBuilder
 		{
 			var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
 			var hull = new List<Vector3>( pts.Count );
+			var centroid = Vector3.Zero;
 			foreach ( var lp in pts )
-				hull.Add( (b.Position + b.Rotation * lp) * sign );
+			{
+				var p = (b.Position + b.Rotation * lp) * sign;
+				hull.Add( p );
+				centroid += p;
+			}
+			centroid /= hull.Count;
+
+			// Sample mirror: this hull's centroid FIRST, marked with w = -1 — the "hull anchor" the mesh
+			// contact path keys its straddle rays on (centroid → each corner) — then every corner at w = 0.
+			if ( samples is not null )
+			{
+				samples.Add( new Vector4( centroid.x, centroid.y, centroid.z, -1f ) );
+				foreach ( var p in hull )
+					samples.Add( new Vector4( p.x, p.y, p.z, 0f ) );
+			}
 
 			body.AddHullShape( Vector3.Zero, Rotation.Identity, hull, rebuildMass: false );
 			any = true;
