@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Mimiclay;
 
@@ -58,6 +59,13 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 
 	readonly List<GameObject> _spawned = new();
 
+	// Cached once per placed prop (its bounds never change after AlignToGround settles it) so
+	// OverlapsAnotherSpawner doesn't re-run a full SurfaceNetsMesher rebuild for the SAME already-placed prop
+	// on every single candidate check some OTHER spawner happens to try — that was O(candidates × every
+	// other spawner's every placed prop), all real mesh-building work, and by far the biggest remaining CPU
+	// cost once the GPU-texture trial churn (see BuildAndAlign's trialOnly doc) was fixed.
+	readonly Dictionary<GameObject, BBox> _spawnedBounds = new();
+
 	// On the host, this component's very first OnUpdate can tick BEFORE Networking.IsActive flips true on
 	// the host's own machine (the scene starts ticking before the network session finishes activating) — so
 	// a Decide()+Apply() that happens to land on that exact frame builds everything with Networking.IsActive
@@ -86,8 +94,9 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 
 		if ( ChosenSlotCount == Undecided )
 		{
-			Decide();
-			Apply();
+			if ( _decideSlot < 0 )
+				StartDecide();
+			StepDecide();
 		}
 		else if ( Networking.IsActive && !_lastNetworkingActive )
 		{
@@ -154,6 +163,16 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	                          // or PreviewPick() is called again — stops the live preview from immediately
 	                          // refilling a spot that was just deliberately cleared.
 
+	/// <summary>Set by a subtype's own gizmo handling (e.g. <see cref="RandomVolumeSpawner"/>'s
+	/// <c>Gizmo.Pressed.This</c> right after <c>Gizmo.Control.BoundingBox</c>) while the user is actively
+	/// mid-drag on some control that also happens to feed <see cref="ComputeConfigHash"/> — resizing the
+	/// region changes <c>Bounds</c> every single frame of the drag, and without this the live preview would
+	/// re-roll and rebuild every prop on every one of those frames (visibly janky, and expensive with a high
+	/// <c>Count</c>). While true, <see cref="UpdateEditorPreview"/> just leaves whatever's already placed
+	/// alone; the moment the drag ends the very next tick sees the settled config as "changed" (one clean
+	/// final re-roll) exactly like any other edit.</summary>
+	protected bool SuppressPreviewWhileDragging { get; set; }
+
 	/// <summary>Editor-only live preview: rolls a pick automatically the moment the config actually changes
 	/// (instead of needing a manual "Preview Random Pick" click just to see an edit take effect), and re-aligns
 	/// the SAME already-chosen picks as you drag the spawner around (moving it shouldn't re-roll what's shown —
@@ -162,6 +181,9 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	/// any settings.</summary>
 	void UpdateEditorPreview()
 	{
+		if ( SuppressPreviewWhileDragging )
+			return; // mid-drag — see that property's doc; the settled value is picked up once it's released
+
 		int hash = ComputeConfigHash();
 		bool configChanged = hash != _previewConfigHash;
 		_previewConfigHash = hash;
@@ -207,15 +229,17 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		return hash.ToHashCode();
 	}
 
-	// Host-only: rolls RollSlotCount() slots, each independently picking a prefab (trying every option,
-	// starting from a random one, then cycling forward) and skipping any candidate whose real placed bounds
-	// would overlap something ALREADY placed — either another already-decided slot in THIS SAME pass (so a
-	// volume spawner's own scattered props don't overlap each other) or another spawner's already-resolved
-	// prop entirely (so two spawner regions placed too close together don't intersect either). Builds a real
-	// trial clone per candidate (BuildAndAlign — the exact same path Apply() uses) purely to measure it
-	// accurately (subtract-aware, ground-aligned) then throws it away; Apply() below builds the ones that
-	// actually stick, once ChosenSlotCount settles. A slot with every option colliding, an empty Prefabs list,
-	// or a NoneChance roll settles on "None" for just that slot rather than forcing a guaranteed overlap.
+	// Host-only: rolls RollSlotCount() slots, each independently picking a prefab — candidates are tried in
+	// LEAST-used-first order (see useCount below), not a flat random cycle, so a multi-slot spawner (chiefly
+	// RandomVolumeSpawner) maximises how many DIFFERENT prefabs actually show up instead of the same one or
+	// two dominating by chance — and skips any candidate whose real placed bounds would overlap something
+	// ALREADY placed — either another already-decided slot in THIS SAME pass (so a volume spawner's own
+	// scattered props don't overlap each other) or another spawner's already-resolved prop entirely (so two
+	// spawner regions placed too close together don't intersect either). Builds a real trial clone per
+	// candidate (BuildAndAlign — the exact same path Apply() uses) purely to measure it accurately
+	// (subtract-aware, ground-aligned) then throws it away; Apply() below builds the ones that actually
+	// stick, once ChosenSlotCount settles. A slot with every option colliding, an empty Prefabs list, or a
+	// NoneChance roll settles on "None" for just that slot rather than forcing a guaranteed overlap.
 	void Decide()
 	{
 		int count = Math.Max( 0, RollSlotCount() );
@@ -226,45 +250,156 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 
 		var placedThisPass = new List<BBox>();
 
+		// How many times each prefab has already been picked THIS decide — candidates are offered
+		// least-used-first (ties broken randomly), so with e.g. 5 prefabs and 10 slots every prefab shows up
+		// twice before any shows up a third time, instead of a flat random draw clumping by chance.
+		var useCount = Prefabs is { Count: > 0 } ? new int[Prefabs.Count] : Array.Empty<int>();
+
 		for ( int slot = 0; slot < count; slot++ )
-		{
-			float yaw = RandomizeRotation ? (float)(Random.Shared.NextDouble() * 360.0) : 0f;
-			var offset = RollLocalOffset();
-			int chosenIndex = None;
-
-			if ( Prefabs is { Count: > 0 } && Random.Shared.NextDouble() >= NoneChance )
-			{
-				int start = Random.Shared.Next( Prefabs.Count );
-				for ( int i = 0; i < Prefabs.Count; i++ )
-				{
-					int index = (start + i) % Prefabs.Count;
-					var prefab = Prefabs[index];
-					if ( !prefab.IsValid() )
-						continue;
-
-					var (trial, bounds) = BuildAndAlign( prefab, offset, yaw );
-					if ( !trial.IsValid() )
-						continue;
-
-					bool collides = bounds is { } b && (OverlapsAnySpawnedBounds( b, placedThisPass ) || OverlapsAnotherSpawner( b ));
-					trial.Destroy();
-
-					if ( collides )
-						continue;
-
-					chosenIndex = index;
-					if ( bounds is { } winnerBounds )
-						placedThisPass.Add( winnerBounds );
-					break;
-				}
-			}
-
-			ChosenYaws[slot] = yaw;
-			ChosenOffsets[slot] = offset;
-			ChosenIndices[slot] = chosenIndex;
-		}
+			DecideSlot( slot, placedThisPass, useCount );
 
 		ChosenSlotCount = count;
+	}
+
+	// One slot's worth of Decide()'s work — pulled out so the runtime path (see StartDecide/StepDecide) can
+	// spread this across multiple frames instead of paying for every slot of every spawner in the level on
+	// the exact frame the map loads (see those methods' doc for why that used to freeze the game). Each
+	// candidate builds a real trial clone (mesh + a physics overlap test) purely to measure/validate it, which
+	// is NOT cheap — Decide() (the editor-preview/PreviewPick path, where there's only ever one spawner being
+	// edited at a time) still calls this once per slot in a tight loop, unchanged.
+	void DecideSlot( int slot, List<BBox> placedThisPass, int[] useCount )
+	{
+		float yaw = RandomizeRotation ? (float)(Random.Shared.NextDouble() * 360.0) : 0f;
+		var offset = RollLocalOffset();
+		int chosenIndex = None;
+
+		if ( Prefabs is { Count: > 0 } && Random.Shared.NextDouble() >= NoneChance )
+		{
+			// Shuffle first (random tie-break), then stable-sort by how many times each index has
+			// already won a slot this decide — least-used prefabs are offered first, so variety wins
+			// over a flat random draw, while a fully-collided/invalid candidate still falls through to
+			// the next-least-used one exactly like the old flat cycle did.
+			var order = Enumerable.Range( 0, Prefabs.Count )
+				.OrderBy( _ => Random.Shared.Next() )
+				.OrderBy( idx => useCount[idx] )
+				.ToList();
+
+			foreach ( var index in order )
+			{
+				var prefab = Prefabs[index];
+				if ( !prefab.IsValid() )
+					continue;
+
+				var (trial, bounds) = BuildAndAlign( prefab, offset, yaw, trialOnly: true );
+				if ( !trial.IsValid() )
+					continue;
+
+				bool collides = bounds is { } b && (OverlapsAnySpawnedBounds( b, placedThisPass )
+					|| OverlapsAnotherSpawner( b ) || OverlapsWorld( b, trial ) );
+				trial.Destroy();
+
+				if ( collides )
+					continue;
+
+				chosenIndex = index;
+				useCount[index]++;
+				if ( bounds is { } winnerBounds )
+					placedThisPass.Add( winnerBounds );
+				break;
+			}
+		}
+
+		ChosenYaws[slot] = yaw;
+		ChosenOffsets[slot] = offset;
+		ChosenIndices[slot] = chosenIndex;
+	}
+
+	// ── Runtime incremental decide (spread across frames) ───────────────────────────────────────────────
+	// Freeze-at-map-start fix: a spawner with a high Count, or just many spawners all deciding on the exact
+	// same frame the map finishes loading, used to pay for EVERY slot's EVERY candidate — each one a real
+	// trial clone (mesh build) plus a physics overlap test against every other spawner's already-placed
+	// props AND the world — all synchronously in one frame. Nothing about that work is per-frame-cheap, so
+	// doing a whole spawner's worth (up to 64 slots for a volume) in a single OnUpdate tick, times however
+	// many spawners a level has, is exactly what a load-time hitch looks like. This spreads it across ticks
+	// with a TIME budget (not a fixed slot count) — a slot that finds a candidate on its first try is cheap,
+	// one that has to reject most of Prefabs isn't, so a fixed slot count either wastes frames on the cheap
+	// case or still spikes on the expensive one. Plain per-OnUpdate-tick state (async/Task.Yield was tried
+	// here and dropped — same result, more moving parts).
+	int _decideSlot = -1; // -1 = not currently mid-decide; otherwise the next slot index to process
+	int _decideCount;
+	List<BBox> _decidePlaced;
+	int[] _decideUseCount;
+	const double PerTickBudgetMs = 1.5;
+
+	// A per-SPAWNER budget alone isn't enough: at map load, potentially every spawner in the level has
+	// ChosenSlotCount == Undecided on the SAME frame, and each one independently getting its own
+	// PerTickBudgetMs allowance means the TOTAL cost that frame is (number of spawners currently deciding) ×
+	// PerTickBudgetMs — unbounded again, just like before any of this existed. This is a budget SHARED across
+	// every PropSpawnerBase instance: whichever spawners happen to tick first in a given frame spend from it,
+	// and once it's gone for that "frame" every other spawner's StepDecide bails immediately (0 slots done,
+	// tries again next tick) — so no matter how many spawners are simultaneously deciding, the aggregate cost
+	// is capped at roughly GlobalBudgetMs per frame, and a level with many spawners just takes proportionally
+	// more frames to finish (spread wider), not more time in any single one.
+	static RealTimeSince s_sinceGlobalReset = 999f;
+	static double s_globalUsedMs;
+	const double GlobalResetIntervalMs = 8; // ~once per frame at a common refresh rate, without needing an
+	                                          // actual engine frame-index API
+	const double GlobalBudgetMs = 2.0; // total, shared across every spawner, per "frame" window above
+
+	// True if there's still some of this frame's shared budget left — checked before doing each slot's work
+	// so an EXHAUSTED spawner further down the tick order does zero slots this tick rather than still paying
+	// for at least one.
+	static bool GlobalBudgetAvailable()
+	{
+		if ( s_sinceGlobalReset * 1000.0 >= GlobalResetIntervalMs )
+		{
+			s_sinceGlobalReset = 0;
+			s_globalUsedMs = 0;
+		}
+
+		return s_globalUsedMs < GlobalBudgetMs;
+	}
+
+	void StartDecide()
+	{
+		_decideCount = Math.Max( 0, RollSlotCount() );
+		ChosenIndices.Clear();
+		ChosenYaws.Clear();
+		ChosenOffsets.Clear();
+		_decidePlaced = new List<BBox>();
+		_decideUseCount = Prefabs is { Count: > 0 } ? new int[Prefabs.Count] : Array.Empty<int>();
+		_decideSlot = _decideCount > 0 ? 0 : _decideCount; // 0 slots: fall straight through to finish below
+	}
+
+	// Called once per OnUpdate tick while a decide is in progress — keeps doing slots until every slot is
+	// done, this spawner's OWN tick budget is spent, or the budget SHARED across every spawner (see
+	// GlobalBudgetAvailable's doc) is spent, whichever comes first.
+	void StepDecide()
+	{
+		var sw = System.Diagnostics.Stopwatch.StartNew();
+
+		while ( _decideSlot < _decideCount )
+		{
+			if ( !GlobalBudgetAvailable() )
+				return; // another spawner already spent this frame's shared allowance — our turn next tick
+
+			DecideSlot( _decideSlot, _decidePlaced, _decideUseCount );
+			_decideSlot++;
+
+			double elapsed = sw.Elapsed.TotalMilliseconds;
+			s_globalUsedMs += elapsed;
+			sw.Restart();
+
+			if ( elapsed >= PerTickBudgetMs || s_globalUsedMs >= GlobalBudgetMs )
+				return; // spent our own or the shared budget this tick — pick up the rest next OnUpdate
+		}
+
+		// Every slot done — settle it (this is what OnUpdate's Undecided check reads) and build for real.
+		ChosenSlotCount = _decideCount;
+		_decideSlot = -1;
+		_decidePlaced = null;
+		_decideUseCount = null;
+		Apply();
 	}
 
 
@@ -275,6 +410,28 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 				return true;
 
 		return false;
+	}
+
+	// Real solid-geometry check (walls, floors, furniture, terrain — anything with a collider already in the
+	// map) — the two checks above only ever compare against OTHER random-spawner picks, so without this nothing
+	// stopped a roll from landing a candidate half-embedded in a wall or clipped through the floor. A
+	// zero-length Trace.Box (from == to) is a pure overlap test at that position — not an actual sweep — using
+	// the candidate's REAL (subtract-aware) world bounds as the shape, centred on itself. Ignores the trial
+	// clone's own hierarchy (so it doesn't just detect its own collider) and this spawner's (a marker sitting
+	// inside/behind level geometry shouldn't block its own region), and triggers (non-solid by definition, so
+	// overlapping one is never actually a placement problem).
+	bool OverlapsWorld( BBox candidate, GameObject trial )
+	{
+		var half = (candidate.Maxs - candidate.Mins) * 0.25f;
+		var localBox = new BBox( -half, half );
+
+		var tr = Scene.Trace.Box( localBox, candidate.Center, candidate.Center )
+			.IgnoreGameObjectHierarchy( trial )
+			.IgnoreGameObjectHierarchy( GameObject )
+			.WithoutTags( "trigger" )
+			.Run();
+
+		return tr.Hit;
 	}
 
 	// Only ever checks against OTHER spawners (of either kind) that have already resolved and built their own
@@ -293,7 +450,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 				if ( !spawnedGo.IsValid() )
 					continue;
 
-				if ( ComputeWorldBounds( spawnedGo ) is { } otherBounds && candidate.Overlaps( otherBounds ) )
+				if ( other._spawnedBounds.TryGetValue( spawnedGo, out var otherBounds ) && candidate.Overlaps( otherBounds ) )
 					return true;
 			}
 		}
@@ -310,6 +467,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		foreach ( var go in _spawned )
 			go?.Destroy();
 		_spawned.Clear();
+		_spawnedBounds.Clear();
 		_pendingNetworkSpawn.Clear();
 
 		int count = Math.Max( 0, ChosenSlotCount );
@@ -330,7 +488,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 			ChosenYaws.TryGetValue( slot, out var yaw );
 			ChosenOffsets.TryGetValue( slot, out var offset );
 
-			var (go, _) = BuildAndAlign( prefab, offset, yaw );
+			var (go, bounds) = BuildAndAlign( prefab, offset, yaw );
 			if ( !go.IsValid() )
 				continue;
 
@@ -342,22 +500,45 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 				_pendingNetworkSpawn.Add( go );
 
 			_spawned.Add( go );
+			if ( bounds is { } b )
+				_spawnedBounds[go] = b;
 		}
 	}
 
 	// Clones a candidate prefab at the given slot's spawn point (yawed per that slot's own roll, if
 	// RandomizeRotation is on), ground-aligns it, and hands back its real (subtract-aware) world bounds
-	// alongside it — shared by Apply() (the placements that actually stick) and Decide()'s collision trials
-	// (thrown away immediately after measuring).
-	(GameObject, BBox?) BuildAndAlign( GameObject prefab, Vector3 localOffset, float yaw )
+	// alongside it — shared by Apply() (the placements that actually stick, trialOnly false) and Decide()'s
+	// collision trials (thrown away immediately after measuring, trialOnly true).
+	//
+	// trialOnly matters a lot: a trial clone used to be built EXACTLY like a real one — every component live,
+	// including SdfRaymarchRenderer, which allocates REAL GPU textures the moment it enables (BrushData/
+	// SplineData/TextSdf, plus the whole field-cache volume+atlas set for a field-cached prefab) — just to
+	// throw the whole thing away a few lines later via trial.Destroy(). With collision-avoidance trying many
+	// candidates per slot, across up to 64 slots, across however many spawners a level has, that's real GPU
+	// memory allocated and discarded far faster than a deferred Destroy()/GC pass can reclaim it — exactly
+	// the runaway texture growth measured live (thousands more resident textures within seconds). All
+	// ComputeWorldBounds actually reads is ModelRenderer's built SceneObject and SdfSculpture's plain brush
+	// data (no GPU dependency, works disabled) — so a trial clones DISABLED and only re-enables those two,
+	// leaving SdfRaymarchRenderer (and everything else) inert for its whole brief lifetime.
+	(GameObject, BBox?) BuildAndAlign( GameObject prefab, Vector3 localOffset, float yaw, bool trialOnly = false )
 	{
 		var point = SpawnPointFor( localOffset );
 		var tx = new Transform( point, WorldRotation, WorldScale );
 		if ( RandomizeRotation )
 			tx = tx.WithRotation( tx.Rotation * Rotation.FromYaw( yaw ) );
 
-		var go = prefab.Clone( new CloneConfig( tx, startEnabled: true,
+		var go = prefab.Clone( new CloneConfig( tx, startEnabled: !trialOnly,
 			name: $"Random Prop ({prefab.Name})" ) );
+
+		if ( trialOnly )
+		{
+			foreach ( var c in go.Components.GetAll<Component>( FindMode.EverythingInSelfAndDescendants ) )
+				if ( c is not (ModelRenderer or SdfSculpture) )
+					c.Enabled = false;
+
+			go.Enabled = true; // now only actually activates the two component types left enabled above
+		}
+
 		go.SetParent( GameObject, true );
 		go.Flags |= GameObjectFlags.NotSaved; // never let a preview/runtime pick bake into the scene file
 
@@ -472,6 +653,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		foreach ( var go in _spawned )
 			go?.Destroy();
 		_spawned.Clear();
+		_spawnedBounds.Clear();
 
 		ChosenSlotCount = Undecided;
 		_pendingNetworkSpawn.Clear();

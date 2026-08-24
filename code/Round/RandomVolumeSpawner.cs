@@ -63,16 +63,26 @@ public sealed class RandomVolumeSpawner : PropSpawnerBase
 		if ( Gizmo.IsSelected )
 		{
 			var bounds = Bounds;
-			Gizmo.Control.BoundingBox( "Bounds", bounds, out bounds );
+			Gizmo.Control.BoundingBox( "Bounds", bounds, out bounds, out bool pressed );
 			Bounds = bounds;
+
+			// Don't re-roll/rebuild every single frame of an active resize drag — Bounds feeds
+			// ComputeConfigHash, so without this the live preview would tear down and re-scatter every prop
+			// on every frame the box is being dragged. See SuppressPreviewWhileDragging's doc. BoundingBox
+			// drives its per-face handles as internal sub-controls, so the plain Gizmo.Pressed.This (which
+			// only reflects THIS exact control scope) never actually went true — the control's own
+			// "outPressed" is the real signal for "one of my handles is currently held".
+			SuppressPreviewWhileDragging = pressed;
 
 			Gizmo.Draw.Color = Color.Yellow.WithAlpha( 0.6f );
 			Gizmo.Draw.LineBBox( bounds );
 		}
 		else
 		{
+			SuppressPreviewWhileDragging = false;
 			Gizmo.Draw.Color = Color.Yellow.WithAlpha( Gizmo.IsHovered ? 0.4f : 0.2f );
 			Gizmo.Draw.LineBBox( Bounds );
 		}
+
 	}
 }
