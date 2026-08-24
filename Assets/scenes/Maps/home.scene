@@ -1798,7 +1798,7 @@
             "Mins": "-320,-1632,-672",
             "Maxs": "1568,1216,416"
           },
-          "Contrast": 1,
+          "Contrast": 2,
           "DistanceTexture": "scenes/maps/home_scene_data/ddgi/probes_distance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex",
           "InsideGeometry": "Deactivate",
           "IrradianceTexture": "scenes/maps/home_scene_data/ddgi/probes_irradiance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex",
@@ -6742,7 +6742,7 @@
           "Cookie": null,
           "FogMode": "Enabled",
           "FogStrength": 1,
-          "LightColor": "0.91373,0.98039,1,1",
+          "LightColor": "0.7907,0.7405,0.64727,1",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -6914,7 +6914,7 @@
           "Cookie": null,
           "FogMode": "Enabled",
           "FogStrength": 1,
-          "LightColor": "0.91373,0.98039,1,1",
+          "LightColor": "0.7907,0.7405,0.64727,1",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -9877,7 +9877,7 @@
               "$blob": "589b55fb-6a75-8ae0-bee0-7da26743148e"
             },
             "Materials": [
-              "materials/dev/simple/simple_tile.vmat",
+              "materials/plaster/ceiling/ceiling_plaster_03_blend.vmat",
               "materials/wallpaper/wallpaper_pattern_a.vmat",
               "materials/wallpaper/wallpaper_pattern_a_old.vmat",
               "materials/dev/simple/wall_simple_128.vmat"
@@ -9926,17 +9926,17 @@
           "Flags": 0,
           "ColliderFlags": 0,
           "Collision": "Mesh",
-          "Color": "0.24651,0.07114,0.06191,1",
+          "Color": "1,1,1,1",
           "Elasticity": null,
           "Friction": null,
           "HideInGame": false,
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "dbded575-6bf0-8244-84b2-a420405dcf65"
+              "$blob": "a85ee221-16f1-8e8b-a92a-36de4a40dfd3"
             },
             "Materials": [
-              "materials/dev/simple/simple_tint_128.vmat"
+              "materials/generic/carpet_a_blend.vmat"
             ]
           },
           "OnComponentDestroy": null,
@@ -20067,10 +20067,9 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "0e6fa50d-aae7-8ca3-a3e3-9837886a7115"
+              "$blob": "39ccd763-2093-8005-a8a0-25a5315c1812"
             },
             "Materials": [
-              "materials/trimsheets/basic/reflectivity_50_trim.vmat",
               "materials/trimsheets/wood/wood_trim_polished.vmat"
             ]
           },
@@ -20124,10 +20123,10 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "6a126417-9692-864e-a2dc-a02118f2b976"
+              "$blob": "d3ba8fef-ed50-830b-8044-e67ac589b85f"
             },
             "Materials": [
-              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+              "materials/trimsheets/wood/wood_trim_polished.vmat"
             ]
           },
           "OnComponentDestroy": null,
@@ -23585,9 +23584,10 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "d1f19c5d-aa35-8575-b72a-1640d512b5c3"
+              "$blob": "35d5c080-816e-8c42-987c-884607cc0989"
             },
             "Materials": [
+              "materials/trimsheets/wood/wood_trim_polished.vmat",
               "materials/trimsheets/basic/reflectivity_50_trim.vmat"
             ]
           },
@@ -24942,6 +24942,118 @@
           "Children": []
         },
         {
+          "__guid": "81afd200-5cf8-43aa-afa5-54302fd83205",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Rnd_prop (22)",
+          "Position": "1522.86658,-712.628418,-30.7521362",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RandomVolumeSpawner",
+              "__guid": "773ee816-eab5-4d32-93e0-3a4b2c13ba78",
+              "__enabled": true,
+              "Flags": 0,
+              "Bounds": {
+                "Mins": "-128,-188,-104",
+                "Maxs": "236,369,64"
+              },
+              "Count": 15,
+              "NoneChance": 0.15,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "Prefabs": [
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/block_1.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/block_2.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/block_3.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/block_a.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/block_b.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/block_c.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/book_star_2.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/book_star.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/bowlingball.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/buildingblock_arc.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/buildingblock_brick.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/buildingblock_column_tall.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/buildingblock_column.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/buildingblock_halfround.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/colouredrings.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/nut.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/toy_car.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/saved/wrench.prefab"
+                }
+              ],
+              "RandomizeRotation": true
+            }
+          ],
+          "Children": []
+        },
+        {
           "__guid": "749da4a5-9e23-4dde-ac5b-9bb7adc8cc65",
           "__version": 2,
           "Flags": 0,
@@ -25173,6 +25285,14 @@
                         "BoundingRadius": 10.672114
                       }
                     ]
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+                    },
+                    "Property": "Model",
+                    "Value": "sbox_procedural_model.vmdl"
                   }
                 ],
                 "MovedObjects": []
@@ -25195,7 +25315,16 @@
               "__PrefabInstancePatch": {
                 "AddedObjects": [],
                 "RemovedObjects": [],
-                "PropertyOverrides": [],
+                "PropertyOverrides": [
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "2ff883e1-ccfc-4f4b-822c-f95ecd1a2887"
+                    },
+                    "Property": "Model",
+                    "Value": "sbox_procedural_model.vmdl"
+                  }
+                ],
                 "MovedObjects": []
               },
               "__PrefabIdToInstanceId": {
@@ -25441,7 +25570,16 @@
               "__PrefabInstancePatch": {
                 "AddedObjects": [],
                 "RemovedObjects": [],
-                "PropertyOverrides": [],
+                "PropertyOverrides": [
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "354e781b-1596-4f67-a74f-08c0585d1750"
+                    },
+                    "Property": "Model",
+                    "Value": "sbox_procedural_model.vmdl"
+                  }
+                ],
                 "MovedObjects": []
               },
               "__PrefabIdToInstanceId": {
@@ -26008,7 +26146,7 @@
               "__enabled": true,
               "Flags": 0,
               "Bounds": {
-                "Mins": "-16,-48,-16",
+                "Mins": "-16,-48,-32",
                 "Maxs": "384,40,64"
               },
               "Count": 15,
@@ -26080,29 +26218,7 @@
               "RandomizeRotation": true
             }
           ],
-          "Children": [
-            {
-              "__guid": "92bb3fb2-09a4-48f0-846f-777861355e46",
-              "__version": 2,
-              "__Prefab": "prefabs/saved/pot_star.prefab",
-              "__PrefabInstancePatch": {
-                "AddedObjects": [],
-                "RemovedObjects": [],
-                "PropertyOverrides": [],
-                "MovedObjects": []
-              },
-              "__PrefabIdToInstanceId": {
-                "5c418ddf-cf65-491d-870e-a9bfb4c886b2": "92bb3fb2-09a4-48f0-846f-777861355e46",
-                "ec1d4422-c3a1-4e0a-9515-32c87f9e8887": "aedf4c5d-c1d4-49e0-80bc-e4bf2454a4ec",
-                "88753e23-1fd1-4f67-9aa4-6332676362b6": "9b97bb93-0184-48ab-b70b-d5c69bae21b4",
-                "43e71f82-886f-4126-b7be-504809318160": "e90c2c17-8114-456b-8bcb-ea4b75806880",
-                "c2d08396-f168-43ac-9682-196082ba8c40": "62e8392b-3863-49e5-8f5b-22b5efb4ba41",
-                "3e2207a1-868b-46cf-b2e1-c6e988a24ff5": "99e8e9be-1fa2-8e96-81d8-5ad61b6833c6",
-                "39261bfe-572f-49d4-91cf-0a4146e3b0db": "3f1b2035-3cbc-88db-9357-b756e4e4672d",
-                "403238df-2f67-4acf-9e94-a1a64a78f416": "712c4b47-8eb2-8ced-8fe0-3aef4d5b003e"
-              }
-            }
-          ]
+          "Children": []
         },
         {
           "__guid": "e6f5d331-7ccb-43be-8111-9803e5c4325a",
@@ -27190,8 +27306,8 @@
               "__enabled": true,
               "Flags": 0,
               "Bounds": {
-                "Mins": "-128,-40,-80",
-                "Maxs": "256,32,64"
+                "Mins": "-101.814438,-40,-80",
+                "Maxs": "256,32,187.332642"
               },
               "Count": 10,
               "NoneChance": 0.15,
@@ -29482,6 +29598,14 @@
             },
             "Property": "Position",
             "Value": "343.999939,-848,-510.34549"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5d319f16-5893-44a3-a6b8-1d10a4a33878"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           }
         ],
         "MovedObjects": []
@@ -29598,6 +29722,218 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "1608b49e-89e5-4ee5-893d-ef4605f1db6d",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "",
+      "Position": "1176,-2048,-516",
+      "Rotation": "0,-0.707106948,0,0.707106888",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "0954c23d-7d59-41bb-9f7d-5ee32172b444",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "52ef7d31-6d41-8ecd-a546-92367b4234fa"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "a038b169-34e2-4334-9fd0-7ff9dfdaf5b8",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Block",
+      "Position": "-255.999573,-2048,-40.0002098",
+      "Rotation": "0,-0.707106948,0,0.707106888",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "987bdb9d-7d19-45a9-9d01-5ce7f7c326a9",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "1,1,1,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "9e49bdb4-e510-8f10-bf2c-5359928449b5"
+            },
+            "Materials": [
+              "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "a0ac13f2-297c-4013-ad65-d59dea7aa22d",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Rnd_prop (22)",
+      "Position": "497.14093,-879.562805,-362.510162",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RandomVolumeSpawner",
+          "__guid": "8b262b8b-e3c5-4d7d-992d-5d66a378b2d2",
+          "__enabled": true,
+          "Flags": 0,
+          "Bounds": {
+            "Mins": "-10.443572,-48,-8",
+            "Maxs": "11.509305,48,64"
+          },
+          "Count": 3,
+          "NoneChance": 0.15,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Prefabs": [
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/block_1.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/block_2.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/block_3.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/block_a.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/block_b.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/block_c.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/book_star_2.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/book_star.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/buildingblock_arc.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/buildingblock_brick.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/buildingblock_column_tall.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/buildingblock_column.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/buildingblock_halfround.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/nut.prefab"
+            },
+            {
+              "_type": "gameobject",
+              "prefab": "prefabs/saved/toy_car.prefab"
+            }
+          ],
+          "RandomizeRotation": true
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -29708,8 +30044,10 @@
     "facepunch.cabinet_a3#282186",
     "facepunch.cabinetb#282188",
     "facepunch.car_dev#139202",
+    "facepunch.carpet_a_blend#85501",
     "facepunch.ceilingfana#274703",
-    "facepunch.coffeetablea#274713",
+    "facepunch.ceilingplaster03blend#314032",
+    "facepunch.coffeetablea#342915",
     "facepunch.consumerunit#308521",
     "facepunch.couch#279771",
     "facepunch.drawera#274718",
