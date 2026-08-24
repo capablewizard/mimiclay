@@ -1,6 +1,6 @@
 {
   "RootObject": {
-    "__guid": "98ff1236-535f-47fe-acfa-bfab0dae06d8",
+    "__guid": "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8",
     "__version": 2,
     "Flags": 0,
     "Name": "pot",
@@ -17,7 +17,7 @@
     "Components": [
       {
         "__type": "Mimiclay.SdfSculpture",
-        "__guid": "41d4782d-04d0-407f-b024-197eec46948a",
+        "__guid": "740a6c50-d4b7-4c3b-bd67-9b13a6bb6bad",
         "__enabled": true,
         "Flags": 0,
         "AutoRebuild": true,
@@ -30,9 +30,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,0",
+            "Position": "-5.46740047E-17,2.01823589E-08,-2.39367723",
             "Rotation": "0,0,0,1",
-            "Size": "24,24,24",
+            "Size": "32.2015152,32.2015152,32.2015152",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
@@ -41,7 +41,7 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 6,
-            "Rounding": 11.599999,
+            "Rounding": 15.564064,
             "Color": "0.58513,0.30516,0.19151,1",
             "Metallic": 0,
             "Roughness": 0.5,
@@ -56,7 +56,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 35.441124
+            "BoundingRadius": 47.03982
           },
           {
             "Shape": "Cylinder",
@@ -65,9 +65,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,15.2433453",
+            "Position": "-5.46740047E-17,2.01823589E-08,18.0587597",
             "Rotation": "0,0,0,1",
-            "Size": "30.9738731,24,10.6990929",
+            "Size": "41.5585594,32.2015152,14.3552914",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
@@ -91,7 +91,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 33.054672
+            "BoundingRadius": 44.253036
           },
           {
             "Shape": "Cylinder",
@@ -100,9 +100,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,5.33959913",
+            "Position": "-5.46740047E-17,2.01823589E-08,4.77062511",
             "Rotation": "0,0,0,1",
-            "Size": "21.0071793,26.733757,11.9676533",
+            "Size": "28.1859493,35.8694839,16.0573559",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
@@ -126,7 +126,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 24.24406
+            "BoundingRadius": 32.506046
           },
           {
             "Shape": "Cylinder",
@@ -135,9 +135,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,-3.15838575",
+            "Position": "-5.46740047E-17,2.01823589E-08,-6.63137674",
             "Rotation": "0,0,0,1",
-            "Size": "20.5092735,26.733757,11.9676533",
+            "Size": "27.5179043,35.8694839,16.0573559",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
@@ -146,7 +146,7 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 0.26832816,
-            "Rounding": 7.5795135,
+            "Rounding": 10.16966,
             "Color": "0.73788,0.37284,0.22465,1",
             "Metallic": 0,
             "Roughness": 0.5,
@@ -161,7 +161,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 23.812714
+            "BoundingRadius": 31.927303
           },
           {
             "Shape": "Cylinder",
@@ -170,9 +170,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,10.6257305",
+            "Position": "-5.46740047E-17,2.01823589E-08,11.8631859",
             "Rotation": "0,0,0,1",
-            "Size": "6.10193491,7.95384836,1.17435014",
+            "Size": "8.18714714,10.671917,1.57566035",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
@@ -181,7 +181,7 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 0.26832816,
-            "Rounding": 0.48290572,
+            "Rounding": 0.64792883,
             "Color": "0.8,0.68627,0.34902,1",
             "Metallic": 1,
             "Roughness": 0.5,
@@ -196,7 +196,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 6.280994
+            "BoundingRadius": 8.404473
           },
           {
             "Shape": "Cone",
@@ -205,18 +205,18 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,18.0305767",
+            "Position": "-5.46740047E-17,2.01823589E-08,21.7984791",
             "Rotation": "-1,1.49011612E-08,-8.8817842E-16,-4.37113847E-08",
-            "Size": "6.14338112,8.00787258,4.05337",
+            "Size": "8.24275684,10.7443991,5.43852806",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
             "Slice": 0.05277778,
             "SlicePlaneN": 0.89444447,
-            "LocalCentre": "0,0,4.05337",
+            "LocalCentre": "0,0,5.43852806",
             "Blend": 2.5067828,
-            "Rounding": 1.0814713,
+            "Rounding": 1.4510419,
             "Color": "0.8,0.68627,0.34902,1",
             "Metallic": 1,
             "Roughness": 0.5,
@@ -231,7 +231,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 10.798243
+            "BoundingRadius": 14.274164
           }
         ],
         "FlipFaces": false,
@@ -246,7 +246,7 @@
       },
       {
         "__type": "Sandbox.ModelRenderer",
-        "__guid": "9f90c654-0bb3-4a5c-b4cb-757687b827c4",
+        "__guid": "b1588502-5f1f-4738-bcb6-df938fa1cbfe",
         "__enabled": false,
         "Flags": 0,
         "BodyGroups": 18446744073709551615,
@@ -273,7 +273,7 @@
       },
       {
         "__type": "Mimiclay.SdfRaymarchRenderer",
-        "__guid": "a4c5db03-fc58-4a26-ac84-c904b885c669",
+        "__guid": "239936e3-3fd0-4c52-a5f0-f4d89e833a00",
         "__enabled": true,
         "Flags": 0,
         "AdaptiveQuality": false,
@@ -320,7 +320,7 @@
       },
       {
         "__type": "Mimiclay.SdfCollider",
-        "__guid": "034bc4b7-17da-45e3-84f8-c291c8a96e40",
+        "__guid": "e11df0bf-f2aa-4005-a7fc-858707ff9c1b",
         "__enabled": true,
         "Flags": 0,
         "BuildAsTrigger": false,
@@ -334,7 +334,7 @@
       },
       {
         "__type": "Mimiclay.SculptBounds",
-        "__guid": "a91e0bf5-1a03-4945-9cef-ec0c72a26c54",
+        "__guid": "f7ad8dc7-fe46-4154-a339-fb8bc571211e",
         "__enabled": true,
         "Flags": 0,
         "Anchor": "FollowShape",
@@ -358,7 +358,7 @@
       },
       {
         "__type": "Mimiclay.DamageProfile",
-        "__guid": "c94a610e-d94d-426a-9fa5-52f84eb984d2",
+        "__guid": "c004d784-afcd-4e27-8830-bd55ca972ad3",
         "__enabled": true,
         "Flags": 0,
         "HealDelay": "0.25,3",
@@ -373,7 +373,7 @@
       },
       {
         "__type": "Mimiclay.ClayBoil",
-        "__guid": "e196e643-96a9-45d4-8fe6-71ea4a7f460a",
+        "__guid": "2cd31428-e447-46b6-83d2-c1999ebc4558",
         "__enabled": true,
         "Flags": 0,
         "Activation": "Never",

@@ -4062,6 +4062,14 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "504b3663-98cb-4d3c-84d2-d7787e386222"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "70cfa371-937d-470c-91f7-e17f2dd0263e"
             },
             "Property": "Activation",
@@ -4831,7 +4839,7 @@
           "DefaultMaterial": "materials/plasticine_scene.vmat",
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "53 object(s), 67690 tris — 09:44:45",
+          "LastImport": "57 object(s), 69888 tris — 19:07:04",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -8812,7 +8820,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Cube.041",
-          "Position": "474.113983,499.303009,0",
+          "Position": "472.401428,499.303009,-4.0647788",
           "Rotation": "-2.66925451E-08,2.66925415E-08,-0.707106709,0.707106829",
           "Scale": "1,1,1",
           "Tags": "",
@@ -8896,7 +8904,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Cylinder.006",
-          "Position": "472.401489,440.298828,66.2272949",
+          "Position": "472.401489,440.298828,62.1625175",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -8980,7 +8988,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Cube",
-          "Position": "472.401489,443.818451,66.2272949",
+          "Position": "472.401489,443.818451,62.1625252",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -9310,6 +9318,342 @@
             }
           ],
           "Children": []
+        },
+        {
+          "__guid": "976ace29-29e3-4333-ba0c-8bd498f26749",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Cube.046",
+          "Position": "472.401428,499.303009,0",
+          "Rotation": "-2.66925451E-08,2.66925415E-08,-0.707106709,0.707106829",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "b9c7db9c-2356-41fa-962c-37b5d35418bd",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "Cube.046"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "1b49dade-61a3-415c-b5c8-341c0de01109",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "1,1,1,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "b1271729-915b-4e8a-8460-daf2b6ee34f4",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "1926eabe-fc67-4bc3-8f05-616cf37f9a0b",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Cube.047",
+          "Position": "472.401428,499.303009,99.0889282",
+          "Rotation": "-0.707106829,0.707106709,-1.37678754E-07,1.37678782E-07",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "45b11cab-b3c6-42e8-b855-e89a7093f08f",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "Cube.047"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "d5918415-82c2-45e5-abc4-f1078f4d4d2b",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "1,1,1,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "4ee29f4a-045c-472f-b686-dad058b1f0d8",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "32451f65-b36f-46ca-b6d1-222727e2a659",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "exported.001",
+          "Position": "472.401428,452.88147,115.669426",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "8ef9151b-93d6-44b5-b968-9df1c2fe74b7",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "exported.001"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "b501e7d0-bc00-4cf1-8941-cd700dd134ad",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "1,1,1,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "a809c561-8087-4c41-98e5-9927aa33a3c3",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "82556d7f-9877-4e22-afe7-c0d368b03214",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "exported.002",
+          "Position": "472.401428,452.88147,115.669426",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "378a1cfa-2398-4366-b27d-9feaf29136e2",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "exported.002"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "81fbbbb6-3ef7-4af0-9f11-9d5876dd5601",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "1,1,1,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "6a580f7b-9d4f-4cb0-8ceb-f0d7a4605420",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
         }
       ]
     },
@@ -9340,10 +9684,50 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
             },
             "Property": "DepthOcclusionCull",
             "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9374,6 +9758,54 @@
             },
             "Property": "Position",
             "Value": "-99.6691971,-908.325012,-406.142395"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9420,6 +9852,54 @@
             },
             "Property": "Rotation",
             "Value": "-0.243694216,-0.243694186,-0.663786888,0.663786948"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9466,6 +9946,54 @@
             },
             "Property": "Rotation",
             "Value": "-0.243694216,-0.243694186,-0.663786888,0.663786948"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9512,6 +10040,54 @@
             },
             "Property": "Rotation",
             "Value": "-0.243694216,-0.243694186,-0.663786888,0.663786948"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9558,6 +10134,54 @@
             },
             "Property": "Rotation",
             "Value": "0.0395912677,0.0395912677,-0.705997467,0.705997586"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9571,44 +10195,6 @@
         "c00dd2f6-2ef7-4133-9e52-9648153fb950": "67f7bc21-e62d-4445-8137-4fe560e8b6f5",
         "67a120aa-d2c3-4f74-ba7e-c850b8524e64": "b3f52684-5bf6-4580-a50e-ffc4f59f5259",
         "8d6aa679-bf63-4868-8f0b-0dd219d2709c": "e1aad16a-0393-46ef-bc22-b56b0e888373"
-      }
-    },
-    {
-      "__guid": "63fecf0b-032e-4e6d-8d7c-bc476598c994",
-      "__version": 2,
-      "__Prefab": "prefabs/saved/pot.prefab",
-      "__PrefabInstancePatch": {
-        "AddedObjects": [],
-        "RemovedObjects": [],
-        "PropertyOverrides": [
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "98ff1236-535f-47fe-acfa-bfab0dae06d8"
-            },
-            "Property": "Position",
-            "Value": "-186.197357,-893.603088,-356.595367"
-          },
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "98ff1236-535f-47fe-acfa-bfab0dae06d8"
-            },
-            "Property": "Rotation",
-            "Value": "-0.0242191553,0.0100319535,0.923561633,0.382552743"
-          }
-        ],
-        "MovedObjects": []
-      },
-      "__PrefabIdToInstanceId": {
-        "98ff1236-535f-47fe-acfa-bfab0dae06d8": "63fecf0b-032e-4e6d-8d7c-bc476598c994",
-        "41d4782d-04d0-407f-b024-197eec46948a": "40ab3a7c-7459-434d-a6eb-540a82dd8897",
-        "9f90c654-0bb3-4a5c-b4cb-757687b827c4": "0071c520-20e1-497c-8f3f-2202ad8029b1",
-        "a4c5db03-fc58-4a26-ac84-c904b885c669": "2540a575-4d74-4e91-bcb5-375047c8a151",
-        "034bc4b7-17da-45e3-84f8-c291c8a96e40": "25e33468-7f3f-4e27-87ab-18ad29407387",
-        "a91e0bf5-1a03-4945-9cef-ec0c72a26c54": "ae391815-3d2e-40d8-9995-34342d05e5a4",
-        "c94a610e-d94d-426a-9fa5-52f84eb984d2": "2201b625-4dff-41ad-a441-722b73a0d126",
-        "e196e643-96a9-45d4-8fe6-71ea4a7f460a": "bb300748-9400-499c-ab74-e384a9fb4be5"
       }
     },
     {
@@ -9721,6 +10307,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9854,6 +10480,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -9987,6 +10653,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -10112,6 +10818,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -10245,6 +10991,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -10378,6 +11164,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -10511,6 +11337,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -10644,6 +11510,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -10777,6 +11683,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -10910,6 +11856,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -11043,6 +12029,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -11176,6 +12202,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -11309,6 +12375,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -11442,6 +12548,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -11488,6 +12634,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -11509,20 +12695,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -11588,9 +12761,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 11.336612
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -11598,6 +12779,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -11605,8 +12794,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -11625,8 +12830,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "a49067a5-ab3f-427c-b63c-e28090e4361c",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "a8c9c002-bb3d-43c9-bdd5-9114c409bdc3",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "1ed67e24-b5ef-4ab2-a207-dbc6850b78df",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "ccb71ff6-70f1-4236-b60c-08c4c00cbd4f",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "ba19dd58-955e-472a-bea3-e13478012d6a"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "93a18ab9-8a48-8bc0-b0a0-cce2864b58f8",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "ac8cba3a-73de-84b3-aaa2-0a5537d8d15b",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "aa7a76e2-b01d-80d0-922a-7d9e40f71313"
       }
     },
     {
@@ -11635,20 +12841,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -11714,9 +12907,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 11.760514
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -11724,6 +12925,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -11731,8 +12940,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -11751,8 +12976,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "26d3070d-4feb-4c9e-9d68-d7fd0a967d2a",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "2356c165-a244-46f5-96e9-990ebdb3ec76",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "dcf0aa9f-17af-4f8c-95a0-3ba830fc8620",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "a7d17019-046a-4825-94b5-cc2e556ae6b2",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "53563fd7-763e-41b5-ae86-9af87d37875a"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "32680885-b15c-8758-95c9-adb31eb33622",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "84089623-89eb-8145-87ad-14088de45dcd",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "06fa9adc-b848-86d7-8548-25abd66ea416"
       }
     },
     {
@@ -11761,20 +12987,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -11840,9 +13053,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.49235
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -11850,6 +13071,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -11857,8 +13086,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -11877,8 +13122,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "4eb950bc-5372-4565-8659-c1650c3d8c88",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "da5592e4-0dc5-4aec-81c1-ae21404151b4",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "55cb6b43-36f4-4f62-a11c-37197f1a0bf6",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "98731b97-7fb2-8984-9aa8-464038bcfa00",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "0f94c4fc-3eb5-8e61-ab48-2297c32d872e"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "0dcd9489-901d-82d3-af66-c6965263a31c",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "555d32d2-3b61-813d-8915-b217091b7158",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "4926e9df-168a-8f2e-9424-573328c7edfa"
       }
     },
     {
@@ -11887,20 +13133,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -11966,9 +13199,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 11.106384
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -11976,6 +13217,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -11983,8 +13232,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12003,8 +13268,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "6410a992-0171-44b5-89aa-f401fadae1d0",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "7265f0e6-a7c5-4c31-9f1c-e644eac74bed",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "27955fcf-0c17-499b-8513-0198f40f1d26",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "78ecfc64-3ff6-4d7b-afc3-44aa45e03536",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "a91f9b5e-437f-4042-a617-c2eebde81fd4"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "9fdea637-92e3-8ea7-b0e4-161708133d86",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "2ddd5481-f9b7-8acb-a01f-21cd901f664c",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "29d151a6-de53-8944-b299-9a73b9e72fcb"
       }
     },
     {
@@ -12013,20 +13279,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12092,9 +13345,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 11.346701
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12102,6 +13363,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12109,8 +13378,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12129,8 +13414,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "dbf802c3-0029-44fe-87ad-5844b5db31b7",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "f90b8da7-bc9e-490b-97d0-c899eb8897f5",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "ec876314-bae5-4fbe-bfe9-cb683723c52e",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "1b639af2-0220-4ec6-a2cd-cffe076c85be",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "92960fc2-cab5-4034-80d5-2ff6d8142cc7"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "5c14cc46-4126-8b22-a6a5-f870e8099d66",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "5df8998f-6b69-8ccc-a15c-bf4b405a2f32",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "d8280509-f10c-8f95-9489-428cb5979b54"
       }
     },
     {
@@ -12139,20 +13425,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12218,9 +13491,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 11.285592
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12228,6 +13509,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12235,8 +13524,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12255,8 +13560,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "05d61edb-b07d-42fe-94f1-ab5fa5f0a16c",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "c8d03ebb-027e-47d3-a552-cdfcfcbe15ee",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "d84ae2bf-89ed-481f-90db-bdffa5e973b5",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "dcecc5aa-529c-45a5-bdc5-db896ddcaddf",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "5c3925fd-551c-4b77-a5d6-42c7c9b1576d"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "56714de1-84f3-8186-8bf5-b3e4820c6291",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "f0871d71-8529-884d-b857-c2de8591e0fe",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "cdd05ed8-4002-8a5c-b27b-d1078550b276"
       }
     },
     {
@@ -12265,20 +13571,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12344,9 +13637,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.479366
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12354,6 +13655,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12361,8 +13670,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12381,8 +13706,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "521c9425-9eff-4064-b384-38189c33280b",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "2e0d12da-17af-48ba-96d8-c2e7e1d08dd5",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "a2746800-d925-4342-9e1a-855fc4148c4e",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "9257b64a-8b62-8fa3-9455-8cb213c87054",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "a2f5e2d6-a011-87bd-b49f-6752cffe3d3e"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "ae313108-f414-8243-92af-bf43bd3419c1",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "85262e72-7087-8bfb-bf01-adcf470ddd9c",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "fbd0a049-35c6-846a-a019-20d91e7123f8"
       }
     },
     {
@@ -12391,20 +13717,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12470,9 +13783,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 11.527906
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12480,6 +13801,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12487,8 +13816,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12507,8 +13852,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "575dd1e3-0d74-40d4-8901-c8de577ee0b7",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "71ddadd6-e3a4-4c8c-8e9a-8d7b54d1128f",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "0569bc1b-8906-4215-8328-ce0cfb7b982b",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "7ca7cb5f-bab5-8f9c-91e5-64f3045ea798",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "b4924497-3655-8f77-b446-87443f7ac1a2"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "da13aa77-8155-8184-8185-c941e9f2f728",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "530c7abc-8b43-8f01-b95b-f8f242384b48",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "f51784a2-71bf-8e57-88c3-e62b8e7e83c2"
       }
     },
     {
@@ -12517,20 +13863,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12596,9 +13929,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 11.177228
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12606,6 +13947,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12613,8 +13962,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12633,8 +13998,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "b3cd2beb-7cd6-4f80-9f66-a3be159b89d4",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "e960e82e-0d1d-4549-9689-6bc12daff90a",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "f4f595b7-fb80-48b7-9e3b-249bfe80c3ad",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "fe2bc3e2-4331-4bc4-9d2c-d2238a14d958",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "1107906d-4619-4b55-ae65-1c2473571bfb"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "1c913d15-6e92-84b5-904e-2712ccc546d3",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "b459094a-3f4e-8b1e-afad-89a7ca57f0de",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "f3649ec7-562f-8614-b44d-fb61992bf3fc"
       }
     },
     {
@@ -12643,20 +14009,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12722,9 +14075,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.998136
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12732,6 +14093,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12739,8 +14108,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12759,8 +14144,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "27065196-67e6-45bf-956c-01b4fee6d21a",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "4b6bfc42-a00c-4a0f-a180-fbe109ab8318",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "d9bff024-bb3f-434f-ac42-efb2e6de2e6e",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "55b1216e-f0a7-4f70-9f81-c86d33a729cd",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "3a199263-10f4-4990-b972-5c2ee92b5e24"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "3fdced3e-5c91-8098-a8ec-b129cb8bc5a0",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "ebdf3d07-baa6-86f3-9fb2-f55dec9d9b17",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "b784a000-2b11-8fcc-b376-ee86c45e4792"
       }
     },
     {
@@ -12769,20 +14155,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12848,9 +14221,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.684394
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12858,6 +14239,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12865,8 +14254,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -12885,8 +14290,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "48ffd5c5-2db7-427b-a193-cfe5f2e46dcd",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "8c03df0b-7c3c-41df-b6a1-8533bc395cd5",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "35048867-7685-46cc-a553-a5be01873432",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "c810c4a5-0b1f-4d05-b0d9-f76c89ee9a77",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "583aa32c-4adb-42e5-aa4f-c5a401af35b6"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "4cdfced8-89eb-8967-8bcf-547071cf1094",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "3abe3f43-e462-815c-83f1-44f642ff4ca9",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "5e73ac2b-5880-8eb1-bbf5-99144cd5f92a"
       }
     },
     {
@@ -12895,20 +14301,7 @@
       "__Prefab": "prefabs/saved/block_a.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "130804e7-9335-4eff-8901-1c6f6e316011"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf"
-            }
-          }
-        ],
+        "RemovedObjects": [],
         "PropertyOverrides": [
           {
             "Target": {
@@ -12974,9 +14367,17 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.998136
+                "BoundingRadius": 41.669773
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -12984,6 +14385,14 @@
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
             "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "DepthOcclusionCull",
             "Value": false
           },
           {
@@ -12991,8 +14400,24 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "DistanceSwitching",
-            "Value": false
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           },
           {
             "Target": {
@@ -13011,8 +14436,9 @@
         "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "f9f10e09-a5c1-45be-822c-108aa03965d9",
         "d18818a7-d31c-44a0-8c71-702227370bfe": "b646a0e6-1d49-4e8f-a4f6-e90536323858",
         "b8c33660-fe1b-42fc-a064-98f087d68c2b": "0df0d146-c479-4d56-b41c-2500ac2542ba",
-        "130804e7-9335-4eff-8901-1c6f6e316011": "948806c5-fd44-4d7f-b1b4-c30567fdff77",
-        "d1aacd41-fb4f-41f3-a0c4-03a46a168ccf": "625f404d-6dc7-400d-817b-6b26115ac420"
+        "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "a60d2041-2693-8ce3-99ad-1b77bdc64620",
+        "6401165a-970b-493f-b566-1d44fc7d2772": "51867a50-b51b-87de-92fa-fd819bb790d6",
+        "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "9bf3fd0f-b2ad-8c4f-821d-0d98a23568a5"
       }
     },
     {
@@ -13046,6 +14472,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -13100,6 +14566,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -13146,6 +14652,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -13192,6 +14738,46 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -13234,299 +14820,50 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "afd12c4c-5f88-4a8d-ad2d-130fb87173ac"
+              "IdValue": "023ac5c2-9981-417e-9ba8-9bcdfc6974cf"
             },
-            "Property": "Brushes",
-            "Value": [
-              {
-                "Shape": "Cylinder",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "0.307403564,-0.135369182,2.59187317",
-                "Rotation": "0,0,0,1",
-                "Size": "25.7502232,25.7502232,29.5835819",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 6,
-                "Rounding": 6.0588756,
-                "Color": "0.2241,0.38705,0.6036,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 40.720684
-              },
-              {
-                "Shape": "Cylinder",
-                "Operation": "Subtract",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "0.307409286,-0.13534832,31.5255928",
-                "Rotation": "0,0,0,1",
-                "Size": "29.0040741,24.1068954,1.73070657",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 1.9799988,
-                "Rounding": 1.7307066,
-                "Color": "0.08635,0.14241,0.21691,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 29.550665
-              },
-              {
-                "Shape": "Cylinder",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "0.307409286,-0.13534832,31.4012413",
-                "Rotation": "0,0,0,1",
-                "Size": "28.4374065,24.1068954,1.36576176",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0.48,
-                "Rounding": 1.3657618,
-                "Color": "0.8,0.68627,0.34902,1",
-                "Metallic": 1,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 28.590185
-              },
-              {
-                "Shape": "Cylinder",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "0.774933338,0.149583936,36.0747566",
-                "Rotation": "0,0,0,1",
-                "Size": "27.5627842,25.7502232,2.67987227",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0.39117646,
-                "SlicePlaneN": 0.21764708,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Rounding": 2.6798723,
-                "Color": "0.2241,0.38705,0.6036,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 27.692757
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "0.774941921,0.149603486,37.8178596",
-                "Rotation": "1.00000012,7.4505806E-09,0,-4.37113883E-08",
-                "Size": "24.8555393,23.6372147,9.40132999",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 5.6399965,
-                "Rounding": 2.801446,
-                "Color": "0.22714,0.44262,0.72899,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 26.26554
-              },
-              {
-                "Shape": "Box",
-                "Operation": "Cutout",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-19.1548519,7.31609774,6.51067972",
-                "Rotation": "0.392847478,-0.587937772,-0.587937772,0.392847478",
-                "Size": "20.2775364,8.84092999,9.74202156",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2.0210106,
-                "Rounding": 2.1851678,
-                "Color": "0.95,0.9,0.75,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 24.676466
-              },
-              {
-                "Shape": "Text",
-                "Operation": "Cutout",
-                "CrossSection": "Triangle",
-                "Text": "flour",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-20.3792896,7.82331848,5.80184793",
-                "Rotation": "0.392847478,-0.587937772,-0.587937772,0.392847478",
-                "Size": "19.8490715,9.92453575,7.63469696",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2.1907628,
-                "Rounding": 0,
-                "Color": "0.29337,0.29337,0.29337,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 19.323284
-              },
-              {
-                "Shape": "Spline",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-37.4460678,14.2117882,38.8307571",
-                "Rotation": "0,0,0,1",
-                "Size": "3.21168876,3.21168876,3.21168876",
-                "Points": [
-                  "1.12551546,-4.94900656,46.0736198,1.62572372",
-                  "1.12551546,-6.62870359,50.429554,1.62572372",
-                  "1.12551546,-4.77848816,54.7158699,1.62572372",
-                  "1.12551546,-0.456515789,56.4811821,1.62572372",
-                  "1.12551546,3.86545801,54.7158699,1.62572372",
-                  "1.12551546,5.71567249,50.429554,1.62572372",
-                  "1.12551546,4.03597546,46.0736198,1.62572372"
-                ],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": true,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2,
-                "Rounding": 0.75,
-                "Color": "0.2241,0.38705,0.6036,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 3.7116888
-              }
-            ]
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -13569,299 +14906,50 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "22f434d8-e402-414e-8fb8-017099f9c2c6"
+              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
-            "Property": "Brushes",
-            "Value": [
-              {
-                "Shape": "Cylinder",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-0.65419364,0.256819606,1.13659",
-                "Rotation": "0,0,0,1",
-                "Size": "20.591013,20.591013,20.7562695",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 6,
-                "Rounding": 4.844943,
-                "Color": "0.61121,0.19869,0.13223,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 30.737177
-              },
-              {
-                "Shape": "Cylinder",
-                "Operation": "Subtract",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-0.65419364,0.256819606,18.4985924",
-                "Rotation": "0,0,0,1",
-                "Size": "23.1929379,19.2769394,1.38394916",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 1.9799988,
-                "Rounding": 1.3839492,
-                "Color": "0.61121,0.19869,0.13223,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 23.72919
-              },
-              {
-                "Shape": "Cylinder",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-0.65419364,0.256819606,18.3991585",
-                "Rotation": "0,0,0,1",
-                "Size": "22.7397976,19.2769394,1.09212339",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0.48,
-                "Rounding": 1.0921234,
-                "Color": "0.8,0.68627,0.34902,1",
-                "Metallic": 1,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 22.88601
-              },
-              {
-                "Shape": "Cylinder",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-0.280342102,0.484663844,22.1363049",
-                "Rotation": "0,0,0,1",
-                "Size": "22.0404148,20.591013,2.14294434",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0.39117646,
-                "SlicePlaneN": 0.21764708,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Rounding": 2.1429443,
-                "Color": "0.61121,0.19869,0.13223,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 22.144346
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-0.280335426,0.484680057,23.5301609",
-                "Rotation": "1.00000012,7.4505806E-09,0,-4.37113883E-08",
-                "Size": "19.8755913,18.9013577,7.51771879",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 5.6399965,
-                "Rounding": 2.2401595,
-                "Color": "0.69423,0.27915,0.21228,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 21.285591
-              },
-              {
-                "Shape": "Box",
-                "Operation": "Cutout",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-16.2170811,6.21534729,2.41609001",
-                "Rotation": "0.392847478,-0.587937772,-0.587937772,0.392847478",
-                "Size": "15.1403198,6.60112476,7.27392817",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2.0210106,
-                "Rounding": 1.7473565,
-                "Color": "0.95,0.9,0.75,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 18.552807
-              },
-              {
-                "Shape": "Text",
-                "Operation": "Cutout",
-                "CrossSection": "Triangle",
-                "Text": "sugar",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-17.1961861,6.62091827,2.6066618",
-                "Rotation": "0.392847478,-0.587937772,-0.587937772,0.392847478",
-                "Size": "15.0123615,7.50618076,5.57288933",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2.1907628,
-                "Rounding": 0,
-                "Color": "0.29337,0.29337,0.29337,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 15.344992
-              },
-              {
-                "Shape": "Spline",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-37.4460678,14.2117882,38.8307571",
-                "Rotation": "0,0,0,1",
-                "Size": "3.21168876,3.21168876,3.21168876",
-                "Points": [
-                  "0,-3.5923934,30.1318665,1.29999995",
-                  "0,-4.93555212,33.6150818,1.29999995",
-                  "0,-3.45604062,37.0426025,1.29999995",
-                  "0,0,38.4542122,1.29999995",
-                  "0,3.45604062,37.0426025,1.29999995",
-                  "0,4.93555212,33.6150818,1.29999995",
-                  "0,3.5923934,30.1318665,1.29999995"
-                ],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": true,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2,
-                "Rounding": 0.75,
-                "Color": "0.61121,0.19869,0.13223,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 3.7116888
-              }
-            ]
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
+            },
+            "Property": "MinSteps",
+            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -13875,6 +14963,950 @@
         "fd038721-9e3b-4ad4-820d-2866cb0a5226": "9fcb2516-611f-40d6-aa5e-a621918dc72b",
         "08f03027-3f37-4dbc-8c14-71a7fe120931": "0016ea8f-48b2-4bbe-b937-a6b4c98148e7",
         "40037d61-1a31-464c-a7ce-0c788c4634ff": "b64029c7-b119-477e-a814-457c6864d3b6"
+      }
+    },
+    {
+      "__guid": "f8bb3b8c-375e-4b09-a859-0125b26f0063",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/pot.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8"
+            },
+            "Property": "Name",
+            "Value": "pot (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8"
+            },
+            "Property": "Position",
+            "Value": "-184.159073,-893.885437,-346.035828"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8"
+            },
+            "Property": "Rotation",
+            "Value": "0.00114344619,0.0261902213,-0.0436026976,0.99870497"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "MinSteps",
+            "Value": 12
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8": "f8bb3b8c-375e-4b09-a859-0125b26f0063",
+        "740a6c50-d4b7-4c3b-bd67-9b13a6bb6bad": "79815925-83c7-4c2e-bf31-c990d725721d",
+        "b1588502-5f1f-4738-bcb6-df938fa1cbfe": "b1344f0b-bf0b-4dcb-9683-8ce668b95e3e",
+        "239936e3-3fd0-4c52-a5f0-f4d89e833a00": "1216d876-c313-42ab-b199-8144b4574e78",
+        "e11df0bf-f2aa-4005-a7fc-858707ff9c1b": "56e0d7ef-1503-4e82-9062-49e45b369797",
+        "f7ad8dc7-fe46-4154-a339-fb8bc571211e": "d07e192e-c9af-4e8b-9458-5b396bc50fea",
+        "c004d784-afcd-4e27-8830-bd55ca972ad3": "d013fffb-2b76-4d35-a980-90b8142267c4",
+        "2cd31428-e447-46b6-83d2-c1999ebc4558": "d2bf70b7-3122-43bb-a810-1a146dcfd6c3"
+      }
+    },
+    {
+      "__guid": "4b2e888c-ef31-474b-835c-bcc8688eb8eb",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/pot_polkedot.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8"
+            },
+            "Property": "Position",
+            "Value": "-183.628098,-749.763306,-350.147614"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "740a6c50-d4b7-4c3b-bd67-9b13a6bb6bad"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-5.46740047E-17,2.01823589E-08,-2.39367723",
+                "Rotation": "0,0,0,1",
+                "Size": "32.2015152,32.2015152,32.2015152",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 15.564064,
+                "Color": "0.22298,0.29685,0.39344,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 47.03982
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-5.46740047E-17,2.01823589E-08,18.0587597",
+                "Rotation": "0,0,0,1",
+                "Size": "41.5585594,32.2015152,14.3552914",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.1399999,
+                "Rounding": 0,
+                "Color": "0.32293,0.40693,0.51675,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 44.253036
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-5.46740047E-17,2.01823589E-08,4.77062511",
+                "Rotation": "0,0,0,1",
+                "Size": "28.1859493,35.8694839,16.0573559",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.26832816,
+                "Rounding": 0,
+                "Color": "0.17196,0.22975,0.30531,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 32.506046
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-5.46740047E-17,2.01823589E-08,-6.63137674",
+                "Rotation": "0,0,0,1",
+                "Size": "27.5179043,35.8694839,16.0573559",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.26832816,
+                "Rounding": 10.16966,
+                "Color": "0.27389,0.37021,0.49614,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 31.927303
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-5.46740047E-17,2.01823589E-08,11.8631859",
+                "Rotation": "0,0,0,1",
+                "Size": "8.18714714,10.671917,1.57566035",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.26832816,
+                "Rounding": 0.64792883,
+                "Color": "0.86512,0.86512,0.86512,1",
+                "Metallic": 1,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 8.404473
+              },
+              {
+                "Shape": "Cone",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-5.46740047E-17,2.01823589E-08,21.7984791",
+                "Rotation": "-1,1.49011612E-08,-8.8817842E-16,-4.37113847E-08",
+                "Size": "8.24275684,10.7443991,5.43852806",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.05277778,
+                "SlicePlaneN": 0.89444447,
+                "LocalCentre": "0,0,5.43852806",
+                "Blend": 2.5067828,
+                "Rounding": 1.4510419,
+                "Color": "0.86512,0.86512,0.86512,1",
+                "Metallic": 1,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 14.274164
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "32.2015152,0,-4.5",
+                "Rotation": "0,0.707106769,0,0.707106769",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "22.7699089,22.7699089,-4.5",
+                "Rotation": "-0.270598054,0.65328151,0.270598054,0.65328151",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,32.2015152,-4.5",
+                "Rotation": "-0.5,0.5,0.5,0.5",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-22.7699089,22.7699089,-4.5",
+                "Rotation": "-0.65328151,0.270598054,0.65328151,0.270598054",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-32.2015152,0,-4.5",
+                "Rotation": "-0.707106769,0,0.707106769,0",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-22.7699089,-22.7699089,-4.5",
+                "Rotation": "-0.65328151,-0.270598054,0.65328151,-0.270598054",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,-32.2015152,-4.5",
+                "Rotation": "-0.5,-0.5,0.5,-0.5",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "22.7699089,-22.7699089,-4.5",
+                "Rotation": "-0.270598054,-0.65328151,0.270598054,-0.65328151",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "29.7503204,12.3229866,-16.5",
+                "Rotation": "-0.13794969,0.69351995,0.13794969,0.69351995",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "12.3229866,29.7503204,-16.5",
+                "Rotation": "-0.392847478,0.587937772,0.392847478,0.587937772",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-12.3229866,29.7503204,-16.5",
+                "Rotation": "-0.587937772,0.392847478,0.587937772,0.392847478",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-29.7503204,12.3229866,-16.5",
+                "Rotation": "-0.69351995,0.13794969,0.69351995,0.13794969",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-29.7503204,-12.3229866,-16.5",
+                "Rotation": "-0.69351995,-0.13794969,0.69351995,-0.13794969",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-12.3229866,-29.7503204,-16.5",
+                "Rotation": "-0.587937772,-0.392847478,0.587937772,-0.392847478",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "12.3229866,-29.7503204,-16.5",
+                "Rotation": "-0.392847478,-0.587937772,0.392847478,-0.587937772",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "29.7503204,-12.3229866,-16.5",
+                "Rotation": "-0.13794969,-0.69351995,0.13794969,-0.69351995",
+                "Size": "4.80000019,4.80000019,2",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.6237113,
+                "Rounding": 0,
+                "Color": "0.71373,0.60784,0.52157,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 5.605928
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "AdaptiveQuality",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "DepthOcclusionCull",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "FarEpsilon",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 16.020012
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "MinSteps",
+            "Value": 12
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8": "4b2e888c-ef31-474b-835c-bcc8688eb8eb",
+        "740a6c50-d4b7-4c3b-bd67-9b13a6bb6bad": "2b16c257-1fd7-41db-a750-cc4b9db5b7ac",
+        "b1588502-5f1f-4738-bcb6-df938fa1cbfe": "134b8f20-7a37-47e5-b251-b93812a1e40f",
+        "239936e3-3fd0-4c52-a5f0-f4d89e833a00": "e1a7cfb6-a1c9-4632-b687-efdb446623de",
+        "e11df0bf-f2aa-4005-a7fc-858707ff9c1b": "dca7670a-dcfa-4ff4-9896-94bae3143988",
+        "f7ad8dc7-fe46-4154-a339-fb8bc571211e": "492c09e3-fdd7-4458-94fe-0a03b166c726",
+        "c004d784-afcd-4e27-8830-bd55ca972ad3": "82c946f3-4ee4-4836-9fd1-5e10845a9798",
+        "2cd31428-e447-46b6-83d2-c1999ebc4558": "099bf1d8-c218-4fe2-b61b-a1b00896ef1a",
+        "aa4dc91b-f203-8f8b-997a-b9a33b3e1699": "3f6bdd67-80fe-46fe-b1d8-cbfd8106293b"
       }
     }
   ],
