@@ -1,4 +1,6 @@
-// THIS FILE IS AUTO-GENERATED
+// Plasticine surface for ORDINARY geometry (engine primitives, imported meshes) — no SurfaceNets vertex
+// data, so g_bUseVertexData is off: albedo comes from g_vTintColor alone instead of vertex colour, and
+// roughness/metalness come from the sliders instead of the per-brush pair packed into TexCoord0.
 
 Layer0
 {
@@ -8,6 +10,7 @@ Layer0
 	g_bFogEnabled "1"
 
 	//---- Surface ----
+	g_bUseVertexData "0"
 	g_flDarkSatBoost "1.000"
 	g_flMetalness "0.000"
 	g_flNormalStrength "1.000"

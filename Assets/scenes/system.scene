@@ -381,7 +381,7 @@
         {
           "__type": "Sandbox.Bloom",
           "__guid": "4c779c47-03a7-4b0d-9af4-063cd7da9b1a",
-          "__enabled": false,
+          "__enabled": true,
           "Flags": 0,
           "__version": 1,
           "Mode": "Additive",
@@ -391,9 +391,9 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Strength": 0.4819277,
-          "Threshold": 1.4297189,
-          "Tint": "0.3814,0.3814,0.3814,1"
+          "Strength": 1.6037736,
+          "Threshold": 1.0377358,
+          "Tint": "1,1,1,1"
         },
         {
           "__type": "Sandbox.Tonemapping",
@@ -478,16 +478,16 @@
           "__enabled": true,
           "Flags": 0,
           "__version": 1,
-          "FalloffRange": 0.6957561,
-          "Intensity": 1,
+          "FalloffRange": 0.45,
+          "Intensity": 0.75,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Radius": 45,
-          "ThinCompensation": 1
+          "Radius": 21,
+          "ThinCompensation": 0
         },
         {
           "__type": "Sandbox.DepthOfField",
@@ -496,6 +496,7 @@
           "Flags": 0,
           "BackBlur": true,
           "BlurSize": 6.329114,
+          "DebugView": false,
           "FocalDistance": 704.9367,
           "FocusRange": 616.03375,
           "FrontBlur": false,
@@ -505,6 +506,32 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
+        },
+        {
+          "__type": "Sandbox.ScreenSpaceReflections",
+          "__guid": "006c1156-7844-4afc-bcb1-d157e19ef911",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
+          "__type": "Sandbox.FilmGrain",
+          "__guid": "997f8c84-49ed-4edb-b0b4-b44a9252144d",
+          "__enabled": true,
+          "Flags": 0,
+          "Intensity": 0.03,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Response": 0.5
         }
       ],
       "Children": []

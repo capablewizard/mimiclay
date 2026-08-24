@@ -1,7 +1,9 @@
 //=========================================================================================================================
 // Mesh counterpart to sdf_raymarch.shader — same plasticine surface (triplanar albedo/normal/roughness, tint/roughness/
 // metalness controls) but for ordinary geometry, tinted by VERTEX COLOUR instead of the SDF data texture. Use this on the
-// meshed (SurfaceNets) LODs so close-up raymarched props and their baked meshes match.
+// meshed (SurfaceNets) LODs so close-up raymarched props and their baked meshes match. Clear the material's
+// "Use Vertex Data" checkbox for meshes that carry no mesher data (engine primitives, imported models) —
+// otherwise their missing/black COLOR0 zeroes the albedo. See Materials/plasticine_tint.vmat.
 //=========================================================================================================================
 HEADER
 {
@@ -30,6 +32,11 @@ struct VertexInput
 {
 	#include "common/vertexinput.hlsl"
 	float4 vColor : COLOR0 < Semantic( Color ); >; // mesh vertex colour (set by the SurfaceNets mesher)
+	// The editor mesh-geometry paint channel (MeshComponent puts its per-corner Colors here, same
+	// semantic blendable.shader reads). MeshCurvatureBaker bakes signed curvature into its ALPHA:
+	// 128 = flat, 255 = full ridge, 1 = full crevice, 0 = no data. Meshes without the attribute
+	// (SurfaceNets bakes) read all zeros = no data.
+	float4 vPaintColor : TEXCOORD5 < Semantic( VertexPaintTintColor ); >;
 };
 
 struct PixelInput
@@ -44,6 +51,12 @@ struct PixelInput
 	float3 vObjToWorld0 : TEXCOORD10;
 	float3 vObjToWorld1 : TEXCOORD12;
 	float3 vObjToWorld2 : TEXCOORD13;
+	// xyz: per-instance tint (the renderer's Tint / SceneObject.ColorTint). ProcessVertex normally
+	// delivers this in vVertexColor, but we need that slot for the mesher's COLOR0, so it rides its
+	// own interpolant. Already LINEAR — unlike the vertex colour, which is gamma and decoded in the PS.
+	// w: baked signed curvature decoded from the paint channel's alpha (0 when the mesh carries none) —
+	// interpolating the per-vertex value is exactly what makes it smooth where the ddx estimate is blocky.
+	float4 vInstanceTint : TEXCOORD14;
 };
 
 VS
@@ -53,6 +66,14 @@ VS
 	PixelInput MainVs( VertexInput i )
 	{
 		PixelInput o = ProcessVertex( i );
+		// Grab the per-instance tint before overwriting vVertexColor with the mesh's own COLOR0 —
+		// ProcessVertex seeds that slot from it, so assigning i.vColor is what used to make the
+		// renderer's Tint property a no-op on this shader.
+		ExtraShaderData_t extraShaderData = GetExtraPerInstanceShaderData( i.nInstanceTransformID );
+		o.vInstanceTint.rgb = extraShaderData.vTint.rgb;
+		// Decode baked curvature from the paint alpha here so the PS interpolates the SIGNED value.
+		// 0 is reserved for "no data" (unpainted corners and meshes without the attribute) -> flat.
+		o.vInstanceTint.w = i.vPaintColor.a > 0.001 ? i.vPaintColor.a * 2.0 - 1.0 : 0.0;
 		o.vVertexColor = i.vColor;
 		// The mesher stows per-brush (metalness, roughness) in TexCoord0.xy — this surface is
 		// triplanar so it has no real UVs to clobber. Carry it through to the pixel shader.
@@ -76,6 +97,7 @@ PS
 {
 	#include "common/pixel.hlsl"
 	#include "common/utils/triplanar.hlsl"
+	#include "common/classes/Depth.hlsl" // scene depth (prepass) — drives the world-cavity curvature
 
 	RenderState( CullMode, DEFAULT );
 
@@ -90,16 +112,57 @@ PS
 	Texture2D g_tNormalTex < Channel( RGB, Box( TextureNormal ),    Linear ); OutputFormat( BC7 ); SrgbRead( false ); >;
 	Texture2D g_tRoughTex  < Channel( R,   Box( TextureRoughness ), Linear ); OutputFormat( BC7 ); SrgbRead( false ); >;
 
+	// Off = ignore the two per-vertex channels the SurfaceNets mesher writes (COLOR0 clay colour, and the
+	// per-brush metalness/roughness it stows in TexCoord0.xy) and fall back to white / the sliders below.
+	// Needed for ordinary geometry: an engine cube primitive has no COLOR0, so it reads black and the tint
+	// multiply kills the albedo, and its real UVs would otherwise be misread as a material pair.
+	bool g_bUseVertexData < UiType( CheckBox ); Default( 1 ); UiGroup( "Surface,10/05" ); >;
+
 	float3 g_vTintColor  < UiType( Color ); Default3( 1.0, 1.0, 1.0 ); UiGroup( "Surface,10/40" ); >;
+	// How strongly the base colour texture multiplies over the tint: 1 = full multiply (default),
+	// 0 = texture ignored, pure tint. Fades the SAMPLE toward white, so the dark-sat boost below
+	// (driven by the texel's darkness) scales down with it automatically.
+	float  g_flBaseTexAmount < Default( 1.0 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/45" ); >;
 	float  g_flRoughness < Default( 0.7 ); Range( 0.0, 2.0 ); UiGroup( "Surface,10/50" ); >;
 	float  g_flMetalness < Default( 0.0 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/60" ); >;
-	float  g_flTriTile   < Default( 8.0 ); Range( 0.5, 64.0 ); UiGroup( "Surface,10/70" ); >;
+	float  g_flTriTile   < Default( 8.0 ); Range( 0.01, 64.0 ); UiGroup( "Surface,10/70" ); >;
+	// Tiling for the normal map, fully independent of Tri Tile (which covers base colour + roughness).
+	float  g_flTriTileNormal < Default( 8.0 ); Range( 0.01, 64.0 ); UiGroup( "Surface,10/72" ); >;
 	float  g_flTriBlend  < Default( 4.0 ); Range( 1.0, 16.0 ); UiGroup( "Surface,10/80" ); >;
 	float  g_flNormalStrength < Default( 1.0 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/90" ); >; // 0 = ignore normal map, 1 = full
 	// The albedo-texture multiply pulls dark tints toward the texture's own grey (chroma dies faster than
 	// brightness in linear space). This re-saturates where the TEXTURE texel is dark — clay colours that
 	// are dark by choice are untouched. 1 = off. Mirrored in sdf_raymarch.shader — keep the two in sync.
 	float  g_flDarkSatBoost < Default( 1.0 ); Range( 1.0, 2.0 ); UiGroup( "Surface,10/95" ); >;
+
+	// Curvature shading — the geometry counterpart of sdf_raymarch's field-Laplacian version (same
+	// controls, same albedo dark/light application): crevices darken (seam grime), ridges lighten
+	// (worn edges). Default source is a WORLD CAVITY estimate à la Blender's viewport "World" mode:
+	// depth-prepass taps in a world-radius ring around the pixel, measuring whether the local scene
+	// sits above the tangent plane (valley) or falls away below it (ridge). Texture taps cross
+	// triangle/object boundaries — unlike derivatives — so it's smooth over hard-edged geometry,
+	// needs no bake, and is gated to this material by construction (it runs IN the material).
+	// Defaults OFF so existing materials are untouched.
+	//
+	// On = take curvature from the mesh-paint channel's alpha instead (MeshCurvatureBaker):
+	// per-vertex, cheaper (no depth taps), feature scale fixed at bake time.
+	bool g_bCurveFromVertexPaint < UiType( CheckBox ); Default( 0 ); UiGroup( "Curvature,13/05" ); >;
+	// World radius of the cavity neighbourhood — the feature size it responds to (ignored by the
+	// baked path, whose feature scale is baked in).
+	float g_flCurveRadius < Default( 1.5 );  Range( 0.25, 16.0 ); UiGroup( "Curvature,13/10" ); >;
+	float g_flCurveDark   < Default( 0.0 );  Range( 0.0, 1.0 );  UiGroup( "Curvature,13/20" ); >;
+	float g_flCurveLight  < Default( 0.0 );  Range( 0.0, 1.0 );  UiGroup( "Curvature,13/30" ); >;
+	// Re-saturation for the cavity darkening above, scaled by how much shade was applied. 1 = off.
+	float g_flCurveSatBoost < Default( 1.0 ); Range( 1.0, 2.0 ); UiGroup( "Curvature,13/40" ); >;
+	// Same, for the ridge LIGHTENING: the lift (and its saturate clamp) washes worn edges toward
+	// white — this gives them their colour back, scaled by how much lift was applied. 1 = off.
+	float g_flCurveLightSatBoost < Default( 1.0 ); Range( 1.0, 2.0 ); UiGroup( "Curvature,13/45" ); >;
+	// Offsets applied on RIDGES only (convex/worn edges — cavities are untouched): added to the
+	// final roughness and to the normal-map strength, scaled by the ridge response.
+	// Negative = edges read handled/polished (shinier, fingerprint grain pressed out); positive =
+	// edges read chalky/broken (rougher, extra grain). 0 = off.
+	float g_flCurveRoughBoost  < Default( 0.0 ); Range( -1.0, 1.0 ); UiGroup( "Curvature,13/50" ); >;
+	float g_flCurveNormalBoost < Default( 0.0 ); Range( -1.0, 1.0 ); UiGroup( "Curvature,13/60" ); >;
 
 	// Per-object seed, same "BoilSeed" attribute the raymarcher gets (stamped by SdfRaymarchRenderer on
 	// the sibling renderer and by SdfSculpture on model assignment). Drives SeedTexOffset below; 0 (unset)
@@ -188,22 +251,137 @@ PS
 		// World normal -> model normal via the inverse rotation. For an orthonormal (unit-scale) basis
 		// the inverse is the transpose, which mul(vector, matrix) applies as R^T * worldN.
 		float3 modelN = normalize( mul( i.vNormalWs, matObjToWorld ) );
+		// Smooth vertex normal in world space, captured before the normal-map overwrite below — the
+		// cavity estimate wants the clean geometric tangent plane, not the map's fake bumps.
+		float3 smoothNWs = normalize( i.vNormalWs );
+
+		// --- Curvature estimate, up front: it feeds the albedo shade AND the roughness/normal-strength
+		// offsets, so it must exist before the normal map is sampled. Branches away (curv stays 0) when
+		// nothing consumes it. Compiled out of depth/shadow views — no valid depth chain to tap there
+		// (and nothing it feeds survives those passes anyway).
+		float curv = 0.0;
+	#if ( S_MODE_DEPTH == 0 )
+		if ( g_flCurveDark + g_flCurveLight + abs( g_flCurveRoughBoost ) + abs( g_flCurveNormalBoost ) > 1e-3 )
+		{
+			if ( g_bCurveFromVertexPaint )
+			{
+				// Baked per-vertex curvature (MeshCurvatureBaker), already signed [-1,1] and smoothed
+				// over the mesh — the interpolator does the rest. ×1.5 so a full bake reaches the
+				// response clamp below.
+				curv = i.vInstanceTint.w * 1.5;
+			}
+			else
+			{
+				// World cavity from the depth prepass (Blender viewport "World" mode): 12 taps on two
+				// rings in the tangent plane at g_flCurveRadius, each resolved back to a world position
+				// through the depth buffer. Mean elevation of those points against the tangent plane is
+				// the signed cavity — scene above the plane = valley, falling away below = ridge.
+				// Depth TAPS cross triangle/object boundaries where derivatives can't, which is what
+				// keeps this smooth over hard-edged geometry with no bake and no per-prop workflow.
+				float3 P = i.vPositionWithOffsetWs.xyz + g_vCameraPositionWs;
+				float3 t1 = normalize( abs( smoothNWs.z ) < 0.99
+				                       ? cross( smoothNWs, float3( 0, 0, 1 ) )
+				                       : cross( smoothNWs, float3( 1, 0, 0 ) ) );
+				float3 t2 = cross( smoothNWs, t1 );
+
+				// Each pixel of the hardware 2x2 quad rotates the ring pattern by a different step
+				// inside its 60° period; the quad-share blur after the loop folds the lanes together,
+				// so a pixel effectively sees 4 rotations = 48 tap directions for 12 samples.
+				float2 parity = frac( floor( i.vPositionSs.xy ) * 0.5 ) * 2.0; // 0 even / 1 odd per axis
+				float quadRot = ( parity.x + parity.y * 2.0 ) * ( 6.2831853 / 6.0 / 4.0 );
+
+				float sum = 0.0, wsum = 0.0;
+				[unroll]
+				for ( int t = 0; t < 12; t++ )
+				{
+					// Outer ring of 6 + inner ring (0.55r) rotated 30° — one feature scale still sees
+					// both the wide shape and the near shape; cheap banding insurance.
+					float ring = t < 6 ? 1.0 : 0.55;
+					float ang = quadRot + ( t % 6 ) * ( 6.2831853 / 6.0 ) + ( t < 6 ? 0.0 : 0.5235988 );
+					float3 tapWs = P + ( t1 * cos( ang ) + t2 * sin( ang ) ) * ( g_flCurveRadius * ring );
+
+					float4 proj = Position4WsToPs( float4( tapWs, 1.0 ) );
+					float2 uv = ( proj.xy / proj.w ) * float2( 0.5, -0.5 ) + 0.5;
+					if ( proj.w <= 0.0 || any( saturate( uv ) != uv ) )
+						continue; // behind the camera / offscreen — no information
+
+					float3 T = Depth::GetWorldPosition( uv * g_vViewportSize.xy );
+					float3 d = T - P;
+					float dist = length( d );
+					if ( dist < 1e-4 )
+						continue;
+
+					// Elevation above the tangent plane as a pure direction, so magnitude can't blow
+					// it up. The weight fades taps whose depth resolved far from the shell — unrelated
+					// geometry through a doorway, foreground occluders, sky — those say nothing about
+					// LOCAL curvature. A flat floor resolves taps at ~radius distance, so w = 1 there.
+					float w = saturate( 2.0 - dist / g_flCurveRadius );
+					sum += ( dot( d, smoothNWs ) / dist ) * w;
+					wsum += w;
+				}
+
+				// Negated: elevation-positive means concave, our convention is ridge-positive. ×4 gain:
+				// a hard 90° interior corner averages ~0.35 elevation — that maps to full response
+				// while gentle slopes stay subtle.
+				curv = wsum > 1e-3 ? -( sum / wsum ) * 4.0 : 0.0;
+
+				// Quad-share blur (SM5 QuadReadAcross): _fine derivatives hand us the horizontal and
+				// vertical quad-neighbours' estimates — each computed with a different ring rotation —
+				// for ~3 ALU and zero extra depth taps. Averaging self + both neighbours is a 1px blur
+				// AND a 3x wider tap set in one move. dir flips the derivative toward the other lane
+				// of each pair (ddx_fine returns odd-minus-even for both lanes).
+				float2 dir = 1.0 - 2.0 * parity;
+				curv += ( dir.x * ddx_fine( curv ) + dir.y * ddy_fine( curv ) ) / 3.0;
+			}
+			// Clamp BEFORE the response curves so few-tap spikes can't exceed full effect; 1.5 still
+			// reaches 1.0 after the knee.
+			curv = clamp( curv, -1.5, 1.5 );
+		}
+	#endif // S_MODE_DEPTH == 0
+		// Soft-knee responses (smoothstep) so every consumer eases in/out instead of banding at the
+		// effect's edges. Ridges drive the albedo lift AND the roughness/normal offsets; valleys
+		// only ever darken the albedo.
+		float curvRidge  = smoothstep( 0.0, 1.0, curv );   // convex — worn edges
+		float curvValley = smoothstep( 0.0, 1.0, -curv );  // concave — seams, contacts
 
 		float3 albedo = Tex2DTriplanar( g_tAlbedo, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).rgb;
+		// Fade the base texture toward white by g_flBaseTexAmount — at 0 the tint colours the surface
+		// alone. Done on the sample itself so everything downstream that reads the texel (the tint
+		// multiply AND BoostDarkSat's darkness estimate) sees the weakened texture consistently.
+		albedo = lerp( float3( 1.0, 1.0, 1.0 ), albedo, g_flBaseTexAmount );
 		float roughness = Tex2DTriplanar( g_tRoughTex, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).r;
 
-		float3 modelNormal = TriplanarNormal( g_tNormalTex, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend, g_flNormalStrength );
+		// Ridge curvature offsets the normal-map strength: negative boost presses the grain out of
+		// worn edges (handled clay), positive roughs them up. Cavities keep the base strength.
+		float normalStrength = saturate( g_flNormalStrength + g_flCurveNormalBoost * curvRidge );
+		float3 modelNormal = TriplanarNormal( g_tNormalTex, g_sRepeat, modelP, modelN, g_flTriTileNormal, g_flTriBlend, normalStrength );
 		i.vNormalWs = normalize( mul( matObjToWorld, modelNormal ) );
 
 		// Per-brush material from the vertex (blended across seams by the mesher): x = metalness, y = roughness.
-		float2 vMR = i.vTextureCoords.xy;
+		// Neutral pair (no metal, unscaled roughness) when this mesh carries no mesher data.
+		float2 vMR = g_bUseVertexData ? i.vTextureCoords.xy : float2( 0.0, 1.0 );
+		float3 vVertexTint = g_bUseVertexData ? SrgbToLinear( i.vVertexColor.rgb ) : float3( 1.0, 1.0, 1.0 );
 
 		Material m = Material::Init( i );
-		m.Albedo = albedo * g_vTintColor * SrgbToLinear( i.vVertexColor.rgb );
+		// g_vTintColor = material-wide tint; vInstanceTint = per-renderer Tint (already linear).
+		m.Albedo = albedo * g_vTintColor * i.vInstanceTint.rgb * vVertexTint;
 		m.Albedo = BoostDarkSat( m.Albedo, albedo, g_flDarkSatBoost );
+
+		// Curvature → diffuse, mirroring sdf_raymarch (crevices darken, ridges lighten). All-zero
+		// no-op when the strengths are off; the expensive estimate already ran (or didn't) above.
+		float cavity = g_flCurveDark * curvValley;
+		float ridgeLift = g_flCurveLight * curvRidge;
+		float shade = (1.0 - cavity) * (1.0 + ridgeLift);
+		m.Albedo = saturate( m.Albedo * shade );
+		// Give both shades their colour back, each scaled by how much was applied — flats untouched.
+		// Cavity and ridge are mutually exclusive, so folding the two lerps into one factor is exact.
+		m.Albedo = BoostSat( m.Albedo, lerp( 1.0, g_flCurveSatBoost, cavity )
+		                             * lerp( 1.0, g_flCurveLightSatBoost, saturate( ridgeLift ) ) );
+
 		// Floor roughness so near-zero samples don't produce pinpoint specular fireflies. The global
-		// g_flRoughness stays a master multiplier; the triplanar texture adds micro-detail.
-		m.Roughness = max( saturate( roughness * g_flRoughness * vMR.y ), 0.08 );
+		// g_flRoughness stays a master multiplier; the triplanar texture adds micro-detail. The
+		// curvature offset is added last, after all multipliers, so it bites even on dark/rough setups.
+		m.Roughness = max( saturate( roughness * g_flRoughness * vMR.y + g_flCurveRoughBoost * curvRidge ), 0.08 );
 		m.Metalness = saturate( vMR.x + g_flMetalness );
 
 		float4 c = ShadingModelStandard::Shade( i, m );
