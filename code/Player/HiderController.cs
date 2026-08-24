@@ -67,6 +67,13 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// as the rise; higher = quicker, punchier landings.</summary>
 	[Property, Group( "Movement" )] public float FallGravityMult { get; set; } = 1.9f;
 
+	/// <summary>Keep gravity (and ground-settle) running while this pawn's disguise is being sculpted — the
+	/// current behavior: an editing prop keeps falling and re-settles onto its shape as soon as a commit
+	/// rebuilds collision. OFF (test option): the body is held perfectly still for the whole edit session —
+	/// it hangs wherever the edit began, mid-air included, and resumes normal physics the moment the
+	/// session ends. Edit sessions only; released/dormant scenery always keeps settling.</summary>
+	[Property, Group( "Movement" )] public bool EditGravity { get; set; } = true;
+
 	/// <summary>How quickly horizontal velocity chases the input target on the ground (per second, exponential).
 	/// Higher = snappier starts/stops; this also serves as the "friction" (input zero decays velocity to zero).
 	/// The hunter has effectively NO ramp — the stock controller's AddVelocity adds several times the wish per tick
@@ -681,6 +688,19 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		if ( !Body.MotionEnabled )
 			Body.MotionEnabled = true;
+
+		// EditGravity test option: pin the body for the whole edit session — no gravity, no ground-snap, no
+		// re-settle after commits; it hangs exactly where the edit began (jump-sculpting included). Velocity
+		// is re-zeroed every step rather than disabling motion, so the solver can still separate a genuine
+		// penetration within a tick and nothing here fights the MotionEnabled recovery above. Keyed on
+		// EditMode specifically — NOT the broader !ControlActive below — so freecam scouting and round
+		// control locks keep normal gravity, and dormant scenery keeps settling.
+		if ( !EditGravity && EditMode )
+		{
+			Body.Velocity = Vector3.Zero;
+			Body.AngularVelocity = Vector3.Zero;
+			return;
+		}
 
 		// No locomotion input when editing (control suspended) OR when released into the level (dormant): the body
 		// stays LIVE — gravity, collision and ground-snap still run, so an editing prop re-settles onto its shape as
