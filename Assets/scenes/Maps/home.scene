@@ -20,7 +20,7 @@
         {
           "__type": "Mimiclay.MapModeCard",
           "__guid": "71780dfb-134d-4d5d-ad74-d8f8a1c2ab51",
-          "__enabled": true,
+          "__enabled": false,
           "Flags": 0,
           "BotCount": 0,
           "BotHunterPawns": true,
@@ -25051,7 +25051,165 @@
               "RandomizeRotation": true
             }
           ],
-          "Children": []
+          "Children": [
+            {
+              "__guid": "90cf24c7-95b4-4f06-9922-1f8793b4c6f3",
+              "__version": 2,
+              "__Prefab": "prefabs/saved/block_a.prefab",
+              "__PrefabInstancePatch": {
+                "AddedObjects": [],
+                "RemovedObjects": [],
+                "PropertyOverrides": [
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "3ae922bf-4b75-413c-9bdb-ddda7200d884"
+                    },
+                    "Property": "Brushes",
+                    "Value": [
+                      {
+                        "Shape": "Box",
+                        "Operation": "Add",
+                        "CrossSection": "Triangle",
+                        "Text": "clay",
+                        "Font": "Super Joyful",
+                        "Enabled": true,
+                        "Position": "0,0,16",
+                        "Rotation": "0,0,0,1",
+                        "Size": "12,12,12",
+                        "Points": null,
+                        "Curvature": 1,
+                        "SplineClosed": false,
+                        "SplinePerPointRadius": false,
+                        "Slice": 0,
+                        "SlicePlaneN": 1,
+                        "LocalCentre": "0,0,0",
+                        "Blend": 6,
+                        "Rounding": 1.8907343,
+                        "Color": "0.67832,0.36171,0.35106,1",
+                        "Metallic": 0,
+                        "Roughness": 0.5,
+                        "MirrorX": false,
+                        "MirrorY": false,
+                        "EffectiveMirrorX": false,
+                        "EffectiveMirrorY": false,
+                        "EffectiveMirrorZ": false,
+                        "MirrorZ": false,
+                        "Damage": false,
+                        "Shrinks": false,
+                        "ShrinkDelay": 2,
+                        "ShrinkDuration": 1.5,
+                        "IsSplineLoop": false,
+                        "BoundingRadius": 22.284609
+                      },
+                      {
+                        "Shape": "Box",
+                        "Operation": "Add",
+                        "CrossSection": "Triangle",
+                        "Text": "clay",
+                        "Font": "Super Joyful",
+                        "Enabled": true,
+                        "Position": "10.8721457,1.04904175E-05,16",
+                        "Rotation": "0,0,0,1",
+                        "Size": "2.08569455,9.57816029,9.57816029",
+                        "Points": null,
+                        "Curvature": 1,
+                        "SplineClosed": false,
+                        "SplinePerPointRadius": false,
+                        "Slice": 0,
+                        "SlicePlaneN": 1,
+                        "LocalCentre": "0,0,0",
+                        "Blend": 0.20141953,
+                        "Rounding": 1.062813,
+                        "Color": "0.97,0.97,0.97,1",
+                        "Metallic": 0,
+                        "Roughness": 0.5,
+                        "MirrorX": false,
+                        "MirrorY": false,
+                        "EffectiveMirrorX": false,
+                        "EffectiveMirrorY": false,
+                        "EffectiveMirrorZ": false,
+                        "MirrorZ": false,
+                        "Damage": false,
+                        "Shrinks": false,
+                        "ShrinkDelay": 2,
+                        "ShrinkDuration": 1.5,
+                        "IsSplineLoop": false,
+                        "BoundingRadius": 13.755552
+                      },
+                      {
+                        "Shape": "Text",
+                        "Operation": "Add",
+                        "CrossSection": "Triangle",
+                        "Text": "a",
+                        "Font": "Super Joyful",
+                        "Enabled": true,
+                        "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                        "Rotation": "0.5,0.5,0.5,0.5",
+                        "Size": "31.4586868,15.7293434,4.98312521",
+                        "Points": null,
+                        "Curvature": 1,
+                        "SplineClosed": false,
+                        "SplinePerPointRadius": false,
+                        "Slice": 0,
+                        "SlicePlaneN": 1,
+                        "LocalCentre": "0,0,0",
+                        "Blend": 0.35532528,
+                        "Rounding": 0.75,
+                        "Color": "0.69538,0.36612,0.36612,1",
+                        "Metallic": 0,
+                        "Roughness": 0.5,
+                        "MirrorX": false,
+                        "MirrorY": false,
+                        "EffectiveMirrorX": false,
+                        "EffectiveMirrorY": false,
+                        "EffectiveMirrorZ": false,
+                        "MirrorZ": false,
+                        "Damage": false,
+                        "Shrinks": false,
+                        "ShrinkDelay": 2,
+                        "ShrinkDuration": 1.5,
+                        "IsSplineLoop": false,
+                        "BoundingRadius": 10.672114
+                      }
+                    ]
+                  }
+                ],
+                "MovedObjects": []
+              },
+              "__PrefabIdToInstanceId": {
+                "8a3442ce-d15b-4a88-a465-74aac92841cb": "90cf24c7-95b4-4f06-9922-1f8793b4c6f3",
+                "3ae922bf-4b75-413c-9bdb-ddda7200d884": "45d77eee-5a6b-4903-8880-a270ad87ed35",
+                "d59742d2-1d36-4979-aeeb-7a7f9762cdfb": "64c4347b-5647-46b5-a7ac-bc1b76be7293",
+                "d18818a7-d31c-44a0-8c71-702227370bfe": "d9a332c8-3f88-446b-ac9b-008b6e1b7f3e",
+                "b8c33660-fe1b-42fc-a064-98f087d68c2b": "9b3c637f-c241-4e90-9805-5139613b8d06",
+                "165c61fd-4c4a-44f5-9541-dd5898b9c9c1": "e198403f-6cb5-818a-8442-add9a6128e66",
+                "6401165a-970b-493f-b566-1d44fc7d2772": "d5f44e93-8cdc-82d4-a378-68bcb4d6a711",
+                "e6d7f354-cbe5-4328-9d43-6cddf2cca532": "fa1e3fe1-fbfb-8c82-a66b-c3652dc50ae7"
+              }
+            },
+            {
+              "__guid": "420000d8-d7a2-4c9b-8922-acbbf98557e9",
+              "__version": 2,
+              "__Prefab": "prefabs/saved/buildingblock_halfround.prefab",
+              "__PrefabInstancePatch": {
+                "AddedObjects": [],
+                "RemovedObjects": [],
+                "PropertyOverrides": [],
+                "MovedObjects": []
+              },
+              "__PrefabIdToInstanceId": {
+                "42b89316-0664-41e9-b0c7-d58d15541a34": "420000d8-d7a2-4c9b-8922-acbbf98557e9",
+                "62adf6ca-c5cb-4584-a99c-ba619d9fc395": "63d6fb3b-e0f1-43d9-8ede-b76ca344b454",
+                "2ff883e1-ccfc-4f4b-822c-f95ecd1a2887": "7efd393f-659f-4a20-9801-a4c8b0f49686",
+                "f50d3434-8a13-4241-9d59-365bd83a1b1f": "a41f8090-7514-4d36-a204-02c52b786b32",
+                "60fca214-cffb-473d-9d41-8531117ccfbc": "992e247a-195c-4d73-b91b-dafeb8f86721",
+                "4fcc897e-0255-4f60-ae1c-d5b52ac6adfc": "d008c00f-c452-88a5-a953-b16273e7e15f",
+                "4929fe56-a257-47bd-9ebc-2b2b49b7dfad": "f17f8a42-9d5b-8e58-9b71-af9481699e1c",
+                "cfb59d1d-9fcd-4120-a42a-5ff9d2ce60fa": "d90cae60-ede1-861f-a4ae-4da49147afc9"
+              }
+            }
+          ]
         },
         {
           "__guid": "be32e483-c8e8-46c0-92a7-6851d3960ceb",
@@ -25275,7 +25433,29 @@
               "RandomizeRotation": true
             }
           ],
-          "Children": []
+          "Children": [
+            {
+              "__guid": "55208fd4-b081-4849-96ef-cf744937ecb5",
+              "__version": 2,
+              "__Prefab": "prefabs/saved/buildingblock_brick.prefab",
+              "__PrefabInstancePatch": {
+                "AddedObjects": [],
+                "RemovedObjects": [],
+                "PropertyOverrides": [],
+                "MovedObjects": []
+              },
+              "__PrefabIdToInstanceId": {
+                "7b598279-2c94-41c6-956f-70137bfeb7af": "55208fd4-b081-4849-96ef-cf744937ecb5",
+                "ece5f226-f4b1-448e-a8da-e340159b965d": "b731c408-a4f3-497c-8de2-01e0426101d4",
+                "354e781b-1596-4f67-a74f-08c0585d1750": "26c094fd-c0a7-4b6b-85a8-184bb2bc4496",
+                "8ff94d0a-95c2-4fa6-988c-244009945b0e": "addf630e-044e-4a13-b8f8-82fb81183e21",
+                "727e9976-2d4f-42cf-b3cf-fea2cab07460": "c62c0bbc-c680-44f1-b772-70bb7970a017",
+                "751b5a54-e0a5-4a1d-92e0-849292f68da6": "65402364-c159-81af-810b-78d688ae7c3c",
+                "e5099e7f-bad7-4e2b-b63d-e5132b44f2b3": "cc09867b-d81c-8b7e-b7cd-654d30e1a80a",
+                "98914a09-1081-42eb-8c7c-669c8c9075ee": "1d6c3ad4-a6e9-8d8c-aba9-f159efb07b45"
+              }
+            }
+          ]
         },
         {
           "__guid": "f85b1d95-7ad7-4035-abe8-beaa76ebb13c",
@@ -25900,7 +26080,29 @@
               "RandomizeRotation": true
             }
           ],
-          "Children": []
+          "Children": [
+            {
+              "__guid": "92bb3fb2-09a4-48f0-846f-777861355e46",
+              "__version": 2,
+              "__Prefab": "prefabs/saved/pot_star.prefab",
+              "__PrefabInstancePatch": {
+                "AddedObjects": [],
+                "RemovedObjects": [],
+                "PropertyOverrides": [],
+                "MovedObjects": []
+              },
+              "__PrefabIdToInstanceId": {
+                "5c418ddf-cf65-491d-870e-a9bfb4c886b2": "92bb3fb2-09a4-48f0-846f-777861355e46",
+                "ec1d4422-c3a1-4e0a-9515-32c87f9e8887": "aedf4c5d-c1d4-49e0-80bc-e4bf2454a4ec",
+                "88753e23-1fd1-4f67-9aa4-6332676362b6": "9b97bb93-0184-48ab-b70b-d5c69bae21b4",
+                "43e71f82-886f-4126-b7be-504809318160": "e90c2c17-8114-456b-8bcb-ea4b75806880",
+                "c2d08396-f168-43ac-9682-196082ba8c40": "62e8392b-3863-49e5-8f5b-22b5efb4ba41",
+                "3e2207a1-868b-46cf-b2e1-c6e988a24ff5": "99e8e9be-1fa2-8e96-81d8-5ad61b6833c6",
+                "39261bfe-572f-49d4-91cf-0a4146e3b0db": "3f1b2035-3cbc-88db-9357-b756e4e4672d",
+                "403238df-2f67-4acf-9e94-a1a64a78f416": "712c4b47-8eb2-8ced-8fe0-3aef4d5b003e"
+              }
+            }
+          ]
         },
         {
           "__guid": "e6f5d331-7ccb-43be-8111-9803e5c4325a",
