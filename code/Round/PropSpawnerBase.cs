@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Mimiclay;
 
@@ -275,14 +274,11 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 
 		if ( Prefabs is { Count: > 0 } && Random.Shared.NextDouble() >= NoneChance )
 		{
-			// Shuffle first (random tie-break), then stable-sort by how many times each index has
-			// already won a slot this decide — least-used prefabs are offered first, so variety wins
-			// over a flat random draw, while a fully-collided/invalid candidate still falls through to
-			// the next-least-used one exactly like the old flat cycle did.
-			var order = Enumerable.Range( 0, Prefabs.Count )
-				.OrderBy( _ => Random.Shared.Next() )
-				.OrderBy( idx => useCount[idx] )
-				.ToList();
+			// Least-used-first with a random tie-break (see the old LINQ version's reasoning) — done with
+			// two reusable scratch arrays and a single Array.Sort instead of two chained OrderBy's plus a
+			// ToList per slot, which allocated (and re-boxed the whole prefab index range) on every single
+			// slot of every spawner.
+			var order = BuildCandidateOrder( useCount );
 
 			foreach ( var index in order )
 			{
@@ -290,21 +286,17 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 				if ( !prefab.IsValid() )
 					continue;
 
-				var (trial, bounds) = BuildAndAlign( prefab, offset, yaw, trialOnly: true );
-				if ( !trial.IsValid() )
+				// No trial clone: the candidate's bounds are derived from this prefab's ONE cached
+				// measurement (see GetCandidateBounds) instead of cloning + re-meshing it per candidate.
+				if ( GetCandidateBounds( prefab, offset, yaw ) is not { } b )
 					continue;
 
-				bool collides = bounds is { } b && (OverlapsAnySpawnedBounds( b, placedThisPass )
-					|| OverlapsAnotherSpawner( b ) || OverlapsWorld( b, trial ) );
-				trial.Destroy();
-
-				if ( collides )
+				if ( OverlapsAnySpawnedBounds( b, placedThisPass ) || OverlapsAnotherSpawner( b ) || OverlapsWorld( b ) )
 					continue;
 
 				chosenIndex = index;
 				useCount[index]++;
-				if ( bounds is { } winnerBounds )
-					placedThisPass.Add( winnerBounds );
+				placedThisPass.Add( b );
 				break;
 			}
 		}
@@ -312,6 +304,96 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		ChosenYaws[slot] = yaw;
 		ChosenOffsets[slot] = offset;
 		ChosenIndices[slot] = chosenIndex;
+	}
+
+	// Scratch buffers for BuildCandidateOrder — reused across every slot (and every decide) of this spawner
+	// rather than allocating a fresh ordering per slot.
+	int[] _orderScratch;
+	long[] _orderKeys;
+
+	// Least-used-first, ties broken randomly. Packs "times used" in the high bits and a random tie-break in
+	// the low bits of a single long key so one Array.Sort does the whole ordering.
+	int[] BuildCandidateOrder( int[] useCount )
+	{
+		int n = Prefabs.Count;
+		if ( _orderScratch is null || _orderScratch.Length != n )
+		{
+			_orderScratch = new int[n];
+			_orderKeys = new long[n];
+		}
+
+		for ( int i = 0; i < n; i++ )
+		{
+			_orderScratch[i] = i;
+			int used = i < useCount.Length ? useCount[i] : 0;
+			_orderKeys[i] = ((long)used << 32) | (uint)Random.Shared.Next();
+		}
+
+		Array.Sort( _orderKeys, _orderScratch );
+		return _orderScratch;
+	}
+
+	// A prefab's LOCAL-space bounds, measured exactly once ever (per prefab) instead of once per candidate
+	// per slot per spawner. Measuring used to mean cloning the prefab into the scene and running
+	// SurfaceNetsMesher over its SDF brushes — by far the dominant cost of a decide, and completely
+	// redundant work since a prefab's own geometry never changes between candidates. Static because the
+	// measurement is a property of the PREFAB, not of whichever spawner happens to be asking.
+	static readonly Dictionary<Guid, BBox?> s_prefabLocalBounds = new();
+
+	// The world bounds a candidate WOULD occupy if placed at this slot's offset/yaw, computed analytically
+	// from the cached local bounds — the clone+align round-trip only happens for picks that actually stick
+	// (Apply). Ground-alignment is reproduced here the same way AlignToGround does it (trace down from the
+	// spawn point, shift so the bounds' underside sits on the hit), so what's tested is what gets built.
+	BBox? GetCandidateBounds( GameObject prefab, Vector3 localOffset, float yaw )
+	{
+		if ( GetPrefabLocalBounds( prefab ) is not { } local )
+			return null;
+
+		var point = SpawnPointFor( localOffset );
+		var rotation = RandomizeRotation ? WorldRotation * Rotation.FromYaw( yaw ) : WorldRotation;
+		var tx = new Transform( point, rotation, WorldScale );
+
+		var world = local.Transform( tx );
+
+		var tr = Scene.Trace.Ray( point + Vector3.Up * 4f, point + Vector3.Down * 512f )
+			.IgnoreGameObjectHierarchy( GameObject )
+			.Run();
+		if ( !tr.Hit )
+			return world;
+
+		var shift = Vector3.Up * (tr.EndPosition.z - world.Mins.z);
+		return new BBox( world.Mins + shift, world.Maxs + shift );
+	}
+
+	// Measures a prefab once by cloning it disabled, off to the side, with only the two component types
+	// ComputeWorldBounds actually reads left enabled (see BuildAndAlign's trialOnly doc for why enabling
+	// anything else here is actively harmful), then caches the result forever.
+	BBox? GetPrefabLocalBounds( GameObject prefab )
+	{
+		if ( s_prefabLocalBounds.TryGetValue( prefab.Id, out var cached ) )
+			return cached;
+
+		var probe = prefab.Clone( new CloneConfig( new Transform( Vector3.Zero, Rotation.Identity, 1f ),
+			startEnabled: false, name: $"Bounds Probe ({prefab.Name})" ) );
+
+		BBox? result = null;
+		if ( probe.IsValid() )
+		{
+			probe.Flags |= GameObjectFlags.NotSaved;
+
+			foreach ( var c in probe.Components.GetAll<Component>( FindMode.EverythingInSelfAndDescendants ) )
+				if ( c is not (ModelRenderer or SdfSculpture) )
+					c.Enabled = false;
+
+			probe.Enabled = true; // only actually activates the two component types left enabled above
+
+			result = ComputeWorldBounds( probe ); // probe sits at the origin unrotated/unscaled, so its
+												   // "world" bounds ARE the prefab's local bounds
+			probe.Destroy();
+		}
+
+		s_prefabLocalBounds[prefab.Id] = result;
+		return result;
 	}
 
 	// ── Runtime incremental decide (spread across frames) ───────────────────────────────────────────────
@@ -329,7 +411,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	int _decideCount;
 	List<BBox> _decidePlaced;
 	int[] _decideUseCount;
-	const double PerTickBudgetMs = 1.5;
+	const double PerTickBudgetMs = 4.0;
 
 	// A per-SPAWNER budget alone isn't enough: at map load, potentially every spawner in the level has
 	// ChosenSlotCount == Undecided on the SAME frame, and each one independently getting its own
@@ -344,7 +426,11 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	static double s_globalUsedMs;
 	const double GlobalResetIntervalMs = 8; // ~once per frame at a common refresh rate, without needing an
 	                                          // actual engine frame-index API
-	const double GlobalBudgetMs = 2.0; // total, shared across every spawner, per "frame" window above
+	const double GlobalBudgetMs = 6.0; // total, shared across every spawner, per "frame" window above. Tuned
+										// up from 2ms once a slot stopped meaning "clone + re-mesh a prefab per
+										// candidate" (see GetCandidateBounds) — the work left in a slot is a
+										// couple of traces and some box tests, so a wider window finishes the
+										// level in a handful of frames without ever coming near a hitch.
 
 	// True if there's still some of this frame's shared budget left — checked before doing each slot's work
 	// so an EXHAUSTED spawner further down the tick order does zero slots this tick rather than still paying
@@ -416,17 +502,15 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	// map) — the two checks above only ever compare against OTHER random-spawner picks, so without this nothing
 	// stopped a roll from landing a candidate half-embedded in a wall or clipped through the floor. A
 	// zero-length Trace.Box (from == to) is a pure overlap test at that position — not an actual sweep — using
-	// the candidate's REAL (subtract-aware) world bounds as the shape, centred on itself. Ignores the trial
-	// clone's own hierarchy (so it doesn't just detect its own collider) and this spawner's (a marker sitting
-	// inside/behind level geometry shouldn't block its own region), and triggers (non-solid by definition, so
-	// overlapping one is never actually a placement problem).
-	bool OverlapsWorld( BBox candidate, GameObject trial )
+	// the candidate's REAL (subtract-aware) world bounds as the shape, centred on itself. Ignores this
+	// spawner's hierarchy (a marker sitting inside/behind level geometry shouldn't block its own region) and
+	// triggers (non-solid by definition, so overlapping one is never actually a placement problem).
+	bool OverlapsWorld( BBox candidate )
 	{
 		var half = (candidate.Maxs - candidate.Mins) * 0.25f;
 		var localBox = new BBox( -half, half );
 
 		var tr = Scene.Trace.Box( localBox, candidate.Center, candidate.Center )
-			.IgnoreGameObjectHierarchy( trial )
 			.IgnoreGameObjectHierarchy( GameObject )
 			.WithoutTags( "trigger" )
 			.Run();
@@ -434,28 +518,39 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		return tr.Hit;
 	}
 
+	// Every bounds every spawner has actually placed, in one flat list. This used to walk
+	// Scene.GetAllComponents<PropSpawnerBase>() (a full scene-wide component query, allocating and scanning
+	// every spawner in the level) and then that spawner's dictionary — PER CANDIDATE, per slot, per spawner.
+	// The set of placed bounds only changes when some spawner applies or clears, so it's maintained there
+	// (see Apply/ClearPreview) and merely READ here.
+	static readonly List<(PropSpawnerBase Owner, BBox Bounds)> s_allPlacedBounds = new();
+
 	// Only ever checks against OTHER spawners (of either kind) that have already resolved and built their own
 	// real props — order-dependent (a spawner deciding earlier in the same session can't know about one that
 	// hasn't decided yet), which is a fine trade-off for a "declutter obvious overlaps" nicety, not a hard
 	// guarantee.
 	bool OverlapsAnotherSpawner( BBox candidate )
 	{
-		foreach ( var other in Scene.GetAllComponents<PropSpawnerBase>() )
+		for ( int i = 0; i < s_allPlacedBounds.Count; i++ )
 		{
-			if ( other == this || !other.IsValid() )
+			var entry = s_allPlacedBounds[i];
+			if ( entry.Owner == this )
 				continue;
 
-			foreach ( var spawnedGo in other._spawned )
-			{
-				if ( !spawnedGo.IsValid() )
-					continue;
-
-				if ( other._spawnedBounds.TryGetValue( spawnedGo, out var otherBounds ) && candidate.Overlaps( otherBounds ) )
-					return true;
-			}
+			if ( candidate.Overlaps( entry.Bounds ) )
+				return true;
 		}
 
 		return false;
+	}
+
+	// Drops this spawner's contribution to the shared list above — called whenever its placements are torn
+	// down, so stale bounds can never keep blocking other spawners' rolls.
+	void ClearGlobalPlacedBounds()
+	{
+		for ( int i = s_allPlacedBounds.Count - 1; i >= 0; i-- )
+			if ( s_allPlacedBounds[i].Owner == this )
+				s_allPlacedBounds.RemoveAt( i );
 	}
 
 		// Builds whatever ChosenIndices/ChosenYaws/ChosenOffsets currently hold. Only ever called on the host (or
@@ -468,6 +563,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 			go?.Destroy();
 		_spawned.Clear();
 		_spawnedBounds.Clear();
+		ClearGlobalPlacedBounds();
 		_pendingNetworkSpawn.Clear();
 
 		int count = Math.Max( 0, ChosenSlotCount );
@@ -501,43 +597,31 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 
 			_spawned.Add( go );
 			if ( bounds is { } b )
+			{
 				_spawnedBounds[go] = b;
+				s_allPlacedBounds.Add( (this, b) );
+			}
 		}
 	}
 
-	// Clones a candidate prefab at the given slot's spawn point (yawed per that slot's own roll, if
-	// RandomizeRotation is on), ground-aligns it, and hands back its real (subtract-aware) world bounds
-	// alongside it — shared by Apply() (the placements that actually stick, trialOnly false) and Decide()'s
-	// collision trials (thrown away immediately after measuring, trialOnly true).
-	//
-	// trialOnly matters a lot: a trial clone used to be built EXACTLY like a real one — every component live,
-	// including SdfRaymarchRenderer, which allocates REAL GPU textures the moment it enables (BrushData/
-	// SplineData/TextSdf, plus the whole field-cache volume+atlas set for a field-cached prefab) — just to
-	// throw the whole thing away a few lines later via trial.Destroy(). With collision-avoidance trying many
-	// candidates per slot, across up to 64 slots, across however many spawners a level has, that's real GPU
-	// memory allocated and discarded far faster than a deferred Destroy()/GC pass can reclaim it — exactly
-	// the runaway texture growth measured live (thousands more resident textures within seconds). All
-	// ComputeWorldBounds actually reads is ModelRenderer's built SceneObject and SdfSculpture's plain brush
-	// data (no GPU dependency, works disabled) — so a trial clones DISABLED and only re-enables those two,
-	// leaving SdfRaymarchRenderer (and everything else) inert for its whole brief lifetime.
-	(GameObject, BBox?) BuildAndAlign( GameObject prefab, Vector3 localOffset, float yaw, bool trialOnly = false )
+	// Clones a prefab at the given slot's spawn point (yawed per that slot's own roll, if RandomizeRotation
+	// is on), ground-aligns it, and hands back its real (subtract-aware) world bounds alongside it. Only ever
+	// called for picks that actually STICK — collision trials no longer clone anything at all, they measure
+	// analytically from a per-prefab cached measurement instead (see GetCandidateBounds), which is what made
+	// deciding cheap: a trial clone used to build every component live, including SdfRaymarchRenderer, which
+	// allocates REAL GPU textures the moment it enables, just to throw the whole thing away a few lines
+	// later. Across many candidates × many slots × many spawners that was real GPU memory allocated and
+	// discarded far faster than a deferred Destroy()/GC pass could reclaim it, on top of a full
+	// SurfaceNetsMesher rebuild per candidate for geometry that never changes between candidates.
+	(GameObject, BBox?) BuildAndAlign( GameObject prefab, Vector3 localOffset, float yaw )
 	{
 		var point = SpawnPointFor( localOffset );
 		var tx = new Transform( point, WorldRotation, WorldScale );
 		if ( RandomizeRotation )
 			tx = tx.WithRotation( tx.Rotation * Rotation.FromYaw( yaw ) );
 
-		var go = prefab.Clone( new CloneConfig( tx, startEnabled: !trialOnly,
+		var go = prefab.Clone( new CloneConfig( tx, startEnabled: true,
 			name: $"Random Prop ({prefab.Name})" ) );
-
-		if ( trialOnly )
-		{
-			foreach ( var c in go.Components.GetAll<Component>( FindMode.EverythingInSelfAndDescendants ) )
-				if ( c is not (ModelRenderer or SdfSculpture) )
-					c.Enabled = false;
-
-			go.Enabled = true; // now only actually activates the two component types left enabled above
-		}
 
 		go.SetParent( GameObject, true );
 		go.Flags |= GameObjectFlags.NotSaved; // never let a preview/runtime pick bake into the scene file
@@ -632,6 +716,9 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 		}
 
 		ChosenSlotCount = Undecided;
+		if ( Scene.IsEditor )
+			s_prefabLocalBounds.Clear(); // a designer may have edited a prefab's geometry since it was
+										  // measured — a manual re-roll is the natural place to re-measure
 		Decide();
 		Apply();
 		_previewConfigHash = ComputeConfigHash();
@@ -654,10 +741,19 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 			go?.Destroy();
 		_spawned.Clear();
 		_spawnedBounds.Clear();
+		ClearGlobalPlacedBounds();
 
 		ChosenSlotCount = Undecided;
 		_pendingNetworkSpawn.Clear();
 		_previewSuppressed = true;
+	}
+
+	// The shared placed-bounds list outlives any single component (it's static), so a spawner that goes away
+	// — scene change, deleted in the editor, etc. — has to take its own entries with it.
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		ClearGlobalPlacedBounds();
 	}
 
 	// [EditorHandle] (on the concrete subtype) supplies an always-visible, clickable billboard icon at this
