@@ -15,7 +15,7 @@ Layer0
 	g_flCurveSatBoost "2.000"
 
 	//---- Fog ----
-	g_bFogEnabled "0"
+	g_bFogEnabled "1"
 
 	//---- Surface ----
 	g_bUseVertexData "0"

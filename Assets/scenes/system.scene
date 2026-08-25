@@ -522,7 +522,7 @@
         {
           "__type": "Sandbox.FilmGrain",
           "__guid": "997f8c84-49ed-4edb-b0b4-b44a9252144d",
-          "__enabled": true,
+          "__enabled": false,
           "Flags": 0,
           "Intensity": 0.03,
           "OnComponentDestroy": null,
