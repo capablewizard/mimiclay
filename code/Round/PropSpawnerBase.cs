@@ -507,7 +507,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	// triggers (non-solid by definition, so overlapping one is never actually a placement problem).
 	bool OverlapsWorld( BBox candidate )
 	{
-		var half = (candidate.Maxs - candidate.Mins) * 0.25f;
+		var half = (candidate.Maxs - candidate.Mins) * 0.05f;
 		var localBox = new BBox( -half, half );
 
 		var tr = Scene.Trace.Box( localBox, candidate.Center, candidate.Center )
