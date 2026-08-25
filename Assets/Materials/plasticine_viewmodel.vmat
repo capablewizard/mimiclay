@@ -4,9 +4,6 @@ Layer0
 {
 	shader "shaders/sdf_raymarch.shader"
 
-	//---- Translucent ----
-	F_TRANSLUCENT 1
-
 	//---- Curvature ----
 	g_flCurveDark "0.350"
 	g_flCurveLight "0.500"

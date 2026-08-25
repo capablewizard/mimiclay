@@ -297,6 +297,15 @@ public sealed class HunterGun : Component
 		_worldSculpt = _world.IsValid() ? _world.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndDescendants ) : null;
 		_viewSculpt = _view.IsValid() ? _view.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndDescendants ) : null;
 
+		// The viewmodel sits ~21 units from the camera it's rendered to (see ViewOffset) inside a gun-shaped
+		// bounding sphere inflated by the barrel's long axis (see SdfRaymarchRenderer.OverdrawOptimization's
+		// own doc) — guaranteed to be inside the shared OverdrawNearRadii safety margin every frame it's on
+		// screen, not just occasionally like a normal world prop. The runtime ratio-based auto-disable can't
+		// be relied on here (reproduced vanishing on 2026-08-25), so force it off outright for this one clone
+		// rather than tightening the shared threshold (and its perf) for every other SDF prop in the game.
+		if ( _viewSdf.IsValid() )
+			_viewSdf.OverdrawOptimization = false;
+
 		_source = LoadSourceBrushes();
 
 		_worldMuzzle = FindMuzzle( _world );
