@@ -172,6 +172,16 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	/// final re-roll) exactly like any other edit.</summary>
 	protected bool SuppressPreviewWhileDragging { get; set; }
 
+	/// <summary>Global kill switch for every spawner's live editor preview (see <see
+	/// cref="UpdateEditorPreview"/>) — flip off to stop every spawner in the scene rolling/rebuilding props
+	/// while you're editing (e.g. a map with dozens of volume spawners, where the constant preview rebuilds
+	/// make general level-editing sluggish), without touching a single spawner's own settings. Toggle from the
+	/// editor console with <c>mimiclay_spawner_preview 0</c> / <c>1</c>. Turning it back on doesn't auto-roll
+	/// anything until a spawner's config actually changes or "Preview Random Pick" is pressed — it just stops
+	/// fighting you, same as <see cref="ClearPreview"/> already does per-spawner.</summary>
+	[ConVar( "mimiclay_spawner_preview" )]
+	public static bool PreviewEnabled { get; set; } = true;
+
 	/// <summary>Editor-only live preview: rolls a pick automatically the moment the config actually changes
 	/// (instead of needing a manual "Preview Random Pick" click just to see an edit take effect), and re-aligns
 	/// the SAME already-chosen picks as you drag the spawner around (moving it shouldn't re-roll what's shown —
@@ -180,6 +190,14 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 	/// any settings.</summary>
 	void UpdateEditorPreview()
 	{
+		if ( !PreviewEnabled )
+		{
+			// Global kill switch — drop whatever's shown (if anything) and stay undecided until it's back on.
+			if ( _spawned.Count > 0 || ChosenSlotCount != Undecided )
+				ClearPreview();
+			return;
+		}
+
 		if ( SuppressPreviewWhileDragging )
 			return; // mid-drag — see that property's doc; the settled value is picked up once it's released
 
