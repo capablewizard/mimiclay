@@ -71,6 +71,18 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// and the raymarch casts nothing — kept for A/B (mesh shadows are cheaper: no per-cascade march).</summary>
 	[Property, Group( "Shadows" )] public bool SdfShadows { get; set; } = true;
 
+	/// <summary>Shadow LOD: beyond this camera distance (in bounding radii, matching the LOD/Distance
+	/// thresholds) a SETTLED prop hands its shadow to the sibling mesh (ShadowsOnly) instead of
+	/// re-marching the field in every shadow view — by far the biggest per-prop render cost in a crowd
+	/// (measured ~4× the forward march itself on a screen of props). Within the band, while boiling,
+	/// and for a couple of seconds after any shape change (a live edit) the marched shadow stays, so
+	/// the shadow silhouette never lags the surface where it could actually be seen to. The handoff is
+	/// a hard swap behind the LOD hysteresis — shadow maps can't crossfade casters — but displacement
+	/// is already off in shadow views by default (see SetupDisplacement), so the two silhouettes agree
+	/// to well under a cascade texel at any sane threshold. 0 = never hand off (the old behaviour:
+	/// marched shadows at any distance). Works with DistanceSwitching on or off.</summary>
+	[Property, Group( "Shadows" ), Range( 0f, 64f )] public float SdfShadowRadii { get; set; } = 10f;
+
 	/// <summary>Extra caster-side depth bias (world units, along the light ray) written by the shadow
 	/// march. The engine's receiver-side bias (per-cascade + receiver-plane) normally suffices — leave
 	/// at 0 and raise slightly only if a prop shows shadow acne on itself.</summary>
@@ -294,12 +306,39 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// included so this is a strict superset of the old "&& !_fieldOnlyHidden" guard. RenderHidden only forces the
 	// scene object OFF on the legacy path — with SdfShadows the object must keep rendering (into shadow views
 	// only, gated in-shader by SdfShadowOnly + ExcludeGameLayer), or it would cast no shadow at all.
-	bool ForceHidden => (RenderHidden && !SdfShadows) || _fieldOnlyHidden;
+	bool ForceHidden => (RenderHidden && !MarchedShadowsNow) || _fieldOnlyHidden;
+
+	// Hold marched shadows this long after a shape change: long enough to ride out a live edit's
+	// per-frame churn without flapping, short enough that a settled prop hands off promptly.
+	const float ShadowShapeHold = 2f;
+
+	/// <summary>Does the raymarch cast its own shadow THIS frame? SdfShadows off = never (the legacy
+	/// mesh-ShadowsOnly path). On, it still marches only where the mesh couldn't stand in: near the
+	/// camera (inside <see cref="SdfShadowRadii"/>), while the sibling ClayBoil churns the surface, or
+	/// just after the shape changed (a live edit) — everywhere else the settled field and the mesh have
+	/// the same silhouette, and the mesh casts for a fraction of the cost. Consumed by the scene-object
+	/// flags, the mesh-mode config AND ApplyVisibility, so all three flip together the frame the band
+	/// (or the boil/edit state) does.</summary>
+	bool MarchedShadowsNow => SdfShadows
+		&& ( SdfShadowRadii <= 0f || !_aboveShadowRadii || _boilActive || _sinceShapeChange < ShadowShapeHold );
 
 	/// <summary>Overdraw optimisation: skip the redundant back-face march (the box draws both faces)
 	/// and use conservative depth so the GPU keeps early-Z and rejects hidden fragments before
-	/// marching. Toggle off to A/B the cost.</summary>
+	/// marching. Toggle off to A/B the cost.
+	///
+	/// Auto-disabled while the camera is within <see cref="OverdrawNearRadii"/> bounding radii of the
+	/// prop (with the usual hysteresis): despite the shader's back-face rationale, a camera inside or
+	/// nearly inside the proxy makes the prop vanish with this on (reproduced 2026-08-25 — only its
+	/// shadow survives, since the light's views aren't inside the box). The march is a runtime uniform,
+	/// so the per-frame flip costs nothing, and the prop the camera is touching is the one place the
+	/// double-faced march is cheapest to afford (it's one prop, however big on screen).</summary>
 	[Property, Group( "Overdraw" )] public bool OverdrawOptimization { get; set; } = true;
+
+	// The camera band inside which OverdrawOptimization is forced off (bounding radii). The vanish
+	// reproduces with the camera just inside the bounding sphere (ratio ~1); 2 leaves comfortable
+	// margin for the near plane and FOV without giving up anything measurable — props inside 2 radii
+	// of the camera are rarely more than a handful.
+	const float OverdrawNearRadii = 2f;
 
 	/// <summary>Per-brush + per-spline-segment AABB early-out in the analytic march: at each step, skip a
 	/// brush's (or spline span's) distance math when its bounds are too far to change the result. Only affects
@@ -386,7 +425,19 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	int _lastHash;
 	ModelRenderer _meshRenderer;
 	SdfMeshMode _lastMeshMode = (SdfMeshMode)(-1);
-	bool _lastSdfShadows; // toggling SdfShadows re-applies the mesh mode (mesh on/off swaps with it)
+	bool _lastSdfShadows; // last EFFECTIVE marched-shadow state (MarchedShadowsNow) — a flip re-applies the mesh mode
+	bool _aboveShadowRadii;          // shadow-band hysteresis: camera is beyond SdfShadowRadii
+	bool _overdrawSafe;              // camera is beyond OverdrawNearRadii (hysteresis) — overdraw opt may run
+
+	/// <summary>The editor scene-view camera position, pumped every editor frame by the editor
+	/// assembly's SdfEditorViewPump (null outside the editor, or with no scene view). Public only as
+	/// that plumbing's landing spot — game code has no legitimate reader. Exists because DrawGizmos
+	/// (the only in-component access to the editor camera) doesn't tick with the gizmo pass off, and
+	/// the camera bands would silently freeze at their full-quality defaults.</summary>
+	public static Vector3? EditorViewPos;
+	bool _boilActive;                // sibling ClayBoil boiling this frame (stamped in Refresh's attribute block)
+	int _lastShapeHash;              // brush SHAPE hash only — movement must not re-arm the edit hold
+	RealTimeSince _sinceShapeChange; // arms ShadowShapeHold on shape edits
 	Vector3 _curMins, _curMaxs;       // world AABB (shader march bracket + frustum bounds)
 	Vector3 _curLocalMins, _curLocalMaxs; // local AABB (the oriented proxy box, for debug draw)
 	Vector3 _curProxyMins, _curProxyMaxs; // padded local proxy bounds actually built (highlight proxy rebuilds from these)
@@ -442,7 +493,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		switch ( MeshMode )
 		{
 			case SdfMeshMode.DepthProxy:
-				_meshRenderer.Enabled = !SdfShadows;
+				_meshRenderer.Enabled = !MarchedShadowsNow;
 				_meshRenderer.MaterialOverride = null;
 				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
 				break;
@@ -459,7 +510,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		}
 
 		_lastMeshMode = MeshMode;
-		_lastSdfShadows = SdfShadows;
+		_lastSdfShadows = MarchedShadowsNow;
 	}
 
 	void EnsureResources()
@@ -556,13 +607,27 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 		Refresh();
 
-		// Runtime: drive the switch from the game camera. In the editor there's no Scene.Camera for the
-		// scene view, so that path runs from DrawGizmos (Gizmo.Camera) instead — see below.
-		if ( DistanceSwitching && !_released && !Scene.IsEditor )
+		// Runtime: drive the switches from the game camera. In the editor there's no Scene.Camera for the
+		// scene view — the camera bands read EditorViewPos (pumped by the editor assembly every editor
+		// frame) so they track the scene-view camera even when the gizmo pass isn't running; DrawGizmos
+		// below still updates them too (and remains the mesh-LOD coordinator's only editor driver). The
+		// shadow band updates regardless of DistanceSwitching: the shadow LOD stands alone in static mode.
+		if ( !_released )
 		{
-			var cam = Scene.Camera;
-			if ( cam.IsValid() )
-				UpdateDistanceSwitch( cam.WorldPosition );
+			if ( !Scene.IsEditor )
+			{
+				var cam = Scene.Camera;
+				if ( cam.IsValid() )
+				{
+					UpdateShadowBand( cam.WorldPosition );
+					if ( DistanceSwitching )
+						UpdateDistanceSwitch( cam.WorldPosition );
+				}
+			}
+			else if ( EditorViewPos is Vector3 editorView )
+			{
+				UpdateShadowBand( editorView );
+			}
 		}
 
 		// ONE resolved visibility application per frame, after every input (Refresh state, band state) is
@@ -609,9 +674,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		if ( RenderHidden )
 		{
 			// Invisible-but-shadow-casting pawn: the mesh is a ShadowsOnly caster — everywhere when the SDF
-			// doesn't cast its own shadows, otherwise only outside the SDF band (in-band the scene object
-			// casts; two casters would double the shadow).
-			_meshRenderer.Enabled = SdfShadows ? !soOn : true;
+			// doesn't cast its own shadow this frame (SdfShadows off OR the shadow LOD handed off), otherwise
+			// only outside the SDF band (in-band the scene object casts; two casters would double the shadow).
+			_meshRenderer.Enabled = MarchedShadowsNow ? !soOn : true;
 			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
 			_meshRenderer.LodOverride = DistanceSwitching && !sdf && !culled ? meshLod : null;
 			return;
@@ -627,9 +692,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		}
 		else if ( sdf )
 		{
-			// SDF is the visible surface. With SdfShadows the raymarch casts its own shadow and the mesh
-			// has no job at all; otherwise the mesh is the legacy ShadowsOnly caster (unless MeshMode hides it).
-			_meshRenderer.Enabled = MeshMode != SdfMeshMode.Hidden && !SdfShadows;
+			// SDF is the visible surface. While the raymarch casts its own shadow the mesh has no job at
+			// all; otherwise (SdfShadows off, or the shadow LOD handed off) the mesh is the ShadowsOnly
+			// caster (unless MeshMode hides it).
+			_meshRenderer.Enabled = MeshMode != SdfMeshMode.Hidden && !MarchedShadowsNow;
 			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
 			_meshRenderer.LodOverride = null;
 		}
@@ -655,6 +721,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// (before the DistanceSwitching early-out below) so clicking still works even with that feature off.
 		if ( _curRadius > 0.01f )
 			Gizmo.Hitbox.BBox( new BBox( _curLocalMins, _curLocalMaxs ) );
+
+		if ( !_released )
+			UpdateShadowBand( Gizmo.Camera.Position ); // shadow LOD runs in the editor too, switching or not
 
 		if ( !DistanceSwitching || _released || !Scene.IsEditor )
 			return;
@@ -685,6 +754,22 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// and the debug label state; ApplyVisibility (the one visibility writer) turns those into what actually
 	// renders. One ratio drives all of it, so the label can never disagree with what's drawn, and there's a
 	// single set of thresholds to tune.
+	// The camera-distance bands that must run with DistanceSwitching off too (static mode is the
+	// shipped state) — deliberately NOT part of UpdateDistanceSwitch. Same ratio, same hysteresis
+	// helper, so a prop parked on a threshold doesn't flap its caster (or its overdraw path).
+	void UpdateShadowBand( Vector3 viewPos )
+	{
+		if ( _curRadius <= 0.01f )
+			return;
+
+		float ratio = (viewPos - _curCenter).Length / _curRadius;
+		if ( SdfShadowRadii > 0f )
+			_aboveShadowRadii = Above( ratio, SdfShadowRadii, _aboveShadowRadii, LodHysteresis );
+		// Overdraw opt is unsafe with the camera at/inside the proxy (the prop vanishes) — see the
+		// property doc. Gated here rather than in the shader so the fix can't drift from the bug.
+		_overdrawSafe = Above( ratio, OverdrawNearRadii, _overdrawSafe, LodHysteresis );
+	}
+
 	void UpdateDistanceSwitch( Vector3 viewPos )
 	{
 		if ( !_so.IsValid() || _curRadius <= 0.01f )
@@ -747,7 +832,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		if ( brushes is not { Count: > 0 } )
 			return;
 
-		if ( MeshMode != _lastMeshMode || SdfShadows != _lastSdfShadows )
+		if ( MeshMode != _lastMeshMode || MarchedShadowsNow != _lastSdfShadows )
 			ApplyMeshMode();
 
 		EnsureResources();
@@ -765,7 +850,18 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// Rebuild geometry + packed brush data only when the brushes / transform change. UseFieldCache is in
 		// here because the proxy's padding (liveBounds below) depends on it — toggling it used to leave a
 		// stale proxy until the next brush edit.
-		int hash = HashCode.Combine( Hash( brushes ), tx.Position, tx.Rotation, Material, TightBounds, EffectiveUseFieldCache );
+		// Shape-only hash feeds the shadow LOD's edit hold: brush changes re-arm it, movement doesn't
+		// (the mesh moves with the prop; only a shape divergence needs the marched shadow back). The
+		// first sight of a shape (spawn/enable) is not an edit — otherwise every prop in a freshly
+		// loaded map would open with ShadowShapeHold seconds of full marched shadows.
+		int shapeHash = Hash( brushes );
+		if ( shapeHash != _lastShapeHash )
+		{
+			_sinceShapeChange = _lastShapeHash == 0 ? ShadowShapeHold : 0f;
+			_lastShapeHash = shapeHash;
+		}
+
+		int hash = HashCode.Combine( shapeHash, tx.Position, tx.Rotation, Material, TightBounds, EffectiveUseFieldCache );
 		if ( hash != _lastHash || !_so.IsValid() || _forceRepack )
 		{
 			// Bounds computed in the object's LOCAL frame, so the proxy can be ORIENTED to the object
@@ -841,9 +937,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				_appliedViewLayer = null; // fresh object, fresh layer state — re-apply whatever's wanted
 				// Shadow casting: the shader's Depth mode detects the sun's orthographic cascade
 				// views per-view and traces PARALLEL rays there, so the marched surface casts its
-				// own exact shadow. Kept in sync with SdfShadows every frame below; OFF = the
-				// legacy sibling-mesh (ShadowsOnly) path.
-				_so.Flags.CastShadows = SdfShadows;
+				// own exact shadow. Kept in sync with MarchedShadowsNow every frame below; OFF = the
+				// legacy sibling-mesh (ShadowsOnly) path — which the shadow LOD also hands off to at
+				// distance (see SdfShadowRadii).
+				_so.Flags.CastShadows = MarchedShadowsNow;
 			}
 
 			_so.Bounds = worldBb;
@@ -857,8 +954,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// Shadow wiring, kept live so toggling SdfShadows / RenderHidden lands immediately. ShadowOnly
 		// (the hidden pawn body) clips every PERSPECTIVE view in-shader — only the ortho sun-shadow
 		// march survives; ExcludeGameLayer additionally keeps it out of the game colour passes.
-		bool shadowOnly = RenderHidden && SdfShadows;
-		_so.Flags.CastShadows = SdfShadows;
+		bool shadowOnly = RenderHidden && MarchedShadowsNow;
+		_so.Flags.CastShadows = MarchedShadowsNow;
 		_so.Flags.ExcludeGameLayer = shadowOnly;
 		ApplyViewLayer();
 		// Viewmodel shader behaviour rides any non-Normal view layer: the viewmodel-FOV ray warp, plus the
@@ -908,7 +1005,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// gate resources or per-step inner-loop cost, so per-draw uniform branches are effectively free.
 		// (D_DEPTH_CLAMP was deleted with its property: nothing shipped used it, and inter-object
 		// occlusion rides the engine depth chain via the prepass.)
-		_so.Attributes.Set( "SdfOverdrawOpt", OverdrawOptimization ? 1 : 0 );
+		_so.Attributes.Set( "SdfOverdrawOpt", OverdrawOptimization && _overdrawSafe ? 1 : 0 );
 		_so.Attributes.Set( "SdfDepthCull", DepthOcclusionCull ? 1 : 0 );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
@@ -929,6 +1026,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// immediately.
 		var boil = GameObject.Components.Get<ClayBoil>(); // self-only + enabled-only
 		bool boilActive = boil is { Boiling: true };
+		_boilActive = boilActive; // feeds MarchedShadowsNow: a boiling surface keeps its marched shadow
 		if ( boilActive )
 			boil.Apply( _so.Attributes );
 		else

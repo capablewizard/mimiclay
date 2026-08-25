@@ -4,19 +4,31 @@ Layer0
 {
 	shader "shaders/sdf_mesh.shader"
 
+	//---- Curvature ----
+	g_bCurveFromVertexPaint "0"
+	g_flCurveDark "0.000"
+	g_flCurveLight "0.500"
+	g_flCurveLightSatBoost "1.000"
+	g_flCurveNormalBoost "0.000"
+	g_flCurveRadius "2.309"
+	g_flCurveRoughBoost "0.000"
+	g_flCurveSatBoost "1.000"
+
 	//---- Fog ----
 	g_bFogEnabled "1"
 
 	//---- Surface ----
-	g_flDarkSatBoost "1.000"
+	g_bUseVertexData "1"
+	g_flBaseTexAmount "1.000"
+	g_flDarkSatBoost "1.200"
 	g_flMetalness "0.000"
-	g_flNormalStrength "1.000"
-	g_flRoughness "0.950"
+	g_flNormalStrength "0.850"
+	g_flRoughness "1.900"
 	g_flTriBlend "6.000"
-	g_flTriTile "0.500"
+	g_flTriTile "1.000"
 	g_flTriTileNormal "0.500"
 	g_vTintColor "[1.000000 1.000000 1.000000 0.000000]"
 	TextureColor "materials/plasticine/plasticine_basecolor.png"
-	TextureNormal "materials/plasticine/plasticine_normal_4.png"
+	TextureNormal "materials/plasticine_imperfections_04.png"
 	TextureRoughness "materials/default/default_rough.tga"
 }
