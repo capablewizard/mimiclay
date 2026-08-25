@@ -807,7 +807,7 @@
       {
         "__type": "Sandbox.ModelRenderer",
         "__guid": "b1588502-5f1f-4738-bcb6-df938fa1cbfe",
-        "__enabled": true,
+        "__enabled": false,
         "Flags": 0,
         "BodyGroups": 18446744073709551615,
         "CreateAttachments": false,
@@ -853,7 +853,7 @@
         "FarEpsilon": 1,
         "FieldCacheOnly": true,
         "FieldNormalScale": 0.5,
-        "FieldResolution": 128,
+        "FieldResolution": 195,
         "FullQualityRadii": 2,
         "LodHysteresis": 0.06,
         "Material": "materials/plasticine.vmat",
