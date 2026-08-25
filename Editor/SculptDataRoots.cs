@@ -61,6 +61,9 @@ internal static class SculptDataRoots
 	{
 		public string Path => System.IO.Path.Combine( Root, SculptLibrary.Folder, Name + SculptExtension );
 		public string Label => SculptDataRoots.Label( Root );
+
+		/// <inheritdoc cref="SculptDataRoots.Modified"/>
+		public DateTime Modified => SculptDataRoots.Modified( Path );
 	}
 
 	/// <summary>One scene save (a folder of <c>.sculpt</c> files + <c>scene.json</c>), in a specific root.</summary>
@@ -69,6 +72,27 @@ internal static class SculptDataRoots
 		public string Dir => System.IO.Path.Combine( Root, SculptSceneLibrary.Folder, Name );
 		public string Path => System.IO.Path.Combine( Dir, SculptSceneLibrary.SceneFileName );
 		public string Label => SculptDataRoots.Label( Root );
+
+		/// <inheritdoc cref="SculptDataRoots.Modified"/>
+		/// <remarks>The save's <c>scene.json</c>, not the folder: a folder's write time also moves when an
+		/// unrelated file lands in it, while scene.json is rewritten by — and only by — a save.</remarks>
+		public DateTime Modified => SculptDataRoots.Modified( Path );
+	}
+
+	/// <summary>When a save was last written, as the filesystem sees it. <see cref="DateTime.MinValue"/> if the
+	/// file is gone (a save deleted out from under an open window sorts to the bottom rather than throwing).
+	/// This is the only date these saves have — the JSON carries no timestamp of its own.</summary>
+	public static DateTime Modified( string path )
+	{
+		try
+		{
+			return File.Exists( path ) ? File.GetLastWriteTime( path ) : DateTime.MinValue;
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[Mimiclay] couldn't read the timestamp of '{path}' — {e.Message}" );
+			return DateTime.MinValue;
+		}
 	}
 
 	// ── Sculpts ───────────────────────────────────────────────────────────────────────────────────────────
