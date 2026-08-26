@@ -23,12 +23,14 @@ public static class SdfBakeUtility
 		int res = sculpt.Resolution;
 		bool flip = sculpt.FlipFaces;
 
-		// Same 3-LOD recipe the runtime build uses (full / half / quarter resolution).
+		// Same 3-LOD recipe the runtime build uses (full / half / quarter resolution), and the same one GPU
+		// round trip for the whole chain — the field readback costs the same for three grids as for one.
+		var grids = SurfaceNetsMesher.SampleGrids( brushes, res, Math.Max( 4, res / 2 ), Math.Max( 4, res / 4 ) );
 		var lods = new[]
 		{
-			SurfaceNetsMesher.ComputeData( brushes, res, flip ),
-			SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, res / 2 ), flip ),
-			SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, res / 4 ), flip ),
+			SurfaceNetsMesher.ComputeData( grids[0], flip ),
+			SurfaceNetsMesher.ComputeData( grids[1], flip ),
+			SurfaceNetsMesher.ComputeData( grids[2], flip ),
 		};
 
 		if ( lods[0].IsEmpty )

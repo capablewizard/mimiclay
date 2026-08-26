@@ -228,10 +228,12 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 			bool flip = FlipFaces;
 			int seq = ++_buildSeq; // also supersedes any in-flight full surface-nets rebuild
 
-			await GameTask.WorkerThread();
-			// Mesh the COMBINED SDF at the LOD1 resolution — this IS the boolean (subtraction included),
+			// Sample on the main thread (GPU dispatch + readback), stitch on a worker — same split as the full
+			// LOD build. Meshing the COMBINED SDF at the LOD1 resolution IS the boolean (subtraction included),
 			// robust and cheap. Cached below so the full rebuild on release reuses it as LOD1 (no recompute).
-			var data = SurfaceNetsMesher.ComputeData( snapshot, res1, flip );
+			var grid = SurfaceNetsMesher.SampleGrid( snapshot, res1 );
+			await GameTask.WorkerThread();
+			var data = SurfaceNetsMesher.ComputeData( grid, flip );
 			await GameTask.MainThread();
 
 			// Drop the result if a newer build (proxy or full remesh) started, or we went away meanwhile.
@@ -334,8 +336,10 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 	// frame: props stream in over a second or two, but the game keeps pumping and the session survives.
 	static readonly System.Threading.SemaphoreSlim BuildGate = new( 1 );
 
-	// Worker-thread compute (the heavy O(res^3) field sampling) then a hop to the main thread for the
-	// cheap GPU upload + model assembly. Builds all three LODs — reusing a precomputed LOD1 (the drag proxy)
+	// Three stages, in this order for a reason. The field SAMPLING is a GPU dispatch + readback, so it has to
+	// run on the main thread (SdfMeshGridGpu); the surface-nets MESHING is pure array work, so it runs on a
+	// worker; the mesh UPLOAD needs the main thread again. Sampling all three LODs up front keeps the number of
+	// thread hops (and readback stalls) per prop at three, not nine. Reuses a precomputed LOD1 (the drag proxy)
 	// when one is supplied, so that mesh is computed once and serves as both the drag shadow and final LOD1.
 	static async Task<Model> BuildModelAsync( List<SdfBrush> brushes, Material material, int resolution, bool flip,
 		SurfaceNetsMesher.MeshData reuseLod1, bool haveLod1 )
@@ -343,11 +347,19 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 		await BuildGate.WaitAsync();
 		try
 		{
+			await GameTask.MainThread();
+
+			int res1 = Math.Max( 4, resolution / 2 );
+			int res2 = Math.Max( 4, resolution / 4 );
+			// All three LODs in one GPU round trip — the sync that reads the field back costs the same for
+			// three grids as for one, and it is the bulk of what meshing costs now.
+			var grids = SurfaceNetsMesher.SampleGrids( brushes, resolution, res1, res2 );
+
 			await GameTask.WorkerThread();
 
-			var d0 = SurfaceNetsMesher.ComputeData( brushes, resolution, flip );
-			var d1 = haveLod1 ? reuseLod1 : SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, resolution / 2 ), flip );
-			var d2 = SurfaceNetsMesher.ComputeData( brushes, Math.Max( 4, resolution / 4 ), flip );
+			var d0 = SurfaceNetsMesher.ComputeData( grids[0], flip );
+			var d1 = haveLod1 ? reuseLod1 : SurfaceNetsMesher.ComputeData( grids[1], flip );
+			var d2 = SurfaceNetsMesher.ComputeData( grids[2], flip );
 
 			await GameTask.MainThread();
 

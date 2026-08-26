@@ -10787,24 +10787,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -10911,8 +10895,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11089,8 +11089,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11197,8 +11213,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11607,24 +11639,8 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -11729,24 +11745,8 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -11851,24 +11851,8 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -11973,24 +11957,8 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -12095,24 +12063,8 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -12217,24 +12169,8 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -12339,24 +12275,8 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -12775,6 +12695,14 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.707106709,0.707106709"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
+            },
+            "Property": "__enabled",
+            "Value": false
           },
           {
             "Target": {
@@ -13559,14 +13487,6 @@
               "Type": "Component",
               "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
-            "Property": "__enabled",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           },
@@ -13807,7 +13727,7 @@
                 "Text": "clay",
                 "Font": "Super Joyful",
                 "Enabled": true,
-                "Position": "-5.46740047E-17,2.01823589E-08,18.0587597",
+                "Position": "0.687057495,-3.2590332,20.8670959",
                 "Rotation": "0,0,0,1",
                 "Size": "41.5585594,32.2015152,14.3552914",
                 "Points": [],
@@ -14536,6 +14456,14 @@
                 "BoundingRadius": 5.605928
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
+            },
+            "Property": "SdfShadowRadii",
+            "Value": 0.3106796
           }
         ],
         "MovedObjects": []
@@ -14594,38 +14522,7 @@
           "RandomizeRotation": true
         }
       ],
-      "Children": [
-        {
-          "__guid": "700e8d35-adad-4c65-ab19-5653a05c1e75",
-          "__version": 2,
-          "__Prefab": "prefabs/saved/dinnerplate.prefab",
-          "__PrefabInstancePatch": {
-            "AddedObjects": [],
-            "RemovedObjects": [],
-            "PropertyOverrides": [
-              {
-                "Target": {
-                  "Type": "Component",
-                  "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
-                },
-                "Property": "Model",
-                "Value": "sbox_procedural_model.vmdl"
-              }
-            ],
-            "MovedObjects": []
-          },
-          "__PrefabIdToInstanceId": {
-            "4a3496b6-23aa-4cd6-bca4-11fc555ad40e": "700e8d35-adad-4c65-ab19-5653a05c1e75",
-            "3cfdbaa4-fd6a-48be-850a-d294db05d7fc": "5d38d7aa-69e7-49f9-80b7-aa5a5ccdee0d",
-            "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908": "cccd8cd4-5791-4e91-b8d5-e4e388a7c753",
-            "8369c507-159f-4553-b20c-05d88e33293a": "138a7b33-11fd-48ba-92b7-cb619c96028c",
-            "94a734bb-fc07-48fe-835c-3dd000fd3533": "d2f60658-c281-4bef-821e-9d67d30134cd",
-            "fa0e4965-975b-4fde-abcf-065c459582cb": "78a972e0-da86-4af5-8942-0925136b3363",
-            "864bc9ce-d854-43f8-886c-94a37701c6ab": "1fa56cdd-0d26-46d7-903d-9fc7db39c271",
-            "db27b4ae-61ec-4d0b-ae2d-01b78213ee75": "ec4edc2f-2dd1-4ad7-997c-260c5eb21f7f"
-          }
-        }
-      ]
+      "Children": []
     },
     {
       "__guid": "5b6d2b91-aaa8-4b46-aa20-1475a9b47c1c",
@@ -14668,38 +14565,7 @@
           "RandomizeRotation": true
         }
       ],
-      "Children": [
-        {
-          "__guid": "b4403ec8-a35a-4314-a507-65fda5c18226",
-          "__version": 2,
-          "__Prefab": "prefabs/saved/dinnerplate.prefab",
-          "__PrefabInstancePatch": {
-            "AddedObjects": [],
-            "RemovedObjects": [],
-            "PropertyOverrides": [
-              {
-                "Target": {
-                  "Type": "Component",
-                  "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
-                },
-                "Property": "Model",
-                "Value": "sbox_procedural_model.vmdl"
-              }
-            ],
-            "MovedObjects": []
-          },
-          "__PrefabIdToInstanceId": {
-            "4a3496b6-23aa-4cd6-bca4-11fc555ad40e": "b4403ec8-a35a-4314-a507-65fda5c18226",
-            "3cfdbaa4-fd6a-48be-850a-d294db05d7fc": "572de8ed-4d6d-464c-a268-8036c174c02f",
-            "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908": "c1af59b6-0a77-4a7c-9235-b97c0783c535",
-            "8369c507-159f-4553-b20c-05d88e33293a": "99d6c661-33aa-4250-9b3c-bdc753825f89",
-            "94a734bb-fc07-48fe-835c-3dd000fd3533": "5cf78ab3-fc0a-4752-9337-37fb372b7299",
-            "fa0e4965-975b-4fde-abcf-065c459582cb": "8244f8c5-8549-4134-b302-e7844647b56e",
-            "864bc9ce-d854-43f8-886c-94a37701c6ab": "828a8bc5-0420-405c-a2c1-e0fe594dd373",
-            "db27b4ae-61ec-4d0b-ae2d-01b78213ee75": "5e47e67e-920a-4c05-be89-ce2a6f7a16b5"
-          }
-        }
-      ]
+      "Children": []
     },
     {
       "__guid": "f2a378f0-8667-472e-be58-8aac69172ea0",
