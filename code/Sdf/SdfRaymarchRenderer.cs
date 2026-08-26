@@ -914,6 +914,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			return;
 
 		float ratio = (view - _curCenter).Length / _curRadius;
+		bool culled = DistanceSwitching && _aboveCull;
+		bool marching = !culled && (!DistanceSwitching || !_aboveHandoff);
+		int meshLod = _aboveLod2 ? 2 : _aboveLod1 ? 1 : 0;
+
 		string band = !DistanceSwitching
 			? "SDF (static)"
 			: _switchState switch
@@ -925,11 +929,89 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				_ => "CULLED",
 			};
 
-		// The shadow caster is an independent handoff on the same ratio — show which one is casting, since
-		// a shadow that changes shape at a distance you didn't set is the confusing one.
-		string caster = MarchedShadowsNow ? "march" : "mesh";
+		var sb = new System.Text.StringBuilder();
+		// Line 1: which band, and the ratio that picked it — plus the radius it's a ratio OF, because
+		// "12.4r" is unreadable without knowing what one r is worth on this prop.
+		sb.Append( $"{band}   {ratio:0.0}r   (r={_curRadius:0}u)" );
 
-		DebugOverlay?.Text( _curCenter, $"{band}  {ratio:0.0}r  shadow:{caster}", size: 18 );
+		// Line 2: the adaptive-quality budget the march is ACTUALLY running at this frame. Computed the
+		// shader's way, not ours: LodQuality measures the ratio against the half-diagonal of the world AABB
+		// (g_vBoundsMin/Max), while the band thresholds above measure against _curRadius — two different
+		// radii, so reproducing the shader's arithmetic is the only way these numbers mean anything. Ortho
+		// (sun-shadow) views always march at full quality; this is the camera view's budget.
+		if ( marching )
+		{
+			float q = ShaderLodQuality( view );
+			int steps = (int)MathX.Lerp( Math.Min( MinSteps, MaxSteps ), MaxSteps, q );
+			float eps = MathX.Lerp( MathF.Max( FarEpsilon, Epsilon ), Epsilon, q );
+			sb.Append( $"\nq {q:0.00}   steps {steps}/{MaxSteps}   eps {eps:0.000}" );
+		}
+		else
+		{
+			sb.Append( culled ? "\nnot rendering" : $"\nmeshed — LOD{meshLod}" );
+		}
+
+		// Line 3: the two handoffs that are easy to mistake for each other. The shadow caster is an
+		// independent threshold on the same ratio, and a shadow that changes shape at a distance you didn't
+		// set is the confusing one — so name who is casting, always.
+		sb.Append( $"\nshadow: {(MarchedShadowsNow ? "march" : "mesh")}" );
+		if ( MeshRenderer is { } mr && mr.IsValid() )
+			sb.Append( $"   mesh: {(mr.Active ? mr.RenderType.ToString() : "off")}{(mr.LodOverride is int l ? $" LOD{l}" : "")}" );
+
+		// Line 4: what the march is actually sampling, and how much of it. A prop that's secretly on the
+		// analytic per-brush path (or whose field hasn't landed) reads as "slow for no reason" otherwise.
+		// No "live vs baked" distinction here on purpose: the shared CPU bake is retired, so every prop
+		// marches its own SdfFieldGpu volume. The useful facts are the resolution it's paying for, whether
+		// it's sparse, and whether it has landed yet.
+		string field = !EffectiveUseFieldCache ? "analytic (per-brush)"
+			: _fieldGpu is { IsValid: true } && _fieldReady ? $"{EffectiveFieldResolution}³{(SparseField ? " sparse" : "")}"
+			: "baking…";
+		sb.Append( $"\n{_curCount} brushes   field: {field}" );
+
+		// This text is drawn in WORLD space, so it shrinks with distance — and the mesh bands are by
+		// definition far away, which made the readout illegible at exactly the range it's about. Scale the
+		// size with camera distance so it holds a roughly constant size on screen at any range.
+		float size = Math.Clamp( 16f * (view - _curCenter).Length / 300f, 8f, 600f );
+
+		// Sit the block ABOVE the prop rather than through it, anchored to the TIGHT local bounds — not
+		// _curMaxs, which is the padded proxy box and can stand well clear of the surface (this frying pan
+		// proxies at 100u). Bottom-aligned, so the text grows upward off the top of the shape and the prop
+		// itself stays unobscured however many lines this ends up being.
+		var tx = WorldTransform;
+		float top = float.MinValue;
+		for ( int i = 0; i < 8; i++ )
+		{
+			var corner = new Vector3(
+				(i & 1) != 0 ? _curLocalMaxs.x : _curLocalMins.x,
+				(i & 2) != 0 ? _curLocalMaxs.y : _curLocalMins.y,
+				(i & 4) != 0 ? _curLocalMaxs.z : _curLocalMins.z );
+			top = MathF.Max( top, tx.PointToWorld( corner ).z );
+		}
+
+		var anchor = new Vector3( _curCenter.x, _curCenter.y, top + size * 0.25f );
+
+		// overlay: true = draw THROUGH geometry, so a prop in front can't swallow the readout for the prop
+		// you're actually reading. A debug label that hides behind the scene is no label.
+		DebugOverlay?.Text( anchor, sb.ToString(), size, TextFlag.CenterHorizontally | TextFlag.Bottom,
+			color: marching ? Color.White : DebugBandTint( culled, false, meshLod ), overlay: true );
+	}
+
+	/// <summary>The shader's own LodQuality for this view position — 1 = full quality, 0 = the floor.
+	/// Deliberately mirrors sdf_raymarch.shader's LodQuality() including its choice of radius (half the
+	/// world AABB's diagonal, NOT <c>_curRadius</c>), so the steps/epsilon the label reports are the ones
+	/// the march really used. Keep the two in sync if that function changes.</summary>
+	float ShaderLodQuality( Vector3 viewPos )
+	{
+		if ( !AdaptiveQuality )
+			return 1f;
+
+		var centre = (_curMins + _curMaxs) * 0.5f;
+		float r = MathF.Max( 0.5f * (_curMaxs - _curMins).Length, 0.001f );
+		float ratio = (centre - viewPos).Length / r;
+
+		float near = FullQualityRadii;
+		float far = MathF.Max( MinQualityRadii, near + 0.001f );
+		return Math.Clamp( (far - ratio) / MathF.Max( far - near, 0.001f ), 0f, 1f );
 	}
 
 	/// <summary>The camera every distance band measures from. At runtime it's the game camera; in the
