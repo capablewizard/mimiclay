@@ -222,7 +222,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 			}
 
 			SdfTextSdf.EnsureBaked( Brushes ); // before the hash below, same as RebuildAsync
-			var snapshot = Snapshot( Brushes ); // copy on the main thread before hopping
+			var snapshot = Snapshot( MeshBrushes( Brushes ) ); // copy on the main thread before hopping
 			var baseMat = Material ?? Material.Load( "materials/dev/reflectivity_50.vmat" );
 			int res1 = Math.Max( 4, Resolution / 2 ); // the drag shadow IS the LOD1 mesh (reused on release)
 			bool flip = FlipFaces;
@@ -272,7 +272,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 
 	public async Task RebuildAsync()
 	{
-		var brushes = Brushes;
+		var brushes = MeshBrushes( Brushes );
 		var renderer = GameObject.Components.GetOrCreate<ModelRenderer>();
 
 		if ( brushes is not { Count: > 0 } )
@@ -391,6 +391,19 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 			_modelCache.Remove( _cacheOrder.Dequeue() );
 
 		return task;
+	}
+
+	// Damage brushes (shot craters) never reach the mesh. The raymarch is the surface that shows them up
+	// close; the mesh's remaining jobs — the distant LOD band and the legacy shadow caster — don't need
+	// pellet holes. Excluding them keeps the mesh content hash stable across carve and heal, so a shot
+	// (and the heal's final Rebuild) resolves as a model-cache hit instead of a full LOD rebuild with its
+	// mid-fight GPU readback stall. The collider is unaffected: SdfCollider reads the sculpture's own
+	// brush list, so craters still carve physics. Returns the list itself when there's no damage.
+	static List<SdfBrush> MeshBrushes( List<SdfBrush> brushes )
+	{
+		if ( brushes is null || !brushes.Exists( static b => b.Damage ) )
+			return brushes;
+		return brushes.FindAll( static b => !b.Damage );
 	}
 
 	static List<SdfBrush> Snapshot( List<SdfBrush> brushes )
