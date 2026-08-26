@@ -278,6 +278,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		if ( EditMode )
 			_session?.SetActive( false ); // forced teardown — no exit-confirm dialog, revert runs silently
+
+		ClayCutout.Clear( Scene ); // scene-global render state — a stale hole sticks to the screen otherwise
 	}
 
 	// Fired by the engine on THIS machine when it stops being the pawn's controller — here, the host retired this
@@ -289,6 +291,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	{
 		if ( _session.IsValid() && _session.IsEditing )
 			_session.SetActive( false );
+
+		ClayCutout.Clear( Scene ); // this machine stopped driving the camera through this pawn
 	}
 
 	// Released-and-claimable state deliberately does NOT live here: _dormant above is machine-local (no other
@@ -356,8 +360,69 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// back at the same framing (see <see cref="LobbySwapCarry.PropZoom"/>).</summary>
 	internal float OrbitDistance => _orbit.IsValid() ? _orbit.Distance : CameraDistance;
 
+	/// <summary>Create (or re-create) the shared orbit rig with its full static config. Split out of OnStart
+	/// because it must be re-runnable: editing prop.prefab while PLAYING makes the editor re-apply the prefab
+	/// to this live instance, rebuilding the root's component list — every runtime-added component is
+	/// destroyed while our fields keep pointing at the corpses (first symptom: _orbit.Tick NRE'd on a null
+	/// Scene the moment a ClayCutoutSettings slider was dragged on the prefab). On a re-create the old
+	/// instance's pose is copied over — plain C# state on a destroyed component is still readable — so the
+	/// camera doesn't snap back to the spawn framing.</summary>
+	void EnsureOrbitRig()
+	{
+		if ( _orbit.IsValid() )
+			return;
+
+		var old = _orbit; // destroyed instance (or null): its Angles/Distance survive as plain managed state
+		_orbit = Components.GetOrCreate<OrbitCameraController>();
+		_orbit.Enabled = false; // never runs its own OnUpdate — we Tick it from UpdateCamera
+		_orbit.FollowTarget = _body.GameObject;
+		_orbit.FollowOffset = Vector3.Up * CameraHeightOffset;
+		_orbit.IgnoreCollision = GameObject; // boom ignores the pawn + its disguise, same as before
+		_orbit.IgnoreCollisionTag = PropBodyTag; // …and fellow props, which our physics ignores too (see PropBodyTag)
+		_orbit.MinDistance = MinDistance;
+		_orbit.MaxDistance = MaxDistance;
+		_orbit.ZoomSpeed = ZoomSpeed;
+		_orbit.PanSpeed = PanSpeed;
+		_orbit.MinPitch = MinPitch;
+		_orbit.MaxPitch = MaxPitch;
+		_orbit.Angles = old is not null ? old.Angles : new Angles( 15f, EyeAngles.yaw, 0f );
+		_orbit.Distance = old is not null ? old.Distance : CameraDistance;
+	}
+
+	/// <summary>Owner-only, once per frame: rebuild whatever a mid-play prefab refresh destroyed (see
+	/// <see cref="EnsureOrbitRig"/> for the mechanism). Cheap no-op in the common case — one IsValid check.</summary>
+	void HealRuntimeComponents()
+	{
+		if ( _orbit.IsValid() && Body.IsValid() )
+			return;
+
+		EnsureOrbitRig();
+
+		// The rest of the runtime-added set died with it. Rigidbody first (OnAwake's config, verbatim) —
+		// OnFixedUpdate dereferences Body unconditionally.
+		Body = GameObject.Components.GetOrCreate<Rigidbody>();
+		Body.Gravity = false;
+		Body.RigidbodyFlags = RigidbodyFlags.DisableCollisionSounds;
+		Body.Locking = new PhysicsLock { Pitch = true, Yaw = false, Roll = true };
+
+		Components.GetOrCreate<PlayerVoice>();
+
+		// Re-attach the edit session (idempotent target wiring); the disguise itself is a child GameObject
+		// and survives the refresh — only root components are rebuilt.
+		if ( _session is not null && !_session.IsValid() )
+			_session = SculptablePawn.AttachEditing( this, _body );
+	}
+
 	protected override void OnAwake()
 	{
+		// Sever the live prefab link: editing prop.prefab while PLAYING makes the editor re-apply the prefab
+		// to every live instance (engine UpdateFromPrefab), which rebuilds the component list AND deletes
+		// children the prefab doesn't declare — the runtime-cloned Disguise included (prop vanishes, sculpt
+		// lost). A spawned pawn needs no live link; broken, prefab edits mid-play touch nothing and land on
+		// the NEXT spawn. Live tuning = edit the pawn CLONE in the hierarchy instead (per-frame republish
+		// makes those instant). HealRuntimeComponents stays as the backstop for anything else.
+		GameObject.BreakFromPrefab();
+
 		Body = GameObject.Components.GetOrCreate<Rigidbody>();
 		Body.Gravity = false; // we integrate gravity ourselves so rise/fall can differ (snappy landings)
 		Body.RigidbodyFlags = RigidbodyFlags.DisableCollisionSounds; // a prop is silent — no clatter scraping the world
@@ -409,20 +474,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// Stand up the shared orbit rig in follow mode, pointed at the disguise. It owns the camera for play AND
 		// edit. Kept disabled as a component (it never runs its own OnUpdate) — we Tick it from UpdateCamera so the
 		// ordering against our look input is deterministic and a proxy/dormant prop never drives the camera.
-		_orbit = Components.GetOrCreate<OrbitCameraController>();
-		_orbit.Enabled = false;
-		_orbit.FollowTarget = _body.GameObject;
-		_orbit.FollowOffset = Vector3.Up * CameraHeightOffset;
-		_orbit.IgnoreCollision = GameObject; // boom ignores the pawn + its disguise, same as before
-		_orbit.IgnoreCollisionTag = PropBodyTag; // …and fellow props, which our physics ignores too (see PropBodyTag)
-		_orbit.MinDistance = MinDistance;
-		_orbit.MaxDistance = MaxDistance;
-		_orbit.ZoomSpeed = ZoomSpeed;
-		_orbit.PanSpeed = PanSpeed;
-		_orbit.MinPitch = MinPitch;
-		_orbit.MaxPitch = MaxPitch;
-		_orbit.Angles = new Angles( 15f, EyeAngles.yaw, 0f );
-		_orbit.Distance = CameraDistance;
+		EnsureOrbitRig();
 
 		// Lobby swap continuity — the split that makes a swap feel like returning to a parked body: the BODY
 		// keeps its remembered facing (the spawn rotation, restored host-side from swap memory, seeded into
@@ -460,6 +512,9 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	{
 		if ( _body.IsValid() )
 			_body.Committed -= RecenterOriginOnShape;
+
+		if ( !IsProxy && Scene.IsValid() )
+			ClayCutout.Clear( Scene ); // only the owner ever set it; proxies must not touch scene render state
 	}
 
 	protected override void OnUpdate()
@@ -490,6 +545,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( IsProxy )
 			return;
 
+		// A prefab edit while playing rebuilds this root's components out from under us — repair before
+		// anything below dereferences a corpse (see HealRuntimeComponents).
+		HealRuntimeComponents();
+
 		// Read the toggles even while control is suspended, so edit mode can be exited.
 		if ( Input.Pressed( "Edit" ) )
 		{
@@ -519,9 +578,15 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		// Always drive the camera (per-frame, for smoothness) — needed during edit mode too, where movement is frozen.
 		if ( _freeCam )
+		{
 			UpdateFreeCam();
+			ClayCutout.Clear( Scene ); // spectating the level, not the prop — no peek hole
+		}
 		else
+		{
 			UpdateCamera();
+			UpdateCutout(); // after UpdateCamera, so the hole projects through this frame's camera pose
+		}
 
 		// Drawn here (not in the fixed step) so it shows in edit mode too, where movement is suspended.
 		if ( DebugGroundProbes )
@@ -671,6 +736,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// character physics entirely so we don't run ground-probe traces for a body we're not simulating.
 		if ( IsProxy )
 			return;
+
+		// A mid-play prefab edit destroys the runtime-added components (Body included) — and fixed ticks can
+		// fire before OnUpdate's heal runs, so this path must repair too. See HealRuntimeComponents.
+		HealRuntimeComponents();
 
 		// Fell out of the world (blockout floor holes, physics tunnelling): put the body back at its spawn
 		// spot, upright and at rest — keeping its current heading so the player's camera relation survives.
@@ -967,6 +1036,33 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			// mid-transition, reading as a speed change partway through instead of one continuous ease.
 			ApplySmoothFov( GameSettings.OrbitFov );
 		}
+	}
+
+	// Camera-occlusion cutout (see ClayCutout.cs): publish this frame's peek hole around the disguise, so
+	// scenery between the shared camera and our prop dissolves open. Owner-only by construction — we only get
+	// here past OnUpdate's IsProxy/dormant gates, and the state is local render attributes (nothing networks).
+	// Tuning lives on the sibling ClayCutoutSettings — GetOrCreate'd so the prefab entry is optional, but the
+	// one in prop.prefab is what makes tweaked values persist.
+	ClayCutoutSettings _cutoutSettings;
+
+	void UpdateCutout()
+	{
+		var cam = MainCamera.Current.IsValid() ? MainCamera.Current.Camera : null;
+		if ( !cam.IsValid() || !_body.IsValid()
+			|| !Sdf.TryGetBounds( _body.Brushes, out var b, SculptEditSession.PendingStamp( _body ) ) )
+		{
+			ClayCutout.Clear( Scene );
+			return;
+		}
+
+		// Local bounds -> world through the live body transform (corner-to-corner, so any scale is included).
+		var tx = _body.WorldTransform;
+		var center = tx.PointToWorld( b.Center );
+		float radius = (tx.PointToWorld( b.Maxs ) - tx.PointToWorld( b.Mins )).Length * 0.5f;
+
+		if ( !_cutoutSettings.IsValid() )
+			_cutoutSettings = Components.GetOrCreate<ClayCutoutSettings>();
+		ClayCutout.Update( Scene, cam, center, radius, _cutoutSettings );
 	}
 
 	// Free cam: detaches the SAME orbit rig from the body (FollowTarget -> null, so Tick treats Pivot as a free

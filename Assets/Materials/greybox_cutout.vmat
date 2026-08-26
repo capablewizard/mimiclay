@@ -1,0 +1,12 @@
+// THIS FILE IS AUTO-GENERATED
+
+Layer0
+{
+	shader "shaders/clay_world.shader"
+
+	//---- Material ----
+	g_flTintColor "[0.300000 0.300000 0.300000 0.000000]"
+
+	//---- Camera Cutout ----
+	g_bClayCutout "1"
+}

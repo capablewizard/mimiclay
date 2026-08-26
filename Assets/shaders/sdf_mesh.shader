@@ -98,8 +98,14 @@ PS
 	#include "common/pixel.hlsl"
 	#include "common/utils/triplanar.hlsl"
 	#include "common/classes/Depth.hlsl" // scene depth (prepass) — drives the world-cavity curvature
+	#include "clay_cutout.hlsl"          // camera-occlusion peek hole (see ClayCutout.cs)
 
 	RenderState( CullMode, DEFAULT );
+
+	// Camera-occlusion cutout (clay_cutout.hlsl): lets this prop dissolve open when it stands between the
+	// camera and the local hider's disguise. The hider's OWN prop is protected by the include's distance
+	// test, so leaving this on everywhere is safe — untick to make a material never cut.
+	bool g_bClayCutout < UiType( CheckBox ); Default( 1 ); UiGroup( "Surface,10/01" ); >;
 
 	// --- Same material inputs as sdf_raymarch.shader ---
 	SamplerState g_sRepeat < Filter( ANISOTROPIC ); AddressU( WRAP ); AddressV( WRAP ); >;
@@ -242,6 +248,14 @@ PS
 
 	float4 MainPs( PixelInput i ) : SV_Target0
 	{
+		// Camera-occlusion cutout, before ANY shading work — and in the S_MODE_DEPTH compile too (the prepass
+		// hole is what actually reveals what's behind; shadow views are gated inside the include). clip()
+		// lives HERE, not in a helper — a nested discard has ICE'd DXC before (see clay_cutout.hlsl).
+		float cutRim = 0.0, cutOutline = 0.0;
+		if ( g_bClayCutout && ClayCutoutHit( i.vPositionSs.xy, i.vPositionWithOffsetWs.xyz + g_vCameraPositionWs,
+		                                     normalize( i.vNormalWs.xyz ), cutRim, cutOutline ) )
+			clip( -1.0 );
+
 		// MODEL-space position + normal drive the triplanar projection, so the plasticine pattern is
 		// locked to the prop (and matches the raymarched LOD, which projects in this same model frame,
 		// so the pattern lines up across an LOD switch). Albedo/roughness are space-agnostic; the
@@ -384,10 +398,17 @@ PS
 		m.Roughness = max( saturate( roughness * g_flRoughness * vMR.y + g_flCurveRoughBoost * curvRidge ), 0.08 );
 		m.Metalness = saturate( vMR.x + g_flMetalness );
 
+		// Cutout rim (clay_cutout.hlsl): darkened cross-section band where the tunnel's eroded edge grazes
+		// this fragment. Zero everywhere the cutout isn't biting. (The outline composites after Shade below.)
+		m.Albedo *= 1.0 - cutRim * g_flClayCutoutRimDarken;
+
 		float4 c = ShadingModelStandard::Shade( i, m );
 		// Stop NaN/fireflies before the DoF gather smears them into bright bokeh discs.
 		c.rgb = c.rgb == c.rgb ? c.rgb : 0.0; // NaN != NaN
 		c.rgb = min( c.rgb, 64.0 );           // firefly clamp — tune to your exposure
+		// Cutout outline AFTER the lighting (and the clamps, so the line is exact): a flat unlit colour
+		// tracing the eroded edge — matches SdfHighlightOutline's read.
+		c.rgb = lerp( c.rgb, g_vClayCutoutOutline.rgb, cutOutline );
 		return c;
 	}
 }
