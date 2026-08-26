@@ -55,6 +55,24 @@ public sealed class OrbitCameraController : Component
 	/// through geometry, even with <see cref="IgnoreCollision"/> set.</summary>
 	[Property] public bool BoomCollision { get; set; } = true;
 
+	/// <summary>How fast the boom eases IN toward an obstruction (per-second exponential rate). Kept brisk —
+	/// the hard clamp below still guarantees no clipping, this only softens the approach.</summary>
+	[Property, Range( 1f, 30f )] public float BoomInSpeed { get; set; } = 14f;
+
+	/// <summary>How fast the boom eases back OUT once an obstruction clears. Deliberately slow — the instant
+	/// snap-out was what made sweeping the camera over bumpy geometry pump in/out nauseatingly.</summary>
+	[Property, Range( 0.5f, 15f )] public float BoomOutSpeed { get; set; } = 4f;
+
+	/// <summary>Lateral spread of the whisker rays that judge whether a boom obstruction really blocks the
+	/// view (a wall) or is just a thin pole / small prop crossing the sight line. Obstructions the whiskers
+	/// see around barely pull the camera at all — it's allowed to briefly clip past them instead.</summary>
+	[Property, Range( 8f, 64f )] public float BoomWhiskerSpread { get; set; } = 24f;
+
+	/// <summary>Only collide with world geometry (walls, scene geo). SDF clay props — decoys, released
+	/// disguises, map clay props (everything tagged <see cref="SdfCollider.ClayTag"/>) — never push the
+	/// camera; it clips past them instead. Walls always collide regardless.</summary>
+	[Property] public bool BoomWorldOnly { get; set; } = true;
+
 	/// <summary>Tag the collision boom passes straight through, on top of <see cref="IgnoreCollision"/>'s
 	/// hierarchy. Null = the boom stops on everything. The hider sets it to the prop-body tag so a fellow prop —
 	/// which its own physics already ignores — can't shove its camera either; a boom that stopped on one would
@@ -79,6 +97,8 @@ public sealed class OrbitCameraController : Component
 
 	Angles _angles;
 	Vector3 _panOffset; // accumulated pan, relative to the follow target
+	float _boomPull;    // smoothed obstruction pull-in (how far short of Distance the boom currently sits)
+	float _boomBlocked; // smoothed whisker occlusion 0..1 (raw value is quantized to quarters and jumps)
 
 	bool _seeded; // false until Pivot/Distance/_angles have been derived from a live camera
 
@@ -109,6 +129,8 @@ public sealed class OrbitCameraController : Component
 	{
 		AltNav.Reset();
 		_seeded = false;
+		_boomPull = 0f;
+		_boomBlocked = 0f;
 	}
 
 	protected override void OnUpdate() => Tick( handleAltDrag: true );
@@ -185,29 +207,106 @@ public sealed class OrbitCameraController : Component
 	void Apply( CameraComponent cam )
 	{
 		var rot = _angles.ToRotation();
-		var desired = Pivot - rot.Forward * Distance;
+		float boom = Distance;
 
-		// Pull the boom in if it would clip through geometry (gameplay only).
+		// Pull the boom in if it would clip through geometry (gameplay only). Two traces: a wide one gives a
+		// resting target with headroom off walls, eased toward (fast in, slow out) so sweeping over bumpy
+		// geometry doesn't pump the camera in/out at frame rate; the narrow one is a hard same-frame clamp,
+		// so the no-clip guarantee is exactly what the old instant boom had. The smoothed value is the
+		// pull-in, not the distance itself, so player dolly zoom stays instant.
 		if ( BoomCollision && IgnoreCollision.IsValid() )
 		{
-			var trace = Scene.Trace.Ray( Pivot, desired )
-				.Radius( 8f )
-				.IgnoreGameObjectHierarchy( IgnoreCollision );
+			var softTr = TraceBoom( rot, 16f );
+			var hardTr = TraceBoom( rot, 8f );
 
-			if ( !string.IsNullOrEmpty( IgnoreCollisionTag ) )
-				trace = trace.WithoutTags( IgnoreCollisionTag );
+			float hard = hardTr.Hit ? hardTr.Fraction * Distance : Distance;
+			// A start-solid soft sweep (pivot within 16u of a wall — a prop hiding against one) carries no
+			// direction info and would read as "pull all the way in"; defer to the hard trace instead.
+			float soft = softTr.StartedSolid ? hard
+				: softTr.Hit ? softTr.Fraction * Distance : Distance;
 
-			var tr = trace.Run();
-			if ( tr.Hit )
-				desired = tr.EndPosition;
+			float wantPull = MathF.Max( 0f, Distance - soft );
+
+			// Context sensitivity: only pull in as much as the obstruction actually blocks the view. Thin
+			// poles and small props near the pivot block just the centre ray — the whiskers see straight
+			// past them — so the boom stays out and the camera clips briefly past instead of zooming in.
+			// The raw whisker fraction is quantized to quarters and jumps as rays cross an edge one at a
+			// time (orbiting into a cube), so it's smoothed before use — a genuine wall still reads 1.0 on
+			// the very first frame, so detection isn't delayed, only the transitions are.
+			float rawBlocked = wantPull > 0f ? WhiskerOcclusion( rot ) : 0f;
+			_boomBlocked = MathX.Lerp( _boomBlocked, rawBlocked, 1f - MathF.Exp( -12f * Time.Delta ) );
+			wantPull *= _boomBlocked;
+
+			float rate = wantPull > _boomPull ? BoomInSpeed : BoomOutSpeed;
+			_boomPull = MathX.Lerp( _boomPull, wantPull, 1f - MathF.Exp( -rate * Time.Delta ) );
+
+			// The hard clamp FADES in with occlusion instead of arming at a threshold — a binary arm was a
+			// visible teleport (eased boom far out, clamp suddenly live at the trace distance). Fully
+			// occluded = the old instant no-clip clamp; mostly clear = no clamp at all.
+			float clampWeight = MathX.Clamp( (_boomBlocked - 0.25f) / 0.5f, 0f, 1f );
+			float hardEffective = MathX.Lerp( Distance, hard, clampWeight );
+
+			boom = MathF.Min( Distance - _boomPull, hardEffective );
+			_boomPull = Distance - boom; // fold the clamp back in, so easing out starts from where we really are
+		}
+		else
+		{
+			_boomPull = 0f;
+			_boomBlocked = 0f;
 		}
 
-		cam.WorldPosition = desired;
+		cam.WorldPosition = Pivot - rot.Forward * boom;
 		cam.WorldRotation = rot;
 
 		// Every rig consumer (sculpt/edit, the prop's play camera) runs at the orbit FOV. Declared through
 		// MainCamera — never written to the CameraComponent directly — and asserted every frame, so the ease
 		// back from the hunter's first-person FOV happens centrally and a live settings change just applies.
 		MainCamera.Fov = GameSettings.OrbitFov;
+	}
+
+	// How much of the view around the sight line the obstruction really blocks, 0..1. Four thin rays fan
+	// from just beside the pivot (half spread — so clutter sitting right next to the disguise doesn't block
+	// them) out to beside the full-distance camera position (full spread). A wall crosses all of them at any
+	// depth; a thin pole or a small prop near the pivot crosses none. Only run when the centre trace hit.
+	float WhiskerOcclusion( Rotation rot )
+	{
+		var camPos = Pivot - rot.Forward * Distance;
+		var offsets = new Vector3[]
+		{
+			rot.Right * BoomWhiskerSpread, rot.Right * -BoomWhiskerSpread,
+			rot.Up * BoomWhiskerSpread, rot.Up * -BoomWhiskerSpread,
+		};
+
+		int blockedCount = 0;
+		foreach ( var off in offsets )
+		{
+			var trace = FilterBoomTrace( Scene.Trace.Ray( Pivot + off * 0.5f, camPos + off ) );
+			if ( trace.Run().Hit )
+				blockedCount++;
+		}
+
+		return blockedCount / 4f;
+	}
+
+	// Sweep a sphere from the pivot out along the full boom length; the caller reads Fraction/StartedSolid.
+	SceneTraceResult TraceBoom( Rotation rot, float radius )
+	{
+		var trace = FilterBoomTrace( Scene.Trace.Ray( Pivot, Pivot - rot.Forward * Distance ).Radius( radius ) );
+		return trace.Run();
+	}
+
+	// The shared exclusion set for every boom/whisker trace: the pawn's own hierarchy, the owner's ignore
+	// tag (fellow prop bodies), and — in world-only mode — all SDF clay props.
+	SceneTrace FilterBoomTrace( SceneTrace trace )
+	{
+		trace = trace.IgnoreGameObjectHierarchy( IgnoreCollision );
+
+		if ( !string.IsNullOrEmpty( IgnoreCollisionTag ) )
+			trace = trace.WithoutTags( IgnoreCollisionTag );
+
+		if ( BoomWorldOnly )
+			trace = trace.WithoutTags( SdfCollider.ClayTag );
+
+		return trace;
 	}
 }

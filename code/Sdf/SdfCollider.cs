@@ -33,6 +33,11 @@ public sealed class SdfCollider : Component
 	/// decoys and world props stay exactly as solid as they look.</summary>
 	[Property] public bool BuildAsTrigger { get; set; }
 
+	/// <summary>Tag stamped onto every SDF-collider GameObject (runtime only — this component never runs in
+	/// the editor, so it's never saved into assets). Lets traces treat clay props differently from world
+	/// geometry — the camera boom's world-only mode filters on it.</summary>
+	public const string ClayTag = "clay";
+
 	// Sculpture-local footprint snapshot (underside contact points), refreshed with the collider. Used by the
 	// player controller for multi-point ground checks. Decoupled from the collider build (see Rebuild) so a
 	// problem computing it can never stop the sculpture from being solid.
@@ -59,6 +64,7 @@ public sealed class SdfCollider : Component
 
 	protected override void OnEnabled()
 	{
+		GameObject.Tags.Add( ClayTag );
 		_sculpture = GameObject.Components.Get<SdfSculpture>();
 		_bounds = GameObject.Components.Get<SculptBounds>();
 		if ( _sculpture.IsValid() )

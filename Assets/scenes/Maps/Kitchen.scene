@@ -4874,7 +4874,7 @@
           "DefaultMaterial": "materials/plasticine_scene.vmat",
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 14:14:14",
+          "LastImport": "63 object(s), 67661 tris — 22:32:50",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -10841,8 +10841,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11035,8 +11051,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11159,8 +11191,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []

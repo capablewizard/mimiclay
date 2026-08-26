@@ -22,7 +22,7 @@
         "Flags": 0,
         "AirControl": 2.5,
         "AltHoldOrbits": true,
-        "CameraCollision": false,
+        "CameraCollision": true,
         "CameraDistance": 180,
         "CameraHeightOffset": 16,
         "CenterPivotOnShape": true,
