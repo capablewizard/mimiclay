@@ -29,7 +29,11 @@ namespace Mimiclay;
 /// (brush data is baked in world space), so the scales are applied by scaling BRUSH data, not the GameObject —
 /// and each model's brushes are re-derived from a pristine prefab-scale source list whenever its scale property
 /// changes, so <see cref="WorldGunScale"/> / <see cref="ViewGunScale"/> are live-tweakable while playing.
-/// Editable guns later can build on the same clones.
+///
+/// EDITABLE: weapon-edit mode (see HunterController.SetEditPart) hands the WORLD model to a
+/// <see cref="SculptEditSession"/> in place — see <see cref="BeginEdit"/>; valid commits become the canonical
+/// source (inverse-scaled), persist to <see cref="SculptLibrary.GunSlot"/> and ride <see cref="CustomGunData"/>
+/// to every machine.
 /// </summary>
 [Title( "Hunter Gun" )]
 [Category( "Mimiclay" )]
@@ -270,9 +274,36 @@ public sealed class HunterGun : Component
 	// (0 = never — the first Place() always applies). Deriving from the SOURCE every time (instead of scaling
 	// the live brushes in place) is what makes the scales freely re-tweakable: no compounding, no baseline
 	// drift, and a snapshot-received clone (streamed at the owner's scale) self-heals to ours.
+	// A PLAYER-AUTHORED gun (weapon-edit mode / the saved GunSlot / the wire) replaces this source outright —
+	// see AdoptSource — and everything downstream (both display scales, the muzzle repin) works unchanged.
 	List<SdfBrush> _source;
 	float _worldApplied;
 	float _viewApplied;
+
+	// ── Editable gun (weapon-edit mode) ─────────────────────────────────────────────────────────────────
+
+	/// <summary>The owner's custom gun shape at full edit scale, packed like <see cref="SdfNetworkSync"/>'s
+	/// payloads (gzip+base64 brush JSON). Owner-write on every valid weapon-edit commit; ships in the spawn
+	/// snapshot so late joiners get it too. Empty = the authored prefab gun. Applied by proxies in
+	/// <see cref="Place"/> (polled — the [Change] callback isn't guaranteed for the initial replicated value).</summary>
+	[Sync] public string CustomGunData { get; set; }
+
+	/// <summary>The sculpture weapon-edit mode targets: the WORLD model itself, edited in place in the pawn's
+	/// hand at its display scale (null until <see cref="BeginEdit"/> has run). The hunter controller binds its
+	/// gun edit session to this.</summary>
+	public SdfSculpture EditSculpt => _worldSculpt;
+
+	/// <summary>Weapon-edit mode currently owns the world gun. The controller asserts per frame that this
+	/// matches "the gun session is editing" — exits that never pass back through it (revert dialog, forced
+	/// teardown) are reconciled there.</summary>
+	public bool EditShown => _editingWorld;
+
+	bool _editingWorld;      // the edit session is driving the world model: freeze its scale derivation,
+	                         // boost its field resolution, and let commits become the canonical source
+	bool _editHooked;        // Committed subscribed on the world sculpt (once, first BeginEdit)
+	string _appliedGunData;  // last CustomGunData payload applied/published here (reference-compared per frame)
+	string _pendingPublish;  // owner: packed payload waiting for the pawn to actually be networked
+	bool _customChecked;     // owner: adopted the saved GunSlot once (lazily — ownership resolves after OnStart)
 
 	protected override void OnStart()
 	{
@@ -347,9 +378,16 @@ public sealed class HunterGun : Component
 
 	public void Place( Vector3 eye, Angles aim, bool firstPerson, Vector3 armOffset = default )
 	{
+		// Custom-gun source first, so a fresh adoption (saved slot, incoming sync payload) is what the
+		// scale derivations below build from — never the prefab default for a frame.
+		UpdateCustomGun();
+
 		// Scale-on-change, so the properties are live while playing. The world model on every machine; the
 		// viewmodel only where it's shown (proxies never enable theirs — no point building it).
-		ApplyScale( _worldSculpt, WorldGunScale, ref _worldApplied );
+		// SUSPENDED on the world model while weapon-edit mode drives it: the edit session owns that brush
+		// list, and a re-derive from source would swap it out from under the gizmo, selection and undo.
+		if ( !_editingWorld )
+			ApplyScale( _worldSculpt, WorldGunScale, ref _worldApplied );
 		if ( firstPerson )
 			ApplyScale( _viewSculpt, ViewGunScale, ref _viewApplied );
 
@@ -421,7 +459,10 @@ public sealed class HunterGun : Component
 		if ( _worldSdf.IsValid() )
 		{
 			_worldSdf.RenderHidden = firstPerson || HideAll;
-			ApplyFieldResolution( _worldSdf, WorldFieldResolution );
+			// While weapon-editing, the world model IS the edit surface — give it the viewmodel's resolution
+			// (the camera gets just as close). The change is folded into the field hash, so entering/leaving
+			// edit mode costs one re-bake each way and nothing per frame.
+			ApplyFieldResolution( _worldSdf, _editingWorld ? ViewFieldResolution : WorldFieldResolution );
 		}
 
 		// Repin the muzzle points to the live scales (per frame, so the scale sliders stay live): the brush
@@ -810,6 +851,121 @@ public sealed class HunterGun : Component
 		}
 
 		return sculpt.Brushes.Select( b => b.Copy() ).ToList();
+	}
+
+	// ── Custom gun: adoption, persistence seed and wire (see the fields above) ───────────────────────────
+	// The owner adopts its saved GunSlot once (lazily — ownership resolves after OnStart, and reading the
+	// local disk any earlier would dress bots/proxies in THIS machine's gun) and publishes deferred, exactly
+	// like SdfNetworkSync's seed: [Sync] writes only stick once the pawn is actually networked, and a pawn
+	// can live local-first (infection concealment). Proxies poll the payload by reference — the synced string
+	// instance only changes when a new value lands, so the per-frame check is a pointer compare.
+	void UpdateCustomGun()
+	{
+		if ( _hunter.IsValid() && _hunter.Owned )
+		{
+			if ( !_customChecked )
+			{
+				_customChecked = true;
+				var entry = SculptLibrary.Load( SculptLibrary.GunSlot );
+				if ( entry?.Brushes is { Count: > 0 } )
+				{
+					AdoptSource( entry.Brushes );
+					_pendingPublish = SdfNetworkSync.Pack( SdfSculpture.SerializeBrushes( _source ) );
+				}
+			}
+
+			if ( _pendingPublish is not null && GameObject.Network.Active )
+			{
+				CustomGunData = _pendingPublish;
+				_appliedGunData = _pendingPublish;
+				_pendingPublish = null;
+			}
+
+			return;
+		}
+
+		if ( IsProxy && CustomGunData is { Length: > 0 } data && !ReferenceEquals( data, _appliedGunData ) )
+		{
+			_appliedGunData = data;
+
+			// Same receive-side sanity as SdfNetworkSync: a malformed payload is ignored (keep the standing
+			// gun), an over-cap one is a modified client (raymarch cost is per-brush on every machine).
+			var brushes = SdfSculpture.DeserializeBrushes( SdfNetworkSync.Unpack( data ) );
+			if ( brushes is { Count: > 0 } && brushes.Count <= SdfBrushPacker.MaxBrushes )
+				AdoptSource( brushes );
+		}
+	}
+
+	// Swap the canonical source both display models derive from. Resetting the applied scales to 0 (= never)
+	// makes the very next Place re-derive world + view from the new source — the same path a scale tweak takes.
+	void AdoptSource( List<SdfBrush> brushes )
+	{
+		_source = brushes.Select( b => b.Copy() ).ToList();
+		_worldApplied = 0f;
+		_viewApplied = 0f;
+	}
+
+	/// <summary>Hand the WORLD model over to weapon-edit mode and return the sculpture the edit session should
+	/// target (null when there is no world clone to edit). The gun is edited IN PLACE, in the pawn's hand, at
+	/// its display scale — no separate edit object. While this is live, <see cref="Place"/> stops re-deriving
+	/// the world brushes (the session owns them) and boosts the world field to the viewmodel's resolution.</summary>
+	public SdfSculpture BeginEdit()
+	{
+		if ( !_worldSculpt.IsValid() )
+			return null;
+
+		// Every commit the session funnels (gizmo release, discrete edit, undo/redo, the exit commit) becomes
+		// the canonical gun — see OnEditCommitted. Hooked once and kept: the _editingWorld gate inside is what
+		// stops the OTHER Committed source (ApplyScale's own re-derive rebuilds) from ever being adopted.
+		if ( !_editHooked )
+		{
+			_editHooked = true;
+			_worldSculpt.Committed += OnEditCommitted;
+		}
+
+		_editingWorld = true;
+		return _worldSculpt;
+	}
+
+	/// <summary>Weapon-edit over: give the world model back to the normal display path (scale derivation and
+	/// the lower field resolution resume). The edited shape stays — it IS the world model now.</summary>
+	public void EndEdit() => _editingWorld = false;
+
+	// Owner commit funnel while weapon-editing: the edited display shape, inverse-scaled back to prefab space,
+	// becomes the canonical source — adopted for the viewmodel, queued for the wire, and saved to the GunSlot.
+	// The slot save lives HERE (not on the session's PersistSlot) because the session would save the SCALED
+	// display brushes: reloading those as the canonical source would shrink the gun by WorldGunScale on every
+	// session. Mirrors the session's persist gate — an invalid shape (SculptBounds) is the owner's private
+	// work-in-progress and must not become the gun anyone (proxies, the next session) sees.
+	void OnEditCommitted()
+	{
+		if ( !_editingWorld || IsProxy || !_worldSculpt.IsValid() || _worldSculpt.Brushes is not { Count: > 0 } )
+			return;
+
+		var bounds = _worldSculpt.GameObject.Components.Get<SculptBounds>();
+		if ( bounds.IsValid() && !bounds.EvaluateNow() )
+			return;
+
+		// _worldApplied is the scale the live brushes actually embody (WorldGunScale as of the last derive) —
+		// invert THAT, not the property, so a scale tweak mid-edit can't skew the canonical shape.
+		float inv = _worldApplied > 0f ? 1f / _worldApplied : 1f;
+		var canonical = _worldSculpt.Brushes.Select( b => ScaledCopy( b, inv ) ).ToList();
+
+		// The world model already IS the edit — only the viewmodel re-derives from the new source (next time
+		// it shows; it's hidden throughout edit mode). Deliberately NOT AdoptSource: that resets _worldApplied
+		// and the next Place would swap the session's brush list for a re-derived copy.
+		_source = canonical;
+		_viewApplied = 0f;
+
+		_pendingPublish = SdfNetworkSync.Pack( SdfSculpture.SerializeBrushes( _source ) );
+
+		SculptLibrary.Save( new SculptLibrary.Entry
+		{
+			Name = SculptLibrary.GunSlot,
+			Resolution = _worldSculpt.Resolution,
+			FlipFaces = _worldSculpt.FlipFaces,
+			Brushes = canonical,
+		} );
 	}
 
 	// Resolve an arm point: the wired property, else an existing child by name, else a freshly created one at

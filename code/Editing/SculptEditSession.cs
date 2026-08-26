@@ -113,6 +113,13 @@ public sealed class SculptEditSession : Component
 	/// whether a prop-hunt hider or a creative-mode host drives the session.</summary>
 	public static SculptEditSession Current { get; private set; }
 
+	/// <summary>The HUD's part-switch dock (Head / Weapon), shown bottom-centre while nothing is selected.
+	/// Wired by an owner that offers several editable parts on one pawn — the hunter puts the same two
+	/// buttons on BOTH its sessions, each with its own part marked Active, and clicking the other one
+	/// swaps which session is editing (see HunterController.SetEditPart). Null everywhere else (props,
+	/// the menu head, the tutorial), which hides the dock entirely.</summary>
+	public IReadOnlyList<(string Label, bool Active, Action Select)> EditParts { get; set; }
+
 	public bool IsEditing { get; private set; }
 
 	/// <summary>Tool edit mode opens on, every time it's entered (never wherever the last session left

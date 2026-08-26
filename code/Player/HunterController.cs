@@ -227,6 +227,7 @@ public sealed class HunterController : Component
 	ModelRenderer[] _bodyRenderers;
 	SdfRaymarchRenderer[] _sdfRenderers;
 	SculptEditSession _session;
+	SculptEditSession _gunSession; // weapon-edit: same machinery, pointed at the gun's full-scale edit clone
 	OrbitCameraController _orbit;
 	HunterGun _gun;
 
@@ -248,10 +249,11 @@ public sealed class HunterController : Component
 	Vector3 _visualAimDir;
 
 	// Internal: the crosshair HUD (HunterCrosshair) reads this to hide the dot while sculpting.
-	// Covers BOTH sessions that can own this pawn's screen: the face session, and an external one (the lobby
-	// tutorial editing the tutorial character in place) — either way the pawn freezes, drops the camera and
-	// hides the crosshair identically.
+	// Covers EVERY session that can own this pawn's screen: the face session, the weapon session (the gun's
+	// full-scale edit clone), and an external one (the lobby tutorial editing the tutorial character in
+	// place) — either way the pawn freezes, drops the camera and hides the crosshair identically.
 	internal bool EditMode => (_session?.IsEditing ?? false)
+		|| (_gunSession?.IsEditing ?? false)
 		|| (ExternalSession.IsValid() && ExternalSession.IsEditing);
 
 	/// <summary>An edit session driving this pawn's screen that ISN'T the face session — the tutorial
@@ -450,6 +452,32 @@ public sealed class HunterController : Component
 		// it back when you leave edit mode. The menu sculpt head shares the slot; see SculptEditSession.PersistSlot.
 		_session.PersistSlot = SculptLibrary.HeadSlot;
 
+		// Weapon-edit session: the same edit machinery pointed at the gun's WORLD model, edited in place in
+		// the pawn's hand. Created DIRECTLY, never via SculptablePawn.AttachEditing — that would rebind the
+		// pawn's single SdfNetworkSync (which must stay on the face); the gun shape rides HunterGun's own
+		// [Sync] instead. Target binds on the first switch to weapon. NO PersistSlot: the world brushes are
+		// at display scale, so HunterGun saves the inverse-scaled canonical shape itself on every commit
+		// (see HunterGun.OnEditCommitted). Two sessions = two undo histories, two exit confirmations, two
+		// camera framings — all for free.
+		if ( _gun.IsValid() )
+		{
+			_gunSession = Components.Create<SculptEditSession>();
+			_gunSession.OrbitCamera = _orbit;
+
+			// The HUD's Head/Weapon dock (bottom-centre while editing with nothing selected). Both sessions
+			// carry the same two buttons with their own part marked active; clicking the other one switches.
+			_session.EditParts = new (string, bool, Action)[]
+			{
+				("Head", true, () => SetEditPart( EditPart.Head )),
+				("Weapon", false, () => SetEditPart( EditPart.Weapon )),
+			};
+			_gunSession.EditParts = new (string, bool, Action)[]
+			{
+				("Head", false, () => SetEditPart( EditPart.Head )),
+				("Weapon", true, () => SetEditPart( EditPart.Weapon )),
+			};
+		}
+
 		// Run dust: cache the emitters we gate by speed (see UpdateRunEffect). EverythingInSelf so a re-cache
 		// still finds them after we've disabled them; they start enabled in the prefab, so force the initial
 		// off state — the pawn spawns standing still.
@@ -554,7 +582,15 @@ public sealed class HunterController : Component
 		// Tab toggles the brush wireframe overlay, same as the hider's props. Routed to whichever session owns
 		// the screen; the session no-ops this unless it's actually editing, so it's only meaningful in edit mode.
 		if ( Owned && Input.Pressed( "ToggleWireframes" ) )
-			(ExternalSession.IsValid() && ExternalSession.IsEditing ? ExternalSession : _session)?.ToggleWireframes();
+			ActiveEditSession?.ToggleWireframes();
+
+		// Weapon-edit teardown reconcile: the HUD's part switch and Q are not the only exits — the revert
+		// dialog's Confirm and every forced teardown call SetActive(false) on the session directly and never
+		// pass back through here. Assert the invariant per frame instead: the world gun belongs to the edit
+		// session exactly while that session is editing; hand it back (scale derivation, display resolution)
+		// the moment it isn't.
+		if ( _gun.IsValid() && _gun.EditShown && !(_gunSession?.IsEditing ?? false) )
+			_gun.EndEdit();
 
 		// Keep the wire in step with the session, whatever path entered or left edit mode (see NetEditing).
 		if ( Owned )
@@ -785,7 +821,7 @@ public sealed class HunterController : Component
 	///
 	/// Read LIVE every frame, never cached in OnStart: a host-spawned pawn runs OnStart on the owning client BEFORE
 	/// ownership replicates, so a one-shot read is stale. (IsProxy is false in non-networked play, so solo works.)</summary>
-	bool Owned => !IsProxy && !Bot;
+	internal bool Owned => !IsProxy && !Bot;
 
 	// Spawn placement (re-anchored by Teleport) — where the fall-respawn check in OnUpdate returns the pawn.
 	Transform _fallAnchor;
@@ -2053,13 +2089,39 @@ public sealed class HunterController : Component
 		}
 	}
 
-	// Enter/leave face-edit mode. On enter, the session enables the orbit camera (seeding it from the current
+	// The session currently owning this pawn's screen (for input routed "to whoever is editing"): the
+	// external (tutorial) session first, then the weapon session, then the face session as the default.
+	SculptEditSession ActiveEditSession =>
+		ExternalSession.IsValid() && ExternalSession.IsEditing ? ExternalSession
+		: _gunSession.IsValid() && _gunSession.IsEditing ? _gunSession
+		: _session;
+
+	/// <summary>The two editable parts the edit HUD's bottom dock switches between.</summary>
+	internal enum EditPart
+	{
+		Head,
+		Weapon,
+	}
+
+	// Enter/leave edit mode. Entering always opens on the HEAD (the default part); the HUD's Weapon button
+	// switches from there. On enter, the session enables the orbit camera (seeding it from the current
 	// first-person view); we immediately reframe it onto the face so you're looking AT your head, not out of it.
 	// On leave, the session disables the orbit camera and DriveCamera resumes this same frame (see OnUpdate order).
 	void ToggleEdit()
 	{
 		if ( !_session.IsValid() )
 			return;
+
+		// Weapon edit up → Q leaves edit mode from THERE, through the same dialog-aware exit path as the
+		// head's. The edit gun's hide is asserted by the per-frame reconcile in OnUpdate (which also covers
+		// the dialog's Confirm and forced teardowns — paths that never come back through here).
+		if ( _gunSession.IsValid() && _gunSession.IsEditing )
+		{
+			_gunSession.Toggle();
+			if ( !_gunSession.IsEditing && _orbit.IsValid() )
+				_lastGunEditView = CaptureGunEditView();
+			return;
+		}
 
 		// Toggle can now DECLINE to exit (an invalid sculpt raises the session's revert confirmation and
 		// stays editing), so both follow-ups key off an actual state CHANGE — re-framing on a blocked exit
@@ -2073,11 +2135,58 @@ public sealed class HunterController : Component
 			_lastEditView = CaptureEditView();
 	}
 
+	// The HUD's Head/Weapon dock lands here (via the sessions' EditParts). Hands the orbit camera and the
+	// HUD from one session to the other; each side commits + persists on its way out (SetActive(false) runs
+	// the same funnel any forced exit does — an invalid shape silently reverts, exactly like a teardown).
+	void SetEditPart( EditPart part )
+	{
+		if ( !_gun.IsValid() || !_gunSession.IsValid() || !_session.IsValid() )
+			return;
+
+		if ( part == EditPart.Weapon )
+		{
+			if ( !_session.IsEditing || _gunSession.IsEditing )
+				return;
+
+			_lastEditView = CaptureEditView();
+			_session.SetActive( false );
+
+			// Hand the world gun — right where it sits in the pawn's hand — to the edit session; the camera
+			// zooms onto it below. A pawn with no gun clone falls straight back into the head edit.
+			var sculpt = _gun.BeginEdit();
+			if ( !sculpt.IsValid() )
+			{
+				_session.SetActive( true );
+				FrameFace();
+				return;
+			}
+
+			_gunSession.Target = sculpt;
+			_gunSession.SetActive( true );
+			FrameGun();
+		}
+		else
+		{
+			if ( !_gunSession.IsEditing || _session.IsEditing )
+				return;
+
+			_lastGunEditView = CaptureGunEditView();
+			_gunSession.SetActive( false );
+			_gun.EndEdit();
+			_session.SetActive( true );
+			FrameFace();
+		}
+	}
+
 	// The last edit session's view, zoom and pan, stored RELATIVE to the face (yaw-relative angles; the panned
 	// pivot as an offset from the face centre in the face's yaw frame) — so the restored view stays glued to
 	// the head even if the pawn turned or moved between edits. Null until an edit session has ended: the very
 	// first entry frames from the front at the auto-fit distance, centred.
 	(Angles view, float distance, Vector3 panOffset)? _lastEditView;
+
+	// Same, for the weapon edit — relative to the edit gun's shape centre, so switching back to the gun (or a
+	// Teleport mid-weapon-edit) restores exactly where you left its view.
+	(Angles view, float distance, Vector3 panOffset)? _lastGunEditView;
 
 	float FaceYaw() => _controller.IsValid() ? _controller.EyeAngles.yaw : WorldRotation.Angles().yaw;
 
@@ -2096,13 +2205,31 @@ public sealed class HunterController : Component
 		_orbit.Angles = new Angles( v.view.pitch, FaceYaw() + v.view.yaw, 0f );
 	}
 
+	// The weapon-edit twins of the pair above, anchored on the edit gun's shape centre instead of the face's.
+	(Angles view, float distance, Vector3 panOffset) CaptureGunEditView() => (
+		new Angles( _orbit.Angles.pitch, _orbit.Angles.yaw - FaceYaw(), 0f ),
+		_orbit.Distance,
+		Rotation.FromYaw( FaceYaw() ).Inverse * (_orbit.Pivot - GunCenterWorld()) );
+
+	void RestoreGunEditView( (Angles view, float distance, Vector3 panOffset) v )
+	{
+		_orbit.Pivot = GunCenterWorld() + Rotation.FromYaw( FaceYaw() ) * v.panOffset;
+		_orbit.Distance = v.distance;
+		_orbit.Angles = new Angles( v.view.pitch, FaceYaw() + v.view.yaw, 0f );
+	}
+
 	/// <summary>Move this (owned) pawn somewhere authoritatively — the round system's hunt-start return to the
 	/// start point. A plain transform write strands the edit camera: the orbit rig's free pivot is a fixed WORLD
 	/// point, so mid-edit the head would teleport out from under the view. This captures the view face-relative
 	/// first and re-applies it after the move, so the framing survives the jump exactly.</summary>
 	public void Teleport( Vector3 position, Rotation rotation )
 	{
-		var view = EditMode && _orbit.IsValid() ? CaptureEditView() : ((Angles, float, Vector3)?)null;
+		// Weapon edit anchors on the gun instead — its clone is parented to the pawn, so it rides the move,
+		// and the gun-relative capture puts the view right back on it.
+		bool weapon = _gunSession.IsValid() && _gunSession.IsEditing;
+		var view = EditMode && _orbit.IsValid()
+			? (weapon ? CaptureGunEditView() : CaptureEditView())
+			: ((Angles, float, Vector3)?)null;
 
 		// An authoritative move is the new "safe ground" — a fall respawn returns here, not the stale spawn.
 		_fallAnchor = new Transform( position, rotation );
@@ -2111,7 +2238,12 @@ public sealed class HunterController : Component
 		WorldRotation = rotation;
 
 		if ( view is { } v )
-			RestoreEditView( v );
+		{
+			if ( weapon )
+				RestoreGunEditView( v );
+			else
+				RestoreEditView( v );
+		}
 	}
 
 	// Park the orbit camera on the face: the FIRST entry frames it from the front (along the head's facing,
@@ -2132,21 +2264,41 @@ public sealed class HunterController : Component
 		}
 	}
 
+	// Park the orbit camera on the edit gun — FrameFace's weapon twin: first switch fits the gun's bounding
+	// sphere from the front, later ones restore wherever the weapon view was last left.
+	void FrameGun()
+	{
+		if ( !_orbit.IsValid() )
+			return;
+
+		if ( _lastGunEditView is { } last )
+			RestoreGunEditView( last );
+		else
+		{
+			_orbit.Pivot = GunCenterWorld();
+			_orbit.Distance = FramingDistance( _gun.IsValid() ? _gun.EditSculpt : null );
+			_orbit.Angles = new Angles( EditCameraPitch, FaceYaw() + 180f, 0f );
+		}
+	}
+
 	// Distance that fits the head's bounding sphere in the frame with EditFramingMargin breathing room, derived
 	// from the FOV edit mode settles at (GameSettings.OrbitFov) — NOT the live camera, which at edit entry is
 	// still easing away from the hunter's first-person FOV and would over-frame. Standard fit-sphere math: a
 	// sphere of radius r is tangent to the view cone at distance r / sin(halfFov). The FOV is the VERTICAL fov
 	// (the tighter axis on a wide screen), so fitting against it guarantees the head fits horizontally too.
 	// Falls back to a fixed distance if bounds aren't ready.
-	float FramingDistance()
+	float FramingDistance() => FramingDistance( Face );
+
+	// The same fit, for any sculpture (the weapon edit fits the gun's bounds with the same margin/FOV rules).
+	float FramingDistance( SdfSculpture sculpt )
 	{
 		const float fallback = 60f;
 
-		if ( !Face.IsValid() || !Sdf.TryGetBounds( Face.Brushes, out var bounds, SculptEditSession.PendingStamp( Face ) ) )
+		if ( !sculpt.IsValid() || !Sdf.TryGetBounds( sculpt.Brushes, out var bounds, SculptEditSession.PendingStamp( sculpt ) ) )
 			return fallback;
 
 		// Bounding-sphere radius = half the box diagonal, in world units.
-		float radius = bounds.Size.Length * 0.5f * Face.WorldScale.x;
+		float radius = bounds.Size.Length * 0.5f * sculpt.WorldScale.x;
 		if ( radius <= 0.01f )
 			return fallback;
 
@@ -2169,6 +2321,17 @@ public sealed class HunterController : Component
 			return Face.WorldPosition;
 
 		return _controller.IsValid() ? _controller.EyePosition : WorldPosition;
+	}
+
+	// World-space centre of the gun's sculpted shape (the WORLD model, in the pawn's hand) — FaceCenterWorld's
+	// weapon twin, anchoring the weapon view capture/restore and the camera framing. Falls back to the pawn.
+	Vector3 GunCenterWorld()
+	{
+		var sculpt = _gun.IsValid() ? _gun.EditSculpt : null;
+		if ( sculpt.IsValid() && Sdf.TryGetBounds( sculpt.Brushes, out var bounds, SculptEditSession.PendingStamp( sculpt ) ) )
+			return sculpt.WorldTransform.PointToWorld( bounds.Center );
+
+		return sculpt.IsValid() ? sculpt.WorldPosition : WorldPosition;
 	}
 
 	void Shoot( Vector3 from )

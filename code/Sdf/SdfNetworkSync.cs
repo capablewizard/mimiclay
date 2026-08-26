@@ -495,7 +495,8 @@ public sealed class SdfNetworkSync : Component
 	// cap to 128 affordable — the commit payload scales linearly with the cap. Wire-format only: .sculpt saves
 	// and everything else keep using SerializeBrushes' plain JSON. Unpack auto-detects a plain-JSON payload
 	// (it starts with '['), so a mixed-version peer or a legacy snapshot still applies.
-	static string Pack( string json )
+	// Internal: HunterGun's [Sync] custom-gun payload shares the exact same encoding.
+	internal static string Pack( string json )
 	{
 		if ( string.IsNullOrEmpty( json ) )
 			return json;
@@ -507,7 +508,7 @@ public sealed class SdfNetworkSync : Component
 		return Convert.ToBase64String( ms.ToArray() );
 	}
 
-	static string Unpack( string data )
+	internal static string Unpack( string data )
 	{
 		if ( string.IsNullOrEmpty( data ) )
 			return data;

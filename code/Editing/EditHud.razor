@@ -150,6 +150,23 @@
 			}
 		</div>
 
+		@* Part dock — Head / Weapon (whatever parts the pawn wired onto its sessions; see
+		   SculptEditSession.EditParts). Bottom-centre, only while nothing is selected and no stamp is held:
+		   the neutral state, when the shape dock and sliders are down and the slot is free. The active part
+		   is the usual selected-orange chip; clicking the other one switches which session is editing. *@
+		@if ( PartDockShown )
+		{
+			<div class="part-dock" @ref="PartDockPanel">
+				@foreach ( var entry in Session.EditParts )
+				{
+					var part = entry;
+					<div class="chip @(part.Active ? "on" : "")" @onclick=@(() => part.Select?.Invoke())>
+						<span>@part.Label</span>
+					</div>
+				}
+			</div>
+		}
+
 		@* The left column is just the layer stack now — shape choice moved to the bottom dock (it's a
 		   property of the brush, not a tool), and the Add/Edit mode toggle is gone entirely. *@
 		@if ( ShowLayers && EditHudGate.Visible( HudSection.Layers ) )
@@ -786,7 +803,13 @@
 	Panel RightPanel { get; set; }
 	Panel ShapeDockPanel { get; set; }
 	Panel WorkshopWindowPanel { get; set; }
+	Panel PartDockPanel { get; set; }
 	Vector2 _shapeDockPos;
+
+	// The Head/Weapon part dock is up: a session wired parts, and the editor sits in the neutral state
+	// (gizmo tool, nothing selected, no stamp ghost). One place for the markup AND the toast anchor.
+	bool PartDockShown => (Session?.IsEditing ?? false) && Session.EditParts is { Count: > 0 }
+		&& Session.Tool == SculptTool.Gizmo && Brush is null;
 
 	// The validity toast's BOTTOM edge, from the bottom of the screen (its wrapper centres x — see the
 	// markup for why neither axis may depend on the toast's measured size). Two anchors: just above the
@@ -800,6 +823,10 @@
 			float sc = Panel?.ScaleFromScreen ?? 1f;
 			return MathF.Max( 64f, Screen.Height * sc - dock.y + 28f );
 		}
+
+		// The Head/Weapon part dock owns the bottom-centre slot while nothing is selected — float above it.
+		if ( PartDockShown )
+			return 112f;
 
 		return 64f;
 	}
@@ -1061,7 +1088,8 @@
 		PointerOverPalette = Over( PalettePanel );
 		PointerOverSliders = Over( SliderStackPanel );
 		PointerOverPicker = Over( PickerPanel );
-		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel ) || Over( WorkshopWindowPanel );
+		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel )
+			|| Over( WorkshopWindowPanel ) || Over( PartDockPanel );
 
 		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
 		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.

@@ -519,6 +519,32 @@
 		&:hover { background-color: $craft-orange-hi; }
 	}
 
+	// Head / Weapon part dock — bottom-centre while nothing is selected (the shape dock's slot when it's
+	// down). Standard chips from the shared kit: white paper, the part being edited in the selected orange.
+	// The container is click-through; only the chips opt in — and they go inert with the rest of the HUD
+	// during alt-nav (the &.alt-nav .chip rule above covers them).
+	.part-dock {
+		position: absolute;
+		bottom: 44px; // clear of the 12px hint strip below
+		left: 0;
+		width: 100%;
+		flex-direction: row;
+		justify-content: center;
+		gap: 10px;
+		pointer-events: none;
+
+		.chip {
+			flex-grow: 0;
+			width: 150px;
+			pointer-events: all;
+
+			span { font-size: 16px; }
+
+			&:hover { sound-in: $sound-hover; }
+			&:active { sound-in: $sound-click; }
+		}
+	}
+
 	// Add-tool hint strip, bottom-centre: the hold-key scheme at a glance. Display-only.
 	.hint-strip {
 		position: absolute;

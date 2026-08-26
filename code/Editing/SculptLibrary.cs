@@ -27,6 +27,13 @@ public static class SculptLibrary
 	/// slot files never show up beside the player's named saves in a save-browser UI.</summary>
 	public const string HeadSlot = "_head";
 
+	/// <summary>Reserved slot for the player's persistent hunter GUN: adopted as the source both gun display
+	/// models derive from at spawn, saved back per valid commit while weapon-editing — both by
+	/// <see cref="HunterGun"/> itself (never the session's <see cref="SculptEditSession.PersistSlot"/>: the
+	/// weapon edit targets the world model at DISPLAY scale, so HunterGun inverse-scales to canonical before
+	/// saving). Brushes are stored at the gun's full prefab-authored scale, never the display size.</summary>
+	public const string GunSlot = "_gun";
+
 	// JSON under the hood; a custom extension lets FindFile filter cleanly and keeps these out of the way of
 	// any other data files.
 	const string Extension = ".sculpt";
