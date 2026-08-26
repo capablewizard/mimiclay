@@ -38,6 +38,11 @@ public sealed class ClayCutoutSettings : Component
 	/// this floors the radius at the prop's depth, i.e. the hole's angular size).</summary>
 	[Property, Group( "Hole" ), Range( 0f, 64f )] public float MinRadius { get; set; } = 16f;
 
+	/// <summary>3D mode only: cone half-angle in degrees. 0 = a straight tunnel (constant radius); higher
+	/// flares it toward the camera — the hole stays prop-sized at the prop and opens wider on nearer
+	/// scenery. (2D mode is inherently a cone the other way round: constant SCREEN size.)</summary>
+	[Property, Group( "Hole" ), Range( 0f, 45f )] public float TunnelCone { get; set; } = 0f;
+
 	/// <summary>Exponential ease rate for the radius opening/shutting — the dissolve-in/out animation speed.
 	/// Higher = snappier. This is the hole's SIZE animation; <see cref="LagTime"/> is its position.</summary>
 	[Property, Group( "Hole" ), Range( 1f, 30f )] public float EaseSpeed { get; set; } = 10f;

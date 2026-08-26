@@ -58,9 +58,42 @@ VS
 
 PS
 {
-	// ORDER MATTERS: Material.CommonInputs.hlsl must come first — its include guard is the #define that
-	// switches Material::From (inside pixel.hlsl) onto the complex-style texture path.
-	#include "common/utils/Material.CommonInputs.hlsl"
+	// Complex-compatible material inputs — a local copy of common/utils/Material.CommonInputs.hlsl with ONE
+	// change: g_tColor's mips are plain Box-filtered instead of AlphaWeighted( colour, translucency ).
+	// AlphaWeighted mip generation hard-fails on non-power-of-two sources (CTextureFrame::
+	// GenerateMips_AlphaWeighted — bit fabric.vmat's 700x700 gingham), and alpha-weighted mips only matter
+	// for translucency-weighted colour bleed, which opaque world geometry doesn't use. Input names are
+	// identical, so vmats stay complex-compatible. ORDER MATTERS: defining the include guard BEFORE
+	// common/pixel.hlsl is what switches Material::From onto this texture set.
+	#define MATERIAL_COMMON_INPUTS_HLSL
+	#include "common/utils/normal.hlsl"
+
+	CreateInputTexture2D( TextureColor, Srgb, 8, "", "_color", "Material,10/10", Default3( 1.0, 1.0, 1.0 ) );
+	CreateInputTexture2D( TextureNormal, Linear, 8, "NormalizeNormals", "_normal", "Material,10/20", Default3( 0.5, 0.5, 1.0 ) );
+	CreateInputTexture2D( TextureRoughness, Linear, 8, "", "_rough", "Material,10/30", Default( 0.5 ) );
+	CreateInputTexture2D( TextureMetalness, Linear, 8, "", "_metal", "Material,10/40", Default( 1.0 ) );
+	CreateInputTexture2D( TextureAmbientOcclusion, Linear, 8, "", "_ao", "Material,10/50", Default( 1.0 ) );
+	CreateInputTexture2D( TextureBlendMask, Linear, 8, "", "_blend", "Material,10/60", Default( 1.0 ) );
+	CreateInputTexture2D( TextureTranslucency, Linear, 8, "", "_trans", "Material,10/70", Default3( 1.0, 1.0, 1.0 ) );
+	CreateInputTexture2D( TextureTintMask, Linear, 8, "", "_tint", "Material,10/70", Default( 1.0 ) );
+
+	float3 g_flTintColor < Default3( 1.0, 1.0, 1.0 ); UiGroup( "Material,10/90" ); UiType( Color ); >;
+	float  g_flSelfIllumScale < Default( 1.0 ); UiGroup( "Material,10/91" ); Range( 0.0, 16.0 ); >;
+
+	Texture2D g_tColor < Channel( RGB, Box( TextureColor ), Srgb ); Channel( A, Box( TextureTranslucency ), Linear ); OutputFormat( BC7 ); SrgbRead( true ); >;
+	Texture2D g_tNormal < Channel( RGB, Box( TextureNormal ), Linear ); Channel( A, Box( TextureTintMask ), Linear ); OutputFormat( BC7 ); SrgbRead( false ); >;
+	Texture2D g_tRma < Channel( R, Box( TextureRoughness ), Linear ); Channel( G, Box( TextureMetalness ), Linear ); Channel( B, Box( TextureAmbientOcclusion ), Linear ); Channel( A, Box( TextureBlendMask ), Linear ); OutputFormat( BC7 ); SrgbRead( false ); >;
+
+	// For VRAD3 / thumbnails, same as the engine include.
+	TextureAttribute( LightSim_DiffuseAlbedoTexture, g_tColor );
+	TextureAttribute( RepresentativeTexture, g_tColor );
+
+	BoolAttribute( DoNotCastShadows, F_DO_NOT_CAST_SHADOWS ? true : false );
+	BoolAttribute( SupportsMappingDimensions, true );
+	BoolAttribute( renderbackfaces, F_RENDER_BACKFACES ? true : false );
+
+	SamplerState TextureFiltering < Filter( (F_TEXTURE_FILTERING == 0 ? ANISOTROPIC : (F_TEXTURE_FILTERING == 1 ? BILINEAR : (F_TEXTURE_FILTERING == 2 ? TRILINEAR : (F_TEXTURE_FILTERING == 3 ? POINT : NEAREST)))) ); MaxAniso( 8 ); >;
+
 	#include "common/pixel.hlsl"
 	#include "clay_cutout.hlsl"
 

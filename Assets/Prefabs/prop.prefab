@@ -75,7 +75,7 @@
         "GroundGuardSlope": 0.1,
         "LagTime": 0,
         "MinRadius": 22.990292,
-        "Mode": "Tunnel3D",
+        "Mode": "Disc2D",
         "NoiseScale": 0.03,
         "NoiseScaleFine": 0.01,
         "OnComponentDestroy": null,
@@ -90,7 +90,8 @@
         "OutlineWidth": 0.01893204,
         "RadiusScale": 1.8980582,
         "RimDarken": 0,
-        "RimWidth": 0
+        "RimWidth": 0,
+        "TunnelCone": 0
       },
       {
         "__type": "Mimiclay.SdfNetworkSync",

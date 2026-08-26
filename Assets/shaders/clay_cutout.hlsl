@@ -57,6 +57,8 @@ float4 g_vClayCutoutGuard < Attribute( "ClayCutoutGuard" ); Default4( 1.0, 0.5, 
 // and must stay true: it's what the secondary-view gate below compares against, and fast motion pushes the
 // lagged position far enough away to trip that gate's 4-unit tolerance). Lagging BOTH ends is what makes the
 // lag visible while orbiting — the prop centre barely moves in world space there, only the camera does.
+// w = 3D tunnel cone spread, as tan(half-angle): widens the tunnel toward the CAMERA end by this much per
+// world unit back from the prop (0 = plain cylinder). 3D mode only — 2D's cone comes from its own radius law.
 float4 g_vClayCutoutOrigin < Attribute( "ClayCutoutOrigin" ); Default4( 0.0, 0.0, 0.0, 0.0 ); >;
 // Albedo darkening at the rim band (the clay cross-section) — read by the consumer shaders, not the test.
 float g_flClayCutoutRimDarken < Attribute( "ClayCutoutRimDarken" ); Default( 0.35 ); >;
@@ -188,7 +190,9 @@ bool ClayCutoutHit( float2 px, float3 worldPos, float3 nWs, out float rim, out f
 	float3 noiseP;
 	if ( g_vClayCutoutScreen.w < 0.5 )
 	{
-		d = distToAxis / max( radius, 0.001 );
+		// Cylinder by default; Origin.w > 0 flares it toward the camera (radius at the prop stays `radius`,
+		// growing by tan(half-angle) per unit back from it), so near scenery opens proportionally wider.
+		d = distToAxis / max( radius + ( segLen - t ) * g_vClayCutoutOrigin.w, 0.001 );
 		noiseP = worldPos;
 	}
 	else

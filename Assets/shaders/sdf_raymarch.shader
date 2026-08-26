@@ -143,6 +143,12 @@ PS
 	// each world-space sample into that frame once (SdfDistWs below), so there is no world-space
 	// evaluator copy to keep in sync any more.
 	#include "sdf_eval.hlsl"
+	#include "clay_cutout.hlsl" // camera-occlusion peek hole — tested at the marched HIT point (see MainPs)
+
+	// Camera-occlusion cutout (clay_cutout.hlsl): lets this prop dissolve open when it stands between the
+	// camera and the local hider's disguise. The local disguise itself is exempt by identity (the
+	// ClayCutoutExempt attribute its owner stamps), so leaving this on is safe — untick to opt a material out.
+	bool g_bClayCutout < UiType( CheckBox ); Default( 1 ); UiGroup( "Surface,10/01" ); >;
 
 	float3    g_vBoundsMin    < Attribute( "BoundsMin" ); >;
 	float3    g_vBoundsMax    < Attribute( "BoundsMax" ); >;
@@ -1090,6 +1096,18 @@ PS
 			return o;
 		}
 
+		// Camera-occlusion cutout, tested at the marched HIT point — after the march (so the cost is one
+		// test on the resolved surface, not per step) and BEFORE the S_MODE_DEPTH split, so the prepass
+		// depth gets the same hole as the forward colour (invariant #1). Zero normal = skip the ground
+		// guard: a raymarched prop is never walkable floor, and the guard is the only consumer, so we
+		// save the field taps a real SdfNormal here would cost on to-be-clipped pixels.
+		float cutRim = 0.0, cutOutline = 0.0;
+		if ( g_bClayCutout && ClayCutoutHit( i.vPositionSs.xy, p, float3( 0, 0, 0 ), cutRim, cutOutline ) )
+		{
+			clip( -1 );
+			return o;
+		}
+
 	#if ( S_MODE_DEPTH )
 		// Depth+normals prepass: output the SDF surface normal into the G-buffer (for SSAO/SSR) and
 		// the surface depth — no shading. This is what gives the raymarch AO and puts it in the
@@ -1236,6 +1254,10 @@ PS
 			m.Albedo = BoostSat( m.Albedo, lerp( 1.0, g_flCurveSatBoost, cavity ) );
 		}
 
+		// Cutout rim (clay_cutout.hlsl): darkened cross-section band where the tunnel's eroded edge grazes
+		// this surface. Zero everywhere the cutout isn't biting — matches sdf_mesh.
+		m.Albedo *= 1.0 - cutRim * g_flClayCutoutRimDarken;
+
 	#if ( D_TRANSMISSION && S_MODE_DEPTH == 0 )
 		// Back-scatter using SDF-derived thickness. Runs once here, after the hit — the march above
 		// is untouched. viewDir points from the surface toward the camera (toward -scatterDir = glow).
@@ -1243,6 +1265,8 @@ PS
 	#endif
 
 		o.vColor = ShadingModelStandard::Shade( i, m );
+		// Cutout outline AFTER the lighting: flat unlit line tracing the eroded edge — matches sdf_mesh.
+		o.vColor.rgb = lerp( o.vColor.rgb, g_vClayCutoutOutline.rgb, cutOutline );
 		o.flDepth = flSurfaceDepth;
 		return o;
 	}

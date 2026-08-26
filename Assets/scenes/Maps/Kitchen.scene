@@ -4874,7 +4874,7 @@
           "DefaultMaterial": "materials/plasticine_scene.vmat",
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 21:49:13",
+          "LastImport": "63 object(s), 67661 tris — 22:06:36",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -10957,8 +10957,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -15020,7 +15036,7 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/plasticine_vertex.vmat",
+          "MaterialOverride": "materials/test.vmat",
           "Materials": null,
           "Model": "models/dev/box.vmdl",
           "OnComponentDestroy": null,

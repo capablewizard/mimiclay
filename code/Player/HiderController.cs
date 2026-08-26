@@ -1071,6 +1071,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		foreach ( var r in _body.GameObject.Components.GetAll<ModelRenderer>( FindMode.EnabledInSelfAndDescendants ) )
 			if ( r.SceneObject.IsValid() )
 				r.SceneObject.Attributes.Set( "ClayCutoutExempt", 1 );
+		foreach ( var rm in _body.GameObject.Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants ) )
+			rm.CutoutExempt = true; // the raymarch stamps its own SceneObject in its per-frame block
 	}
 
 	// Free cam: detaches the SAME orbit rig from the body (FollowTarget -> null, so Tick treats Pivot as a free

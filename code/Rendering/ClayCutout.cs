@@ -104,7 +104,8 @@ public static class ClayCutout
 		bool flat = s.Mode == ClayCutoutMode.Disc2D;
 
 		scene.RenderAttributes.Set( "ClayCutoutHole", new Vector4( holeCenter.x, holeCenter.y, holeCenter.z, _radius ) );
-		scene.RenderAttributes.Set( "ClayCutoutOrigin", new Vector4( holeOrigin.x, holeOrigin.y, holeOrigin.z, 0f ) );
+		scene.RenderAttributes.Set( "ClayCutoutOrigin", new Vector4( holeOrigin.x, holeOrigin.y, holeOrigin.z,
+			MathF.Tan( s.TunnelCone.Clamp( 0f, 89f ) * (MathF.PI / 180f) ) ) );
 		scene.RenderAttributes.Set( "ClayCutoutCam", new Vector4( camPos.x, camPos.y, camPos.z, cutMargin ) );
 		scene.RenderAttributes.Set( "ClayCutoutStyle", new Vector4( s.NoiseScale, s.NoiseScaleFine, s.Erode, s.RimWidth ) );
 		scene.RenderAttributes.Set( "ClayCutoutScreen",

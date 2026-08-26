@@ -534,6 +534,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// SeedTexOffset (per-instance triplanar offset) must agree across the raymarch/mesh swap.</summary>
 	internal static float BoilSeedFor( GameObject go ) => ( ( go.Id.GetHashCode() & 0xFFFF ) * 0.6180339887f ) % 64f;
 
+	/// <summary>Runtime flag (never authored/serialized): exempt this prop from the camera-occlusion cutout
+	/// (clay_cutout.hlsl). The local hider sets it on its own disguise every frame — identity protection, so
+	/// the peek hole can never eat the prop it exists to reveal. Stamped as a per-SceneObject attribute in
+	/// the per-frame block below, which also survives SceneObject recreation.</summary>
+	public bool CutoutExempt { get; set; }
+
 	/// <summary>Subsurface / back-scatter lighting — thin parts glow when back-lit (foliage, skin,
 	/// ears). Thickness is read from the SDF itself, so it's cheap (runs once after the hit, not per
 	/// march step) and needs no baked thickness map. The look (tint, strength, thickness falloff) is
@@ -1301,6 +1307,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		else
 			ClayBoil.ApplyOff( _so.Attributes );
 		_so.Attributes.Set( "BoilSeed", BoilSeed );
+		_so.Attributes.Set( "ClayCutoutExempt", CutoutExempt ? 1 : 0 );
 		// The sibling meshed renderer samples the same triplanar maps — stamp the same seed so the
 		// per-instance texture offset doesn't pop when the raymarch<->mesh role swaps.
 		var meshSo = MeshRenderer?.SceneObject;
