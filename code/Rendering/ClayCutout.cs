@@ -54,12 +54,12 @@ public static class ClayCutout
 		float target = MathF.Max( radiusWs * s.RadiusScale, s.MinRadius );
 		_radius += (target - _radius) * (1f - MathF.Exp( -s.EaseSpeed * Time.Delta ));
 
-		// Cut distance stays on the TRUE geometry: it exists to protect the real prop from being cut, and an
-		// easing/lagging radius here would punch a pinhole in the prop's face. From the FULL prop radius,
-		// never the eased one. Non-positive (camera essentially inside the prop) is the shader's "no cut".
+		// Cut margin: how far in FRONT of the prop centre (along the sight line) cutting stops, in world
+		// units. From the FULL prop radius, never the eased one. The prop itself is protected by IDENTITY
+		// (the exemption attribute HiderController stamps on its renderers), not by this margin — which is
+		// what lets the margin go small so scenery hugging the prop still opens.
 		var camPos = cam.WorldPosition;
-		var toProp = centerWs - camPos;
-		float cutDist = toProp.Length - radiusWs * s.CutSlack;
+		float cutMargin = radiusWs * s.CutSlack;
 
 		// Positional lag: the hole trails and settles instead of being welded to the prop. BOTH ends of the
 		// tunnel lag — the prop end gives the walk feel, the camera end is the only thing that moves while
@@ -105,9 +105,10 @@ public static class ClayCutout
 
 		scene.RenderAttributes.Set( "ClayCutoutHole", new Vector4( holeCenter.x, holeCenter.y, holeCenter.z, _radius ) );
 		scene.RenderAttributes.Set( "ClayCutoutOrigin", new Vector4( holeOrigin.x, holeOrigin.y, holeOrigin.z, 0f ) );
-		scene.RenderAttributes.Set( "ClayCutoutCam", new Vector4( camPos.x, camPos.y, camPos.z, cutDist ) );
+		scene.RenderAttributes.Set( "ClayCutoutCam", new Vector4( camPos.x, camPos.y, camPos.z, cutMargin ) );
 		scene.RenderAttributes.Set( "ClayCutoutStyle", new Vector4( s.NoiseScale, s.NoiseScaleFine, s.Erode, s.RimWidth ) );
-		scene.RenderAttributes.Set( "ClayCutoutScreen", new Vector4( s.OrbitNoiseDrive, s.OutlineWidth, 0f, flat ? 1f : 0f ) );
+		scene.RenderAttributes.Set( "ClayCutoutScreen",
+			new Vector4( s.OrbitNoiseDrive, s.OutlineWidth, s.DepthTaper, flat ? 1f : 0f ) );
 		scene.RenderAttributes.Set( "ClayCutoutOutline",
 			new Vector4( s.OutlineColor.r, s.OutlineColor.g, s.OutlineColor.b, s.OutlineColor.a ) );
 		scene.RenderAttributes.Set( "ClayCutoutGuard",

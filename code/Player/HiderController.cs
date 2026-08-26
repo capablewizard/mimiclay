@@ -1063,6 +1063,14 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( !_cutoutSettings.IsValid() )
 			_cutoutSettings = Components.GetOrCreate<ClayCutoutSettings>();
 		ClayCutout.Update( Scene, cam, center, radius, _cutoutSettings );
+
+		// Identity protection: OUR disguise's renderers are exempt from the cut (per-renderer attribute
+		// overrides the scene default), so the prop survives any cut margin and any lag sweep. Re-stamped
+		// every frame, mirroring the BoilSeed pattern — SceneObjects are recreated on every model swap.
+		// The raymarched close-up path isn't cutout-wired at all; this covers the meshed LOD + any clones.
+		foreach ( var r in _body.GameObject.Components.GetAll<ModelRenderer>( FindMode.EnabledInSelfAndDescendants ) )
+			if ( r.SceneObject.IsValid() )
+				r.SceneObject.Attributes.Set( "ClayCutoutExempt", 1 );
 	}
 
 	// Free cam: detaches the SAME orbit rig from the body (FollowTarget -> null, so Tick treats Pivot as a free

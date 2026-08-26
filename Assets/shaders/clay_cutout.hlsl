@@ -46,8 +46,9 @@ float4 g_vClayCutoutStyle < Attribute( "ClayCutoutStyle" ); Default4( 0.15, 0.45
 // sight AXIS, whose direction rotates at orbit rate — orbit churn in 2D is otherwise only hole-radius ×
 // orbit rate (the plane's centre IS the pivot), far slower than 3D's wall-distance × orbit rate. Walking
 // keeps the axis direction constant, so this adds nothing there.
-// y = outline width as a fraction of the radius (<= 0 = no outline; colour in ClayCutoutOutline). z unused.
-float4 g_vClayCutoutScreen < Attribute( "ClayCutoutScreen" ); Default4( 0.5, 0.0, 0.0, 0.0 ); >;
+// y = outline width as a fraction of the radius (<= 0 = no outline; colour in ClayCutoutOutline).
+// z = depth-taper width as a fraction of the radius (how fast the hole pinches shut at the depth boundary).
+float4 g_vClayCutoutScreen < Attribute( "ClayCutoutScreen" ); Default4( 0.5, 0.0, 0.25, 0.0 ); >;
 // Ground guard: x = on/off, y = height slack as a fraction of the radius, z = "counts as floor" normal Z.
 // w = edge feather width as a fraction of the radius: the band inside the eroded edge where the cut fades
 // in by DITHER (clip is binary — an alpha fade can't hole the depth prepass). 0 = hard 1px edge.
@@ -63,6 +64,10 @@ float g_flClayCutoutRimDarken < Attribute( "ClayCutoutRimDarken" ); Default( 0.3
 // fraction of the radius, like the rim; <= 0 disables). Consumers lerp their albedo toward the colour by
 // the outline weight ClayCutoutHit hands back.
 float4 g_vClayCutoutOutline < Attribute( "ClayCutoutOutline" ); Default4( 1.0, 1.0, 1.0, 1.0 ); >;
+// PER-RENDERER exemption (object attributes override the scene default): the local hider stamps 1 onto its
+// own disguise's renderers every frame, so the prop is protected by IDENTITY — never cut, no matter how the
+// lag sweeps or how small the cut margin gets. This is what frees CutSlack to be purely a scenery knob.
+int g_nClayCutoutExempt < Attribute( "ClayCutoutExempt" ); Default( 0 ); >;
 
 // Random unit-ish gradient per lattice point (sin-hash). The rsqrt guard keeps a pathological
 // near-zero hash from turning into a NaN that clip() would smear.
@@ -124,20 +129,13 @@ bool ClayCutoutHit( float2 px, float3 worldPos, float3 nWs, out float rim, out f
 	if ( radius <= 0.0 )
 		return false; // disabled — the common case, so it's the first test
 
+	if ( g_nClayCutoutExempt != 0 )
+		return false; // this renderer IS the prop (or opted out) — identity protection, distance-free
+
 	// Secondary-view gate: shadow, reflection and probe views render with their OWN per-view camera position;
 	// only the real game view sits (within slop) at the position the driver stamped. Cutting a shadow view
 	// leaks light through walls.
 	if ( distance( g_vCameraPositionWs, g_vClayCutoutCam.xyz ) > 4.0 )
-		return false;
-
-	float cutDist = g_vClayCutoutCam.w;
-	if ( cutDist <= 0.0 )
-		return false; // camera essentially inside the prop — no meaningful tunnel
-
-	// Only occluders NEARER the camera than the prop punch through. RADIAL distance (length, not view-Z), to
-	// match the driver's cut distance = prop distance - propRadius * 1.15 — the prop keeps drawing.
-	float3 cam = g_vClayCutoutCam.xyz;
-	if ( distance( worldPos, cam ) >= cutDist )
 		return false;
 
 	// Ground guard (Sullivan separates walkable ground the same way): an up-facing fragment at or below the
@@ -155,7 +153,26 @@ bool ClayCutoutHit( float2 px, float3 worldPos, float3 nWs, out float rim, out f
 	float3 prop = g_vClayCutoutHole.xyz;
 	float segLen = distance( prop, origin );
 	float3 axis = ( prop - origin ) / max( segLen, 0.001 );
-	float t = clamp( dot( worldPos - origin, axis ), 0.0, segLen );
+	float along = dot( worldPos - origin, axis );
+
+	// Depth gate, PER-RAY (Thales): a fragment is cut only while its own view ray is still APPROACHING the
+	// prop — equivalently, while it lies inside the sphere whose DIAMETER runs camera -> boundary point
+	// (one dot product). This is the third gate design and the keeper: geometry behind the prop is past its
+	// rays' closest approach, so it never cuts (the cube-behind-the-prop case); there's no camera-radial
+	// "lean" case (a wall behind a low prop is receding along its rays too); and no axial-plane oblique
+	// slicing — the boundary is view-symmetric by construction. The margin (Cam.w) pulls the boundary point
+	// toward the camera from the prop centre. `ahead` = world units this fragment sits before the boundary
+	// along its own ray — the hole TAPERS shut over the last ~3/4 radius of it (below) instead of chopping,
+	// so the truncation edge gets erosion, feather, rim and outline like any other part of the hole.
+	// Camera inside the prop puts the boundary behind the camera — ahead <= 0 everywhere, nothing cuts.
+	float3 camT = g_vClayCutoutCam.xyz;
+	float3 boundary = prop + normalize( camT - prop ) * g_vClayCutoutCam.w;
+	float3 toFrag = worldPos - camT;
+	float ahead = -dot( toFrag, worldPos - boundary ) / max( length( toFrag ), 0.001 );
+	if ( ahead <= 0.0 )
+		return false;
+
+	float t = clamp( along, 0.0, segLen );
 	float distToAxis = distance( worldPos, origin + axis * t );
 
 	// The two modes differ in the radius law and in where the noise is anchored:
@@ -177,8 +194,7 @@ bool ClayCutoutHit( float2 px, float3 worldPos, float3 nWs, out float rim, out f
 	else
 	{
 		d = distToAxis / max( radius * ( t / max( segLen, 0.001 ) ), 0.001 );
-		float along = max( dot( worldPos - origin, axis ), 0.001 );
-		noiseP = origin + ( worldPos - origin ) * ( segLen / along ); // ray extended to the prop's depth plane
+		noiseP = origin + ( worldPos - origin ) * ( segLen / max( along, 0.001 ) ); // ray extended to the prop's depth plane
 		// Orbit drive: the axis direction turns at orbit rate, so this slide makes the pattern churn on
 		// orbit the way 3D's does — see the attribute comment. Zero-cost while walking (axis constant).
 		noiseP += axis * ( segLen * g_vClayCutoutScreen.x );
@@ -197,6 +213,13 @@ bool ClayCutoutHit( float2 px, float3 worldPos, float3 nWs, out float rim, out f
 	        + ClayCutoutNoise( p2.yzx + 0.31 * p2.zxy + 19.7 ) * 0.25;
 	float edge = 1.0 - n * g_vClayCutoutStyle.z;
 
+	// Depth taper: the hole pinches smoothly shut over the last (Screen.z × radius) before the depth
+	// boundary, so scenery crossing it shows a shrinking eroded hole instead of a hard truncation arc.
+	// Width is a KNOB (DepthTaper) because it decides how close to the prop a thin occluder still opens:
+	// a fence you hide right behind sits at a tiny `ahead`, and a wide taper strangles its hole entirely
+	// (the behind-the-prop protection comes from ahead's SIGN, not from this width).
+	edge *= smoothstep( 0.0, radius * max( g_vClayCutoutScreen.z, 0.01 ), ahead );
+
 	if ( d < edge )
 	{
 		// Dithered feather: inside the eroded edge the cut fades in over a band (Guard.w × radius) by
@@ -211,8 +234,11 @@ bool ClayCutoutHit( float2 px, float3 worldPos, float3 nWs, out float rim, out f
 	}
 
 	// Survived, but close to the eroded edge: hand back a rim weight (1 at/inside the edge -> 0 over the rim
-	// band outside it) for the caller's cross-section darkening.
-	rim = saturate( 1.0 - ( d - edge ) / max( g_vClayCutoutStyle.w, 0.001 ) );
+	// band outside it) for the caller's cross-section darkening. tipFade quiets both bands as the depth
+	// taper pinches the hole shut — with edge near 0 they'd otherwise paint a floating blob on the surface
+	// where there's barely a hole at all.
+	float tipFade = smoothstep( 0.02, 0.15, edge );
+	rim = saturate( 1.0 - ( d - edge ) / max( g_vClayCutoutStyle.w, 0.001 ) ) * tipFade;
 
 	// Outline band hugging the edge, [edge .. edge + width] with a quarter-width ease at each end (fixed
 	// fractions, not fwidth — the early returns above leave quads partially dead, so derivatives here are
@@ -222,7 +248,7 @@ bool ClayCutoutHit( float2 px, float3 worldPos, float3 nWs, out float rim, out f
 	{
 		outline = smoothstep( edge - ow * 0.25, edge, d )
 		        * ( 1.0 - smoothstep( edge + ow, edge + ow * 1.25, d ) )
-		        * g_vClayCutoutOutline.a;
+		        * g_vClayCutoutOutline.a * tipFade;
 	}
 	return false;
 }

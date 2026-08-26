@@ -55,11 +55,18 @@ public sealed class ClayCutoutSettings : Component
 	/// something you're hiding right behind. Raise until orbiting reads right; it won't touch the walk feel.</summary>
 	[Property, Group( "Hole" ), Range( 1f, 10f )] public float OrbitLagScale { get; set; } = 3f;
 
-	/// <summary>Prop-protection slack: cutting stops this many prop-radii short of the prop centre, so the
-	/// disguise's own front face never gets nibbled. This is ALSO what stops geometry very close to the prop
-	/// from opening — drop it toward 0 to cut right up to the prop's surface (1.15 backs off a full radius
-	/// plus 15%; ~0.5 cuts well inside the bounding sphere). Too low and the prop cuts itself.</summary>
-	[Property, Group( "Hole" ), Range( 0f, 2f )] public float CutSlack { get; set; } = 1.15f;
+	/// <summary>How far in FRONT of the prop centre (along the sight line, in prop-radii) cutting stops.
+	/// Purely a scenery knob: the prop itself is exempt by identity (its renderers carry an exemption
+	/// attribute), and geometry BEHIND the prop never cuts regardless (per-ray gate) — so go as low as you
+	/// like to open scenery hugging the shape; raise it to keep a solid buffer in front of the prop.
+	/// A thin fence/railing you hide right behind needs this low (~0.1) AND a modest DepthTaper.</summary>
+	[Property, Group( "Hole" ), Range( 0f, 2f )] public float CutSlack { get; set; } = 0.1f;
+
+	/// <summary>How fast the hole pinches shut approaching the depth boundary, in prop-radii along each view
+	/// ray. Big = soft gradual closes but strangles the hole on thin items you hide right behind (they sit
+	/// almost at the boundary); small = thin fences/railings open fully, closes are snappier. The
+	/// behind-the-prop protection is unaffected — that's the gate's sign test, not this width.</summary>
+	[Property, Group( "Hole" ), Range( 0.05f, 1.5f )] public float DepthTaper { get; set; } = 0.25f;
 
 	// ── Edge ────────────────────────────────────────────────────────────────────────────────────────────
 
