@@ -36,6 +36,7 @@
         "FreeCamFastMultiplier": 3,
         "FreeCamFov": 90,
         "FreeCamFovLerpSpeed": 3,
+        "FreeCamSmoothing": 0.5,
         "FreeCamSpeed": 600,
         "Gravity": 800,
         "GroundControl": 30,

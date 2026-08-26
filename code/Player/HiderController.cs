@@ -239,6 +239,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// that the view doesn't poke through thin geometry.</summary>
 	[Property, Group( "Free Cam" )] public float FreeCamCollisionRadius { get; set; } = 8f;
 
+	/// <summary>Movement momentum, in seconds to (mostly) reach or shed full speed — the editor viewport's
+	/// fly-camera feel, where the camera accelerates in and glides to a stop instead of starting/stopping
+	/// dead on the key edge. 0 = the old instant response.</summary>
+	[Property, Group( "Free Cam" ), Range( 0f, 1f )] public float FreeCamSmoothing { get; set; } = 0.3f;
+
 	/// <summary>Wider FOV while free cam is active — a scouting/spectator view benefits from seeing more than
 	/// the normal orbit framing. Eased in/out by our OWN blend (<see cref="ApplySmoothFov"/>), independent of
 	/// MainCamera's shared <c>FovLerpSpeed</c> (used by every other FOV transition in the game — hunter zoom,
@@ -253,6 +258,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	bool _fovBlendSeeded;  // false until first driven, so the very first frame starts from whatever's live (no pop)
 
 	bool _freeCam;
+	Vector3 _freeCamVelocity; // smoothed fly velocity (momentum) — lives only while free cam is active
 
 	// Released into the level (see ReleaseControl): the prop keeps simulating but takes no input and no longer owns
 	// the camera, so a freshly-spawned pawn can take over while this one stays as scenery.
@@ -999,10 +1005,24 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( Input.Down( "jump" ) ) wish += Vector3.Up;
 		if ( Input.Down( "duck" ) ) wish += Vector3.Down;
 
+		// Momentum: the keys steer a WISH velocity; the actual velocity eases toward it (editor fly-cam
+		// feel — accelerate in, glide to a stop). The time constant is a third of FreeCamSmoothing so the
+		// ramp mostly completes within that many seconds; 0 = instant, exactly the old behaviour.
+		var wishVel = wish * speed;
+		if ( FreeCamSmoothing > 0.001f )
+			_freeCamVelocity = Vector3.Lerp( _freeCamVelocity, wishVel, 1f - MathF.Exp( -Time.Delta * 3f / FreeCamSmoothing ) );
+		else
+			_freeCamVelocity = wishVel;
+
 		var from = _orbit.Pivot;
-		var delta = wish * speed * Time.Delta;
+		var delta = _freeCamVelocity * Time.Delta;
 
 		_orbit.Pivot = SlideFreeCam( from, delta );
+
+		// Re-derive velocity from the distance actually covered, so a wall bleeds off the blocked component
+		// (the slide keeps the tangential part) instead of momentum silently pressing into geometry.
+		if ( Time.Delta > 0f )
+			_freeCamVelocity = (_orbit.Pivot - from) / Time.Delta;
 
 		_orbit.Tick( handleAltDrag: false );
 
@@ -1105,6 +1125,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			_orbit.PivotXYOverride = null;
 			_pivotOffsetXY = null;
 			_orbit.Distance = 0f;
+			_freeCamVelocity = Vector3.Zero; // take off from rest — no stale momentum from the last session
 		}
 		else
 		{
