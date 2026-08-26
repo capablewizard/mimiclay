@@ -24455,8 +24455,64 @@
                       "Type": "Component",
                       "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
                     },
+                    "Property": "__enabled",
+                    "Value": false
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+                    },
                     "Property": "Model",
                     "Value": "sbox_procedural_model.vmdl"
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+                    },
+                    "Property": "CullRadii",
+                    "Value": 220
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+                    },
+                    "Property": "FullQualityRadii",
+                    "Value": 6
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+                    },
+                    "Property": "MeshLod1Radii",
+                    "Value": 90
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+                    },
+                    "Property": "MeshLod2Radii",
+                    "Value": 140
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+                    },
+                    "Property": "MinQualityRadii",
+                    "Value": 60
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
+                    },
+                    "Property": "SdfShadowRadii",
+                    "Value": 10
                   }
                 ],
                 "MovedObjects": []
@@ -24485,8 +24541,64 @@
                       "Type": "Component",
                       "IdValue": "2ff883e1-ccfc-4f4b-822c-f95ecd1a2887"
                     },
+                    "Property": "__enabled",
+                    "Value": false
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "2ff883e1-ccfc-4f4b-822c-f95ecd1a2887"
+                    },
                     "Property": "Model",
                     "Value": "sbox_procedural_model.vmdl"
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "f50d3434-8a13-4241-9d59-365bd83a1b1f"
+                    },
+                    "Property": "CullRadii",
+                    "Value": 220
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "f50d3434-8a13-4241-9d59-365bd83a1b1f"
+                    },
+                    "Property": "FullQualityRadii",
+                    "Value": 6
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "f50d3434-8a13-4241-9d59-365bd83a1b1f"
+                    },
+                    "Property": "MeshLod1Radii",
+                    "Value": 90
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "f50d3434-8a13-4241-9d59-365bd83a1b1f"
+                    },
+                    "Property": "MeshLod2Radii",
+                    "Value": 140
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "f50d3434-8a13-4241-9d59-365bd83a1b1f"
+                    },
+                    "Property": "MinQualityRadii",
+                    "Value": 60
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "f50d3434-8a13-4241-9d59-365bd83a1b1f"
+                    },
+                    "Property": "SdfShadowRadii",
+                    "Value": 10
                   }
                 ],
                 "MovedObjects": []
@@ -24740,8 +24852,64 @@
                       "Type": "Component",
                       "IdValue": "354e781b-1596-4f67-a74f-08c0585d1750"
                     },
+                    "Property": "__enabled",
+                    "Value": false
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "354e781b-1596-4f67-a74f-08c0585d1750"
+                    },
                     "Property": "Model",
                     "Value": "sbox_procedural_model.vmdl"
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "8ff94d0a-95c2-4fa6-988c-244009945b0e"
+                    },
+                    "Property": "CullRadii",
+                    "Value": 220
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "8ff94d0a-95c2-4fa6-988c-244009945b0e"
+                    },
+                    "Property": "FullQualityRadii",
+                    "Value": 6
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "8ff94d0a-95c2-4fa6-988c-244009945b0e"
+                    },
+                    "Property": "MeshLod1Radii",
+                    "Value": 90
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "8ff94d0a-95c2-4fa6-988c-244009945b0e"
+                    },
+                    "Property": "MeshLod2Radii",
+                    "Value": 140
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "8ff94d0a-95c2-4fa6-988c-244009945b0e"
+                    },
+                    "Property": "MinQualityRadii",
+                    "Value": 60
+                  },
+                  {
+                    "Target": {
+                      "Type": "Component",
+                      "IdValue": "8ff94d0a-95c2-4fa6-988c-244009945b0e"
+                    },
+                    "Property": "SdfShadowRadii",
+                    "Value": 10
                   }
                 ],
                 "MovedObjects": []
@@ -28768,8 +28936,64 @@
               "Type": "Component",
               "IdValue": "5d319f16-5893-44a3-a6b8-1d10a4a33878"
             },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5d319f16-5893-44a3-a6b8-1d10a4a33878"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41ec5f0f-4af0-4385-be73-d716baae6e61"
+            },
+            "Property": "CullRadii",
+            "Value": 220
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41ec5f0f-4af0-4385-be73-d716baae6e61"
+            },
+            "Property": "FullQualityRadii",
+            "Value": 6
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41ec5f0f-4af0-4385-be73-d716baae6e61"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 90
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41ec5f0f-4af0-4385-be73-d716baae6e61"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 140
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41ec5f0f-4af0-4385-be73-d716baae6e61"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 60
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "41ec5f0f-4af0-4385-be73-d716baae6e61"
+            },
+            "Property": "SdfShadowRadii",
+            "Value": 10
           }
         ],
         "MovedObjects": []
@@ -28814,8 +29038,64 @@
               "Type": "Component",
               "IdValue": "cf4247dd-ebcf-44e4-acab-20d5c04dcb38"
             },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "cf4247dd-ebcf-44e4-acab-20d5c04dcb38"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "965bf768-a47e-457f-9fc6-87ab426d2b4f"
+            },
+            "Property": "CullRadii",
+            "Value": 220
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "965bf768-a47e-457f-9fc6-87ab426d2b4f"
+            },
+            "Property": "FullQualityRadii",
+            "Value": 6
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "965bf768-a47e-457f-9fc6-87ab426d2b4f"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 90
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "965bf768-a47e-457f-9fc6-87ab426d2b4f"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 140
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "965bf768-a47e-457f-9fc6-87ab426d2b4f"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 60
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "965bf768-a47e-457f-9fc6-87ab426d2b4f"
+            },
+            "Property": "SdfShadowRadii",
+            "Value": 10
           }
         ],
         "MovedObjects": []
@@ -29766,8 +30046,64 @@
                   "Type": "Component",
                   "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
                 },
+                "Property": "__enabled",
+                "Value": false
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+                },
                 "Property": "Model",
                 "Value": "sbox_procedural_model.vmdl"
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "CullRadii",
+                "Value": 220
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "FullQualityRadii",
+                "Value": 6
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod1Radii",
+                "Value": 90
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod2Radii",
+                "Value": 140
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MinQualityRadii",
+                "Value": 60
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "SdfShadowRadii",
+                "Value": 10
               }
             ],
             "MovedObjects": []
@@ -29820,8 +30156,64 @@
                   "Type": "Component",
                   "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
                 },
+                "Property": "__enabled",
+                "Value": false
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+                },
                 "Property": "Model",
                 "Value": "sbox_procedural_model.vmdl"
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "CullRadii",
+                "Value": 220
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "FullQualityRadii",
+                "Value": 6
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod1Radii",
+                "Value": 90
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod2Radii",
+                "Value": 140
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MinQualityRadii",
+                "Value": 60
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "SdfShadowRadii",
+                "Value": 10
               }
             ],
             "MovedObjects": []
@@ -29874,8 +30266,64 @@
                   "Type": "Component",
                   "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
                 },
+                "Property": "__enabled",
+                "Value": false
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+                },
                 "Property": "Model",
                 "Value": "sbox_procedural_model.vmdl"
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "CullRadii",
+                "Value": 220
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "FullQualityRadii",
+                "Value": 6
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod1Radii",
+                "Value": 90
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod2Radii",
+                "Value": 140
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MinQualityRadii",
+                "Value": 60
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "SdfShadowRadii",
+                "Value": 10
               }
             ],
             "MovedObjects": []
@@ -29928,8 +30376,64 @@
                   "Type": "Component",
                   "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
                 },
+                "Property": "__enabled",
+                "Value": false
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+                },
                 "Property": "Model",
                 "Value": "sbox_procedural_model.vmdl"
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "CullRadii",
+                "Value": 220
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "FullQualityRadii",
+                "Value": 6
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod1Radii",
+                "Value": 90
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MeshLod2Radii",
+                "Value": 140
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "MinQualityRadii",
+                "Value": 60
+              },
+              {
+                "Target": {
+                  "Type": "Component",
+                  "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
+                },
+                "Property": "SdfShadowRadii",
+                "Value": 10
               }
             ],
             "MovedObjects": []
@@ -30705,8 +31209,64 @@
               "Type": "Component",
               "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
             },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "CullRadii",
+            "Value": 220
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "FullQualityRadii",
+            "Value": 6
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 90
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 140
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 60
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
+            },
+            "Property": "SdfShadowRadii",
+            "Value": 10
           }
         ],
         "MovedObjects": []
@@ -31965,11 +32525,10 @@
               "Flags": 0,
               "AdaptiveQuality": false,
               "BrushCulling": true,
-              "CullRadii": 80,
+              "CullRadii": 220,
               "DebugBounds": false,
               "DebugLiveField": false,
               "DebugLod": false,
-              "DebugSwitchState": false,
               "DepthOcclusionCull": true,
               "DispAmp": 0.8,
               "DispFreq": 0.073,
@@ -31981,14 +32540,14 @@
               "FieldCacheOnly": true,
               "FieldNormalScale": 0.5,
               "FieldResolution": 256,
-              "FullQualityRadii": 2,
+              "FullQualityRadii": 6,
               "LodHysteresis": 0.06,
               "Material": "materials/plasticine.vmat",
               "MaxSteps": 50,
-              "MeshLod1Radii": 30,
-              "MeshLod2Radii": 40,
+              "MeshLod1Radii": 90,
+              "MeshLod2Radii": 140,
               "MeshMode": "DepthProxy",
-              "MinQualityRadii": 12,
+              "MinQualityRadii": 60,
               "MinSteps": 6,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -31997,6 +32556,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OverdrawOptimization": false,
+              "SdfShadowRadii": 10,
               "SdfShadows": true,
               "ShadowBias": 0,
               "ShadowSlopeScale": 1.5,

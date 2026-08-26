@@ -81,6 +81,26 @@ public static class SdfTextSdf
 		return data;
 	}
 
+	/// <summary>Attach the baked field to every Text brush in a list. MAIN THREAD — call this on any list
+	/// that's about to be sampled on the CPU (the surface-nets mesher, the CPU field bake, prefab bounds
+	/// measurement), because <see cref="SdfBrush"/>'s text distance falls back to a plain BOX when
+	/// <see cref="SdfBrush.TextData"/> is null, so the mesh silently comes out as a slab. The GPU packer
+	/// warms the same cache, but only once the raymarch renderer packs — a mesh built before that (level
+	/// load, a commit, a spawner measuring a prefab) misses it, and the model cache then serves that box
+	/// for the rest of the session. Re-fetching unconditionally also refreshes a brush whose string/font
+	/// changed since the last pack; <see cref="Get"/> is a cache lookup.</summary>
+	public static void EnsureBaked( List<SdfBrush> brushes )
+	{
+		if ( brushes is null )
+			return;
+
+		foreach ( var b in brushes )
+		{
+			if ( b is not null && b.Shape == SdfShape.Text )
+				b.TextData = Get( b.Text, b.Font );
+		}
+	}
+
 	/// <summary>Supersample factor: the string is rasterized and distance-transformed at SS× the slot
 	/// resolution, then the DISTANCES are downsampled. Thresholding a raster bakes its stair-stepped edge
 	/// into the field — sampled at 1× that staircase is a whole texel tall and reads as jagged letters;

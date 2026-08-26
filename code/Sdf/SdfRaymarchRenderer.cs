@@ -71,17 +71,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// and the raymarch casts nothing — kept for A/B (mesh shadows are cheaper: no per-cascade march).</summary>
 	[Property, Group( "Shadows" )] public bool SdfShadows { get; set; } = true;
 
-	/// <summary>Shadow LOD: beyond this camera distance (in bounding radii, matching the LOD/Distance
-	/// thresholds) a SETTLED prop hands its shadow to the sibling mesh (ShadowsOnly) instead of
-	/// re-marching the field in every shadow view — by far the biggest per-prop render cost in a crowd
-	/// (measured ~4× the forward march itself on a screen of props). Within the band, while boiling,
-	/// and for a couple of seconds after any shape change (a live edit) the marched shadow stays, so
-	/// the shadow silhouette never lags the surface where it could actually be seen to. The handoff is
-	/// a hard swap behind the LOD hysteresis — shadow maps can't crossfade casters — but displacement
-	/// is already off in shadow views by default (see SetupDisplacement), so the two silhouettes agree
-	/// to well under a cascade texel at any sane threshold. 0 = never hand off (the old behaviour:
-	/// marched shadows at any distance). Works with DistanceSwitching on or off.</summary>
-	[Property, Group( "Shadows" ), Range( 0f, 64f )] public float SdfShadowRadii { get; set; } = 10f;
+	// The shadow handoff distance (SdfShadowRadii) lives with the rest of the distance chain, down in
+	// the LOD / Distance region — it's one link in that chain, not a separate dial.
 
 	/// <summary>Extra caster-side depth bias (world units, along the light ray) written by the shadow
 	/// march. The engine's receiver-side bias (per-cascade + receiver-plane) normally suffices — leave
@@ -164,6 +155,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	RealTimeSince _sinceFieldDispatch; // throttle clock for FieldRebakeInterval
 
+	// ── Adaptive Quality: the SHAPE of the SDF quality ramp (how cheap the floor is). WHERE it ramps is
+	// two links of the LOD / Distance chain below — Full Quality (ramp starts) and Mesh Handoff (ramp
+	// bottoms out, and the SDF hands over). The two used to be mixed into one group, which is what made
+	// them feel like they were fighting: a quality knob and a handoff distance sitting side by side with
+	// no indication that one of them also moved the mesh switch.
+
 	/// <summary>Scale step count / epsilon down as the object shrinks on screen (a pure-SDF LOD —
 	/// distant props march far cheaper while staying raymarched). Quality floors below.</summary>
 	[Property, Group( "Adaptive Quality" )] public bool AdaptiveQuality { get; set; } = true;
@@ -178,45 +175,180 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// hits at the box face and the prop just renders as its bounding box.</summary>
 	[Property, Group( "Adaptive Quality" ), Range( 0.01f, 16f )] public float FarEpsilon { get; set; } = 0.4f;
 
-	/// <summary>Within this camera distance (measured in bounding-radii) the object is full quality.</summary>
-	[Property, Group( "Adaptive Quality" )] public float FullQualityRadii { get; set; } = 6f;
+	// ── LOD / Distance ─────────────────────────────────────────────────────────────────────────────────
+	//
+	// ONE ordered chain of camera distances, nearest → farthest. Every threshold is in BOUNDING RADII
+	// (camera distance ÷ the prop's bounding radius), so it's scale-invariant: a giraffe and a bottle cap
+	// hand off at the same apparent size, and one set of numbers tunes a whole scene.
+	//
+	//   FullQuality ─────────────────────► MeshHandoff ─────► Lod1 ─────► Lod2 ─────► Cull
+	//   │ full-quality march               │ SDF stops,       │           │           │ nothing
+	//   │                                  │ mesh LOD0 starts │ mesh LOD1 │ mesh LOD2 │ renders
+	//   └── SDF step count / epsilon ramp ─┘
+	//         (quality bottoms out exactly AT the mesh handoff — one distance, by design: the
+	//          raymarch hands over as it runs out of quality, so there's no window where it's
+	//          paying to march a surface it can no longer resolve)
+	//
+	//        ShadowHandoff sits anywhere in [0, MeshHandoff] — a rider, not a link (see its doc).
+	//
+	// The chain is ordered BY CONSTRUCTION: setting any threshold pushes its neighbours out of the way
+	// (Unity LODGroup style), so the numbers you see are the numbers that run. It used to be clamped at
+	// USE time instead — dragging one value past another silently collapsed a band to zero width while
+	// the inspector still showed the value you'd typed, and the thresholds were split across three
+	// property groups, so nothing showed you the ordering you were actually fighting.
+	//
+	// This component is the sole owner/driver of all of it.
 
-	/// <summary>Beyond this camera distance (in bounding-radii) the object is at the quality floor. This
-	/// is ALSO the SDF→mesh handoff: the raymarch turns off and mesh LOD0 takes over right here, so the
-	/// SDF hands off exactly as it bottoms out (no separate "LOD0 kicks in" value to keep in sync).</summary>
-	[Property, Group( "Adaptive Quality" )] public float MinQualityRadii { get; set; } = 60f;
+	// Chain slots, nearest → farthest. Keep in sync with ChainGet/ChainStore.
+	// The shadow handoff is deliberately NOT a slot — see SdfShadowRadii.
+	const int ChainFullQuality = 0, ChainMeshHandoff = 1;
+	const int ChainLod1 = 2, ChainLod2 = 3, ChainCull = 4, ChainCount = 5;
 
-	/// <summary>Paint each object by its LOD quality (red = floor/cheapest, yellow = mid, green = full).</summary>
-	[Property, Group( "Adaptive Quality" )] public bool DebugLod { get; set; }
+	float ChainGet( int i ) => i switch
+	{
+		ChainFullQuality => FullQualityRadii,
+		ChainMeshHandoff => MinQualityRadii,
+		ChainLod1 => MeshLod1Radii,
+		ChainLod2 => MeshLod2Radii,
+		_ => CullRadii,
+	};
 
-	// ── LOD / Distance: the single ordered distance chain (all in bounding-radii). Below MinQualityRadii
-	// the SDF renders; from there to CullRadii the mesh renders (LOD0→1→2); past CullRadii it's culled.
-	// The thresholds are clamped monotonic on use, so dragging one past another just pushes it — there's
-	// never anything to "balance" across components. This component is the sole owner/driver of all of it.
+	void ChainStore( int i, float v )
+	{
+		switch ( i )
+		{
+			case ChainFullQuality: FullQualityRadii = v; break;
+			case ChainMeshHandoff: MinQualityRadii = v; break;
+			case ChainLod1: MeshLod1Radii = v; break;
+			case ChainLod2: MeshLod2Radii = v; break;
+			default: CullRadii = v; break;
+		}
+	}
+
+	// The chain as of the last sync, so the next one can tell WHICH threshold moved. Null until the
+	// first sync (a fresh enable, or a hotload) — that pass normalises instead of diffing.
+	float[] _chainPrev;
+
+	/// <summary>Keep the distance chain ordered nearest→farthest, LODGroup style: whichever threshold
+	/// moved since last frame pushes the others out of its way.
+	///
+	/// Deliberately a per-frame DIFF rather than logic in the property setters, and that matters twice
+	/// over. Deserialization writes these members one at a time in alphabetical order (see
+	/// ReflectionQueryCache.OrderedSerializableMembers) — a setter that shoved its neighbours mid-load
+	/// would resolve an authored chain differently depending on the order it happened to be written in.
+	/// And keeping every threshold a plain AUTO-property keeps its compiler-generated backing field name
+	/// stable, which is what a code hotload matches state on: renaming the storage to a hand-written
+	/// field silently resets every live prop in the open scene to code defaults — measured, not
+	/// theorised, and one save would then bake those defaults over the authored values on disk.</summary>
+	void SyncChain()
+	{
+		if ( _chainPrev is null )
+		{
+			// No previous state to diff (first enable / post-hotload): just put an authored chain in
+			// order — the monotonic clamp the distance switch used to apply at use time, except it lands
+			// in the STORED values now, so the inspector can't show a threshold that isn't running.
+			_chainPrev = new float[ChainCount];
+			float floor = 0f;
+			for ( int i = 0; i < ChainCount; i++ )
+			{
+				floor = MathF.Max( ChainGet( i ), floor );
+				ChainStore( i, floor );
+				_chainPrev[i] = floor;
+			}
+
+			ClampShadowHandoff();
+			return;
+		}
+
+		for ( int i = 0; i < ChainCount; i++ )
+		{
+			float v = MathF.Max( ChainGet( i ), 0f );
+			if ( v == _chainPrev[i] )
+				continue;
+
+			ChainStore( i, v );
+			for ( int j = i + 1; j < ChainCount; j++ )
+				if ( ChainGet( j ) < v ) ChainStore( j, v );
+			for ( int j = i - 1; j >= 0; j-- )
+				if ( ChainGet( j ) > v ) ChainStore( j, v );
+
+			break; // one drag at a time; a second edit in the same frame is caught by the next sync
+		}
+
+		for ( int i = 0; i < ChainCount; i++ )
+			_chainPrev[i] = ChainGet( i );
+
+		ClampShadowHandoff();
+	}
+
+	// The shadow handoff rides on the chain's upper bound without being IN it (see SdfShadowRadii):
+	// past the mesh handoff the mesh is the caster anyway, so a shadow threshold beyond it means nothing.
+	void ClampShadowHandoff()
+	{
+		if ( SdfShadowRadii > MinQualityRadii )
+			SdfShadowRadii = MinQualityRadii;
+	}
 
 	/// <summary>Master switch for the distance coordinator: drive SDF↔mesh↔cull and the mesh LOD from
 	/// camera distance each frame. Off = static behaviour (SDF always on, MeshMode applied literally) for
-	/// A/B testing.</summary>
+	/// A/B testing. The shadow handoff runs either way — it stands alone.</summary>
 	[Property, Group( "LOD / Distance" )] public bool DistanceSwitching { get; set; } = true;
 
-	/// <summary>Camera distance (bounding-radii) at which the visible mesh drops from LOD0 to LOD1.
-	/// Auto-clamped to be ≥ the SDF handoff (MinQualityRadii).</summary>
-	[Property, Group( "LOD / Distance" )] public float MeshLod1Radii { get; set; } = 90f;
+	/// <summary>Chain link 1. Inside this the raymarch runs at full quality (MaxSteps / Epsilon); past it
+	/// step count and epsilon ramp toward the floor, reaching it at the mesh handoff.</summary>
+	[Property, Group( "LOD / Distance" ), Title( "Full Quality (radii)" )]
+	public float FullQualityRadii { get; set; } = 6f;
 
-	/// <summary>Camera distance (bounding-radii) at which the mesh drops from LOD1 to LOD2. Auto-clamped ≥ LOD1.</summary>
-	[Property, Group( "LOD / Distance" )] public float MeshLod2Radii { get; set; } = 140f;
+	/// <summary>Chain link 2 — the shadow handoff. Beyond this a SETTLED prop hands its shadow to the
+	/// sibling mesh (ShadowsOnly) instead of re-marching the field in every shadow view: by far the
+	/// biggest per-prop render cost in a crowd (measured ~4× the forward march itself on a screen of
+	/// props). Inside the band, while boiling, and for a couple of seconds after any shape change (a live
+	/// edit) the marched shadow stays, so the silhouette never lags the surface where it could be seen
+	/// to. The swap is hard behind the hysteresis — shadow maps can't crossfade casters — but
+	/// displacement is already off in shadow views (see SetupDisplacement), so the two silhouettes agree
+	/// to well under a cascade texel at any sane threshold. 0 = never hand off (marched shadows at any
+	/// distance). Runs with DistanceSwitching off too.
+	///
+	/// NOT a link in the push chain, on purpose — only a rider on its upper bound. Handing the shadow
+	/// over early while the surface still marches at full quality is a perfectly good trade (shadows are
+	/// the expensive half), so this must be free to sit anywhere inside the SDF band; making it a link
+	/// would drag Full Quality around with it — precisely the toe-stepping the chain exists to stop. The
+	/// one real constraint is the upper bound: past the mesh handoff the mesh is casting anyway.</summary>
+	[Property, Group( "LOD / Distance" ), Title( "Shadow Handoff (radii)" ), Range( 0f, 64f )]
+	public float SdfShadowRadii { get; set; } = 10f;
 
-	/// <summary>Camera distance (bounding-radii) past which the prop is culled entirely (no SDF, no mesh).
-	/// Auto-clamped ≥ LOD2.</summary>
-	[Property, Group( "LOD / Distance" )] public float CullRadii { get; set; } = 220f;
+	/// <summary>Chain link 3 — the SDF→mesh handoff, and the same distance at which SDF quality bottoms
+	/// out (see the chain diagram: one distance does both jobs deliberately). The raymarch turns off here
+	/// and mesh LOD0 takes over. (Serialized under its historical name MinQualityRadii.)</summary>
+	[Property, Group( "LOD / Distance" ), Title( "Mesh Handoff (radii)" )]
+	public float MinQualityRadii { get; set; } = 60f;
+
+	/// <summary>Chain link 4: the visible mesh drops from LOD0 to LOD1 here.</summary>
+	[Property, Group( "LOD / Distance" ), Title( "Mesh LOD 1 (radii)" )]
+	public float MeshLod1Radii { get; set; } = 90f;
+
+	/// <summary>Chain link 5: the mesh drops from LOD1 to LOD2 here.</summary>
+	[Property, Group( "LOD / Distance" ), Title( "Mesh LOD 2 (radii)" )]
+	public float MeshLod2Radii { get; set; } = 140f;
+
+	/// <summary>Chain link 6: past this the prop is culled entirely — no SDF, no mesh, no shadow.</summary>
+	[Property, Group( "LOD / Distance" ), Title( "Cull (radii)" )]
+	public float CullRadii { get; set; } = 220f;
 
 	/// <summary>Dead-band around every threshold (fraction of the threshold) so a prop sitting on a
 	/// boundary doesn't flicker between states. 0.06 = ±6%.</summary>
 	[Property, Group( "LOD / Distance" ), Range( 0f, 0.4f )] public float LodHysteresis { get; set; } = 0.06f;
 
-	/// <summary>Label the current pipeline state (SDF / LOD0 / LOD1 / LOD2 / CULLED) over the prop in the
-	/// scene view, so you can see exactly which stage the coordinator has picked.</summary>
-	[Property, Group( "LOD / Distance" )] public bool DebugSwitchState { get; set; }
+	/// <summary>Debug view of the WHOLE chain on this prop, in the scene view:
+	/// <list type="bullet">
+	/// <item>while raymarched — the in-shader quality heatmap (red = floor/cheapest → green = full);</item>
+	/// <item>once handed off — a flat tint per mesh LOD (cyan LOD0, blue LOD1, magenta LOD2), so the
+	/// handoff itself is visible instead of the heatmap simply vanishing at it;</item>
+	/// <item>either way — a label with the band and the bounding-radii ratio that picked it, so you can
+	/// read a threshold straight off the prop rather than guessing which side of it you're on.</item>
+	/// </list>
+	/// (Absorbed the old separate DebugSwitchState toggle — one chain, one debug switch.)</summary>
+	[Property, Group( "LOD / Distance" )] public bool DebugLod { get; set; }
 
 	/// <summary>What to do with the sibling meshed ModelRenderer while raymarching.
 	/// <list type="bullet">
@@ -424,8 +556,6 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	Material _fallbackMaterial;
 	int _lastHash;
 	ModelRenderer _meshRenderer;
-	SdfMeshMode _lastMeshMode = (SdfMeshMode)(-1);
-	bool _lastSdfShadows; // last EFFECTIVE marched-shadow state (MarchedShadowsNow) — a flip re-applies the mesh mode
 	bool _aboveShadowRadii;          // shadow-band hysteresis: camera is beyond SdfShadowRadii
 	bool _overdrawSafe;              // camera is beyond OverdrawNearRadii (hysteresis) — overdraw opt may run
 
@@ -465,7 +595,6 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// the ratio clears its threshold ± the dead-band). _switchState is the resolved stage for the label.
 	bool _aboveHandoff, _aboveLod1, _aboveLod2, _aboveCull;
 	int _switchState; // 0 SDF, 1 LOD0, 2 LOD1, 3 LOD2, 4 culled
-	bool _lastDistanceSwitching = true;
 
 	Material ActiveMaterial => Material ?? (_fallbackMaterial ??= Material.FromShader( "shaders/sdf_raymarch.shader" ));
 
@@ -473,44 +602,46 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	{
 		_released = false; // re-enabling revives a previously released renderer
 		_destroyed = false;
-		_meshRenderer = GameObject.Components.Get<ModelRenderer>();
-		ApplyMeshMode();
+		_chainPrev = null; // every authored threshold has landed by now — normalise, then track edits
+		SyncChain();
+		AdoptMeshRenderer();
 
 		_lastHash = 0;
 		Refresh();
 	}
 
-	// Configure the sibling mesh per MeshMode. DepthProxy with SdfShadows = mesh fully off (the
-	// raymarch writes its own prepass AND casts its own shadows); without SdfShadows it's the legacy
-	// ShadowsOnly caster. The raymarch handles its own depth+normals prepass either way.
-	void ApplyMeshMode()
+	/// <summary>The sibling meshed renderer — the LOD/shadow stand-in this component owns outright.
+	///
+	/// Looked up INCLUDING DISABLED components, and that is load-bearing: turning the mesh off is normal
+	/// operation here (<see cref="ApplyVisibility"/> writes Enabled every frame), but Enabled is a
+	/// SERIALIZED property — it gets written into scenes and prefabs, and copied by GameObject.Clone. The
+	/// old lookup was <c>Components.Get&lt;ModelRenderer&gt;()</c>, which skips disabled components, so it
+	/// returned null in exactly the case that needed fixing: a prefab saved with its mesh off (half the prop
+	/// library ships that way) or a perf-grid clone stamped from one could never find its mesh again and
+	/// spent its whole life with no mesh and no mesh shadows. GetOrCreate covers a prop that has no
+	/// ModelRenderer yet — SdfSculpture makes one anyway when it meshes.</summary>
+	ModelRenderer MeshRenderer
 	{
-		if ( !_meshRenderer.IsValid() )
-			_meshRenderer = GameObject.Components.Get<ModelRenderer>();
-		if ( !_meshRenderer.IsValid() )
+		get
+		{
+			if ( _meshRenderer.IsValid() )
+				return _meshRenderer;
+			if ( !GameObject.IsValid() )
+				return null;
+			return _meshRenderer = GameObject.Components.GetOrCreate<ModelRenderer>();
+		}
+	}
+
+	// Take ownership of the sibling mesh: clear anything a previous owner (or a serialized/cloned state)
+	// left on it that ApplyVisibility does NOT rewrite every frame. Visibility itself needs no seeding —
+	// it's resolved from scratch each frame — so this only has to undo the sticky bits.
+	void AdoptMeshRenderer()
+	{
+		var mesh = MeshRenderer;
+		if ( !mesh.IsValid() )
 			return;
 
-		switch ( MeshMode )
-		{
-			case SdfMeshMode.DepthProxy:
-				_meshRenderer.Enabled = !MarchedShadowsNow;
-				_meshRenderer.MaterialOverride = null;
-				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
-				break;
-			case SdfMeshMode.Hidden:
-				_meshRenderer.Enabled = false;
-				_meshRenderer.MaterialOverride = null;
-				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.On;
-				break;
-			default: // Visible
-				_meshRenderer.Enabled = true;
-				_meshRenderer.MaterialOverride = null;
-				_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.On;
-				break;
-		}
-
-		_lastMeshMode = MeshMode;
-		_lastSdfShadows = MarchedShadowsNow;
+		mesh.MaterialOverride = null; // e.g. SdfSculpture's drag-proxy wireframe, or a stale clone override
 	}
 
 	void EnsureResources()
@@ -543,7 +674,6 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	{
 		_so?.Delete();
 		_so = null;
-		_lastMeshMode = (SdfMeshMode)(-1);
 
 		// Hand the sibling mesh back as a normal visible renderer when the raymarch renderer is
 		// disabled but the object lives on (e.g. the user unchecks this component). We CAN'T tell
@@ -558,7 +688,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	async void RestoreSiblingMeshDeferred()
 	{
 		var go = GameObject;
-		var mesh = _meshRenderer;
+		var mesh = MeshRenderer; // including-disabled: we're most likely handing back a mesh WE turned off
 
 		try { await Task.Yield(); }
 		catch { return; }
@@ -597,42 +727,29 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	protected override void OnUpdate()
 	{
-		// Toggling the coordinator off restores the static behaviour (mesh per MeshMode, SDF on).
-		if ( DistanceSwitching != _lastDistanceSwitching )
-		{
-			_lastDistanceSwitching = DistanceSwitching;
-			if ( !DistanceSwitching )
-				RestoreStaticState();
-		}
+		SyncChain(); // before anything reads a threshold, so the bands and the inspector never disagree
+
+		// Bands FIRST — before anything reads them. Refresh writes band-derived state onto the scene object
+		// (CastShadows from MarchedShadowsNow, the overdraw and depth-cull toggles from _overdrawSafe), and
+		// it used to run BEFORE this: on the frame a band flipped it wrote the OLD answer while
+		// ApplyVisibility below wrote the NEW one, so the two disagreed for exactly one frame. Crossing the
+		// shadow handoff inward that produced a visible SHADOW GAP — Refresh left CastShadows false (stale:
+		// "the mesh is casting") in the same frame ApplyVisibility disabled the mesh renderer, so for one
+		// frame nothing cast at all and the prop's shadow blinked out.
+		//
+		// The ratio is measured against LAST frame's centre/radius (Refresh computes those). That's fine:
+		// bounds barely move in a frame, the thresholds are radii apart, and the hysteresis dead-band is
+		// ±6% — it can shift a crossing by a frame, never split one across two.
+		if ( !_released && BandViewPos is Vector3 view )
+			UpdateBands( view );
 
 		Refresh();
-
-		// Runtime: drive the switches from the game camera. In the editor there's no Scene.Camera for the
-		// scene view — the camera bands read EditorViewPos (pumped by the editor assembly every editor
-		// frame) so they track the scene-view camera even when the gizmo pass isn't running; DrawGizmos
-		// below still updates them too (and remains the mesh-LOD coordinator's only editor driver). The
-		// shadow band updates regardless of DistanceSwitching: the shadow LOD stands alone in static mode.
-		if ( !_released )
-		{
-			if ( !Scene.IsEditor )
-			{
-				var cam = Scene.Camera;
-				if ( cam.IsValid() )
-				{
-					UpdateShadowBand( cam.WorldPosition );
-					if ( DistanceSwitching )
-						UpdateDistanceSwitch( cam.WorldPosition );
-				}
-			}
-			else if ( EditorViewPos is Vector3 editorView )
-			{
-				UpdateShadowBand( editorView );
-			}
-		}
 
 		// ONE resolved visibility application per frame, after every input (Refresh state, band state) is
 		// current. Replaces the old chain of order-dependent writers.
 		ApplyVisibility();
+
+		DrawLodLabel(); // reads this frame's resolved band, so it can never disagree with what's drawn
 
 		// Sync the sibling highlight LAST, from this frame's refreshed state. Driven from here (not
 		// the highlight's own OnUpdate) so component update order can never leave the outline
@@ -642,18 +759,17 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			Highlight.SyncFromRenderer( this );
 	}
 
-	// THE one place that decides what renders. Every input — the distance-switch band, ForceHidden,
-	// RenderHidden, SdfShadows, MeshMode, the field-only hide — resolves to one state applied in one pass.
-	// It replaced five separate writers (Refresh, UpdateDistanceSwitch, ApplyRenderHidden, ApplyFieldOnlyHide,
-	// RestoreStaticState) whose correctness depended on their call order inside a single frame; keep it that
-	// way — a new visibility input belongs HERE, not in a new "runs last" method.
+	// THE one place that decides what renders — for the raymarched scene object AND the sibling mesh. Every
+	// input (the distance-switch band, ForceHidden, RenderHidden, SdfShadows, MeshMode, the field-only hide)
+	// resolves to one state written in one pass, every frame, LEVEL-driven: nothing here reads the current
+	// state, so there is no edge to miss and no order to get wrong. It replaced six separate writers (Refresh,
+	// UpdateDistanceSwitch, ApplyRenderHidden, ApplyFieldOnlyHide, RestoreStaticState, ApplyMeshMode) whose
+	// correctness depended on their call order — and, worse, on having SEEN every transition. Keep it that
+	// way: a new visibility input belongs HERE, not in a new "runs last" or "runs on change" method.
 	void ApplyVisibility()
 	{
 		if ( !_so.IsValid() )
 			return;
-
-		if ( !_meshRenderer.IsValid() )
-			_meshRenderer = GameObject.Components.Get<ModelRenderer>();
 
 		// Band state from the distance switch's hysteresis flags; static mode (DistanceSwitching off) counts
 		// as permanently inside the SDF band.
@@ -668,44 +784,92 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		bool soOn = sdf && !ForceHidden;
 		_so.RenderingEnabled = soOn;
 
-		if ( !_meshRenderer.IsValid() )
+		var mesh = MeshRenderer;
+		if ( !mesh.IsValid() )
 			return;
 
+		// Resolve the mesh's WHOLE state, then write all of it — every frame, in every mode. Nothing here
+		// reads the renderer's current state, so it converges from any starting point in one frame: a clone,
+		// a freshly loaded prefab, a hotload, a mode toggle. (This used to be split with ApplyMeshMode, which
+		// only ran on MeshMode/shadow EDGES and owned static mode outright — so a prop that entered a frame
+		// in the wrong state with no edge to correct it just stayed wrong.)
+		var want = ResolveMeshState( soOn, culled, sdf, meshLod );
+
+		// A ModelRenderer with a null Model doesn't draw nothing — the engine substitutes models/dev/box.vmdl
+		// (ModelRenderer.UpdateObject) — so a sculpture whose mesh build hasn't landed yet, or produced no
+		// geometry at all, would stand in for the prop as a grey box, shadow and all. Wait for a real model.
+		if ( want.Enabled && mesh.Model is null )
+			want = want with { Enabled = false };
+
+		mesh.Enabled = want.Enabled;
+		mesh.RenderType = want.RenderType;
+		mesh.LodOverride = want.Lod;
+
+		// DebugLod: the SDF band paints its own quality heatmap in-shader, but that shader stops running
+		// the instant the prop hands off to the mesh — exactly when you most want to see what happened.
+		// Tint the mesh per band so the whole chain reads in one view. SceneObject.ColorTint is TRANSIENT
+		// (the component's authored Tint is never written, nothing is serialized), and it's rewritten from
+		// the resolved band every frame, so it also can't stick around once the debug goes off.
+		var meshSo = mesh.SceneObject;
+		if ( meshSo.IsValid() )
+			meshSo.ColorTint = DebugLod ? DebugBandTint( culled, sdf, meshLod ) : mesh.Tint;
+	}
+
+	// Flat per-band tints for DebugLod, picking up where the shader's SDF heatmap (red = quality floor →
+	// green = full) leaves off: the mesh bands get cool hues, so "still marching" and "handed off to the
+	// mesh" can never be mistaken for one another.
+	static Color DebugBandTint( bool culled, bool sdf, int meshLod )
+	{
+		if ( culled || sdf )
+			return Color.White; // culled draws nothing; in-band the mesh is an invisible shadow caster
+
+		return meshLod switch
+		{
+			0 => new Color( 0.2f, 0.9f, 1f ),  // LOD0 — cyan
+			1 => new Color( 0.3f, 0.45f, 1f ), // LOD1 — blue
+			_ => new Color( 0.85f, 0.3f, 1f ), // LOD2 — magenta
+		};
+	}
+
+	// What the sibling mesh should be doing this frame. Pure: same inputs -> same state, no history.
+	readonly record struct MeshState( bool Enabled, ModelRenderer.ShadowRenderType RenderType, int? Lod );
+
+	MeshState ResolveMeshState( bool soOn, bool culled, bool sdf, int meshLod )
+	{
+		const ModelRenderer.ShadowRenderType ShadowsOnly = ModelRenderer.ShadowRenderType.ShadowsOnly;
+		const ModelRenderer.ShadowRenderType On = ModelRenderer.ShadowRenderType.On;
+
+		// Invisible-but-shadow-casting pawn: the mesh is a ShadowsOnly caster — everywhere when the SDF
+		// doesn't cast its own shadow this frame (SdfShadows off OR the shadow LOD handed off), otherwise
+		// only outside the SDF band (in-band the scene object casts; two casters would double the shadow).
 		if ( RenderHidden )
-		{
-			// Invisible-but-shadow-casting pawn: the mesh is a ShadowsOnly caster — everywhere when the SDF
-			// doesn't cast its own shadow this frame (SdfShadows off OR the shadow LOD handed off), otherwise
-			// only outside the SDF band (in-band the scene object casts; two casters would double the shadow).
-			_meshRenderer.Enabled = MarchedShadowsNow ? !soOn : true;
-			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
-			_meshRenderer.LodOverride = DistanceSwitching && !sdf && !culled ? meshLod : null;
-			return;
-		}
+			return new MeshState(
+				MarchedShadowsNow ? !soOn : true,
+				ShadowsOnly,
+				DistanceSwitching && !sdf && !culled ? meshLod : null );
 
-		// Static mode: the mesh is whatever ApplyMeshMode configured (per MeshMode) — don't fight it.
+		// Static mode (no distance coordinator): MeshMode applies literally. DepthProxy is the legacy
+		// ShadowsOnly caster, and it stands down while the raymarch is casting its own shadow.
 		if ( !DistanceSwitching )
-			return;
+			return MeshMode switch
+			{
+				SdfMeshMode.DepthProxy => new MeshState( !MarchedShadowsNow, ShadowsOnly, null ),
+				SdfMeshMode.Hidden => new MeshState( false, On, null ),
+				_ => new MeshState( true, On, null ), // Visible: the meshed path
+			};
 
+		// Past the cull band nothing renders at all.
 		if ( culled )
-		{
-			_meshRenderer.Enabled = false;
-		}
-		else if ( sdf )
-		{
-			// SDF is the visible surface. While the raymarch casts its own shadow the mesh has no job at
-			// all; otherwise (SdfShadows off, or the shadow LOD handed off) the mesh is the ShadowsOnly
-			// caster (unless MeshMode hides it).
-			_meshRenderer.Enabled = MeshMode != SdfMeshMode.Hidden && !MarchedShadowsNow;
-			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.ShadowsOnly;
-			_meshRenderer.LodOverride = null;
-		}
-		else
-		{
-			// Mesh band: show the mesh at the LOD this distance selects.
-			_meshRenderer.Enabled = true;
-			_meshRenderer.RenderType = ModelRenderer.ShadowRenderType.On;
-			_meshRenderer.LodOverride = meshLod;
-		}
+			return new MeshState( false, ShadowsOnly, null );
+
+		// SDF is the visible surface. While the raymarch casts its own shadow the mesh has no job at all;
+		// otherwise (SdfShadows off, or the shadow LOD handed off) the mesh is the ShadowsOnly caster —
+		// unless MeshMode hides it.
+		if ( sdf )
+			return new MeshState( MeshMode != SdfMeshMode.Hidden && !MarchedShadowsNow, ShadowsOnly, null );
+
+		// Mesh band: show the mesh at the LOD this distance selects.
+		return new MeshState( true, On, meshLod );
 	}
 
 	// Editor: the scene-view camera is only reachable as Gizmo.Camera inside a gizmo scope, so the
@@ -716,24 +880,43 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// The visible surface is a hand-built raw SceneObject (_so, below), not the kind of renderer the
 		// editor's click-to-select path resolves back to a GameObject — and the one component that WOULD be
 		// pickable that way, the sibling ModelRenderer, is deliberately disabled by default (see
-		// ApplyMeshMode/ApplyVisibility: MeshMode defaults to DepthProxy with SdfShadows on). Without an
+		// ApplyVisibility: MeshMode defaults to DepthProxy with SdfShadows on). Without an
 		// explicit hitbox there was nothing under the cursor to click at all. Registered unconditionally
 		// (before the DistanceSwitching early-out below) so clicking still works even with that feature off.
 		if ( _curRadius > 0.01f )
 			Gizmo.Hitbox.BBox( new BBox( _curLocalMins, _curLocalMaxs ) );
 
-		if ( !_released )
-			UpdateShadowBand( Gizmo.Camera.Position ); // shadow LOD runs in the editor too, switching or not
-
-		if ( !DistanceSwitching || _released || !Scene.IsEditor )
+		if ( _released || !Scene.IsEditor )
 			return;
 
-		UpdateDistanceSwitch( Gizmo.Camera.Position );
-		ApplyVisibility(); // OnUpdate applied before this ran (editor order) — re-apply with the fresh band
-
-		if ( DebugSwitchState && _curRadius > 0.01f )
+		// Fallback driver only. OnUpdate already ran both bands off BandViewPos; this covers the case
+		// where the editor assembly isn't pumping EditorViewPos, since the gizmo pass always has a
+		// camera of its own. Same helper, so there's never a second policy — just a second source.
+		if ( EditorViewPos is null )
 		{
-			string label = _switchState switch
+			UpdateBands( Gizmo.Camera.Position );
+			ApplyVisibility(); // OnUpdate applied before this ran (editor order) — re-apply with the fresh band
+		}
+
+	}
+
+	/// <summary>The DebugLod label: the band, the bounding-radii ratio that picked it, and which caster is
+	/// currently casting. Walk the camera until the name changes and you've read a threshold straight off
+	/// the prop — no arithmetic, no guessing which side of a value you're on.
+	///
+	/// Drawn through DebugOverlay rather than Gizmo.Draw, deliberately: gizmo drawing only happens inside
+	/// the editor's gizmo pass, which does NOT run for every prop every frame — the same asymmetry that
+	/// was hiding the mesh handoff itself. The overlay is a plain scene object, so the label shows up
+	/// wherever the prop does, selected or not, in the editor and in game.</summary>
+	void DrawLodLabel()
+	{
+		if ( !DebugLod || _released || _curRadius <= 0.01f || BandViewPos is not Vector3 view )
+			return;
+
+		float ratio = (view - _curCenter).Length / _curRadius;
+		string band = !DistanceSwitching
+			? "SDF (static)"
+			: _switchState switch
 			{
 				0 => "SDF",
 				1 => "LOD0",
@@ -742,12 +925,33 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				_ => "CULLED",
 			};
 
-			using ( Gizmo.Scope( "sdf-switch-label" ) )
-			{
-				Gizmo.Draw.Color = Color.Black;
-				Gizmo.Draw.Text( label, new Transform( _curCenter ), size: 24 );
-			}
-		}
+		// The shadow caster is an independent handoff on the same ratio — show which one is casting, since
+		// a shadow that changes shape at a distance you didn't set is the confusing one.
+		string caster = MarchedShadowsNow ? "march" : "mesh";
+
+		DebugOverlay?.Text( _curCenter, $"{band}  {ratio:0.0}r  shadow:{caster}", size: 18 );
+	}
+
+	/// <summary>The camera every distance band measures from. At runtime it's the game camera; in the
+	/// editor there IS no Scene.Camera for the scene view, so it's <see cref="EditorViewPos"/>, pumped
+	/// every editor frame by the editor assembly. Null = no view this frame — the bands hold.</summary>
+	Vector3? BandViewPos => Scene.IsEditor
+		? EditorViewPos
+		: (Scene.Camera.IsValid() ? Scene.Camera.WorldPosition : null);
+
+	/// <summary>Both camera-distance bands, from one position, in one call.
+	///
+	/// They used to be driven from different places in the editor: the shadow band from EditorViewPos in
+	/// OnUpdate, the distance switch ONLY from DrawGizmos — which doesn't run for every prop every frame.
+	/// So in the editor a prop would correctly hand its SHADOW to the mesh at distance while never handing
+	/// over the SURFACE: no mesh LOD, no cull, the raymarch running at any distance. One source, both
+	/// bands, and the two can't disagree about where the camera is. The shadow band updates regardless of
+	/// DistanceSwitching — the shadow LOD stands alone in static mode.</summary>
+	void UpdateBands( Vector3 viewPos )
+	{
+		UpdateShadowBand( viewPos );
+		if ( DistanceSwitching )
+			UpdateDistanceSwitch( viewPos );
 	}
 
 	// Resolve the pipeline stage from camera distance — COMPUTE ONLY: it updates the hysteresis band flags
@@ -778,16 +982,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		float ratio = (viewPos - _curCenter).Length / _curRadius;
 		float h = LodHysteresis;
 
-		// Effective thresholds, clamped monotonic so the inspector values can be in any order.
-		float tHandoff = MathF.Max( MinQualityRadii, FullQualityRadii );
-		float tLod1 = MathF.Max( MeshLod1Radii, tHandoff );
-		float tLod2 = MathF.Max( MeshLod2Radii, tLod1 );
-		float tCull = MathF.Max( CullRadii, tLod2 );
-
-		_aboveHandoff = Above( ratio, tHandoff, _aboveHandoff, h );
-		_aboveLod1 = Above( ratio, tLod1, _aboveLod1, h );
-		_aboveLod2 = Above( ratio, tLod2, _aboveLod2, h );
-		_aboveCull = Above( ratio, tCull, _aboveCull, h );
+		// No clamping here any more: SyncChain orders the chain where it's STORED, so these are the
+		// authored values and the authored values are what run.
+		_aboveHandoff = Above( ratio, MinQualityRadii, _aboveHandoff, h );
+		_aboveLod1 = Above( ratio, MeshLod1Radii, _aboveLod1, h );
+		_aboveLod2 = Above( ratio, MeshLod2Radii, _aboveLod2, h );
+		_aboveCull = Above( ratio, CullRadii, _aboveCull, h );
 
 		_switchState = _aboveCull ? 4 : !_aboveHandoff ? 0 : 1 + (_aboveLod2 ? 2 : _aboveLod1 ? 1 : 0);
 	}
@@ -801,21 +1001,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		return ratio > threshold * (1f + h);       // go above only once past the upper edge
 	}
 
-	// Undo the coordinator's state when DistanceSwitching is turned off: back to the static MeshMode mesh
-	// config. The scene object needs nothing here — ApplyVisibility resolves it every frame either way.
-	void RestoreStaticState()
-	{
-		if ( _meshRenderer.IsValid() )
-			_meshRenderer.LodOverride = null;
-		ApplyMeshMode();
-	}
-
 	/// <summary>Force a full repack + rebuild, ignoring the change-hash.</summary>
 	[Button( "Refresh" )]
 	public void ForceRefresh()
 	{
 		_forceRepack = true;
-		ApplyMeshMode();
 		Refresh();
 	}
 
@@ -831,9 +1021,6 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		var brushes = sculpt?.Brushes;
 		if ( brushes is not { Count: > 0 } )
 			return;
-
-		if ( MeshMode != _lastMeshMode || MarchedShadowsNow != _lastSdfShadows )
-			ApplyMeshMode();
 
 		EnsureResources();
 
@@ -1034,8 +1221,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "BoilSeed", BoilSeed );
 		// The sibling meshed renderer samples the same triplanar maps — stamp the same seed so the
 		// per-instance texture offset doesn't pop when the raymarch<->mesh role swaps.
-		if ( _meshRenderer.IsValid() && _meshRenderer.SceneObject.IsValid() )
-			_meshRenderer.SceneObject.Attributes.Set( "BoilSeed", BoilSeed );
+		var meshSo = MeshRenderer?.SceneObject;
+		if ( meshSo.IsValid() )
+			meshSo.Attributes.Set( "BoilSeed", BoilSeed );
 
 		// Transmission look (tint, strength, thickness) lives on the material; this just gates the combo.
 		_so.Attributes.SetCombo( "D_TRANSMISSION", Transmission ? 1 : 0 );
@@ -1471,3 +1659,4 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		}
 	}
 }
+

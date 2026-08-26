@@ -221,6 +221,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 				return;
 			}
 
+			SdfTextSdf.EnsureBaked( Brushes ); // before the hash below, same as RebuildAsync
 			var snapshot = Snapshot( Brushes ); // copy on the main thread before hopping
 			var baseMat = Material ?? Material.Load( "materials/dev/reflectivity_50.vmat" );
 			int res1 = Math.Max( 4, Resolution / 2 ); // the drag shadow IS the LOD1 mesh (reused on release)
@@ -277,6 +278,11 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 			renderer.Model = null;
 			return;
 		}
+
+		// Warm the text fields BEFORE hashing, not just before meshing: the hash decides whether we mesh at
+		// all (model cache / .sdfmesh match), and an unbaked text brush hashes the same as a baked one bar
+		// the readiness bit — so hashing first would keep serving a box that an earlier unbaked build cached.
+		SdfTextSdf.EnsureBaked( brushes );
 
 		var baseMat = Material ?? Material.Load( "materials/dev/reflectivity_50.vmat" );
 		int res = Resolution;
@@ -377,6 +383,10 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 
 	static List<SdfBrush> Snapshot( List<SdfBrush> brushes )
 	{
+		// Warm the text fields FIRST, on this (main) thread: the copies carry TextData by reference, and a
+		// text brush that reaches the worker without one meshes as a featureless box (SdfTextSdf.EnsureBaked).
+		SdfTextSdf.EnsureBaked( brushes );
+
 		var copy = new List<SdfBrush>( brushes.Count );
 		foreach ( var b in brushes )
 			copy.Add( b.Copy() );

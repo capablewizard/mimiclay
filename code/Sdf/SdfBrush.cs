@@ -306,6 +306,12 @@ public class SdfBrush
 			Mix( (int)CrossSection ); // extruded profile changes the geometry
 			MixString( Text );        // text brushes: the string IS the geometry
 			MixString( Font );
+			// …and whether that string's field has actually been baked yet. An unbaked text brush meshes as
+			// a plain BOX (see SdfTextSdf.EnsureBaked), and a box built in that window must never be served
+			// later from the model cache — or from a .sdfmesh — as if it were the real glyphs. Text-only, so
+			// no other shape's hash (and no existing bake) shifts.
+			if ( Shape == SdfShape.Text )
+				Mix( TextData is not null ? 1 : 0 );
 			Mix( (int)Operation );
 			Mix( Enabled ? 1 : 0 );
 			Mix( F( Position.x ) ); Mix( F( Position.y ) ); Mix( F( Position.z ) );

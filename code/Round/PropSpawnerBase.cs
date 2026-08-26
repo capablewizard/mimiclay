@@ -705,6 +705,7 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 			if ( !sculpture.IsValid() || sculpture.Brushes is not { Count: > 0 } )
 				continue;
 
+			SdfTextSdf.EnsureBaked( sculpture.Brushes ); // text meshes as a box without its baked field
 			var data = SurfaceNetsMesher.ComputeData( sculpture.Brushes, 16, sculpture.FlipFaces );
 			if ( data.IsEmpty )
 				continue;

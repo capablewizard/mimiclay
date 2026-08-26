@@ -717,48 +717,36 @@
       "Children": []
     },
     {
-      "__guid": "503bca5f-8644-4ca8-87fe-350ae3324f36",
+      "__guid": "8b195621-d61a-4768-bfeb-c21b076da7fb",
       "__version": 2,
-      "Flags": 0,
-      "Name": "PropSpawner",
-      "Position": "-636.230835,499.031433,306.928589",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.RandomVolumeSpawner",
-          "__guid": "f062104a-4c86-4985-aff6-88947942f03e",
-          "__enabled": true,
-          "Flags": 0,
-          "Bounds": {
-            "Mins": "-641.524292,-1598.91968,-283.578522",
-            "Maxs": "1274.30603,175.236511,64"
-          },
-          "Count": 1024,
-          "NoneChance": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Prefabs": [
-            {
-              "_type": "gameobject",
-              "prefab": "prefabs/saved/pot_polkedot.prefab"
-            }
-          ],
-          "RandomizeRotation": true
-        }
-      ],
-      "Children": []
+      "__Prefab": "prefabs/saved/pot_polkedot.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8"
+            },
+            "Property": "Position",
+            "Value": "-768.813721,-634.584717,35.4774704"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "ef0352bb-f7a2-4552-b61b-6efeda0fa3d8": "8b195621-d61a-4768-bfeb-c21b076da7fb",
+        "740a6c50-d4b7-4c3b-bd67-9b13a6bb6bad": "77d30fea-adc9-4929-86f9-3ef6d4a5efa6",
+        "b1588502-5f1f-4738-bcb6-df938fa1cbfe": "01744613-18ce-4e45-8824-d5fdc3bd64e8",
+        "239936e3-3fd0-4c52-a5f0-f4d89e833a00": "73c79a5c-6004-4296-a6f6-3da521e119ca",
+        "e11df0bf-f2aa-4005-a7fc-858707ff9c1b": "c4f44fe7-e872-48f5-bf49-6377c17c981c",
+        "f7ad8dc7-fe46-4154-a339-fb8bc571211e": "523a774b-a702-4508-9c66-634193f2065f",
+        "c004d784-afcd-4e27-8830-bd55ca972ad3": "7e3a9021-180e-4500-8109-9650edd19c78",
+        "2cd31428-e447-46b6-83d2-c1999ebc4558": "d9dc9854-7f63-4c2e-8285-7bbc5efb4a4c",
+        "aa4dc91b-f203-8f8b-997a-b9a33b3e1699": "0f4fd6ef-5fdc-4fc3-ba67-f3f4da7167c6",
+        "3f6ad022-d534-84b1-8211-278cf466f682": "e9d776d7-d12d-4478-b05a-751b8e70b142"
+      }
     }
   ],
   "SceneProperties": {

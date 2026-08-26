@@ -422,6 +422,7 @@
           "Flags": 0,
           "BackBlur": true,
           "BlurSize": 29.050278,
+          "DebugView": false,
           "FocalDistance": 118.20112,
           "FocusRange": 616.03375,
           "FrontBlur": false,
@@ -824,6 +825,7 @@
               "Flags": 0,
               "Activation": "Always",
               "AmpJitter": 1,
+              "ForceDisplace": true,
               "Fps": 4,
               "ImpactTicks": 1,
               "Jitter": 0.4,
@@ -1436,6 +1438,70 @@
                 "BoundingRadius": 5.1119366
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5aa60a0d-74b3-46a7-b9ea-77d2c97172f0"
+            },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5aa60a0d-74b3-46a7-b9ea-77d2c97172f0"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
+            },
+            "Property": "CullRadii",
+            "Value": 220
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
+            },
+            "Property": "FullQualityRadii",
+            "Value": 6
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
+            },
+            "Property": "MeshLod1Radii",
+            "Value": 90
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
+            },
+            "Property": "MeshLod2Radii",
+            "Value": 140
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
+            },
+            "Property": "MinQualityRadii",
+            "Value": 60
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
+            },
+            "Property": "SdfShadowRadii",
+            "Value": 10
           }
         ],
         "MovedObjects": []

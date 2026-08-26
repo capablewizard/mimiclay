@@ -62,6 +62,7 @@ public static class SdfFieldBaker
 		if ( _cache.TryGetValue( key, out var existing ) && !existing.IsFaulted )
 			return existing;
 
+		SdfTextSdf.EnsureBaked( snapshot ); // still the main thread here — text samples as a box without it
 		var task = BakeAsync( snapshot, mins, maxs, resolution );
 		_cache[key] = task;
 		_order.Enqueue( key );
