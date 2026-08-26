@@ -182,6 +182,11 @@ public sealed class HunterController : Component
 	/// <summary>Vertical offset of the boom above the eye.</summary>
 	[Property, Group( "Third Person" ), Range( -32f, 64f )] public float ThirdPersonRise { get; set; } = 8f;
 
+	/// <summary>Only let WORLD geometry pull the third-person boom in — SDF clay props (everything tagged
+	/// <see cref="SdfCollider.ClayTag"/>) never push the camera, matching the prop's orbit camera
+	/// (<see cref="OrbitCameraController.BoomWorldOnly"/>), so switching pawns doesn't change the rule.</summary>
+	[Property, Group( "Third Person" )] public bool BoomWorldOnly { get; set; } = true;
+
 	/// <summary>Crosshair distance over which the pawn's VISUALS fade INTO convergence: at this distance and
 	/// beyond they point exactly where the pellet goes, smoothstepping down to plain aim-parallel as the target
 	/// approaches the muzzle. There's no upper limit — convergence is full for everything past this. Shots still
@@ -1547,10 +1552,15 @@ public sealed class HunterController : Component
 			// beside the fixed shoulder offset. Play mode keeps the authored offsets untouched.
 			float offsetScale = _altOrbiting ? dist / MathF.Max( ThirdPersonDistance, 1f ) : 1f;
 			var desired = anchor + rot * new Vector3( -dist, -ThirdPersonShoulder * offsetScale, ThirdPersonRise * offsetScale );
-			var tr = Scene.Trace.Ray( anchor, desired )
+			var trace = Scene.Trace.Ray( anchor, desired )
 				.Radius( 8f )
-				.IgnoreGameObjectHierarchy( GameObject )
-				.Run();
+				.IgnoreGameObjectHierarchy( GameObject );
+
+			// Same world-only rule as the prop's orbit boom: clay never pushes the camera.
+			if ( BoomWorldOnly )
+				trace = trace.WithoutTags( SdfCollider.ClayTag );
+
+			var tr = trace.Run();
 			pos = tr.Hit ? tr.EndPosition : desired;
 		}
 

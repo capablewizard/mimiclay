@@ -190,8 +190,27 @@ public sealed class OrbitCameraController : Component
 		_angles.roll = 0f;
 	}
 
-	// Drag up zooms in, down zooms out — exponential so it feels even at any distance.
-	public void Dolly( Vector2 d ) => Distance = (Distance * MathF.Pow( 1f + ZoomSpeed, d.y )).Clamp( MinDistance, MaxDistance );
+	// Drag up zooms in, down zooms out — exponential so it feels even at any distance. Zoom works on where
+	// the camera ACTUALLY is (boom = Distance minus the collision pull-in), not the virtual full distance:
+	// zooming in while a wall has the boom clamped starts from the camera's real position (and rebases
+	// Distance there, dropping the pull), while zooming out against a wall can't inflate Distance past the
+	// remembered maximum — orbiting away restores the old framing instead of flying out to a padded value.
+	public void Dolly( Vector2 d )
+	{
+		float factor = MathF.Pow( 1f + ZoomSpeed, d.y );
+		float boom = Distance - _boomPull;
+		float target = (boom * factor).Clamp( MinDistance, MaxDistance );
+
+		if ( factor < 1f )
+		{
+			Distance = target;
+			_boomPull = 0f; // the new distance is in front of the obstruction; let any pull re-establish
+		}
+		else
+		{
+			Distance = MathF.Max( Distance, target );
+		}
+	}
 
 	// Vertical pan only. In follow mode it offsets the follow point; otherwise it moves the world pivot.
 	public void Pan( Vector2 d )
