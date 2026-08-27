@@ -172,8 +172,42 @@
 						{
 							var editing = Phase == RoundPhase.Hide || EditingOf( prop.Connection );
 
+							@* Silhouette hint — every HintSeconds this pip briefly flashes a blank grey silhouette
+							   of the prop's ACTUAL disguise ("who's that pokemon"), timed by HintStateOf. The icon
+							   is mounted for the whole Hunt whenever hints are on (not just during the flash): a
+							   new SdfIcon panel means a new SceneWorld, and a removed element can't animate out —
+							   the .hinting class does the showing, exactly like the corner badges. Never gated on
+							   Concealed here: IconOf already refuses concealed pawns, and during the Hunt every
+							   live prop is networked + visible anyway.
+
+							   When PropIconsRevealed (the Reveal phase, or a Teams prop-team machine looking at
+							   its own side) the same slot shows the disguise OPENLY instead: full colour, no
+							   silhouette, held up the whole time from the prop's own portrait pose rather than
+							   flashed from a random one. *@
+							var revealed = PropIconsRevealed;
+							var hintIcon = revealed || (HintsEnabled && Phase == RoundPhase.Hunt) ? IconOf( prop.Connection ) : default;
+							var hintState = !revealed && hintIcon.Sculpture.IsValid() ? HintStateOf( prop.Connection ) : default;
+							var hinting = hintIcon.Sculpture.IsValid() && (revealed || hintState.Hinting);
+
 							<div class="pip-cell">
-								<div class="pip prop-pip">
+								<div class="pip prop-pip @(hinting ? "hinting" : "")">
+									@* The anonymous clay sphere, now a child so the hint can swap it out: it shrinks
+									   away while the silhouette springs in, and returns when the flash ends. *@
+									<div class="prop-glyph"></div>
+
+									@if ( hintIcon.Sculpture.IsValid() )
+									{
+										@* As a hint: rendered as a true silhouette by the stage itself (Silhouette
+										   flattens the fill to a block grey before the outline pass, so it wears
+										   the exact same brown ink ring the hunter portraits do), posed by
+										   HintPose — a raised look-down that spins to a new yaw every flash, so
+										   the quiz never repeats an angle. Revealed: the lit render from the
+										   prop's own edit-exit portrait pose, like any hunter pip. Frozen while
+										   they're mid-edit so live strokes never replay on everyone's HUD, same
+										   as the portraits. *@
+										<SdfIcon Key=@prop.Connection Source=@hintIcon.Sculpture Silhouette=@(!revealed) Pose=@(revealed ? hintIcon.Pose : (Angles?)HintPose( prop.Connection, hintState.Cycle )) Frozen=@hintIcon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="silhouette" />
+									}
+
 									<div class="paint-badge @(editing ? "editing" : "")">
 										<div class="badge-glyph">🎨</div>
 									</div>
@@ -472,6 +506,153 @@
 		}
 	}
 
+	// ── Silhouette hints ────────────────────────────────────────────────────────────────────────────────────
+	// "Who's that pokemon": during the Hunt, every HintSeconds each surviving prop's anonymous pip briefly flips
+	// to a blank dark silhouette of their actual disguise, then back. Host-tuned via RoundSettings.HintSeconds
+	// (0 = off, the "None" step in the setup menu).
+	//
+	// Purely a HUD effect, so nothing is networked — but the timing is still the SAME on every machine, because
+	// it's derived from state everyone already shares: the synced hunt clock plus a per-prop phase offset hashed
+	// from the connection id. Everyone gasps at the same silhouette at the same moment, stateless.
+
+	/// <summary>How long each silhouette flash stays up before the pip returns to the anonymous blob.</summary>
+	const float HintShowSeconds = 2f;
+
+	// Pure interface feedback, so played as a raw file exactly like HunterController's denied-shot blip —
+	// ListenLocal, no world spatialisation.
+	const string HintSoundPath = "sounds/kenney/ui/maximize_006.wav";
+
+	bool HintsEnabled => RoundManager.Current.IsValid() && RoundManager.Current.Settings.HintSeconds > 0f;
+
+	// Machines where the prop pips show the REAL disguises openly — full-colour portrait, ink outline, no
+	// silhouette, no flashing:
+	//   • the Reveal: the hunt is over and the survivors are being shown off, so every machine sees them.
+	//   • Teams mode on a prop-team machine (a live prop, or an eliminated one — only props get eliminated in
+	//     Teams, so LocalEliminated IS the prop team): your own teammates are no secret to you. Hunters' machines
+	//     keep the anonymous spheres and the timed silhouette flashes.
+	// Independent of HintsEnabled on purpose — the Reveal shows survivors even in a round with hints off.
+	bool PropIconsRevealed => Phase == RoundPhase.Reveal
+		|| (CurrentMode == RoundMode.Teams && (LocalRole == PlayerRole.Prop || RoundManager.LocalEliminated));
+
+	// One prop's place in the hint schedule: whether its silhouette window is open RIGHT NOW, and which flash
+	// this is (0-based, counting up over the hunt) — the cycle number is what varies the camera angle from one
+	// flash to the next, see HintPose.
+	readonly record struct HintState( bool Hinting, int Cycle );
+
+	bool HintingOf( Guid connection ) => HintStateOf( connection ).Hinting;
+
+	// This prop's silhouette schedule. Windows are the last HintShowSeconds of each per-prop cycle, with the
+	// surviving props parked on EVENLY SPACED slots across the interval (ordered by connection id, so every
+	// machine derives the same schedule): each prop still flashes once per interval, and consecutive flashes
+	// are always a full interval÷propCount apart. Slots rather than the hashed offsets this started with — a
+	// hash could park two props nearly on top of each other, which read as one rapid-fire double flash. A found
+	// prop drops out of the roster and the survivors re-slot, which can nudge everyone's next flash time —
+	// invisible in practice, the flashes are seconds apart either way.
+	HintState HintStateOf( Guid connection )
+	{
+		var round = RoundManager.Current;
+		if ( !round.IsValid() || round.Phase != RoundPhase.Hunt )
+			return default;
+
+		float interval = round.Settings.HintSeconds;
+		if ( interval <= 0f )
+			return default;
+
+		// This prop's slot among the props still alive. PropRoster is connection-ordered, so the rank is just
+		// its index — counted by comparison rather than IndexOf so a stale row (our connection missing while
+		// rosters settle) simply ranks against everyone rather than faulting to -1.
+		int rank = 0, count = 0;
+		foreach ( var p in round.PropRoster )
+		{
+			count++;
+			if ( p.Connection.CompareTo( connection ) < 0 )
+				rank++;
+		}
+		if ( count == 0 )
+			return default;
+
+		// Elapsed hunt time, off the synced phase-end timer (TimeUntil is clock-skew-corrected per client) —
+		// minus a short opening grace, so nobody's silhouette pops at the starting gun.
+		float grace = MathF.Min( 15f, 0.5f * interval );
+		float elapsed = round.Settings.HuntSeconds - MathF.Max( 0f, round.PhaseEndsAt ) - grace;
+		if ( elapsed <= 0f )
+			return default;
+
+		// +0.5 centres the slots so no prop sits at offset 0 (a flash exactly on the interval boundary) and the
+		// first flash of a cycle keeps half a slot's clearance from the last flash of the previous one.
+		float offset = interval * ((rank + 0.5f) / count);
+		float t = elapsed + offset;
+		return new HintState( t % interval >= interval - HintShowSeconds, (int)(t / interval) );
+	}
+
+	// The silhouette's camera angle for one flash: a raised camera looking down — pitched into a 24°–41° band,
+	// never top-down, never ground-level — spun to a fresh yaw every cycle so repeat hints show the disguise
+	// from a new side (the same shape memorised from one angle is exactly what a silhouette quiz shouldn't be).
+	// Scrambled by hand (Knuth multiplicative + xorshift) rather than HashCode.Combine or Random: both of those
+	// are seeded per process, and this must land on the SAME angle on every machine at the same moment. The
+	// cycle number advances the moment a flash ends, so the re-frame and re-render happen while the icon is
+	// hidden and the next pop is already drawn from its new angle.
+	static Angles HintPose( Guid connection, int cycle )
+	{
+		var h = (uint)connection.GetHashCode() * 2654435761u ^ (uint)cycle * 2246822519u;
+		h ^= h >> 15;
+		h *= 2654435761u;
+		h ^= h >> 13;
+
+		float yaw = h % 360u;
+		float pitch = 24f + (h >> 16) % 18u;
+		return new Angles( pitch, yaw, 0f );
+	}
+
+	// The props whose silhouette is up this frame (shown pips with a resolvable disguise only — a window that
+	// opens with nothing to draw neither pops nor plays). Rebuilt every update; a connection newly present is a
+	// pop-in, which is when the sound fires. Its XOR'd hash rides BuildHash so the pips re-render on every flip.
+	HashSet<Guid> _hintingNow = new();
+	HashSet<Guid> _hintingPrev = new(); // last frame's set, kept as the swap buffer so no per-frame allocation
+	int _hintSignal;
+
+	protected override void OnUpdate()
+	{
+		(_hintingNow, _hintingPrev) = (_hintingPrev, _hintingNow);
+		_hintingNow.Clear();
+		_hintSignal = 0;
+
+		// Not when this machine shows the prop icons openly (a Teams prop-team machine) — the pips sit fully
+		// revealed the whole hunt there, so the hint windows have nothing to pop and the blip would just be a
+		// meaningless metronome.
+		if ( HintsEnabled && ShowRoster && Phase == RoundPhase.Hunt && !PropIconsRevealed )
+		{
+			var popped = false;
+			foreach ( var prop in ShownProps )
+			{
+				if ( !HintingOf( prop.Connection ) || !IconOf( prop.Connection ).Sculpture.IsValid() )
+					continue;
+
+				_hintingNow.Add( prop.Connection );
+				_hintSignal ^= prop.Connection.GetHashCode();
+				popped |= !_hintingPrev.Contains( prop.Connection );
+			}
+
+			// One blip per frame however many popped together — simultaneous flashes stacking the same sample
+			// would just play it louder.
+			if ( popped )
+				PlayHintSound();
+		}
+	}
+
+	void PlayHintSound()
+	{
+		var handle = Sound.PlayFile( SoundFile.Load( HintSoundPath ) );
+		if ( !handle.IsValid() )
+			return;
+
+		handle.ListenLocal = true;
+		handle.DistanceAttenuation = false;
+		handle.AirAbsorption = false;
+		handle.OcclusionEnabled = false;
+		handle.ReverbEnabled = false;
+	}
+
 	// Whether a player is mid-edit, for rows that don't resolve a full icon (the anonymous prop pips). Only
 	// answerable for pawns this machine can see — a concealed prop's synced state never reaches us, so its
 	// badge simply stays down, which is also the correct amount of information to give a hunter.
@@ -576,15 +757,21 @@
 	}
 
 	// The local player's role, read from the pawn they're actually controlling — not the host-side roster, which
-	// doesn't reach clients here. Everyone owns exactly one live pawn (IsProxy == false), and a found prop that
-	// respawned as a hunter shows Hunter automatically because its pawn type changed.
+	// doesn't reach clients here. A found prop that respawned as a hunter shows Hunter automatically because its
+	// pawn type changed.
+	//
+	// NOT a bare !IsProxy: on the HOST every bot pawn and every released scenery prop reads !IsProxy too (they're
+	// host-owned), so a prop host with bot hunters in the round was labelled HUNTER — wrong role chip, wrong
+	// hotkeys, and the Teams team-visibility (PropIconsRevealed) treated their own machine as an enemy's. Bots
+	// are excluded per pawn type (Owned / IsBotPawn), released scenery via its claim state.
 	PlayerRole LocalRole
 	{
 		get
 		{
-			if ( Scene.GetAllComponents<HunterController>().Any( c => c.IsValid() && !c.IsProxy ) )
+			if ( Scene.GetAllComponents<HunterController>().Any( c => c.IsValid() && c.Owned ) )
 				return PlayerRole.Hunter;
-			if ( Scene.GetAllComponents<HiderController>().Any( c => c.IsValid() && !c.IsProxy ) )
+			if ( Scene.GetAllComponents<HiderController>().Any( c => c.IsValid() && !c.IsProxy
+					&& !RoundManager.IsBotPawn( c.GameObject ) && !PropClaims.IsReleased( c ) ) )
 				return PlayerRole.Prop;
 
 			return PlayerRole.Unassigned;
@@ -692,7 +879,10 @@
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
 				TutorialDirector.IsRunning ), // lobby roster hides while the tutorial runs
-			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount ),
+			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount,
+				// Silhouette hints: which props are flashing (from OnUpdate) + the setting itself, so the pips
+				// re-render on every pop in/out and drop their icons the moment the host turns hints off.
+				HashCode.Combine( _hintSignal, _hintingNow.Count, HintsEnabled ) ),
 			// Lobby roster: nothing else in the hash moves when someone joins or leaves the lobby, so without
 			// this the row would sit stale until the next unrelated rebuild. EditSignal is what re-renders on
 			// enter/exit edit mode — the paint badge, the icon freeze and the portrait pose all ride it.

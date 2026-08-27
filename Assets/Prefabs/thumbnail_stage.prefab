@@ -24,7 +24,7 @@
         "Displace": true,
         "EnvmapTexture": "textures/cubemaps/default2.vtex",
         "Epsilon": 0.02,
-        "Margin": 1,
+        "Margin": 1.1,
         "MaxSteps": 160,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,

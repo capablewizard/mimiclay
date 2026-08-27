@@ -109,8 +109,19 @@
 						<div class="setting-name"><div class="mi">campaign</div><span>Taunt Timer</span></div>
 						<div class="stepper">
 							<div class="step-btn" @onclick=@(() => AddTaunt( -5f ))>remove</div>
-							<div class="step-value">@Secs( S.TauntSeconds )</div>
+							<div class="step-value">@SecsOrNone( S.TauntSeconds )</div>
 							<div class="step-btn" @onclick=@(() => AddTaunt( 5f ))>add</div>
+						</div>
+					</div>
+
+					@* "Who's that pokemon" — how often each prop's HUD pip flashes its disguise silhouette during
+					   the Hunt. Steps below the floor read "None" (0), same as the taunt timer above. *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">question_mark</div><span>Silhouette Hints</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddHint( -15f ))>remove</div>
+							<div class="step-value">@SecsOrNone( S.HintSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddHint( 15f ))>add</div>
 						</div>
 					</div>
 
@@ -287,6 +298,7 @@
 	void AddHide( float d ) => LobbyManager.Current?.SetHideSeconds( S.HideSeconds + d );
 	void AddHunt( float d ) => LobbyManager.Current?.SetHuntSeconds( S.HuntSeconds + d );
 	void AddTaunt( float d ) => LobbyManager.Current?.SetTauntSeconds( S.TauntSeconds + d );
+	void AddHint( float d ) => LobbyManager.Current?.SetHintSeconds( S.HintSeconds + d );
 	void AddReveal( float d ) => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d );
 
 	// Creative's toggle (host-authority enforced by the LobbyManager setter, like everything above).
@@ -303,6 +315,9 @@
 
 	static string Secs( float seconds ) => $"{(int)MathF.Round( seconds )}s";
 
+	// For the repeating timers whose setters collapse below-floor to 0 (taunts, silhouette hints): 0 reads "None".
+	static string SecsOrNone( float seconds ) => seconds <= 0f ? "None" : Secs( seconds );
+
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
@@ -311,7 +326,7 @@
 
 	protected override int BuildHash()
 		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
-			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.RevealSeconds ),
+			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
 			HashCode.Combine( G, C.SpawnProps ),
 			_picked, LobbyPlayerCount );
 }

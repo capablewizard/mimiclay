@@ -39,6 +39,10 @@ public readonly struct SdfIconRequest
 	/// <inheritdoc cref="OutlineColor"/>
 	public float? OutlineWidth { get; init; }
 
+	/// <summary>Render the subject as a flat grey silhouette (the ink outline still draws). Part of the cache
+	/// key — the same subject lit and silhouetted is genuinely two renders.</summary>
+	public bool Silhouette { get; init; }
+
 	// Pose and Frozen are deliberately NOT in the cache key: they're the subject's current STATE, not a
 	// different picture of the same subject — a key only ever has one pose and one freeze at a time, and
 	// changing either should retarget the existing render (a reframe / a held picture), not mint a second
@@ -109,10 +113,10 @@ public sealed class SdfIconFarm : Panel
 	// Keyed by subject AND every setting that can vary. The same head wanted at two resolutions, or with two
 	// different outlines, is genuinely two renders — sharing one panel would just make them overwrite each
 	// other's settings every frame. Colour is packed to an int so the key never depends on float equality.
-	readonly Dictionary<(object Key, int Size, float Outline, int Ink), Entry> _entries = new();
+	readonly Dictionary<(object Key, int Size, float Outline, int Ink, bool Silhouette), Entry> _entries = new();
 
-	static (object, int, float, int) CacheKey( in SdfIconRequest request ) =>
-		(request.Key, request.RenderSize, request.OutlineWidth ?? -1f, PackColour( request.OutlineColor ));
+	static (object, int, float, int, bool) CacheKey( in SdfIconRequest request ) =>
+		(request.Key, request.RenderSize, request.OutlineWidth ?? -1f, PackColour( request.OutlineColor ), request.Silhouette);
 
 	static int PackColour( Color? colour )
 	{
@@ -154,6 +158,7 @@ public sealed class SdfIconFarm : Panel
 		entry.Panel.Brushes = request.Brushes;
 		entry.Panel.OutlineColor = request.OutlineColor;
 		entry.Panel.OutlineWidth = request.OutlineWidth;
+		entry.Panel.Silhouette = request.Silhouette;
 		entry.Panel.Pose = request.Pose;
 		entry.Panel.Frozen = request.Frozen;
 		entry.LastUsed = 0;
@@ -168,14 +173,14 @@ public sealed class SdfIconFarm : Panel
 		if ( _entries.Count == 0 )
 			return;
 
-		List<(object, int, float, int)> expired = null;
+		List<(object, int, float, int, bool)> expired = null;
 
 		foreach ( var (id, entry) in _entries )
 		{
 			if ( entry.LastUsed < PruneAfter && entry.Panel.IsValid() )
 				continue;
 
-			expired ??= new List<(object, int, float, int)>();
+			expired ??= new List<(object, int, float, int, bool)>();
 			expired.Add( id );
 		}
 

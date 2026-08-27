@@ -52,6 +52,7 @@ public sealed class LobbyController : Component
 	[Property, Group( "Round Defaults" )] public float DefaultConsolidationSeconds { get; set; } = 12f;
 	[Property, Group( "Round Defaults" )] public float DefaultStartCountdownSeconds { get; set; } = 4f;
 	[Property, Group( "Round Defaults" )] public float DefaultTauntSeconds { get; set; } = 15f;
+	[Property, Group( "Round Defaults" )] public float DefaultHintSeconds { get; set; } = RoundSettings.DefaultHintSeconds;
 	[Property, Group( "Round Defaults" )] public int DefaultHunterCount { get; set; } = 1;
 
 	/// <summary>Seconds between hitting Start and the scene change, so everyone sees the launch coming.</summary>
@@ -97,6 +98,7 @@ public sealed class LobbyController : Component
 		RevealSeconds = DefaultRevealSeconds,
 		ConsolidationSeconds = DefaultConsolidationSeconds,
 		TauntSeconds = DefaultTauntSeconds,
+		HintSeconds = DefaultHintSeconds,
 		HunterCount = DefaultHunterCount,
 		MapIdent = MapCatalog.RandomIdent,
 	};

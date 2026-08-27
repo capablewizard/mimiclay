@@ -340,13 +340,52 @@ $clock-col-width: 150px;
 		.pip-cell:nth-child( 15 ) .pip .badge-glyph { animation-duration: 0.83s; }
 		.pip-cell:nth-child( 16 ) .pip .badge-glyph { animation-duration: 1.07s; }
 
-		// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop" until these
-		// become real per-prop thumbnails.
+		// Props still hiding — the clay sphere from the sculpt palette, standing in for "a prop". The sphere is a
+		// CHILD (.prop-glyph) rather than the pip's own background so the silhouette hint can swap it out: while
+		// .hinting is on, the sphere shrinks away and a dark silhouette of the prop's actual disguise springs in
+		// over the same footprint ("who's that pokemon"), then they trade back. Both stay mounted throughout —
+		// the swap is all transforms, same lifecycle as the corner badges (a removed element can't animate out).
 		.prop-pip {
-			background-image: url( "/ui/shapeicons/shape_sphere_large.png" );
-			background-size: contain;
-			background-repeat: no-repeat;
-			background-position: center;
+			.prop-glyph {
+				position: absolute;
+				top: 0; left: 0;
+				width: 100%; height: 100%;
+				background-image: url( "/ui/shapeicons/shape_sphere_large.png" );
+				background-size: contain;
+				background-repeat: no-repeat;
+				background-position: center;
+
+				// Both directions of the sphere are the plain quick scale — the spring flourish belongs to the
+				// silhouette's entrance, and two overshoots at once in one 64px box is noise.
+				transition: transform 0.16s ease;
+			}
+
+			// The hint: an SdfIcon of the disguise rendered AS a silhouette by the stage itself (SdfIcon
+			// Silhouette=true — the post chain flattens the fill to a block grey before the outline pass), so
+			// the flat grey body wears the same brown ink outline as every hunter portrait. No CSS filter: an
+			// earlier cut flattened the lit render with filter contrast(0) here, which killed the outline's
+			// colour along with the fill. Grey level lives in SdfStagePost.SilhouetteGrey. Hidden at scale(0)
+			// and revealed by .hinting with the badge spring; the 0.16s shrink covers its exit.
+			.silhouette {
+				position: absolute;
+				top: 0; left: 0;
+				width: 100%; height: 100%;
+				background-size: contain;
+				background-repeat: no-repeat;
+				background-position: center;
+
+				transform: scale( 0 );
+				transition: transform 0.16s ease;
+			}
+
+			&.hinting {
+				.prop-glyph { transform: scale( 0 ); }
+
+				.silhouette {
+					transform: scale( 1 );
+					animation: hud-hand-raise 0.34s ease-out;
+				}
+			}
 		}
 
 		// The portrait variant is an SdfIcon showing that player's own sculpted head; the generic variant is the

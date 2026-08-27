@@ -55,6 +55,10 @@ public sealed class SdfIcon : Panel
 	/// not per icon.</summary>
 	public Color? OutlineColor { get; set; }
 
+	/// <summary>Render the subject as a flat grey silhouette — the ink outline still draws in its usual colour,
+	/// so it wears the same ring every portrait does. Its own render, cached separately from the lit one.</summary>
+	public bool Silhouette { get; set; }
+
 	/// <summary>Camera orientation override, in the subject's local space (a prop disguise portrays from the
 	/// angle its player last edited it at). Null keeps the rig prefab's pose. Per subject, not per icon —
 	/// see the note on <see cref="SdfIconRequest.Pose"/>.</summary>
@@ -130,6 +134,7 @@ public sealed class SdfIcon : Panel
 			Brushes = Brushes,
 			OutlineColor = OutlineColor,
 			OutlineWidth = outlineFraction,
+			Silhouette = Silhouette,
 			Pose = Pose,
 			Frozen = Frozen,
 		} );

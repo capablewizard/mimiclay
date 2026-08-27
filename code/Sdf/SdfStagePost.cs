@@ -76,8 +76,18 @@ sealed class SdfStagePost
 	public Color OutlineColor = DefaultInk;
 	public float OutlineWidth;
 
+	/// <summary>Flatten the subject to a featureless block of grey — the "who's that pokemon" silhouette. The
+	/// ink outline still draws on top in its authored colour, so a silhouette icon wears the same brown ring as
+	/// every portrait. Runs through the engine's own colour shader (contrast 0 collapses every covered pixel to
+	/// 0.5, brightness rescales to <see cref="SilhouetteGrey"/>), so no shader of ours is involved and alpha —
+	/// the shape — is untouched.</summary>
+	public bool Silhouette;
+
+	/// <summary>The silhouette's grey level, 0 (black) to 1 (white).</summary>
+	public float SilhouetteGrey = 0.5f;
+
 	/// <summary>Whether anything would actually draw — the stage skips creating the pass object if not.</summary>
-	public bool Any => TonemapMode > 0 || SharpenStrength > 0f || ColorEnabled || OutlineWidth > 0f;
+	public bool Any => TonemapMode > 0 || SharpenStrength > 0f || ColorEnabled || OutlineWidth > 0f || Silhouette;
 
 	/// <summary>
 	/// Kill switch for the whole chain: `mimiclay_thumb_post false`. This pass grabs the frame buffer and blits
@@ -154,6 +164,24 @@ sealed class SdfStagePost
 				_attributes.Set( "hue_rotate", HueRotate );
 				_attributes.Set( "brightness", Brightness );
 				_attributes.Set( "contrast", Contrast );
+				Graphics.Blit( _colorMaterial, _attributes );
+			}
+		}
+
+		// Silhouette flatten — after the rig's own grade (whose output it discards anyway) and BEFORE the
+		// outline, so the ink still lands on top in its exact authored colour. pp_color applies contrast first
+		// and multiplies brightness after, which is what makes the grey tunable: contrast 0 → flat 0.5,
+		// brightness 2·grey → the requested level.
+		if ( Silhouette )
+		{
+			if ( _colorMaterial is not null )
+			{
+				Graphics.GrabFrameTexture( "ColorBuffer", _attributes, Graphics.DownsampleMethod.None );
+				_attributes.Set( "blend", 1f );
+				_attributes.Set( "saturate", 0f );
+				_attributes.Set( "hue_rotate", 0f );
+				_attributes.Set( "brightness", SilhouetteGrey * 2f );
+				_attributes.Set( "contrast", 0f );
 				Graphics.Blit( _colorMaterial, _attributes );
 			}
 		}

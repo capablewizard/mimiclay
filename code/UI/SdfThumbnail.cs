@@ -68,6 +68,10 @@ public sealed class SdfThumbnail : ScenePanel
 	/// <inheritdoc cref="OutlineColor"/>
 	public float? OutlineWidth { get; set; }
 
+	/// <summary>Portray the subject as a flat grey silhouette rather than its lit self — the ink outline still
+	/// draws on top, so it wears the same ring every portrait does. See <see cref="SdfStagePost.Silhouette"/>.</summary>
+	public bool Silhouette { get; set; }
+
 	/// <summary>Re-render every frame rather than only when the sculpt changes. Costs a full scene render per
 	/// frame, so it's for debugging — but it means a console toggle shows up immediately instead of waiting for
 	/// something to invalidate the thumbnail.</summary>
@@ -98,6 +102,7 @@ public sealed class SdfThumbnail : ScenePanel
 	bool _postEnabled = SdfStagePost.Enabled;
 	Color? _appliedOutlineColor;
 	float? _appliedOutlineWidth;
+	bool _appliedSilhouette;
 	bool _outlineApplied;
 
 	public SdfThumbnail()
@@ -226,12 +231,15 @@ public sealed class SdfThumbnail : ScenePanel
 			_staged = false; // a fresh stage has no picture to hold — the next SetBrushes must go through
 		}
 
-		if ( !_outlineApplied || _appliedOutlineColor != OutlineColor || _appliedOutlineWidth != OutlineWidth )
+		if ( !_outlineApplied || _appliedOutlineColor != OutlineColor || _appliedOutlineWidth != OutlineWidth
+			|| _appliedSilhouette != Silhouette )
 		{
 			_outlineApplied = true;
 			_appliedOutlineColor = OutlineColor;
 			_appliedOutlineWidth = OutlineWidth;
+			_appliedSilhouette = Silhouette;
 			_stage.ApplyOutlineOverride( OutlineColor, OutlineWidth );
+			_stage.ApplySilhouette( Silhouette );
 			RenderNextFrame();
 		}
 

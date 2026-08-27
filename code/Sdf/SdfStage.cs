@@ -85,6 +85,9 @@ public sealed class SdfStage : IDisposable
 	// authored rotation so the sun swings with a pose override like the placed lights do.
 	readonly List<PlacedDirectional> _directionals = new();
 
+	// Per-brush convex fit primitives for the camera fit (see Frame) — rebuilt alongside Bounds in SetBrushes.
+	readonly List<SdfFitPrimitive> _fitPrimitives = new();
+
 	int _brushHash;
 	bool _disposed;
 
@@ -301,6 +304,14 @@ public sealed class SdfStage : IDisposable
 		BuildPostPass();
 	}
 
+	/// <summary>Render the subject as a flat grey silhouette instead of its lit self — the outline still draws
+	/// in its authored ink on top. Read live per render, same as the outline override.</summary>
+	public void ApplySilhouette( bool on )
+	{
+		_post.Silhouette = on;
+		BuildPostPass();
+	}
+
 	/// <summary>
 	/// The post-process chain, as an overlay object in the private world. OverlayWithoutDepth draws after the
 	/// scene's own post block, which is where the effect components' blits would have landed. Idempotent — the
@@ -418,6 +429,8 @@ public sealed class SdfStage : IDisposable
 			? bb
 			: BBox.FromPositionAndSize( Vector3.Zero, 16f );
 
+		Sdf.GetFitPrimitives( copy, _fitPrimitives );
+
 		return true;
 	}
 
@@ -442,6 +455,7 @@ public sealed class SdfStage : IDisposable
 		_brushHash = 0;
 		_sculpt.Brushes = new List<SdfBrush>();
 		_renderer.ForceRefresh();
+		_fitPrimitives.Clear();
 		return true;
 	}
 
@@ -467,22 +481,58 @@ public sealed class SdfStage : IDisposable
 		var rot = (pose ?? _pose).ToRotation();
 		var m = MathF.Max( margin ?? _margin, 0.01f );
 
-		// Fit the subject as a SPHERE whose radius is the largest half-extent of the bounds.
+		// Fit the camera against the PER-BRUSH convex primitives (each brush's mirror-expanded AABB; uniform
+		// sphere brushes as the exact spheres they are — see Sdf.GetFitPrimitives), one frustum side plane at a
+		// time: a convex shape sits inside a plane exactly when its centre's signed distance beats its support
+		// along the plane normal, which solves directly for the camera distance with no iteration.
 		//
-		// Two wrong answers came before this one, both too conservative in the same direction. Fitting the
-		// bounding sphere by its half-DIAGONAL treats a ball of radius r as radius r*sqrt(3) and fills barely
-		// half the frame. Fitting the bounding BOX corner-by-corner is exactly right for a box, but a clay prop
-		// doesn't occupy its corners — and it's the corners that set the distance, so a round head still lost
-		// about a third of the frame to background.
+		// This replaced fitting the whole sculpt as a sphere of radius max-half-extent. Three wrong answers came
+		// before, all approximating the sculpt as ONE primitive. Half-diagonal bounding sphere: treats a ball of
+		// radius r as r·√3 and fills half the frame. Union-box corners: right for a box, but a clay prop doesn't
+		// occupy its box's corners, so a round head lost a third of the frame. Max-half-extent sphere: right for
+		// a round prop, but understates a chunky one viewed corner-on by up to √3 — which CLIPPED, and margin
+		// (authored at ~1) never actually covered it; barely visible under the fixed portrait pose, constant
+		// once the silhouette hints started framing every disguise from a random angle each flash. Per-brush
+		// primitives dodge the dilemma: the fit hugs whatever the brushes actually occupy, exactly, at any pose.
 		//
-		// The largest half-extent is the honest radius for a rounded form that fills its box, which is what
-		// these props are. A genuinely cubic subject viewed corner-on could graze the frame edge; that's what
-		// Margin is for, and 1.2 leaves plenty.
-		//
-		// sin, not tan: a sphere of radius r is tangent to the frustum at distance r / sin(halfFov). Using tan
-		// puts it slightly too close and clips the silhouette.
-		var extent = MathF.Max( Bounds.Size.x, MathF.Max( Bounds.Size.y, Bounds.Size.z ) ) * 0.5f;
-		var dist = MathF.Max( extent, 1f ) * m / MathF.Sin( f * MathF.PI / 360f );
+		// The empty stage (no brushes staged yet) falls back to the sphere fit on the placeholder Bounds.
+		var halfFov = f * MathF.PI / 360f;
+		var sinH = MathF.Sin( halfFov );
+		var cosH = MathF.Cos( halfFov );
+
+		float dist;
+		if ( _fitPrimitives.Count > 0 )
+		{
+			// The four side planes' inward unit normals for a camera looking along rot.Forward. The render
+			// target is square, so the vertical pair uses the same half-angle as the horizontal.
+			var n0 = rot.Forward * sinH - rot.Right * cosH;
+			var n1 = rot.Forward * sinH + rot.Right * cosH;
+			var n2 = rot.Forward * sinH - rot.Up * cosH;
+			var n3 = rot.Forward * sinH + rot.Up * cosH;
+
+			dist = 1f;
+			foreach ( var p in _fitPrimitives )
+			{
+				// Inside the plane through the camera (at centre - Forward·dist) needs
+				// dot(shapeCentre - camera, n) ≥ support(n); dot(Forward, n) = sinH turns that straight into a
+				// minimum distance. Support is symmetric, so the same value serves n and -n.
+				var d0 = p.Centre - centre;
+				dist = MathF.Max( dist, (p.Support( n0 ) - Vector3.Dot( d0, n0 )) / sinH );
+				dist = MathF.Max( dist, (p.Support( n1 ) - Vector3.Dot( d0, n1 )) / sinH );
+				dist = MathF.Max( dist, (p.Support( n2 ) - Vector3.Dot( d0, n2 )) / sinH );
+				dist = MathF.Max( dist, (p.Support( n3 ) - Vector3.Dot( d0, n3 )) / sinH );
+			}
+
+			// Margin scales the fitted distance, exactly as it scaled the sphere fit — with the fit now honest,
+			// it's purely the breathing room for the ink outline (drawn OUTSIDE the silhouette) and the boil
+			// displacement, not a fudge factor for the fit itself.
+			dist *= m;
+		}
+		else
+		{
+			var extent = MathF.Max( Bounds.Size.x, MathF.Max( Bounds.Size.y, Bounds.Size.z ) ) * 0.5f;
+			dist = MathF.Max( extent, 1f ) * m / sinH;
+		}
 
 		// Depth range of the actual box along the view, for the near/far planes.
 		var nearest = float.MaxValue;

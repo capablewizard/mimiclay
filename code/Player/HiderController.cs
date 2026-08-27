@@ -486,7 +486,18 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		// Released into the level: no input, no camera — just let OnFixedUpdate keep the physics settling.
 		if ( _dormant )
+		{
+			// BOT props are dormant by construction (RoundBots.Prepare releases the controls), but they're still
+			// roster members the hunt is played against — so they whistle like any surviving prop. Without this
+			// a solo playtest's hunt was SILENT, which read as "taunts are broken". Host-side only (bot pawns
+			// are host-owned; every other machine sees them as proxies and gets the whistle through the
+			// broadcast). Released SCENERY is dormant too and must never whistle — it has no BotPawn row.
+			// Manual is withheld: the host's T key belongs to the host's own pawn, not the whole bot flock.
+			if ( !IsProxy && Components.Get<BotPawn>() is not null )
+				UpdateTaunts( manual: false );
+
 			return;
+		}
 
 		// Only the owning client reads input + drives the ONE shared scene camera. On every other machine this pawn
 		// is a proxy: the engine moves its body from the networked transform, and the local player's own pawn owns
@@ -624,7 +635,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	RealTimeSince _sinceTaunt;
 	bool _tauntClockSeeded; // seeded on the first Hunt frame; reset outside the Hunt so a next round re-seeds
 
-	void UpdateTaunts()
+	void UpdateTaunts( bool manual = true )
 	{
 		var round = RoundManager.Current;
 		if ( !round.IsValid() || round.Phase != RoundPhase.Hunt )
@@ -633,9 +644,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			return;
 		}
 
-		// Same 5s floor as LobbyManager.SetTauntSeconds — also catches a zeroed TauntSeconds from any stale
-		// settings path (e.g. an old serialized struct), which Max(0) would turn into per-frame whistling.
-		float interval = MathF.Max( 5f, round.Settings.TauntSeconds );
+		// 0 = the host chose "None": no automatic whistling at all (manual T still works — taunting on purpose
+		// is the prop's own risk to take). Anything else keeps the same 5s floor as LobbyManager.SetTauntSeconds,
+		// which also catches a sub-floor value from any stale settings path (e.g. an old serialized struct) that
+		// Max(0) would turn into per-frame whistling.
+		float interval = round.Settings.TauntSeconds <= 0f ? 0f : MathF.Max( 5f, round.Settings.TauntSeconds );
 
 		// First Hunt frame: every prop starts its clock at a RANDOM fraction of the interval. All machines flip
 		// into the Hunt within a frame or two of each other, so without this offset the whole lobby would
@@ -643,22 +656,27 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( !_tauntClockSeeded )
 		{
 			_tauntClockSeeded = true;
-			_sinceTaunt = interval; // a manual taunt is allowed immediately at the whistle-phase start
-			_nextAutoTaunt = Game.Random.Float( 0.3f, 1f ) * interval;
+			// A manual taunt is allowed immediately at the whistle-phase start (with auto taunts off there's no
+			// interval to wait out, so just clear the manual cooldown).
+			_sinceTaunt = MathF.Max( interval, ManualTauntCooldown );
+			if ( interval > 0f )
+				_nextAutoTaunt = Game.Random.Float( 0.3f, 1f ) * interval;
 		}
 
-		if ( Input.Pressed( "Taunt" ) && _sinceTaunt > ManualTauntCooldown )
+		if ( manual && Input.Pressed( "Taunt" ) && _sinceTaunt > ManualTauntCooldown )
 			Taunt( interval );
-		else if ( _nextAutoTaunt <= 0f )
+		else if ( interval > 0f && _nextAutoTaunt <= 0f )
 			Taunt( interval );
 	}
 
 	// Fire one taunt and rewind the auto clock — jittered ±15% so two props whose clocks happened to land in
-	// step drift apart again instead of whistling together for the whole hunt.
+	// step drift apart again instead of whistling together for the whole hunt. With auto taunts off (interval 0)
+	// the auto clock is left alone — the `interval > 0` gate above never reads it.
 	void Taunt( float interval )
 	{
 		_sinceTaunt = 0f;
-		_nextAutoTaunt = interval * Game.Random.Float( 0.85f, 1.15f );
+		if ( interval > 0f )
+			_nextAutoTaunt = interval * Game.Random.Float( 0.85f, 1.15f );
 		BroadcastTaunt();
 	}
 

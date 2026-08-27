@@ -4246,26 +4246,27 @@
           "__guid": "585041da-37f3-42df-be03-45e91500e635",
           "__enabled": true,
           "Flags": 0,
-          "BotCount": 0,
+          "BotCount": 7,
           "BotHunterPawns": true,
           "BotRandomDisguises": true,
           "ConsolidationSeconds": 12,
           "CreativeHoverRange": 300,
           "DebugSoloHide": false,
-          "DirectPlayGame": "Creative",
+          "DirectPlayGame": "PropHunt",
           "DisableSceneCameras": true,
-          "HideSeconds": 90,
-          "HunterCount": 1,
+          "HideSeconds": 5,
+          "HintSeconds": 10,
+          "HunterCount": 2,
           "HuntSeconds": 210,
-          "Mode": "Infection",
+          "Mode": "Teams",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverrideRules": false,
-          "PlayAs": "Auto",
+          "OverrideRules": true,
+          "PlayAs": "Hunter",
           "RevealSeconds": 30,
           "StartCountdownSeconds": 4,
           "TauntSeconds": 35
@@ -10800,24 +10801,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11132,24 +11117,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11202,24 +11171,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11273,7 +11226,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -11342,24 +11295,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11412,24 +11349,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11482,24 +11403,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11552,24 +11457,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13812,6 +13701,14 @@
                 "BoundingRadius": 3.7116888
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
+            },
+            "Property": "__enabled",
+            "Value": false
           },
           {
             "Target": {

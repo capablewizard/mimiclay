@@ -414,11 +414,20 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 	}
 
 	// Floor of 5s (not the 1s the phase timers use): the taunt repeats for every prop for the whole hunt, and
-	// per-second whistling would be pure noise spam.
+	// per-second whistling would be pure noise spam. Stepping BELOW the floor collapses to 0 = "None" (no auto
+	// taunts), so the setup stepper walks 10 → 5 → None → 5 instead of pinning at the floor.
 	public void SetTauntSeconds( float seconds )
 	{
 		if ( !IsHostAuthority ) return;
-		var s = Settings; s.TauntSeconds = MathF.Max( 5f, seconds ); Settings = s;
+		var s = Settings; s.TauntSeconds = seconds < 5f ? 0f : seconds; Settings = s;
+	}
+
+	// Same shape as the taunt timer: a floor (15s — a silhouette tells hunters far more than the whistle does,
+	// so it repeats slower) with below-floor collapsing to 0 = "None".
+	public void SetHintSeconds( float seconds )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = Settings; s.HintSeconds = seconds < 15f ? 0f : seconds; Settings = s;
 	}
 
 	// ── Creative config (same copy-mutate-write shape as the round setters above) ─────────────────────────────

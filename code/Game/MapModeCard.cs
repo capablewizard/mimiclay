@@ -100,8 +100,11 @@ public sealed class MapModeCard : Component
 	/// <summary>The results/gallery beat before the round returns to the lobby.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float ConsolidationSeconds { get; set; } = RoundSettings.DefaultConsolidationSeconds;
 
-	/// <summary>How often each surviving prop auto-taunts during the hunt.</summary>
+	/// <summary>How often each surviving prop auto-taunts during the hunt. 0 = never.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float TauntSeconds { get; set; } = RoundSettings.DefaultTauntSeconds;
+
+	/// <summary>How often each surviving prop's HUD pip flashes its disguise silhouette during the hunt. 0 = never.</summary>
+	[Property, Group( "Round Rules (Override)" )] public float HintSeconds { get; set; } = RoundSettings.DefaultHintSeconds;
 
 	// The authored rules as the manager wants them. MapIdent is left at the default: the map is already loaded by
 	// the time anyone reads this — nothing downstream re-resolves it — so there's nothing here to choose.
@@ -114,6 +117,7 @@ public sealed class MapModeCard : Component
 		RevealSeconds = RevealSeconds,
 		ConsolidationSeconds = ConsolidationSeconds,
 		TauntSeconds = TauntSeconds,
+		HintSeconds = HintSeconds,
 		HunterCount = HunterCount,
 		MapIdent = RoundSettings.Default.MapIdent,
 	};

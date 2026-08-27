@@ -28,8 +28,13 @@ public struct RoundSettings
 
 	/// <summary>How often (seconds) each surviving prop automatically taunts during the Hunt — the whistle every
 	/// hunter hears from the prop's hiding spot. Individual props stagger around this period so the whole lobby
-	/// never whistles in chorus (see <see cref="HiderController"/>).</summary>
+	/// never whistles in chorus (see <see cref="HiderController"/>). 0 = no automatic taunts (manual T still works).</summary>
 	public float TauntSeconds;
+
+	/// <summary>How often (seconds) each surviving prop's HUD pip briefly flashes a dark silhouette of their actual
+	/// disguise during the Hunt — the "who's that pokemon" hint. Per-prop staggered (deterministically, so every
+	/// machine flashes the same prop at the same moment — see <see cref="RoundHud"/>). 0 = never.</summary>
+	public float HintSeconds;
 
 	/// <summary>How many players are made hunters at round start (the rest are props). Clamped to leave ≥1 prop.</summary>
 	public int HunterCount;
@@ -49,6 +54,7 @@ public struct RoundSettings
 	public const float DefaultRevealSeconds = 30f;
 	public const float DefaultConsolidationSeconds = 12f;
 	public const float DefaultTauntSeconds = 35f;
+	public const float DefaultHintSeconds = 60f;
 	public const int DefaultHunterCount = 1;
 
 	/// <summary>Sensible opening values — short hide, longer hunt, brief reveal/consolidation, one hunter.</summary>
@@ -61,6 +67,7 @@ public struct RoundSettings
 		RevealSeconds = DefaultRevealSeconds,
 		ConsolidationSeconds = DefaultConsolidationSeconds,
 		TauntSeconds = DefaultTauntSeconds,
+		HintSeconds = DefaultHintSeconds,
 		HunterCount = DefaultHunterCount,
 		MapIdent = MapCatalog.RandomIdent,
 	};
@@ -76,6 +83,7 @@ public struct RoundSettings
 		public const string Reveal = "r.reveal";
 		public const string Cons = "r.cons";
 		public const string Taunt = "r.taunt";
+		public const string Hint = "r.hint";
 		public const string Hunters = "r.hn";
 		public const string Map = "r.map";
 	}
@@ -92,6 +100,7 @@ public struct RoundSettings
 		Networking.SetData( Keys.Reveal, Str( RevealSeconds ) );
 		Networking.SetData( Keys.Cons, Str( ConsolidationSeconds ) );
 		Networking.SetData( Keys.Taunt, Str( TauntSeconds ) );
+		Networking.SetData( Keys.Hint, Str( HintSeconds ) );
 		Networking.SetData( Keys.Hunters, HunterCount.ToString( CultureInfo.InvariantCulture ) );
 		Networking.SetData( Keys.Map, resolvedMapIdent ?? "" );
 	}
@@ -112,6 +121,7 @@ public struct RoundSettings
 		d.RevealSeconds = Read( Keys.Reveal, d.RevealSeconds );
 		d.ConsolidationSeconds = Read( Keys.Cons, d.ConsolidationSeconds );
 		d.TauntSeconds = Read( Keys.Taunt, d.TauntSeconds );
+		d.HintSeconds = Read( Keys.Hint, d.HintSeconds );
 
 		var hunters = Networking.GetData( Keys.Hunters );
 		if ( int.TryParse( hunters, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n ) )
@@ -145,6 +155,7 @@ public struct RoundSettings
 		Networking.SetData( Keys.Reveal, "" );
 		Networking.SetData( Keys.Cons, "" );
 		Networking.SetData( Keys.Taunt, "" );
+		Networking.SetData( Keys.Hint, "" );
 		Networking.SetData( Keys.Hunters, "" );
 		Networking.SetData( Keys.Map, "" );
 		Networking.SetData( RoundManager.HunterIdsKey, "" );

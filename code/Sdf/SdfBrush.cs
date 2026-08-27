@@ -1251,6 +1251,31 @@ public struct SdfSurface
 }
 
 /// <summary>
+/// A conservative convex stand-in for one brush mirror copy, used by camera framing (<see cref="SdfStage.Frame"/>):
+/// the brush's sculpt-local AABB as a box, or — for uniform spheres, where the box's corners would overstate the
+/// silhouette by up to √3 — the exact sphere. <see cref="Support"/> is the convex support function (the farthest
+/// reach from the centre along a direction), which is everything a frustum-plane fit needs to know about a shape.
+/// Built by <see cref="Sdf.GetFitPrimitives"/>.
+/// </summary>
+public readonly struct SdfFitPrimitive
+{
+	/// <summary>Shape centre, sculpture-local.</summary>
+	public Vector3 Centre { get; init; }
+
+	/// <summary>Box half-extents. For a round primitive all three hold the radius.</summary>
+	public Vector3 Extents { get; init; }
+
+	/// <summary>True = an exact sphere (radius <c>Extents.x</c>) rather than a box.</summary>
+	public bool Round { get; init; }
+
+	/// <summary>Farthest reach from <see cref="Centre"/> along UNIT direction <paramref name="u"/> — constant for
+	/// a sphere, the abs-sum for an axis-aligned box (symmetric, so the same value serves u and −u).</summary>
+	public float Support( Vector3 u ) => Round
+		? Extents.x
+		: MathF.Abs( u.x ) * Extents.x + MathF.Abs( u.y ) * Extents.y + MathF.Abs( u.z ) * Extents.z;
+}
+
+/// <summary>
 /// Pure-math evaluation of a brush list. No engine/render dependencies — this is the
 /// part we'll reuse identically in the editor tool and the in-game player UI.
 /// </summary>
@@ -1482,6 +1507,56 @@ public static class Sdf
 			bounds = new BBox( mn, mx );
 
 		return any;
+	}
+
+	/// <summary>The per-brush fit primitives for camera framing (<see cref="SdfStage.Frame"/>): one
+	/// <see cref="SdfFitPrimitive"/> per enabled additive brush per mirror copy — the same filtering and mirror
+	/// expansion as <see cref="TryGetBounds"/>, kept in step with it. Framing against these instead of the
+	/// whole-sculpt box is what lets the camera fit the sculpt's actual occupied space: the union box's empty
+	/// corner regions contribute nothing, and a uniform sphere brush fits as the sphere it is rather than as
+	/// its box's corners. Clears and refills <paramref name="primitives"/> (caller owns the list, so a stage
+	/// re-fit allocates nothing).</summary>
+	public static void GetFitPrimitives( List<SdfBrush> brushes, List<SdfFitPrimitive> primitives )
+	{
+		primitives.Clear();
+
+		if ( brushes is null )
+			return;
+
+		foreach ( var b in brushes )
+		{
+			if ( !b.Enabled || b.Operation != SdfOperation.Add )
+				continue;
+
+			b.LocalBounds( out var lo0, out var hi0 );
+
+			// A UNIFORM sphere is rotation-proof, so it can be fitted as the exact sphere it is. A non-uniform
+			// one is an ellipsoid — possibly rotated, where an axis-aligned ellipsoid built from the AABB would
+			// no longer contain it — so it keeps its box, which LocalBounds already made conservative for the
+			// rotation. Extents come from the blended box, so the smooth-union bulge padding rides along.
+			var he = (hi0 - lo0) * 0.5f;
+			bool round = b.Shape == SdfShape.Sphere
+				&& MathF.Abs( he.x - he.y ) < 0.01f && MathF.Abs( he.x - he.z ) < 0.01f;
+
+			int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
+			for ( int sx = 0; sx <= nx; sx++ )
+				for ( int sy = 0; sy <= ny; sy++ )
+					for ( int sz = 0; sz <= nz; sz++ )
+					{
+						var lo = lo0;
+						var hi = hi0;
+						if ( sx == 1 ) (lo.x, hi.x) = (-hi.x, -lo.x);
+						if ( sy == 1 ) (lo.y, hi.y) = (-hi.y, -lo.y);
+						if ( sz == 1 ) (lo.z, hi.z) = (-hi.z, -lo.z);
+
+						primitives.Add( new SdfFitPrimitive
+						{
+							Centre = (lo + hi) * 0.5f,
+							Extents = he,
+							Round = round,
+						} );
+					}
+		}
 	}
 
 	/// <summary>Is this brush's <see cref="SdfBrush.Blend"/> a no-op on the field? True for the FIRST
