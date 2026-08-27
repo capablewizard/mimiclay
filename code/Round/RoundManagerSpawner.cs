@@ -163,14 +163,33 @@ public sealed class RoundManagerSpawner : Component
 
 		// Debug/test config comes off the map's card — host-only by nature: the host seats the bots, owns their
 		// bodies, and decides the rules. No card = a clean real round.
+		//
+		// But only a DIRECT play (the map opened straight in the editor — the card's whole purpose) takes the
+		// debug knobs. A lobby launch is a REAL round and the lobby's choices are the only truth: a knob left
+		// ticked on a map must not silently distort it — a card's OverrideRules swapped a lobby's Teams round
+		// back to Infection, and its PlayAs force-huntered the host, through several confusing playtests. The
+		// game-mode key is stamped by every lobby launch and blanked by the direct-play path above, so its
+		// presence IS "we came from a lobby". (Bots are safe either way: a lobby launch always writes
+		// BotCountKey, which overrides the card's count in RoundManager.OnStart.)
+		bool lobbyLaunch = !string.IsNullOrEmpty( Networking.GetData( MenuNetworking.Keys.Mode ) );
 		if ( card.IsValid() )
 		{
-			rm.DebugSoloHide = card.DebugSoloHide;
 			rm.BotCount = card.BotCount;
 			rm.BotHunterPawns = card.BotHunterPawns;
 			rm.BotRandomDisguises = card.BotRandomDisguises;
-			rm.PlayAs = card.PlayAs;
-			rm.RulesOverride = card.OverrideRules ? card.AuthoredRules : null;
+
+			if ( lobbyLaunch )
+			{
+				if ( card.OverrideRules || card.PlayAs != PlayAsChoice.Auto || card.DebugSoloHide )
+					Log.Warning( "RoundManagerSpawner: ignoring this map card's debug round config " +
+						"(rules override / PlayAs / solo hide) — lobby launches play the lobby's rules." );
+			}
+			else
+			{
+				rm.DebugSoloHide = card.DebugSoloHide;
+				rm.PlayAs = card.PlayAs;
+				rm.RulesOverride = card.OverrideRules ? card.AuthoredRules : null;
+			}
 		}
 
 		go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]

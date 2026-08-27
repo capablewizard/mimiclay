@@ -803,10 +803,12 @@ public sealed class HunterController : Component
 	GameObject _collidersObject;
 	GameObject _armObject;
 
-	/// <summary>True when this pawn is concealed FROM US: someone else's hunter during Infection prep. Everything
-	/// that could give them away reads this one flag — visuals and colliders (<see cref="UpdateConcealment"/>),
-	/// footsteps, shot effects, and the nameplate — so there's a single answer to "can we know they're there".
-	/// Never true for our own pawn: concealment is about what OTHER machines perceive.</summary>
+	/// <summary>True when this pawn is concealed FROM US: someone else's hunter during round prep, on a machine
+	/// not playing a hunter — fellow hunters always see each other (<see cref="RoundManager.HuntersConcealed"/>).
+	/// Everything that could give them away reads this one flag — visuals and colliders
+	/// (<see cref="UpdateConcealment"/>), footsteps, shot effects, and the nameplate — so there's a single
+	/// answer to "can we know they're there". Never true for our own pawn: concealment is about what OTHER
+	/// machines perceive.</summary>
 	public bool Concealed => !Owned && RoundManager.HuntersConcealed;
 
 	/// <summary>Set by <see cref="RoundManager"/> on a pawn it spawned for a TEST BOT: host-owned, but with nobody
@@ -1762,10 +1764,11 @@ public sealed class HunterController : Component
 		}
 	}
 
-	// Infection prep: a hunter is ON the network (so the round can address it, so the engine's own RPCs resolve,
-	// and so it can be revealed or shot the instant the Hunt starts) but must not be seen, heard of, or bumped
-	// into by anyone else. This is what makes that true, asserted every frame on every machine — concealment is
-	// per-machine state and is never networked, so a proxy is never trusted to have arrived in the right one.
+	// Round prep (both modes): a hunter is ON the network (so the round can address it, so the engine's own RPCs
+	// resolve, and so it can be revealed or shot the instant the Hunt starts) but must not be seen, heard of, or
+	// bumped into by anyone outside its own team. This is what makes that true, asserted every frame on every
+	// machine — concealment is per-machine state and is never networked, so a proxy is never trusted to have
+	// arrived in the right one.
 	//
 	// It switches whole OBJECTS off rather than flipping renderer flags, and that distinction is the reason the
 	// first attempt at this leaked: RenderHidden on an SdfRaymarchRenderer means SHADOWS-ONLY, and so does
@@ -1862,11 +1865,11 @@ public sealed class HunterController : Component
 			}
 		}
 
-		// Body/SDF first-person hide: our own pawn only — a pawn we merely look at (another player's, or a bot's)
-		// isn't ours to touch.
-		if ( !Owned )
-			return;
-
+		// Body/SDF first-person hide. hideOwn can only ever be true for our OWN pawn, but the RESTORE must run
+		// on every machine — network spawn/refresh serializes the owner's LIVE component state (the same trap
+		// as the run puffs above), and the owner is nearly always first-person, so a proxy can arrive with
+		// ShadowsOnly / RenderHidden baked in and nothing else would ever put it back. Rendering flags are
+		// per-machine (no sync), so a proxy re-asserting its own copy networks nothing.
 		if ( _bodyRenderers is not null )
 		{
 			var type = hideOwn ? ModelRenderer.ShadowRenderType.ShadowsOnly : ModelRenderer.ShadowRenderType.On;

@@ -195,6 +195,10 @@
 				{
 					<div class="role-chip role-@(LocalRole.ToString().ToLower())">@LocalRole.ToString().ToUpper()</div>
 				}
+				else if ( RoundManager.LocalEliminated )
+				{
+					<div class="role-chip role-spectator">SPECTATING</div>
+				}
 			</div>
 
 			<div class="hud-col col-hunters">
@@ -608,6 +612,17 @@
 				yield break;
 			}
 
+			// Eliminated (a found Teams prop): out for the round, flying the spectator cam — the fly
+			// hints are the only controls left.
+			if ( RoundManager.LocalEliminated )
+			{
+				yield return new( "WASD", "Fly" );
+				yield return new( "Space / Ctrl", "Up / Down" );
+				yield return new( "Shift", "Fast" );
+				yield return new( "Esc", "Pause" );
+				yield break;
+			}
+
 			// In a round: shared movement + role-specific actions.
 			yield return new( "WASD", "Move" );
 			yield return new( "Alt", "Orbit Camera" );
@@ -670,9 +685,10 @@
 	int DbgProxyPawns => Scene.GetAllComponents<HiderController>().Count( c => c.IsValid() && c.IsProxy )
 		+ Scene.GetAllComponents<HunterController>().Count( c => c.IsValid() && c.IsProxy );
 
-	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole, so they're covered.
+	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole (+ eliminated), so
+	// they're covered.
 	protected override int BuildHash()
-		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame ) ),
+		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
 				TutorialDirector.IsRunning ), // lobby roster hides while the tutorial runs

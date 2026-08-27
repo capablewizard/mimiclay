@@ -4897,8 +4897,8 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverrideRules": true,
-          "PlayAs": "Hunter",
+          "OverrideRules": false,
+          "PlayAs": "Auto",
           "RevealSeconds": 30,
           "StartCountdownSeconds": 4,
           "TauntSeconds": 35

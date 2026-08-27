@@ -548,11 +548,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	}
 
 	// ── Concealment ───────────────────────────────────────────────────────────────────────────────────
-	/// <summary>True when this prop is concealed FROM US: someone else's prop, while we're a prop ourselves and
-	/// the Reveal hasn't arrived (see <see cref="RoundManager.PropsConcealed"/>). Never true for our own pawn —
-	/// concealment is about what OTHER machines perceive — and never true on a hunter's machine, which has to
-	/// see every prop it's hunting.</summary>
-	public bool Concealed => IsProxy && RoundManager.PropsConcealed;
+	/// <summary>True when this prop is concealed FROM US: somebody else's prop — a proxy, or a host-held bot
+	/// body, which is neither a proxy nor ours — while <see cref="RoundManager.PropsConcealed"/> says props
+	/// are hidden from what we're playing (Infection: a fellow prop before the Reveal; Teams: any prop on a
+	/// hunter's machine during prep). Never true for our own pawn — concealment is about what OTHER machines
+	/// perceive.</summary>
+	public bool Concealed => (IsProxy || RoundManager.IsBotPawn( GameObject )) && RoundManager.PropsConcealed;
 
 	// Keep other players' props out of our world until the Reveal. Asserted every frame on every machine and
 	// unconditionally, not on change: GameObject.Enabled is serialized, so a spawn snapshot or a network refresh

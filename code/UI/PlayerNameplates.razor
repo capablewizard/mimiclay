@@ -19,11 +19,11 @@
 	scene scans multiplied per overlay — which is what melted the host's framerate late in long creative
 	sessions. A machine-level singleton has no dormant copies to wake and needs no ownership gate at all.
 
-	Everything shown is networked state: pawns are enumerated from the scene's networked proxies (a hidden PROP is
-	simply not on the wire, so its name can't leak; a concealed HUNTER is networked but filtered by
-	HunterController.Concealed), the role IS the replicated pawn type (HunterController vs HiderController — more
-	truthful than the roster row, and it works in debug scenes too), and the name comes from the round's [Sync]'d
-	roster, falling back to the pawn's Network.Owner display name. A released prop draws nothing anywhere: on the
+	Everything shown is networked state: pawns are enumerated from the scene's networked proxies (an infection
+	prop hides by not being on the wire at all, so its name can't leak; a concealed HUNTER — and a Teams prop
+	during prep — is networked but filtered by its controller's Concealed), the role IS the replicated pawn type
+	(HunterController vs HiderController — more truthful than the roster row, and it works in debug scenes too),
+	and the name comes from the round's [Sync]'d roster, falling back to the pawn's Network.Owner display name. A released prop draws nothing anywhere: on the
 	host it's neither a proxy nor a bot pawn, and on clients it's a proxy with no owner and no roster row, so it
 	has no name to show.
 
@@ -203,7 +203,12 @@
 
 			if ( h.IsProxy || RoundManager.IsBotPawn( h.GameObject ) )
 			{
-				_candidates.Add( (h.GameObject, PlayerRole.Prop) );
+				// Teams props ride the wire from round start and conceal by RENDERING on hunter machines during
+				// prep — so, like the hunters above, an enumerable prop is no longer proof of a visible one and
+				// has to be filtered explicitly. (TeamVisible would catch today's cases too — a concealed prop
+				// is only ever concealed from the other team — but a plate must never outlive its body.)
+				if ( !h.Concealed )
+					_candidates.Add( (h.GameObject, PlayerRole.Prop) );
 			}
 			else if ( !_ownPawn.IsValid() && RoundManager.RosterIdOf( h.GameObject ) == localId )
 			{

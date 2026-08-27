@@ -458,8 +458,9 @@ $clock-col-width: 150px;
 			border-radius: $radius-pill;
 			box-shadow: $shadow-edge;
 
-			&.role-hunter { background-color: $craft-red; }
-			&.role-prop   { background-color: $craft-green; }
+			&.role-hunter    { background-color: $craft-red; }
+			&.role-prop      { background-color: $craft-green; }
+			&.role-spectator { background-color: $craft-blue; }
 		}
 	}
 

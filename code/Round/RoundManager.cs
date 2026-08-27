@@ -23,7 +23,12 @@ namespace Mimiclay;
 /// roster (<see cref="EnsureOwnPawn"/>). For infection mode that pawn stays purely LOCAL (off the network) through the
 /// prep period (Starting + Hide) — so no other player can see or collide with it — then goes on the wire the instant
 /// the Hunt begins (<see cref="PublishOwnPawn"/>). Concealment is therefore "the pawn doesn't exist for anyone else
-/// yet", not a render/collider hack. Non-concealed modes just publish immediately.
+/// yet", not a render/collider hack. Teams publishes immediately (fellow hiders must see each other) and conceals
+/// per-machine during prep instead (<see cref="HuntersConcealed"/> / <see cref="PropsConcealed"/>).
+///
+/// <b>Modes.</b> Infection converts a found prop into a hunter; Teams benches them — the row keeps Role=Prop with
+/// Alive=false, the body pops, and the player is left flying a local spectator cam (<see cref="SpectatorController"/>)
+/// for the rest of the round.
 ///
 /// <b>Test bots.</b> The one exception to "the host doesn't spawn pawns": a bot is a roster row with no machine
 /// behind it (<see cref="PlayerInfo.Bot"/>), so the host spawns its body too (<see cref="EnsureBotPawns"/>) — same
@@ -143,6 +148,10 @@ public sealed class RoundManager : Component, IRoundContext
 	GameObject _ownPawn;
 	PlayerRole _ownPawnRole = PlayerRole.Unassigned;
 
+	// The local free-fly camera an eliminated Teams prop is left with. Purely local — never networked, so
+	// there's nothing for anyone else to see, collide with or shoot. See EnsureOwnPawn's eliminated branch.
+	GameObject _spectator;
+
 	// All-machines: the phase we last reacted to, so a [Sync] Phase change fires IRoundPhaseChanged + local effects on
 	// every client (not just the host that flipped it). Starts at a sentinel so the opening phase also fires.
 	RoundPhase _observedPhase = (RoundPhase)(-1);
@@ -166,6 +175,7 @@ public sealed class RoundManager : Component, IRoundContext
 	{
 		if ( Current == this ) Current = null;
 		if ( ReferenceEquals( RoundContext.Active, this ) ) RoundContext.Active = null;
+		RetireSpectator(); // local-only, so nothing else would ever clean it up
 	}
 
 	protected override void OnStart()
@@ -179,6 +189,11 @@ public sealed class RoundManager : Component, IRoundContext
 		// Settings + Players are [Sync], so clients (and late-joiners) get them from this one write — and each client
 		// reads its OWN row to spawn its own pawn.
 		Settings = RulesOverride ?? RoundSettings.ReadFromLobby();
+
+		// Say so when debug rules are driving the round — a silently-overridden mode ate a whole playtest once
+		// (a lobby's Teams round ran as Infection because a map card shipped with its override ticked).
+		if ( RulesOverride is not null )
+			Log.Info( $"RoundManager: map card rules override active — {Settings.Mode}, {Settings.HunterCount} hunter(s)." );
 
 		// A lobby that seated bots hands its count over, so the crowd you set up there is the crowd you play with —
 		// and, just as importantly, so a REAL session doesn't inherit whatever bot count a map's spawner happens to
@@ -422,6 +437,18 @@ public sealed class RoundManager : Component, IRoundContext
 			return;
 		}
 
+		// Teams benches a found prop instead of converting them: the row keeps Role=Prop with Alive=false, our
+		// body is retired (everyone watches it vanish under the caught puff) and this machine is left with a
+		// local free-fly spectator camera for the rest of the round.
+		if ( IsEliminated( info ) )
+		{
+			RetireOwnPawn();
+			EnsureSpectator();
+			return;
+		}
+
+		RetireSpectator(); // in the round proper — a fresh roster (next round, role re-assign) drops the ghost cam
+
 		var wantNetworked = WantNetworked( info.Role );
 
 		// No pawn yet → spawn at our assigned spot.
@@ -444,28 +471,35 @@ public sealed class RoundManager : Component, IRoundContext
 			PublishOwnPawn();
 	}
 
-	// Infection conceals during prep. PROPS do it by staying off the network entirely until the hunt — a pawn that
+	// Infection conceals props during prep by keeping them off the network entirely until the hunt — a pawn that
 	// was never networked is simply invisible to everyone else, and unlike any rendering trick it cannot be leaked
 	// by a shadow, a sound, or a modified client. That's the concealment that actually matters, since finding props
 	// is the game.
 	//
-	// HUNTERS ride the wire from the start and are concealed by rendering instead (see HuntersConcealed). They need
-	// to be networked for the same reason props need not to be: hunters roam during Hide, and an unnetworked pawn
-	// can't be shown to its own team later, can't be shot the instant Hunt begins, and — the tell that led here —
-	// makes the engine's own PlayerController.OnJumped broadcast unresolvable on every other machine.
+	// TEAMS props ride the wire from the start instead: fellow hiders are a team and must SEE each other while
+	// they hide (nameplates included), which only the wire can provide — so there the hunters' machines conceal
+	// them by rendering during prep (see PropsConcealed), the same per-machine treatment hunters get.
+	//
+	// HUNTERS ride the wire from the start in every mode and are concealed by rendering instead (see
+	// HuntersConcealed). They need to be networked for the same reason infection props need not to be: hunters
+	// roam during Hide, and an unnetworked pawn can't be shown to its own team, can't be shot the instant Hunt
+	// begins, and — the tell that led here — makes the engine's own PlayerController.OnJumped broadcast
+	// unresolvable on every other machine.
 	bool WantNetworked( PlayerRole role )
 		=> Networking.IsActive
 		&& (Settings.Mode != RoundMode.Infection
 			|| role == PlayerRole.Hunter
 			|| Phase is RoundPhase.Hunt or RoundPhase.Reveal or RoundPhase.Consolidation);
 
-	/// <summary>True while a hunter pawn must be invisible and intangible to everyone but its owner: Infection's
-	/// prep phases, where hunters are on the network (so the round can talk about them) but must not be seen,
-	/// bumped into or shot. Read per-frame by <see cref="HunterController"/> on every machine — concealment is
-	/// per-machine rendering/collision state, never networked.</summary>
+	/// <summary>True while hunter pawns must be invisible and intangible TO US: the prep phases (Starting +
+	/// Hide) on any machine NOT playing a hunter, in both modes. Fellow hunters always see each other — the
+	/// hunter team waits out the prep together — so like <see cref="PropsConcealed"/> this is asymmetric: the
+	/// same hunter is concealed on a prop's machine and fully visible on a teammate's. Read per-frame by
+	/// <see cref="HunterController"/> on every machine — concealment is per-machine rendering/collision state,
+	/// never networked.</summary>
 	public static bool HuntersConcealed => Current.IsValid()
-		&& Current.Settings.Mode == RoundMode.Infection
-		&& Current.Phase is RoundPhase.Starting or RoundPhase.Hide;
+		&& Current.Phase is RoundPhase.Starting or RoundPhase.Hide
+		&& LocalRole != PlayerRole.Hunter;
 
 	/// <summary>What THIS machine is currently playing as: the role of the pawn we actually own. Read from the
 	/// pawn rather than our roster row because the row flips FIRST — a caught prop is marked Hunter a moment
@@ -475,19 +509,46 @@ public sealed class RoundManager : Component, IRoundContext
 		? Current._ownPawnRole
 		: PlayerRole.Unassigned;
 
-	/// <summary>True while OTHER players' props must be invisible and intangible TO US, because we're a prop
-	/// ourselves and it isn't the Reveal yet. Props go on the wire at the Hunt so HUNTERS can see and shoot them
-	/// (<see cref="WantNetworked"/>), and that necessarily hands every other prop their positions too — so from
-	/// the Hunt onward the hiding is per-machine rendering state, exactly like <see cref="HuntersConcealed"/>.
-	/// Props learning where the other props are is the Reveal's payoff and shouldn't leak before it.
+	/// <summary>True while OTHER players' props must be invisible and intangible TO US. Asymmetric like
+	/// <see cref="HuntersConcealed"/> — it depends on who WE are — but the mode decides who "us" is:
 	///
-	/// Unlike <see cref="HuntersConcealed"/> this is asymmetric — it depends on who WE are, so the same prop is
-	/// concealed on a fellow prop's machine and fully visible on every hunter's. Teams mode is exempt: props are
-	/// a team there and see each other all round (nameplates already work that way).</summary>
+	/// <para>INFECTION: concealed while we're a prop ourselves and it isn't the Reveal yet. Props go on the
+	/// wire at the Hunt so HUNTERS can see and shoot them (<see cref="WantNetworked"/>), and that necessarily
+	/// hands every other prop their positions too — so from the Hunt onward the hiding is per-machine
+	/// rendering state. Props learning where the other props are is the Reveal's payoff and shouldn't leak
+	/// before it.</para>
+	///
+	/// <para>TEAMS: props are a team and see each other (with nameplates) all round — it's the HUNTERS who
+	/// must not scout them during prep, so there the concealment is on hunter machines through Starting +
+	/// Hide, and from the Hunt on everyone sees everyone.</para></summary>
 	public static bool PropsConcealed => Current.IsValid()
-		&& Current.Settings.Mode == RoundMode.Infection
-		&& Current.Phase is RoundPhase.Starting or RoundPhase.Hide or RoundPhase.Hunt
-		&& LocalRole == PlayerRole.Prop;
+		&& (Current.Settings.Mode == RoundMode.Infection
+			? Current.Phase is RoundPhase.Starting or RoundPhase.Hide or RoundPhase.Hunt
+				&& LocalRole == PlayerRole.Prop
+			: Current.Phase is RoundPhase.Starting or RoundPhase.Hide
+				&& LocalRole == PlayerRole.Hunter);
+
+	// Teams' defining rule, read off a roster row: a found prop is OUT — fixed sides, no conversion. The row
+	// keeps its role (so the team counts stay honest) with Alive=false; the player's own machine retires its
+	// pawn and rides the spectator cam. Never true in Infection, where a found prop converts instead.
+	bool IsEliminated( PlayerInfo info )
+		=> Settings.Mode == RoundMode.Teams && info.Role == PlayerRole.Prop && !info.Alive;
+
+	/// <summary>True when the LOCAL player has been eliminated from the round (a Teams prop that's been found:
+	/// out for the round, flying the spectator cam). Read by the HUD for the SPECTATING chip + fly hints.</summary>
+	public static bool LocalEliminated
+	{
+		get
+		{
+			if ( !Current.IsValid() )
+				return false;
+
+			var me = Connection.Local;
+			return me is not null
+				&& Current.Players.TryGetValue( me.Id, out var info )
+				&& Current.IsEliminated( info );
+		}
+	}
 
 	// Our spawn transform: our assigned spot for our current role.
 	Transform SpotFor( PlayerInfo info )
@@ -587,6 +648,26 @@ public sealed class RoundManager : Component, IRoundContext
 		_ownPawnRole = PlayerRole.Unassigned;
 	}
 
+	// ── Spectator (an eliminated Teams prop's ghost cam — local-only, never networked) ─────────────────────────
+	void EnsureSpectator()
+	{
+		if ( _spectator.IsValid() )
+			return;
+
+		// NotSaved: in-editor play mutates the open scene, and a runtime object without the flag would bake
+		// into the .scene on the next save (the RoundOutlineSystem hover-component lesson).
+		_spectator = new GameObject( true, "Spectator (local)" );
+		_spectator.Flags |= GameObjectFlags.NotSaved;
+		_spectator.Components.Create<SpectatorController>();
+	}
+
+	void RetireSpectator()
+	{
+		if ( _spectator.IsValid() )
+			_spectator.Destroy();
+		_spectator = null;
+	}
+
 	// ── Bot pawns (host-only: the bodies for roster rows with no machine behind them) ──────────────────────────
 	readonly Dictionary<Guid, GameObject> _botPawns = new();
 	readonly Dictionary<Guid, PlayerRole> _botPawnRoles = new();
@@ -647,6 +728,15 @@ public sealed class RoundManager : Component, IRoundContext
 			// Switched off, a bot hunter is a roster row with no body at all — the round still counts it, a shot
 			// bot prop just leaves nothing standing where it was.
 			if ( info.Role == PlayerRole.Hunter && !BotHunterPawns )
+			{
+				if ( pawn.IsValid() )
+					RetireBotPawn( id );
+				continue;
+			}
+
+			// Teams: a found bot prop is benched like a player's — its body pops under the caught puff and
+			// nothing respawns (no spectator either; there's nobody watching through it).
+			if ( IsEliminated( info ) )
 			{
 				if ( pawn.IsValid() )
 					RetireBotPawn( id );
@@ -823,11 +913,15 @@ public sealed class RoundManager : Component, IRoundContext
 		if ( prop.Role != PlayerRole.Prop || !prop.Alive )
 			return; // already found, or not actually a prop
 
-		// Mark the prop found + convert it (struct: copy-mutate-write back, the NetDictionary setter replicates it).
-		// The converted player's machine reacts to Role flipping to Hunter and respawns its own pawn accordingly.
+		// Mark the prop found (struct: copy-mutate-write back, the NetDictionary setter replicates it). What
+		// happens to the player is the mode's defining rule: INFECTION converts them — the row flips to Hunter
+		// and their machine respawns its own pawn accordingly — while TEAMS benches them: fixed sides, so the
+		// row keeps Role=Prop with Alive=false and their machine retires its pawn and goes spectator
+		// (see EnsureOwnPawn's eliminated branch).
 		prop.Alive = false;
 		prop.Found = true;
-		prop.Role = PlayerRole.Hunter;
+		if ( Settings.Mode == RoundMode.Infection )
+			prop.Role = PlayerRole.Hunter;
 		Players[ownerId.Value] = prop;
 
 		// Reward the shooter.
