@@ -16324,192 +16324,6 @@
       "Children": []
     },
     {
-      "__guid": "2373593a-503d-4a5d-a79d-c01a9112b366",
-      "__version": 2,
-      "Flags": 32768,
-      "Name": "kickstool",
-      "Position": "201.138611,-438.866058,-544.000366",
-      "Rotation": "0,0,0.362238199,0.932085574",
-      "Scale": "4,4,4",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.Prop",
-          "__guid": "051ae4ab-21e7-4ba2-a3fc-486d6a869e76",
-          "__enabled": true,
-          "Flags": 0,
-          "BodyGroups": 18446744073709551615,
-          "Health": 0,
-          "IsStatic": true,
-          "MaterialGroup": null,
-          "Model": "models/props/kickstool/kickstool.vmdl",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnGibsCreated": null,
-          "OnPropBreak": null,
-          "OnPropTakeDamage": null,
-          "StartAsleep": false,
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.ModelRenderer",
-          "__guid": "5681207b-ec4e-4e40-839e-5cbd0783c995",
-          "__enabled": true,
-          "Flags": 0,
-          "BodyGroups": 18446744073709551615,
-          "CreateAttachments": false,
-          "LodOverride": null,
-          "MaterialGroup": null,
-          "MaterialOverride": null,
-          "Materials": null,
-          "Model": "models/props/kickstool/kickstool.vmdl",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "RenderOptions": {
-            "GameLayer": true,
-            "OverlayLayer": false,
-            "BloomLayer": false,
-            "AfterUILayer": false
-          },
-          "RenderType": "On",
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.ModelCollider",
-          "__guid": "a149c205-652c-4d71-aa0e-7a5263b07899",
-          "__enabled": true,
-          "Flags": 0,
-          "ColliderFlags": 0,
-          "Elasticity": null,
-          "Friction": null,
-          "IsTrigger": false,
-          "Model": "models/props/kickstool/kickstool.vmdl",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnObjectTriggerEnter": null,
-          "OnObjectTriggerExit": null,
-          "OnTriggerEnter": null,
-          "OnTriggerExit": null,
-          "RollingResistance": null,
-          "Static": true,
-          "Surface": null,
-          "SurfaceVelocity": "0,0,0"
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "43a1db74-249d-471f-9446-d76cd6c109f4",
-      "__version": 2,
-      "Flags": 32768,
-      "Name": "step_ladder_01",
-      "Position": "98.2422028,-442.629578,-543.910217",
-      "Rotation": "0,0,-0.174487531,0.984659314",
-      "Scale": "4,4,4",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.Prop",
-          "__guid": "d2d0cf95-2ca1-430a-9f03-b52b531e733e",
-          "__enabled": true,
-          "Flags": 0,
-          "BodyGroups": 18446744073709551615,
-          "Health": 0,
-          "IsStatic": true,
-          "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/utility/step_ladder_01.vmdl",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnGibsCreated": null,
-          "OnPropBreak": null,
-          "OnPropTakeDamage": null,
-          "StartAsleep": false,
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.ModelRenderer",
-          "__guid": "bc002dbd-31de-43fa-a90a-a21115b1fc5c",
-          "__enabled": true,
-          "Flags": 0,
-          "BodyGroups": 18446744073709551615,
-          "CreateAttachments": false,
-          "LodOverride": null,
-          "MaterialGroup": null,
-          "MaterialOverride": null,
-          "Materials": null,
-          "Model": "models/props/trim_sheets/utility/step_ladder_01.vmdl",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "RenderOptions": {
-            "GameLayer": true,
-            "OverlayLayer": false,
-            "BloomLayer": false,
-            "AfterUILayer": false
-          },
-          "RenderType": "On",
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.ModelCollider",
-          "__guid": "dfd456b3-27c0-4d2d-9c83-eaeed7439e84",
-          "__enabled": true,
-          "Flags": 0,
-          "ColliderFlags": 0,
-          "Elasticity": null,
-          "Friction": null,
-          "IsTrigger": false,
-          "Model": "models/props/trim_sheets/utility/step_ladder_01.vmdl",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnObjectTriggerEnter": null,
-          "OnObjectTriggerExit": null,
-          "OnTriggerEnter": null,
-          "OnTriggerExit": null,
-          "RollingResistance": null,
-          "Static": true,
-          "Surface": null,
-          "SurfaceVelocity": "0,0,0"
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "0193d917-7021-4d8c-a701-f7a7f7da6fc1",
       "__version": 2,
       "Flags": 32768,
@@ -28673,6 +28487,14 @@
               "Type": "Component",
               "IdValue": "5d319f16-5893-44a3-a6b8-1d10a4a33878"
             },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5d319f16-5893-44a3-a6b8-1d10a4a33878"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -31633,7 +31455,7 @@
             {
               "__type": "Sandbox.ModelRenderer",
               "__guid": "439a20d6-5a51-4d16-9e58-5b6185c3c4af",
-              "__enabled": true,
+              "__enabled": false,
               "Flags": 0,
               "BodyGroups": 18446744073709551615,
               "CreateAttachments": false,
@@ -36858,6 +36680,100 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "4d4e4a1b-732a-4bfe-92be-8f50385b15a9",
+      "__version": 2,
+      "__Prefab": "prefabs/map/stoll.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3cc189a8-6d5b-4f23-bb19-6a7d7ed48792"
+            },
+            "Property": "Name",
+            "Value": "Stoll"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3cc189a8-6d5b-4f23-bb19-6a7d7ed48792"
+            },
+            "Property": "Position",
+            "Value": "200,-440,-544"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3cc189a8-6d5b-4f23-bb19-6a7d7ed48792"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.258819133,0.965925813"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "3cc189a8-6d5b-4f23-bb19-6a7d7ed48792": "4d4e4a1b-732a-4bfe-92be-8f50385b15a9",
+        "388aa9fc-f4d0-43d4-b060-1482f9c4dae1": "2a7415ba-1ef0-4e47-96cd-a07e336ad44b",
+        "da9e918f-308e-4f12-8155-dc8f9fae90ba": "7b6b8566-9659-41d3-954d-c524d6dbc3c1",
+        "75424e61-f77a-4487-9129-c78abad48feb": "a1ba3fdf-0c00-4136-bb40-c856d1a707a3",
+        "b9398d8b-a38a-43d6-9ffd-042280f1a446": "09600f58-96b5-4eaa-b952-fee190e69ad9",
+        "ed0423c3-7ff6-48bf-b693-ce04a9fb3db8": "80f26f49-6047-454a-b281-bd08ea796dd5",
+        "34571658-d625-4800-9274-4300876d8d69": "f807696a-3a97-4919-936e-bb9caa1c5ffb",
+        "892423b8-555b-4146-a892-c59fd4068afe": "0a5f76b4-80d7-47a6-a218-6cb27e8fc167",
+        "a793c233-9709-4f08-9539-fc54912c8de7": "04dfbe66-8ac8-4ee9-ad08-8b13b6ef596c"
+      }
+    },
+    {
+      "__guid": "082e12e5-e3d2-4dba-8d38-dc6d288645c5",
+      "__version": 2,
+      "__Prefab": "prefabs/map/stepladder.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3f575d97-f7d8-442f-af7f-add4d9f5556a"
+            },
+            "Property": "Name",
+            "Value": "StepLadder"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3f575d97-f7d8-442f-af7f-add4d9f5556a"
+            },
+            "Property": "Position",
+            "Value": "105.77549,-459.665558,-547.132324"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3f575d97-f7d8-442f-af7f-add4d9f5556a"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.0913247019,0.995821178"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "3f575d97-f7d8-442f-af7f-add4d9f5556a": "082e12e5-e3d2-4dba-8d38-dc6d288645c5",
+        "bac2db87-a41f-457a-9904-6a90bd843cda": "7def3ca1-d215-485c-ba18-236bb744572b",
+        "6e275c2d-c802-4503-9a5b-ae0f3dcb266f": "1953f75f-bc39-4ecb-b218-7685e0170ffd",
+        "be3e155a-0b2e-488f-bbff-18b929043e05": "dca1fb96-8f6f-46bd-b753-a02a1d2352c1",
+        "7d4ae63c-7d10-4000-8d86-ec5ef4214e31": "c05edb48-22d0-4928-955a-385c2b33c363",
+        "9225e281-ebec-494e-92af-7d4c63263f09": "c828fc57-4beb-4990-8667-77c9ad98cde4",
+        "2dc148e7-2be3-49bd-a13e-398ae205d96c": "830f4e5b-b878-49ec-8435-ae5664710da4",
+        "8ff938aa-4858-4163-8e6c-00285645aead": "9adf664a-49ca-4d2f-ab2d-4f0c7e2d8067",
+        "ad3a3ca1-85db-4baf-9930-17f8cd4aa2f3": "b3545711-fb1e-4d79-a05c-50f552465a84"
+      }
     }
   ],
   "SceneProperties": {
@@ -36991,7 +36907,6 @@
     "facepunch.electricalmeter#308522",
     "facepunch.glass_b#293145",
     "facepunch.industrial_shelving_01#275348",
-    "facepunch.kickstool#143317",
     "facepunch.light_bulb_fitting#143325",
     "facepunch.mattress#285511",
     "facepunch.modern_shelving_a2#279136",
@@ -36999,7 +36914,6 @@
     "facepunch.office_desk#282033",
     "facepunch.pot_02a#280202",
     "facepunch.reflectivity50trim#274174",
-    "facepunch.step_ladder_01#274743",
     "facepunch.step_ladder_02#274745",
     "facepunch.switch#308549",
     "facepunch.tablerounda#274748",
