@@ -1,6 +1,311 @@
 {
-  "__guid": "c99a2d9e-db59-4dcb-a1e0-abe8c74119cd",
+  "__guid": "8a55caa1-b568-460d-85e8-0c9e8c446f5b",
   "GameObjects": [
+    {
+      "__guid": "a1e94861-764b-4e38-b37e-e95ee9a47282",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "LobbyController",
+      "Position": "110.889534,-1164.77466,-361.464691",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.LobbyController",
+          "__guid": "71b38165-657b-46a1-ac52-ca916a855fd0",
+          "__enabled": true,
+          "Flags": 0,
+          "BotCount": 0,
+          "BotNominations": 0,
+          "BotRandomLooks": false,
+          "BotsFollowIntoRound": true,
+          "DefaultConsolidationSeconds": 12,
+          "DefaultHideSeconds": 90,
+          "DefaultHintSeconds": 60,
+          "DefaultHunterCount": 1,
+          "DefaultHuntSeconds": 220,
+          "DefaultRevealSeconds": 30,
+          "DefaultRoundMode": "Infection",
+          "DefaultStartCountdownSeconds": 4,
+          "DefaultTauntSeconds": 30,
+          "HunterPrefab": {
+            "_type": "gameobject",
+            "prefab": "prefabs/hunter.prefab"
+          },
+          "LaunchCountdownSeconds": 10,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "PropHoverRange": 300,
+          "PropPrefab": {
+            "_type": "gameobject",
+            "prefab": "prefabs/prop.prefab"
+          },
+          "SpawnPoint": null,
+          "SpawnPoints": [
+            {
+              "_type": "gameobject",
+              "go": "4ec2a0c9-6841-43e6-ad7b-b6223d2ba3f8"
+            },
+            {
+              "_type": "gameobject",
+              "go": "601f40e2-c6d8-449b-ad1e-6d802ca47b72"
+            },
+            {
+              "_type": "gameobject",
+              "go": "08361160-d357-4e20-9b9a-b6e009208a7d"
+            },
+            {
+              "_type": "gameobject",
+              "go": "dcbcfad5-35e3-4acf-a416-1d3efe9a40d4"
+            },
+            {
+              "_type": "gameobject",
+              "go": "efffb73e-b40b-4415-ae7c-99c78e8b5ddc"
+            },
+            {
+              "_type": "gameobject",
+              "go": "5fc35ac0-0929-43ff-a034-5a040c55b373"
+            },
+            {
+              "_type": "gameobject",
+              "go": "349c40b4-1e94-4779-a532-cb9d9a6c52c7"
+            },
+            {
+              "_type": "gameobject",
+              "go": "67cf0e15-0e0b-4e32-ab05-8ea41ad70286"
+            },
+            {
+              "_type": "gameobject",
+              "go": "31a94e74-d21f-46fa-806a-906275c3580a"
+            }
+          ]
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "fc46a55c-588c-45f9-a4f7-6e916bc5943c",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "RoundHUD",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.RoundHud",
+          "__guid": "ae33a6bb-8a58-4811-96d6-2b4aab867e73",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "d7efc125-fa85-4e7a-ae09-9ad1c3446ae0",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "9960d8d4-daa7-4731-9bfb-d66e1cf0c14d",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "GizmoController",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.GizmoSettings",
+          "__guid": "16cb21b3-75b6-47d0-8cdf-24b3fca5976c",
+          "__enabled": true,
+          "Flags": 0,
+          "DotRadius": 10.406712,
+          "DragOpacity": 0.2,
+          "FadeTime": 0.12,
+          "GizmoDepthBias": 10,
+          "GizmoScale": 1,
+          "HitboxPadding": 3,
+          "HotScale": 1.3,
+          "LineCapScale": 0.835443,
+          "MoveWidth": 6,
+          "OccludeRingBackHalf": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OutlineWidth": 0.7,
+          "PlaneOffsetFrac": 1.0566658,
+          "PlaneRounding": 0.44725737,
+          "PlaneScale": 0.12,
+          "ReferenceHeight": 1080,
+          "RingSegments": 64,
+          "RingWidth": 3,
+          "RotationRadius": 130,
+          "ScaleDotOffset": 28,
+          "ScreenMoveRounding": 0.35,
+          "ScreenMoveScale": 0.07924457,
+          "ScreenRingScale": 1.2,
+          "ShowPlaneSquares": true,
+          "ShowRotation": true,
+          "ShowScale": true,
+          "ShowScreenMove": true,
+          "ShowScreenRotation": true,
+          "ShowSliders": true,
+          "ShowTranslation": true,
+          "ShowUniformScale": true,
+          "SliderBlendMax": 15,
+          "SliderBuffer": 8,
+          "SliderOffset": 255,
+          "SliderRoundingMin": 0,
+          "SliderSpacing": 36.36675,
+          "SliderThickness": 6,
+          "SplineLineColor": "0.85,0.85,0.9,1",
+          "SplineLineHitScale": 0.45,
+          "SplineLineHoverOpacity": 0.5,
+          "SplineLineOpacity": 0.3,
+          "SplineLineWidth": 4,
+          "SplineMidDotRadius": 2.5,
+          "SplineMidDots": 0,
+          "SplinePointRadius": 16,
+          "SplineRadiusColor": "1,0.8,0.25,1",
+          "SplineRadiusDotScale": 0.7,
+          "Thickness": 2.2660944,
+          "TranslationMax": 204.98135,
+          "TranslationMin": 61.940144,
+          "TranslationOffset": 0,
+          "UniformScaleOffset": 150,
+          "UniformScaleRadius": 12,
+          "UniformScaleSensitivity": 150
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c6e033d3-4d28-4979-b6a7-d517cdec7c3a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "EditHUD",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "99c324dc-f5cb-48f9-a09e-9b1d279b605f",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
+        },
+        {
+          "__type": "Mimiclay.EditHud",
+          "__guid": "e1851a98-7494-4c17-a408-e869e628883c",
+          "__enabled": true,
+          "Flags": 0,
+          "AddPointCursor": "cursor-add",
+          "BlendCurve": 2.5,
+          "DistanceFromGizmo": 0,
+          "EditTransparency": 0,
+          "FadeTime": 0.12,
+          "HoverScale": 1.25,
+          "MetalAngle": 135,
+          "MetalDarken": 0.85,
+          "MetalSaturate": 0.4,
+          "MetalSheen": 0.3,
+          "MetalThreshold": 0.5,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OutlineDarken": 0.5,
+          "OutlineOpacity": 0.5609756,
+          "OutlineSaturate": 0.3,
+          "OutlineThickness": 2.5,
+          "PickerGap": 18,
+          "PickerSize": 190,
+          "ShowBounds": false,
+          "ShowLayers": true,
+          "ShowPalette": true,
+          "ShowPicker": true,
+          "ShowSliders": true,
+          "ShowTools": true,
+          "SliderDropFromGizmo": 0,
+          "SliderStackHeight": 100,
+          "SliderWidth": 400,
+          "SwatchRoundness": 14,
+          "SwatchSize": 35,
+          "SwatchSpacing": 5,
+          "UseShapeBounds": true
+        }
+      ],
+      "Children": []
+    },
     {
       "__guid": "82c0cdbc-3332-4253-946f-c6a26880270a",
       "__version": 2,
@@ -4226,55 +4531,6 @@
       "Children": []
     },
     {
-      "__guid": "6f84e222-b093-4448-aaec-545af33bcc84",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Map Mode Card",
-      "Position": "270.506439,-962.707275,-285.92804",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.MapModeCard",
-          "__guid": "585041da-37f3-42df-be03-45e91500e635",
-          "__enabled": true,
-          "Flags": 0,
-          "BotCount": 7,
-          "BotHunterPawns": true,
-          "BotRandomDisguises": true,
-          "ConsolidationSeconds": 12,
-          "CreativeHoverRange": 300,
-          "DebugSoloHide": false,
-          "DirectPlayGame": "PropHunt",
-          "DisableSceneCameras": true,
-          "HideSeconds": 5,
-          "HintSeconds": 10,
-          "HunterCount": 2,
-          "HuntSeconds": 210,
-          "Mode": "Teams",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OverrideRules": true,
-          "PlayAs": "Hunter",
-          "RevealSeconds": 30,
-          "StartCountdownSeconds": 4,
-          "TauntSeconds": 35
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "01b4883b-184f-4533-97b9-79c1b032b7c6",
       "__version": 2,
       "Flags": 0,
@@ -5150,7 +5406,7 @@
           "DefaultMaterial": "materials/plasticine_scene.vmat",
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 12:10:16",
+          "LastImport": "63 object(s), 67661 tris — 13:03:09",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -11171,24 +11427,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11241,24 +11481,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11311,24 +11535,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11381,24 +11589,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11451,24 +11643,8 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12037,8 +12213,24 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -12355,8 +12547,24 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -12461,8 +12669,24 @@
               "Type": "Component",
               "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d59742d2-1d36-4979-aeeb-7a7f9762cdfb"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -13771,6 +13995,14 @@
               "Type": "Component",
               "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           },
@@ -14766,92 +14998,6 @@
       }
     },
     {
-      "__guid": "d269caa8-c114-49ae-995f-fd4849f70e80",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Object",
-      "Position": "142.888809,-1131.01453,-390.621307",
-      "Rotation": "-2.22921371E-05,-7.20322132E-05,0.804773629,-0.593581796",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.RandomPropSpawner",
-          "__guid": "ec23cd06-4da4-4535-8e69-a00e4ec3becb",
-          "__enabled": true,
-          "Flags": 0,
-          "NoneChance": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Prefabs": [
-            {
-              "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerplate.prefab"
-            },
-            {
-              "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerbowl.prefab"
-            }
-          ],
-          "RandomizeRotation": true
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "5b6d2b91-aaa8-4b46-aa20-1475a9b47c1c",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Object (1)",
-      "Position": "245.162704,-1120.28418,-390.621307",
-      "Rotation": "-2.22921371E-05,-7.20322132E-05,0.804773629,-0.593581796",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.RandomPropSpawner",
-          "__guid": "123692a3-d4a4-4155-9951-15e2d897b814",
-          "__enabled": true,
-          "Flags": 0,
-          "NoneChance": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Prefabs": [
-            {
-              "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerplate.prefab"
-            },
-            {
-              "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerbowl.prefab"
-            }
-          ],
-          "RandomizeRotation": true
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "f2a378f0-8667-472e-be58-8aac69172ea0",
       "__version": 2,
       "Flags": 0,
@@ -15326,12 +15472,225 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "2e41828b-5ed1-493b-88fa-753e802b8054",
+      "__version": 2,
+      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Position",
+            "Value": "423.321198,-496.733337,-544.000061"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "2e41828b-5ed1-493b-88fa-753e802b8054",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "b7281a02-58d8-4411-b5b5-2a0f1e972ae5",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "a821073e-215c-4f30-9ff1-00f9d2ae54eb",
+        "48041871-1f1e-4913-a351-2ab601031e47": "b52eb305-c21c-425f-a390-f38cee9eeaa0",
+        "d3ff2571-7731-4874-993c-ee0571153e5b": "26bb0376-11bb-40fb-849d-1739e15a4056",
+        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "3d65f924-9ae7-4aef-b9a9-71a8e092edf0",
+        "184eaddd-bf97-4ced-9385-3da2eefe1902": "a099bcc3-449c-4421-9b69-5d6d635c854e",
+        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "461a365d-8739-4209-8557-e2dc1f61cff6",
+        "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "d9855bb5-7823-48a2-99b0-f3c24958bacb",
+        "f8586086-305a-40a0-88d1-50cbdb36bd85": "0eb09882-7b29-4a65-84a8-b53600be9321",
+        "21494caa-4cd1-4c82-afb7-de8e28c8743b": "0ec46189-b1f7-4af4-b0e5-9aae3b2990f6",
+        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "749fbfb1-597d-4762-9bf4-d185396d913b",
+        "a2de9064-2c2e-4a59-8931-f32adae878fe": "9261ae4a-2223-44ef-be2e-6c1e05c1cb70"
+      }
+    },
+    {
+      "__guid": "67d8bfb3-813a-400b-afc4-55571277f102",
+      "__version": 2,
+      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Name",
+            "Value": "jumppad (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Position",
+            "Value": "387.950104,-1062.84143,-544"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "67d8bfb3-813a-400b-afc4-55571277f102",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "d2278854-5fe5-4cb5-81b2-158f01088507",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "4717086d-70de-41b1-bb83-cfc29b4a5639",
+        "48041871-1f1e-4913-a351-2ab601031e47": "98e5184a-9f89-4de3-a309-956c0ae64229",
+        "d3ff2571-7731-4874-993c-ee0571153e5b": "e9e09503-5727-45da-9c0d-dda64a10e015",
+        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "d126e716-7fdb-4337-9e1c-cec6f5b2a966",
+        "184eaddd-bf97-4ced-9385-3da2eefe1902": "0d703595-4e84-489d-9b44-bd8a709f8c3f",
+        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "900e52a7-c6b6-4dc7-80dc-e5b80762c044",
+        "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "cdf361e9-7e01-48d7-87dd-f7e49121da34",
+        "f8586086-305a-40a0-88d1-50cbdb36bd85": "5714f465-c157-4953-8b24-439a363be163",
+        "21494caa-4cd1-4c82-afb7-de8e28c8743b": "ecd4e514-b8d7-44ad-855a-a9dfe7818f52",
+        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "163a7ab7-c445-4f91-bfaa-48490fd1b0ab",
+        "a2de9064-2c2e-4a59-8931-f32adae878fe": "1d83119f-dc76-4c86-9330-20e7c646bb65"
+      }
+    },
+    {
+      "__guid": "4e3449a1-4ca5-4f4f-bdc5-79f15d46bdbe",
+      "__version": 2,
+      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Name",
+            "Value": "jumppad (2)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0aa7984f-c3c1-4843-a9bd-dfa46f101e72"
+            },
+            "Property": "Position",
+            "Value": "-172.204422,-569.133179,-544.000061"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "4e3449a1-4ca5-4f4f-bdc5-79f15d46bdbe",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "e86caebf-5d4a-496e-9014-6f299ffb63c4",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "0f832b78-1602-454f-8fa6-6860bb5c2606",
+        "48041871-1f1e-4913-a351-2ab601031e47": "8b691ab8-071a-4cbd-9daf-ff49d578f7b6",
+        "d3ff2571-7731-4874-993c-ee0571153e5b": "ddc7d554-dce2-4d5b-aa97-a2e05c6a80ac",
+        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "c4c53768-b614-46d8-8ef4-fa03b6adf085",
+        "184eaddd-bf97-4ced-9385-3da2eefe1902": "91efcb26-a1d6-4768-8c79-61ab503136b1",
+        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "77aff1ea-f429-47c2-a06b-6f07bca6fd45",
+        "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "49c95fdd-c7c3-4e0d-a529-7caf4b0e34f5",
+        "f8586086-305a-40a0-88d1-50cbdb36bd85": "c84239e6-c7b7-4cad-9d30-85b327112476",
+        "21494caa-4cd1-4c82-afb7-de8e28c8743b": "8681dc83-3517-4ca7-abe9-f2daefe8541f",
+        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "df790d33-3b0a-4d35-9377-0d9977381480",
+        "a2de9064-2c2e-4a59-8931-f32adae878fe": "e5b1fe0b-7682-4fc2-9984-1e744f2fc29a"
+      }
+    },
+    {
+      "__guid": "16c23225-e7ca-4e6c-8b64-3582279581c3",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/dinnerplate.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "4a3496b6-23aa-4cd6-bca4-11fc555ad40e"
+            },
+            "Property": "Position",
+            "Value": "131.748474,-1206.42053,-389.696259"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "4a3496b6-23aa-4cd6-bca4-11fc555ad40e"
+            },
+            "Property": "Rotation",
+            "Value": "-3.36300582E-06,7.0720911E-05,0.0237452015,0.99971807"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "4a3496b6-23aa-4cd6-bca4-11fc555ad40e": "16c23225-e7ca-4e6c-8b64-3582279581c3",
+        "3cfdbaa4-fd6a-48be-850a-d294db05d7fc": "ed7004be-a621-48b6-b1ee-1940eebd9230",
+        "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908": "3628f003-c2df-4463-a56e-ad4eecbc422e",
+        "8369c507-159f-4553-b20c-05d88e33293a": "cb2a433b-ef73-4bee-a9a3-967ff5ae525a",
+        "94a734bb-fc07-48fe-835c-3dd000fd3533": "0d642be4-45c1-4d78-be69-65edcae0ecfd",
+        "fa0e4965-975b-4fde-abcf-065c459582cb": "ebc6ae0b-3912-4510-8c90-d62e5bcd7609",
+        "864bc9ce-d854-43f8-886c-94a37701c6ab": "c3f575e0-2e82-4f42-a23d-d4eaeccde9dc",
+        "db27b4ae-61ec-4d0b-ae2d-01b78213ee75": "20c1332e-6764-49bf-98d9-eb27fd590a61"
+      }
+    },
+    {
+      "__guid": "4ce1d459-f138-4bf2-ad2d-74c81fba5972",
+      "__version": 2,
+      "__Prefab": "prefabs/saved/dinnerbowl.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "2ada7de6-6224-43b4-91f3-17b86d5894a0"
+            },
+            "Property": "Position",
+            "Value": "87.6978302,-1116.75244,-390.195984"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "2ada7de6-6224-43b4-91f3-17b86d5894a0"
+            },
+            "Property": "Rotation",
+            "Value": "0.000154137611,0.000190317631,-0.591159046,0.806555033"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "2ada7de6-6224-43b4-91f3-17b86d5894a0": "4ce1d459-f138-4bf2-ad2d-74c81fba5972",
+        "4013d174-535f-42fd-a9e1-43eb6a3405df": "12a9c060-9462-4fe3-adaf-a19edd9a38dc",
+        "26f041df-abb4-46f0-bbcf-59e3dfdce0ac": "a9447544-08c6-451f-a968-8d569d536c89",
+        "6625adfb-86e2-4bac-8d28-54381d2f524c": "6e79863a-ea75-4b33-bf93-6115cf8dbbd1",
+        "0c5b2c1e-d389-4eb4-8b62-2b28599f0d07": "6c3727c7-4a7d-48d2-9a1a-4d3b4e523643",
+        "a45e5e90-e8b0-47dc-9e99-2165e8671ee0": "2cbeade9-2202-417b-8d91-6dfd5199502b",
+        "dc7c086d-b773-47a4-9202-935801cc8665": "85611d0c-0ef7-478b-adf5-fc4a365e2251",
+        "3f7d4998-4dbe-462d-917d-7e1788f04e99": "28fb6873-1118-4136-b353-1223ea972724"
+      }
     }
   ],
   "SceneProperties": {
     "NetworkInterpolation": true,
     "TimeScale": 1,
-    "WantsSystemScene": true,
+    "WantsSystemScene": false,
     "Metadata": {},
     "NavMesh": {
       "Enabled": false,

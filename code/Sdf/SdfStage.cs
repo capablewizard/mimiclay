@@ -501,27 +501,44 @@ public sealed class SdfStage : IDisposable
 		var cosH = MathF.Cos( halfFov );
 
 		float dist;
+		var aim = centre;
 		if ( _fitPrimitives.Count > 0 )
 		{
 			// The four side planes' inward unit normals for a camera looking along rot.Forward. The render
 			// target is square, so the vertical pair uses the same half-angle as the horizontal.
-			var n0 = rot.Forward * sinH - rot.Right * cosH;
-			var n1 = rot.Forward * sinH + rot.Right * cosH;
-			var n2 = rot.Forward * sinH - rot.Up * cosH;
-			var n3 = rot.Forward * sinH + rot.Up * cosH;
+			var n0 = rot.Forward * sinH - rot.Right * cosH; // limits content on the +Right side
+			var n1 = rot.Forward * sinH + rot.Right * cosH; // −Right
+			var n2 = rot.Forward * sinH - rot.Up * cosH;    // +Up
+			var n3 = rot.Forward * sinH + rot.Up * cosH;    // −Up
 
-			dist = 1f;
+			// Per-plane requirement: inside the plane through the camera needs
+			// dot(shapeCentre - camera, n) ≥ support(n), so each plane wants at least
+			// support(n) - dot(shapeCentre - aim, n) of dist·sinH. Support is symmetric, so the same value
+			// serves n and -n.
+			float a = float.MinValue, b = float.MinValue, c = float.MinValue, d = float.MinValue;
 			foreach ( var p in _fitPrimitives )
 			{
-				// Inside the plane through the camera (at centre - Forward·dist) needs
-				// dot(shapeCentre - camera, n) ≥ support(n); dot(Forward, n) = sinH turns that straight into a
-				// minimum distance. Support is symmetric, so the same value serves n and -n.
 				var d0 = p.Centre - centre;
-				dist = MathF.Max( dist, (p.Support( n0 ) - Vector3.Dot( d0, n0 )) / sinH );
-				dist = MathF.Max( dist, (p.Support( n1 ) - Vector3.Dot( d0, n1 )) / sinH );
-				dist = MathF.Max( dist, (p.Support( n2 ) - Vector3.Dot( d0, n2 )) / sinH );
-				dist = MathF.Max( dist, (p.Support( n3 ) - Vector3.Dot( d0, n3 )) / sinH );
+				a = MathF.Max( a, p.Support( n0 ) - Vector3.Dot( d0, n0 ) );
+				b = MathF.Max( b, p.Support( n1 ) - Vector3.Dot( d0, n1 ) );
+				c = MathF.Max( c, p.Support( n2 ) - Vector3.Dot( d0, n2 ) );
+				d = MathF.Max( d, p.Support( n3 ) - Vector3.Dot( d0, n3 ) );
 			}
+
+			// CENTRE the subject, don't just contain it: aiming at the union box's centre put anything with an
+			// off-mass protrusion (a ball with a stem, a fuse, an antenna) visibly off-frame — the box centre
+			// sits between the mass and the protrusion tip, nowhere near the visual middle, which read as "the
+			// pivot is wrong" and left half the icon empty. Shifting the aim along each screen axis by the
+			// imbalance between that axis's two plane requirements splits the slack evenly — which both centres
+			// the render and MINIMISES the distance (the fit is tangent on the wider pair's both sides at once),
+			// so it's strictly better framing, never a trade.
+			aim = centre
+				+ rot.Right * ((a - b) / (2f * cosH))
+				+ rot.Up * ((c - d) / (2f * cosH));
+
+			// With the slack balanced, each pair needs the AVERAGE of its two requirements; the tighter pair
+			// rides along centred inside the wider one's fit.
+			dist = MathF.Max( 1f, MathF.Max( a + b, c + d ) / (2f * sinH) );
 
 			// Margin scales the fitted distance, exactly as it scaled the sphere fit — with the fit now honest,
 			// it's purely the breathing room for the ink outline (drawn OUTSIDE the silhouette) and the boil
@@ -552,7 +569,10 @@ public sealed class SdfStage : IDisposable
 
 		camera.World = World;
 		camera.FieldOfView = f;
-		camera.Position = centre - rot.Forward * dist;
+		// Backed off from the AIM point (the slack-balanced frame centre), not the box centre. The aim shift is
+		// perpendicular to Forward, so every depth quantity below — measured from the box centre along Forward —
+		// is unaffected by it.
+		camera.Position = aim - rot.Forward * dist;
 		camera.Rotation = rot;
 		// Bracket the box itself, with a subject-sized pad so displacement pushing the silhouette out past the
 		// SDF bounds can't get clipped by the near/far planes.

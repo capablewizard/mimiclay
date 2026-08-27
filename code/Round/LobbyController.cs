@@ -25,7 +25,7 @@ public sealed class LobbyController : Component
 	public static LobbyController Current { get; private set; }
 
 	/// <summary>The lobby scene, loaded on hosting a Prop Hunt session and returned to after each round.</summary>
-	public const string LobbyScene = "scenes/lobby.scene";
+	public const string LobbyScene = "scenes/kitchenlobby.scene";
 
 	/// <summary>Lobby cap when we self-host (pressing Play directly on this scene).</summary>
 	public const int MaxLobbyPlayers = 8;
