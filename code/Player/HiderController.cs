@@ -117,7 +117,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	[Property, Group( "Camera" )] public float ZoomSpeed { get; set; } = 0.01f;
 	[Property, Group( "Camera" )] public float PanSpeed { get; set; } = 1.0f;
 	[Property, Group( "Camera" )] public float MinDistance { get; set; } = 24f;
-	[Property, Group( "Camera" )] public float MaxDistance { get; set; } = 2000f;
+	[Property, Group( "Camera" )] public float MaxDistance { get; set; } = 500f;
 
 	/// <summary>Off = the camera boom no longer pulls in when geometry blocks it, so it keeps its full
 	/// distance and clips through walls instead.</summary>

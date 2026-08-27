@@ -30,7 +30,7 @@ public sealed class OrbitCameraController : Component
 
 	[Property] public float DefaultDistance { get; set; } = 200f;
 	[Property] public float MinDistance { get; set; } = 24f;
-	[Property] public float MaxDistance { get; set; } = 2000f;
+	[Property] public float MaxDistance { get; set; } = 500f;
 
 	/// <summary>Pitch limits for orbit and free-look. Default to near-vertical; an owner (e.g. the hider) can
 	/// tighten them.</summary>

@@ -43,7 +43,7 @@
         "GroundRestGap": 4,
         "GroundSnapSpeed": 300,
         "JumpPower": 300,
-        "MaxDistance": 2000,
+        "MaxDistance": 500,
         "MaxPitch": 89,
         "MinDistance": 24,
         "MinPitch": -89,
