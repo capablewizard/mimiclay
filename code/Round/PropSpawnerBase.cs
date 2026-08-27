@@ -686,7 +686,29 @@ public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 
 		foreach ( var renderer in go.Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
 		{
-			if ( !renderer.IsValid() || !renderer.SceneObject.IsValid() )
+			// Model-less ModelRenderer: contributes NOTHING renderable, but its SceneObject still reports a
+			// default box around the origin. Every SDF prefab carries a ShadowsOnly ModelRenderer whose Model is
+			// null in the prefab file until the sculpture's ASYNC rebuild fills it in, so a bounds probe (or a
+			// freshly-cloned pick) measured on the very frame it was enabled would otherwise union a phantom box.
+			if ( !renderer.IsValid() || renderer.Model is null || !renderer.SceneObject.IsValid() )
+				continue;
+
+			// And once the model IS there, a sculpture's own renderer is still the wrong thing to measure — it's
+			// the single biggest cause of floating clay props. SurfaceNetsMesher stamps the mesh's Bounds from
+			// the grid it sampled (SurfaceNetsMesher.Upload -> mesh.Bounds = data.Bounds -> MeshGrid.Bounds),
+			// and that grid is sized from Sdf.TryGetBounds PADDED BY A CELL. TryGetBounds unions ADD brushes
+			// only, so the box reaches to the additive silhouette's underside — not the real surface — and then
+			// a whole grid cell lower still. Measured live: toy_car's real bottom is -149.6 while its renderer
+			// claims -168.0, spoonjar -388.2 vs -400.0, platestack -385.7 vs -400.0. Since Include() UNIONS,
+			// that box always won over the honest SDF measurement below, and AlignToGround dutifully sat the
+			// phantom underside on the floor — hanging the prop in the air by the difference. Which is why the
+			// worst offenders were exactly the shapes with a bottom-facing Subtract or a low pivot, and why
+			// solid blocks only floated by the ~1-unit grid padding and read as fine.
+			//
+			// A sculpture's mesh geometry is ALREADY measured exactly, from real vertex positions, in the loop
+			// below — so skipping its renderer here loses nothing at all. Renderers on objects WITHOUT a
+			// sculpture are ordinary props whose model bounds are real, and still count.
+			if ( renderer.Components.Get<SdfSculpture>() is not null )
 				continue;
 
 			Include( renderer.SceneObject.Bounds.Mins );
