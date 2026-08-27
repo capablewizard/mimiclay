@@ -26427,7 +26427,7 @@
               "__enabled": true,
               "Flags": 0,
               "Bounds": {
-                "Mins": "-101.814438,-40,-80",
+                "Mins": "-101.814438,-40,-6",
                 "Maxs": "256,32,187.332642"
               },
               "Count": 10,
@@ -26774,6 +26774,10 @@
                 {
                   "_type": "gameobject",
                   "prefab": "prefabs/saved/candelabra.prefab"
+                },
+                {
+                  "_type": "gameobject",
+                  "prefab": "prefabs/castlecourtyard/candelabra.prefab"
                 }
               ],
               "RandomizeRotation": true
@@ -28709,14 +28713,6 @@
             },
             "Property": "Rotation",
             "Value": "0.28469637,-0.28469637,-0.647261858,0.647261858"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cf4247dd-ebcf-44e4-acab-20d5c04dcb38"
-            },
-            "Property": "__enabled",
-            "Value": false
           },
           {
             "Target": {
@@ -31637,7 +31633,7 @@
             {
               "__type": "Sandbox.ModelRenderer",
               "__guid": "439a20d6-5a51-4d16-9e58-5b6185c3c4af",
-              "__enabled": false,
+              "__enabled": true,
               "Flags": 0,
               "BodyGroups": 18446744073709551615,
               "CreateAttachments": false,
@@ -36727,6 +36723,141 @@
           "Children": []
         }
       ]
+    },
+    {
+      "__guid": "3c22963d-afe7-485e-b711-36313bc0a516",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Collider",
+      "Position": "898.809387,-1352,-508.7659",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "cc4bf8f0-2c54-4059-a813-b18627dc58ad",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "3,-7,17",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "130,92,84",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "8d50d7b0-5e14-4012-a717-0f9e730ebecd",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Collider (1)",
+      "Position": "1146,-1352,-508.7659",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "9bef87c4-a1f0-42ac-9749-682b9bcd58cb",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "3,-7,17",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "130,92,84",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "2322bae6-3a67-4cb8-84f9-9be24550dec5",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Collider (2)",
+      "Position": "1025,-1352,-425",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "9a4903bd-87b1-40f3-8b59-9b6a76bca3a0",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "-3.5,-7,44",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "131,92,138",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
