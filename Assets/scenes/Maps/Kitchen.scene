@@ -4490,11 +4490,11 @@
       "Children": []
     },
     {
-      "__guid": "4ec2a0c9-6841-43e6-ad7b-b6223d2ba3f8",
+      "__guid": "bf520bd1-8a53-4b8b-b216-abdce7dfae0b",
       "__version": 2,
       "Flags": 0,
-      "Name": "Spawn",
-      "Position": "182.646576,-1164.77466,-392.552612",
+      "Name": "spawns",
+      "Position": "110.889534,-1164.77466,-361.464691",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -4504,22 +4504,297 @@
       "NetworkOrphaned": 0,
       "NetworkTransmit": true,
       "OwnerTransfer": 1,
-      "Components": [
+      "Components": [],
+      "Children": [
         {
-          "__type": "Mimiclay.RoundSpawnPoint",
-          "__guid": "2881cca7-3d09-4bbf-b7d8-767ecb2438af",
-          "__enabled": true,
+          "__guid": "4ec2a0c9-6841-43e6-ad7b-b6223d2ba3f8",
+          "__version": 2,
           "Flags": 0,
-          "HunterStart": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "Name": "HunterSpawn",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "2881cca7-3d09-4bbf-b7d8-767ecb2438af",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "601f40e2-c6d8-449b-ad1e-6d802ca47b72",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "HunterSpawn",
+          "Position": "67.5849686,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "fe5f1db4-901e-4e18-85c7-3300e6790dde",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "08361160-d357-4e20-9b9a-b6e009208a7d",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "HunterSpawn",
+          "Position": "118.59864,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "b4f5a454-e195-4906-a346-928fe5f47a6e",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "dcbcfad5-35e3-4acf-a416-1d3efe9a40d4",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "HunterSpawn",
+          "Position": "181.384003,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "53329fde-06f3-4b8a-a347-c4f00dc77e84",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "efffb73e-b40b-4415-ae7c-99c78e8b5ddc",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "PropSpawn",
+          "Position": "-232.476288,567.86322,-182.532806",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "50f32bf9-ca7d-487a-94d4-5b97d2d54532",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": false,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "5fc35ac0-0929-43ff-a034-5a040c55b373",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "PropSpawn (1)",
+          "Position": "131.677368,518.258728,-182.532806",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "04519205-655b-4b17-9455-9660eaf3179f",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": false,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "349c40b4-1e94-4779-a532-cb9d9a6c52c7",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "PropSpawn (2)",
+          "Position": "-85.6772232,235.689514,-182.532806",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "2d29ed37-59d1-400a-8f20-8ed412d4cb48",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": false,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "67cf0e15-0e0b-4e32-ab05-8ea41ad70286",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "PropSpawn (3)",
+          "Position": "260.625946,243.236511,-182.532806",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "87be6b63-d00c-4ddb-ab55-3ba8e19943a2",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": false,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "31a94e74-d21f-46fa-806a-906275c3580a",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "PropSpawn (4)",
+          "Position": "132.740356,805.812012,-21.8351135",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.RoundSpawnPoint",
+              "__guid": "2571dccc-d4dc-4440-9960-18f63a4d90ee",
+              "__enabled": true,
+              "Flags": 0,
+              "HunterStart": false,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
         }
-      ],
-      "Children": []
+      ]
     },
     {
       "__guid": "8b5d9312-6385-4790-bad4-5f029741736e",
@@ -10525,8 +10800,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -10841,8 +11132,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -10895,8 +11202,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -10949,8 +11272,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11003,8 +11342,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11057,8 +11412,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11111,8 +11482,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11165,8 +11552,24 @@
               "Type": "Component",
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13409,14 +13812,6 @@
                 "BoundingRadius": 3.7116888
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
-            },
-            "Property": "__enabled",
-            "Value": false
           },
           {
             "Target": {
