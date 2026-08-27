@@ -10153,17 +10153,17 @@
           "Flags": 0,
           "ColliderFlags": 0,
           "Collision": "Mesh",
-          "Color": "1,1,1,1",
+          "Color": "0.15294,0.46275,0.48235,1",
           "Elasticity": null,
           "Friction": null,
           "HideInGame": false,
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "2e243bbf-e840-8a20-826e-51d7e12ef3a1"
+              "$blob": "8c2eb60a-8503-82e2-bd1d-b645b37fd696"
             },
             "Materials": [
-              "materials/subzero-studios/tiles/tiles013.vmat"
+              "materials/tiles/tiles_a_alt.vmat"
             ]
           },
           "OnComponentDestroy": null,
@@ -37728,8 +37728,7 @@
     "facepunch.wooden_chair_a#274758",
     "facepunch.wooden_desk_01#275098",
     "facepunch.wooden_door_01c#275040",
-    "rust.field_day_01a#43853",
-    "subzerostudios.tiles013#148371"
+    "rust.field_day_01a#43853"
   ],
   "__version": 3
 }
