@@ -58,8 +58,6 @@ public sealed class RandomVolumeSpawner : PropSpawnerBase
 	// without already being selected — same reasoning as the always-on EditorHandle icon.
 	protected override void DrawRegionGizmo()
 	{
-		Gizmo.Transform = WorldTransform;
-
 		if ( Gizmo.IsSelected )
 		{
 			var bounds = Bounds;
