@@ -196,6 +196,19 @@ public sealed class HunterGun : Component
 	/// spawn, per shot, so it's live-tweakable between shots.</summary>
 	[Property, Group( "Effects" ), Range( 0.25f, 4f )] public float ViewFlashScale { get; set; } = 1f;
 
+	/// <summary>The tracer prefab, cloned once per pellet on every shot — a streak from the barrel tip to
+	/// wherever that pellet landed. Wants a <see cref="TracerEffect"/> somewhere in it (see the engine's
+	/// <c>prefabs/effects/default_tracer.prefab</c> for the shape of one); its EndPoint is overwritten per
+	/// shot with the real hit position. Cosmetic and local like the muzzle flash — every machine clones its
+	/// own off the shot RPC, only the hit POSITIONS cross the wire. Empty/missing prefab just loses the
+	/// tracer.</summary>
+	[Property, Group( "Effects" )] public PrefabFile TracerPrefab { get; set; }
+
+	/// <summary>Streak every pellet in the scatter, not just the central crosshair one. On, because the
+	/// shot already carves a crater per pellet — a single tracer down the middle visibly disagrees with the
+	/// four holes that appear. Off gives the one-in-N tracer-round look instead.</summary>
+	[Property, Group( "Effects" )] public bool TracerAllPellets { get; set; } = true;
+
 	/// <summary>Material override for the VIEW clone's raymarch (world model keeps the prefab's). Point it
 	/// at plasticine_viewmodel.vmat — its F_TRANSLUCENT feature selects the shader's translucent LIGHTING
 	/// variant, whose shading skips the screen-space passes (SSAO sample, contact-shadow mask) entirely.
@@ -532,12 +545,13 @@ public sealed class HunterGun : Component
 	/// separate, HunterController's ShotKick). The world model starts its decaying hand jolt everywhere;
 	/// the viewmodel takes a velocity impulse into its live springs (owner-side only — elsewhere the
 	/// springs are dormant and reseed on the next first-person frame, which would wipe it anyway).</summary>
-	public void Kick()
+	public void Kick( Vector3[] tracerEnds = null )
 	{
 		_worldKick = 1f;
 
 		// Before the seeded gate: proxies never seed the view springs, but their world gun still flashes.
 		SpawnMuzzleFlash();
+		SpawnTracers( tracerEnds );
 
 		if ( !_motionSeeded )
 			return;
@@ -575,7 +589,66 @@ public sealed class HunterGun : Component
 		if ( _lastFirstPerson && !ViewFlashScale.AlmostEqual( 1f ) )
 			ScaleFlash( flash, ViewFlashScale );
 
-		ExpireFlash( flash );
+		ExpireEffect( flash );
+	}
+
+	/// <summary>One tracer clone per pellet, streaking from the on-screen barrel tip to where that pellet
+	/// actually landed. <paramref name="ends"/> are world hit positions rolled by the SHOOTER and shipped in
+	/// the shot RPC (index 0 is the central crosshair pellet) — everything else about the effect is local.
+	/// </summary>
+	void SpawnTracers( Vector3[] ends )
+	{
+		if ( TracerPrefab is null || ends is not { Length: > 0 } )
+			return;
+
+		var muzzle = _lastFirstPerson ? _viewMuzzle : _worldMuzzle;
+		if ( !muzzle.IsValid() )
+			return;
+
+		// Same on-screen barrel tip the flash uses, so in first person the streak leaves the gun where the
+		// gun LOOKS like it is (viewmodel FOV re-projection) rather than where it truly sits.
+		var start = MuzzleFlashPosition( muzzle );
+
+		int count = TracerAllPellets ? ends.Length : 1;
+		for ( int i = 0; i < count; i++ )
+			SpawnTracer( start, ends[i] );
+	}
+
+	void SpawnTracer( Vector3 start, Vector3 end )
+	{
+		var tracer = SceneUtility.GetPrefabScene( TracerPrefab )?.Clone();
+		if ( !tracer.IsValid() )
+			return;
+
+		tracer.Tags.Add( CloneTag ); // same skip-tag as the gun clones, so pawn-wide sweeps never adopt it
+
+		// Deliberately NOT parented to the muzzle, unlike the flash. TracerEffect re-reads its own
+		// WorldPosition and EndPoint EVERY frame to rebuild the line (see its OnPreRender), so a tracer
+		// hanging off the gun would drag its start point around with the recoil jolt and — far worse — with
+		// the shooter's aim, whipping the whole beam sideways on a flick. A bullet streak is two fixed world
+		// points; leaving the clone at the scene root is what keeps them fixed.
+		//
+		// Rotation is left alone for the same reason the flash needs one set: the flash's cone emitters spray
+		// along their object's forward, but the tracer builds its line from start/end in WORLD space while
+		// also handing its WorldTransform to the SceneLineObject — so any rotation here is a chance to have
+		// the line transformed twice. It doesn't need one.
+		tracer.WorldPosition = start;
+
+		// The ITargetedEffect pair rather than poking EndPoint directly: SetStartPoint drives each effect's
+		// own WorldPosition, so a prefab that nests its TracerEffect under an offset child still starts at
+		// the barrel instead of that child's authored offset. SceneAnchor takes a bare Vector3 as a fixed
+		// WORLD anchor — which is what a hitscan impact is. Anchoring it to the object we hit would make the
+		// streak chase a prop that's already running away.
+		foreach ( var effect in tracer.Components.GetAll<TracerEffect>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			effect.SetStartPoint( start );
+			effect.SetTarget( end );
+		}
+
+		// TracerEffect is an ITemporaryEffect and reports itself finished once the tail passes the end point,
+		// so a prefab with the engine's TemporaryEffect on it retires itself the moment the streak lands.
+		// This is only the backstop for a prefab authored without one.
+		ExpireEffect( tracer );
 	}
 
 	// Particle SIZES are world-unit values that ignore transform scale (the sim writes p.Size straight from
@@ -606,14 +679,15 @@ public sealed class HunterGun : Component
 		return _lastEye + _lastAim * new Vector3( rel.x, rel.y * s, rel.z * s );
 	}
 
-	// The flash is a one-shot (the smoke tail lives ~2s) and GameObject has no delayed destroy — retire the
-	// clone once every particle is long dead, same as the caught puff. Component.Task cancels this on pawn
-	// teardown, and the clone hangs under the gun hierarchy, so it dies with the pawn either way.
-	async void ExpireFlash( GameObject flash )
+	// A one-shot cosmetic clone (the flash's smoke tail lives ~2s; a tracer normally retires itself well
+	// before this through its own TemporaryEffect) and GameObject has no delayed destroy — retire it once
+	// every particle is long dead, same as the caught puff. Component.Task cancels this on pawn teardown,
+	// and the flash hangs under the gun hierarchy, so it dies with the pawn either way.
+	async void ExpireEffect( GameObject effect )
 	{
 		await Task.DelaySeconds( 2.5f );
-		if ( flash.IsValid() )
-			flash.Destroy();
+		if ( effect.IsValid() )
+			effect.Destroy();
 	}
 
 	// A clone's authored "Muzzle" child — a direct child of the gun prefab's root, cloned along with it.

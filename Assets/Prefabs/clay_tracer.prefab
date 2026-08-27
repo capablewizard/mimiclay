@@ -1,0 +1,126 @@
+{
+  "RootObject": {
+    "__guid": "4a1f7c39-6b28-4d5e-9a03-c7e1b2f84d60",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "clay_tracer",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0,1",
+    "Scale": "1,1,1",
+    "Tags": "",
+    "Enabled": true,
+    "NetworkMode": 0,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "TemporaryEffect",
+        "__guid": "9c4b1e07-2d63-4f81-b5a9-3e6c8d10f7a2",
+        "__enabled": true,
+        "Flags": 0,
+        "BecomeOrphan": false,
+        "DestroyAfterSeconds": 2,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "WaitForChildEffects": true
+      },
+      {
+        "__type": "Sandbox.TracerEffect",
+        "__guid": "1d8a5f62-7e04-4c39-8b1d-6f2a9c53e4b8",
+        "__enabled": true,
+        "Flags": 0,
+        "CastShadows": false,
+        "DistancePerSecond": 11000,
+        "EnableLight": false,
+        "EndCap": "Rounded",
+        "EndPoint": {
+          "LocalPosition": "0,0,0",
+          "LocalRotation": "0,0,0,0",
+          "Parent": null,
+          "IsAnchored": false,
+          "Position": "0,0,0"
+        },
+        "Length": 260,
+        "LightColor": {
+          "blend": "Linear",
+          "color": [
+            { "t": 0, "c": "1,0.78,0.5,1" },
+            { "t": 1, "c": "1,0.78,0.5,1" }
+          ],
+          "alpha": null
+        },
+        "LightPosition": 0,
+        "LightRadius": {
+          "rangey": "0,128",
+          "frames": [
+            { "x": 0, "y": 1, "in": 1, "out": -1, "mode": "Mirrored" },
+            { "x": 1, "y": 0, "in": 1, "out": -1, "mode": "Mirrored" }
+          ]
+        },
+        "LineColor": {
+          "blend": "Linear",
+          "color": [
+            { "t": 0, "c": "6,4.1,2.2,1" },
+            { "t": 1, "c": "1.6,0.9,0.4,0" }
+          ],
+          "alpha": []
+        },
+        "LineWidth": [
+          { "x": 0, "y": 1.1, "in": 0, "out": 0, "mode": "Linear" },
+          { "x": 1, "y": 0, "in": 0, "out": 0, "mode": "Linear" }
+        ],
+        "Material": null,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Opaque": false,
+        "RenderOptions": {
+          "GameLayer": true,
+          "OverlayLayer": false,
+          "BloomLayer": false,
+          "AfterUILayer": false
+        },
+        "StartCap": "Rounded",
+        "StartDistance": 90
+      }
+    ],
+    "Children": [],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [],
+  "__version": 2
+}

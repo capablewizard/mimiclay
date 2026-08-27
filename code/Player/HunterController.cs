@@ -63,6 +63,18 @@ public sealed class HunterController : Component
 	/// darker than the clay reads as scorched/fresh-cut material.</summary>
 	[Property, Group( "Weapon" )] public Color CarveColor { get; set; } = new( 0.42f, 0.26f, 0.2f );
 
+	/// <summary>Spawned at each pellet that lands on CLAY — a sculpture, a prop's disguise, a hunter's head.
+	/// Oriented so its forward points back out along the surface normal, so a cone-emitting prefab sprays
+	/// away from the wall it hit. Cloned locally on every machine off the shot RPC (only the impact
+	/// positions/normals cross the wire), and purely cosmetic — the crater is the real damage.</summary>
+	[Property, Group( "Weapon" )] public PrefabFile ClayImpactPrefab { get; set; }
+
+	/// <summary>Spawned at each pellet that lands on anything that ISN'T clay — map geometry, furniture,
+	/// the floor. Same orientation and networking deal as <see cref="ClayImpactPrefab"/>. Split from it
+	/// because clay wants a spray of its own chunks and everything else wants generic dust and sparks; a
+	/// single shared effect reads as wrong on one of the two whichever way you tune it.</summary>
+	[Property, Group( "Weapon" )] public PrefabFile WorldImpactPrefab { get; set; }
+
 	/// <summary>Recoil: degrees the shooter's own view kicks up per shot. Render-only (a CameraEffectSystem
 	/// punch composed into the view, never the camera transform) — the actual aim never moves, so holding
 	/// the crosshair on a prop through the kick still hits. 0 = no kick.</summary>
@@ -2352,10 +2364,61 @@ public sealed class HunterController : Component
 
 		_nextShot = ShootCooldown;
 
-		// Every machine plays the bang and nearby cameras rattle (the RPC also runs locally). The EVENT is
-		// what's broadcast — each machine plays its own prefab-authored ShootSound, so no asset reference
-		// crosses the wire.
-		BroadcastShotEffects();
+		// Every pellet is traced UP FRONT, before anything is broadcast or carved. The shot RPC now also
+		// carries the tracer end points, and one RPC with the whole formation beats one per pellet — but it
+		// can only carry them if the traces have already happened. The randomness is still rolled once, here,
+		// by the shooter (exactly as the carves already do) so every machine draws the identical spread.
+		// Index 0 is the CENTRAL pellet: exactly the crosshair ray, full carve size, and the ONLY pellet that
+		// counts for catching props — hit registration must never depend on a random scatter roll.
+		var dirs = new Vector3[Math.Max( 1, CarvePellets )];
+		var traces = new SceneTraceResult[dirs.Length];
+		var radii = new float[dirs.Length];
+
+		dirs[0] = dir;
+		radii[0] = CarveRadius;
+
+		// SCATTER pellets: purely cosmetic buckshot — random directions inside the CarveScatter cone, each
+		// carving a smaller crater. The shooter broadcasts concrete positions and radii, so every machine
+		// ends up with the identical formation without any seed syncing.
+		for ( int i = 1; i < dirs.Length; i++ )
+		{
+			// Uniform disc sample in angle space (sqrt for area-uniform), rotated into the aim frame.
+			float ang = Game.Random.Float( 0f, MathF.Tau );
+			float off = MathF.Sqrt( Game.Random.Float( 0f, 1f ) ) * CarveScatter;
+			dirs[i] = (aimRot * Rotation.From( new Angles(
+				MathF.Sin( ang ) * off, MathF.Cos( ang ) * off, 0f ) )).Forward;
+			radii[i] = CarveRadius * Game.Random.Float( 0.45f, 0.8f );
+		}
+
+		// A tracer wants somewhere to fly to whether or not the pellet hit anything — a shot into open sky
+		// still streaks, out to the weapon's range. The impact effect is the opposite: it only exists where
+		// something was actually struck, and which of the two prefabs plays depends on whether that something
+		// was clay. Both masks are bitfields over the pellet index rather than bool[] — CarvePellets caps at
+		// 8, so the whole formation's hit/material state is two ints on the wire instead of two arrays.
+		var tracerEnds = new Vector3[dirs.Length];
+		var normals = new Vector3[dirs.Length];
+		int hitMask = 0, clayMask = 0;
+
+		for ( int i = 0; i < dirs.Length; i++ )
+		{
+			traces[i] = TraceShot( from, dirs[i] );
+			tracerEnds[i] = traces[i].Hit ? traces[i].EndPosition : from + dirs[i] * Range;
+			normals[i] = traces[i].Hit ? traces[i].Normal : -dirs[i];
+
+			if ( !traces[i].Hit )
+				continue;
+
+			hitMask |= 1 << i;
+			if ( IsClaySurface( traces[i].GameObject ) )
+				clayMask |= 1 << i;
+		}
+
+		// Every machine plays the bang, streaks the tracers, spits the impacts and nearby cameras rattle (the
+		// RPC also runs locally). The EVENT plus the pellet impact POSITIONS are what's broadcast — each
+		// machine plays its own prefab-authored ShootSound and clones its own effect prefabs, so no asset
+		// reference crosses the wire. Still ahead of the carve broadcasts below, so the bang always lands
+		// before its craters.
+		BroadcastShotEffects( tracerEnds, normals, hitMask, clayMask );
 
 		// Recoil for the shooter. Owner-side only — proxies feel this shot through the epicenter shake in
 		// the RPC instead.
@@ -2364,9 +2427,7 @@ public sealed class HunterController : Component
 				new Angles( -ShotKick, Game.Random.Float( -ShotKickYawJitter, ShotKickYawJitter ) * ShotKick, 0f ),
 				frequency: ShotKickBounce, duration: ShotKickTime, fovAmplitude: ShotKickFov );
 
-		// CENTRAL pellet: exactly the crosshair ray, full carve size, and the ONLY pellet that counts for
-		// catching props — hit registration must never depend on a random scatter roll.
-		var tr = TraceShot( from, dir );
+		var tr = traces[0];
 		if ( tr.Hit )
 		{
 			// Cosmetic carve on ANY sdf surface the shot lands on (decoys, world props, disguises, faces —
@@ -2388,21 +2449,9 @@ public sealed class HunterController : Component
 			}
 		}
 
-		// SCATTER pellets: purely cosmetic buckshot — random directions inside the CarveScatter cone, each
-		// carving a smaller crater. The shooter rolls the randomness and broadcasts concrete positions and
-		// radii, so every machine ends up with the identical formation without any seed syncing.
-		for ( int i = 1; i < CarvePellets; i++ )
-		{
-			// Uniform disc sample in angle space (sqrt for area-uniform), rotated into the aim frame.
-			float ang = Game.Random.Float( 0f, MathF.Tau );
-			float off = MathF.Sqrt( Game.Random.Float( 0f, 1f ) ) * CarveScatter;
-			var pelletDir = (aimRot * Rotation.From( new Angles(
-				MathF.Sin( ang ) * off, MathF.Cos( ang ) * off, 0f ) )).Forward;
-
-			var ptr = TraceShot( from, pelletDir );
-			if ( ptr.Hit )
-				PelletCarve( from, pelletDir, CarveRadius * Game.Random.Float( 0.45f, 0.8f ), ptr.Distance );
-		}
+		for ( int i = 1; i < dirs.Length; i++ )
+			if ( traces[i].Hit )
+				PelletCarve( from, dirs[i], radii[i], traces[i].Distance );
 	}
 
 	// UI blip for a trigger pull denied by the round phase (Hide/Reveal). Local feedback only — nothing is
@@ -2750,12 +2799,87 @@ public sealed class HunterController : Component
 		return anchor.Components.Get<SdfSculpture>();
 	}
 
+	// Did this pellet land on clay? Deliberately the SAME walk TryCarve does rather than a cheap
+	// tags.Has( SdfCollider.ClayTag ) test: that tag is stamped on the sculpture's own GameObject, but shapes
+	// aggregated into a pawn's RIGIDBODY report the untagged PAWN ROOT as the hit object (see TryCarve's note
+	// on exactly this), so the tag test would call every body shot "world" and spit dust out of a clay prop.
+	// Sharing the resolution means the impact effect and the crater can never disagree about the material.
+	static bool IsClaySurface( GameObject go )
+	{
+		while ( go.IsValid() )
+		{
+			if ( go.Components.Get<SdfSculpture>().IsValid() )
+				return true;
+
+			// Topped out in a pawn without finding a sculpture on the way: same rigidbody-aggregation case,
+			// so fall back to the pawn's canonical sculpture the way the carve does.
+			if ( go.Components.Get<HiderController>().IsValid() || go.Components.Get<HunterController>().IsValid() )
+				return ResolveCarveSculpture( go ).IsValid();
+
+			go = go.Parent;
+		}
+
+		return false;
+	}
+
+	// One impact clone per pellet that actually landed, at the hit point, turned so its FORWARD points back
+	// out along the surface normal — a cone emitter then sprays away from the surface instead of into it.
+	// Local and cosmetic, like the muzzle flash and the tracer: the RPC brought the positions, each machine
+	// clones its own prefab. Runs on every machine including the shooter's.
+	void SpawnImpacts( Vector3[] ends, Vector3[] normals, int hitMask, int clayMask )
+	{
+		if ( ends is not { Length: > 0 } || normals is null || normals.Length < ends.Length )
+			return;
+
+		for ( int i = 0; i < ends.Length; i++ )
+		{
+			if ( (hitMask & (1 << i)) == 0 )
+				continue;
+
+			var prefab = (clayMask & (1 << i)) != 0 ? ClayImpactPrefab : WorldImpactPrefab;
+			if ( prefab is null )
+				continue;
+
+			var impact = SceneUtility.GetPrefabScene( prefab )?.Clone();
+			if ( !impact.IsValid() )
+				continue;
+
+			impact.WorldPosition = ends[i];
+
+			// A degenerate normal (a trace that reported a zero normal) would make LookAt produce garbage —
+			// fall back to straight up, which is never worse than a NaN rotation.
+			var n = normals[i];
+			impact.WorldRotation = n.LengthSquared > 0.001f
+				? Rotation.LookAt( n.Normal )
+				: Rotation.LookAt( Vector3.Up );
+
+			impact.Flags |= GameObjectFlags.NotSaved; // never let a cosmetic burst bake into the scene file
+			ExpireImpact( impact );
+		}
+	}
+
+	// The prefab's own TemporaryEffect retires it once the burst finishes; this is only the backstop for one
+	// authored without it. Not parented to anything (an impact belongs to the SURFACE, not to the shooter who
+	// may already be sprinting away), so nothing else would ever clean it up.
+	async void ExpireImpact( GameObject impact )
+	{
+		await Task.DelaySeconds( 4f );
+		if ( impact.IsValid() )
+			impact.Destroy();
+	}
+
 	// The gunshot, on every machine, from the shooter's pawn. Detached from the pawn so the tail of the
 	// sound stays where the shot happened instead of chasing a sprinting hunter. The SHOOTER's own copy
 	// plays flat 2D (SpacialBlend 0): spatializing your own shot against your own head panned/attenuated
 	// it oddly — the classic FPS split is punchy 2D for the local player, positioned 3D for everyone else.
+	//
+	// <paramref name="tracerEnds"/> is the per-shot DATA that has to cross the wire: where each pellet landed,
+	// in world space, index 0 being the central crosshair pellet, with the surface normal and two bitfields
+	// saying which pellets hit anything and which of those hit clay. Only receivers can't work any of that
+	// out for themselves — they never ran the trace — and it's the same "ship concrete rolled values, never a
+	// seed" deal as the carve formation. The effect PREFABS stay local, like the muzzle flash.
 	[Rpc.Broadcast]
-	void BroadcastShotEffects()
+	void BroadcastShotEffects( Vector3[] tracerEnds, Vector3[] normals, int hitMask, int clayMask )
 	{
 		// A concealed hunter's shot leaves no trace on OUR machine — no bang, no muzzle flash, no screen shake.
 		// Hunting is already blocked during Hide so this shouldn't fire today, but a silent invisible shooter is
@@ -2766,9 +2890,15 @@ public sealed class HunterController : Component
 			return;
 
 		// The gun models buck — the viewmodel through its springs (owner), the world model's hand jolt
-		// (everyone). Lives on the RPC so proxies see remote hunters' guns recoil too.
+		// (everyone) — and each pellet leaves its streak. Lives on the RPC so proxies see remote hunters'
+		// guns recoil and their shots trace too.
 		if ( _gun.IsValid() )
-			_gun.Kick();
+			_gun.Kick( tracerEnds );
+
+		// Impacts before the ShootSound early-out below — a hunter with no shot sound assigned still gets
+		// dust off the walls. Inside the Concealed gate above for the obvious reason: puffs erupting out of
+		// nowhere would give a concealed shooter away just as loudly as the bang would.
+		SpawnImpacts( tracerEnds, normals, hitMask, clayMask );
 
 		// Everyone NEAR the shot feels it, falling off with distance from the shooter — a prop hiding by a
 		// hunter gets rattled. The shooter is excluded (IsProxy): they get the recoil punch in Shoot instead,

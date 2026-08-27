@@ -112,6 +112,7 @@
         "CarvePellets": 4,
         "CarveRadius": 12.840336,
         "CarveScatter": 2.5,
+        "ClayImpactPrefab": "prefabs/clay_impact.prefab",
         "ConvergeFade": 100,
         "ConvergeMinAhead": 60,
         "DuckBulge": 0.75,
@@ -182,7 +183,8 @@
         "ThirdPersonDistance": 120,
         "ThirdPersonRise": 0.675,
         "ThirdPersonShoulder": 25,
-        "VisualPivot": null
+        "VisualPivot": null,
+        "WorldImpactPrefab": "prefabs/surface/default-bullet.prefab"
       },
       {
         "__type": "Mimiclay.HunterGun",
@@ -224,6 +226,8 @@
           "go": "40000001-0000-4000-8000-000000000022"
         },
         "ShoulderOffset": "0,-16,-22",
+        "TracerAllPellets": true,
+        "TracerPrefab": "prefabs/clay_tracer.prefab",
         "ViewFieldResolution": 256,
         "ViewFlashScale": 1.5,
         "ViewGunScale": 0.5,
