@@ -146,11 +146,30 @@ public class SdfBrush
 	/// mesh proxies and colliders all share, so their cut planes can't disagree.</summary>
 	public float SlicePlaneN => 1f - 2f * MathF.Min( MathF.Max( Slice, 0f ), MaxSlice );
 
+	/// <summary>Local half-height AFTER the slice — <see cref="Size"/>.z when unsliced, shrinking to nothing as
+	/// the cut plane drops: a sliceable shape spans local z from its bottom (−Size.z centred, 0 base-pivot) up to
+	/// the cut at <c>Size.z·SlicePlaneN</c>, so its real half-extent is half of that span. ONLY meaningful for the
+	/// sliceable shapes — <see cref="Slice"/> survives a shape conversion, so a cylinder can carry a stale nonzero
+	/// value its SDF ignores, and reading this for one would shrink its bounds below the actual shape.</summary>
+	float SlicedHalfZ => Size.z * (1f + SlicePlaneN) * 0.5f;
+
+	/// <summary>A sliced cone's flat top radius (0 = untouched/pointed) — the cut plane's radius on the frustum.
+	/// Derived from <see cref="SlicePlaneN"/> like everything else, so it can't disagree with the SDF's cut.</summary>
+	float SlicedConeTopRadius => Size.x * (1f - SlicePlaneN) * 0.5f;
+
 	/// <summary>The shape's geometric centre, offset from <see cref="Position"/> in the brush's LOCAL frame.
 	/// Zero for the centred shapes; the cone pivots at its BASE (the gizmo sits where the cone stands and
 	/// scaling grows it upward), so its centre is half a height up local Z. Bounds, mirror centres and every
-	/// mesh proxy share this one definition so they can't disagree with the SDF about where the shape sits.</summary>
-	public Vector3 LocalCentre => Shape == SdfShape.Cone ? new Vector3( 0f, 0f, Size.z ) : Vector3.Zero;
+	/// mesh proxy share this one definition so they can't disagree with the SDF about where the shape sits.
+	/// <para>SLICE-AWARE: a sliced shape loses its local +Z top, so its centre sinks with the cut plane. A deeply
+	/// sliced cone is a short frustum sitting on its base, NOT a full-height cone — treating it as one put the
+	/// centre (and every bounds built from it) most of a phantom height below the clay.</para></summary>
+	public Vector3 LocalCentre => Shape switch
+	{
+		SdfShape.Cone => new Vector3( 0f, 0f, SlicedHalfZ ),          // frustum spans local z 0 .. 2·SlicedHalfZ
+		SdfShape.Sphere => new Vector3( 0f, 0f, SlicedHalfZ - Size.z ), // spans −Size.z .. 2·SlicedHalfZ − Size.z
+		_ => Vector3.Zero,
+	};
 
 	/// <summary>Smooth-blend radius when merging/cutting against the rest of the field. An ABSOLUTE distance
 	/// in the sculpture's local space (not relative to the brush's size). Capped at <see cref="MaxBlend"/> via
@@ -1117,8 +1136,11 @@ public class SdfBrush
 					? Size.Length
 					: MathF.Sqrt( Size.x * Size.x + Size.z * Size.z ),
 				SdfShape.Cylinder => MathF.Sqrt( Size.x * Size.x + Size.z * Size.z ),
-				// Base-pivot cone: measured from Position (the base), the apex is a FULL height (2·Size.z) away.
-				SdfShape.Cone => MathF.Sqrt( Size.x * Size.x + 4f * Size.z * Size.z ),
+				// Base-pivot cone, measured from Position (the base): the farthest point is either a base-rim
+				// point or the top — the apex a FULL height (2·Size.z) up when unsliced, the frustum's cut rim
+				// when sliced (slicing brings the top DOWN and IN, so it can only shrink this).
+				SdfShape.Cone => MathF.Max( Size.x, MathF.Sqrt(
+					SlicedConeTopRadius * SlicedConeTopRadius + 4f * SlicedHalfZ * SlicedHalfZ ) ),
 				_ => MathF.Max( Size.x, MathF.Max( Size.y, Size.z ) ), // ellipsoid: largest radius
 
 			};
@@ -1133,14 +1155,19 @@ public class SdfBrush
 	/// box instead of a giant cube.</summary>
 	public Vector3 AabbExtents( Rotation rotation, bool includeBlend = true )
 	{
-		// Local half-extents per shape.
+		// Local half-extents per shape. The sliceable shapes (cone, sphere) take their SLICED half-height —
+		// paired with LocalCentre, which sinks by the same amount, so the box tracks the cut plane. X/Y stay
+		// full, which is exact for a cone (the base it keeps IS its widest ring) and merely conservative for a
+		// sphere cut below its equator (the box still spans the equator's radius the piece no longer reaches).
 		Vector3 e = Shape switch
 		{
-			SdfShape.Cylinder or SdfShape.Cone => new Vector3( Size.x, Size.x, Size.z ),
+			SdfShape.Cylinder => new Vector3( Size.x, Size.x, Size.z ),
+			SdfShape.Cone => new Vector3( Size.x, Size.x, SlicedHalfZ ),
 			// Star/hexagon profiles fit a radius-Size.x disc; the triangle keeps its Size.x/Size.y extents.
 			SdfShape.Extruded when CrossSection != SdfCrossSection.Triangle => new Vector3( Size.x, Size.x, Size.z ),
 			SdfShape.Text => TextInkExtents(), // the ink rectangle, not the letterboxed quad
-			_ => Size, // Box/triangle half-extents; sphere/ellipsoid per-axis radii
+			SdfShape.Sphere => new Vector3( Size.x, Size.y, SlicedHalfZ ), // ellipsoid radii, top cut off
+			_ => Size, // Box/triangle half-extents
 		};
 
 		// Standard oriented-box -> AABB: sum the absolute contributions of the rotated local axes.
