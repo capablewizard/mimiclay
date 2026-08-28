@@ -63,6 +63,14 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 	readonly HashSet<Guid> _known = new();
 	readonly HashSet<Guid> _botLooksPending = new();   // bots still waiting on a face to dress (see TryDressBot)
 
+	// ── Pawn-presence heal state (see ReconcilePawnPresence — the lobby port of RoundManager's heal) ──────────
+	TimeUntil _nextPresenceScan;                              // scan cadence — this is a heal, not a hot path
+	readonly Dictionary<Guid, RealTimeSince> _missingFor = new();     // rosterId → how long its pawn's been absent here
+	readonly Dictionary<Guid, RealTimeUntil> _requestBackoff = new(); // rosterId → next time we may re-request it
+	readonly Dictionary<Guid, RealTimeSince> _rowlessFor = new();     // pawn object id → how long it's had no roster row
+	readonly Dictionary<Guid, RealTimeSince> _staleFor = new();       // pawn object id → how long the roster has disowned it
+	readonly Dictionary<Guid, RealTimeUntil> _republishGate = new();  // host: per-row respawn rate limit
+
 	// What each player's last pawn OF EACH ROLE was like, snapshotted host-side as that pawn is destroyed in a
 	// role swap and put back on the next pawn of that role — so swapping prop↔hunter is returning to a body
 	// you parked, not rolling a fresh character.
@@ -149,11 +157,16 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 
 	protected override void OnUpdate()
 	{
+		// EVERY machine (before the host gate): reconcile the pawns we actually HAVE against the pawns the
+		// roster says exist — the heal for the engine's mid-load create/destroy drops (see the method).
+		ReconcilePawnPresence();
+
 		if ( !IsHostAuthority )
 			return;
 
 		ReconcileConnections();
 		ReconcileBots(); // after the real players, so they take the front spawn slots
+		StampPawnIds();
 
 		// Keep the hunter count valid as the lobby grows/shrinks — never more than MaxHunters, so a prop always
 		// remains.
@@ -682,5 +695,200 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		hider.ReleaseControl();
 		if ( Networking.IsActive )
 			pawn.Network.DropOwnership();
+	}
+
+	// ── Pawn-presence heal (the lobby port of RoundManager's — see there for the whole story) ─────────────────
+	// The engine drops object create/destroy messages that arrive while a machine is mid-scene-load (its
+	// ActiveScene is null until the snapshot apply starts) and never resends them, so a lobby pawn spawned
+	// while someone was still loading simply never exists on their machine — including their OWN pawn, since
+	// the lobby host-spawns everyone's. The [Sync] roster is immune (delta snapshots re-assert by hash), so
+	// it carries the ground truth: the host stamps each row's live pawn object id, every client reconciles
+	// what it actually holds against that, and the host heals by respawning-in-place — which the lobby already
+	// knows how to do, because it's exactly the role-swap respawn (swap memory carries the face/disguise).
+
+	// Host-only. The roster's PawnId column, straight off the host's own pawn table.
+	void StampPawnIds()
+	{
+		foreach ( var id in Players.Keys.ToList() )
+		{
+			var row = Players[id];
+			var pawn = _pawns.GetValueOrDefault( id );
+			var pawnId = pawn.IsValid() && pawn.Network.Active ? pawn.Id : Guid.Empty;
+			if ( row.PawnId == pawnId )
+				continue;
+
+			row.PawnId = pawnId;
+			Players[id] = row;
+		}
+	}
+
+	// Clients only (the host's pawn table IS the truth the roster is stamped from). Unlike the round, the
+	// check includes OUR OWN row: lobby pawns are host-spawned, so the create for your own body can be the
+	// one that got dropped while you joined.
+	void ReconcilePawnPresence()
+	{
+		if ( !Networking.IsActive || IsHostAuthority || Launching )
+			return;
+
+		if ( _nextPresenceScan > 0f )
+			return;
+		_nextPresenceScan = 0.5f;
+
+		// What we actually have: every networked pawn root in OUR scene, by object id.
+		var present = new HashSet<Guid>();
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+			Collect( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>() )
+			Collect( h?.GameObject );
+
+		// MISSING: the roster names a pawn object we don't hold. Grace for transit (the roster delta can beat
+		// the create by a moment), then ask the host to respawn it, with a per-row backoff — the host declines
+		// quietly while that player is mid-sculpt, and the backoff simply retries later.
+		foreach ( var id in Players.Keys.ToList() )
+		{
+			var row = Players[id];
+
+			if ( row.PawnId == Guid.Empty || present.Contains( row.PawnId ) )
+			{
+				_missingFor.Remove( id );
+				continue;
+			}
+
+			if ( !_missingFor.ContainsKey( id ) )
+			{
+				_missingFor[id] = 0f;
+				continue;
+			}
+
+			if ( _missingFor[id] < 3f )
+				continue;
+
+			if ( _requestBackoff.TryGetValue( id, out var wait ) && wait > 0f )
+				continue;
+
+			_requestBackoff[id] = 8f;
+			Log.Info( $"LobbyManager: missing {row.Name}'s pawn (dropped while loading?) — requesting a republish." );
+			RequestPawnRepublish( id );
+		}
+
+		// GHOSTS: a pawn the roster has disowned — its destroy dropped while we loaded. Same graces as the
+		// round's sweep: "set and different" waits out the create-vs-roster-delta race, rowless waits much
+		// longer (a joiner's row may still be en route). Released scenery is unowned and resolves to nobody,
+		// so it never enters here.
+		foreach ( var h in Scene.GetAllComponents<HunterController>().ToList() )
+			Sweep( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>().ToList() )
+			Sweep( h?.GameObject );
+
+		void Collect( GameObject go )
+		{
+			if ( go.IsValid() && go.Network.Active )
+				present.Add( go.Id );
+		}
+
+		void Sweep( GameObject go )
+		{
+			if ( !go.IsValid() || !go.Network.Active )
+				return;
+
+			var owner = RoundManager.RosterIdOf( go );
+			if ( owner is null )
+				return;
+
+			if ( Players.TryGetValue( owner.Value, out var row ) )
+			{
+				_rowlessFor.Remove( go.Id );
+
+				if ( row.PawnId != Guid.Empty && row.PawnId != go.Id )
+				{
+					if ( !_staleFor.ContainsKey( go.Id ) )
+					{
+						_staleFor[go.Id] = 0f;
+					}
+					else if ( _staleFor[go.Id] > 3f )
+					{
+						_staleFor.Remove( go.Id );
+						Log.Info( $"LobbyManager: dropping a stale copy of {row.Name}'s pawn (superseded by a respawn)." );
+						go.Destroy();
+					}
+				}
+				else
+				{
+					_staleFor.Remove( go.Id );
+				}
+				return;
+			}
+
+			if ( !_rowlessFor.ContainsKey( go.Id ) )
+			{
+				_rowlessFor[go.Id] = 0f;
+				return;
+			}
+
+			if ( _rowlessFor[go.Id] > 10f )
+			{
+				_rowlessFor.Remove( go.Id );
+				Log.Info( $"LobbyManager: dropping an ownerless pawn copy '{go.Name}' (its destroy never reached us)." );
+				go.Destroy();
+			}
+		}
+	}
+
+	/// <summary>Client → host: "I have no copy of this player's pawn — respawn it." The lobby host owns every
+	/// pawn, so the heal is entirely its move: the role-swap respawn machinery, minus the role flip — in place,
+	/// swap memory carrying the face/disguise, a fresh network identity whose create reaches everyone (the
+	/// engine sends an object's create exactly once per connection and drops it if it lands mid-scene-load, so
+	/// a new object is the only way back). Declined quietly while that player is mid-sculpt — the requester's
+	/// backoff retries after they finish.</summary>
+	[Rpc.Host]
+	public void RequestPawnRepublish( Guid rosterId )
+	{
+		if ( Launching || !Players.TryGetValue( rosterId, out var row ) )
+			return;
+
+		if ( _republishGate.TryGetValue( rosterId, out var gate ) && gate > 0f )
+			return;
+
+		var pawn = _pawns.GetValueOrDefault( rosterId );
+		if ( !pawn.IsValid() || !pawn.Network.Active )
+			return;
+
+		// Mid-sculpt: a respawn would tear their edit session down mid-stroke. NetEditing is [Sync]'d and
+		// mirrored per owner frame, so the host's copy reads it truthfully.
+		if ( IsEditingPawn( pawn ) )
+			return;
+
+		var owner = row.Bot ? null : Connection.All.FirstOrDefault( c => c.Id == rosterId );
+		if ( !row.Bot && owner is null )
+			return; // a leaver mid-flight — the roster sweep will drop the row shortly
+
+		_republishGate[rosterId] = 5f;
+
+		// A converted pawn is borrowed map furniture — carry the mark to the fresh id so a later swap still
+		// releases it back into the world instead of destroying it.
+		var claims = PropClaims.Current;
+		var wasConverted = claims.IsValid() && claims.IsConverted( pawn );
+		var oldId = pawn.Id;
+
+		Log.Info( $"LobbyManager: republishing {row.Name}'s pawn (a machine was missing it)." );
+		var fresh = SpawnPawnFor( rosterId, row.Name, row.Role, owner );
+
+		if ( wasConverted && fresh.IsValid() )
+			claims.TransferConverted( oldId, fresh );
+
+		// A bot's random look doesn't ride the dress path (it gates on a real owner) — re-roll it instead.
+		if ( row.Bot && fresh.IsValid()
+			&& LobbyController.Current.IsValid() && LobbyController.Current.BotRandomLooks )
+			_botLooksPending.Add( rosterId );
+	}
+
+	static bool IsEditingPawn( GameObject pawn )
+	{
+		var hider = pawn.Components.Get<HiderController>();
+		if ( hider.IsValid() )
+			return hider.NetEditing;
+
+		var hunter = pawn.Components.Get<HunterController>();
+		return hunter.IsValid() && hunter.NetEditing;
 	}
 }

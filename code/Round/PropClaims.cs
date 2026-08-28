@@ -166,6 +166,15 @@ public sealed class PropClaims : Component
 	public bool IsConverted( GameObject pawn )
 		=> pawn.IsValid() && _converted.Contains( pawn.Id );
 
+	/// <summary>Host-only. The pawn-presence heal republished a converted pawn under a fresh object id — carry
+	/// the "this is borrowed map furniture" mark across, so a later role swap still RELEASES it back into the
+	/// world instead of destroying it like a practice body. No-op if the old id wasn't marked.</summary>
+	internal void TransferConverted( Guid oldPawnId, GameObject fresh )
+	{
+		if ( _converted.Remove( oldPawnId ) && fresh.IsValid() )
+			_converted.Add( fresh.Id );
+	}
+
 	// Host-side per-caller gate on RequestPossess, same shape as RoundManager's shot gate: the RPC is the trust
 	// boundary, so re-enforce a sane rate at it rather than trusting the client's own key repeat.
 	const float PossessCooldown = 0.3f;

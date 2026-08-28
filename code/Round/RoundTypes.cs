@@ -80,6 +80,15 @@ public struct PlayerInfo
 	/// (<see cref="RoundManager"/>.ReconcileConnections) must not drop a row with no connection behind it, and
 	/// pawn ownership must be resolved through <see cref="RoundManager.RosterIdOf"/> rather than Network.Owner.</summary>
 	public bool Bot;
+
+	/// <summary>The GameObject id of this player's NETWORKED pawn, stamped by the HOST as it observes its own
+	/// scene (the host misses no create/destroy — every message routes through it). <see cref="Guid.Empty"/>
+	/// while the pawn is unpublished (infection prep, the publish gate) or gone. This is the roster's answer to
+	/// "which pawn object should exist on my machine": the engine silently DROPS object create/destroy messages
+	/// that arrive while a machine is mid-scene-load, so without this a machine can be permanently missing a
+	/// pawn — or keeping a ghost of a destroyed one — with nothing ever noticing. Reconciled per machine by
+	/// <see cref="RoundManager"/>'s pawn-presence heal.</summary>
+	public Guid PawnId;
 }
 
 /// <summary>Debug override for the side the LOCAL player takes at role assignment, so you can test either seat

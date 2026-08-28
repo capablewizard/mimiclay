@@ -131,6 +131,11 @@ public sealed class RoundManager : Component, IRoundContext
 	[Sync]
 	public int DoorSeed { get; set; }
 
+	/// <summary>Host-asserted each frame: every connection has fully finished loading the scene. Gates putting
+	/// pawns on the wire — see <see cref="MayPublishPawns"/> for why publishing at a loading machine loses the
+	/// pawn forever.</summary>
+	[Sync] public bool AllPlayersLoaded { get; set; }
+
 	// ── Host-only bookkeeping (not networked) ────────────────────────────────────────────────────────────────
 	readonly Dictionary<Guid, float> _scoreAccum = new();      // fractional prop score carried between integer ticks
 
@@ -151,6 +156,16 @@ public sealed class RoundManager : Component, IRoundContext
 	// The local free-fly camera an eliminated Teams prop is left with. Purely local — never networked, so
 	// there's nothing for anyone else to see, collide with or shoot. See EnsureOwnPawn's eliminated branch.
 	GameObject _spectator;
+
+	// ── Pawn-presence heal state (see ReconcilePawnPresence) ────────────────────────────────────────────────
+	bool _republishPending;                                   // a machine asked us to republish our pawn
+	RealTimeUntil _republishCooldown;                         // collapse request storms into one respawn
+	RealTimeUntil _botRepublishCooldown;                      // same, for the host's bot bodies
+	TimeUntil _nextPresenceScan;                              // scan cadence — this is a heal, not a hot path
+	readonly Dictionary<Guid, RealTimeSince> _missingFor = new();     // rosterId → how long its pawn's been absent here
+	readonly Dictionary<Guid, RealTimeUntil> _requestBackoff = new(); // rosterId → next time we may re-request it
+	readonly Dictionary<Guid, RealTimeSince> _rowlessFor = new();     // pawn object id → how long it's had no roster row
+	readonly Dictionary<Guid, RealTimeSince> _staleFor = new();       // pawn object id → how long the roster has disowned it
 
 	// All-machines: the phase we last reacted to, so a [Sync] Phase change fires IRoundPhaseChanged + local effects on
 	// every client (not just the host that flipped it). Starts at a sentinel so the opening phase also fires.
@@ -223,6 +238,10 @@ public sealed class RoundManager : Component, IRoundContext
 		// wire when it's time). This is the whole spawn model now — the host does not spawn pawns.
 		EnsureOwnPawn();
 
+		// EVERY machine: reconcile the pawns we actually HAVE against the pawns the roster says exist —
+		// the heal for the engine's mid-load create/destroy drops. See the method for the whole story.
+		ReconcilePawnPresence();
+
 		if ( !IsHostAuthority )
 			return;
 
@@ -230,6 +249,8 @@ public sealed class RoundManager : Component, IRoundContext
 		// no machine to do it themselves, then tick the active phase.
 		ReconcileConnections();
 		EnsureBotPawns();
+		StampPawnIds();
+		AllPlayersLoaded = Connection.All.All( c => c.IsActive );
 		TickHostPhase();
 	}
 
@@ -450,26 +471,47 @@ public sealed class RoundManager : Component, IRoundContext
 		RetireSpectator(); // in the round proper — a fresh roster (next round, role re-assign) drops the ghost cam
 
 		var wantNetworked = WantNetworked( info.Role );
+		var publish = wantNetworked && MayPublishPawns;
 
 		// No pawn yet → spawn at our assigned spot.
 		if ( !_ownPawn.IsValid() )
 		{
-			SpawnOwnPawn( info.Role, SpotFor( info ), wantNetworked );
+			SpawnOwnPawn( info.Role, SpotFor( info ), publish );
 			return;
 		}
 
 		// Role changed (we were a prop, a hunter found us) → respawn in our new role, right where we stand.
 		if ( _ownPawnRole != info.Role )
 		{
-			SpawnOwnPawn( info.Role, ConversionSpot( _ownPawn ), wantNetworked );
+			SpawnOwnPawn( info.Role, ConversionSpot( _ownPawn ), publish );
 			return;
 		}
 
-		// We've been driving a purely-local pawn through prep; now it's time to be seen → put it on the wire as-is
-		// (keeps the disguise we sculpted and the spot we hid in).
-		if ( wantNetworked && !_ownPawn.Network.Active )
+		// A machine that never received our pawn's create asked us to republish (see ReconcilePawnPresence).
+		// Deferred while sculpting — the respawn would tear the edit session down mid-stroke.
+		if ( _republishPending && !(SculptEditSession.Current?.IsEditing ?? false) )
+		{
+			_republishPending = false;
+			RepublishOwnPawn( info );
+			return;
+		}
+
+		// We've been driving a purely-local pawn (prep concealment, or the publish gate holding for a loading
+		// machine); now it's time to be seen → put it on the wire as-is (keeps the disguise + the hiding spot).
+		if ( publish && !_ownPawn.Network.Active )
 			PublishOwnPawn();
 	}
+
+	/// <summary>Gate on putting ANY pawn on the wire: hold until every connection has finished loading the
+	/// scene. The engine DROPS object create/destroy messages that arrive while a machine is mid-scene-load
+	/// (its ActiveScene is null between scene teardown and the snapshot apply) — and the sender marks them
+	/// delivered, so a pawn published into that window simply never exists on the loading machine, for the
+	/// whole round. That was the live playtests' "some props/hunters never appear, who varies by load order".
+	/// Holding the publish closes the window in the common case (a mid-round joiner re-closes it while they
+	/// load, which protects them the same way); <see cref="ReconcilePawnPresence"/> heals anything that still
+	/// slips through. The pawn exists and plays LOCALLY the whole time — publishing late only delays when
+	/// others can see it, which during prep is concealed anyway.</summary>
+	bool MayPublishPawns => !Networking.IsActive || AllPlayersLoaded;
 
 	// Infection conceals props during prep by keeping them off the network entirely until the hunt — a pawn that
 	// was never networked is simply invisible to everyone else, and unlike any rendering trick it cannot be leaked
@@ -592,7 +634,10 @@ public sealed class RoundManager : Component, IRoundContext
 
 	// Clone our role's prefab locally and (optionally) publish it. The pawn is owned by THIS machine; while it's
 	// unpublished it exists nowhere else, which is the concealment.
-	void SpawnOwnPawn( PlayerRole role, Transform at, bool networked )
+	//
+	// `disguise` carries a prop's sculpted shape onto the fresh clone (the republish path — a normal spawn has
+	// nothing to carry). Dressed pre-enable like the hunter head below, and for the same reason.
+	void SpawnOwnPawn( PlayerRole role, Transform at, bool networked, List<SdfBrush> disguise = null )
 	{
 		var prefab = PrefabFor( role );
 		if ( !prefab.IsValid() )
@@ -603,25 +648,259 @@ public sealed class RoundManager : Component, IRoundContext
 
 		RetireOwnPawn();
 
-		// Hunters clone DISABLED, dress, then enable — the ordering is the whole fix for the prefab-default
-		// face flash. SdfSculpture.OnEnabled fires Rebuild, so an enabled clone has the DEFAULT face's build
+		// Dressed pawns clone DISABLED, dress, then enable — the ordering is the whole fix for the prefab-default
+		// flash. SdfSculpture.OnEnabled fires Rebuild, so an enabled clone has the DEFAULT shape's build
 		// (and field bake) in flight before any post-clone dress can swap the brushes — that build landing
 		// first is exactly the flash. Dressed while disabled, the first build that ever starts is the real
-		// head; and it's in place before the NetworkSpawn below, so the snapshot ships it too. This is what
+		// shape; and it's in place before the NetworkSpawn below, so the snapshot ships it too. This is what
 		// stops a converted prop's fresh hunter flashing the default at the hunter who just shot them.
-		var dressHead = role == PlayerRole.Hunter;
-		_ownPawn = prefab.Clone( new CloneConfig( at, startEnabled: !dressHead,
+		var dress = role == PlayerRole.Hunter || disguise is { Count: > 0 };
+		_ownPawn = prefab.Clone( new CloneConfig( at, startEnabled: !dress,
 			name: $"Pawn ({role}) {Connection.Local.DisplayName}" ) );
 		_ownPawnRole = role;
 
-		if ( dressHead && _ownPawn.IsValid() )
+		if ( dress && _ownPawn.IsValid() )
 		{
-			HunterController.WearSavedHead( _ownPawn );
+			if ( role == PlayerRole.Hunter )
+				HunterController.WearSavedHead( _ownPawn );
+			else
+				HiderController.WearDisguise( _ownPawn, disguise );
 			_ownPawn.Enabled = true;
 		}
 
 		if ( networked && _ownPawn.IsValid() )
 			PublishOwnPawn();
+	}
+
+	// A machine told us it has no copy of our pawn. The engine sends an object's create exactly once per
+	// connection and drops it if it lands mid-scene-load, so the ONLY way to reach that machine again is a
+	// fresh network identity: respawn-in-place, carrying the shape we sculpted, and let the new create (and
+	// the old pawn's destroy) go out to everyone. Machines that had us see a one-frame swap; the machine that
+	// didn't finally gets a body. Rate-limited — a storm of requests (several machines missed us) collapses
+	// into one respawn.
+	void RepublishOwnPawn( PlayerInfo info )
+	{
+		if ( _republishCooldown > 0f || !_ownPawn.IsValid() )
+			return;
+		_republishCooldown = 5f;
+
+		var at = _ownPawn.WorldTransform;
+		var hider = _ownPawn.Components.Get<HiderController>();
+		var disguise = hider.IsValid() && hider.DisguiseSculpture.IsValid()
+			? hider.DisguiseSculpture.Brushes?.ToList()
+			: null;
+
+		Log.Info( $"RoundManager: republishing our pawn (a machine was missing it)." );
+		SpawnOwnPawn( info.Role, at, WantNetworked( info.Role ) && MayPublishPawns, disguise );
+	}
+
+	// ── Pawn-presence heal ───────────────────────────────────────────────────────────────────────────────────
+	// The engine sends an object's create/destroy to each connection EXACTLY ONCE, and a message that arrives
+	// while a machine is mid-scene-load (its ActiveScene is null between scene teardown and the snapshot apply)
+	// is silently dropped — while the sender still marks it delivered. On our slow-loading SDF maps that window
+	// is seconds wide, so in live games a pawn published while someone was still loading simply never existed on
+	// their machine (and a destroy dropped the same way left a frozen ghost). The [Sync] roster is immune — delta
+	// snapshots re-assert state hashes continuously — which is exactly why "the icons update but the players
+	// aren't there" was the symptom.
+	//
+	// The heal reconciles the two: the HOST (which misses nothing — every message routes through it) stamps each
+	// row's live pawn object id into the roster (StampPawnIds); every CLIENT then compares that against the pawns
+	// it actually has (ReconcilePawnPresence) — asking owners to republish what's missing, and destroying local
+	// copies the roster says are gone. MayPublishPawns closes most of the window up front by holding publishes
+	// until everyone has loaded.
+
+	// Host-only. The roster's PawnId column, from the host's own scene — the ground truth of what exists.
+	// Written only on change, so a stable round networks nothing.
+	void StampPawnIds()
+	{
+		_pawnIdScratch.Clear();
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+			MapPawn( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>() )
+			MapPawn( h?.GameObject );
+
+		foreach ( var key in Players.Keys.ToList() )
+		{
+			var row = Players[key];
+			var pawnId = _pawnIdScratch.GetValueOrDefault( key );
+			if ( row.PawnId == pawnId )
+				continue;
+
+			row.PawnId = pawnId;
+			Players[key] = row;
+		}
+
+		void MapPawn( GameObject go )
+		{
+			if ( !go.IsValid() || !go.Network.Active )
+				return;
+
+			// RosterIdOf resolves players (owner) and bots (BotPawn row) alike; unowned scenery resolves to
+			// nobody and is rightly ignored.
+			var id = RosterIdOf( go );
+			if ( id is not null )
+				_pawnIdScratch[id.Value] = go.Id;
+		}
+	}
+
+	readonly Dictionary<Guid, Guid> _pawnIdScratch = new();
+	readonly HashSet<Guid> _presentScratch = new();
+
+	// Clients only (the host's scene IS the truth the roster is stamped from). Compare the roster's pawn ids
+	// against the pawns we actually hold; request republishes for what's missing, drop what's been superseded.
+	void ReconcilePawnPresence()
+	{
+		if ( !Networking.IsActive || IsHostAuthority || Phase == RoundPhase.Lobby )
+			return;
+
+		if ( _nextPresenceScan > 0f )
+			return;
+		_nextPresenceScan = 0.5f;
+
+		var me = Connection.Local?.Id;
+
+		// What we actually have: every networked pawn root in OUR scene, by object id.
+		_presentScratch.Clear();
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+			Collect( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>() )
+			Collect( h?.GameObject );
+
+		// MISSING: the roster names a pawn object we don't hold. Grace first — the roster delta can outrun the
+		// create by a beat (both reliable, different send paths) — then ask the owner to republish, with a
+		// per-row backoff so a machine that stays broken re-asks occasionally rather than every scan.
+		foreach ( var id in Players.Keys.ToList() )
+		{
+			var row = Players[id];
+
+			if ( row.PawnId == Guid.Empty || id == me || _presentScratch.Contains( row.PawnId ) )
+			{
+				_missingFor.Remove( id );
+				continue;
+			}
+
+			if ( !_missingFor.ContainsKey( id ) )
+			{
+				_missingFor[id] = 0f;
+				continue;
+			}
+
+			if ( _missingFor[id] < 3f )
+				continue;
+
+			if ( _requestBackoff.TryGetValue( id, out var wait ) && wait > 0f )
+				continue;
+
+			_requestBackoff[id] = 8f;
+			Log.Info( $"RoundManager: missing {row.Name}'s pawn (dropped while loading?) — requesting a republish." );
+			RequestPawnRepublish( id );
+		}
+
+		// GHOSTS: a networked pawn the roster has superseded — its destroy dropped while we loaded, leaving a
+		// frozen body. Deliberately conservative: a set-but-DIFFERENT PawnId is the host explicitly saying
+		// "that object is gone"; a pawn with no roster row at all gets a long grace (a joiner's row may still
+		// be en route) before we conclude its owner left long ago. Never our own body.
+		foreach ( var h in Scene.GetAllComponents<HunterController>().ToList() )
+			Sweep( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>().ToList() )
+			Sweep( h?.GameObject );
+
+		void Collect( GameObject go )
+		{
+			if ( go.IsValid() && go.Network.Active )
+				_presentScratch.Add( go.Id );
+		}
+
+		void Sweep( GameObject go )
+		{
+			if ( !go.IsValid() || !go.Network.Active )
+				return;
+
+			var owner = RosterIdOf( go );
+			if ( owner is null || owner == me )
+				return;
+
+			if ( Players.TryGetValue( owner.Value, out var row ) )
+			{
+				_rowlessFor.Remove( go.Id );
+
+				// "Set and different" needs its own grace: a fresh pawn's CREATE can land here before the
+				// roster delta re-stamps its id, and destroying on the first mismatched scan would kill the
+				// legitimate replacement the moment it arrived.
+				if ( row.PawnId != Guid.Empty && row.PawnId != go.Id )
+				{
+					if ( !_staleFor.ContainsKey( go.Id ) )
+					{
+						_staleFor[go.Id] = 0f;
+					}
+					else if ( _staleFor[go.Id] > 3f )
+					{
+						_staleFor.Remove( go.Id );
+						Log.Info( $"RoundManager: dropping a stale copy of {row.Name}'s pawn (superseded by a republish)." );
+						go.Destroy();
+					}
+				}
+				else
+				{
+					_staleFor.Remove( go.Id );
+				}
+				return;
+			}
+
+			if ( !_rowlessFor.ContainsKey( go.Id ) )
+			{
+				_rowlessFor[go.Id] = 0f;
+				return;
+			}
+
+			if ( _rowlessFor[go.Id] > 10f )
+			{
+				_rowlessFor.Remove( go.Id );
+				Log.Info( $"RoundManager: dropping an ownerless pawn copy '{go.Name}' (its destroy never reached us)." );
+				go.Destroy();
+			}
+		}
+	}
+
+	/// <summary>Any machine → everyone: "I have no copy of this player's pawn — republish it." The OWNER
+	/// respawns-in-place under a fresh network identity (creates are once-per-object per connection, so a new
+	/// object is the only way to reach a machine that missed one); the HOST does the same for a bot's body.
+	/// Broadcast because machine→machine needs a shared networked object to ride — this manager is it, and
+	/// every machine the request doesn't concern just ignores it.</summary>
+	[Rpc.Broadcast]
+	void RequestPawnRepublish( Guid rosterId )
+	{
+		if ( Connection.Local is { } local && local.Id == rosterId )
+			_republishPending = true; // handled in EnsureOwnPawn, deferred past any live edit session
+
+		if ( IsHostAuthority && Players.TryGetValue( rosterId, out var row ) && row.Bot )
+			RepublishBotPawn( rosterId, row );
+	}
+
+	// Host-only: the bot half of RepublishOwnPawn — same fresh-identity respawn-in-place, same disguise carry.
+	void RepublishBotPawn( Guid id, PlayerInfo row )
+	{
+		if ( _botRepublishCooldown > 0f )
+			return;
+
+		var pawn = _botPawns.GetValueOrDefault( id );
+		if ( !pawn.IsValid() || !pawn.Network.Active )
+			return;
+
+		_botRepublishCooldown = 5f;
+
+		var hider = pawn.Components.Get<HiderController>();
+		var disguise = hider.IsValid() && hider.DisguiseSculpture.IsValid()
+			? hider.DisguiseSculpture.Brushes?.ToList()
+			: null;
+		var at = pawn.WorldTransform;
+
+		Log.Info( $"RoundManager: republishing bot pawn '{row.Name}' (a machine was missing it)." );
+		SpawnBotPawn( id, row, at );
+
+		var fresh = _botPawns.GetValueOrDefault( id );
+		if ( fresh.IsValid() && disguise is { Count: > 0 } )
+			HiderController.WearDisguise( fresh, disguise );
 	}
 
 	// Put our local pawn on the network, owned by us. Orphaned → Destroy so a disconnect cleanly removes it for
@@ -768,8 +1047,9 @@ public sealed class RoundManager : Component, IRoundContext
 			if ( _botDressPending.Contains( id ) )
 				WearRandomDisguise( id, pawn );
 
-			// Time to be seen: on the wire as-is, host-owned.
-			if ( WantNetworked( info.Role ) && !pawn.Network.Active )
+			// Time to be seen: on the wire as-is, host-owned. Same publish gate as player pawns — a create
+			// sent at a still-loading machine is lost (see MayPublishPawns).
+			if ( WantNetworked( info.Role ) && MayPublishPawns && !pawn.Network.Active )
 				pawn.NetworkSpawn();
 		}
 	}
@@ -801,7 +1081,9 @@ public sealed class RoundManager : Component, IRoundContext
 		_botPawns[id] = pawn;
 		_botPawnRoles[id] = info.Role;
 
-		if ( WantNetworked( info.Role ) )
+		// Gated like every publish (MayPublishPawns); a deferred one goes on the wire from EnsureBotPawns'
+		// per-frame check the moment the gate opens.
+		if ( WantNetworked( info.Role ) && MayPublishPawns )
 			pawn.NetworkSpawn();
 	}
 
