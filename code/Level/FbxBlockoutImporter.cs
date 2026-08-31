@@ -59,21 +59,35 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 	/// <summary>FBX material name → project material. Use "Scan FBX Materials" to fill in the names.</summary>
 	[Property, Group( "Materials" )] public List<FbxMaterialRemap> MaterialRemaps { get; set; } = new();
 
+	/// <summary>Shipped-build copy of the geometry, written by "Bake Shippable Geometry". Standalone
+	/// builds can't read the raw .fbx (only compiled assets get packaged) and the runtime-built models
+	/// save as a dead <c>sbox_procedural_model</c> placeholder — so when the file is missing, the
+	/// importer rebuilds its children from this instead.</summary>
+	[Property, Group( "Bake" )] public FbxBakedBlockout BakedGeometry { get; set; }
+
+	/// <summary>Editor-only bake hook — writing a .fbxbake asset needs the editor assembly, which game
+	/// code can't reference. Wired up by FbxBakeUtility; null at runtime.</summary>
+	public static Func<FbxBlockoutImporter, bool> BakeHandler;
+
 	[Property, ReadOnly, Group( "Status" )] public string LastImport { get; set; } = "";
 
 	ulong _importedHash;
 	ulong _failedHash;
+	bool _usingBake;
 	RealTimeSince _sinceCheck;
 
 	protected override void OnEnabled()
 	{
 		_importedHash = 0;
 		_failedHash = 0;
+		_usingBake = false;
 		TryImport( quiet: false );
 	}
 
 	protected override void OnUpdate()
 	{
+		if ( _usingBake )
+			return; // running off the baked asset — there's no file to poll
 		if ( !AutoReimport )
 			return;
 		if ( _sinceCheck < CheckInterval )
@@ -88,7 +102,23 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 	{
 		_importedHash = 0;
 		_failedHash = 0;
+		_usingBake = false;
 		TryImport( quiet: false );
+	}
+
+	/// <summary>Bake the current FBX into a <see cref="FbxBakedBlockout"/> asset (editor only) so
+	/// standalone builds get the geometry — see <see cref="BakedGeometry"/>. Rebake after level
+	/// changes; the importer warns when the file drifts from the bake.</summary>
+	[Button( "Bake Shippable Geometry" )]
+	public void BakeShippable()
+	{
+		if ( BakeHandler is null )
+		{
+			Log.Warning( "[FbxBlockout] Baking needs the editor — the bake button only works in the editor, not in game." );
+			return;
+		}
+
+		BakeHandler( this );
 	}
 
 	/// <summary>Read the FBX and add a remap row for every material it references that we don't have yet.</summary>
@@ -129,6 +159,10 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 		var bytes = ReadFileBytes( out var error );
 		if ( bytes == null )
 		{
+			// shipped build: the raw .fbx isn't in the package — run off the baked asset instead
+			if ( BuildFromBake() )
+				return;
+
 			if ( !quiet )
 			{
 				LastImport = error;
@@ -137,7 +171,7 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 			return;
 		}
 
-		var hash = Fnv1a( bytes );
+		var hash = FbxBakedBlockout.HashBytes( bytes );
 		if ( hash == _importedHash )
 			return;
 		if ( hash == _failedHash )
@@ -149,9 +183,13 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 			SyncChildren( pieces );
 			_importedHash = hash;
 			_failedHash = 0;
+			_usingBake = false;
 			var tris = pieces.Sum( p => p.SubMeshes.Sum( s => s.Vertices.Count ) ) / 3;
 			LastImport = $"{pieces.Count} object(s), {tris} tris — {DateTime.Now:HH:mm:ss}";
 			Log.Info( $"[FbxBlockout] Imported '{FbxPath}': {LastImport}" );
+
+			if ( BakedGeometry != null && (BakedGeometry.SourceHash != hash || BakedGeometry.ImportScale != ImportScale) )
+				Log.Warning( $"[FbxBlockout] '{FbxPath}' has changed since it was baked — hit \"Bake Shippable Geometry\" or standalone builds will ship the old geometry." );
 		}
 		catch ( Exception e )
 		{
@@ -160,6 +198,33 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 			LastImport = $"Import failed: {e.Message}";
 			Log.Warning( $"[FbxBlockout] Import of '{FbxPath}' failed: {e.Message}" );
 		}
+	}
+
+	/// <summary>Rebuild the children from <see cref="BakedGeometry"/> — the standalone path, where
+	/// the source .fbx doesn't exist. Idempotent: once built, stays built.</summary>
+	bool BuildFromBake()
+	{
+		if ( _usingBake )
+			return true;
+
+		var pieces = BakedGeometry?.UnpackPieces();
+		if ( pieces == null )
+			return false;
+
+		try
+		{
+			SyncChildren( pieces );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"[FbxBlockout] Building '{FbxPath}' from its bake failed: {e.Message}" );
+			return false;
+		}
+
+		_usingBake = true;
+		LastImport = $"{pieces.Count} object(s) from bake '{BakedGeometry.ResourcePath}'";
+		Log.Info( $"[FbxBlockout] {LastImport}" );
+		return true;
 	}
 
 	void SyncChildren( List<FbxPiece> pieces )
@@ -225,7 +290,7 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 			if ( sub.Vertices.Count == 0 )
 				continue;
 
-			var mesh = new Mesh( ResolveMaterial( sub.MaterialName ) );
+			var mesh = new Mesh( sub.Material ?? ResolveMaterial( sub.MaterialName ) );
 			mesh.CreateVertexBuffer( sub.Vertices.Count, sub.Vertices );
 
 			var indices = new List<int>( sub.Vertices.Count );
@@ -243,7 +308,9 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 		return builder.Create();
 	}
 
-	Material ResolveMaterial( string fbxName )
+	/// <summary>FBX material name → project material via the remap table. Public so the editor-side
+	/// bake resolves materials with exactly the same rules.</summary>
+	public Material ResolveMaterial( string fbxName )
 	{
 		var entry = MaterialRemaps?.FirstOrDefault( r =>
 			string.Equals( r?.FbxMaterial, fbxName, StringComparison.OrdinalIgnoreCase ) );
@@ -258,7 +325,10 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 
 	// ---------------------------------------------------------------- file access
 
-	byte[] ReadFileBytes( out string error )
+	/// <summary>Read the source .fbx from the mounted filesystem. Public so the editor-side bake reads
+	/// the exact same bytes the live import does. Null (with <paramref name="error"/> set) when the
+	/// file is missing — which is every standalone build, since raw .fbx files aren't packaged.</summary>
+	public byte[] ReadFileBytes( out string error )
 	{
 		error = null;
 
@@ -291,13 +361,5 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 			error = $"Couldn't read '{path}': {e.Message}";
 			return null;
 		}
-	}
-
-	static ulong Fnv1a( byte[] data )
-	{
-		var hash = 14695981039346656037UL;
-		foreach ( var b in data )
-			hash = (hash ^ b) * 1099511628211UL;
-		return hash;
 	}
 }

@@ -7,6 +7,11 @@ namespace Mimiclay;
 public sealed class FbxSubMesh
 {
 	public string MaterialName = "";
+
+	/// <summary>Pre-resolved project material — only set on pieces unpacked from a
+	/// <see cref="FbxBakedBlockout"/> (bakes resolve the remap table at bake time). Null on live
+	/// imports, where the importer resolves <see cref="MaterialName"/> through its remap rows.</summary>
+	public Material Material;
 	public List<Vertex> Vertices = new();
 	public BBox Bounds = BBox.FromPositionAndSize( 0, 1 );
 	bool _hasBounds;
