@@ -131,6 +131,7 @@ public sealed class LobbyController : Component
 			// clear that MATTERS is RoundManagerSpawner's, where stale keys were read as real lobby intent.
 			RoundSettings.ClearLobbyData();
 			CreativeSettings.ClearLobbyData();
+			CharadesSettings.ClearLobbyData();
 		}
 
 		// Spawn the host's setup panel (programmatically, like the pause/edit HUDs — clients don't get one).

@@ -154,6 +154,38 @@
 		.mode-value { min-width: 120px; }
 	}
 
+	// ── Charades topic chips (word-pool multi-select; same pill recipe as the map rows) ────────────────────
+	.topic-grid {
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: $space-xs;
+		padding: 0 0 $space-sm 0;
+
+		.topic-chip {
+			padding: 4px 14px;
+			border-radius: $radius-pill;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
+			font-family: $body-font;
+			font-size: 18px;
+			font-weight: 700;
+			color: $paper-ink;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+
+			&:hover { transform: scale( 1.05 ); sound-in: $sound-hover; }
+			&:active { sound-in: $sound-click; }
+			&.on { background-color: $craft-orange; } // orange = in the pool, matching map selection
+
+			// Everything reads as the headline switch, so it gets the craft-blue accent instead.
+			&.everything.on { background-color: $craft-blue; color: #fff; }
+		}
+	}
+
+	// The Topics label row has no stepper — stop space-between stretching a lone label oddly.
+	.topics-row { justify-content: flex-start; padding-bottom: 0; }
+
 	// ── Map picker ──────────────────────────────────────────────────────────────────────────────────────────
 	.map-preview {
 		position: relative;

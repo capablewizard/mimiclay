@@ -1,0 +1,12 @@
+{
+  "Title": "Objects",
+  "Topic": "Objects",
+  "Hidden": false,
+  "Words": [
+    "chair", "teapot", "umbrella", "guitar", "hammer", "glasses",
+    "crown", "candle", "balloon", "book", "clock", "ladder", "anchor", "bell",
+    "key", "scissors", "toothbrush", "trophy", "wheelbarrow", "telescope", "wellington boot"
+  ],
+  "__references": [],
+  "__version": 0
+}

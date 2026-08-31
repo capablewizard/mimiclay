@@ -353,6 +353,27 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			_session.SetActive( true );
 	}
 
+	/// <summary>Open the sculpt editor on this (owned) pawn's own disguise — the charades manager drops the
+	/// mimic straight into edit when their sculpt phase opens. A no-op on proxies or while already editing.</summary>
+	internal void EnterEditing()
+	{
+		if ( IsProxy || _dormant )
+			return;
+		if ( _session.IsValid() && !_session.IsEditing )
+		{
+			SetFreeCam( false ); // the sculpt rig owns navigation in edit mode — don't fight it for the camera
+			_session.SetActive( true );
+		}
+	}
+
+	/// <summary>Force-close the sculpt editor — the phase moved on. Same silent forced teardown as
+	/// <see cref="ReleaseControl"/>'s (no exit-confirm dialog).</summary>
+	internal void ExitEditing()
+	{
+		if ( EditMode )
+			_session?.SetActive( false );
+	}
+
 	// Yaw WASD is measured against = the camera (the rig's yaw); yaw the disguise visually faces = its own
 	// (frozen during alt orbit).
 	float MoveYaw => _orbit.Angles.yaw;
@@ -507,11 +528,16 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( IsProxy )
 			return;
 
-		// Read the toggles even while control is suspended, so edit mode can be exited.
+		// Read the toggles even while control is suspended, so edit mode can be exited. Charades LOCKS the
+		// mimic's editor outside the sculpt phase (no sculpting before the word is chosen or after the
+		// reveal) — exiting is always allowed, only opening is gated.
 		if ( Input.Pressed( "Edit" ) )
 		{
-			SetFreeCam( false ); // the sculpt rig owns navigation in edit mode — don't fight it for the camera
-			_session?.Toggle();
+			if ( EditMode || !CharadesManager.EditLockedFor( this ) )
+			{
+				SetFreeCam( false ); // the sculpt rig owns navigation in edit mode — don't fight it for the camera
+				_session?.Toggle();
+			}
 		}
 		if ( Input.Pressed( "ToggleWireframes" ) )
 			_session?.ToggleWireframes();

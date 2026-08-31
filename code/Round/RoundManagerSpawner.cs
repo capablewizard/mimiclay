@@ -91,6 +91,7 @@ public sealed class RoundManagerSpawner : Component
 			// count ("0") overriding the card's BotCount, so the test bots silently never spawn.
 			RoundSettings.ClearLobbyData();
 			CreativeSettings.ClearLobbyData();
+			CharadesSettings.ClearLobbyData();
 		}
 
 		// Only the host creates the networked manager; a real client just receives it over the wire and is done.
@@ -121,6 +122,10 @@ public sealed class RoundManagerSpawner : Component
 				SpawnPropHunt( card );
 				break;
 
+			case GameModeKind.Charades:
+				SpawnCharades( card );
+				break;
+
 			default:
 				// A new GameModeKind was added but not wired up here — every game needs a case that creates its
 				// manager (and, if it has per-map knobs, a group on MapModeCard).
@@ -146,6 +151,40 @@ public sealed class RoundManagerSpawner : Component
 		var claims = go.Components.Create<PropClaims>();
 		claims.HoverRange = card.IsValid() ? card.CreativeHoverRange : MapModeCard.DefaultCreativeHoverRange;
 		go.NetworkSpawn();
+	}
+
+	void SpawnCharades( MapModeCard card )
+	{
+		if ( CharadesManager.Current.IsValid() )
+			return;
+
+		var go = new GameObject( true, "Charades Manager" );
+		var cm = go.Components.Create<CharadesManager>(); // pawn prefab read live off this spawner, like RoundManager's
+
+		// Same lobby-vs-card precedence as prop hunt: a direct play takes the card's debug knobs; a real lobby
+		// launch plays the lobby's rules only (the courier's bot count overrides the card's in OnStart).
+		bool lobbyLaunch = !string.IsNullOrEmpty( Networking.GetData( MenuNetworking.Keys.Mode ) );
+		if ( card.IsValid() )
+		{
+			cm.BotCount = card.BotCount;
+			cm.BotRandomLooks = card.BotRandomDisguises;
+
+			if ( lobbyLaunch )
+			{
+				if ( card.OverrideCharadesRules || card.CharadesSoloDebug )
+					Log.Warning( "RoundManagerSpawner: ignoring this map card's charades override/solo debug — lobby launches play the lobby's rules." );
+			}
+			else if ( card.OverrideCharadesRules || card.CharadesSoloDebug )
+			{
+				// Solo debug without the full override still wants MinPlayers 1 — AuthoredCharadesRules folds
+				// it in either way; the non-overridden fields are just the defaults then.
+				cm.RulesOverride = card.OverrideCharadesRules
+					? card.AuthoredCharadesRules
+					: CharadesSettings.Default with { MinPlayers = 1 };
+			}
+		}
+
+		go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]
 	}
 
 	void SpawnPropHunt( MapModeCard card )

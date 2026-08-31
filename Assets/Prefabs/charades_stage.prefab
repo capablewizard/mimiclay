@@ -1,0 +1,173 @@
+{
+  "RootObject": {
+    "__guid": "5dce4a10-77b2-4c6e-8f31-a94f02d7e401",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "Charades Stage",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0,1",
+    "Scale": "1,1,1",
+    "Tags": "",
+    "Enabled": true,
+    "NetworkMode": 2,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "Mimiclay.CharadesStage",
+        "__guid": "5dce4a10-77b2-4c6e-8f31-a94f02d7e402",
+        "__enabled": true,
+        "Flags": 0,
+        "CanvasPrefab": {
+          "_type": "gameobject",
+          "prefab": "prefabs/charades_canvas.prefab"
+        },
+        "CanvasSpot": {
+          "_type": "gameobject",
+          "go": "5dce4a10-77b2-4c6e-8f31-a94f02d7e420"
+        },
+        "MimicSpot": {
+          "_type": "gameobject",
+          "go": "5dce4a10-77b2-4c6e-8f31-a94f02d7e421"
+        },
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null
+      },
+      {
+        "__type": "Mimiclay.CharadesStageFence",
+        "__guid": "5dce4a10-77b2-4c6e-8f31-a94f02d7e407",
+        "__enabled": true,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Radius": 68,
+        "Segments": 12,
+        "Bottom": -40,
+        "Top": 150,
+        "Thickness": 8
+      }
+    ],
+    "Children": [
+      {
+        "__guid": "5dce4a10-77b2-4c6e-8f31-a94f02d7e420",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Canvas Spot",
+        "Position": "0,0,136",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [],
+        "Children": []
+      },
+      {
+        "__guid": "5dce4a10-77b2-4c6e-8f31-a94f02d7e421",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Mimic Spot",
+        "Position": "0,0,17.528614",
+        "Rotation": "0,0,0,1",
+        "Scale": "1,1,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [],
+        "Children": []
+      },
+      {
+        "__guid": "c5c6e464-3ba2-8a49-a378-a501050b588d",
+        "__version": 2,
+        "Flags": 0,
+        "Name": "Cube",
+        "Position": "0,0,-45.171772",
+        "Rotation": "0,0,0,1",
+        "Scale": "2.63389683,2.70154333,1",
+        "Tags": "",
+        "Enabled": true,
+        "NetworkMode": 2,
+        "NetworkFlags": 0,
+        "NetworkOrphaned": 0,
+        "NetworkTransmit": true,
+        "OwnerTransfer": 1,
+        "Components": [
+          {
+            "__type": "Sandbox.ModelRenderer",
+            "__guid": "f7087697-b809-866e-acfb-59973aea47f1",
+            "__enabled": true,
+            "Flags": 0,
+            "BodyGroups": 18446744073709551615,
+            "CreateAttachments": false,
+            "LodOverride": null,
+            "MaterialGroup": null,
+            "MaterialOverride": null,
+            "Materials": null,
+            "Model": "models/dev/box.vmdl",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "RenderOptions": {
+              "GameLayer": true,
+              "OverlayLayer": false,
+              "BloomLayer": false,
+              "AfterUILayer": false
+            },
+            "RenderType": "On",
+            "Tint": "0.2093,0.2093,0.2093,1"
+          }
+        ],
+        "Children": []
+      }
+    ],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [],
+  "__version": 2
+}

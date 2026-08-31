@@ -315,10 +315,12 @@ public sealed class OrbitCameraController : Component
 	}
 
 	// The shared exclusion set for every boom/whisker trace: the pawn's own hierarchy, the owner's ignore
-	// tag (fellow prop bodies), and — in world-only mode — all SDF clay props.
+	// tag (fellow prop bodies), invisible stage-fence walls (a camera shoved by a wall that isn't there
+	// reads as a glitch), and — in world-only mode — all SDF clay props.
 	SceneTrace FilterBoomTrace( SceneTrace trace )
 	{
 		trace = trace.IgnoreGameObjectHierarchy( IgnoreCollision );
+		trace = trace.WithoutTags( CharadesStageFence.WallTag );
 
 		if ( !string.IsNullOrEmpty( IgnoreCollisionTag ) )
 			trace = trace.WithoutTags( IgnoreCollisionTag );

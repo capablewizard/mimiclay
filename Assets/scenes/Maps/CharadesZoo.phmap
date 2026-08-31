@@ -1,0 +1,12 @@
+{
+  "Title": "Charades Zoo",
+  "Description": "Gather round the stage and guess the sculpt.",
+  "Preview": null,
+  "Scene": "scenes/maps/charadeszoo.scene",
+  "Hidden": false,
+  "ForPropHunt": false,
+  "ForCreative": false,
+  "ForCharades": true,
+  "__references": [],
+  "__version": 0
+}

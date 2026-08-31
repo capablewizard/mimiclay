@@ -106,6 +106,58 @@ public sealed class MapModeCard : Component
 	/// <summary>How often each surviving prop's HUD pip flashes its disguise silhouette during the hunt. 0 = never.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float HintSeconds { get; set; } = RoundSettings.DefaultHintSeconds;
 
+	// ── Charades rules override ───────────────────────────────────────────────────────────────────────────
+	// Same deal as the round override above, for charades maps: the rules normally ride in from the lobby as
+	// session data (CharadesSettings.ReadFromLobby); ticking this replaces them so a direct-played charades
+	// map can run short turns while you test the loop. The Test Bots count above doubles as the charades bot
+	// count — bots guess (and take mimic turns) so the whole game is walkable solo.
+	/// <summary>Use the charades rules authored below instead of whatever the lobby sent. Leave OFF for real
+	/// play. Only consulted on a direct play with <see cref="DirectPlayGame"/> = Charades.</summary>
+	[Property, Group( "Charades (Override)" )] public bool OverrideCharadesRules { get; set; }
+
+	/// <summary>First player to this score wins.</summary>
+	[Property, Group( "Charades (Override)" )] public int CharadesTargetScore { get; set; } = CharadesSettings.DefaultTargetScore;
+
+	/// <summary>How the next mimic is picked (take turns / winner stays on).</summary>
+	[Property, Group( "Charades (Override)" )] public MimicRotation CharadesRotation { get; set; } = CharadesSettings.DefaultRotation;
+
+	/// <summary>Which word topics are in play.</summary>
+	[Property, Group( "Charades (Override)" )] public CharadesTopics CharadesTopicSet { get; set; } = CharadesSettings.DefaultTopics;
+
+	/// <summary>Show guessers the masked word shape ("_ _ _   _ _ _ _").</summary>
+	[Property, Group( "Charades (Override)" )] public bool CharadesWordLengthHints { get; set; } = CharadesSettings.DefaultWordLengthHints;
+
+	/// <summary>Warm-up countdown before the first turn (free wander, no freeze). 0 = skip straight in.</summary>
+	[Property, Group( "Charades (Override)" )] public float CharadesStartCountdownSeconds { get; set; } = CharadesSettings.DefaultStartCountdownSeconds;
+
+	/// <summary>Word-pick time before the first offer auto-plays.</summary>
+	[Property, Group( "Charades (Override)" )] public float CharadesChooseSeconds { get; set; } = CharadesSettings.DefaultChooseSeconds;
+
+	/// <summary>The sculpting/guessing clock.</summary>
+	[Property, Group( "Charades (Override)" )] public float CharadesSculptSeconds { get; set; } = CharadesSettings.DefaultSculptSeconds;
+
+	/// <summary>How long the revealed word lingers.</summary>
+	[Property, Group( "Charades (Override)" )] public float CharadesRevealSeconds { get; set; } = CharadesSettings.DefaultRevealSeconds;
+
+	/// <summary>DEBUG: let a charades game start alone (MinPlayers 1) so the loop can be walked solo — pair
+	/// it with a bot or two so there's someone to guess (or sculpt at you).</summary>
+	[Property, Group( "Charades (Override)" )] public bool CharadesSoloDebug { get; set; }
+
+	/// <summary>The authored charades rules as the manager wants them.</summary>
+	public CharadesSettings AuthoredCharadesRules => new()
+	{
+		TargetScore = CharadesTargetScore,
+		Rotation = CharadesRotation,
+		Topics = CharadesTopicSet,
+		WordLengthHints = CharadesWordLengthHints,
+		StartCountdownSeconds = CharadesStartCountdownSeconds,
+		ChooseSeconds = CharadesChooseSeconds,
+		SculptSeconds = CharadesSculptSeconds,
+		RevealSeconds = CharadesRevealSeconds,
+		PodiumSeconds = CharadesSettings.DefaultPodiumSeconds,
+		MinPlayers = CharadesSoloDebug ? 1 : CharadesSettings.DefaultMinPlayers,
+	};
+
 	// The authored rules as the manager wants them. MapIdent is left at the default: the map is already loaded by
 	// the time anyone reads this — nothing downstream re-resolves it — so there's nothing here to choose.
 	public RoundSettings AuthoredRules => new()

@@ -1,0 +1,11 @@
+{
+  "Title": "Characters",
+  "Topic": "Characters",
+  "Hidden": false,
+  "Words": [
+    "wizard", "robot", "ghost", "mermaid", "pirate", "angel", "skeleton", "chef",
+    "knight", "clown", "alien", "cowboy", "snow queen", "caveman"
+  ],
+  "__references": [],
+  "__version": 0
+}

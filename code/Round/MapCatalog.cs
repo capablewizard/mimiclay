@@ -23,6 +23,12 @@ public static class MapCatalog
 			.OrderBy( m => m.Title )
 			.ToList();
 
+	/// <summary>The maps that can host <paramref name="game"/> — what the setup dialog's map panel lists, and
+	/// what a Random pick rolls between, once a game is selected. Charades maps carry a stage, prop-hunt maps
+	/// hiding spots; the flags live on the asset (<see cref="MapResource.Supports"/>).</summary>
+	public static IReadOnlyList<MapResource> For( GameModeKind game )
+		=> All.Where( m => m.Supports( game ) ).ToList();
+
 	/// <summary>Look up a map by its <c>ResourcePath</c>. <see cref="RandomIdent"/> / unknown / empty return false.</summary>
 	public static bool TryGet( string ident, out MapResource map )
 	{
@@ -41,5 +47,17 @@ public static class MapCatalog
 
 		var all = All;
 		return all.Count > 0 ? all[Random.Shared.Next( all.Count )] : null;
+	}
+
+	/// <summary>Resolve within the maps <paramref name="game"/> can play: a picked map that doesn't support the
+	/// game (the host chose the map first, then flipped games) re-rolls among the ones that do, same as Random.
+	/// Returns null when NO map supports the game — the launch preflight's "don't start what can't finish".</summary>
+	public static MapResource Resolve( string ident, GameModeKind game )
+	{
+		if ( TryGet( ident, out var map ) && map.Supports( game ) )
+			return map;
+
+		var pool = For( game );
+		return pool.Count > 0 ? pool[Random.Shared.Next( pool.Count )] : null;
 	}
 }
