@@ -62,11 +62,11 @@
 		// On success the connect changes scene for us; on failure LastError is shown (BuildHash picks it up).
 	}
 
-	void HostGame() => this.Navigate( "/host" );
-	void Sessions() => this.Navigate( "/sessions" );
-	void Customise() => this.Navigate( "/customise" );
-	void Library() => this.Navigate( "/library" );
-	void Options() => this.Navigate( "/options" );
+	void HostGame() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/host");
+	void Sessions() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/sessions");
+	void Customise() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/customise");
+	void Library() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/library");
+	void Options() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/options");
 
 	// Re-render while a network action is in flight (label / disabled state) and when an error appears/clears.
 	// ErrorStamp is included so a repeat of the same message still re-renders → re-keys → replays the fade.

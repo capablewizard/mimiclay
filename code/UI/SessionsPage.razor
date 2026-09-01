@@ -246,7 +246,7 @@
 		StateHasChanged(); // surface any error if the join didn't take
 	}
 
-	void HostInstead() => this.Navigate( "/host" );
+	void HostInstead() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/host");
 
 	// DEBUG helper — fabricate a list of varied fake sessions (real mode names so icons/labels populate) for
 	// styling + scroll testing. Remove together with FakeData. Joining one will just fail ("Couldn't join").
