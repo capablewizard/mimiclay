@@ -1099,7 +1099,7 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0.544853,
                 "SlicePlaneN": -0.089705944,
-                "LocalCentre": "0,0,0",
+                "LocalCentre": "0,0,-3.35075402",
                 "Blend": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
@@ -1400,7 +1400,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 22.804426
+                "BoundingRadius": 21.64156
               },
               {
                 "Shape": "Extruded",
