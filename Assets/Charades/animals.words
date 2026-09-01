@@ -1,0 +1,12 @@
+{
+  "Title": "Animals",
+  "Topic": "Animals",
+  "Hidden": false,
+  "Words": [
+    "snake", "duck", "elephant", "giraffe", "snail", "octopus", "penguin", "turtle",
+    "shark", "whale", "spider", "butterfly", "crab", "frog", "mouse", "cat",
+    "dog", "rabbit", "owl", "flamingo", "hedgehog", "seahorse", "dinosaur", "worm"
+  ],
+  "__references": [],
+  "__version": 0
+}

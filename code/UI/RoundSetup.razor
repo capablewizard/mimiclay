@@ -65,6 +65,72 @@
 						<div class="options-hint">@Game.Blurb</div>
 					</div>
 					}
+					else if ( G == GameModeKind.Charades )
+					{
+					@* First to X points wins the game. *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">flag</div><span>First To</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddCharadesTarget( -1 ))>remove</div>
+							<div class="step-value">@Ch.TargetScore</div>
+							<div class="step-btn" @onclick=@(() => AddCharadesTarget( 1 ))>add</div>
+						</div>
+					</div>
+
+					@* Who takes the stage next — take turns, or the turn's winner. *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">theater_comedy</div><span>Mimic</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@CycleCharadesRotation>chevron_left</div>
+							<div class="step-value mode-value">@RotationLabel( Ch.Rotation )</div>
+							<div class="step-btn" @onclick=@CycleCharadesRotation>chevron_right</div>
+						</div>
+					</div>
+
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">timer</div><span>Sculpt Time</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddCharadesSculpt( -15f ))>remove</div>
+							<div class="step-value">@Secs( Ch.SculptSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddCharadesSculpt( 15f ))>add</div>
+						</div>
+					</div>
+
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">schedule</div><span>Choose Time</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddCharadesChoose( -5f ))>remove</div>
+							<div class="step-value">@Secs( Ch.ChooseSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddCharadesChoose( 5f ))>add</div>
+						</div>
+					</div>
+
+					@* Show guessers the masked word shape ("_ _ _  _ _ _ _"). Yes/No through the same
+					   two-value scrubber as creative's Spawn Props — both arrows just flip it. *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">password</div><span>Length Hints</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@ToggleCharadesHints>chevron_left</div>
+							<div class="step-value">@(Ch.WordLengthHints ? "Yes" : "No")</div>
+							<div class="step-btn" @onclick=@ToggleCharadesHints>chevron_right</div>
+						</div>
+					</div>
+
+					@* Which word topics are in the pool — chips toggle; Everything lights them all. The last
+					   lit chip won't turn off (the manager needs SOMETHING to draw from). *@
+					<div class="setting-row topics-row">
+						<div class="setting-name"><div class="mi">category</div><span>Topics</span></div>
+					</div>
+					<div class="topic-grid">
+						<div class="topic-chip everything @(Ch.Topics == CharadesTopics.Everything ? "on" : "")"
+							 @onclick=@(() => LobbyManager.Current?.SetCharadesAllTopics())>Everything</div>
+						@foreach ( var topic in AllTopics )
+						{
+							<div class="topic-chip @(Ch.Topics.HasFlag( topic ) ? "on" : "")"
+								 @onclick=@(() => LobbyManager.Current?.ToggleCharadesTopic( topic ))>@topic</div>
+						}
+					</div>
+					}
 					else
 					{
 					@* Prop hunt's mode-within-the-game — Infection / Teams (the second taxonomy level). *@
@@ -157,7 +223,8 @@
 						<div class="map-row @(IsPicked( MapCatalog.RandomIdent ) ? "selected" : "")"
 							 @onclick=@(() => PickMap( MapCatalog.RandomIdent ))>Random</div>
 
-						@foreach ( var m in MapCatalog.All )
+						@* Only maps that can HOST the selected game (charades maps carry a stage, etc). *@
+						@foreach ( var m in MapCatalog.For( G ) )
 						{
 							<div class="map-row @(IsPicked( m.ResourcePath ) ? "selected" : "")"
 								 @onclick=@(() => PickMap( m.ResourcePath ))>@m.Title</div>
@@ -304,6 +371,29 @@
 	// Creative's toggle (host-authority enforced by the LobbyManager setter, like everything above).
 	void ToggleSpawnProps() => LobbyManager.Current?.SetSpawnProps( !C.SpawnProps );
 
+	// ── Charades settings (host-authority enforced by the LobbyManager setters) ─────────────────────────────
+	CharadesSettings Ch => LobbyManager.Current.IsValid() ? LobbyManager.Current.CharadesCfg : CharadesSettings.Default;
+
+	// Everything is a chip of its own, so the per-topic list excludes the aggregate (and None).
+	static readonly CharadesTopics[] AllTopics =
+	{
+		CharadesTopics.Animals, CharadesTopics.Food, CharadesTopics.Objects,
+		CharadesTopics.Vehicles, CharadesTopics.Nature, CharadesTopics.Characters,
+	};
+
+	void AddCharadesTarget( int d ) => LobbyManager.Current?.SetCharadesTarget( Ch.TargetScore + d );
+	void AddCharadesSculpt( float d ) => LobbyManager.Current?.SetCharadesSculptSeconds( Ch.SculptSeconds + d );
+	void AddCharadesChoose( float d ) => LobbyManager.Current?.SetCharadesChooseSeconds( Ch.ChooseSeconds + d );
+	void ToggleCharadesHints() => LobbyManager.Current?.SetCharadesWordHints( !Ch.WordLengthHints );
+
+	// Two values, so both arrows just flip it — same convention as creative's Yes/No scrubber.
+	void CycleCharadesRotation()
+		=> LobbyManager.Current?.SetCharadesRotation(
+			Ch.Rotation == MimicRotation.TakeTurns ? MimicRotation.WinnerStaysOn : MimicRotation.TakeTurns );
+
+	static string RotationLabel( MimicRotation r )
+		=> r == MimicRotation.WinnerStaysOn ? "Winner Stays On" : "Take Turns";
+
 	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
 	void PickMap( string ident )
 	{
@@ -328,5 +418,6 @@
 		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
 			HashCode.Combine( G, C.SpawnProps ),
+			HashCode.Combine( Ch.TargetScore, Ch.Rotation, Ch.Topics, Ch.SculptSeconds, Ch.ChooseSeconds, Ch.WordLengthHints ),
 			_picked, LobbyPlayerCount );
 }

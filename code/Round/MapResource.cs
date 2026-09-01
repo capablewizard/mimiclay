@@ -25,4 +25,28 @@ public sealed class MapResource : GameResource
 
 	/// <summary>Keep this map out of the picker (still openable directly in the editor).</summary>
 	public bool Hidden { get; set; } = false;
+
+	// ── Which games this map can host ─────────────────────────────────────────────────────────────────────
+	// Per-game bools rather than a list so every EXISTING .phmap asset (which predates these keys) reads the
+	// right answer from the defaults: all of them were authored as prop-hunt/creative maps, and none has a
+	// charades stage. The setup dialog's map panel filters through MapCatalog.For( game ).
+
+	/// <summary>Selectable when the lobby is set up for Prop Hunt.</summary>
+	public bool ForPropHunt { get; set; } = true;
+
+	/// <summary>Selectable when the lobby is set up for Creative.</summary>
+	public bool ForCreative { get; set; } = true;
+
+	/// <summary>Selectable when the lobby is set up for Charades. Only maps with a <see cref="CharadesStage"/>
+	/// prefab placed in the scene qualify — the game needs somewhere to put the canvas.</summary>
+	public bool ForCharades { get; set; } = false;
+
+	/// <summary>Whether this map can host <paramref name="game"/>.</summary>
+	public bool Supports( GameModeKind game ) => game switch
+	{
+		GameModeKind.PropHunt => ForPropHunt,
+		GameModeKind.Creative => ForCreative,
+		GameModeKind.Charades => ForCharades,
+		_ => false,
+	};
 }

@@ -50,6 +50,10 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 	/// is Creative; carried into the map by its courier at launch — see <see cref="CreativeSettings"/>).</summary>
 	[Sync] public CreativeSettings CreativeCfg { get; set; } = CreativeSettings.Default;
 
+	/// <summary>The charades rules the host is configuring (only meaningful while <see cref="SelectedGame"/>
+	/// is Charades; carried into the map by its courier at launch — see <see cref="CharadesSettings"/>).</summary>
+	[Sync] public CharadesSettings CharadesCfg { get; set; } = CharadesSettings.Default;
+
 	/// <summary>True from Start being hit until the scene change. [Sync]'d, so a client joining mid-countdown
 	/// sees the launch coming instead of an idle "waiting for host".</summary>
 	[Sync] public bool Launching { get; private set; }
@@ -367,10 +371,11 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
 			return; // only the host starts
 
-		// Don't begin a countdown we can't finish — every map-playing game needs a resolvable map.
-		if ( GameModes.Get( SelectedGame ).UsesMaps && MapCatalog.Resolve( Settings.MapIdent ) is null )
+		// Don't begin a countdown we can't finish — every map-playing game needs a map that can HOST it
+		// (charades maps carry a stage; a game-filtered resolve returns null when none qualifies).
+		if ( GameModes.Get( SelectedGame ).UsesMaps && MapCatalog.Resolve( Settings.MapIdent, SelectedGame ) is null )
 		{
-			Log.Warning( "LobbyManager: can't start — no Prop Hunt Map assets exist. Create one and pick it." );
+			Log.Warning( $"LobbyManager: can't start — no map asset supports {SelectedGame}. Create one and pick it." );
 			return;
 		}
 
@@ -450,6 +455,57 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		var s = CreativeCfg; s.SpawnProps = on; CreativeCfg = s;
 	}
 
+	// ── Charades config (same copy-mutate-write shape again) ──────────────────────────────────────────────────
+	public void SetCharadesTarget( int score )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.TargetScore = Math.Clamp( score, 3, 50 ); CharadesCfg = s;
+	}
+
+	public void SetCharadesRotation( MimicRotation rotation )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.Rotation = rotation; CharadesCfg = s;
+	}
+
+	/// <summary>Toggle one topic in/out of the pool. The last lit topic can't be turned off — a game needs
+	/// SOMETHING to draw words from, and "none selected" reading as Everything would make the click look broken.</summary>
+	public void ToggleCharadesTopic( CharadesTopics topic )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg;
+		var next = s.Topics ^ topic;
+		if ( (next & CharadesTopics.Everything) == CharadesTopics.None )
+			return;
+		s.Topics = next;
+		CharadesCfg = s;
+	}
+
+	/// <summary>All topics on — the "Everything" chip.</summary>
+	public void SetCharadesAllTopics()
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.Topics = CharadesTopics.Everything; CharadesCfg = s;
+	}
+
+	public void SetCharadesWordHints( bool on )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.WordLengthHints = on; CharadesCfg = s;
+	}
+
+	public void SetCharadesSculptSeconds( float seconds )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.SculptSeconds = Math.Clamp( seconds, 30f, 600f ); CharadesCfg = s;
+	}
+
+	public void SetCharadesChooseSeconds( float seconds )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.ChooseSeconds = Math.Clamp( seconds, 5f, 60f ); CharadesCfg = s;
+	}
+
 	// ── Launch ─────────────────────────────────────────────────────────────────────────────────────────────────
 	// Host-only. The countdown elapsed: every game launches into the picked map. The mode key stamped below is
 	// the courier that tells the map scene which game to run — RoundManagerSpawner reads it and spawns that
@@ -469,6 +525,10 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		if ( SelectedGame == GameModeKind.Creative )
 			CreativeCfg.WriteToLobby();
 
+		// Charades' too — including the came-from-lobby flag its manager returns on after the podium.
+		if ( SelectedGame == GameModeKind.Charades )
+			CharadesCfg.WriteToLobby();
+
 		LaunchIntoMap();
 	}
 
@@ -477,10 +537,10 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 	// (it has no roles to assign) but rides the same courier.
 	void LaunchIntoMap()
 	{
-		var map = MapCatalog.Resolve( Settings.MapIdent );
+		var map = MapCatalog.Resolve( Settings.MapIdent, SelectedGame );
 		if ( map is null || map.Scene is null )
 		{
-			Log.Warning( "LobbyManager: nothing to launch — no Prop Hunt Map asset (with a Scene) to load." );
+			Log.Warning( $"LobbyManager: nothing to launch — no map asset (with a Scene) supports {SelectedGame}." );
 			return;
 		}
 

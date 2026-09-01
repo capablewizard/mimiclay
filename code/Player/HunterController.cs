@@ -621,7 +621,8 @@ public sealed class HunterController : Component
 		// once in OnStart: a host-spawned pawn runs OnStart on the owning client BEFORE ownership replicates, so a
 		// one-shot IsProxy read is stale. (IsProxy is false in non-networked play, so solo still works.)
 		// Round freeze: during the Starting countdown locomotion is locked (you can still LOOK around to scope out
-		// your team + surroundings) — same "stop input, clear momentum" treatment as edit mode.
+		// your team + surroundings) — same "stop input, clear momentum" treatment as edit mode. (Charades'
+		// Starting countdown deliberately does NOT lock — its warm-up is a free wander.)
 		bool locked = RoundManager.ControlsLocked;
 
 		if ( _controller.IsValid() )
@@ -1604,7 +1605,11 @@ public sealed class HunterController : Component
 			var desired = anchor + rot * new Vector3( -dist, -ThirdPersonShoulder * offsetScale, ThirdPersonRise * offsetScale );
 			var trace = Scene.Trace.Ray( anchor, desired )
 				.Radius( 8f )
-				.IgnoreGameObjectHierarchy( GameObject );
+				.IgnoreGameObjectHierarchy( GameObject )
+				// Booms never collide with the charades stage's invisible fence walls — shared rule with
+				// the prop's orbit boom (FilterBoomTrace): an unseeable obstruction shoving the camera
+				// reads as a glitch.
+				.WithoutTags( CharadesStageFence.WallTag );
 
 			// Same world-only rule as the prop's orbit boom: clay never pushes the camera.
 			if ( BoomWorldOnly )

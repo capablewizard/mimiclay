@@ -10,12 +10,13 @@ namespace Mimiclay;
 /// and drops everyone into the lobby, where <see cref="LobbyManager.SelectedGame"/> carries the live choice.
 ///
 /// <see cref="PropHunt"/> is the headline game (hunters vs. sculpted hiders). <see cref="Creative"/> is the
-/// no-round sandbox.
+/// no-round sandbox. <see cref="Charades"/> is sculpt-and-guess (pictionary in clay).
 /// </summary>
 public enum GameModeKind
 {
 	PropHunt,
 	Creative,
+	Charades,
 }
 
 /// <summary>Display metadata for a <see cref="GameModeKind"/> — label, one-line blurb, icon, and the gameplay
@@ -29,7 +30,7 @@ public readonly record struct GameModeInfo( GameModeKind Kind, string Label, str
 	/// static, and statics survive hotload — a field added to the struct arrives as its DEFAULT (false) in the
 	/// migrated array because the initializer doesn't re-run, which silently hid the maps panel for every game
 	/// until an editor restart.</summary>
-	public bool UsesMaps => Kind is GameModeKind.PropHunt or GameModeKind.Creative;
+	public bool UsesMaps => Kind is GameModeKind.PropHunt or GameModeKind.Creative or GameModeKind.Charades;
 }
 
 /// <summary>The catalogue of playable games, in the order the setup dialog cycles them.</summary>
@@ -41,6 +42,8 @@ public static class GameModes
 			"", "visibility" ), // scene comes from the map picker (MapCatalog), not the catalogue
 		new( GameModeKind.Creative, "Creative", "A quiet sandbox, let your creativity run wild",
 			"", "brush" ),      // plays on the picked map too — the mode key tells the map to run creative
+		new( GameModeKind.Charades, "Charades", "One player sculpts a secret word — everyone else guesses.",
+			"", "theater_comedy" ), // plays on a picked charades map (one with a stage — see MapResource.ForCharades)
 	};
 
 	public static GameModeInfo Get( GameModeKind kind )

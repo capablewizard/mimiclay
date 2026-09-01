@@ -45,6 +45,32 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 
 	void Apply()
 	{
+		// CHARADES: no outlines, full stop — the sculpt on the stage is the whole show, and any glow (the
+		// mimic's owner locator, a hunt-style through-wall tell, a decoy's authored state) is just noise
+		// around it. Without this branch charades maps fall through every gate below (no round, no lobby,
+		// no claims) and every pawn keeps the prefab-authored glow. One exception: the owner-only
+		// SculptBounds WARNING (locally editable + invalid sculpt) stays — that's the mimic's size-limit
+		// feedback while sculpting, not a highlight.
+		if ( CharadesManager.Current.IsValid() )
+		{
+			foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
+			{
+				var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
+				outline.Hidden = !(bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid);
+			}
+
+			// And no Reveal pulse ever — asserted OFF both ways like the branches below, so a snapshot
+			// that shipped a mid-flash pawn can't leave one pulsing.
+			foreach ( var hider in Scene.GetAllComponents<HiderController>() )
+			{
+				var flash = hider.Components.Get<SdfOutlineFlash>( FindMode.EverythingInSelf );
+				if ( flash.IsValid() )
+					flash.Enabled = false;
+			}
+
+			return;
+		}
+
 		// A live claim service WITHOUT a round (creative maps; the lobby with prop editing) takes the
 		// hover-presentation rules — which subsume the Lobby-phase rules, so the lobby doesn't also run
 		// the phase path. It NEEDS gating just as much as a round: with no system writing Hidden, every

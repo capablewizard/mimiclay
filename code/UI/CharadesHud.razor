@@ -1,0 +1,225 @@
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The Charades player HUD — one panel for the whole game, bound to CharadesManager.Current. Spawned
+	programmatically by the manager (Ensure below), so charades maps need no HUD wiring of their own.
+
+	Layout:
+	  • top-centre — phase caption + timer + the word strip: the mimic sees their word, guessers see the
+	    masked hint, the reveal shows everyone the answer.
+	  • bottom centre — the mimic's three word buttons during Choosing (keyed 1/2/3), or the guessers'
+	    "press Enter" hint during the sculpt. Guessing itself lives in the ENGINE chat overlay — the
+	    familiar Enter box — with CharadesManager censoring correct guesses host-side (IChatEvent).
+	  • right edge — the scoreboard with the target score, always up (it IS the game's tension).
+
+	Hidden wholesale while the local player sculpt-edits (the mimic keeps a slim word reminder only) —
+	the edit HUD owns the screen there, same deal as RoundHud's hotkey strip.
+*@
+
+<root class="charades-hud">
+	@if ( Manager is null )
+	{
+		<div class="top-centre">
+			<div class="phase-caption">Setting up…</div>
+		</div>
+	}
+	else if ( Editing )
+	{
+		@* Mimic, in the editor: everything gets out of the edit HUD's way except what they must not
+		   forget — the word and the clock. *@
+		<div class="mimic-strip">
+			<div class="strip-word">@(Manager.LocalWord ?? "")</div>
+			<div class="strip-timer">@TimerText</div>
+		</div>
+	}
+	else
+	{
+		<div class="top-centre">
+			<div class="phase-caption">@PhaseCaption</div>
+			@if ( HasTimer )
+			{
+				<div class="timer">@TimerText</div>
+			}
+
+			@if ( WordStrip != "" )
+			{
+				<div class="word-strip @(Manager.Phase == CharadesPhase.TurnReveal ? "revealed" : "")">@WordStrip</div>
+			}
+		</div>
+
+		@* Choosing: the mimic picks — bottom centre, by click or the 1/2/3 keys (they're standing on the
+		   stage as their prop, so the hands stay on the movement keys). Everyone else watches the name. *@
+		@if ( Manager.Phase == CharadesPhase.Choosing )
+		{
+			@if ( Manager.LocalIsMimic && Manager.OfferedWords.Count > 0 )
+			{
+				<div class="word-choice paper-card">
+					<div class="choice-title">Sculpt one:</div>
+					<div class="choice-row">
+						@foreach ( var (word, i) in Manager.OfferedWords.Select( ( w, i ) => (w, i) ) )
+						{
+							<div class="btn choice-btn" onclick=@( () => Manager.ChooseWord( i ) )>
+								<div class="choice-key">@(i + 1)</div>
+								<span>@word</span>
+							</div>
+						}
+					</div>
+				</div>
+			}
+		}
+
+		@* Podium: the standings, big. *@
+		@if ( Manager.Phase == CharadesPhase.Podium )
+		{
+			<div class="podium paper-card">
+				<div class="podium-title">@WinnerLine</div>
+				@foreach ( var (p, i) in Manager.Scoreboard.Take( 8 ).Select( ( p, i ) => (p, i) ) )
+				{
+					<div class="podium-row rank-@i">
+						<div class="rank">@(i + 1)</div>
+						<div class="name">@p.Name</div>
+						<div class="score">@p.Score</div>
+					</div>
+				}
+			</div>
+		}
+
+		@* Scoreboard — right edge, always on, topped by the race's finish line. *@
+		<div class="scoreboard">
+			<div class="target-line">First to @Manager.Settings.TargetScore</div>
+			@foreach ( var p in Manager.Scoreboard.Take( 10 ) )
+			{
+				<div class="score-row @(p.Connection == Manager.MimicId ? "miming" : "") @(p.GuessedPlace > 0 ? "guessed" : "")">
+					<div class="badge">@BadgeFor( p )</div>
+					<div class="name">@p.Name</div>
+					<div class="score">@p.Score</div>
+				</div>
+			}
+		</div>
+
+		@* Guessing happens in the ENGINE chat (Enter) — the HUD just reminds guessers where the verb is. *@
+		@if ( Manager.Phase == CharadesPhase.Sculpting && !Manager.LocalIsMimic )
+		{
+			<div class="guess-hint">press <span class="key">Enter</span> and type your guess</div>
+		}
+	}
+</root>
+
+@code
+{
+	/// <summary>Bring the HUD up in this scene if it isn't already — called by CharadesManager.OnEnabled,
+	/// the SpeechBubbleHud.Ensure pattern, so charades maps need no scene wiring.</summary>
+	public static void Ensure( Scene scene )
+	{
+		if ( scene is null || scene.IsEditor || scene.GetAllComponents<CharadesHud>().Any() )
+			return;
+
+		var go = new GameObject( true, "Charades HUD" );
+		go.Flags |= GameObjectFlags.NotSaved; // runtime-only: never let this end up serialised into an asset
+		var panel = go.Components.Create<ScreenPanel>();
+		panel.ZIndex = 60; // gameplay HUD: under the EditHud (100) and every dialog
+		go.Components.Create<CharadesHud>();
+	}
+
+	CharadesManager Manager => CharadesManager.Current;
+
+	// The local player is in the sculpt editor (as the mimic, or somehow otherwise) — the edit HUD owns the
+	// screen, this panel slims down to the reminder strip.
+	bool Editing => SculptEditSession.Current?.IsEditing == true;
+
+	protected override void OnUpdate()
+	{
+		// The mimic's 1/2/3 word pick — keyboard-direct (like RoundSetup's G) so it works while they drive
+		// their prop around the stage; the on-screen buttons stay clickable for mouse people.
+		if ( Manager is null || Manager.Phase != CharadesPhase.Choosing
+			|| !Manager.LocalIsMimic || Manager.OfferedWords.Count == 0 )
+			return;
+
+		for ( var i = 0; i < Math.Min( 3, Manager.OfferedWords.Count ); i++ )
+		{
+			if ( Input.Keyboard.Pressed( (i + 1).ToString() ) )
+				Manager.ChooseWord( i );
+		}
+	}
+
+	bool HasTimer => Manager is not null && Manager.Phase != CharadesPhase.Waiting;
+
+	string TimerText
+	{
+		get
+		{
+			if ( Manager is null || !HasTimer )
+				return "0";
+
+			var t = MathF.Ceiling( MathF.Max( 0f, Manager.PhaseEndsAt ) );
+			return $"{(int)(t / 60f)}:{(int)(t % 60f):00}";
+		}
+	}
+
+	string PhaseCaption => Manager?.Phase switch
+	{
+		CharadesPhase.Waiting => $"Waiting for players ({Manager.Players.Count}/{Manager.Settings.MinPlayers})",
+		CharadesPhase.Starting => "Get ready…",
+		CharadesPhase.Choosing => Manager.LocalIsMimic ? "Your turn — pick a word!" : $"{Manager.MimicName} is choosing a word…",
+		CharadesPhase.Sculpting => Manager.LocalIsMimic ? "Sculpt it!" : $"{Manager.MimicName} is sculpting — guess in chat!",
+		CharadesPhase.TurnReveal => "The word was…",
+		CharadesPhase.Podium => "Final standings",
+		_ => "",
+	} ?? "";
+
+	// The word strip under the clock: your word (mimic), the letter-spaced hint (guessers), the answer (reveal).
+	string WordStrip
+	{
+		get
+		{
+			if ( Manager is null )
+				return "";
+
+			if ( Manager.Phase == CharadesPhase.TurnReveal )
+				return Manager.RevealedWord;
+
+			if ( Manager.Phase != CharadesPhase.Sculpting )
+				return "";
+
+			if ( Manager.LocalIsMimic )
+				return Manager.LocalWord ?? "";
+
+			// "___ _____" reads better letter-spaced: "_ _ _   _ _ _ _ _".
+			return string.Join( " ", (Manager.WordHint ?? "").Select( c => c == ' ' ? " " : c.ToString() ) );
+		}
+	}
+
+	// The row badge: the mimic's easel, or the guess-place medal (faster = shinier).
+	static string BadgeFor( CharadesPlayer p )
+	{
+		if ( CharadesManager.Current.IsValid() && p.Connection == CharadesManager.Current.MimicId )
+			return "🎨";
+
+		return p.GuessedPlace switch { 0 => "", 1 => "🥇", 2 => "🥈", _ => "✔" };
+	}
+
+	string WinnerLine
+	{
+		get
+		{
+			var top = Manager?.Scoreboard.FirstOrDefault();
+			return top is { Name.Length: > 0 } ? $"🏆 {top.Value.Name} wins!" : "Game over!";
+		}
+	}
+
+	protected override int BuildHash()
+		=> Manager is null
+			? 0
+			: HashCode.Combine(
+				HashCode.Combine( Manager.Phase, TimerText, Manager.MimicId, Manager.WordHint, Manager.RevealedWord ),
+				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing ),
+				// Scores/guess places move without anything above noticing.
+				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedPlace ) ),
+				Manager.Players.Count );
+}
