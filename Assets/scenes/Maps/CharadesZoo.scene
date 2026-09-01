@@ -3470,15 +3470,15 @@
           "BotCount": 3,
           "BotHunterPawns": true,
           "BotRandomDisguises": true,
-          "CharadesChooseSeconds": 5,
-          "CharadesRevealSeconds": 3,
+          "CharadesChooseSeconds": 15,
+          "CharadesRevealSeconds": 8,
           "CharadesRotation": "TakeTurns",
-          "CharadesSculptSeconds": 10,
-          "CharadesSoloDebug": true,
-          "CharadesStartCountdownSeconds": 4,
+          "CharadesSculptSeconds": 150,
+          "CharadesSoloDebug": false,
+          "CharadesStartCountdownSeconds": 10,
           "CharadesTargetScore": 15,
           "CharadesTopicSet": "Everything",
-          "CharadesWordLengthHints": false,
+          "CharadesWordLengthHints": true,
           "ConsolidationSeconds": 12,
           "CreativeHoverRange": 300,
           "DebugSoloHide": false,
@@ -3495,7 +3495,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverrideCharadesRules": true,
+          "OverrideCharadesRules": false,
           "OverrideRules": false,
           "PlayAs": "Auto",
           "RevealSeconds": 30,
@@ -9837,208 +9837,20 @@
       "__version": 2,
       "__Prefab": "prefabs/charades_stage.prefab",
       "__PrefabInstancePatch": {
-        "AddedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "f79b93e5-fdc3-419b-a821-abb71e66d315"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5dce4a10-77b2-4c6e-8f31-a94f02d7e401"
-            },
-            "PreviousElement": {
-              "Type": "Component",
-              "IdValue": "5dce4a10-77b2-4c6e-8f31-a94f02d7e402"
-            },
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.CharadesStageFence",
-              "__guid": "f79b93e5-fdc3-419b-a821-abb71e66d315",
-              "__enabled": true,
-              "Flags": 0,
-              "Bottom": -57.779957,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 100,
-              "Segments": 16,
-              "Thickness": 8,
-              "Top": 93.42017
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "f350c173-69df-460c-8137-33ece9845ebf"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5dce4a10-77b2-4c6e-8f31-a94f02d7e401"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "5dce4a10-77b2-4c6e-8f31-a94f02d7e421"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "f350c173-69df-460c-8137-33ece9845ebf",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Block",
-              "Position": "0,0,-89.8408508",
-              "Rotation": "0,0,0,1",
-              "Scale": "1.07573497,0.937021077,1",
-              "Tags": "world",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d66188d9-53fb-4aab-817f-e6607c65b2f7"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "f350c173-69df-460c-8137-33ece9845ebf"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Sandbox.MeshComponent",
-              "__guid": "d66188d9-53fb-4aab-817f-e6607c65b2f7",
-              "__enabled": true,
-              "Flags": 0,
-              "ColliderFlags": 0,
-              "Collision": "Mesh",
-              "Color": "1,1,1,1",
-              "Elasticity": null,
-              "Friction": null,
-              "HideInGame": false,
-              "IsTrigger": false,
-              "Mesh": {
-                "Data": "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Pghdgz0OqFe/Ng4+vspfIT42Dj6+DqhXv+bb9b7KXyE+5tv1vg6oV79YWEa/yl8hPlhYRr8OqFe/xCODv8pfIT72Ub8/DqhXv04fmz/KXyE+Th+bPw6oV78f2WA/yl8hPh/ZYD8OqFe/mnMLP8pfIT6acws/DqhXv5wchj7KXyE+wSODPw6oV79YWEY/yl8hPlhYRj8OqFe/DQAAAG1hdGVyaWFsaW5kZXhIAAAA////////////////////////////////////////////////////////////////////////////////////////////////CQAAAGVkZ2VmbGFnc4ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-              },
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "OnObjectTriggerEnter": null,
-              "OnObjectTriggerExit": null,
-              "OnTriggerEnter": null,
-              "OnTriggerExit": null,
-              "RenderType": "On",
-              "RollingResistance": null,
-              "SmoothingAngle": 40,
-              "Static": true,
-              "Surface": null,
-              "SurfaceVelocity": "0,0,0"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "25d04e0c-3c01-47d6-bff2-b920fc800d9c"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "f350c173-69df-460c-8137-33ece9845ebf"
-            },
-            "PreviousElement": {
-              "Type": "Component",
-              "IdValue": "d66188d9-53fb-4aab-817f-e6607c65b2f7"
-            },
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Sandbox.HullCollider",
-              "__guid": "25d04e0c-3c01-47d6-bff2-b920fc800d9c",
-              "__enabled": true,
-              "Flags": 0,
-              "BoxSize": "50,50,50",
-              "Center": "0,0,0",
-              "ColliderFlags": 0,
-              "Elasticity": null,
-              "Friction": null,
-              "Height": 50,
-              "IsTrigger": false,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "OnObjectTriggerEnter": null,
-              "OnObjectTriggerExit": null,
-              "OnTriggerEnter": null,
-              "OnTriggerExit": null,
-              "Points": [],
-              "Radius": 25,
-              "Radius2": 0,
-              "RollingResistance": null,
-              "Slices": 16,
-              "Static": false,
-              "Surface": null,
-              "SurfaceVelocity": "0,0,0",
-              "Type": "Cylinder"
-            }
-          }
-        ],
-        "RemovedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "5dce4a10-77b2-4c6e-8f31-a94f02d7e407"
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "c5c6e464-3ba2-8a49-a378-a501050b588d"
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "f7087697-b809-866e-acfb-59973aea47f1"
-            }
-          }
-        ],
-        "PropertyOverrides": [
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5dce4a10-77b2-4c6e-8f31-a94f02d7e402"
-            },
-            "Property": "StageRadius",
-            "Value": 60.52003
-          }
-        ],
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [],
         "MovedObjects": []
       },
       "__PrefabIdToInstanceId": {
         "5dce4a10-77b2-4c6e-8f31-a94f02d7e401": "74bfcf9f-fae2-444b-90bf-925ef1a86b31",
-        "5dce4a10-77b2-4c6e-8f31-a94f02d7e402": "fbc46961-0532-41a8-b69c-0048ce9b0165",
-        "cfd0ad72-5900-440c-808a-9d87bf608f73": "e8ac9e10-3dea-471c-8f54-c76027092320",
         "5dce4a10-77b2-4c6e-8f31-a94f02d7e420": "c5fbaed4-286f-45cb-afed-ad0e285cb1d9",
         "5dce4a10-77b2-4c6e-8f31-a94f02d7e421": "2514fc94-401c-404f-a174-da0b7a30277a",
-        "c5c6e464-3ba2-8a49-a378-a501050b588d": "cf3f185e-1f3b-4f02-980d-c340d759793a",
-        "f7087697-b809-866e-acfb-59973aea47f1": "cb5070dc-71c6-4000-b416-ddb2f169b818"
+        "cfceb1bf-00f0-8489-9414-49ee0f9c181b": "f350c173-69df-460c-8137-33ece9845ebf",
+        "596d63d9-3af7-8f00-9a87-101d464465e4": "7adafc1b-2428-4edb-b21c-d6e49ae424f1",
+        "8580b04b-3905-87a4-b0fd-c0bda1d07417": "c4c1f711-59a9-4e19-889e-203549519de1",
+        "f9b4ff59-e645-8954-ba4f-0ec2daa8de85": "d66188d9-53fb-4aab-817f-e6607c65b2f7",
+        "475feaac-94cb-8404-a4e1-4491b124e3b3": "25d04e0c-3c01-47d6-bff2-b920fc800d9c"
       }
     }
   ],

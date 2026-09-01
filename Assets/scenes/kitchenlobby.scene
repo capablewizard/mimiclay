@@ -5407,7 +5407,7 @@
           "DefaultMaterial": "materials/plasticine_scene.vmat",
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 12:09:28",
+          "LastImport": "63 object(s), 67661 tris — 15:28:29",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
