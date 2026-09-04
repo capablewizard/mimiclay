@@ -80,8 +80,21 @@ public static class CharadesWords
 	public static string Mask( string word )
 		=> new( word.Select( c => c == ' ' ? ' ' : '_' ).ToArray() );
 
-	/// <summary>Case/whitespace-insensitive canonical form for guess comparison.</summary>
+	/// <summary>Canonical form for guess comparison: lower-cased, punctuation stripped, whitespace folded —
+	/// so "Hot-Dog!" matches "hot dog", and a bot mimic's sculpt-save name like "duck (2)" still matches a
+	/// typed "duck 2". Letters, digits and single spaces are all that survive.</summary>
 	public static string Normalize( string text )
-		=> string.Join( ' ', (text ?? "").Trim().ToLowerInvariant()
+	{
+		var kept = new System.Text.StringBuilder( (text ?? "").Length );
+		foreach ( var c in (text ?? "").ToLowerInvariant() )
+		{
+			if ( char.IsLetterOrDigit( c ) )
+				kept.Append( c );
+			else if ( char.IsWhiteSpace( c ) || c == '-' || c == '_' )
+				kept.Append( ' ' ); // separators count as word gaps, never as letters
+		}
+
+		return string.Join( ' ', kept.ToString()
 			.Split( ' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries ) );
+	}
 }

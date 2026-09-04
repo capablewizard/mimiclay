@@ -488,8 +488,16 @@ public sealed class CharadesManager : Component, IChatEvent
 	// still stops delivery — so a correct guess is censored at the source: the word itself never goes on
 	// the wire. Wrong guesses flow through as ordinary chat (near-misses being public is half the game),
 	// and every DELIVERED line floats a speech bubble over its speaker on every machine.
+	/// <summary>Log every step of the chat→guess funnel (host-side verdicts included, so it PRINTS THE
+	/// SECRET WORD on the host — debugging only). Console: <c>charades_debug_chat true</c>.</summary>
+	[ConVar( "charades_debug_chat" )]
+	public static bool DebugChat { get; set; }
+
 	void IChatEvent.OnChatMessage( ChatMessageEvent e )
 	{
+		if ( DebugChat )
+			Log.Info( $"[charades chat] sender={e.Sender?.DisplayName ?? "<system>"} msg='{e.Message}' hostAuth={IsHostAuthority} phase={Phase} suppressed={e.Suppress}" );
+
 		if ( e.Sender is null )
 			return; // system lines (join/leave, our own announcements) — no verdicts, no bubbles
 
@@ -509,7 +517,14 @@ public sealed class CharadesManager : Component, IChatEvent
 	{
 		var rosterId = e.Sender.Id;
 		if ( !Players.TryGetValue( rosterId, out var guesser ) )
+		{
+			if ( DebugChat )
+				Log.Info( $"[charades judge] sender {rosterId} has NO roster row ({Players.Count} rows) — plain chat" );
 			return; // not seated (a mid-join edge) — plain chat
+		}
+
+		if ( DebugChat )
+			Log.Info( $"[charades judge] roster ok, phase={Phase}, word='{_currentWord ?? "<null>"}', place={guesser.GuessedPlace}, norm-guess='{CharadesWords.Normalize( e.Message )}' vs norm-word='{CharadesWords.Normalize( _currentWord ?? "" )}'" );
 
 		// The mimic knows the word — nothing they type mid-turn is safe to echo.
 		if ( rosterId == MimicId && Phase is CharadesPhase.Choosing or CharadesPhase.Sculpting )
