@@ -88,13 +88,14 @@ public static class SdfPrefabUtility
 	/// <summary>Core writer: clone the template prefab, swap in the given shape, write it under
 	/// <c>&lt;outputRelDir&gt;/&lt;name&gt;.prefab</c> (default <c>prefabs/saved/</c>) and register it so the
 	/// editor imports it.</summary>
-	public static bool Export( string name, List<SdfBrush> brushes, int resolution, bool flip, string[] outputRelDir = null )
+	public static bool Export( string name, List<SdfBrush> brushes, int resolution, bool flip, string[] outputRelDir = null,
+		string outputPath = null, PropColorRandomizer colors = null, bool updateExisting = false )
 	{
 		if ( brushes is not { Count: > 0 } )
 			return false;
 
 		var assets = Project.Current.GetAssetsPath();
-		var templatePath = Path.Combine( assets, "prefabs", "disguise.prefab" );
+		var templatePath = updateExisting ? outputPath : Path.Combine( assets, "prefabs", "disguise.prefab" );
 		if ( !File.Exists( templatePath ) )
 		{
 			Log.Warning( $"[SDF Export] template prefab missing at {templatePath}" );
@@ -136,6 +137,23 @@ public static class SdfPrefabUtility
 		sculptNode["FlipFaces"] = flip;
 		sculptNode["BakedMesh"] = null; // stay live/editable; bake is a separate opt-in step
 
+		// Keep the complete variation palette and authored snapshots, with its reference pointing at
+		// the exported sculpture rather than the live play-session component.
+		if ( colors.IsValid() )
+		{
+			var oldColors = components.FirstOrDefault( c => (string)c?["__type"] == "Mimiclay.PropColorRandomizer" );
+			var colorNode = colors.Serialize().DeepClone().AsObject();
+			colorNode["__guid"] = oldColors?["__guid"]?.DeepClone() ?? JsonValue.Create( Guid.NewGuid().ToString() );
+			colorNode["Sculpture"] = new JsonObject
+			{
+				["_type"] = "component",
+				["component_id"] = sculptNode["__guid"]!.DeepClone(),
+				["go"] = rootObject["__guid"]!.DeepClone()
+			};
+			if ( oldColors is not null ) components.Remove( oldColors );
+			components.Add( colorNode );
+		}
+
 		// The sibling ModelRenderer's Model field is ALSO a snapshot of whatever the template happened to be
 		// showing in the play session it was captured from — "sbox_procedural_model.vmdl", a stale reference
 		// that has nothing to do with THIS shape (same root cause already called out for ModelCollider above,
@@ -153,21 +171,24 @@ public static class SdfPrefabUtility
 
 		// A clean scene prop: name it after the export and drop the disguise's runtime-only children (pause HUD).
 		var safe = SanitizeName( name );
-		rootObject["Name"] = safe;
-		rootObject["Children"] = new JsonArray();
+		if ( !updateExisting )
+		{
+			rootObject["Name"] = safe;
+			rootObject["Children"] = new JsonArray();
 
-		// ...and drop the components a scene prop shouldn't inherit from the disguise template.
-		foreach ( var node in components
-			.Where( c => c is JsonObject && StrippedTypes.Contains( (string)c["__type"] ) )
-			.ToList() )
-			components.Remove( node );
+			// ...and drop the components a scene prop shouldn't inherit from the disguise template.
+			foreach ( var node in components
+				.Where( c => c is JsonObject && StrippedTypes.Contains( (string)c["__type"] ) )
+				.ToList() )
+				components.Remove( node );
 
-		// Fresh GUIDs so this prefab is a standalone asset, not one that aliases the template's object identities.
-		RemapGuids( root );
+			// Fresh GUIDs so this prefab is a standalone asset, not one that aliases the template's object identities.
+			RemapGuids( root );
+		}
 
-		var dir = Path.Combine( assets, Path.Combine( outputRelDir ?? OutputRelDir ) );
+		var dir = outputPath is null ? Path.Combine( assets, Path.Combine( outputRelDir ?? OutputRelDir ) ) : Path.GetDirectoryName( outputPath );
 		Directory.CreateDirectory( dir );
-		var absPath = Path.Combine( dir, safe + ".prefab" );
+		var absPath = outputPath ?? Path.Combine( dir, safe + ".prefab" );
 
 		try
 		{

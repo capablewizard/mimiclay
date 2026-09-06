@@ -13838,7 +13838,7 @@
         {
           "__guid": "fa66e1db-5927-42c3-9f05-598864247f2d",
           "__version": 2,
-          "__Prefab": "prefabs/saved/fryingpan.prefab",
+          "__Prefab": "prefabs/props/kitchen/fryingpan.prefab",
           "__PrefabInstancePatch": {
             "AddedObjects": [],
             "RemovedObjects": [],
@@ -16597,7 +16597,7 @@
         {
           "__guid": "01be68da-b126-4b77-ab86-90796ae6f7f1",
           "__version": 2,
-          "__Prefab": "prefabs/saved/mug.prefab",
+          "__Prefab": "prefabs/props/kitchen/mug.prefab",
           "__PrefabInstancePatch": {
             "AddedObjects": [],
             "RemovedObjects": [],
@@ -18056,7 +18056,7 @@
         {
           "__guid": "403aec57-cbd3-8415-bd0f-f77622e8833b",
           "__version": 2,
-          "__Prefab": "prefabs/saved/pot.prefab",
+          "__Prefab": "prefabs/props/kitchen/pot.prefab",
           "__PrefabInstancePatch": {
             "AddedObjects": [],
             "RemovedObjects": [],
@@ -19377,7 +19377,7 @@
         {
           "__guid": "fe471eff-4042-4013-9f1a-8cae2fccb0f0",
           "__version": 2,
-          "__Prefab": "prefabs/saved/sugar.prefab",
+          "__Prefab": "prefabs/props/kitchen/sugar.prefab",
           "__PrefabInstancePatch": {
             "AddedObjects": [],
             "RemovedObjects": [],
@@ -19878,7 +19878,7 @@
         {
           "__guid": "dae96b0c-83a1-832a-bfa0-67b89296ff38",
           "__version": 2,
-          "__Prefab": "prefabs/saved/teapot.prefab",
+          "__Prefab": "prefabs/props/kitchen/teapot.prefab",
           "__PrefabInstancePatch": {
             "AddedObjects": [],
             "RemovedObjects": [],

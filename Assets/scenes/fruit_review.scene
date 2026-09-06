@@ -1,0 +1,1041 @@
+{
+  "__guid": "77201047-4191-4794-b961-16cd9c5c7244",
+  "GameObjects": [
+    {
+      "__guid": "a3c5393f-8274-48d4-a687-c0557d5e50e5",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Sun",
+      "Position": "0,0,0",
+      "Rotation": "-0.688729584,0.160160467,0.356659502,0.610568404",
+      "Scale": "1,1,1",
+      "Tags": "light_directional,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "75a909bc-e102-475d-afdc-40fb7ee7fe27",
+          "__enabled": true,
+          "Flags": 0,
+          "ContactShadows": true,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "0.94419,0.97767,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "ShadowBias": 0.0005,
+          "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91,
+          "ShadowHardness": 0,
+          "Shadows": true,
+          "SkyColor": "0.2532,0.32006,0.35349,1",
+          "Visualizer": {}
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "af7280bf-8dea-4e2f-95a5-50fd79003ff9",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "2D Skybox",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "skybox",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkyBox2D",
+          "__guid": "bdd8a210-749c-45d9-91f7-c3d81ffe9c17",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "SkyIndirectLighting": true,
+          "SkyMaterial": "materials/skybox/skybox_day_01.vmat",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.EnvmapProbe",
+          "__guid": "29540d88-75ec-459b-b761-a7c0fdf244e2",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 1,
+          "BakedTexture": null,
+          "Bounds": {
+            "Mins": "-512,-512,-512",
+            "Maxs": "512,512,512"
+          },
+          "DelayBetweenUpdates": 0.1,
+          "Feathering": 0.02,
+          "FrameInterval": 5,
+          "MaxDistance": 512,
+          "Mode": "CustomTexture",
+          "MultiBounce": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Priority": 0,
+          "Projection": "Sphere",
+          "RenderExcludeTags": "",
+          "Resolution": "Small",
+          "Texture": "textures/cubemaps/default2.vtex",
+          "TintColor": "1,1,1,1",
+          "UpdateStrategy": "OnEnabled",
+          "ZFar": 4096,
+          "ZNear": 16
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "494dad34-ad9f-4023-99cd-e51f16fe8075",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Plane",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "10,10,10",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "a0f0d6b1-e3d3-404e-a985-11323cfec295",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": "materials/plasticine_scene.vmat",
+          "Materials": null,
+          "Model": "models/dev/plane.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "0.48,0.45,0.39,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "d4d0ba1a-0cab-4fdf-b490-3c800169de87",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "0,0,-5",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "100,100,10",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "61860169-398c-404e-b83d-1fcee4624898",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Camera",
+      "Position": "170,-340,260",
+      "Rotation": "-0.222846299,0.147498742,0.803557813,0.531863272",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.CameraComponent",
+          "__guid": "1e48a6a2-9af4-4c11-856b-583938456888",
+          "__enabled": true,
+          "Flags": 0,
+          "BackgroundColor": "0.33333,0.46275,0.52157,1",
+          "ClearFlags": "All",
+          "EnablePostProcessing": true,
+          "FieldOfView": 60,
+          "FovAxis": "Horizontal",
+          "IsMainCamera": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Orthographic": false,
+          "OrthographicHeight": 1204,
+          "PostProcessAnchor": null,
+          "Priority": 1,
+          "RenderExcludeTags": "",
+          "RenderTags": "",
+          "RenderTexture": null,
+          "TargetEye": "None",
+          "Viewport": "0,0,1,1",
+          "ZFar": 10000,
+          "ZNear": 10
+        },
+        {
+          "__type": "Sandbox.Tonemapping",
+          "__guid": "7522165d-d935-4e05-94d4-023e67b36cde",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 3,
+          "AutoExposureEnabled": true,
+          "ExposureCompensation": 0,
+          "ExposureMethod": "RGB",
+          "MaximumExposure": 2,
+          "MinimumExposure": 1,
+          "Mode": "AgX",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Rate": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "02e0ad42-960d-4016-93fa-c475cf36c9e0",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/apple.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ecb4ba55-b245-0b21-61d0-b97826a32b86"
+            },
+            "Property": "Position",
+            "Value": "-90,-45,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8ad16c46-8c5a-323e-ec86-6ad3c0650955"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "ecb4ba55-b245-0b21-61d0-b97826a32b86": "02e0ad42-960d-4016-93fa-c475cf36c9e0",
+        "1fd866ad-6fc3-7706-7e9b-b988b927b657": "36345f24-ac40-4e25-9662-214092c5d6d1",
+        "8ad16c46-8c5a-323e-ec86-6ad3c0650955": "f7df741f-7a7f-4e2b-a8ef-ea506af4ed86",
+        "c74e386d-54ab-f466-e804-51432fd71e66": "ab255f96-6ed4-4880-a5b1-42cdb97be0d7",
+        "f1dfb1ed-fa85-9308-9a9b-49f51feb4c95": "6bbd7e9d-c0ac-4e4f-912d-fcc39e586b25",
+        "e82a708f-3ab3-b335-277d-7f29d09a82d8": "5fd768c7-64e0-4dd6-8143-153a8c5fc46d",
+        "25da98b2-cc2d-bae0-0864-c755e06f858b": "8a725ac6-44f4-478d-8c42-c04c1c2cc340",
+        "a5a9560a-2723-8a38-5c00-5dd7757407e9": "b6863f6b-3e61-4e42-9e13-209ce4b4552e"
+      }
+    },
+    {
+      "__guid": "4d56d608-e3e2-4ed2-a16e-8c5dc47776e7",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/pear.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b7d3df7e-0162-4f3d-52fb-772f9ee2ab3e"
+            },
+            "Property": "Position",
+            "Value": "-30,-45,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "55dcf9ac-c161-7a7f-8b57-b3375d6a99a4"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "b7d3df7e-0162-4f3d-52fb-772f9ee2ab3e": "4d56d608-e3e2-4ed2-a16e-8c5dc47776e7",
+        "42446005-fc5e-f477-0f8a-7b6f49d21eda": "a973986a-d563-4326-aba4-243e40d21839",
+        "55dcf9ac-c161-7a7f-8b57-b3375d6a99a4": "6dafce7e-0f34-465b-9044-abbc57b7fa10",
+        "c91dbad7-bc79-8282-6d8a-2274a06bea17": "aa13e837-e0e8-4a29-b1d0-0d16a533cf69",
+        "8e4c3960-f538-eb08-bb55-5dac0f083705": "f1d66d87-7d4f-4bf0-8361-8c07dd8476e6",
+        "15c9f1e2-e8d5-c63f-6510-d956cb36c50e": "dd48399b-0e69-4894-b5a8-ab2b74e3de43",
+        "a7dd09a7-9c25-1427-98ae-445719b4dbb6": "5f9090fd-472b-49da-b088-9446c02019b0",
+        "08f238ea-caa6-0c91-f4a6-841f63269c8e": "be156782-708f-4fd4-bc67-6fa809f0112c"
+      }
+    },
+    {
+      "__guid": "6ebc0635-459b-4261-b44d-515356c07f08",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/orange.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "81e3b4b3-fe51-a3a9-d528-822d9cdeb065"
+            },
+            "Property": "Position",
+            "Value": "30,-45,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3a9f0192-301d-fe87-14e2-239649de546a"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "81e3b4b3-fe51-a3a9-d528-822d9cdeb065": "6ebc0635-459b-4261-b44d-515356c07f08",
+        "47191bad-942a-a35f-3d80-22764c1423bb": "2072f0da-ba2b-4cb8-9919-63bc35b2b058",
+        "3a9f0192-301d-fe87-14e2-239649de546a": "a4f8ae64-07d8-4834-a1f0-f5d6c285a52c",
+        "b36cfae1-0b6e-d6ea-03f1-8d064c5326b7": "f14a6b09-416e-41a1-b19a-ab02f373d4f4",
+        "491992ef-a2af-48fc-882b-e2a7c450994a": "6e18100b-b8d0-44b5-bd39-bc1d37f9864f",
+        "e091d388-4abd-496d-1e1d-33eeb886a65a": "ccad017d-9350-4bb1-ad3a-e44d42aa34e4",
+        "e3acf0c1-4138-c133-94ca-34a5846400b4": "d36924f5-2cbf-4673-8055-baaea5b672e6",
+        "1e672b04-3387-2dd2-73c8-a7fa120db16f": "ff09f685-e169-4c08-8715-deb8b66aa9f3"
+      }
+    },
+    {
+      "__guid": "5d1094d4-03d3-49f8-85a8-3ca0cf892d6a",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/lemon.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "aba5fd74-5110-ed34-cc67-dd76b6ea9f8a"
+            },
+            "Property": "Position",
+            "Value": "90,-45,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d5b3fb82-684b-ab7d-9fb0-0e4c63138328"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "aba5fd74-5110-ed34-cc67-dd76b6ea9f8a": "5d1094d4-03d3-49f8-85a8-3ca0cf892d6a",
+        "5453b707-f23b-fa28-c797-22d7c2f11aba": "d5add519-f66b-4f03-9971-859eebc5c3d9",
+        "d5b3fb82-684b-ab7d-9fb0-0e4c63138328": "92587881-c8b8-4ce1-87a8-f88b0b2823e9",
+        "2faa3ec0-7d44-1e88-c3c7-23e8ab4b4ff3": "0b1dd724-ab45-4e61-9c67-6c206f3f92be",
+        "5bc0b301-09c5-26ea-517a-112b42325a2c": "55d4e1f5-f30d-4259-9dc0-458079230fc9",
+        "dc4c26bf-1000-75df-ccca-6a9c61138178": "6bef607d-3299-453e-92bb-51580bd0f336",
+        "b6c12595-7b74-1f5f-8be5-5fd7d4e5aebf": "5d19c256-4041-48b8-a855-84af1d3d711e",
+        "4a209b4b-4b77-2882-39fa-950fd11419ed": "69150a3e-5a13-46bd-99bb-71fbd2321edc"
+      }
+    },
+    {
+      "__guid": "b5ed4d59-fae8-496f-b6a8-30db40ec1823",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/banana.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "baed05fc-fdc6-e210-6103-aef49898d972"
+            },
+            "Property": "Position",
+            "Value": "-90,15,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8fe31688-0424-4b01-101f-4674df811c71"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "baed05fc-fdc6-e210-6103-aef49898d972": "b5ed4d59-fae8-496f-b6a8-30db40ec1823",
+        "3e749b75-6c3c-bf62-faa9-f86cc6660299": "da357f0d-401c-4ce5-b893-223d58dd1b49",
+        "8fe31688-0424-4b01-101f-4674df811c71": "73783954-6dd8-4ad7-85bf-281563d9f7af",
+        "3b7329b1-ebe1-aa96-2767-416bba9cff93": "2f3bd2c2-a6ae-431c-8ead-df99cd051c19",
+        "54959736-562e-95a0-a182-4f585a11252b": "928ccb77-d6ec-4ecf-ac27-edcfe7f44c67",
+        "6b6f68f6-6809-fd25-f50d-aeed23f1cb0a": "576f4e99-adc2-4f03-a0c9-b6579c73622b",
+        "7d78838d-da19-ec46-ff75-a294f1212c53": "4c7eff2e-bb13-4ec4-b3db-7a6685878ae0",
+        "ba9e980f-affa-7d97-c59f-b0a29268244e": "5d64940f-8836-4655-b9c3-7a4f67ba3071"
+      }
+    },
+    {
+      "__guid": "d59dbc4b-4f7a-49b3-a8f8-0d9e5f36a8b3",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/grapes.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "33d07e9f-e122-83da-87f4-768a0d6fd101"
+            },
+            "Property": "Position",
+            "Value": "-30,15,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "33d07e9f-e122-83da-87f4-768a0d6fd101": "d59dbc4b-4f7a-49b3-a8f8-0d9e5f36a8b3",
+        "e7a0979f-2b7c-41e9-a00d-e87a4abfd749": "826b8744-ab7f-465c-881a-a2a2edbe97a2",
+        "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4": "c7955673-67bd-4f7b-b141-66d25bd37f6d",
+        "1ba274b0-cd56-4e85-6f23-c34c717f0c56": "fcf14b42-6869-4f1e-9f43-f4be04a9a5c7",
+        "704ca144-5163-bbcb-ef0b-a97c262cf840": "8869238b-a084-4b68-bb18-13732ea75153",
+        "5ff813c4-7c50-80d4-3ba6-09c05ef79acf": "0c90d735-254a-43cb-95e3-d62cfd1853dc",
+        "11b055d1-b933-ed26-de56-e640d0b8b297": "67e22b63-2ec5-47cb-b73a-d8fcfdb9f824",
+        "3501bcec-7a1d-de97-1dbd-0ba3deadcfad": "bb0b2812-990d-445d-b0d1-5057b40a2f9f"
+      }
+    },
+    {
+      "__guid": "cfcd60a9-a82c-4377-88a7-e6b545d6f7b4",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/strawberry.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "07b14f66-74c0-2739-30b4-7750ac1c9ef6"
+            },
+            "Property": "Position",
+            "Value": "30,15,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "07b14f66-74c0-2739-30b4-7750ac1c9ef6": "cfcd60a9-a82c-4377-88a7-e6b545d6f7b4",
+        "b7e48788-e2ad-3806-27ce-bddce3037152": "833a7597-27a4-4538-958c-3c9d028032ff",
+        "0f4658f0-3785-f23f-63c8-f4e38d3afb37": "1427d7f7-3ede-4529-8f69-c1923630aee0",
+        "f4c5efb3-184e-689f-48b6-030b82ac61ca": "98c57e19-a6b7-4d7b-a127-c228be6063c9",
+        "102d0453-2c3f-b8a6-b3de-2412e2d8a29f": "31e5563f-bcfd-491c-92f9-5fbb6fa47ecb",
+        "93c5068c-9aaf-c7a8-0e2d-878b8c2a7ca7": "85db9eec-4f0a-473c-91f0-7c4481744b58",
+        "0b83fd93-83fa-db13-bce7-352e4d2b7bf0": "94d849d1-e551-4ddb-8c75-7d4cae025fc9",
+        "448bbd9e-190a-a260-d8b6-9ac3ab607574": "64e1e7da-0533-44b0-843a-f87fe451fbaf"
+      }
+    },
+    {
+      "__guid": "322e7410-d410-488e-b66f-445898a1d240",
+      "__version": 2,
+      "__Prefab": "prefabs/props/food/cherries.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "c8e420d9-9f6e-7401-4a8c-271dbae0e9f7"
+            },
+            "Property": "Position",
+            "Value": "90,15,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "236611a1-731c-8335-90a1-8b97a4cfa647"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "c8e420d9-9f6e-7401-4a8c-271dbae0e9f7": "322e7410-d410-488e-b66f-445898a1d240",
+        "5b60c91a-d0e9-7915-ab7b-49b3970a9967": "5b55f8a7-257c-4755-8a30-7f3f87ea35fd",
+        "236611a1-731c-8335-90a1-8b97a4cfa647": "bf6951ea-70d4-4be7-b6a2-3ecd0fce2fdc",
+        "07496003-bdc7-2579-dd51-f63e1161666d": "f61bd07e-50bd-46c9-b2d1-d4615bab92e1",
+        "a26f3918-4b2e-7bb8-0878-048dcd471583": "6e8aa615-a435-4855-a283-909a3bbcf9a6",
+        "a90d579f-496b-46ea-9b38-ab59bc9893e1": "b5aa9318-d8f1-4abb-a053-d23193c9eee4",
+        "d2c3b88c-b040-1cc9-1a72-b67eb44331b6": "4ae7090f-0d7e-4285-bc29-02026f749e90",
+        "74b6db4e-0f35-2094-1bda-9679af884740": "dd44a75f-6dbf-4122-ab48-cd8b976b6b99"
+      }
+    },
+    {
+      "__guid": "fd1d4b1c-d90c-45a5-9c85-db50d92d9595",
+      "__version": 2,
+      "__Prefab": "prefabs/props/kitchen/mug.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Name",
+            "Value": "Reference - mug"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Position",
+            "Value": "-90,95,29.2000008"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "a98a3e9f-e662-4874-94b6-98983a196ae7": "fd1d4b1c-d90c-45a5-9c85-db50d92d9595",
+        "9b76d781-06f1-4f60-a4fe-4bc5ab77c861": "0d814288-74fb-4eef-b332-a7db17f408ab",
+        "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6": "b6f6d62f-f3ec-4d7c-afca-c050981c744d",
+        "d1176097-b5b5-49d1-b0cf-63001c68503c": "b2135f15-50ae-4f16-87cb-aaa0ce1446df",
+        "fa2fc9de-7ded-4198-b734-e0bbca7ea36d": "023dba57-07b6-4aa2-9463-6556ea6a06f7",
+        "2c074b7b-323c-4cc6-9272-70c9cc045f73": "abea7645-1e96-4ab9-8568-1d57df48d3e5",
+        "ba1df3b3-753b-4ef6-ac00-a1b2012719de": "6947c011-ded1-4a62-9861-f1aa5ecdd992",
+        "9b97ae99-e8c0-4501-b787-77f01891578d": "2893ef50-6464-420f-b245-1a165e35183f"
+      }
+    },
+    {
+      "__guid": "955f29d5-438d-47f4-bd3b-36c54b8d8d9d",
+      "__version": 2,
+      "__Prefab": "prefabs/props/kitchen/teapot.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0fd08478-dc9c-42c4-8fd9-f13476130a2c"
+            },
+            "Property": "Name",
+            "Value": "Reference - teapot"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0fd08478-dc9c-42c4-8fd9-f13476130a2c"
+            },
+            "Property": "Position",
+            "Value": "0,105,24.2999992"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
+            "Property": "__enabled",
+            "Value": true
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0fd08478-dc9c-42c4-8fd9-f13476130a2c": "955f29d5-438d-47f4-bd3b-36c54b8d8d9d",
+        "13514fd7-4628-4877-8f61-46fe5626d4a2": "02410ea9-6f55-4351-ae18-28dd3e260499",
+        "b0f41ab9-9207-4601-9da0-98556f047712": "e91947ee-3f09-4dd2-8bd5-98ae86fcdff9",
+        "a5dc336f-3c67-430a-8659-64ca90fbbd9a": "43bf5b84-61ff-40bb-9805-ae1de3a59543",
+        "785c4b35-16d5-45e4-8dcd-9039e3b36f37": "f9cb2caa-d1ca-4592-b132-1ac2fdb50abf",
+        "856bb140-20e3-48d8-bece-1520dadcf717": "d1351ebd-adb8-4f60-bbce-0a74a9988012",
+        "906d98f9-b2cb-4d33-ba2f-16c8a50edc4c": "9ab63c66-41c5-4dc4-91ab-7ba5b0bd9752",
+        "c3dd2ce3-8843-4506-a3a0-a04498b3d08f": "6a1752d7-9d0e-48bf-91e9-d71bf564566a",
+        "1cb24d45-dc6d-8e46-9d5e-dab3a3924e5e": "7c033bb6-aa5f-4a88-8fd3-09e265370536"
+      }
+    },
+    {
+      "__guid": "81445646-e3d8-4561-b442-ed91e8fc76a7",
+      "__version": 2,
+      "__Prefab": "prefabs/props/kitchen/flour.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "26fdd8b8-c2cb-455c-808e-7f533df8915f"
+            },
+            "Property": "Name",
+            "Value": "Reference - flour"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "26fdd8b8-c2cb-455c-808e-7f533df8915f"
+            },
+            "Property": "Position",
+            "Value": "95,100,27"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "26fdd8b8-c2cb-455c-808e-7f533df8915f"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.906307817,0.42261824"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "afd12c4c-5f88-4a8d-ad2d-130fb87173ac"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0.307403564,-0.135369182,2.59187317",
+                "Rotation": "0,0,0,1",
+                "Size": "25.7502232,25.7502232,29.5835819",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Rounding": 6.0588756,
+                "Color": "0.2241,0.38705,0.6036,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 40.720684
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0.307409286,-0.13534832,31.5255928",
+                "Rotation": "0,0,0,1",
+                "Size": "29.0040741,24.1068954,1.73070657",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.9799988,
+                "Rounding": 1.7307066,
+                "Color": "0.08635,0.14241,0.21691,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.550665
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0.307409286,-0.13534832,31.4012413",
+                "Rotation": "0,0,0,1",
+                "Size": "28.4374065,24.1068954,1.36576176",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.48,
+                "Rounding": 1.3657618,
+                "Color": "0.8,0.68627,0.34902,1",
+                "Metallic": 1,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 28.590185
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0.774933338,0.149583936,36.0747566",
+                "Rotation": "0,0,0,1",
+                "Size": "27.5627842,25.7502232,2.67987227",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.39117646,
+                "SlicePlaneN": 0.21764708,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Rounding": 2.6798723,
+                "Color": "0.2241,0.38705,0.6036,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 27.692757
+              },
+              {
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0.774941921,0.149603486,37.8178596",
+                "Rotation": "1.00000012,7.4505806E-09,0,-4.37113883E-08",
+                "Size": "24.8555393,23.6372147,9.40132999",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 5.6399965,
+                "Rounding": 2.801446,
+                "Color": "0.22714,0.44262,0.72899,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 26.26554
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-19.1548519,7.31609774,6.51067972",
+                "Rotation": "0.392847478,-0.587937772,-0.587937772,0.392847478",
+                "Size": "20.2775364,8.84092999,9.74202156",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 2.0210106,
+                "Rounding": 2.1851678,
+                "Color": "0.95,0.9,0.75,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 24.676466
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "flour",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-20.3792896,7.82331848,5.80184793",
+                "Rotation": "0.392847478,-0.587937772,-0.587937772,0.392847478",
+                "Size": "19.8490715,9.92453575,7.63469696",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 2.1907628,
+                "Rounding": 0,
+                "Color": "0.29337,0.29337,0.29337,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 19.323284
+              },
+              {
+                "Shape": "Spline",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-37.4460678,14.2117882,38.8307571",
+                "Rotation": "0,0,0,1",
+                "Size": "3.21168876,3.21168876,3.21168876",
+                "Points": [
+                  "1.12551546,-4.94900656,46.0736198,1.62572372",
+                  "1.12551546,-6.62870359,50.429554,1.62572372",
+                  "1.12551546,-4.77848816,54.7158699,1.62572372",
+                  "1.12551546,-0.456515789,56.4811821,1.62572372",
+                  "1.12551546,3.86545801,54.7158699,1.62572372",
+                  "1.12551546,5.71567249,50.429554,1.62572372",
+                  "1.12551546,4.03597546,46.0736198,1.62572372"
+                ],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": true,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 2,
+                "Rounding": 0.75,
+                "Color": "0.2241,0.38705,0.6036,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 3.7116888
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "023ac5c2-9981-417e-9ba8-9bcdfc6974cf"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "26fdd8b8-c2cb-455c-808e-7f533df8915f": "81445646-e3d8-4561-b442-ed91e8fc76a7",
+        "afd12c4c-5f88-4a8d-ad2d-130fb87173ac": "3abb518a-374a-4897-8917-3b6b84aaeb48",
+        "023ac5c2-9981-417e-9ba8-9bcdfc6974cf": "749ff2a6-e85e-467f-96df-298880277f73",
+        "ef219837-1d5f-412f-8938-99c65c87a74c": "cee393d5-372a-46e5-9094-2d629e57d4c4",
+        "c2f0d9c1-8886-47a3-bfe8-259ab7c0d91a": "47410731-3fa4-4d4e-a7be-824b7b77e881",
+        "33f6ae3a-3ce7-485a-8d35-49bf204b94df": "bcbac55c-78ed-4066-be04-ec42ebae09ca",
+        "1d016f88-a19d-4d7a-b27b-5e558811cbe2": "81604cbc-09a9-4adf-9695-d8876b463c93",
+        "6b4bb377-0e6f-4aa0-9aa3-a26a943a48a6": "3365223c-aba2-47b0-9bfb-dbe5d0e268d1"
+      }
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": false,
+    "Metadata": {},
+    "NavMesh": {
+      "Enabled": false,
+      "IncludeStaticBodies": true,
+      "IncludeKeyframedBodies": true,
+      "EditorAutoUpdate": true,
+      "AgentHeight": 64,
+      "AgentRadius": 16,
+      "AgentStepSize": 18,
+      "AgentMaxSlope": 40,
+      "ExcludedBodies": "",
+      "IncludedBodies": "",
+      "DeferGeneration": false,
+      "CustomBounds": false
+    },
+    "GameObjectSystems": {
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
+          "$refs": []
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
+      }
+    }
+  },
+  "ResourceVersion": 3,
+  "Title": null,
+  "Description": null,
+  "__references": [],
+  "__version": 3
+}

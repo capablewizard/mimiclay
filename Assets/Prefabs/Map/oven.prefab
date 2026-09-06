@@ -124,7 +124,7 @@
       {
         "__guid": "0fa57871-dbb1-4897-95e8-a1b381561813",
         "__version": 2,
-        "__Prefab": "prefabs/saved/knob.prefab",
+        "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
         "__PrefabInstancePatch": {
           "AddedObjects": [],
           "RemovedObjects": [],
@@ -178,7 +178,7 @@
       {
         "__guid": "d00018e5-c0a8-45e5-82bd-93e6af63bc5b",
         "__version": 2,
-        "__Prefab": "prefabs/saved/knob.prefab",
+        "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
         "__PrefabInstancePatch": {
           "AddedObjects": [],
           "RemovedObjects": [],
@@ -232,7 +232,7 @@
       {
         "__guid": "5e8da44b-915c-4a8f-a108-13b613b6deba",
         "__version": 2,
-        "__Prefab": "prefabs/saved/knob.prefab",
+        "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
         "__PrefabInstancePatch": {
           "AddedObjects": [],
           "RemovedObjects": [],
@@ -286,7 +286,7 @@
       {
         "__guid": "736a74c2-2422-42be-b8a5-a1c14a25d83e",
         "__version": 2,
-        "__Prefab": "prefabs/saved/knob.prefab",
+        "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
         "__PrefabInstancePatch": {
           "AddedObjects": [],
           "RemovedObjects": [],

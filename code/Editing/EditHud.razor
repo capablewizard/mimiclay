@@ -283,9 +283,11 @@
 		@* Workshop column — a second card stack just LEFT of the Tools panel, same paper style. Only mounted
 		   when an owner wires the actions: the menu customiser (heads) and creative mode (props / faces —
 		   see CreativeManager.UpdateWorkshopUi); round HUDs never do. *@
-		@if ( WorkshopSave is not null )
+		@if ( WorkshopSave is not null || Game.IsEditor )
 		{
-			<div class="panel right workshop-col">
+			<div class="panel right workshop-col" @ref="WorkshopPanel">
+				@if ( WorkshopSave is not null )
+				{
 				<div class="section-title"><span>Workshop</span><div class="icon">cloud</div></div>
 				<div class="tool-list">
 					<div class="chip action" @onclick=@(() => WorkshopSave?.Invoke())>
@@ -295,6 +297,23 @@
 						<div class="icon">cloud_download</div><span>Load</span>
 					</div>
 				</div>
+				}
+				@if ( Game.IsEditor )
+				{
+					<div class="section-title"><span>Prefab</span><div class="icon">widgets</div></div>
+					<div class="tool-list">
+						<div class="chip action" @onclick=@(() => SavePrefab( false ))>
+							<div class="icon">save</div><span>Save</span>
+						</div>
+						<div class="chip action" @onclick=@(() => SavePrefab( true ))>
+							<div class="icon">save_as</div><span>Save As...</span>
+						</div>
+					</div>
+					@if ( _prefabSaveTarget == Session?.Target && _prefabSaveStatus is not null )
+					{
+						<div class="prefab-save-status">@_prefabSaveStatus</div>
+					}
+				}
 			</div>
 
 			@* The workshop library window — our own browser (loading is silent API; only publishing has an
@@ -756,6 +775,19 @@
 	/// <see cref="SculptWorkshop"/>); null everywhere else — round HUDs never mount it.</summary>
 	public Action WorkshopSave { get; set; }
 
+	string _prefabSaveStatus;
+	SdfSculpture _prefabSaveTarget;
+
+	void SavePrefab( bool saveAs )
+	{
+		if ( !Game.IsEditor || Session is null ) return;
+		_prefabSaveTarget = Session.Target;
+		_prefabSaveStatus = Session.IsManipulating
+			? "Finish the current edit before saving."
+			: SdfSculpture.SavePrefabHandler?.Invoke( Session.Target, saveAs )
+				?? "The editor save tool is not ready yet.";
+	}
+
 	/// <summary>The Workshop column's second button — see <see cref="WorkshopSave"/>.</summary>
 	public Action WorkshopLoad { get; set; }
 
@@ -803,6 +835,7 @@
 	Panel RightPanel { get; set; }
 	Panel ShapeDockPanel { get; set; }
 	Panel WorkshopWindowPanel { get; set; }
+	Panel WorkshopPanel { get; set; }
 	Panel PartDockPanel { get; set; }
 	Vector2 _shapeDockPos;
 
@@ -1089,7 +1122,7 @@
 		PointerOverSliders = Over( SliderStackPanel );
 		PointerOverPicker = Over( PickerPanel );
 		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel )
-			|| Over( WorkshopWindowPanel ) || Over( PartDockPanel );
+			|| Over( WorkshopWindowPanel ) || Over( WorkshopPanel ) || Over( PartDockPanel );
 
 		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
 		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.
@@ -1656,6 +1689,9 @@
 		hc.Add( EditHudGate.Version ); // per-section tutorial gating (hide/lock/highlight) — bumped on every change
 		hc.Add( BackAction is not null ); // the customiser's Back button mounts/unmounts with its wiring
 		hc.Add( WorkshopSave is not null ); // ditto the customiser's Workshop column
+		hc.Add( Game.IsEditor );
+		hc.Add( s?.Target );
+		hc.Add( _prefabSaveStatus );
 		hc.Add( WorkshopBrowserOpen );     // the library window mounts/unmounts
 		hc.Add( WorkshopStatus );          // search/download status line appears/relabels/clears
 		hc.Add( WorkshopItems?.Count ?? -1 ); // tiles mount/unmount

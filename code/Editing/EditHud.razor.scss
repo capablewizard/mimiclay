@@ -425,6 +425,16 @@
 		// 228 = $panel-inset (24) + tools width (190) + 14 gap — spelled out, s&box scss has no arithmetic.
 		&.right.workshop-col {
 			right: 228px;
+
+			.section-title {
+				span { white-space: nowrap; flex-shrink: 0; }
+				.icon { width: 20px; flex-shrink: 0; }
+			}
+
+			.prefab-save-status {
+				font-size: 12px;
+				margin-top: 6px;
+			}
 		}
 
 		// Highlighted panel: the slide-in above OWNS the `animation` shorthand and out-ranks the generic

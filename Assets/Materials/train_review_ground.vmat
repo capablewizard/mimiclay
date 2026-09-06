@@ -1,0 +1,18 @@
+// Quiet warm ground for the concept comparison scene.
+Layer0
+{
+ shader "shaders/sdf_mesh.shader"
+ g_bUseVertexData "0"
+ g_flBaseTexAmount "0.12"
+ g_flDarkSatBoost "1.0"
+ g_flMetalness "0.0"
+ g_flNormalStrength "0.08"
+ g_flRoughness "0.95"
+ g_flTriBlend "6.0"
+ g_flTriTile "0.5"
+ g_flTriTileNormal "0.5"
+ g_vTintColor "[1.0 1.0 1.0 0.0]"
+ TextureColor "materials/plasticine/plasticine_basecolor.png"
+ TextureNormal "materials/plasticine/plasticine_normal_4.png"
+ TextureRoughness "materials/default/default_rough.tga"
+}

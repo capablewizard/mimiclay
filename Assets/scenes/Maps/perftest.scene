@@ -719,7 +719,7 @@
     {
       "__guid": "8b195621-d61a-4768-bfeb-c21b076da7fb",
       "__version": 2,
-      "__Prefab": "prefabs/saved/pot_polkedot.prefab",
+      "__Prefab": "prefabs/props/kitchen/pot_polkedot.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],

@@ -1,9 +1,9 @@
 {
   "RootObject": {
-    "__guid": "461a15a8-21bd-4384-91b9-4ff44ecaf6aa",
+    "__guid": "acf08b15-50ac-4252-9c6d-db02a49a3817",
     "__version": 2,
     "Flags": 0,
-    "Name": "wine_bottle",
+    "Name": "wine_bottle (1)",
     "Position": "0,0,0",
     "Rotation": "0,0,0,1",
     "Scale": "1,1,1",
@@ -17,7 +17,7 @@
     "Components": [
       {
         "__type": "Mimiclay.SdfSculpture",
-        "__guid": "088169da-4963-41ba-82bd-a7c3820e97e4",
+        "__guid": "432181ab-a22e-43a8-be7e-eb0947e97ede",
         "__enabled": true,
         "Flags": 0,
         "AutoRebuild": true,
@@ -30,10 +30,10 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,-1.46325779",
+            "Position": "0,0,-0.596088409",
             "Rotation": "0,0,0,1",
-            "Size": "10.5880737,10.5880737,21.9373131",
-            "Points": null,
+            "Size": "11.1564131,11.1564131,23.1148434",
+            "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
@@ -41,8 +41,8 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 6,
-            "Rounding": 10.588074,
-            "Color": "0.12644,0.05879,0.05846,1",
+            "Rounding": 11.156413,
+            "Color": "0.07293,0.09302,0.00692,1",
             "Metallic": 0,
             "Roughness": 0.5,
             "MirrorX": false,
@@ -56,7 +56,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 25.858839
+            "BoundingRadius": 27.16635
           },
           {
             "Shape": "Cylinder",
@@ -65,9 +65,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,-17.1090355",
+            "Position": "0,0,-17.081686",
             "Rotation": "0,0,0,1",
-            "Size": "10.5351715,22.0553532,6.61558342",
+            "Size": "11.1006699,23.2392216,6.97068882",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -76,8 +76,8 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 0,
-            "Rounding": 1.766895,
-            "Color": "0.12644,0.05879,0.05846,1",
+            "Rounding": 1.8617369,
+            "Color": "0.07293,0.09302,0.00692,1",
             "Metallic": 0,
             "Roughness": 0.5,
             "MirrorX": false,
@@ -91,7 +91,42 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 12.440087
+            "BoundingRadius": 13.107836
+          },
+          {
+            "Shape": "Cone",
+            "Operation": "Subtract",
+            "CrossSection": "Triangle",
+            "Text": "clay",
+            "Font": "Super Joyful",
+            "Enabled": true,
+            "Position": "0,0,-28.9864616",
+            "Rotation": "0,0,0,1",
+            "Size": "11.1006699,23.2392216,6.97068882",
+            "Points": null,
+            "Curvature": 1,
+            "SplineClosed": false,
+            "SplinePerPointRadius": false,
+            "Slice": 0,
+            "SlicePlaneN": 1,
+            "LocalCentre": "0,0,6.97068882",
+            "Blend": 2.2199993,
+            "Rounding": 1.8617369,
+            "Color": "0.07293,0.09302,0.00692,1",
+            "Metallic": 0,
+            "Roughness": 0.5,
+            "MirrorX": false,
+            "MirrorY": false,
+            "EffectiveMirrorX": false,
+            "EffectiveMirrorY": false,
+            "EffectiveMirrorZ": false,
+            "MirrorZ": false,
+            "Damage": false,
+            "Shrinks": false,
+            "ShrinkDelay": 2,
+            "ShrinkDuration": 1.5,
+            "IsSplineLoop": false,
+            "BoundingRadius": 14.496378
           },
           {
             "Shape": "Cylinder",
@@ -100,9 +135,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,24.0196342",
+            "Position": "0,0,26.2546539",
             "Rotation": "0,0,0,1",
-            "Size": "3.98556471,4.8025403,4.59122419",
+            "Size": "4.19949818,5.06032658,4.83766842",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -111,8 +146,8 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 15,
-            "Rounding": 3.4519792,
-            "Color": "0.12644,0.05879,0.05846,1",
+            "Rounding": 3.6372714,
+            "Color": "0.07293,0.09302,0.00692,1",
             "Metallic": 0,
             "Roughness": 0.5,
             "MirrorX": false,
@@ -126,7 +161,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 9.829808
+            "BoundingRadius": 10.156155
           },
           {
             "Shape": "Cylinder",
@@ -135,9 +170,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,37.6259003",
+            "Position": "0,0,40.5912628",
             "Rotation": "0,0,0,1",
-            "Size": "3.45197916,3.45197916,10.4168053",
+            "Size": "3.6372714,3.6372714,10.9759502",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -146,8 +181,8 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 3.7025094,
-            "Rounding": 0.7075483,
-            "Color": "0.12644,0.05879,0.05846,1",
+            "Rounding": 0.74552757,
+            "Color": "0.07293,0.09302,0.00692,1",
             "Metallic": 0,
             "Roughness": 0.5,
             "MirrorX": false,
@@ -161,7 +196,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 11.899506
+            "BoundingRadius": 12.488552
           },
           {
             "Shape": "Cylinder",
@@ -170,9 +205,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,43.7090454",
+            "Position": "0,0,47.0009308",
             "Rotation": "0,0,0,1",
-            "Size": "4.19456196,4.19456196,1.21511805",
+            "Size": "4.4197135,4.4197135,1.2803421",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -181,8 +216,8 @@
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
             "Blend": 0.28530633,
-            "Rounding": 0.24151415,
-            "Color": "0.12644,0.05879,0.05846,1",
+            "Rounding": 0.25447795,
+            "Color": "0.07293,0.09302,0.00692,1",
             "Metallic": 0,
             "Roughness": 0.5,
             "MirrorX": false,
@@ -196,7 +231,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 4.4383464
+            "BoundingRadius": 4.6727552
           },
           {
             "Shape": "Cylinder",
@@ -205,9 +240,9 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,40.0675926",
+            "Position": "0,0,43.1640015",
             "Rotation": "0,0,0,1",
-            "Size": "4.2939024,4.2939024,10.2898674",
+            "Size": "5.91626883,4.52438784,10.8421965",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -215,11 +250,11 @@
             "Slice": 0,
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
-            "Blend": 1.1684135,
+            "Blend": 0.79500014,
             "Rounding": 0,
-            "Color": "0.40208,0.08288,0.08133,1",
+            "Color": "0.31595,0.10345,0.10242,1",
             "Metallic": 0,
-            "Roughness": 0.5,
+            "Roughness": 0.56666666,
             "MirrorX": false,
             "MirrorY": false,
             "EffectiveMirrorX": false,
@@ -231,7 +266,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 11.441945
+            "BoundingRadius": 12.550084
           },
           {
             "Shape": "Cylinder",
@@ -240,19 +275,19 @@
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,-2.02609158",
+            "Position": "0,0,-1.18913841",
             "Rotation": "0,0,0,1",
-            "Size": "12.1226931,12.1226931,10.4351921",
-            "Points": null,
+            "Size": "12.7734022,12.7734022,10.9953222",
+            "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
             "Slice": 0,
             "SlicePlaneN": 1,
             "LocalCentre": "0,0,0",
-            "Blend": 0,
+            "Blend": 0.66054976,
             "Rounding": 0,
-            "Color": "0.95,0.9,0.75,1",
+            "Color": "0.79717,0.73109,0.53283,1",
             "Metallic": 0,
             "Roughness": 0.5,
             "MirrorX": false,
@@ -266,7 +301,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 15.995403
+            "BoundingRadius": 17.019127
           }
         ],
         "FlipFaces": false,
@@ -281,7 +316,7 @@
       },
       {
         "__type": "Sandbox.ModelRenderer",
-        "__guid": "976e5d3b-4b54-477a-8862-2187caa92368",
+        "__guid": "4baaaa56-57fb-4f6d-991f-b48254940750",
         "__enabled": false,
         "Flags": 0,
         "BodyGroups": 18446744073709551615,
@@ -290,7 +325,7 @@
         "MaterialGroup": null,
         "MaterialOverride": null,
         "Materials": null,
-        "Model": null,
+        "Model": "sbox_procedural_model.vmdl",
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
@@ -308,7 +343,7 @@
       },
       {
         "__type": "Mimiclay.SdfRaymarchRenderer",
-        "__guid": "97cc440c-18fd-4506-a696-6e52eceb159e",
+        "__guid": "f13ba4e2-bffb-484f-9691-8b83745e116a",
         "__enabled": true,
         "Flags": 0,
         "AdaptiveQuality": false,
@@ -317,7 +352,6 @@
         "DebugBounds": false,
         "DebugLiveField": false,
         "DebugLod": false,
-        "DebugSwitchState": false,
         "DepthOcclusionCull": true,
         "DispAmp": 0.8,
         "DispFreq": 0.073,
@@ -345,6 +379,7 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "OverdrawOptimization": false,
+        "SdfShadowRadii": 10,
         "SdfShadows": true,
         "ShadowBias": 0,
         "ShadowSlopeScale": 1.5,
@@ -355,7 +390,7 @@
       },
       {
         "__type": "Mimiclay.SdfCollider",
-        "__guid": "daf52c86-062e-456e-bc36-da42c7754b7e",
+        "__guid": "d644dd8e-3ab3-4255-8648-9f39bf08d75d",
         "__enabled": true,
         "Flags": 0,
         "BuildAsTrigger": false,
@@ -369,7 +404,7 @@
       },
       {
         "__type": "Mimiclay.SculptBounds",
-        "__guid": "6e3ef17b-834f-4d30-be99-c5c417c7a029",
+        "__guid": "5df2316c-65b1-45f8-9f1c-ce2839525a8e",
         "__enabled": true,
         "Flags": 0,
         "Anchor": "FollowShape",
@@ -393,7 +428,7 @@
       },
       {
         "__type": "Mimiclay.DamageProfile",
-        "__guid": "7ca6802a-5dd1-484e-a578-c845cbad4a3e",
+        "__guid": "533b6fd1-a0b3-475e-acff-39539f955cb4",
         "__enabled": true,
         "Flags": 0,
         "HealDelay": "0.25,3",
@@ -408,7 +443,7 @@
       },
       {
         "__type": "Mimiclay.ClayBoil",
-        "__guid": "e79ee2ab-fe37-463a-84d2-0e2282941aab",
+        "__guid": "3a14f22d-d46b-4096-bbf1-60369b877ecf",
         "__enabled": true,
         "Flags": 0,
         "Activation": "Never",
@@ -426,6 +461,147 @@
         "OnComponentUpdate": null,
         "RuntimeManaged": false,
         "TextureJitter": 0.02
+      },
+      {
+        "__type": "Mimiclay.PropColorRandomizer",
+        "__guid": "d3211141-d100-852f-ad7c-e63de72367df",
+        "__enabled": true,
+        "Flags": 0,
+        "ChromaTolerance": 0.15,
+        "DetectedBrushCount": 8,
+        "Groups": [
+          {
+            "Name": "Group 1 · #121701 · m0.00 r0.50 · 6 brushes",
+            "Detected": "0.07293,0.09302,0.00692,1",
+            "DetectedMetallic": 0,
+            "DetectedRoughness": 0.5,
+            "Variants": [
+              {
+                "Color": "0.07293,0.09302,0.00692,1",
+                "Metallic": 0,
+                "Roughness": 0.5
+              },
+              {
+                "Color": "0.15814,0.02721,0.02721,1",
+                "Metallic": 0,
+                "Roughness": 0.5
+              },
+              {
+                "Color": "0,0.09767,0.02279,1",
+                "Metallic": 0,
+                "Roughness": 0.5
+              },
+              {
+                "Color": "0.29637,0.30233,0.12374,1",
+                "Metallic": 0,
+                "Roughness": 0.5
+              }
+            ],
+            "BrushIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "Tints": null
+          },
+          {
+            "Name": "Group 2 · #501a1a · m0.00 r0.57 · 1 brush",
+            "Detected": "0.31595,0.10345,0.10242,1",
+            "DetectedMetallic": 0,
+            "DetectedRoughness": 0.56666666,
+            "Variants": [
+              {
+                "Color": "0.31595,0.10345,0.10242,1",
+                "Metallic": 0,
+                "Roughness": 0.56666666
+              },
+              {
+                "Color": "0.62326,0.51672,0.19712,1",
+                "Metallic": 1,
+                "Roughness": 0.56666666
+              },
+              {
+                "Color": "0.08372,0.08372,0.08372,1",
+                "Metallic": 0,
+                "Roughness": 0.56666666
+              }
+            ],
+            "BrushIndices": [
+              6
+            ],
+            "Tints": null
+          },
+          {
+            "Name": "Group 3 · #cbba87 · m0.00 r0.50 · 1 brush",
+            "Detected": "0.79717,0.73109,0.53283,1",
+            "DetectedMetallic": 0,
+            "DetectedRoughness": 0.5,
+            "Variants": [
+              {
+                "Color": "0.79717,0.73109,0.53283,1",
+                "Metallic": 0,
+                "Roughness": 0.5
+              },
+              {
+                "Color": "0.17674,0.17674,0.17674,1",
+                "Metallic": 0,
+                "Roughness": 0.5
+              }
+            ],
+            "BrushIndices": [
+              7
+            ],
+            "Tints": null
+          }
+        ],
+        "LivePreview": true,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "OriginalColors": [
+          "0.07293,0.09302,0.00692,1",
+          "0.07293,0.09302,0.00692,1",
+          "0.07293,0.09302,0.00692,1",
+          "0.07293,0.09302,0.00692,1",
+          "0.07293,0.09302,0.00692,1",
+          "0.07293,0.09302,0.00692,1",
+          "0.31595,0.10345,0.10242,1",
+          "0.79717,0.73109,0.53283,1"
+        ],
+        "OriginalMetallic": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "OriginalRoughness": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.56666666,
+          0.5
+        ],
+        "Sculpture": {
+          "_type": "component",
+          "component_id": "432181ab-a22e-43a8-be7e-eb0947e97ede",
+          "go": "acf08b15-50ac-4252-9c6d-db02a49a3817",
+          "component_type": "SdfSculpture"
+        },
+        "SplitByMaterial": true,
+        "ValueTolerance": 0.35
       }
     ],
     "Children": [],

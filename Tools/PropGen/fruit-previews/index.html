@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mimiclay fruit props</title>
+<style>body{margin:40px auto;padding:0 24px;max-width:1120px;background:#24272a;color:#ece5d7;font:16px system-ui}h1{font-size:32px;margin-bottom:8px}p{color:#c5c0b6;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}figure{margin:0;background:#323639;border-radius:16px;padding:10px;text-align:center}img{width:100%;max-width:256px}figcaption{padding:0 0 16px;font-weight:600}h2{margin-top:40px;font-size:22px}</style>
+<h1>Fruit props</h1><p>Eight editable clay sculptures in <code>Assets/Prefabs/Final/Food</code>. Open <code>Assets/scenes/fruit_review.scene</code> to compare them at authored scale with the finished mug, teapot, and flour jar.</p>
+<a href="scene-overview.png"><img style="max-width:none;width:100%;border-radius:16px" src="scene-overview.png" alt="Fruit and finished reference props together in the editor scene with shared lighting and shadows"></a>
+<p><a style="color:inherit" href="scene-close.png">Second scene view</a>. The individual asset thumbnails below are framed independently and do not show relative scale.</p>
+<div class="grid">
+<figure><img src="apple.png" alt="Red clay apple"><figcaption>Apple</figcaption></figure>
+<figure><img src="pear.png" alt="Yellow green clay pear"><figcaption>Pear</figcaption></figure>
+<figure><img src="orange.png" alt="Clay orange with a leaf"><figcaption>Orange</figcaption></figure>
+<figure><img src="lemon.png" alt="Yellow clay lemon"><figcaption>Lemon</figcaption></figure>
+<figure><img src="banana.png" alt="Curved clay banana"><figcaption>Banana</figcaption></figure>
+<figure><img src="grapes.png" alt="Purple clay grape bunch"><figcaption>Grapes</figcaption></figure>
+<figure><img src="strawberry.png" alt="Clay strawberry"><figcaption>Strawberry</figcaption></figure>
+<figure><img src="cherries.png" alt="Paired clay cherries"><figcaption>Cherries</figcaption></figure>
+</div>
+<h2>Finished style references</h2><p>Rounded primary forms, restrained shape counts, soft joins, thick attachments, and the existing plasticine materials. Fruit bodies are roughly 20–30 units across, compared with the reference mug's roughly 32-unit body width. Shared renderer, collision, damage, and clay settings come from the finished mug.</p>
+<div class="grid">
+<figure><img src="../reference-teapot.png" alt="Reference teapot"><figcaption>Teapot</figcaption></figure>
+<figure><img src="../reference-mug.png" alt="Reference mug"><figcaption>Mug</figcaption></figure>
+<figure><img src="../reference-pot_pitcher.png" alt="Reference pitcher"><figcaption>Pitcher</figcaption></figure>
+<figure><img src="../reference-flour.png" alt="Reference flour jar"><figcaption>Flour jar</figcaption></figure>
+</div>
+<p>Regenerate with <code>powershell -NoProfile -ExecutionPolicy Bypass -File Tools/PropGen/gen-fruit.ps1</code>. Regeneration replaces these eight fruit prefabs; save manual variants under different names. Preview PNGs are captured separately from the editor. All eight prefabs compiled successfully and were inspected together in the review scene as well as in asset thumbnails. Collision has not been playtested.</p>
+</html>

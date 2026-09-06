@@ -1,0 +1,364 @@
+{
+  "__guid": "fb6ccfa6-b735-4cf2-a177-79f5f2ae0f11",
+  "GameObjects": [
+    {
+      "__guid": "358853b4-1d87-458f-9e15-bbc7c6fd42ad",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Sun",
+      "Position": "0,0,0",
+      "Rotation": "-0.688729584,0.160160467,0.356659502,0.610568404",
+      "Scale": "1,1,1",
+      "Tags": "light_directional,light",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "57e122bf-38f7-48b9-a56a-965fdb9ec4cb",
+          "__enabled": true,
+          "Flags": 0,
+          "ContactShadows": true,
+          "Contribution": "Diffuse, Specular, Transmissive",
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "1,0.92,0.79,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "ShadowBias": 0.0005,
+          "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91,
+          "ShadowHardness": 0,
+          "Shadows": true,
+          "SkyColor": "0.4,0.38,0.32,1",
+          "Visualizer": {}
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "e8b3c38a-e11c-4816-8243-04a4d64f2637",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "2D Skybox",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "skybox",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkyBox2D",
+          "__guid": "438385db-4392-4902-adb4-aff5d430bc90",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "SkyIndirectLighting": true,
+          "SkyMaterial": "materials/skybox/skybox_day_01.vmat",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.EnvmapProbe",
+          "__guid": "741bf968-d3fd-4e09-bc96-93788a76597a",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 1,
+          "BakedTexture": null,
+          "Bounds": {
+            "Mins": "-512,-512,-512",
+            "Maxs": "512,512,512"
+          },
+          "DelayBetweenUpdates": 0.1,
+          "Feathering": 0.02,
+          "FrameInterval": 5,
+          "MaxDistance": 512,
+          "Mode": "CustomTexture",
+          "MultiBounce": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Priority": 0,
+          "Projection": "Sphere",
+          "RenderExcludeTags": "",
+          "Resolution": "Small",
+          "Texture": "textures/cubemaps/default2.vtex",
+          "TintColor": "1,1,1,1",
+          "UpdateStrategy": "OnEnabled",
+          "ZFar": 4096,
+          "ZNear": 16
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "0f5c3f5f-ed7d-41eb-b909-013166e268c6",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Plane",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "10,10,10",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "877ea6c0-eaba-41f6-951c-e33d2cad88d3",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": "materials/train_review_ground.vmat",
+          "Materials": null,
+          "Model": "models/dev/plane.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "0.82,0.67,0.44,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "41efdc4a-34a5-4f2f-b9b7-b863d339c317",
+          "__enabled": true,
+          "Flags": 0,
+          "Center": "0,0,-5",
+          "ColliderFlags": 0,
+          "Elasticity": null,
+          "Friction": null,
+          "IsTrigger": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RollingResistance": null,
+          "Scale": "100,100,10",
+          "Static": false,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "a5a6e84d-2172-414e-894c-263496792f62",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Camera",
+      "Position": "-135,-300,150",
+      "Rotation": "-0.0910958722,0.137630865,0.544367492,0.822449625",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.CameraComponent",
+          "__guid": "ebb79e40-d5f0-4aad-ae70-1805b359e3a1",
+          "__enabled": true,
+          "Flags": 0,
+          "BackgroundColor": "0.33333,0.46275,0.52157,1",
+          "ClearFlags": "All",
+          "EnablePostProcessing": true,
+          "FieldOfView": 40,
+          "FovAxis": "Horizontal",
+          "IsMainCamera": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Orthographic": true,
+          "OrthographicHeight": 108,
+          "PostProcessAnchor": null,
+          "Priority": 1,
+          "RenderExcludeTags": "",
+          "RenderTags": "",
+          "RenderTexture": null,
+          "TargetEye": "None",
+          "Viewport": "0,0,1,1",
+          "ZFar": 10000,
+          "ZNear": 10
+        },
+        {
+          "__type": "Sandbox.Tonemapping",
+          "__guid": "8a2a0986-c5f8-45cf-be86-b1d2af107c2d",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 3,
+          "AutoExposureEnabled": true,
+          "ExposureCompensation": 0,
+          "ExposureMethod": "RGB",
+          "MaximumExposure": 2,
+          "MinimumExposure": 1,
+          "Mode": "AgX",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Rate": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "06ea12de-8d21-4a10-9067-f7a69b1456bc",
+      "__version": 2,
+      "__Prefab": "prefabs/props/toys/toy_train.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "bfbd5a69-0c42-3e34-aff6-31b8dc76d6f1"
+            },
+            "Property": "Name",
+            "Value": "Concept train"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c9d4f546-7e82-a24f-47fa-5092435691be"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "31bfbc08-c58c-9352-4096-e10b1840f1d6"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b60c4e49-f624-1f7f-a0e7-6eec33654ac7"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "bfbd5a69-0c42-3e34-aff6-31b8dc76d6f1": "06ea12de-8d21-4a10-9067-f7a69b1456bc",
+        "34e2b3e4-9c7e-d20c-1bf6-04f2b9b7e058": "32815efa-9008-46c2-ae35-ea21b108d75b",
+        "f0cafc7a-5ab2-0ad2-5fc0-2733bfc49b78": "4c574e9a-b936-4764-ae69-135b572e0f15",
+        "c9d4f546-7e82-a24f-47fa-5092435691be": "0825aa0d-d21f-4035-a1e2-27ae130c8ce8",
+        "09fdf1a0-13cc-6c30-5e00-a8e9f57b806e": "9f4516d6-b1f3-4245-bdfd-f23c72c8f369",
+        "97e08b12-d731-efcc-24bb-e11f5b0069fd": "c63a1cff-9d9c-4d03-a39b-42cbd077bfb3",
+        "e9cf4335-d5e9-50f3-9f1f-486cf7438596": "e9d24d84-c23b-4391-b33b-5d5f47739428",
+        "ff0b7491-1b59-207b-18d1-009b28803b1b": "7b3cd6db-5583-4e65-854c-d59f006fc521",
+        "055d55d0-9c44-f970-49a0-8565f6b2d76a": "1032048d-532d-4f5e-ab4b-7844a89a7500",
+        "d485dabf-4096-9faf-d815-41f53b406634": "ee25199c-1e07-46a1-b5c1-69184e80f06c",
+        "bc711d98-47ed-0e3e-d25b-cdd0e84886ee": "ab977c31-1c81-4075-b35d-6f71ccae6afb",
+        "31bfbc08-c58c-9352-4096-e10b1840f1d6": "87fc9f32-b8d3-4fb6-aba0-0d00b97926b5",
+        "98c35cf8-0345-a7e0-9a24-d91c37909a1b": "2e97134f-31d8-4bfb-b2ff-2a71ab315b13",
+        "d4b1772b-13a9-0496-1550-da193d5fc7a7": "c28576bf-d507-4fe4-80ca-6ad5066ddf98",
+        "3ba72ece-4a64-e8c6-43a8-1a89d4bfa4d4": "9fbe5019-adc7-4337-9188-492547fb090a",
+        "9c44a136-5df7-901c-0f92-bcfe24e52ece": "84f72022-f4cc-4552-911d-05c1bcf90a41",
+        "2b79fdbe-910f-eff7-071d-3d997e3a80a9": "d7caefdc-f04d-40cd-a1bc-822a07b3e6ed",
+        "024fdd94-a0df-fe8d-d57b-f70f251a89b9": "6cd38538-78f5-49d6-a10a-f699fae4d431",
+        "1984c665-14bd-1a86-32a5-5a0e61131537": "99a6d730-5c8b-4564-b839-c6d43b391d6f",
+        "b60c4e49-f624-1f7f-a0e7-6eec33654ac7": "b3024d57-de3d-486f-8e4e-180c22b49f8b",
+        "51a740ce-58db-5bab-611b-0d60e5c8c814": "5566ee6c-97e4-4e44-aaf6-0d0baa6d6790",
+        "94a2f304-bfd5-f9f0-8a7c-4bec78310097": "0c9c10b2-f3e6-4115-b74f-311c50138cb7",
+        "2fac454f-9d1a-c68a-a68f-48a8950b711c": "584efdd0-b1f9-4b59-9c21-9646efd98bd1",
+        "63ce82c0-af47-092f-c15f-b21e96400fe1": "88fe44fd-c153-4f93-9388-18a6c83f9464",
+        "16fb0a16-f4c3-466c-e02e-a3a541f2cbdd": "7c237ecc-f653-431b-90dd-49c3742caa41"
+      }
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": false,
+    "Metadata": {},
+    "NavMesh": {
+      "Enabled": false,
+      "IncludeStaticBodies": true,
+      "IncludeKeyframedBodies": true,
+      "EditorAutoUpdate": true,
+      "AgentHeight": 64,
+      "AgentRadius": 16,
+      "AgentStepSize": 18,
+      "AgentMaxSlope": 40,
+      "ExcludedBodies": "",
+      "IncludedBodies": "",
+      "DeferGeneration": false,
+      "CustomBounds": false
+    },
+    "GameObjectSystems": {
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
+          "$refs": []
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
+      }
+    }
+  },
+  "ResourceVersion": 3,
+  "Title": null,
+  "Description": null,
+  "__references": [],
+  "__version": 3
+}

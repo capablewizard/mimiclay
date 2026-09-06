@@ -10475,7 +10475,7 @@
     {
       "__guid": "0c833b7d-dc9a-423a-a2cc-0b8e3fbd1ae0",
       "__version": 2,
-      "__Prefab": "prefabs/saved/fryingpan.prefab",
+      "__Prefab": "prefabs/props/kitchen/fryingpan.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10521,7 +10521,7 @@
     {
       "__guid": "bc4e4ac2-b070-4850-a9c3-717eead3c6ec",
       "__version": 2,
-      "__Prefab": "prefabs/saved/knob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10559,7 +10559,7 @@
     {
       "__guid": "c513621c-926b-404d-84a4-2142487753bb",
       "__version": 2,
-      "__Prefab": "prefabs/saved/knob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10613,7 +10613,7 @@
     {
       "__guid": "4da5d789-6284-4872-b775-311fb5f2a050",
       "__version": 2,
-      "__Prefab": "prefabs/saved/knob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10667,7 +10667,7 @@
     {
       "__guid": "a7d06871-04b6-4d2a-a132-4115d6624926",
       "__version": 2,
-      "__Prefab": "prefabs/saved/knob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10721,7 +10721,7 @@
     {
       "__guid": "74dd85ed-6b1c-4b0a-9647-15c11155c767",
       "__version": 2,
-      "__Prefab": "prefabs/saved/knob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10775,7 +10775,7 @@
     {
       "__guid": "ca4c37b2-e84a-46cb-b7d8-d1e5758304a9",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10821,7 +10821,7 @@
     {
       "__guid": "f0c535b3-810e-4942-9abe-01a724ab3c60",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10875,7 +10875,7 @@
     {
       "__guid": "4d88b87b-7f47-4f9f-bcf2-9b25ce441b87",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10929,7 +10929,7 @@
     {
       "__guid": "4ef945dc-d826-4a8b-a312-0f2dcfd7ab69",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10975,7 +10975,7 @@
     {
       "__guid": "7e435b66-bf05-4a26-ab99-21d93ac5c79c",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11029,7 +11029,7 @@
     {
       "__guid": "c79239dd-01c6-4e87-8bb6-326ddb6fda12",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11083,7 +11083,7 @@
     {
       "__guid": "9c7d95e4-2328-431d-a029-4b6e82a65170",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11137,7 +11137,7 @@
     {
       "__guid": "3aca9cde-7b9a-49c3-8892-c1c479203a72",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11207,7 +11207,7 @@
     {
       "__guid": "0ef3577e-67ca-4d48-8397-f163d2070fd7",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11277,7 +11277,7 @@
     {
       "__guid": "9e369767-b822-4e2b-b3d1-88483b6df4d4",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11347,7 +11347,7 @@
     {
       "__guid": "ea1e056b-aca9-48d0-8fbb-8224706f2ef7",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11417,7 +11417,7 @@
     {
       "__guid": "310e12ac-9539-496c-85e1-0dae6d3f6d2f",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11487,7 +11487,7 @@
     {
       "__guid": "0791109d-c35f-49af-beda-28eb06617251",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11541,7 +11541,7 @@
     {
       "__guid": "a9fb60ab-b9aa-47a2-b786-fec0b310c5b2",
       "__version": 2,
-      "__Prefab": "prefabs/saved/goldknob.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11595,7 +11595,7 @@
     {
       "__guid": "1a3865b2-37d4-4bfa-aa14-2713589af11a",
       "__version": 2,
-      "__Prefab": "prefabs/saved/teapot.prefab",
+      "__Prefab": "prefabs/props/kitchen/teapot.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12913,7 +12913,7 @@
     {
       "__guid": "d286d30c-713a-4f06-bc50-5de102cd4a0b",
       "__version": 2,
-      "__Prefab": "prefabs/saved/fridgehandle.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/fridgehandle.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12959,7 +12959,7 @@
     {
       "__guid": "5a9c2b98-a6a6-4bbb-bbd0-5c2263209e0d",
       "__version": 2,
-      "__Prefab": "prefabs/saved/fridgehandle.prefab",
+      "__Prefab": "prefabs/props/kitchen/scene/fridgehandle.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13013,7 +13013,7 @@
     {
       "__guid": "86633f0e-6f97-4030-bbdb-44d0f4fdad9a",
       "__version": 2,
-      "__Prefab": "prefabs/saved/tap.prefab",
+      "__Prefab": "prefabs/props/kitchen/tap.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13059,7 +13059,7 @@
     {
       "__guid": "a92e0308-5e7e-443b-834e-d5a3e5fea81d",
       "__version": 2,
-      "__Prefab": "prefabs/saved/tap.prefab",
+      "__Prefab": "prefabs/props/kitchen/tap.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13105,7 +13105,7 @@
     {
       "__guid": "20ec15ec-a7de-4c48-8d93-769ba3cf302a",
       "__version": 2,
-      "__Prefab": "prefabs/saved/flour.prefab",
+      "__Prefab": "prefabs/props/kitchen/flour.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13448,7 +13448,7 @@
     {
       "__guid": "0623f2b5-8068-47d2-958c-0d2ad88f5a81",
       "__version": 2,
-      "__Prefab": "prefabs/saved/sugar.prefab",
+      "__Prefab": "prefabs/props/kitchen/sugar.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13839,7 +13839,7 @@
     {
       "__guid": "f8bb3b8c-375e-4b09-a859-0125b26f0063",
       "__version": 2,
-      "__Prefab": "prefabs/saved/pot.prefab",
+      "__Prefab": "prefabs/props/kitchen/pot.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13949,7 +13949,7 @@
     {
       "__guid": "4b2e888c-ef31-474b-835c-bcc8688eb8eb",
       "__version": 2,
-      "__Prefab": "prefabs/saved/pot_polkedot.prefab",
+      "__Prefab": "prefabs/props/kitchen/pot_polkedot.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14796,11 +14796,11 @@
           "Prefabs": [
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerplate.prefab"
+              "prefab": "prefabs/props/kitchen/dinnerplate.prefab"
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerbowl.prefab"
+              "prefab": "prefabs/props/kitchen/dinnerbowl.prefab"
             }
           ],
           "RandomizeRotation": true
@@ -14839,11 +14839,11 @@
           "Prefabs": [
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerplate.prefab"
+              "prefab": "prefabs/props/kitchen/dinnerplate.prefab"
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerbowl.prefab"
+              "prefab": "prefabs/props/kitchen/dinnerbowl.prefab"
             }
           ],
           "RandomizeRotation": true
@@ -15039,11 +15039,11 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerbowl.prefab"
+              "prefab": "prefabs/props/kitchen/dinnerbowl.prefab"
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/dinnerplate.prefab"
+              "prefab": "prefabs/props/kitchen/dinnerplate.prefab"
             },
             {
               "_type": "gameobject",
@@ -15055,7 +15055,7 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/flour.prefab"
+              "prefab": "prefabs/props/kitchen/flour.prefab"
             },
             {
               "_type": "gameobject",
@@ -15067,7 +15067,7 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/fridgehandle.prefab"
+              "prefab": "prefabs/props/kitchen/scene/fridgehandle.prefab"
             },
             {
               "_type": "gameobject",
@@ -15075,7 +15075,7 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/fryingpan.prefab"
+              "prefab": "prefabs/props/kitchen/fryingpan.prefab"
             },
             {
               "_type": "gameobject",
@@ -15095,7 +15095,7 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/goldknob.prefab"
+              "prefab": "prefabs/props/kitchen/scene/goldknob.prefab"
             },
             {
               "_type": "gameobject",
@@ -15135,7 +15135,7 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/knob.prefab"
+              "prefab": "prefabs/props/kitchen/scene/knob.prefab"
             },
             {
               "_type": "gameobject",
@@ -15171,7 +15171,7 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/mug.prefab"
+              "prefab": "prefabs/props/kitchen/mug.prefab"
             },
             {
               "_type": "gameobject",
@@ -15219,11 +15219,11 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/pot.prefab"
+              "prefab": "prefabs/props/kitchen/pot.prefab"
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/pot_polkedot.prefab"
+              "prefab": "prefabs/props/kitchen/pot_polkedot.prefab"
             },
             {
               "_type": "gameobject",
@@ -15259,11 +15259,11 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/sugar.prefab"
+              "prefab": "prefabs/props/kitchen/sugar.prefab"
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/tap.prefab"
+              "prefab": "prefabs/props/kitchen/tap.prefab"
             },
             {
               "_type": "gameobject",
@@ -15271,7 +15271,7 @@
             },
             {
               "_type": "gameobject",
-              "prefab": "prefabs/saved/teapot.prefab"
+              "prefab": "prefabs/props/kitchen/teapot.prefab"
             },
             {
               "_type": "gameobject",

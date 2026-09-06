@@ -1,4 +1,4 @@
-# Rebuilds prefabs/saved/pot_polkedot.prefab = pot.prefab's brushes + a ring of polka dots.
+# Rebuilds prefabs/props/kitchen/pot_polkedot.prefab = pot.prefab's brushes + a ring of polka dots.
 #
 # Each dot is a CYLINDER brush with Operation = Cutout, its local Z axis pointed RADIALLY
 # outward at the pot wall. The cutout op subtracts a thin shell around the brush BOUNDARY
@@ -17,8 +17,8 @@
 # stacks dots. Tune the knobs below and re-run.
 
 $ErrorActionPreference = 'Stop'
-$Src = 'd:/SBox/Projects/mimiclay/Assets/Prefabs/saved/pot.prefab'
-$Dst = 'd:/SBox/Projects/mimiclay/Assets/Prefabs/saved/pot_polkedot.prefab'
+$Src = 'd:/SBox/Projects/mimiclay/Assets/Prefabs/Props/Kitchen/pot.prefab'
+$Dst = 'd:/SBox/Projects/mimiclay/Assets/Prefabs/Props/Kitchen/pot_polkedot.prefab'
 $inv = [Globalization.CultureInfo]::InvariantCulture
 function F([double]$v) { $v.ToString('0.#########', $inv) }
 

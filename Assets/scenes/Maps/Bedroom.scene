@@ -9657,7 +9657,7 @@
     {
       "__guid": "626e9b96-1cec-8c7e-8b7e-248381849121",
       "__version": 2,
-      "__Prefab": "prefabs/saved/mug.prefab",
+      "__Prefab": "prefabs/props/kitchen/mug.prefab",
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [

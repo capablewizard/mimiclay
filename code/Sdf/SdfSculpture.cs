@@ -45,6 +45,9 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 	/// for). See <see cref="ExportToPrefab"/>.</summary>
 	public static Func<SdfSculpture, bool> ExportPrefabHandler;
 
+	/// <summary>Editor HUD save bridge. Returns a user-facing result; Save As chooses a new asset path.</summary>
+	public static Func<SdfSculpture, bool, string> SavePrefabHandler;
+
 	/// <summary>Raised at the end of <see cref="Rebuild"/> — i.e. whenever the shape is COMMITTED (a discrete
 	/// edit or a gizmo release), never mid-drag (dragging goes through <see cref="RebuildShadowProxy"/>). The
 	/// networked hider listens to this to push its authored brushes to the other clients; the SDF core itself
