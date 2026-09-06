@@ -299,6 +299,17 @@ public sealed class PropClaims : Component
 		// feet-at-origin lift with the exact composed placement — the lift assumes an upright unscaled shape,
 		// and the scene original may be neither.
 		HiderController.WearDisguise( pawn, sculpture.Brushes );
+
+		// Remember which prefab the clay came from so the editor HUD's Prefab "Save" writes back over it (see
+		// HiderController.DisguiseSource). NEAREST instance root, not outermost: a prop nested inside an
+		// arrangement prefab still resolves to the prop's own file, not the arrangement's.
+		var sourceRoot = sculpture.GameObject;
+		while ( sourceRoot.IsValid() && !sourceRoot.IsPrefabInstanceRoot )
+			sourceRoot = sourceRoot.Parent;
+		var hider = pawn.Components.Get<HiderController>( includeDisabled: true );
+		if ( hider.IsValid() )
+			hider.DisguiseSource = sourceRoot.IsValid() ? sourceRoot.PrefabInstanceSource : null;
+
 		var disguise = pawn.Children.FirstOrDefault( ch => ch.Name == "Disguise" );
 		if ( disguise.IsValid() )
 		{

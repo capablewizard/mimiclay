@@ -132,6 +132,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// editor (a single source of truth), not duplicated in code.</summary>
 	[Property, Group( "Disguise" )] public PrefabFile DisguisePrefab { get; set; }
 
+	/// <summary>Assets-relative path of the prefab this pawn's disguise was possessed from (set by
+	/// <see cref="PropClaims"/> when a scene-placed prefab instance is converted); null for a shape sculpted
+	/// from scratch. The editor HUD's Prefab "Save" writes over THIS prefab, never the disguise template.</summary>
+	[Sync] public string DisguiseSource { get; set; }
+
 	// Shape networking lives on a reusable SdfNetworkSync component (in the prop prefab), pointed at the disguise
 	// in OnStart. The SDF core + this controller stay networking-agnostic — see SdfNetworkSync.
 
