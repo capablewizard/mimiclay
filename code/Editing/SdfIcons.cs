@@ -63,6 +63,7 @@ public static class SdfIcons
 	public const string Add = "add";
 	public const string Subtract = "remove";
 	public const string Cutout = "content_cut"; // scissors — the score-and-recolour op
+	public const string Colour = "palette"; // paint palette — the paint-only op
 	public const string Symmetry = "flip"; // a shape mirrored across a dashed line
 	public const string Delete = "delete";
 	public const string Duplicate = "content_copy";

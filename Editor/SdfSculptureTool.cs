@@ -136,7 +136,7 @@ public class SdfSculptureTool : EditorTool<SdfSculpture>
 					}
 
 					float alpha = isSel ? 1f : (hovered ? 0.7f : 0.3f);
-					Gizmo.Draw.Color = (brush.Operation == SdfOperation.Subtract ? Color.Red : Color.Cyan).WithAlpha( alpha * dragAlpha );
+					Gizmo.Draw.Color = Mimiclay.BrushWireframes.OpColor( brush.Operation ).WithAlpha( alpha * dragAlpha );
 
 					DrawBrushOutline( brush, style );
 
@@ -144,7 +144,7 @@ public class SdfSculptureTool : EditorTool<SdfSculpture>
 					if ( hovered )
 					{
 						Gizmo.Draw.IgnoreDepth = true;
-						Gizmo.Draw.Color = (brush.Operation == SdfOperation.Subtract ? Color.Red : Color.Cyan).WithAlpha( 0.15f * dragAlpha );
+						Gizmo.Draw.Color = Mimiclay.BrushWireframes.OpColor( brush.Operation ).WithAlpha( 0.15f * dragAlpha );
 						DrawBrushSolid( brush );
 					}
 				}
@@ -331,7 +331,7 @@ public class SdfSculptureTool : EditorTool<SdfSculpture>
 		float alpha = isSel ? 1f : (hovered ? 0.7f : 0.3f);
 		Gizmo.Draw.IgnoreDepth = false;
 		Gizmo.Draw.LineThickness = 2f;
-		Gizmo.Draw.Color = (brush.Operation == SdfOperation.Subtract ? Color.Red : Color.Cyan).WithAlpha( alpha * dragAlpha );
+		Gizmo.Draw.Color = Mimiclay.BrushWireframes.OpColor( brush.Operation ).WithAlpha( alpha * dragAlpha );
 
 		// Centre line follows the drawn curve (tessellated when Curvature > 0); rings stay on the control points.
 		brush.BuildSplinePolyline( _splineCurve );
@@ -368,7 +368,7 @@ public class SdfSculptureTool : EditorTool<SdfSculpture>
 			if ( hovered )
 			{
 				Gizmo.Draw.IgnoreDepth = true;
-				Gizmo.Draw.Color = (brush.Operation == SdfOperation.Subtract ? Color.Red : Color.Cyan).WithAlpha( 0.15f * dragAlpha );
+				Gizmo.Draw.Color = Mimiclay.BrushWireframes.OpColor( brush.Operation ).WithAlpha( 0.15f * dragAlpha );
 				foreach ( var s in _splineSweep )
 					Gizmo.Draw.SolidSphere( new Vector3( s.x, s.y, s.z ), s.w, 6, 8 );
 				Gizmo.Draw.IgnoreDepth = false;

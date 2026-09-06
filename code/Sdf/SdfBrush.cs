@@ -38,6 +38,11 @@ public enum SdfOperation
 	/// the groove size and 0 is a pure recolour — and paints the clay INSIDE the brush with the brush's
 	/// material. Adds no geometry of its own, so bounds/collision treat it like Subtract.</summary>
 	Cutout,
+	/// <summary>Paint only: recolours the clay INSIDE the brush with the brush's material and never touches
+	/// the distance field (a Cutout with no groove). Blend is the paint's feather — the colour edge fades
+	/// over Blend units either side of the brush boundary; 0 gives a hard 1-unit AA edge. Adds no
+	/// geometry, so bounds/collision/last-solid checks ignore it like the other non-Add ops.</summary>
+	Colour,
 }
 
 /// <summary>
@@ -1390,7 +1395,9 @@ public static class Sdf
 				SdfOperation.Subtract => SmoothSubtract( d, bd, b.Blend ),
 				// Cutout: subtract a thin SHELL of the brush boundary (|bd|) — a groove where the brush
 				// surface crosses the clay, sized by Blend (0 = pure recolour, no geometry change).
-				_ => SmoothSubtract( d, MathF.Abs( bd ), b.Blend ),
+				SdfOperation.Cutout => SmoothSubtract( d, MathF.Abs( bd ), b.Blend ),
+				// Colour: paint only — the field is untouched.
+				_ => d,
 			};
 		}
 		return d;
@@ -1400,7 +1407,8 @@ public static class Sdf
 	public static Color SampleColor( List<SdfBrush> brushes, Vector3 p ) => SampleSurface( brushes, p ).Color;
 
 	/// <summary>Width (world units) of a Cutout brush's recolour edge — a small fixed AA band so the colour
-	/// boundary doesn't shimmer at distance. Must match the literal in sdf_raymarch's SdfShade.</summary>
+	/// boundary doesn't shimmer at distance. Also the floor of a Colour brush's feather (Blend 0 = this hard
+	/// edge). Must match SDF_CUTOUT_COLOR_EDGE in sdf_eval.hlsl.</summary>
 	const float CutoutColorEdge = 1f;
 
 	/// <summary>The full per-point surface — colour, metalness and roughness — each blended across
@@ -1419,6 +1427,17 @@ public static class Sdf
 
 			float bd = b.Distance( p );
 			float k = b.Blend;
+
+			if ( b.Operation == SdfOperation.Colour )
+			{
+				// Colour: paint the clay inside the brush, no geometry. The edge feathers over Blend units
+				// about the brush boundary (floored at the cutout AA band so Blend 0 is a crisp edge).
+				float hc = Math.Clamp( 0.5f - bd / MathF.Max( k, CutoutColorEdge ), 0f, 1f );
+				col = Color.Lerp( col, b.Color, hc );
+				metal = MathX.Lerp( metal, b.Metallic, hc );
+				rough = MathX.Lerp( rough, b.Roughness, hc );
+				continue;
+			}
 
 			if ( b.Operation == SdfOperation.Cutout )
 			{

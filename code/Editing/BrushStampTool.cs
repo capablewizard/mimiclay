@@ -29,7 +29,7 @@ public sealed class BrushStampTool
 	/// <summary>Shape the next ghost takes (and the live ghost is mutated to). Set via <see cref="SetShape"/>.</summary>
 	public SdfShape Shape { get; private set; } = SdfShape.Sphere;
 
-	/// <summary>Stamp operation — Add, Subtract (carve) or Cutout, driven by the HUD's cycle. The live ghost syncs
+	/// <summary>Stamp operation — Add, Subtract (carve), Cutout or Colour, driven by the HUD's cycle. The live ghost syncs
 	/// to it on the next update, so toggling flips the preview in place.</summary>
 	public SdfOperation Operation { get; set; } = SdfOperation.Add;
 

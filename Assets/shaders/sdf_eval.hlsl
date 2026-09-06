@@ -463,6 +463,10 @@ float SdfDist( float3 lp )
 		float4 F = LoadBrush( k, 5 ); // cull AABB min .xyz, extruded cross-section id .w
 		float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
 
+		// Op (D.w): 0 add, 1 subtract, 2 cutout, 3 colour. Colour is paint only — it never touches the field.
+		if ( D.w >= 2.5 )
+			continue;
+
 		// Cull threshold per op: add matters within blend of becoming the nearest (d + k), subtract while
 		// material is within blend (k − d). Cutout carves the shell |bd| ≥ bd, so the subtract bound stays
 		// conservative for it too.
@@ -470,9 +474,9 @@ float SdfDist( float3 lp )
 			continue;
 
 		float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
-		// Op (D.w): 0 add, 1 subtract, 2 cutout. Cutout subtracts a thin SHELL of the brush boundary (|bd|)
-		// — a groove where the brush surface crosses the clay, sized by Blend (0 = geometric no-op; the
-		// recolour half of the op lives in sdf_raymarch's SdfShade).
+		// Cutout subtracts a thin SHELL of the brush boundary (|bd|) — a groove where the brush surface
+		// crosses the clay, sized by Blend (0 = geometric no-op; the recolour half of the op lives in
+		// SdfSurfaceLocal below).
 		d = (D.w < 0.5) ? smin( d, bd, B.w ) : ssub( d, (D.w < 1.5) ? bd : abs( bd ), B.w );
 	}
 	return d;
@@ -489,7 +493,8 @@ float SdfDist( float3 lp )
 // vertex colour has to gamma-encode it, since the mesh shader does SrgbToLinear on the way back in.
 struct SdfSurface { float3 col; float metal; float rough; };
 
-// Small fixed AA band on a Cutout's colour edge — must match SdfBrush.CutoutColorEdge (1 unit).
+// Small fixed AA band on a Cutout's colour edge, and the floor of a Colour brush's feather — must match
+// SdfBrush.CutoutColorEdge (1 unit).
 #define SDF_CUTOUT_COLOR_EDGE 1.0
 
 SdfSurface SdfSurfaceLocal( float3 lp )
@@ -509,12 +514,25 @@ SdfSurface SdfSurfaceLocal( float3 lp )
 		float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
 
 		// The same incremental AABB early-out as SdfDist: a far brush can't change the blended distance,
-		// and it can't change the colour either — the colour lerps use the same h factors.
-		if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > (D.w < 0.5 ? d + B.w : B.w - d) )
+		// and it can't change the colour either — the colour lerps use the same h factors. A Colour brush
+		// has no distance term: it only matters within half its feather of the boundary.
+		float cullT = (D.w < 0.5) ? d + B.w : (D.w < 2.5 ? B.w - d : 0.5 * max( B.w, SDF_CUTOUT_COLOR_EDGE ));
+		if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > cullT )
 			continue;
 
 		float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
 		float kk = B.w;
+
+		if ( D.w >= 2.5 )
+		{
+			// Colour: paint the clay inside the brush, no geometry. The edge feathers over Blend units about
+			// the brush boundary (floored at the cutout AA band so Blend 0 is a crisp edge).
+			float hc = saturate( 0.5 - bd / max( kk, SDF_CUTOUT_COLOR_EDGE ) );
+			s.col = lerp( s.col, D.rgb, hc );
+			s.metal = lerp( s.metal, E.y, hc );
+			s.rough = lerp( s.rough, E.z, hc );
+			continue;
+		}
 
 		if ( D.w >= 1.5 )
 		{

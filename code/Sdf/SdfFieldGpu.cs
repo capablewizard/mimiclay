@@ -536,7 +536,7 @@ public static class SdfBrushPacker
 			data[o + 12] = SrgbToLinear( b.Color.r );
 			data[o + 13] = SrgbToLinear( b.Color.g );
 			data[o + 14] = SrgbToLinear( b.Color.b );
-			data[o + 15] = (int)b.Operation; // 0 add, 1 subtract, 2 cutout — sdf_eval's SdfDist + SdfShade branch on it
+			data[o + 15] = (int)b.Operation; // 0 add, 1 subtract, 2 cutout, 3 colour — sdf_eval's SdfDist + SdfSurfaceLocal branch on it
 
 			data[o + 16] = b.Shape == SdfShape.Spline ? (b.SplineClosed ? 1f : 0f) : b.Rounding;
 			data[o + 17] = b.Metallic;

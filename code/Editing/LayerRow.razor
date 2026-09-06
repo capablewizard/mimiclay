@@ -22,8 +22,8 @@
 
 <div class="cell shapeswatch" style=@ShapeSwatchStyle()></div>
 
-<div class="cell icon iconbtn op @(Operation == SdfOperation.Subtract ? "sub" : Operation == SdfOperation.Cutout ? "cut" : "add")" onclick=@OnToggleOperation>
-	@(Operation == SdfOperation.Subtract ? SdfIcons.Subtract : Operation == SdfOperation.Cutout ? SdfIcons.Cutout : SdfIcons.Add)
+<div class="cell icon iconbtn op @(Operation == SdfOperation.Subtract ? "sub" : Operation == SdfOperation.Cutout ? "cut" : Operation == SdfOperation.Colour ? "col" : "add")" onclick=@OnToggleOperation>
+	@(Operation == SdfOperation.Subtract ? SdfIcons.Subtract : Operation == SdfOperation.Cutout ? SdfIcons.Cutout : Operation == SdfOperation.Colour ? SdfIcons.Colour : SdfIcons.Add)
 </div>
 
 <div class="cell iconbtn sym @(SymmetryOn ? "on" : "")" onclick=@OnToggleSymmetry>
@@ -60,7 +60,7 @@
 
 	/// <summary>Eye button — toggle visibility.</summary>
 	[Parameter] public Action<int> ToggleEnabled { get; set; }
-	/// <summary>Op button — cycle Add → Carve → Cutout.</summary>
+	/// <summary>Op button — cycle Add → Carve → Cutout → Colour.</summary>
 	[Parameter] public Action<int> ToggleOperation { get; set; }
 	/// <summary>Symmetry button — toggle symmetry.</summary>
 	[Parameter] public Action<int> ToggleSymmetry { get; set; }

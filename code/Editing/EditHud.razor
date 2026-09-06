@@ -92,7 +92,7 @@
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
 				<div class="hint"><span class="key">R</span><span>point size</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-				<div class="hint"><span class="key">A</span><span>add / carve / cutout</span></div>
+				<div class="hint"><span class="key">A</span><span>add / carve / cutout / colour</span></div>
 				<div class="hint"><span class="key">S</span><span>blend</span></div>
 				<div class="hint"><span class="key">D</span><span>smooth</span></div>
 				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
@@ -100,13 +100,13 @@
 			}
 			else if ( Session.Tool == SculptTool.Sculpt )
 			{
-				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : Session.StampOperation == SdfOperation.Cutout ? "cutout" : "stamp")</span></div>
+				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : Session.StampOperation == SdfOperation.Cutout ? "cutout" : Session.StampOperation == SdfOperation.Colour ? "paint" : "stamp")</span></div>
 				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
 				<div class="hint"><span class="key">RMB tap</span><span>done</span></div>
 				<div class="hint"><span class="key">R</span><span>scale</span></div>
 				<div class="hint"><span class="key">E</span><span>rotate</span></div>
 				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-				<div class="hint"><span class="key">A</span><span>add / carve / cutout</span></div>
+				<div class="hint"><span class="key">A</span><span>add / carve / cutout / colour</span></div>
 				<div class="hint"><span class="key">S</span><span>blend</span></div>
 				<div class="hint"><span class="key">D</span><span>@(SecondSliderName)</span></div>
 				@if ( WildcardName is { } wc )
@@ -134,7 +134,7 @@
 					<div class="hint"><span class="key">R</span><span>scale</span></div>
 					<div class="hint"><span class="key">E</span><span>rotate</span></div>
 					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-					<div class="hint"><span class="key">A</span><span>add / carve / cutout</span></div>
+					<div class="hint"><span class="key">A</span><span>add / carve / cutout / colour</span></div>
 					<div class="hint"><span class="key">S</span><span>blend</span></div>
 					<div class="hint"><span class="key">D</span><span>@(SecondSliderName)</span></div>
 					@if ( WildcardName is { } wc )
@@ -485,10 +485,10 @@
 			var sliceVal = fb?.Slice ?? 0f;
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
 			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
-				@* Add/Carve/Cutout cycle for the active brush (ghost or selection) — same cycle the A key steps. *@
+				@* Add/Carve/Cutout/Colour cycle for the active brush (ghost or selection) — same cycle the A key steps. *@
 				@{ var opNow = fb?.Operation ?? SdfOperation.Add; }
-				<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : "")" @onclick=@ToggleActiveOperation>
-					<span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : "Add")</span>
+				<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : opNow == SdfOperation.Colour ? "colour" : "")" @onclick=@ToggleActiveOperation>
+					<span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : opNow == SdfOperation.Colour ? "Colour" : "Add")</span>
 				</div>
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
@@ -673,7 +673,7 @@
 		Session.SetShape( shape );
 	}
 
-	// The strip's Add/Carve/Cutout chip: cycle the active brush's operation — the stamp's in sculpt mode,
+	// The strip's Add/Carve/Cutout/Colour chip: cycle the active brush's operation — the stamp's in sculpt mode,
 	// the selected brush's in gizmo mode (identical to the A key).
 	void ToggleActiveOperation()
 	{

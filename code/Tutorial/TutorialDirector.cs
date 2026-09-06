@@ -192,7 +192,7 @@ public sealed class TutorialDirector : Component
 	readonly string[] _optionsLines =
 	{
 		"Shapes can have different qualities.",
-		"You can make them add, carve, cutout or change how they blend here.",
+		"You can make them add, carve, cutout, colour or change how they blend here.",
 		"These are hotkeyed to A, S, D and F.",
 	};
 
@@ -819,6 +819,7 @@ public sealed class TutorialDirector : Component
 				new Hint { KeyCap = "A", Label = "Set a shape to Add", Check = d => d._opsSet.Contains( SdfOperation.Add ) },
 				new Hint { KeyCap = "A", Label = "Set a shape to Carve", Check = d => d._opsSet.Contains( SdfOperation.Subtract ) },
 				new Hint { KeyCap = "A", Label = "Set a shape to Cutout", Check = d => d._opsSet.Contains( SdfOperation.Cutout ) },
+				new Hint { KeyCap = "A", Label = "Set a shape to Colour", Check = d => d._opsSet.Contains( SdfOperation.Colour ) },
 				new Hint
 				{
 					KeyCap = "S", Label = "Adjust the blend amount",

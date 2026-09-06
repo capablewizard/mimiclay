@@ -17,6 +17,17 @@ public sealed class BrushWireframes
 	const float Pad = 1.04f;         // match BrushGhost: sit a touch outside the surface (no z-fight)
 	static readonly float Tau = MathF.PI * 2f;
 
+	/// <summary>The one wire/ghost colour per operation — cyan add, red carve, blue cutout, magenta colour.
+	/// Shared by the runtime wireframes, the hover ghost tint and the editor scene-view tool so the op
+	/// reads the same everywhere (the HUD's $craft-* accents mirror these).</summary>
+	public static Color OpColor( SdfOperation op ) => op switch
+	{
+		SdfOperation.Subtract => Color.Red,
+		SdfOperation.Cutout => Color.Blue,
+		SdfOperation.Colour => Color.Magenta,
+		_ => Color.Cyan,
+	};
+
 	readonly List<Vertex> _verts = new();
 	readonly List<int> _indices = new();
 	Vector3 _bbMin, _bbMax;
@@ -159,16 +170,11 @@ public sealed class BrushWireframes
 
 			_brush = b;
 
-			// Editor styling: cyan additive / red subtractive; opacity by selection state (× the master fade
+			// Editor styling: per-op wire colour (see OpColor); opacity by selection state (× the master fade
 			// and drag-opacity passed in). An out-of-bounds brush (SculptBounds blame, fixed regions only)
 			// wears the warn colour near-full regardless of selection — the culprit has to pop.
 			float stateAlpha = (i == selected || IndexIn( selectedMulti, i )) ? 1f : (i == hovered ? 0.7f : 0.3f);
-			var baseCol = b.Operation switch
-			{
-				SdfOperation.Subtract => Color.Red,
-				SdfOperation.Cutout => Color.Blue,
-				_ => Color.Cyan,
-			};
+			var baseCol = OpColor( b.Operation );
 			if ( IndexIn( warn, i ) )
 			{
 				baseCol = warnColor;

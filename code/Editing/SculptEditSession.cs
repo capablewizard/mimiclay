@@ -1333,10 +1333,10 @@ public sealed class SculptEditSession : Component
 		NotifyChanged();
 	}
 
-	/// <summary>Cycle a brush's operation (the layer-row op button): Add → Carve → Cutout → Add. On a
+	/// <summary>Cycle a brush's operation (the layer-row op button): Add → Carve → Cutout → Colour → Add. On a
 	/// multi-selected row the whole selection lands on ONE op — the clicked row's next. Refused (with the
-	/// toast) when leaving Add would strip the last solid shape — Carve and Cutout both add no geometry,
-	/// so neither can be the sculpt's remaining solid.</summary>
+	/// toast) when leaving Add would strip the last solid shape — Carve, Cutout and Colour all add no
+	/// geometry, so none can be the sculpt's remaining solid.</summary>
 	public void ToggleOperation( int index )
 	{
 		if ( BrushAt( index ) is not { } b )
@@ -1363,11 +1363,12 @@ public sealed class SculptEditSession : Component
 	}
 
 	/// <summary>The op cycle every add/carve toggle steps through (A key, op chip, layer-row button):
-	/// Add → Subtract (carve) → Cutout → back to Add.</summary>
+	/// Add → Subtract (carve) → Cutout → Colour → back to Add.</summary>
 	public static SdfOperation NextOperation( SdfOperation op ) => op switch
 	{
 		SdfOperation.Add => SdfOperation.Subtract,
 		SdfOperation.Subtract => SdfOperation.Cutout,
+		SdfOperation.Cutout => SdfOperation.Colour,
 		_ => SdfOperation.Add,
 	};
 
@@ -2255,13 +2256,13 @@ public sealed class SculptEditSession : Component
 		if ( _ghostOutAlpha <= 0f )
 			_ghostOutBrush = null;
 
-		// A selected CARVE or CUTOUT brush has no surface of its own (a hole / a scored recolour) — draw
-		// its wireframe so you can see what you're moving. Covers every such brush in the selection.
+		// A selected non-Add brush (carve / cutout / colour) has no surface of its own (a hole / a recolour)
+		// — draw its wireframe so you can see what you're moving. Covers every such brush in the selection.
 		_stampWireList.Clear();
 		_stampWireSel.Clear();
 		foreach ( var sel in SelectedBrushes )
 		{
-			if ( sel.Operation is SdfOperation.Subtract or SdfOperation.Cutout )
+			if ( sel.Operation != SdfOperation.Add )
 			{
 				_stampWireSel.Add( _stampWireList.Count );
 				_stampWireList.Add( sel );
@@ -2385,13 +2386,8 @@ public sealed class SculptEditSession : Component
 		}
 	}
 
-	// Faint translucent overlay tint — cyan additive, red subtractive, blue cutout (matches the wires).
-	static Color HoverColor( SdfBrush b ) => (b.Operation switch
-	{
-		SdfOperation.Subtract => Color.Red,
-		SdfOperation.Cutout => Color.Blue,
-		_ => Color.Cyan,
-	}).WithAlpha( 0.2f );
+	// Faint translucent overlay tint — the per-op wire colour (cyan add / red carve / blue cutout / magenta colour).
+	static Color HoverColor( SdfBrush b ) => BrushWireframes.OpColor( b.Operation ).WithAlpha( 0.2f );
 
 	// Draw one hover ghost at the given opacity (fades the base hover tint), or hide it when invisible.
 	void DrawGhost( BrushGhost ghost, SdfBrush brush, float alpha, Transform tx )
@@ -2476,9 +2472,9 @@ public sealed class SculptEditSession : Component
 
 		bool changed = _stampTool.Update( Target, Scene, interactive, out bool committed );
 
-		// No overlay for an additive stamp — the live surface IS the preview. Carve and cutout stamps are
-		// the exception: hovering empty space they change nothing, so they'd be invisible — give them the
-		// editor wireframe (red carve / blue cutout, from BrushWireframes' op colour).
+		// No overlay for an additive stamp — the live surface IS the preview. Carve, cutout and colour stamps
+		// are the exception: hovering empty space they change nothing, so they'd be invisible — give them the
+		// editor wireframe (red carve / blue cutout / magenta colour, from BrushWireframes' op colour).
 		var stamp = StampBrush;
 		if ( stamp is not null && stamp.Operation != SdfOperation.Add )
 		{
