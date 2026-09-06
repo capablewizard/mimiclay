@@ -2045,7 +2045,8 @@ public sealed class SculptEditSession : Component
 		if ( del && !_delWas && Tool == SculptTool.Gizmo )
 			RemoveSelected();
 		_delWas = del;
-		if ( keysLive && EditHudGate.Interactive( HudSection.EditChips ) && Input.Pressed( "Drop" ) ) RemoveLast();
+		// (The engine's "Drop" action — G by default — used to remove the LAST brush here. Retired 2026-09-06:
+		// G is the Gap scrub now, Del covers deletion, and the shortcut was never surfaced in the hints.)
 
 		// Undo / redo: Ctrl+Z back, Ctrl+Shift+Z or Ctrl+Y forward. Manual edge detection like the keys above
 		// (Keyboard.Pressed doesn't fire reliably in this context), and held off whenever a gesture owns the
@@ -2522,29 +2523,6 @@ public sealed class SculptEditSession : Component
 			ClampActiveBrush(); // the stamp ghost mutates directly too — never let it rest inside a wall
 			Target.RebuildShadowProxy(); // live preview: the raymarcher reads the brushes; shadows + net stream follow
 		}
-	}
-
-	void RemoveLast()
-	{
-		var brushes = Target.Brushes;
-		if ( brushes is null )
-			return;
-
-		// Never remove the pending stamp ghost, and keep at least one real brush to edit.
-		var ghost = StampBrush;
-		if ( brushes.Count - (ghost is not null ? 1 : 0) <= 1 )
-			return;
-
-		for ( int i = brushes.Count - 1; i >= 0; i-- )
-		{
-			if ( brushes[i] == ghost )
-				continue;
-			brushes.RemoveAt( i );
-			break;
-		}
-
-		Selected = ghost is null ? brushes.Count - 1 : -1;
-		NotifyChanged();
 	}
 
 	// ── AltNav claim queries ─────────────────────────────────────────────────────────────────────────

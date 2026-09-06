@@ -3490,6 +3490,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 9.231856,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -3525,6 +3526,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -3560,6 +3562,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 5.493479,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -3595,6 +3598,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15787041,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "1,1,1,1",
                 "Metallic": 0,
@@ -3630,6 +3634,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -3665,6 +3670,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2.700001,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -3700,6 +3706,7 @@
                 "SlicePlaneN": -0.089705944,
                 "LocalCentre": "0,0,-3.35075402",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -3735,6 +3742,7 @@
                 "SlicePlaneN": -0.15500057,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.96,0.53,0.15,1",
                 "Metallic": 0,
@@ -3770,6 +3778,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -3805,6 +3814,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.97,0.97,0.97,1",
                 "Metallic": 0,
@@ -3840,6 +3850,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.97,0.97,0.97,1",
                 "Metallic": 0,
@@ -3875,6 +3886,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -3910,6 +3922,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1,
                 "Color": "0.92,0.68,0.4,1",
                 "Metallic": 0,
@@ -3949,6 +3962,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.41999996,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.45,0.26,0.17,1",
                 "Metallic": 0,
@@ -3984,6 +3998,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -4019,6 +4034,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 9.862535,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -10524,6 +10540,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 3,
+                "Gap": 0,
                 "Rounding": 1.65,
                 "Color": "0.6549,0.6549,0.6549,1",
                 "Metallic": 1,
@@ -10559,6 +10576,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.8599991,
+                "Gap": 0,
                 "Rounding": 0.91129494,
                 "Color": "0.6549,0.6549,0.6549,1",
                 "Metallic": 1,
@@ -10594,6 +10612,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 3,
+                "Gap": 0,
                 "Rounding": 0.91129494,
                 "Color": "0.6549,0.6549,0.6549,1",
                 "Metallic": 1,
@@ -10634,6 +10653,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 5.479999,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.50769,0.50769,0.50769,1",
                 "Metallic": 1,
@@ -10669,6 +10689,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.24,
+                "Gap": 0,
                 "Rounding": 5.8124776,
                 "Color": "0.88298,0.59218,0.48607,1",
                 "Metallic": 1,
@@ -10704,6 +10725,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2.3999991,
+                "Gap": 0,
                 "Rounding": 5.447955,
                 "Color": "0.88298,0.59218,0.48607,1",
                 "Metallic": 1,
@@ -10739,6 +10761,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.48,
+                "Gap": 0,
                 "Rounding": 5.447955,
                 "Color": "0.88298,0.59218,0.48607,1",
                 "Metallic": 1,
@@ -10774,6 +10797,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.3199997,
+                "Gap": 0,
                 "Rounding": 4.920993,
                 "Color": "0.16476,0.16476,0.16476,1",
                 "Metallic": 0,
@@ -10809,6 +10833,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.02,
+                "Gap": 0,
                 "Rounding": 4.2479544,
                 "Color": "0.16476,0.16476,0.16476,1",
                 "Metallic": 0,
@@ -10844,6 +10869,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.91129494,
                 "Color": "0.6549,0.6549,0.6549,1",
                 "Metallic": 1,
@@ -10862,14 +10888,6 @@
                 "BoundingRadius": 2.7031977
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f34d6c2e-6f75-4fd8-bb53-424daa174e29"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10927,6 +10945,7 @@
                 "SlicePlaneN": -0.45294118,
                 "LocalCentre": "0,0,11.0020361",
                 "Blend": 7,
+                "Gap": 0,
                 "Rounding": 9,
                 "Color": "0.26855,0.35178,0.57649,1",
                 "Metallic": 0,
@@ -10962,6 +10981,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.26855,0.35178,0.57649,1",
                 "Metallic": 0,
@@ -10997,6 +11017,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.3199998,
+                "Gap": 0,
                 "Rounding": 1,
                 "Color": "0.26855,0.35178,0.57649,1",
                 "Metallic": 0,
@@ -11032,6 +11053,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,17.8896408",
                 "Blend": 10.29695,
+                "Gap": 0,
                 "Rounding": 1,
                 "Color": "0.26855,0.35178,0.57649,1",
                 "Metallic": 0,
@@ -11067,6 +11089,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 4.679999,
+                "Gap": 0,
                 "Rounding": 1.05,
                 "Color": "0.73231,0.68319,0.57678,1",
                 "Metallic": 0,
@@ -11102,6 +11125,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 4.679999,
+                "Gap": 0,
                 "Rounding": 1.05,
                 "Color": "0.73231,0.68319,0.57678,1",
                 "Metallic": 0,
@@ -11137,6 +11161,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 3.7799973,
+                "Gap": 0,
                 "Rounding": 1.05,
                 "Color": "0.73231,0.68319,0.57678,1",
                 "Metallic": 0,
@@ -11172,6 +11197,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 3.1799989,
+                "Gap": 0,
                 "Rounding": 1.05,
                 "Color": "0.73231,0.68319,0.57678,1",
                 "Metallic": 0,
@@ -11207,6 +11233,7 @@
                 "SlicePlaneN": 0.51102936,
                 "LocalCentre": "0,0,9.29715919",
                 "Blend": 1.0200002,
+                "Gap": 0,
                 "Rounding": 1.05,
                 "Color": "0.47435,0.41217,0.27747,1",
                 "Metallic": 0,
@@ -11251,6 +11278,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2.5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.26855,0.35178,0.57649,1",
                 "Metallic": 0,
@@ -11286,6 +11314,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.859405,
+                "Gap": 0,
                 "Rounding": 0,
                 "Color": "0.73231,0.68319,0.57678,1",
                 "Metallic": 0,
@@ -11343,22 +11372,6 @@
             },
             "Property": "Position",
             "Value": "61.5200653,-934.227417,-507.904816"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -11563,24 +11576,8 @@
               "Type": "Component",
               "IdValue": "984ff6c6-7080-8648-dc21-49f9c6c9d2d8"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "984ff6c6-7080-8648-dc21-49f9c6c9d2d8"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "984ff6c6-7080-8648-dc21-49f9c6c9d2d8"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11617,24 +11614,8 @@
               "Type": "Component",
               "IdValue": "183d98aa-9cc9-96f8-5b91-40de9503b61a"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "183d98aa-9cc9-96f8-5b91-40de9503b61a"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "183d98aa-9cc9-96f8-5b91-40de9503b61a"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11671,24 +11652,8 @@
               "Type": "Component",
               "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12045,7 +12010,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -12090,24 +12055,8 @@
               "Type": "Component",
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12146,14 +12095,6 @@
             },
             "Property": "Position",
             "Value": "-401.238098,-922.961792,-532.761475"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f34d6c2e-6f75-4fd8-bb53-424daa174e29"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12498,24 +12439,8 @@
               "Type": "Component",
               "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12572,6 +12497,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 6,
+                "Gap": 0,
                 "Rounding": 4.844943,
                 "Color": "0.61121,0.19869,0.13223,1",
                 "Metallic": 0,
@@ -12607,6 +12533,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.9799988,
+                "Gap": 0,
                 "Rounding": 1.3839492,
                 "Color": "0.61121,0.19869,0.13223,1",
                 "Metallic": 0,
@@ -12642,6 +12569,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.48,
+                "Gap": 0,
                 "Rounding": 1.0921234,
                 "Color": "0.8,0.68627,0.34902,1",
                 "Metallic": 1,
@@ -12677,6 +12605,7 @@
                 "SlicePlaneN": 0.21764708,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 2.1429443,
                 "Color": "0.61121,0.19869,0.13223,1",
                 "Metallic": 0,
@@ -12712,6 +12641,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 5.6399965,
+                "Gap": 0,
                 "Rounding": 2.2401595,
                 "Color": "0.69423,0.27915,0.21228,1",
                 "Metallic": 0,
@@ -12747,6 +12677,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2.0210106,
+                "Gap": 0,
                 "Rounding": 1.7473565,
                 "Color": "0.95,0.9,0.75,1",
                 "Metallic": 0,
@@ -12782,6 +12713,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2.1907628,
+                "Gap": 0,
                 "Rounding": 0,
                 "Color": "0.29337,0.29337,0.29337,1",
                 "Metallic": 0,
@@ -12825,6 +12757,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.61121,0.19869,0.13223,1",
                 "Metallic": 0,
@@ -12849,24 +12782,8 @@
               "Type": "Component",
               "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12903,24 +12820,8 @@
               "Type": "Component",
               "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13004,24 +12905,8 @@
               "Type": "Component",
               "IdValue": "8ad16c46-8c5a-323e-ec86-6ad3c0650955"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8ad16c46-8c5a-323e-ec86-6ad3c0650955"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8ad16c46-8c5a-323e-ec86-6ad3c0650955"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13058,24 +12943,8 @@
               "Type": "Component",
               "IdValue": "8fe31688-0424-4b01-101f-4674df811c71"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8fe31688-0424-4b01-101f-4674df811c71"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8fe31688-0424-4b01-101f-4674df811c71"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13132,6 +13001,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.48,0.055,0.07,1",
                 "Metallic": 0,
@@ -13167,6 +13037,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.48,0.055,0.07,1",
                 "Metallic": 0,
@@ -13202,6 +13073,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.6,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.48,0.055,0.07,1",
                 "Metallic": 0,
@@ -13237,6 +13109,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.6,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.48,0.055,0.07,1",
                 "Metallic": 0,
@@ -13276,6 +13149,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.4,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.17,0.075,1",
                 "Metallic": 0,
@@ -13316,6 +13190,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.4,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.17,0.075,1",
                 "Metallic": 0,
@@ -13351,6 +13226,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -13375,24 +13251,8 @@
               "Type": "Component",
               "IdValue": "236611a1-731c-8335-90a1-8b97a4cfa647"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "236611a1-731c-8335-90a1-8b97a4cfa647"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "236611a1-731c-8335-90a1-8b97a4cfa647"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13449,6 +13309,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.32,0.16,0.4,1",
                 "Metallic": 0,
@@ -13484,6 +13345,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.37,0.19,0.44,1",
                 "Metallic": 0,
@@ -13519,6 +13381,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.32,0.16,0.4,1",
                 "Metallic": 0,
@@ -13554,6 +13417,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.32,0.16,0.4,1",
                 "Metallic": 0,
@@ -13589,6 +13453,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.37,0.19,0.44,1",
                 "Metallic": 0,
@@ -13624,6 +13489,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.32,0.16,0.4,1",
                 "Metallic": 0,
@@ -13659,6 +13525,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.32,0.16,0.4,1",
                 "Metallic": 0,
@@ -13694,6 +13561,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.37,0.19,0.44,1",
                 "Metallic": 0,
@@ -13729,6 +13597,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.32,0.16,0.4,1",
                 "Metallic": 0,
@@ -13769,6 +13638,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.17,0.075,1",
                 "Metallic": 0,
@@ -13804,6 +13674,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -13828,24 +13699,8 @@
               "Type": "Component",
               "IdValue": "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13883,7 +13738,7 @@
               "IdValue": "d5b3fb82-684b-ab7d-9fb0-0e4c63138328"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13956,6 +13811,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.91,0.37,0.075,1",
                 "Metallic": 0,
@@ -13991,6 +13847,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.7,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.91,0.37,0.075,1",
                 "Metallic": 0,
@@ -14026,6 +13883,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.3,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.38,0.38,0.1,1",
                 "Metallic": 0,
@@ -14064,6 +13922,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.2,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.17,0.075,1",
                 "Metallic": 0,
@@ -14099,6 +13958,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14124,7 +13984,7 @@
               "IdValue": "3a9f0192-301d-fe87-14e2-239649de546a"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -14197,6 +14057,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.64,0.66,0.16,1",
                 "Metallic": 0,
@@ -14232,6 +14093,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 6,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.64,0.66,0.16,1",
                 "Metallic": 0,
@@ -14267,6 +14129,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.64,0.66,0.16,1",
                 "Metallic": 0,
@@ -14302,6 +14165,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.8,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.64,0.66,0.16,1",
                 "Metallic": 0,
@@ -14341,6 +14205,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.17,0.075,1",
                 "Metallic": 0,
@@ -14376,6 +14241,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.65,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14400,24 +14266,8 @@
               "Type": "Component",
               "IdValue": "55dcf9ac-c161-7a7f-8b57-b3375d6a99a4"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "55dcf9ac-c161-7a7f-8b57-b3375d6a99a4"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "55dcf9ac-c161-7a7f-8b57-b3375d6a99a4"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -14474,6 +14324,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.74,0.115,0.08,1",
                 "Metallic": 0,
@@ -14509,6 +14360,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.74,0.115,0.08,1",
                 "Metallic": 0,
@@ -14544,6 +14396,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 4,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.74,0.115,0.08,1",
                 "Metallic": 0,
@@ -14579,6 +14432,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14614,6 +14468,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14649,6 +14504,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14684,6 +14540,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14719,6 +14576,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14757,6 +14615,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -14792,6 +14651,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -14827,6 +14687,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -14862,6 +14723,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -14897,6 +14759,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -14932,6 +14795,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -14967,6 +14831,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15002,6 +14867,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15037,6 +14903,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15072,6 +14939,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15107,6 +14975,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15142,6 +15011,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15177,6 +15047,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15212,6 +15083,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15247,6 +15119,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15282,6 +15155,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15317,6 +15191,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15352,6 +15227,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15387,6 +15263,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15411,24 +15288,8 @@
               "Type": "Component",
               "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -15473,24 +15334,8 @@
               "Type": "Component",
               "IdValue": "8ad16c46-8c5a-323e-ec86-6ad3c0650955"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8ad16c46-8c5a-323e-ec86-6ad3c0650955"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8ad16c46-8c5a-323e-ec86-6ad3c0650955"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -15535,24 +15380,8 @@
               "Type": "Component",
               "IdValue": "236611a1-731c-8335-90a1-8b97a4cfa647"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "236611a1-731c-8335-90a1-8b97a4cfa647"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "236611a1-731c-8335-90a1-8b97a4cfa647"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -15617,6 +15446,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.74,0.115,0.08,1",
                 "Metallic": 0,
@@ -15652,6 +15482,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.74,0.115,0.08,1",
                 "Metallic": 0,
@@ -15687,6 +15518,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 4,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.74,0.115,0.08,1",
                 "Metallic": 0,
@@ -15722,6 +15554,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -15757,6 +15590,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -15792,6 +15626,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -15827,6 +15662,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -15862,6 +15698,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.45,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -15900,6 +15737,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.5,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.29,0.43,0.105,1",
                 "Metallic": 0,
@@ -15935,6 +15773,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -15970,6 +15809,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16005,6 +15845,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16040,6 +15881,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16075,6 +15917,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16110,6 +15953,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16145,6 +15989,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16180,6 +16025,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16215,6 +16061,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16250,6 +16097,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16285,6 +16133,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16320,6 +16169,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16355,6 +16205,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16390,6 +16241,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16425,6 +16277,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16460,6 +16313,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16495,6 +16349,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16530,6 +16385,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.92,0.68,0.28,1",
                 "Metallic": 0,
@@ -16554,24 +16410,8 @@
               "Type": "Component",
               "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -16616,24 +16456,8 @@
               "Type": "Component",
               "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
             },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0f4658f0-3785-f23f-63c8-f4e38d3afb37"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -16767,6 +16591,7 @@
               "SlicePlaneN": -0.1875,
               "LocalCentre": "0,0,6.90831804",
               "Blend": 0.6,
+              "Gap": 0,
               "Rounding": 2.25,
               "Color": "0.5532,0.2301,0.16357,1",
               "Metallic": 0,
@@ -16802,6 +16627,7 @@
               "SlicePlaneN": -0.07573533,
               "LocalCentre": "0,0,0",
               "Blend": 4.679998,
+              "Gap": 0,
               "Rounding": 2.8943195,
               "Color": "0.5532,0.2301,0.16357,1",
               "Metallic": 0,
@@ -16837,6 +16663,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.6599998,
+              "Gap": 0,
               "Rounding": 2.1000004,
               "Color": "0.5532,0.2301,0.16357,1",
               "Metallic": 0,
@@ -16872,6 +16699,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.7485203,
+              "Gap": 0,
               "Rounding": 1.5,
               "Color": "0.5532,0.2301,0.16357,1",
               "Metallic": 0,
@@ -16907,6 +16735,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 3.1199987,
+              "Gap": 0,
               "Rounding": 2.5500004,
               "Color": "0.5532,0.2301,0.16357,1",
               "Metallic": 0,
@@ -16942,6 +16771,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.35999998,
+              "Gap": 0,
               "Rounding": 3.9117646,
               "Color": "0.23302,0.35286,0.46604,1",
               "Metallic": 0,
@@ -16977,6 +16807,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.7,
+              "Gap": 0,
               "Rounding": 4.477941,
               "Color": "0.23302,0.35286,0.46604,1",
               "Metallic": 0,
@@ -17012,6 +16843,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 1.02,
+              "Gap": 0,
               "Rounding": 0.5,
               "Color": "0.23302,0.35286,0.46604,1",
               "Metallic": 0,
@@ -17047,6 +16879,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.12,
+              "Gap": 0,
               "Rounding": 0.5,
               "Color": "0.74053,0.60529,0.29005,1",
               "Metallic": 1,
@@ -17082,6 +16915,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 1.3799996,
+              "Gap": 0,
               "Rounding": 2.4,
               "Color": "0.13211,0.21624,0.29569,1",
               "Metallic": 0,
@@ -17117,6 +16951,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.24,
+              "Gap": 0,
               "Rounding": 0.75,
               "Color": "0.37522,0.41448,0.24269,1",
               "Metallic": 0,
@@ -17152,6 +16987,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0,
+              "Gap": 0,
               "Rounding": 3.8,
               "Color": "0.5532,0.2301,0.16357,1",
               "Metallic": 0,
@@ -17187,6 +17023,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.71999997,
+              "Gap": 0,
               "Rounding": 1.1,
               "Color": "0.74053,0.60529,0.29005,1",
               "Metallic": 1,
@@ -17222,6 +17059,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.3,
+              "Gap": 0,
               "Rounding": 1.7294118,
               "Color": "0.74053,0.60529,0.29005,1",
               "Metallic": 1,
@@ -17257,6 +17095,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0.23999995,
+              "Gap": 0,
               "Rounding": 0.75,
               "Color": "0.74053,0.60529,0.29005,1",
               "Metallic": 1,
@@ -17292,6 +17131,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0,
+              "Gap": 0,
               "Rounding": 1.8,
               "Color": "0.18143,0.16136,0.12694,1",
               "Metallic": 0,
@@ -17327,6 +17167,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 1.4399995,
+              "Gap": 0,
               "Rounding": 1.8,
               "Color": "0.18143,0.16136,0.12694,1",
               "Metallic": 0,
@@ -17362,6 +17203,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0,
+              "Gap": 0,
               "Rounding": 1.8,
               "Color": "0.27182,0.23971,0.18467,1",
               "Metallic": 0,
@@ -17397,6 +17239,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0,
+              "Gap": 0,
               "Rounding": 2.170086,
               "Color": "0.18143,0.16136,0.12694,1",
               "Metallic": 0,
@@ -17432,6 +17275,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 1.4399995,
+              "Gap": 0,
               "Rounding": 2.078817,
               "Color": "0.18143,0.16136,0.12694,1",
               "Metallic": 0,
@@ -17467,6 +17311,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0,
+              "Gap": 0,
               "Rounding": 1.5278093,
               "Color": "0.27182,0.23971,0.18467,1",
               "Metallic": 0,
@@ -17502,6 +17347,7 @@
               "SlicePlaneN": 1,
               "LocalCentre": "0,0,0",
               "Blend": 0,
+              "Gap": 0,
               "Rounding": 1.5,
               "Color": "0.74053,0.60529,0.29005,1",
               "Metallic": 1,
@@ -17533,7 +17379,7 @@
         {
           "__type": "Sandbox.ModelRenderer",
           "__guid": "ca9471ec-e1a5-4fff-af3f-50aac55a28ab",
-          "__enabled": true,
+          "__enabled": false,
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
@@ -17943,14 +17789,6 @@
             },
             "Property": "Position",
             "Value": "-214.16098,-1282.3429,-540.097412"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -18016,6 +17854,7 @@
                 "SlicePlaneN": -0.1875,
                 "LocalCentre": "0,0,6.90831804",
                 "Blend": 0.6,
+                "Gap": 0,
                 "Rounding": 2.25,
                 "Color": "0.18419,0.27423,0.30698,1",
                 "Metallic": 0,
@@ -18051,6 +17890,7 @@
                 "SlicePlaneN": -0.07573533,
                 "LocalCentre": "0,0,0",
                 "Blend": 4.679998,
+                "Gap": 0,
                 "Rounding": 2.8943195,
                 "Color": "0.18419,0.27423,0.30698,1",
                 "Metallic": 0,
@@ -18086,6 +17926,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.6599998,
+                "Gap": 0,
                 "Rounding": 2.1000004,
                 "Color": "0.18419,0.27423,0.30698,1",
                 "Metallic": 0,
@@ -18121,6 +17962,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.7485203,
+                "Gap": 0,
                 "Rounding": 1.5,
                 "Color": "0.18419,0.27423,0.30698,1",
                 "Metallic": 0,
@@ -18156,6 +17998,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 3.1199987,
+                "Gap": 0,
                 "Rounding": 2.5500004,
                 "Color": "0.18419,0.27423,0.30698,1",
                 "Metallic": 0,
@@ -18191,6 +18034,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.35999998,
+                "Gap": 0,
                 "Rounding": 3.9117646,
                 "Color": "0.81904,0.65316,0.26614,1",
                 "Metallic": 0,
@@ -18226,6 +18070,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.7,
+                "Gap": 0,
                 "Rounding": 4.477941,
                 "Color": "0.81904,0.65316,0.26614,1",
                 "Metallic": 0,
@@ -18261,6 +18106,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.02,
+                "Gap": 0,
                 "Rounding": 0.5,
                 "Color": "0.81904,0.65316,0.26614,1",
                 "Metallic": 0,
@@ -18296,6 +18142,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.12,
+                "Gap": 0,
                 "Rounding": 0.5,
                 "Color": "0.65098,0.49412,0.13725,1",
                 "Metallic": 0,
@@ -18331,6 +18178,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.3799996,
+                "Gap": 0,
                 "Rounding": 2.4,
                 "Color": "0.51966,0.40321,0.13153,1",
                 "Metallic": 0,
@@ -18366,6 +18214,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.24,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.37047,0.51273,0.63721,1",
                 "Metallic": 0,
@@ -18401,6 +18250,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 3.8,
                 "Color": "0.18419,0.27423,0.30698,1",
                 "Metallic": 0,
@@ -18436,6 +18286,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.71999997,
+                "Gap": 0,
                 "Rounding": 1.1,
                 "Color": "0.65098,0.49412,0.13725,1",
                 "Metallic": 0,
@@ -18471,6 +18322,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.3,
+                "Gap": 0,
                 "Rounding": 1.7294118,
                 "Color": "0.65098,0.49412,0.13725,1",
                 "Metallic": 0,
@@ -18506,6 +18358,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.23999995,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.65098,0.49412,0.13725,1",
                 "Metallic": 0,
@@ -18541,6 +18394,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.8,
                 "Color": "0.18143,0.16136,0.12694,1",
                 "Metallic": 0,
@@ -18576,6 +18430,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.4399995,
+                "Gap": 0,
                 "Rounding": 1.8,
                 "Color": "0.18143,0.16136,0.12694,1",
                 "Metallic": 0,
@@ -18611,6 +18466,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.8,
                 "Color": "0.27182,0.23971,0.18467,1",
                 "Metallic": 0,
@@ -18646,6 +18502,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 2.170086,
                 "Color": "0.18143,0.16136,0.12694,1",
                 "Metallic": 0,
@@ -18681,6 +18538,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 1.4399995,
+                "Gap": 0,
                 "Rounding": 2.078817,
                 "Color": "0.18143,0.16136,0.12694,1",
                 "Metallic": 0,
@@ -18716,6 +18574,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.5278093,
                 "Color": "0.27182,0.23971,0.18467,1",
                 "Metallic": 0,
@@ -18751,6 +18610,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.5,
                 "Color": "0.65098,0.49412,0.13725,1",
                 "Metallic": 0,
@@ -18769,14 +18629,6 @@
                 "BoundingRadius": 9.863027
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []

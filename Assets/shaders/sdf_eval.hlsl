@@ -468,16 +468,17 @@ float SdfDist( float3 lp )
 			continue;
 
 		// Cull threshold per op: add matters within blend of becoming the nearest (d + k), subtract while
-		// material is within blend (k − d). Cutout carves the shell |bd| ≥ bd, so the subtract bound stays
-		// conservative for it too.
-		if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > (D.w < 0.5 ? d + B.w : B.w - d) )
+		// material is within blend (k − d). Cutout carves the shell |bd| − gap ≥ bd − gap, so its bound is
+		// the subtract one widened by the gap (E.z — the cutout slot half-width, see SdfBrushPacker).
+		float cullT = (D.w < 0.5) ? d + B.w : B.w - d + ((D.w < 1.5) ? 0.0 : E.z);
+		if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > cullT )
 			continue;
 
 		float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
-		// Cutout subtracts a thin SHELL of the brush boundary (|bd|) — a groove where the brush surface
-		// crosses the clay, sized by Blend (0 = geometric no-op; the recolour half of the op lives in
-		// SdfSurfaceLocal below).
-		d = (D.w < 0.5) ? smin( d, bd, B.w ) : ssub( d, (D.w < 1.5) ? bd : abs( bd ), B.w );
+		// Cutout subtracts a SHELL of the brush boundary (|bd| < gap) — a slot where the brush surface
+		// crosses the clay, its lip rounded by Blend (gap 0 + Blend 0 = geometric no-op; the recolour half
+		// of the op lives in SdfSurfaceLocal below).
+		d = (D.w < 0.5) ? smin( d, bd, B.w ) : ssub( d, (D.w < 1.5) ? bd : abs( bd ) - E.z, B.w );
 	}
 	return d;
 }
@@ -493,9 +494,11 @@ float SdfDist( float3 lp )
 // vertex colour has to gamma-encode it, since the mesh shader does SrgbToLinear on the way back in.
 struct SdfSurface { float3 col; float metal; float rough; };
 
-// Small fixed AA band on a Cutout's colour edge, and the floor of a Colour brush's feather — must match
-// SdfBrush.CutoutColorEdge (1 unit).
+// Small fixed AA band on a Cutout's colour edge — must match SdfBrush.CutoutColorEdge (1 unit).
 #define SDF_CUTOUT_COLOR_EDGE 1.0
+// Floor of a Colour brush's feather (its edge width at Blend 0) — must match SdfBrush.ColourEdgeFloor.
+// Tighter than the cutout band: paint edges are in plain view and want to read crisp.
+#define SDF_COLOUR_EDGE_FLOOR 0.25
 
 SdfSurface SdfSurfaceLocal( float3 lp )
 {
@@ -509,38 +512,46 @@ SdfSurface SdfSurfaceLocal( float3 lp )
 		float4 B = LoadBrush( k, 1 );
 		float4 C = LoadBrush( k, 2 );
 		float4 D = LoadBrush( k, 3 );
-		float4 E = LoadBrush( k, 4 ); // rounding .x, metalness .y, roughness .z, mirror mask .w
+		float4 E = LoadBrush( k, 4 ); // rounding .x, metal+rough packed .y, cutout gap .z, mirror mask .w
 		float4 F = LoadBrush( k, 5 ); // cull AABB min .xyz, extruded cross-section id .w
 		float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
 
 		// The same incremental AABB early-out as SdfDist: a far brush can't change the blended distance,
 		// and it can't change the colour either — the colour lerps use the same h factors. A Colour brush
 		// has no distance term: it only matters within half its feather of the boundary.
-		float cullT = (D.w < 0.5) ? d + B.w : (D.w < 2.5 ? B.w - d : 0.5 * max( B.w, SDF_CUTOUT_COLOR_EDGE ));
+		float cullT = (D.w < 0.5) ? d + B.w
+			: (D.w < 1.5) ? B.w - d
+			: (D.w < 2.5) ? B.w - d + E.z
+			: 0.5 * max( B.w, SDF_COLOUR_EDGE_FLOOR );
 		if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > cullT )
 			continue;
 
 		float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
 		float kk = B.w;
+		// Metalness + roughness ride one lane as two 10-bit integers (round(m*1023) + 1024*round(r*1023)) —
+		// exact in the RGBA32F brush texture; mirrors SdfBrushPacker.PackMaterial.
+		float roughQ = floor( E.y / 1024.0 );
+		float metal = (E.y - roughQ * 1024.0) / 1023.0;
+		float rough = roughQ / 1023.0;
 
 		if ( D.w >= 2.5 )
 		{
 			// Colour: paint the clay inside the brush, no geometry. The edge feathers over Blend units about
 			// the brush boundary (floored at the cutout AA band so Blend 0 is a crisp edge).
-			float hc = saturate( 0.5 - bd / max( kk, SDF_CUTOUT_COLOR_EDGE ) );
+			float hc = saturate( 0.5 - bd / max( kk, SDF_COLOUR_EDGE_FLOOR ) );
 			s.col = lerp( s.col, D.rgb, hc );
-			s.metal = lerp( s.metal, E.y, hc );
-			s.rough = lerp( s.rough, E.z, hc );
+			s.metal = lerp( s.metal, metal, hc );
+			s.rough = lerp( s.rough, rough, hc );
 			continue;
 		}
 
 		if ( D.w >= 1.5 )
 		{
-			// Cutout: groove the brush boundary (the same shell subtract as SdfDist) WITHOUT tinting the
+			// Cutout: slot the brush boundary (the same shell subtract as SdfDist) WITHOUT tinting the
 			// cut walls, then recolour the clay inside the brush — the "cut out and set back in place"
-			// look. The recolour edge sits at bd = 0, the groove's centre, so each wall wears the colour
+			// look. The recolour edge sits at bd = 0, the slot's centre, so each wall wears the colour
 			// of the side it belongs to.
-			float shell = abs( bd );
+			float shell = abs( bd ) - E.z;
 			if ( kk <= 0.0 )
 				d = max( d, -shell );
 			else
@@ -551,8 +562,8 @@ SdfSurface SdfSurfaceLocal( float3 lp )
 
 			float hc = saturate( 0.5 - bd / SDF_CUTOUT_COLOR_EDGE );
 			s.col = lerp( s.col, D.rgb, hc );
-			s.metal = lerp( s.metal, E.y, hc );
-			s.rough = lerp( s.rough, E.z, hc );
+			s.metal = lerp( s.metal, metal, hc );
+			s.rough = lerp( s.rough, rough, hc );
 			continue;
 		}
 
@@ -562,15 +573,15 @@ SdfSurface SdfSurfaceLocal( float3 lp )
 			// smooth-subtract factor as the geometry.
 			if ( kk <= 0.0 )
 			{
-				if ( -bd > d ) { s.col = D.rgb; s.metal = E.y; s.rough = E.z; }
+				if ( -bd > d ) { s.col = D.rgb; s.metal = metal; s.rough = rough; }
 				d = max( d, -bd );
 			}
 			else
 			{
 				float h = saturate( 0.5 - 0.5 * (d + bd) / kk );
 				s.col = lerp( s.col, D.rgb, h );    // h->1 takes the cut material
-				s.metal = lerp( s.metal, E.y, h );
-				s.rough = lerp( s.rough, E.z, h );
+				s.metal = lerp( s.metal, metal, h );
+				s.rough = lerp( s.rough, rough, h );
 				d = lerp( d, -bd, h ) + kk * h * (1.0 - h);
 			}
 			continue;
@@ -578,14 +589,14 @@ SdfSurface SdfSurfaceLocal( float3 lp )
 
 		if ( kk <= 0.0 )
 		{
-			if ( bd < d ) { d = bd; s.col = D.rgb; s.metal = E.y; s.rough = E.z; }
+			if ( bd < d ) { d = bd; s.col = D.rgb; s.metal = metal; s.rough = rough; }
 		}
 		else
 		{
 			float h = saturate( 0.5 + 0.5 * (bd - d) / kk );
 			s.col = lerp( D.rgb, s.col, h );        // h->1 keeps accumulated, h->0 takes new
-			s.metal = lerp( E.y, s.metal, h );
-			s.rough = lerp( E.z, s.rough, h );
+			s.metal = lerp( metal, s.metal, h );
+			s.rough = lerp( rough, s.rough, h );
 			d = lerp( bd, d, h ) - kk * h * (1.0 - h);
 		}
 	}

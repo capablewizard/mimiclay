@@ -54,7 +54,7 @@ public enum SdfMeshMode
 public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 {
 	const int MaxBrushes = SdfBrushPacker.MaxBrushes;
-	const int TexelsPerBrush = 7; // pos+shape, size+blend, quat, colour+op, rounding+metal+rough+mirrormask, aabbMin, aabbMax
+	const int TexelsPerBrush = 7; // pos+shape, size+blend, quat, colour+op, rounding+(metal|rough packed)+gap+mirrormask, aabbMin, aabbMax
 	const int MaxSplinePoints = SdfBrushPacker.MaxSplinePoints; // shared pool of spline control points (xyz world pos, w radius) across all spline brushes
 
 	/// <summary>Material to render with. Leave empty to use the built-in sdf_raymarch shader.</summary>

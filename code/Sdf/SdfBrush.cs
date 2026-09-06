@@ -33,10 +33,11 @@ public enum SdfOperation
 {
 	Add,
 	Subtract,
-	/// <summary>Score-and-recolour ("cut out and set back in place"): carves a thin groove where the brush's
-	/// BOUNDARY crosses the clay — the shell subtract <c>max(d, -(|bd|))</c> smoothed by Blend, so Blend is
-	/// the groove size and 0 is a pure recolour — and paints the clay INSIDE the brush with the brush's
-	/// material. Adds no geometry of its own, so bounds/collision treat it like Subtract.</summary>
+	/// <summary>Score-and-recolour ("cut out and set back in place"): carves a slot where the brush's
+	/// BOUNDARY crosses the clay — the shell subtract <c>max(d, -(|bd| - Gap))</c> smoothed by Blend, so
+	/// <see cref="SdfBrush.Gap"/> is the slot's half-width and Blend rounds its lip (Gap 0 + Blend 0 is a
+	/// pure recolour) — and paints the clay INSIDE the brush with the brush's material. Adds no geometry of
+	/// its own, so bounds/collision treat it like Subtract.</summary>
 	Cutout,
 	/// <summary>Paint only: recolours the clay INSIDE the brush with the brush's material and never touches
 	/// the distance field (a Cutout with no groove). Blend is the paint's feather — the colour edge fades
@@ -181,6 +182,15 @@ public class SdfBrush
 	/// the inspector range and the gizmo slider max (kept an auto-property so it serialises like the rest).</summary>
 	[Property, Range( 0f, MaxBlend )] public float Blend { get; set; } = 6f;
 
+	/// <summary>Hard cap on <see cref="Gap"/> — a slot wider than this stops reading as a seam.</summary>
+	public const float MaxGap = 8f;
+
+	/// <summary>Cutout only: half-width (local units) of the slot cut along the brush boundary — the shell
+	/// subtract removes <c>|bd| &lt; Gap</c>, then Blend rounds the slot's lip. 0 (the default) keeps the
+	/// pre-Gap behaviour exactly: no slot of its own, Blend alone shapes the groove. Ignored by every other
+	/// operation, and hashed only when it's active so existing bakes keep their hashes.</summary>
+	[Property, Range( 0f, MaxGap )] public float Gap { get; set; } = 0f;
+
 	/// <summary>Corner-rounding radius (box and future shapes) — also the slice rim's fillet on the sliceable
 	/// shapes. 0 = perfectly sharp (a hard boolean-style cut); defaults to <see cref="DefaultRounding"/>.</summary>
 	[Property, Range( MinRounding, 64f )] public float Rounding { get; set; } = DefaultRounding;
@@ -285,6 +295,7 @@ public class SdfBrush
 		Rotation = Rotation,
 		Size = Size,
 		Blend = Blend,
+		Gap = Gap,
 		Rounding = Rounding,
 		Slice = Slice,
 		Color = Color,
@@ -362,6 +373,11 @@ public class SdfBrush
 				Mix( SplineClosed ? 1 : 0 );
 			}
 
+			// Gap only shapes a Cutout, and only when non-zero — mixed conditionally (like the Points block)
+			// so every pre-Gap brush, and every .sdfmesh baked from one, keeps its hash.
+			if ( Operation == SdfOperation.Cutout && Gap > 0f )
+				Mix( F( Gap ) );
+
 			h = hh;
 		}
 	}
@@ -379,6 +395,7 @@ public class SdfBrush
 		Rotation = Rotation.Slerp( a.Rotation, b.Rotation, t );
 		Size = Vector3.Lerp( a.Size, b.Size, t );
 		Blend = MathX.Lerp( a.Blend, b.Blend, t );
+		Gap = MathX.Lerp( a.Gap, b.Gap, t );
 		Rounding = MathX.Lerp( a.Rounding, b.Rounding, t );
 		Slice = MathX.Lerp( a.Slice, b.Slice, t );
 		Curvature = MathX.Lerp( a.Curvature, b.Curvature, t );
@@ -1393,9 +1410,9 @@ public static class Sdf
 			{
 				SdfOperation.Add => SmoothUnion( d, bd, b.Blend ),
 				SdfOperation.Subtract => SmoothSubtract( d, bd, b.Blend ),
-				// Cutout: subtract a thin SHELL of the brush boundary (|bd|) — a groove where the brush
-				// surface crosses the clay, sized by Blend (0 = pure recolour, no geometry change).
-				SdfOperation.Cutout => SmoothSubtract( d, MathF.Abs( bd ), b.Blend ),
+				// Cutout: subtract a SHELL of the brush boundary (|bd| < Gap) — a slot where the brush
+				// surface crosses the clay, its lip rounded by Blend (Gap 0 + Blend 0 = pure recolour).
+				SdfOperation.Cutout => SmoothSubtract( d, MathF.Abs( bd ) - b.Gap, b.Blend ),
 				// Colour: paint only — the field is untouched.
 				_ => d,
 			};
@@ -1407,9 +1424,14 @@ public static class Sdf
 	public static Color SampleColor( List<SdfBrush> brushes, Vector3 p ) => SampleSurface( brushes, p ).Color;
 
 	/// <summary>Width (world units) of a Cutout brush's recolour edge — a small fixed AA band so the colour
-	/// boundary doesn't shimmer at distance. Also the floor of a Colour brush's feather (Blend 0 = this hard
-	/// edge). Must match SDF_CUTOUT_COLOR_EDGE in sdf_eval.hlsl.</summary>
+	/// boundary doesn't shimmer at distance (it sits inside the slot, so a wide band costs nothing visible).
+	/// Must match SDF_CUTOUT_COLOR_EDGE in sdf_eval.hlsl.</summary>
 	const float CutoutColorEdge = 1f;
+
+	/// <summary>Floor of a Colour brush's feather — the edge width when Blend is 0. Much tighter than the
+	/// cutout band because paint edges are in plain view and want to read crisp; the trade is some sparkle
+	/// on a far/small prop. Tune here if it needs to go lower still. Must match SDF_COLOUR_EDGE_FLOOR.</summary>
+	const float ColourEdgeFloor = 0.25f;
 
 	/// <summary>The full per-point surface — colour, metalness and roughness — each blended across
 	/// smooth-union seams by the SAME smooth-min factor as the geometry, so material attributes share
@@ -1432,7 +1454,7 @@ public static class Sdf
 			{
 				// Colour: paint the clay inside the brush, no geometry. The edge feathers over Blend units
 				// about the brush boundary (floored at the cutout AA band so Blend 0 is a crisp edge).
-				float hc = Math.Clamp( 0.5f - bd / MathF.Max( k, CutoutColorEdge ), 0f, 1f );
+				float hc = Math.Clamp( 0.5f - bd / MathF.Max( k, ColourEdgeFloor ), 0f, 1f );
 				col = Color.Lerp( col, b.Color, hc );
 				metal = MathX.Lerp( metal, b.Metallic, hc );
 				rough = MathX.Lerp( rough, b.Roughness, hc );
@@ -1441,10 +1463,10 @@ public static class Sdf
 
 			if ( b.Operation == SdfOperation.Cutout )
 			{
-				// Cutout: groove the brush boundary (the same shell subtract as Sample) WITHOUT tinting the
+				// Cutout: slot the brush boundary (the same shell subtract as Sample) WITHOUT tinting the
 				// cut walls, then recolour the clay inside the brush. The recolour edge sits at bd = 0 — the
-				// groove's centre — so each wall naturally wears the colour of the side it belongs to.
-				float shell = MathF.Abs( bd );
+				// slot's centre — so each wall naturally wears the colour of the side it belongs to.
+				float shell = MathF.Abs( bd ) - b.Gap;
 				if ( k <= 0f )
 					d = MathF.Max( d, -shell );
 				else

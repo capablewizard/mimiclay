@@ -696,14 +696,15 @@ public enum ScrubKind
 	Blend,
 	Round,
 	Wildcard, // the per-shape third slider: slice / profile / spline size
+	Gap,      // cutout slot half-width (G) — parks on every other op
 	Scale,
 	Rotate,
 	Move, // screen-space grab (W) — edit mode only; the stamp ghost already rides the cursor
 }
 
 /// <summary>
-/// Hold parameter scrubbing, Blender-modal-style: hold S / D / F (the slider stack in order — blend, round,
-/// then the per-shape wildcard: slice, profile, spline size; A ahead of them TAPS add/carve, so the whole
+/// Hold parameter scrubbing, Blender-modal-style: hold S / D / F / G (the slider stack in order — blend, round,
+/// then the per-shape wildcard: slice, profile, spline size, then the cutout gap; A ahead of them TAPS add/carve, so the whole
 /// edit row sits on A-S-D-F), W (screen-space move), R (uniform scale) or E (free rotate) and move the
 /// mouse. Shift held snaps the rotate to the shared <see cref="SculptEditSession.SnapDeg"/> grid and the
 /// move to the <see cref="SculptEditSession.GridStep"/> grid. Shared by BOTH tools — the stamp ghost in add
@@ -722,7 +723,7 @@ public static class BrushScrub
 	public static Vector2 Anchor { get; private set; }
 
 	// Manual edge detection (Input.Keyboard exposes Down only).
-	static bool _blendWas, _roundWas, _wildWas, _moveWas, _scaleWas, _rotWas;
+	static bool _blendWas, _roundWas, _wildWas, _gapWas, _moveWas, _scaleWas, _rotWas;
 
 	// The rotate scrub's continuous (unsnapped) orientation, sculpture-local. The mouse always drives THIS;
 	// shift only changes what gets applied to the brush (the grid-snapped version of it).
@@ -739,6 +740,7 @@ public static class BrushScrub
 	};
 
 	const float BlendPerPx = 0.06f;   // MaxBlend (15) across ~250 px
+	const float GapPerPx = 0.03f;     // MaxGap (8) across ~270 px
 	const float RoundPerPx = 0.15f;
 	const float CurvePerPx = 0.005f;  // spline curvature 0..1 across ~200 px
 	const float SlicePerPx = 0.0035f; // MaxSlice (0.95) across ~270 px
@@ -760,7 +762,7 @@ public static class BrushScrub
 		ended = false;
 
 		// A focused text field (the Text brush's entry) owns the keyboard — typing must never scrub.
-		// S/D/F scrub the slider stack in order: blend, round (curve on a spline), then the per-shape
+		// S/D/F/G scrub the slider stack in order: blend, round (curve on a spline), then the per-shape
 		// wildcard (slice / profile / spline size) — A ahead of them taps add/carve, so the whole edit row
 		// sits on A-S-D-F. W moves (screen space), R scales, E rotates (gmod-style) — keyboard holds like
 		// the rest of the row; the right mouse button belongs to the CAMERA now (zoom drag, step-back tap
@@ -769,12 +771,13 @@ public static class BrushScrub
 		bool blendKey = !typing && Input.Keyboard.Down( "s" );
 		bool roundKey = !typing && Input.Keyboard.Down( "d" );
 		bool wildKey = !typing && Input.Keyboard.Down( "f" );
+		bool gapKey = !typing && Input.Keyboard.Down( "g" ); // cutout slot width — the row's fourth slot
 		bool moveKey = allowMove && !typing && Input.Keyboard.Down( "w" );
 		bool scale = !typing && Input.Keyboard.Down( "r" );
 		bool rot = !typing && Input.Keyboard.Down( "e" );
 		bool blendP = blendKey && !_blendWas, roundP = roundKey && !_roundWas, wildP = wildKey && !_wildWas,
-			moveP = moveKey && !_moveWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
-		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _moveWas = moveKey; _scaleWas = scale; _rotWas = rot;
+			gapP = gapKey && !_gapWas, moveP = moveKey && !_moveWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
+		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _gapWas = gapKey; _moveWas = moveKey; _scaleWas = scale; _rotWas = rot;
 
 		if ( b is null || cam is null || (!allow && Active == ScrubKind.None) )
 		{
@@ -789,6 +792,7 @@ public static class BrushScrub
 			if ( blendP && !blendLocked ) Begin( ScrubKind.Blend, b );
 			else if ( roundP ) Begin( ScrubKind.Round, b );
 			else if ( wildP ) Begin( ScrubKind.Wildcard, b );
+			else if ( gapP && b.Operation == SdfOperation.Cutout ) Begin( ScrubKind.Gap, b );
 			else if ( moveP ) Begin( ScrubKind.Move, b );
 			else if ( scaleP ) Begin( ScrubKind.Scale, b );
 			else if ( rotP ) Begin( ScrubKind.Rotate, b );
@@ -803,6 +807,7 @@ public static class BrushScrub
 			ScrubKind.Blend => blendKey,
 			ScrubKind.Round => roundKey,
 			ScrubKind.Wildcard => wildKey,
+			ScrubKind.Gap => gapKey,
 			ScrubKind.Move => moveKey,
 			ScrubKind.Scale => scale,
 			ScrubKind.Rotate => rot,
@@ -823,6 +828,11 @@ public static class BrushScrub
 		{
 			case ScrubKind.Blend:
 				b.Blend = Math.Clamp( b.Blend + delta.x * BlendPerPx, 0f, SdfBrush.MaxBlend );
+				return true;
+
+			case ScrubKind.Gap:
+				// Cutout slot half-width (Begin only fires on a cutout, but the op can't change mid-hold anyway).
+				b.Gap = Math.Clamp( b.Gap + delta.x * GapPerPx, 0f, SdfBrush.MaxGap );
 				return true;
 
 			case ScrubKind.Round:

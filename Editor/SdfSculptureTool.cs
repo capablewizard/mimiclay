@@ -445,6 +445,7 @@ public class SdfSculptureTool : EditorTool<SdfSculpture>
 			h.Add( b.Size );
 			h.Add( b.Rotation );
 			h.Add( b.Blend );
+			h.Add( b.Gap ); // cutout slot width re-meshes
 			h.Add( b.Rounding );
 			h.Add( b.Slice );
 			h.Add( b.Color );

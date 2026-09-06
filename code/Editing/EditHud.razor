@@ -113,6 +113,10 @@
 				{
 					<div class="hint"><span class="key">F</span><span>@wc</span></div>
 				}
+				@if ( Brush?.Operation == SdfOperation.Cutout )
+				{
+					<div class="hint"><span class="key">G</span><span>gap</span></div>
+				}
 				<div class="hint"><span class="key">1-7</span><span>shape</span></div>
 				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
 				<div class="hint"><span class="key">Space</span><span>done</span></div>
@@ -140,6 +144,10 @@
 					@if ( WildcardName is { } wc )
 					{
 						<div class="hint"><span class="key">F</span><span>@wc</span></div>
+					}
+					@if ( Brush?.Operation == SdfOperation.Cutout )
+					{
+						<div class="hint"><span class="key">G</span><span>gap</span></div>
 					}
 					<div class="hint"><span class="key">1-7</span><span>shape</span></div>
 					<div class="hint"><span class="key">Del</span><span>delete</span></div>
@@ -473,6 +481,7 @@
 			var blendLocked = fb is not null && !Session.IsMultiSelection
 				&& Session.Target?.Brushes is { } blendList && Sdf.BlendInert( blendList, fb );
 			var blendVal = blendLocked ? 0f : fb?.Blend ?? 0f;
+			var gapVal = fb?.Gap ?? 0f;
 			var roundVal = fb?.Rounding ?? GizmoSettingsRoundingMin;
 			var roundMax = fb is not null ? fb.MaxRounding() : 1f;
 			var isSpline = fb?.Shape == SdfShape.Spline;
@@ -539,6 +548,15 @@
 							</div>
 						}
 					</div>
+				}
+				@* Cutout only: the slot's half-width — Blend then rounds the slot's lip instead of doubling
+				   as its size. LAST in the strip so it reads in keyboard order: S blend · D round · F wildcard
+				   · G gap. Keys bind to MEANING, not position — a shape with no wildcard just collapses that
+				   slot (like a box already does for F), so G is as stable as S and D. *@
+				@if ( opNow == SdfOperation.Cutout )
+				{
+					<ClaySlider Label="Gap" Value=@gapVal Min=@(0f) Max=@SdfBrush.MaxGap Curve=@BlendCurve
+						OnInput=@((float v) => SetGap( v )) OnCommit=@CommitEdit />
 				}
 				@* Text brush: edit the string in place, riding under the sliders like the profile chips. *@
 				@if ( isText )
@@ -1248,6 +1266,17 @@
 		Session?.PreviewChanged();
 	}
 
+	// Cutout slot half-width. Only cutouts show the slider, but a mixed multi-selection fans the edit out
+	// to every member — harmless on the others (Gap is inert off-Cutout) and it means a member later cycled
+	// to Cutout already carries the group's value.
+	void SetGap( float v )
+	{
+		if ( Brush is null )
+			return;
+		EditEach( b => b.Gap = Math.Clamp( v, 0f, SdfBrush.MaxGap ) );
+		Session?.PreviewChanged();
+	}
+
 	void SetCurvature( float v )
 	{
 		if ( Brush is null )
@@ -1757,6 +1786,8 @@
 		hc.Add( b?.Metallic ?? 0f );
 		hc.Add( b?.Roughness ?? 0f );
 		hc.Add( b?.Blend ?? 0f );      // drives the 2D blend slider's fill
+		hc.Add( b?.Gap ?? 0f );        // drives the cutout gap slider's fill
+		hc.Add( (int)(b?.Operation ?? SdfOperation.Add) ); // gap slider + G hint show for cutouts only
 		hc.Add( b is not null && s?.Target?.Brushes is { } bl && Sdf.BlendInert( bl, b ) ); // blend-slider lock
 		hc.Add( b?.Rounding ?? 0f );   // drives the 2D roundness slider's fill
 		hc.Add( b?.Slice ?? 0f );      // drives the slice slider's fill (sphere/cone)

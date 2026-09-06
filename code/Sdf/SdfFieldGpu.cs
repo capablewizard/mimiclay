@@ -478,6 +478,17 @@ public static class SdfBrushPacker
 	// Truncation warnings, throttled — Pack runs per frame during drags, one line every few seconds is plenty.
 	static RealTimeSince _sinceTruncWarn = 999f;
 
+	/// <summary>Metalness + roughness as ONE float lane: <c>round(m·1023) + 1024·round(r·1023)</c>. Both are
+	/// 0..1 and only feed the colour loop, and 10 bits each is finer than the HUD sliders or the 8-bit
+	/// vertex-colour path, so nothing visible changes. Max value 1,047,575 &lt; 2^24, so the RGBA32F texture
+	/// carries it exactly. Decoded at the top of sdf_eval's SdfSurfaceLocal — keep the two in step.</summary>
+	static float PackMaterial( float metallic, float roughness )
+	{
+		int m = (int)MathF.Round( Math.Clamp( metallic, 0f, 1f ) * 1023f );
+		int r = (int)MathF.Round( Math.Clamp( roughness, 0f, 1f ) * 1023f );
+		return m + 1024 * r;
+	}
+
 	public static int Pack( List<SdfBrush> brushes, Transform tx, float[] data, float[] spline,
 		int maxBrushes, int texelsPerBrush, int maxSplinePoints, SdfTextAtlas textAtlas = null )
 	{
@@ -539,8 +550,11 @@ public static class SdfBrushPacker
 			data[o + 15] = (int)b.Operation; // 0 add, 1 subtract, 2 cutout, 3 colour — sdf_eval's SdfDist + SdfSurfaceLocal branch on it
 
 			data[o + 16] = b.Shape == SdfShape.Spline ? (b.SplineClosed ? 1f : 0f) : b.Rounding;
-			data[o + 17] = b.Metallic;
-			data[o + 18] = b.Roughness;
+			// Metal + rough share one lane (two 10-bit ints, exact in RGBA32F) so the cutout gap gets the
+			// freed .z without an 8th texel. Gap is cutout-only — zeroed for the other ops so the shader's
+			// shell maths never sees a stale value if the op is cycled away and back.
+			data[o + 17] = PackMaterial( b.Metallic, b.Roughness );
+			data[o + 18] = b.Operation == SdfOperation.Cutout ? b.Gap : 0f;
 			// Effective flags (symmetry deadzone): pack-time is the single gate for BOTH GPU shader copies,
 			// so a centre-hugging brush loses its mirror everywhere without touching shader code.
 			data[o + 19] = (b.EffectiveMirrorX ? 1 : 0) | (b.EffectiveMirrorY ? 2 : 0) | (b.EffectiveMirrorZ ? 4 : 0);
