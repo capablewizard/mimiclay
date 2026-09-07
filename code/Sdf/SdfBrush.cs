@@ -523,6 +523,11 @@ public class SdfBrush
 	// and the result stays inside the sharp silhouette. r is clamped to half the remaining thickness so a
 	// deep slice can't erode the piece away. max() is a slight distance underestimate near the edge, which
 	// the sphere-tracer and mesher both tolerate (steps just shorten, never overshoot).
+	// The corner join is only exact for two ORTHOGONAL PLANE distances; d is the full 3D ellipsoid distance,
+	// so far above the cap (outside the ellipsoid and above the plane) it overstates the distance by up to
+	// ~40% and the sphere trace stepped through the flat face. Bound it by the hard slice + r: the far-field
+	// error is capped at r and the rim fillet (where the join is the smaller value) is untouched. Must match
+	// sdf_eval.hlsl sliceRound.
 	static float SliceRound( float d, float z, float halfH, float slice, float rounding )
 	{
 		if ( slice <= 0f )
@@ -534,7 +539,8 @@ public class SdfBrush
 			return MathF.Max( d, dz ); // hard slice
 		float wx = d + r, wy = dz + r;
 		float ox = MathF.Max( wx, 0f ), oy = MathF.Max( wy, 0f );
-		return MathF.Min( MathF.Max( wx, wy ), 0f ) + MathF.Sqrt( ox * ox + oy * oy ) - r;
+		float corner = MathF.Min( MathF.Max( wx, wy ), 0f ) + MathF.Sqrt( ox * ox + oy * oy ) - r;
+		return MathF.Min( corner, MathF.Max( d, dz ) + r );
 	}
 
 	/// <summary>Variable-radius tube through the control points: the nearest of the rounded cones joining

@@ -235,6 +235,13 @@ float sdExtruded( float3 p, float wx, float hy, float hz, float rounding, int xs
 // z = halfH·(1 − 2·slice), the rim rounded by the Round slider (erode shape + plane by r, rounded-corner
 // join, dilate by r — the same combine the extrusions use). Matches SdfBrush.SliceRound. Callers pre-clamp
 // r so the fillet fits the cut disc (see SdfShapeDist).
+// The corner join is only an exact distance when both inputs are ORTHOGONAL PLANE distances (the extrusions'
+// 2D profile vs. height). Here d is the full 3D ellipsoid distance, so far above the cap — sample outside the
+// ellipsoid AND above the plane — the join Pythagoras-sums the two and overstates the distance by up to ~40%.
+// A sphere trace entering the proxy box above the cut then stepped clean through the flat face (a hole with
+// DepthOcclusionCull, a floating "distorted" face without it — lemon wedge / dinner bowl, 2026-09-07). Bounding
+// the join by the hard slice + r caps the far-field error at r; near the rim the join is still the smaller
+// value, so the fillet is unchanged.
 float sliceRound( float d, float z, float halfH, float slice, float rounding )
 {
 	if ( slice <= 0.0 ) return d;
@@ -243,7 +250,8 @@ float sliceRound( float d, float z, float halfH, float slice, float rounding )
 	float r = clamp( rounding, 0.0, (zcut + halfH) * 0.5 ); // ≤ half the remaining thickness
 	if ( r <= 1e-3 ) return max( d, dz ); // hard slice
 	float2 w = float2( d, dz ) + r;
-	return min( max( w.x, w.y ), 0.0 ) + length( max( w, 0.0 ) ) - r;
+	float corner = min( max( w.x, w.y ), 0.0 ) + length( max( w, 0.0 ) ) - r;
+	return min( corner, max( d, dz ) + r );
 }
 
 // Extruded TEXT: the 2D profile is the brush's baked distance field (one atlas slot, texel units), sampled
