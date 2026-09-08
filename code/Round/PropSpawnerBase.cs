@@ -25,7 +25,12 @@ namespace Mimiclay;
 /// </summary>
 public abstract class PropSpawnerBase : Component, Component.ExecuteInEditor
 {
-	[Property] public List<GameObject> Prefabs { get; set; } = new();
+	/// <summary>The pool a slot picks from. Shown as a thumbnail grid rather than the stock list of rows —
+	/// see <c>Editor/PrefabThumbListWidget.cs</c> — because a spawner with a couple of dozen props is
+	/// unreadable as a column of near-identical name labels. Repeating a prefab is a legitimate way to weight
+	/// it: <see cref="BuildCandidateOrder"/> counts uses per INDEX, not per prefab.</summary>
+	[Property, Editor( "prefab-thumbs" )]
+	public List<GameObject> Prefabs { get; set; } = new();
 
 	/// <summary>Chance of a given slot spawning nothing at all instead of picking a prefab — lets picks
 	/// sometimes come up empty for variety, rather than every slot always being filled.</summary>
