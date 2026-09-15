@@ -290,7 +290,7 @@
 					font-size: 72px;
 					color: $paper-ink;
 					// Glyph = text, so its shadow can hug the actual shape (same trick as the emboss text).
-					text-shadow: 0px 6px 16px rgba( 30, 20, 8, 0.32 ); // = $shadow-float, keep in step
+					text-shadow: 0px 6px 16px rgba( 30, 20, 8, 0.19 ); // $shadow-float colour/offset; text blurs in the text renderer so it keeps the full 16px blur
 				}
 			}
 
@@ -679,7 +679,7 @@
 		&.dragging {
 			z-index: 20;
 			pointer-events: none;
-			box-shadow: 0px 16px 30px rgba( 30, 20, 8, 0.5 );
+			box-shadow: 0px 16px 15px rgba( 30, 20, 8, 0.30 );
 		}
 
 		// One slot in the toolbar.

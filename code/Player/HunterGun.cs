@@ -88,7 +88,9 @@ public sealed class HunterGun : Component
 
 	/// <summary>Viewmodel offset from the camera eye, in aim space (x forward, y left, z up). Rendered under
 	/// <see cref="ViewmodelFov"/>'s own projection, so where this puts the gun on screen is independent of
-	/// the camera's FOV — tune it once, at any camera FOV, and it stays put.</summary>
+	/// the camera's FOV — tune it once, at any camera FOV, and it stays put. The forward (x) component is
+	/// the apparent depth at <see cref="ViewOffsetFov"/>: changing ViewmodelFov dolly-zooms the real
+	/// distance so the gun's screen size and position don't move with it.</summary>
 	[Property, Group( "Placement" )] public Vector3 ViewOffset { get; set; } = new( 15f, -8f, -12f );
 
 	/// <summary>The viewmodel's OWN field of view — a true second projection for the gun's rays (the SDF
@@ -97,11 +99,18 @@ public sealed class HunterGun : Component
 	/// wide-angle distortion; higher pushes toward the camera's natural perspective.</summary>
 	[Property, Group( "Placement" ), Range( 10f, 120f )] public float ViewmodelFov { get; set; } = 54f;
 
+	/// <summary>The <see cref="ViewmodelFov"/> that <see cref="ViewOffset"/> was authored at. The FOV warp
+	/// scales the gun's lateral extents but not its depth, so on its own a narrower ViewmodelFov grows the
+	/// gun on screen exactly as if it had slid toward the camera. The mount's forward distance is scaled by
+	/// tan(this/2)/tan(ViewmodelFov/2) to cancel that (a dolly zoom): screen position and size stay as
+	/// authored, only the in-gun perspective changes. Set this to whatever FOV you tuned ViewOffset at; at
+	/// ViewmodelFov == this the compensation is exactly 1.</summary>
+	[Property, Group( "Placement" ), Range( 10f, 120f )] public float ViewOffsetFov { get; set; } = 54f;
+
 	/// <summary>Which render path the viewmodel draws through. OverlayFlag is the production path: the
 	/// engine's overlay depth prepass stencil-claims the gun's pixels at REAL depth (no wall clipping,
-	/// UI/contact-shadows/AO all see honest depth). The rest are live-tweakable diagnostics — Normal =
-	/// game pass (clips into walls), Viewmodel = native layer (renders invisible, dead end), OverlayNoDepth
-	/// = draw-over with no overlay prepass.</summary>
+	/// UI/contact-shadows/AO all see honest depth) and enables the <see cref="ViewmodelFov"/> warp. Normal =
+	/// plain game pass under the camera's own projection (clips into walls) — a diagnostic.</summary>
 	[Property, Group( "Placement" )] public SdfViewLayer ViewLayerMode { get; set; } = SdfViewLayer.Normal;
 
 	/// <summary>Mounting rotation of the gun on its parent (the hand for the world model, the aim for the view
@@ -506,13 +515,21 @@ public sealed class HunterGun : Component
 				// The rigid mount (offset + bob), with the recoil spring's aim-space offset riding on
 				// top of the PIVOT point (grip); the rotation lag swings the gun AROUND that pivot —
 				// so the hand stays planted while the muzzle sweeps.
-				var targetPos = eye + aimRot * ( ViewOffset + UpdateBob() );
+				var bob = UpdateBob();
 				UpdateViewSprings( aimRot );
 
 				// Strength scales the RENDERED effect, not the simulation — the spring's character
 				// (speed, bounce) is untouched, only how much of its offset shows. Rotation lag scales
 				// in angle space (small + clamped, so per-component scaling is safe).
-				var pivotPos = targetPos + aimRot * ( _recoilPos * PositionStrength );
+				//
+				// The whole aim-space mount (offset + bob + kick) then gets its FORWARD component scaled
+				// by the dolly-zoom factor (see ViewOffsetFov): the shader warp leaves depth alone, so
+				// this is what keeps the gun's on-screen size/position fixed across ViewmodelFov changes.
+				// Bob and kick ride along so their apparent throw is FOV-independent too. Lateral
+				// components stay raw — their screen displacement is already FOV-independent.
+				var mount = ViewOffset + bob + _recoilPos * PositionStrength;
+				mount.x *= ViewDepthScale();
+				var pivotPos = eye + aimRot * mount;
 				var lagAngles = ( aimRot.Inverse * _springRot ).Angles();
 				var lagRot = aimRot * Rotation.From( new Angles(
 					lagAngles.pitch * RotationStrength,
@@ -823,6 +840,21 @@ public sealed class HunterGun : Component
 		float camTan = MathF.Tan( cam.FieldOfView.DegreeToRadian() * 0.5f );
 		float vmTan = MathF.Tan( Math.Clamp( ViewmodelFov, 5f, 170f ).DegreeToRadian() * 0.5f );
 		return vmTan > 0.001f ? camTan / vmTan : 1f;
+	}
+
+	// tan(refHalf)/tan(viewmodelHalf) — the dolly-zoom depth factor for the viewmodel mount (see
+	// ViewOffsetFov). Projected size of a lateral extent L at depth x under the warp is L/(x·tan(vmHalf)),
+	// so scaling x by this keeps it (and every lateral screen position) constant as ViewmodelFov moves.
+	// Gated like the shader's warp: in the Normal view layer the gun renders under the camera's own
+	// projection, ViewmodelFov does nothing, and compensating would just move the gun.
+	float ViewDepthScale()
+	{
+		if ( ViewLayerMode == SdfViewLayer.Normal )
+			return 1f;
+
+		float refTan = MathF.Tan( Math.Clamp( ViewOffsetFov, 5f, 170f ).DegreeToRadian() * 0.5f );
+		float vmTan = MathF.Tan( Math.Clamp( ViewmodelFov, 5f, 170f ).DegreeToRadian() * 0.5f );
+		return vmTan > 0.001f ? refTan / vmTan : 1f;
 	}
 
 	// Assert a field resolution on a clone's renderer. Safe to call every frame: the renderer folds

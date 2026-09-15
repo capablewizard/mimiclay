@@ -49,24 +49,27 @@ $craft-purple:    #a35bc9;   // paint-only (Colour op)
 // --- Text over the 3D scene (no card behind it: titles, the menu) ------------
 $scene-text:     #f9efd4;                     // warm cream, legible over the scene
 $scene-text-dim: rgba( 249, 239, 212, 0.6 );  // muted cream
-$scene-shadow:   0px 2px 6px rgba( 18, 12, 4, 0.75 ); // drop shadow for legibility
+$scene-shadow:   0px 2px 6px rgba( 18, 12, 4, 0.5 );  // drop shadow for legibility
 
 // --- Elevation (soft + tactile — clay has no hard edges) ---------------------
-$shadow-float: 0px 6px 16px rgba( 30, 20, 8, 0.32 );  // card lifted off the scene
-$shadow-edge:  0px 4px 8px rgba( 40, 28, 12, 0.16 );   // soft lift under a card (slider knob)
-$shadow-press: 0px 2px 6px rgba( 0, 0, 0, 0.30 );      // pressed-in (.btn:active)
+// Retuned 2026-09 for the s&box UI update: box-shadow is now a true Gaussian (reaches ~1.5× blur, was ½ blur)
+// and the UI blends in gamma space (ui_gamma_blend), so the old values read dark and wide. Rule of thumb vs the
+// old look: box-shadow = half the blur + 0.6× alpha; text-shadow / filter drop-shadow = 0.65× alpha only.
+$shadow-float: 0px 6px 8px rgba( 30, 20, 8, 0.19 );   // card lifted off the scene
+$shadow-edge:  0px 4px 4px rgba( 40, 28, 12, 0.09 );   // soft lift under a card (slider knob)
+$shadow-press: 0px 2px 3px rgba( 0, 0, 0, 0.16 );      // pressed-in (.btn:active)
 
 // --- Emboss (layered "clay" text shadow on the big menu type) ----------------
 // Two stacked text-shadows: a tight dark-brown offset for depth + a soft warm glow behind it. Offsets/blur are
 // per-element (scaled to the font size); these are just the colours.
 $emboss-depth:         rgb(165, 155, 158);         // The depth effect of the text (cream menu text)
 $emboss-depth-primary: rgb(180, 123, 84);           // The depth effect for the orange Quick Play text
-$emboss-glow:          rgba(0, 0, 0, 0.637);  // the shadow cast by our text, same for all text
+$emboss-glow:          rgba(0, 0, 0, 0.42);   // the shadow cast by our text, same for all text
 
 // Same idea for SOLID elements (buttons/cards): a box-shadow glow looks much darker + harder than the text glow
 // because a solid silhouette paints its whole footprint at full alpha (where letter strokes only paint thin
 // lines). So box glows use a LOWER-alpha colour — and a wide blur per-element — to read as soft as the text glow.
-$emboss-glow-box:      rgba(0, 0, 0, 0.4);   // the shadow cast by solid clay buttons/cards
+$emboss-glow-box:      rgba(0, 0, 0, 0.24);  // the shadow cast by solid clay buttons/cards
 
 // --- Shape (rounded, chunky — pinched clay) ----------------------------------
 $radius-sm:   8px;

@@ -12906,14 +12906,6 @@
                 "BoundingRadius": 22.18174
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []

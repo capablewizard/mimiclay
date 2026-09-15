@@ -75,7 +75,7 @@
 	// 3D clay look (box equivalent of the text emboss): soft cast glow first, then a hard 0-blur dark-orange depth
 	// extrude on top — reads as raised orange clay. $emboss-glow-box is the lower-alpha solid-element glow.
 	box-shadow:
-		14px 16px 20px $emboss-glow-box,
+		14px 16px 10px $emboss-glow-box,
 		5px 7px 0px $emboss-depth-primary;
 
 	.mi { font-size: 40px; } // an optional leading icon, scaled to the big label

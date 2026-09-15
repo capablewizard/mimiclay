@@ -3,23 +3,10 @@ using System.Threading.Tasks;
 
 namespace Mimiclay;
 
-/// <summary>Render-path candidates for a first-person viewmodel (see <see cref="SdfRaymarchRenderer.ViewLayer"/>).
-/// <see cref="OverlayFlag"/> is the production path; the others are kept as live-tweakable diagnostics.</summary>
+/// <summary>Render path for a first-person viewmodel (see <see cref="SdfRaymarchRenderer.ViewLayer"/>).</summary>
 public enum SdfViewLayer
 {
-	/// <summary>Normal game passes — depth-tested against the world (a viewmodel clips into walls).</summary>
 	Normal,
-	/// <summary>Native viewmodel layer (RenderLayer match + ViewModelLayer flag): renders invisible here,
-	/// and a dead end — the engine's own BaseCombatWeapon viewmodels don't use this layer either.</summary>
-	Viewmodel,
-	/// <summary>OverlayWithoutDepth layer match: after post with NO depth — pure draw-over, but no
-	/// GameOverlayLayer flag, so it misses the engine's overlay depth prepass (depth chain sees nothing).</summary>
-	OverlayNoDepth,
-	/// <summary>GameOverlayLayer FLAG (ModelRenderer RenderOptions.Overlay): THE viewmodel path. The engine
-	/// runs a dedicated overlay depth prepass for this flag — before the world prepasses, stencil-claiming
-	/// the object's pixels (bit 0x80) so nearer world depth can't overwrite them. The forward overlay pass
-	/// (after post, scene depth) then wins at REAL depth: no wall clipping, and the depth buffer stays
-	/// honest for screen UI (which depth-tests), contact shadows and screen AO.</summary>
 	OverlayFlag,
 }
 
@@ -395,42 +382,20 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// working once each way, then going dead).
 	SdfViewLayer? _appliedViewLayer;
 
-	// Apply ViewLayer on CHANGE only, never trusting the scene object's own change detection. Match-based modes
-	// route through a second real layer first so the setter's stale cache can't early-out the transition,
-	// whatever state previous toggles left it in.
+	// Apply ViewLayer on CHANGE only, never trusting the scene object's own change detection. Both modes
+	// stay on the Default render layer; OverlayFlag is the GameOverlayLayer FLAG (ModelRenderer
+	// RenderOptions.Overlay): the engine runs a dedicated overlay depth prepass for it — before the world
+	// prepasses, stencil-claiming the object's pixels (bit 0x80) so nearer world depth can't overwrite them.
+	// The forward overlay pass (after post, scene depth) then wins at REAL depth: no wall clipping, and the
+	// depth buffer stays honest for screen UI (which depth-tests), contact shadows and screen AO.
 	void ApplyViewLayer()
 	{
 		if ( _appliedViewLayer == ViewLayer )
 			return;
 
 		_appliedViewLayer = ViewLayer;
-
-		// Reset the flag-based bits; each mode below re-asserts what it needs.
-		_so.Flags.ViewModelLayer = false;
-		_so.Flags.OverlayLayer = false;
-
-		switch ( ViewLayer )
-		{
-			case SdfViewLayer.Viewmodel:
-				_so.RenderLayer = SceneRenderLayer.OverlayWithDepth; // cache-mover; both assignments land natively
-				_so.RenderLayer = SceneRenderLayer.ViewModel;
-				_so.Flags.ViewModelLayer = true;
-				break;
-
-			case SdfViewLayer.OverlayNoDepth:
-				_so.RenderLayer = SceneRenderLayer.OverlayWithDepth; // cache-mover
-				_so.RenderLayer = SceneRenderLayer.OverlayWithoutDepth;
-				break;
-
-			case SdfViewLayer.OverlayFlag:
-				_so.RenderLayer = SceneRenderLayer.Default;
-				_so.Flags.OverlayLayer = true;
-				break;
-
-			default:
-				_so.RenderLayer = SceneRenderLayer.Default;
-				break;
-		}
+		_so.RenderLayer = SceneRenderLayer.Default;
+		_so.Flags.OverlayLayer = ViewLayer == SdfViewLayer.OverlayFlag;
 	}
 
 	// Any reason the raymarched surface should be off this frame. Every place that turns _so.RenderingEnabled ON
