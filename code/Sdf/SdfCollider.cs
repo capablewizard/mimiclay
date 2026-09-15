@@ -61,6 +61,27 @@ public sealed class SdfCollider : Component
 
 	SdfSculpture _sculpture;
 	SculptBounds _bounds;
+	Model _builtModel; // the model THIS component last assigned to the sibling ModelCollider (null until it builds)
+
+	/// <summary>May an invalid/embedded commit leave the standing collider in place instead of building? Only
+	/// while a LOCAL edit session is actively targeting this sculpture AND the standing model is one this
+	/// component built. The freeze exists for editing: the standing collider is then the session's "last good
+	/// shape" — the one proxies render and the exit-revert restores — so holding it is correct. Outside a
+	/// session every shape change is AUTHORITATIVE and must build: spawn dress (<see cref="HiderController.WearDisguise"/>,
+	/// <c>HunterController.WearFace</c>), lobby restores, persist-slot loads, proxy applies. Those replace the
+	/// brushes wholesale on a clone whose collider ALREADY stands — the disguise/face template's default brush
+	/// was built the moment the template cloned, before the real brushes arrived — so a standing collider is
+	/// no evidence of a last good shape there. Gating on "a collider exists" froze a scene mop that overflowed
+	/// the template's bounds (or leaned into a wall) onto the template SPHERE: one tiny collider, pawn through
+	/// the floor. The model-identity check additionally ignores a Model a prefab deserialized into the
+	/// ModelCollider (the procedural placeholder path), which nothing ever built.</summary>
+	bool CanFreezeOn( ModelCollider standing )
+	{
+		if ( _builtModel is null || !ReferenceEquals( standing.Model, _builtModel ) )
+			return false;
+
+		return SculptEditSession.Current is { IsEditing: true } s && s.Target == _sculpture;
+	}
 
 	protected override void OnEnabled()
 	{
@@ -84,6 +105,7 @@ public sealed class SdfCollider : Component
 		var collider = GameObject.Components.Get<ModelCollider>();
 		if ( collider.IsValid() )
 			collider.Enabled = false;
+		_builtModel = null; // the next enable's build is a first build again — never a freeze candidate
 		_footPoints.Clear();
 		_framePoints.Clear();
 	}
@@ -115,7 +137,8 @@ public sealed class SdfCollider : Component
 		// whatever the sculpture starts as, or a shape that spawns invalid (or a decoy this machine's config
 		// judges invalid) would be left with no collision at all.
 		var standing = GameObject.Components.Get<ModelCollider>();
-		if ( !IsProxy && _bounds.IsValid() && standing.IsValid() && standing.Model is not null && !_bounds.EvaluateNow() )
+		bool mayFreeze = !IsProxy && standing.IsValid() && CanFreezeOn( standing );
+		if ( mayFreeze && _bounds.IsValid() && !_bounds.EvaluateNow() )
 			return;
 
 		// NEVER swap in a collider whose clay is EMBEDDED in the world (deeper than the backstop tolerance).
@@ -126,8 +149,7 @@ public sealed class SdfCollider : Component
 		// and the same owner-side/standing-collider gating as the bounds check above — the standing collider
 		// keeps the prop solid on its last good shape, and the next clean commit rebuilds as normal. Trigger
 		// builds (the hunter head) are exempt: they generate no contacts, so embedding them shoves nothing.
-		if ( !IsProxy && !BuildAsTrigger && standing.IsValid() && standing.Model is not null
-			&& BrushWorldClamp.EmbeddedInWorld( _sculpture ) )
+		if ( mayFreeze && !BuildAsTrigger && BrushWorldClamp.EmbeddedInWorld( _sculpture ) )
 			return;
 
 		// The carved-copy record keeps the foot probes in lockstep with the collider: any copy Build swaps to
@@ -140,6 +162,7 @@ public sealed class SdfCollider : Component
 		collider.Model = model;
 		collider.IsTrigger = BuildAsTrigger;
 		collider.Enabled = model is not null;
+		_builtModel = model;
 
 		// Footprint snapshot for ground probes — computed AFTER the collider is fully set up, and guarded, so a
 		// problem here can NEVER stop the sculpture from being solid (the collider build must not depend on it).
