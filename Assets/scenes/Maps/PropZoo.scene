@@ -11956,6 +11956,14 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           }
         ],
         "MovedObjects": []
@@ -13632,6 +13640,14 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           }
         ],
         "MovedObjects": []
@@ -16612,6 +16628,7 @@
   ],
   "SceneProperties": {
     "NetworkInterpolation": true,
+    "PhysicsMode": "Physics3D",
     "TimeScale": 1,
     "WantsSystemScene": true,
     "Metadata": {},

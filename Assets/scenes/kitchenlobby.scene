@@ -11688,22 +11688,6 @@
             },
             "Property": "Position",
             "Value": "-250.648331,-584.849365,-371.277924"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12163,7 +12147,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12180,7 +12164,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12385,7 +12369,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12402,7 +12386,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12607,7 +12591,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12624,7 +12608,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12829,7 +12813,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12846,7 +12830,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13051,7 +13035,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13068,7 +13052,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13273,7 +13257,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13290,7 +13274,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13495,7 +13479,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13512,7 +13496,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13717,7 +13701,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13734,7 +13718,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13939,7 +13923,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13956,7 +13940,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -14161,7 +14145,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14178,7 +14162,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -14383,7 +14367,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14400,7 +14384,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -14605,7 +14589,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14622,7 +14606,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -17343,6 +17327,14 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
             },
             "Property": "AdaptiveQuality",
@@ -18819,6 +18811,60 @@
       }
     },
     {
+      "__guid": "14447540-13a7-4552-9f17-2de6a668c2b8",
+      "__version": 2,
+      "__Prefab": "prefabs/props/kitchen/mug.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Name",
+            "Value": "mug (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Position",
+            "Value": "305.610382,-1225.47815,-361.048096"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Rotation",
+            "Value": "-2.25414624E-05,6.71166126E-05,0.295757651,0.955263078"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "a98a3e9f-e662-4874-94b6-98983a196ae7": "14447540-13a7-4552-9f17-2de6a668c2b8",
+        "9b76d781-06f1-4f60-a4fe-4bc5ab77c861": "4afed5ae-fef3-401d-90e2-f00d88f10619",
+        "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6": "40a46e39-168a-4481-b628-f8f0cf6e12f6",
+        "d1176097-b5b5-49d1-b0cf-63001c68503c": "9a2f3d82-3368-4748-839d-027541cabaa8",
+        "fa2fc9de-7ded-4198-b734-e0bbca7ea36d": "f65b1fe6-5c84-4e15-a890-82c5b2162c1c",
+        "2c074b7b-323c-4cc6-9272-70c9cc045f73": "9f545a65-16ee-4b6c-8ec4-3822f72219d5",
+        "ba1df3b3-753b-4ef6-ac00-a1b2012719de": "b524fb5c-eb9c-489c-9d68-de5b4cf4dd1b",
+        "9b97ae99-e8c0-4501-b787-77f01891578d": "ebfcf32f-9d30-4da9-a5f0-eedf5bcdd1d3"
+      }
+    },
+    {
       "__guid": "3e61e601-db95-4579-a893-348c9a8eeea3",
       "__version": 2,
       "__Prefab": "prefabs/props/kitchen/wine_bottle.prefab",
@@ -19346,14 +19392,6 @@
               "Type": "Component",
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19592,55 +19630,6 @@
       }
     },
     {
-      "__guid": "ff4cec78-280f-46c5-95f4-3ab0fa48910d",
-      "__version": 2,
-      "__Prefab": "prefabs/map/toaster.prefab",
-      "__PrefabInstancePatch": {
-        "AddedObjects": [],
-        "RemovedObjects": [],
-        "PropertyOverrides": [
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "83ce451a-9b15-485f-b56e-701014f4f4fd"
-            },
-            "Property": "Position",
-            "Value": "189.950729,-387.695831,-383.560852"
-          },
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "83ce451a-9b15-485f-b56e-701014f4f4fd"
-            },
-            "Property": "Rotation",
-            "Value": "-3.49272717E-08,-4.82990643E-08,0.585982323,-0.810323715"
-          },
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "d64e622b-11f6-431b-af6c-bf2664bfb2ab"
-            },
-            "Property": "Rotation",
-            "Value": "0,0,0,1"
-          }
-        ],
-        "MovedObjects": []
-      },
-      "__PrefabIdToInstanceId": {
-        "83ce451a-9b15-485f-b56e-701014f4f4fd": "ff4cec78-280f-46c5-95f4-3ab0fa48910d",
-        "7eb54bbb-6b2b-4c99-bac5-cc1de256cd97": "9c01bdfd-db32-4fd9-98ff-ee6256863221",
-        "0663bfc2-ade7-41cb-94a8-af3d4f16c9f3": "c9b18215-5601-4d33-ae24-c9628e760031",
-        "fdc73fca-79a7-4f33-bef3-5de5c54fb0e0": "22b50b0c-a23e-4847-b604-f0142a922c87",
-        "60e207dc-147d-496f-a38b-4c1a61fe3cd2": "1c3069a3-d9fc-442d-aff1-18f738db6b2b",
-        "d64e622b-11f6-431b-af6c-bf2664bfb2ab": "d6540884-7fb0-471e-85b2-e93ca8bf9f41",
-        "c43de2b6-b140-434c-9e1e-7829b33e46c6": "fd884a0d-4e07-471e-940b-2e3a1c2bce88",
-        "a5863020-9b1b-4797-be79-d2227636ad32": "960bfabf-d5be-4c14-a095-5b190b8dcd11",
-        "999b90b6-5fff-4b89-892e-4892c44615fc": "ee727b9d-b9c6-423b-a946-7f88ae8f330e",
-        "b0cc6177-3b70-4056-85f3-2af8c5a491d9": "c4f89832-930a-4a60-883a-c15477114dfc",
-        "c0488927-4e13-413f-a4f4-11ceba9b8879": "1b4524c0-d3f6-4072-9e80-f173f6666a11"
-      }
-    },
-    {
       "__guid": "5262d419-0262-4be2-9468-c54ccea4df9a",
       "__version": 2,
       "__Prefab": "prefabs/props/food/lemon_slice.prefab",
@@ -19715,6 +19704,52 @@
         "e2452b94-854d-4261-b7da-272c4d1d0764": "51437317-0ce0-498b-b336-ebf0ebb1e23c",
         "221d394b-8948-4ec4-ab09-ffd17cddf10f": "cbda29d8-4975-4f0c-aab5-bd1677af376e",
         "fe1f1fe9-0dc3-8b54-a4f9-77d9e3188ad1": "deb94020-bd4d-4c12-be1d-6bd1123e51b0"
+      }
+    },
+    {
+      "__guid": "c61a6eea-0467-46c9-b461-3758983eade7",
+      "__version": 2,
+      "__Prefab": "prefabs/props/kitchen/toaster.prefab",
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "c29094f9-75b2-4218-88d7-a48b73d26b2c"
+            },
+            "Property": "Position",
+            "Value": "189.239502,-383.228546,-378.709381"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "c29094f9-75b2-4218-88d7-a48b73d26b2c"
+            },
+            "Property": "Rotation",
+            "Value": "-5.39024434E-08,2.54409223E-08,0.904332876,0.426827788"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "bd8a5941-5cb1-4f72-ab2a-880cb3e2048c"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "c29094f9-75b2-4218-88d7-a48b73d26b2c": "c61a6eea-0467-46c9-b461-3758983eade7",
+        "6c5b4e81-ec7a-4f2c-8206-29d448f8eb8b": "15594a1b-5253-427f-83ec-4b3ebc02475f",
+        "bd8a5941-5cb1-4f72-ab2a-880cb3e2048c": "5e4ce7e6-c8ea-422a-81ac-89073bc35d17",
+        "a21f5351-8c21-4334-b94d-783bffca524c": "26f0c84e-5b32-48e7-b15a-e2865062b2e6",
+        "f436431c-2811-4826-9a72-053c953c0a10": "964df83f-264c-4781-9ba1-da2cacbb6644",
+        "f0c06d16-d9ea-4d13-aa7e-005a644bd849": "a5aec73b-3fcb-4681-b067-66544427068a",
+        "8d5b8745-cf1d-4d39-bce8-5c1e9d53c8eb": "51d658d9-222a-491c-987b-bf1523ba17ce",
+        "5c626390-200b-4d88-bc4d-f1b364608e72": "db670fde-9802-41de-921e-5978eacba3e0"
       }
     }
   ],

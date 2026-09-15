@@ -26,6 +26,9 @@
           {
             "Shape": "Sphere",
             "Operation": "Add",
+            "CrossSection": "Triangle",
+            "Text": "clay",
+            "Font": "Super Joyful",
             "Enabled": true,
             "Position": "0,0,0",
             "Rotation": "0,0,0,1",
@@ -33,14 +36,26 @@
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
+            "SplinePerPointRadius": false,
+            "Slice": 0,
+            "SlicePlaneN": 1,
+            "LocalCentre": "0,0,0",
             "Blend": 6,
+            "Gap": 0,
             "Rounding": 0.75,
             "Color": "0.79608,0.4902,0.34902,1",
             "Metallic": 0,
             "Roughness": 0.5,
             "MirrorX": false,
             "MirrorY": false,
+            "EffectiveMirrorX": false,
+            "EffectiveMirrorY": false,
+            "EffectiveMirrorZ": false,
             "MirrorZ": false,
+            "Damage": false,
+            "Shrinks": false,
+            "ShrinkDelay": 2,
+            "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
             "BoundingRadius": 25.5
           }
@@ -93,7 +108,6 @@
         "DebugBounds": false,
         "DebugLiveField": false,
         "DebugLod": false,
-        "DebugSwitchState": false,
         "DepthOcclusionCull": true,
         "DispAmp": 0.8,
         "DispFreq": 0.073,
@@ -121,6 +135,7 @@
         "OnComponentStart": null,
         "OnComponentUpdate": null,
         "OverdrawOptimization": false,
+        "SdfShadowRadii": 10,
         "SdfShadows": true,
         "ShadowBias": 0,
         "ShadowSlopeScale": 1.5,
@@ -225,7 +240,29 @@
         }
       }
     ],
-    "Children": []
+    "Children": [],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "PhysicsMode": "Physics3D",
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
   },
   "ResourceVersion": 2,
   "ShowInMenu": false,
