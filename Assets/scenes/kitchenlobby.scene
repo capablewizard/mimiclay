@@ -499,7 +499,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -553,7 +556,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1502,7 +1508,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/cooker/cooker.vmdl",
+              "Model": {
+                "Id": "565b8f1c-6443-4aa5-a7e4-5e45af7ab1c6",
+                "Path": "models/props/cooker/cooker.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1545,7 +1554,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/props/fridge/fridge.vmdl",
+              "Model": {
+                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Path": "models/props/fridge/fridge.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1570,7 +1582,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/props/fridge/fridge.vmdl",
+              "Model": {
+                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Path": "models/props/fridge/fridge.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1614,7 +1629,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/washing_machine/washing_machine.vmdl",
+              "Model": {
+                "Id": "3d7cf54b-0a3f-42f1-879a-715ca72225fe",
+                "Path": "models/props/washing_machine/washing_machine.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1655,7 +1673,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/microwave/microwave.vmdl",
+              "Model": {
+                "Id": "1c26aeb3-1ede-4c0f-8e24-c66e4a65176c",
+                "Path": "models/props/microwave/microwave.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1964,7 +1985,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/kickstool/kickstool.vmdl",
+              "Model": {
+                "Id": "50a57905-70d9-4f32-b3e6-0556b4e68dea",
+                "Path": "models/props/kickstool/kickstool.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2005,7 +2029,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/trim_sheets/utility/step_ladder_01.vmdl",
+              "Model": {
+                "Id": "3090eba8-4502-4771-b23c-3cea5a589cad",
+                "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2046,7 +2073,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/toaster/toaster.vmdl",
+              "Model": {
+                "Id": "3868c869-7640-4b94-a95e-1dc4794ac1b3",
+                "Path": "models/props/toaster/toaster.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2089,7 +2119,10 @@
               "MaterialGroup": "metal_on",
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+              "Model": {
+                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2114,7 +2147,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+              "Model": {
+                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3221,7 +3257,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3246,7 +3285,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3292,7 +3334,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3317,7 +3362,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3629,7 +3677,10 @@
               "CreateAttachments": false,
               "LodOverride": null,
               "MaterialGroup": null,
-              "MaterialOverride": "materials/emissivelight.vmat",
+              "MaterialOverride": {
+                "Id": "29293922-6160-4737-a54a-e2b04736a471",
+                "Path": "materials/emissivelight.vmat"
+              },
               "Materials": null,
               "Model": "models/dev/sphere.vmdl",
               "OnComponentDestroy": null,
@@ -3655,7 +3706,10 @@
     {
       "__guid": "9332366c-1c9a-4ae3-be62-dcaf326fc509",
       "__version": 2,
-      "__Prefab": "prefabs/saved/fullorange.prefab",
+      "__Prefab": {
+        "Id": "2d76c68a-fb76-40b5-b830-44ca7b8bfb7b",
+        "Path": "prefabs/saved/fullorange.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [
           {
@@ -4473,7 +4527,10 @@
             "Maxs": "296.55426,548.902222,213.573914"
           },
           "Contrast": 1,
-          "DistanceTexture": "scenes/kitchenlobby_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "DistanceTexture": {
+            "Id": "b01b0691-ef58-4fa9-91ba-a4a567da7ec1",
+            "Path": "scenes/kitchenlobby_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": null,
           "NormalBias": 5,
@@ -4484,7 +4541,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "ProbeDensity": 8,
-          "RelocationTexture": "scenes/kitchenlobby_scene_data/ddgi/ddgi_relocation_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "RelocationTexture": {
+            "Id": "fba209a6-d031-407d-b309-0cf684ac4e5f",
+            "Path": "scenes/kitchenlobby_scene_data/ddgi/ddgi_relocation_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "RenderExcludeTags": ""
         },
         {
@@ -4493,7 +4553,10 @@
           "__enabled": true,
           "Flags": 0,
           "__version": 1,
-          "BakedTexture": "scenes/kitchenlobby_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex",
+          "BakedTexture": {
+            "Id": "30124bbd-4e74-467c-8670-773185591264",
+            "Path": "scenes/kitchenlobby_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex"
+          },
           "Bounds": {
             "Mins": "-503.445862,-539.0979,-297.174377",
             "Maxs": "296.55426,548.902222,213.573914"
@@ -4527,7 +4590,10 @@
           "Flags": 0,
           "AmbientColor": "0.91628,0.78331,0.69467,1",
           "AmbientLift": 0,
-          "BaseIrradiance": "scenes/kitchenlobby_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "BaseIrradiance": {
+            "Id": "45d40af0-631c-485c-b108-78976e337283",
+            "Path": "scenes/kitchenlobby_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "BounceSaturation": 0,
           "Gain": 0.2,
           "Iterations": 8,
@@ -5264,7 +5330,10 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/plasticine_scene.vmat",
+          "MaterialOverride": {
+            "Id": "f93c4486-1005-4cf4-bdaf-ee28dc720b55",
+            "Path": "materials/plasticine_scene.vmat"
+          },
           "Materials": null,
           "Model": "models/dev/box.vmdl",
           "OnComponentDestroy": null,
@@ -5419,17 +5488,26 @@
           "__enabled": true,
           "Flags": 0,
           "AutoReimport": true,
-          "BakedGeometry": "models/fbxbaked/prefabs_kitchen_kitchen.fbxbake",
+          "BakedGeometry": {
+            "Id": "22f7259c-b35e-49b4-993d-221e1cebbff6",
+            "Path": "models/fbxbaked/prefabs_kitchen_kitchen.fbxbake"
+          },
           "BuildCollision": true,
           "CheckInterval": 0.5,
-          "DefaultMaterial": "materials/plasticine_scene.vmat",
+          "DefaultMaterial": {
+            "Id": "f93c4486-1005-4cf4-bdaf-ee28dc720b55",
+            "Path": "materials/plasticine_scene.vmat"
+          },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 17:53:20",
+          "LastImport": "63 object(s), 67661 tris — 11:11:15",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
-              "Material": "materials/plasticine_scenemetal.vmat"
+              "Material": {
+                "Id": "b28bd0ca-4fa4-42b2-9cad-8f512ab2e3b5",
+                "Path": "materials/plasticine_scenemetal.vmat"
+              }
             },
             {
               "FbxMaterial": "Clay",
@@ -5437,11 +5515,17 @@
             },
             {
               "FbxMaterial": "Glass",
-              "Material": "materials/glass_scene.vmat"
+              "Material": {
+                "Id": "aa7f4156-16db-4eca-b515-6a2317736dff",
+                "Path": "materials/glass_scene.vmat"
+              }
             },
             {
               "FbxMaterial": "Fabric",
-              "Material": "materials/fabric.vmat"
+              "Material": {
+                "Id": "5c485d96-a451-4604-815b-2f98ec6923ce",
+                "Path": "materials/fabric.vmat"
+              }
             }
           ],
           "OnComponentDestroy": null,
@@ -10750,7 +10834,10 @@
     {
       "__guid": "11270f05-eecf-8bfc-a2d2-4c59ab82c1a4",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/fryingpan.prefab",
+      "__Prefab": {
+        "Id": "78d14cc4-bd4a-4d8a-a24d-74aaa5ae8297",
+        "Path": "prefabs/props/kitchen/fryingpan.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10988,7 +11075,10 @@
     {
       "__guid": "9e0d8b40-d7da-89f1-ba90-19c90c43997f",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
+      "__Prefab": {
+        "Id": "9cd0078c-32c7-407e-8e50-7a786877b0a5",
+        "Path": "prefabs/props/kitchen/scene/knob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11026,7 +11116,10 @@
     {
       "__guid": "ab0ae1ce-0d11-85e7-95fa-f703161b12ca",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
+      "__Prefab": {
+        "Id": "9cd0078c-32c7-407e-8e50-7a786877b0a5",
+        "Path": "prefabs/props/kitchen/scene/knob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11080,7 +11173,10 @@
     {
       "__guid": "eea0473c-40fc-8896-82b5-b040ff7776ab",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
+      "__Prefab": {
+        "Id": "9cd0078c-32c7-407e-8e50-7a786877b0a5",
+        "Path": "prefabs/props/kitchen/scene/knob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11134,7 +11230,10 @@
     {
       "__guid": "efef0f9e-a4d2-8172-b833-db07abe387f8",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
+      "__Prefab": {
+        "Id": "9cd0078c-32c7-407e-8e50-7a786877b0a5",
+        "Path": "prefabs/props/kitchen/scene/knob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11188,7 +11287,10 @@
     {
       "__guid": "3c0c9d33-efb5-8921-8ee6-6d2aecae1d51",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/knob.prefab",
+      "__Prefab": {
+        "Id": "9cd0078c-32c7-407e-8e50-7a786877b0a5",
+        "Path": "prefabs/props/kitchen/scene/knob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11337,7 +11439,10 @@
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11353,7 +11458,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11370,7 +11475,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -11397,7 +11502,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -11500,7 +11608,10 @@
     {
       "__guid": "d020e14b-c2ee-8ff8-9096-3419535b0b26",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11538,7 +11649,10 @@
     {
       "__guid": "9b5206a2-7701-8858-9c66-ff01a537f131",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11584,7 +11698,10 @@
     {
       "__guid": "3f60d70c-af3d-8703-b585-a502cf8b1ccc",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11630,7 +11747,10 @@
     {
       "__guid": "2b2f620e-be8a-8506-9ac8-ca5266204146",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11668,7 +11788,10 @@
     {
       "__guid": "a5e72897-bdf2-8bc6-8d60-c837b8d9b42b",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11688,6 +11811,22 @@
             },
             "Property": "Position",
             "Value": "-250.648331,-584.849365,-371.277924"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11706,7 +11845,10 @@
     {
       "__guid": "adfd4302-a0a1-8877-9bd9-a3fcb810dddd",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11726,6 +11868,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-465.34613"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11744,7 +11902,10 @@
     {
       "__guid": "ac4e27d4-df8e-859a-ad7d-51941d8bfda0",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11764,6 +11925,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1242.81396,-427.365051"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11782,7 +11959,10 @@
     {
       "__guid": "38f49ca2-fa45-85de-9626-96fea80debce",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11802,6 +11982,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1277.56177,-427.365051"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11820,7 +12016,10 @@
     {
       "__guid": "f4976f66-8ff3-887e-917d-c4b080fdfe29",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11840,6 +12039,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1101.1239,-483.758209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11858,7 +12073,10 @@
     {
       "__guid": "1afcb08c-5ab7-888a-8d31-a778e65e06c2",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11878,6 +12096,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1129.97668,-483.758209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11896,7 +12130,10 @@
     {
       "__guid": "7060866b-61f5-8593-b301-88226e0f16da",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11916,6 +12153,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-504.864471"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11934,7 +12187,10 @@
     {
       "__guid": "83791b19-a19d-8c9d-8228-98b7050f6477",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11980,7 +12236,10 @@
     {
       "__guid": "e682e747-4fb2-8129-a8b1-3d9b2a61e903",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12026,7 +12285,10 @@
     {
       "__guid": "3788d12d-1a2d-8924-9cfe-9965db65f237",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/teapot.prefab",
+      "__Prefab": {
+        "Id": "d5ca3694-b5df-4a43-835e-cea9f1bbf625",
+        "Path": "prefabs/props/kitchen/teapot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12127,11 +12389,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.336612
+              "BoundingRadius": 11.2864485
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12191,7 +12456,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -12353,7 +12621,10 @@
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12413,7 +12684,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -12571,11 +12845,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.49235
+              "BoundingRadius": 10.522
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12591,7 +12868,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12608,7 +12885,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -12635,7 +12912,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -12793,11 +13073,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.106384
+              "BoundingRadius": 11.086889
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12857,7 +13140,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -13019,7 +13305,10 @@
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13079,7 +13368,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -13241,7 +13533,10 @@
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13301,7 +13596,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -13459,11 +13757,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.479366
+              "BoundingRadius": 10.429633
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13523,7 +13824,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -13681,11 +13985,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.527906
+              "BoundingRadius": 11.549745
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13701,7 +14008,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13718,7 +14025,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13745,7 +14052,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -13903,11 +14213,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.177228
+              "BoundingRadius": 11.198455
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13967,7 +14280,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -14125,11 +14441,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.998136
+              "BoundingRadius": 11.025564
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14189,7 +14508,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -14347,11 +14669,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.684394
+              "BoundingRadius": 10.677233
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14411,7 +14736,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -14569,11 +14897,14 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.998136
+              "BoundingRadius": 11.025564
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14633,7 +14964,10 @@
           "FieldResolution": 195,
           "FullQualityRadii": 1,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 20,
           "MeshLod2Radii": 30,
@@ -14736,7 +15070,10 @@
     {
       "__guid": "45c7b72e-a711-8470-a813-d0dfb521ae26",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/fridgehandle.prefab",
+      "__Prefab": {
+        "Id": "5d75c049-1553-4a83-98c6-08ceed534605",
+        "Path": "prefabs/props/kitchen/scene/fridgehandle.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14782,7 +15119,10 @@
     {
       "__guid": "00bd0425-b521-8cab-8ee5-4619ed643b07",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/fridgehandle.prefab",
+      "__Prefab": {
+        "Id": "5d75c049-1553-4a83-98c6-08ceed534605",
+        "Path": "prefabs/props/kitchen/scene/fridgehandle.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14836,7 +15176,10 @@
     {
       "__guid": "8c681cc6-568c-8d46-9024-8fd4951c4f4a",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/tap.prefab",
+      "__Prefab": {
+        "Id": "95bc1f4f-0c3d-43d8-97cf-0c106bb394c0",
+        "Path": "prefabs/props/kitchen/tap.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14882,7 +15225,10 @@
     {
       "__guid": "e95cbe11-673f-81f4-8a70-b1c148be685d",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/tap.prefab",
+      "__Prefab": {
+        "Id": "95bc1f4f-0c3d-43d8-97cf-0c106bb394c0",
+        "Path": "prefabs/props/kitchen/tap.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14928,7 +15274,10 @@
     {
       "__guid": "5317715f-db8d-8c22-916a-67140c0a3141",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/flour.prefab",
+      "__Prefab": {
+        "Id": "037dabff-93b7-41c4-bc7d-f2e19f6a5511",
+        "Path": "prefabs/props/kitchen/flour.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15279,7 +15628,10 @@
     {
       "__guid": "7ba49a2b-65da-88d4-ae77-b9d86b156500",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/sugar.prefab",
+      "__Prefab": {
+        "Id": "2b91a3a5-1c3e-4578-a225-5a8992e8446a",
+        "Path": "prefabs/props/kitchen/sugar.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15557,7 +15909,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 15.344992
+                "BoundingRadius": 15.328206
               },
               {
                 "Shape": "Spline",
@@ -15686,7 +16038,10 @@
     {
       "__guid": "eba90385-a317-8d3e-924c-717d44c95210",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot.prefab",
+      "__Prefab": {
+        "Id": "206a5047-f9e5-4700-ae45-f630a9d83cb0",
+        "Path": "prefabs/props/kitchen/pot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15796,7 +16151,10 @@
     {
       "__guid": "0bd54e6b-c0cd-8fe8-8565-d3d33d226ad5",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_polkedot.prefab",
+      "__Prefab": {
+        "Id": "7fdf2b9b-a8fc-498c-a260-8f0a1f9656b4",
+        "Path": "prefabs/props/kitchen/pot_polkedot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -17240,7 +17598,10 @@
     {
       "__guid": "5515d39b-0698-8745-bcc2-250332678818",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/dinnerplate.prefab",
+      "__Prefab": {
+        "Id": "77acb1ca-f0e6-43d5-9f6f-e84c2fb48882",
+        "Path": "prefabs/props/kitchen/dinnerplate.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -17295,7 +17656,10 @@
     {
       "__guid": "16e01e93-8751-4ce4-8d71-bbf73c9df6cc",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/dinnerplate.prefab",
+      "__Prefab": {
+        "Id": "77acb1ca-f0e6-43d5-9f6f-e84c2fb48882",
+        "Path": "prefabs/props/kitchen/dinnerplate.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -17358,7 +17722,10 @@
     {
       "__guid": "7657deb8-db2d-8859-8ab0-da066c59ff01",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/dinnerbowl.prefab",
+      "__Prefab": {
+        "Id": "26b6b1bd-a40e-4048-873e-f8e6c0b06e67",
+        "Path": "prefabs/props/kitchen/dinnerbowl.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -17404,7 +17771,10 @@
     {
       "__guid": "076ab3de-cca0-8887-b68b-04c2577a04bf",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_copper.prefab",
+      "__Prefab": {
+        "Id": "030ad016-8082-4b35-9241-5b02dc307de7",
+        "Path": "prefabs/props/kitchen/pot_copper.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -17435,7 +17805,10 @@
     {
       "__guid": "071e5492-9777-4b70-b4bb-63ce2a3e11d0",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/castironpan.prefab",
+      "__Prefab": {
+        "Id": "bb881cf0-cc34-436c-b8e2-d2d7488ff817",
+        "Path": "prefabs/props/kitchen/castironpan.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -17840,7 +18213,10 @@
     {
       "__guid": "aee00498-d89b-8a90-b187-5efcc0b9f5fa",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_pitcher.prefab",
+      "__Prefab": {
+        "Id": "8df773c9-e799-4900-a837-174482147f76",
+        "Path": "prefabs/props/kitchen/pot_pitcher.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18293,7 +18669,10 @@
     {
       "__guid": "0eac80f3-b5fa-468f-aad3-b9ae3d906618",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18319,24 +18698,27 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "0eac80f3-b5fa-468f-aad3-b9ae3d906618",
+        "48041871-1f1e-4913-a351-2ab601031e47": "8d803b0e-e939-48c4-acf7-cc22f44953d0",
+        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "c45dae98-04f6-44d8-a89a-a2b0d11d5d20",
+        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "62830a9b-7ef1-4edd-a272-178343f98b20",
+        "f8586086-305a-40a0-88d1-50cbdb36bd85": "d98a7a5c-983f-4ed3-b19c-15e6ade4db97",
+        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "dee72bd1-d7c3-4f21-aea1-e9a5845138c1",
         "b3116030-50d0-45cf-9576-f0b8c5ea110c": "6f0f1f1d-a233-4ab1-a621-50a84c95a973",
         "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "8166c8b9-e5c0-49b4-99f9-bd0b245529fd",
-        "48041871-1f1e-4913-a351-2ab601031e47": "8d803b0e-e939-48c4-acf7-cc22f44953d0",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "86786b32-ed32-402f-9957-77a1315b172b",
-        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "c45dae98-04f6-44d8-a89a-a2b0d11d5d20",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "e778980c-11a5-493b-8d20-6740d94a5dbe",
-        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "62830a9b-7ef1-4edd-a272-178343f98b20",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "a1126a8f-afe3-474a-8e3e-b6e9de29b30e",
-        "f8586086-305a-40a0-88d1-50cbdb36bd85": "d98a7a5c-983f-4ed3-b19c-15e6ade4db97",
         "21494caa-4cd1-4c82-afb7-de8e28c8743b": "b9798f4f-1990-43ad-8cf9-0b172c9c5b7e",
-        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "dee72bd1-d7c3-4f21-aea1-e9a5845138c1",
         "a2de9064-2c2e-4a59-8931-f32adae878fe": "622a06fa-4773-4aeb-9797-c157eac0c12c"
       }
     },
     {
       "__guid": "fb367f39-f42c-4ffb-bb72-41e6ab18017a",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18362,24 +18744,27 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "fb367f39-f42c-4ffb-bb72-41e6ab18017a",
+        "48041871-1f1e-4913-a351-2ab601031e47": "62e31336-3ff6-49d1-b95b-0b657856b054",
+        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "3a764949-f4d8-487b-9e65-152ff942e469",
+        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "d4a61b46-11d2-4aca-8e56-3726792644b8",
+        "f8586086-305a-40a0-88d1-50cbdb36bd85": "214d303c-ac08-4065-a427-7981253cbf9f",
+        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "2da6eb1f-61ee-45df-b960-e527effed89e",
         "b3116030-50d0-45cf-9576-f0b8c5ea110c": "4a327063-9323-4adb-925f-43489014a61d",
         "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "3684e100-8461-4a1c-909b-ce5da7c912d9",
-        "48041871-1f1e-4913-a351-2ab601031e47": "62e31336-3ff6-49d1-b95b-0b657856b054",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "324a2a60-c167-45ef-bf16-bee6073dceac",
-        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "3a764949-f4d8-487b-9e65-152ff942e469",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "60efe36d-884f-4b81-b937-e8209022f754",
-        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "d4a61b46-11d2-4aca-8e56-3726792644b8",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "e365ae20-dfee-433b-a50c-3099e72b7243",
-        "f8586086-305a-40a0-88d1-50cbdb36bd85": "214d303c-ac08-4065-a427-7981253cbf9f",
         "21494caa-4cd1-4c82-afb7-de8e28c8743b": "64ad289a-cc53-4b03-b47b-3e5f448aedd5",
-        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "2da6eb1f-61ee-45df-b960-e527effed89e",
         "a2de9064-2c2e-4a59-8931-f32adae878fe": "ee598aa7-56ec-4b4e-9fdf-afd5d1a8e6e5"
       }
     },
     {
       "__guid": "3408d84b-717c-4d57-bcd6-846a16ac7984",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18405,24 +18790,27 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "3408d84b-717c-4d57-bcd6-846a16ac7984",
+        "48041871-1f1e-4913-a351-2ab601031e47": "9645be24-3f2a-4f0a-94fc-efe0d55e4790",
+        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "8afb4d0e-6e7d-43e2-89a0-db7c3e26a288",
+        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "5376ea79-4ec4-463f-a1ce-a243023e7cb2",
+        "f8586086-305a-40a0-88d1-50cbdb36bd85": "45590943-acbb-468c-869b-beb04fc686a6",
+        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "9bedb60c-6f96-4299-8c15-dfcdd234c67a",
         "b3116030-50d0-45cf-9576-f0b8c5ea110c": "c0eb9628-aeb8-43be-b400-852acec0c300",
         "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "9abe85d3-f9ba-4b9f-a662-91dfea7cac30",
-        "48041871-1f1e-4913-a351-2ab601031e47": "9645be24-3f2a-4f0a-94fc-efe0d55e4790",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "bcef03f3-ed27-4d45-a2c0-83efb9320820",
-        "e63338c7-2262-4e4e-80a0-56e91a9e8159": "8afb4d0e-6e7d-43e2-89a0-db7c3e26a288",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "010b44f0-d32a-4191-97c5-c8bbd3b1021b",
-        "919e07ca-c903-43f1-97fe-c7ca6d004db8": "5376ea79-4ec4-463f-a1ce-a243023e7cb2",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "6f1cb4d1-0f4d-4dec-9790-5ece22eef953",
-        "f8586086-305a-40a0-88d1-50cbdb36bd85": "45590943-acbb-468c-869b-beb04fc686a6",
         "21494caa-4cd1-4c82-afb7-de8e28c8743b": "dd6a879d-b77b-4f6f-8213-4e93fc4a79e3",
-        "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "9bedb60c-6f96-4299-8c15-dfcdd234c67a",
         "a2de9064-2c2e-4a59-8931-f32adae878fe": "7b109dfa-b268-48c0-8704-406cc01d0935"
       }
     },
     {
       "__guid": "9fd8efab-721e-49c4-b675-1f67dd329654",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/plug.prefab",
+      "__Prefab": {
+        "Id": "5016d540-109b-4ab7-9e81-1cf2c60816aa",
+        "Path": "prefabs/props/kitchen/scene/plug.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18637,7 +19025,10 @@
     {
       "__guid": "9500ae41-e238-4535-8670-3d033b4d3539",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/drainhole.prefab",
+      "__Prefab": {
+        "Id": "2e3328af-7d20-416a-8db4-951f8479b572",
+        "Path": "prefabs/props/kitchen/scene/drainhole.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18691,7 +19082,10 @@
     {
       "__guid": "26f7bdd4-481b-4b4e-b947-54ae64d80ccc",
       "__version": 2,
-      "__Prefab": "prefabs/saved/mop.prefab",
+      "__Prefab": {
+        "Id": "6871b718-9724-4f2b-b3f3-4d17f7171397",
+        "Path": "prefabs/saved/mop.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18737,7 +19131,10 @@
     {
       "__guid": "13d8aea2-01a1-4b7d-8623-fec1165fef5a",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/egg_cup.prefab",
+      "__Prefab": {
+        "Id": "98aa64a8-4c94-400b-bcee-cd75ea429f29",
+        "Path": "prefabs/props/kitchen/egg_cup.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18749,6 +19146,14 @@
             },
             "Property": "Position",
             "Value": "153.794373,-1134.85608,-365.04541"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e7601da9-8ae1-4549-855f-b2b5034d6707"
+            },
+            "Property": "__enabled",
+            "Value": true
           }
         ],
         "MovedObjects": []
@@ -18767,7 +19172,10 @@
     {
       "__guid": "6c0f462e-796a-49cd-beaa-f97fa517e5e0",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/mug.prefab",
+      "__Prefab": {
+        "Id": "ae21ea84-9dc4-42d1-924b-ac08b48fbf06",
+        "Path": "prefabs/props/kitchen/mug.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18813,7 +19221,10 @@
     {
       "__guid": "14447540-13a7-4552-9f17-2de6a668c2b8",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/mug.prefab",
+      "__Prefab": {
+        "Id": "ae21ea84-9dc4-42d1-924b-ac08b48fbf06",
+        "Path": "prefabs/props/kitchen/mug.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18867,7 +19278,10 @@
     {
       "__guid": "3e61e601-db95-4579-a893-348c9a8eeea3",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/wine_bottle.prefab",
+      "__Prefab": {
+        "Id": "6a1bab5c-162d-4d9f-9227-855a52cca8e6",
+        "Path": "prefabs/props/kitchen/wine_bottle.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -18906,7 +19320,10 @@
     {
       "__guid": "d4a61185-90f2-4f1b-aa5e-c99ae76866c0",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/wine_bottle.prefab",
+      "__Prefab": {
+        "Id": "6a1bab5c-162d-4d9f-9227-855a52cca8e6",
+        "Path": "prefabs/props/kitchen/wine_bottle.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19250,7 +19667,10 @@
     {
       "__guid": "a50c86e8-6226-42c3-b274-9f281a03c39d",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/power_socket.prefab",
+      "__Prefab": {
+        "Id": "dc0fc186-0139-424c-9812-865d131565a7",
+        "Path": "prefabs/props/kitchen/scene/power_socket.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19296,7 +19716,10 @@
     {
       "__guid": "a39c2d63-ef06-40a4-9994-fde6a3bb2265",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/light_switch.prefab",
+      "__Prefab": {
+        "Id": "0c15c076-302b-4965-a8a0-a3d3b9c20409",
+        "Path": "prefabs/props/kitchen/scene/light_switch.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19358,7 +19781,10 @@
     {
       "__guid": "3fd28ec6-d456-403e-bec8-87418b6cc201",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/power_socket.prefab",
+      "__Prefab": {
+        "Id": "dc0fc186-0139-424c-9812-865d131565a7",
+        "Path": "prefabs/props/kitchen/scene/power_socket.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19412,7 +19838,10 @@
     {
       "__guid": "514620a6-58c7-4cdc-a1d3-d343a332b8a9",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/cutting_board.prefab",
+      "__Prefab": {
+        "Id": "d74786dd-669c-4c2c-a8e3-776b581e4fa1",
+        "Path": "prefabs/props/kitchen/cutting_board.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19443,7 +19872,10 @@
     {
       "__guid": "d5d93d2c-99b4-4323-8d46-7b6281c1dc6e",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/lemon_wedge.prefab",
+      "__Prefab": {
+        "Id": "9f888929-9b2e-41da-b684-f84145df188e",
+        "Path": "prefabs/props/food/lemon_wedge.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19497,7 +19929,10 @@
     {
       "__guid": "09fc8809-50fd-488d-8ea7-c31399e4032a",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/light_switch.prefab",
+      "__Prefab": {
+        "Id": "0c15c076-302b-4965-a8a0-a3d3b9c20409",
+        "Path": "prefabs/props/kitchen/scene/light_switch.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19543,7 +19978,10 @@
     {
       "__guid": "a74150e8-e5fb-4e80-a551-419fe6e3cac2",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/power_socket.prefab",
+      "__Prefab": {
+        "Id": "dc0fc186-0139-424c-9812-865d131565a7",
+        "Path": "prefabs/props/kitchen/scene/power_socket.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19589,7 +20027,10 @@
     {
       "__guid": "2ce1a901-7771-4068-a9cc-eef8b66b34b4",
       "__version": 2,
-      "__Prefab": "prefabs/map/microwave.prefab",
+      "__Prefab": {
+        "Id": "7b52c159-d3e2-47f7-a530-439a8dcf45f6",
+        "Path": "prefabs/map/microwave.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19616,23 +20057,26 @@
       "__PrefabIdToInstanceId": {
         "42353b34-c7a4-4c7b-a013-a2eaf4f7a91e": "2ce1a901-7771-4068-a9cc-eef8b66b34b4",
         "4beaa212-d873-40ca-9586-b940d0a0c695": "a99162ea-f021-4c3a-9870-e25f15cce738",
-        "71905ba0-e945-4f42-8c09-df0fb8b09030": "aa520e0b-fc58-4591-9a00-640d2e7f68fb",
         "f6a4bd7a-1809-4350-ab3f-688ad7b28cf4": "cc934d9f-6a72-4ba4-bfd5-9d6773679a98",
-        "236c43bb-12b5-40c3-bf0c-79e94496d3a4": "fed790c4-2f7f-4809-acbd-1c5a0116af3f",
         "c05fc2d9-bd6b-48db-accc-f6c55ddf6b0b": "f20aca05-513e-4939-b30e-fd6a88c85de8",
-        "bbb2c1e5-75fe-408d-a39b-e8ef4d2743b3": "4c417994-6c60-419c-ac81-4df1408eedc2",
         "b4e22ca5-cb8e-4591-bba7-c169dd6aa9b3": "a02f0b88-7425-4dfc-aded-f549242499e0",
-        "91a78da9-1b10-476e-ac51-b13fcbc94b96": "4031ea90-dd57-4a0d-9f7d-d0b0f88beb51",
         "1fb79186-165f-440e-8beb-146d01a16cf4": "52052ec9-e32e-488b-b1de-7a493c9c3b21",
-        "c473518b-054b-4b1b-8dfc-7e56217d4433": "a0b68459-5837-42ae-ada4-1cd389ca320c",
         "df648303-01aa-4b00-9e3c-07fe931731e7": "b10f4bd5-8c7a-43c6-b9d1-1606c3fb728c",
+        "71905ba0-e945-4f42-8c09-df0fb8b09030": "aa520e0b-fc58-4591-9a00-640d2e7f68fb",
+        "236c43bb-12b5-40c3-bf0c-79e94496d3a4": "fed790c4-2f7f-4809-acbd-1c5a0116af3f",
+        "bbb2c1e5-75fe-408d-a39b-e8ef4d2743b3": "4c417994-6c60-419c-ac81-4df1408eedc2",
+        "91a78da9-1b10-476e-ac51-b13fcbc94b96": "4031ea90-dd57-4a0d-9f7d-d0b0f88beb51",
+        "c473518b-054b-4b1b-8dfc-7e56217d4433": "a0b68459-5837-42ae-ada4-1cd389ca320c",
         "f9b6fdd1-1d1c-4be9-9479-778ad1e6dd0a": "0a189606-19f1-44cc-86d0-d622de2ace56"
       }
     },
     {
       "__guid": "5262d419-0262-4be2-9468-c54ccea4df9a",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/lemon_slice.prefab",
+      "__Prefab": {
+        "Id": "65baeb8a-2e45-43e9-9d37-75471ea9ef5b",
+        "Path": "prefabs/props/food/lemon_slice.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19670,7 +20114,10 @@
     {
       "__guid": "672fb98b-c0f0-4e9d-97cc-ae6a2e6dc17c",
       "__version": 2,
-      "__Prefab": "prefabs/props/toys/toy_train_engine.prefab",
+      "__Prefab": {
+        "Id": "558d0487-c2d2-4708-8d26-29e9d286b334",
+        "Path": "prefabs/props/toys/toy_train_engine.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -19709,7 +20156,10 @@
     {
       "__guid": "c61a6eea-0467-46c9-b461-3758983eade7",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/toaster.prefab",
+      "__Prefab": {
+        "Id": "ca8c4375-759e-4939-b269-cf2e19a65ef6",
+        "Path": "prefabs/props/kitchen/toaster.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],

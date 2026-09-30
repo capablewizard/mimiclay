@@ -98,7 +98,10 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Track": "sounds/music/menu_music.sound",
+          "Track": {
+            "Id": "7c65fb02-3a8e-46b3-9926-525085ea09bf",
+            "Path": "sounds/music/menu_music.sound"
+          },
           "Volume": 0.3
         }
       ],
@@ -707,7 +710,10 @@
     {
       "__guid": "58a1513b-8fcd-41d1-a025-2476f5a0db6c",
       "__version": 2,
-      "__Prefab": "prefabs/saved/headorange.prefab",
+      "__Prefab": {
+        "Id": "b4cbfc45-39f8-4833-8e7b-96d74cfeec19",
+        "Path": "prefabs/saved/headorange.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [
           {

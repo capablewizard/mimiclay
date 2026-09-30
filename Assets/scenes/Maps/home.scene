@@ -1853,7 +1853,10 @@
             "Maxs": "1568,1216,-88"
           },
           "Contrast": 2,
-          "DistanceTexture": "scenes/maps/home_scene_data/ddgi/probes_distance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex",
+          "DistanceTexture": {
+            "Id": "a5b3d777-00a6-4f2a-ac7c-961ce82c863f",
+            "Path": "scenes/maps/home_scene_data/ddgi/probes_distance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex"
+          },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": null,
           "NormalBias": 32.233505,
@@ -1864,7 +1867,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "ProbeDensity": 10,
-          "RelocationTexture": "scenes/maps/home_scene_data/ddgi/probes_relocation_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex",
+          "RelocationTexture": {
+            "Id": "f0185a4a-8988-4fca-9c67-eb83d276dec4",
+            "Path": "scenes/maps/home_scene_data/ddgi/probes_relocation_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex"
+          },
           "RenderExcludeTags": "clip"
         },
         {
@@ -1874,7 +1880,10 @@
           "Flags": 0,
           "AmbientColor": "0.51163,0.42953,0.34743,1",
           "AmbientLift": 0.14054054,
-          "BaseIrradiance": "scenes/maps/home_scene_data/ddgi/probes_irradiance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex",
+          "BaseIrradiance": {
+            "Id": "27900b13-f10e-4642-a51d-5eff1d73caec",
+            "Path": "scenes/maps/home_scene_data/ddgi/probes_irradiance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex"
+          },
           "BounceSaturation": 0.52791876,
           "Gain": 0.45,
           "Iterations": 8,
@@ -2124,7 +2133,10 @@
               "__enabled": true,
               "Flags": 0,
               "__version": 1,
-              "BakedTexture": "scenes/maps/home_scene_data/envmap/bake_44976a09-4463-4a71-8672-852aa64ebfac.vtex",
+              "BakedTexture": {
+                "Id": "2a6b792c-0d3b-4834-a62b-f12c86c7228b",
+                "Path": "scenes/maps/home_scene_data/envmap/bake_44976a09-4463-4a71-8672-852aa64ebfac.vtex"
+              },
               "Bounds": {
                 "Mins": "-448,-416,-224",
                 "Maxs": "384,608,320"
@@ -2176,7 +2188,10 @@
               "__enabled": true,
               "Flags": 0,
               "__version": 1,
-              "BakedTexture": "scenes/maps/home_scene_data/envmap/bake_5bcdc25e-aa02-4f4b-9f96-ec41ed02964f.vtex",
+              "BakedTexture": {
+                "Id": "58e499ab-9085-40b7-95c4-9a27f4d86da2",
+                "Path": "scenes/maps/home_scene_data/envmap/bake_5bcdc25e-aa02-4f4b-9f96-ec41ed02964f.vtex"
+              },
               "Bounds": {
                 "Mins": "-416,-384,-240",
                 "Maxs": "400,384,304"
@@ -2228,7 +2243,10 @@
               "__enabled": true,
               "Flags": 0,
               "__version": 1,
-              "BakedTexture": "scenes/maps/home_scene_data/envmap/bake_c74a2741-3bce-407e-8cf8-6384cbd02482.vtex",
+              "BakedTexture": {
+                "Id": "b636170e-a54a-479e-b616-aaecf2654734",
+                "Path": "scenes/maps/home_scene_data/envmap/bake_c74a2741-3bce-407e-8cf8-6384cbd02482.vtex"
+              },
               "Bounds": {
                 "Mins": "-672,-384,-240",
                 "Maxs": "416,384,304"
@@ -2280,7 +2298,10 @@
               "__enabled": true,
               "Flags": 0,
               "__version": 1,
-              "BakedTexture": "scenes/maps/home_scene_data/envmap/bake_8829d076-b263-4336-841a-107589a25190.vtex",
+              "BakedTexture": {
+                "Id": "248eb1a4-dcfd-4eab-8031-932fe92c1c6f",
+                "Path": "scenes/maps/home_scene_data/envmap/bake_8829d076-b263-4336-841a-107589a25190.vtex"
+              },
               "Bounds": {
                 "Mins": "-560,-496,-224",
                 "Maxs": "528,528,288"
@@ -2332,7 +2353,10 @@
               "__enabled": true,
               "Flags": 0,
               "__version": 1,
-              "BakedTexture": "scenes/maps/home_scene_data/envmap/bake_9416307e-6379-45c9-9be4-d428072aff40.vtex",
+              "BakedTexture": {
+                "Id": "899f0ce9-2de3-416a-87d7-7c43d4995d00",
+                "Path": "scenes/maps/home_scene_data/envmap/bake_9416307e-6379-45c9-9be4-d428072aff40.vtex"
+              },
               "Bounds": {
                 "Mins": "-560,-496,-240",
                 "Maxs": "528,528,832"
@@ -2488,7 +2512,10 @@
               "__enabled": true,
               "Flags": 0,
               "__version": 1,
-              "BakedTexture": "scenes/maps/home_scene_data/envmap/bake_7eb97af2-fc73-4bcf-951c-60f6f30c064d.vtex",
+              "BakedTexture": {
+                "Id": "5cc4dc97-075c-4634-be52-b414fc42cadd",
+                "Path": "scenes/maps/home_scene_data/envmap/bake_7eb97af2-fc73-4bcf-951c-60f6f30c064d.vtex"
+              },
               "Bounds": {
                 "Mins": "-848,-560,-176",
                 "Maxs": "1040,480,368"
@@ -2597,7 +2624,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2651,7 +2681,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2705,7 +2738,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2759,7 +2795,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2813,7 +2852,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2867,7 +2909,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2921,7 +2966,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2975,7 +3023,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3007,7 +3058,10 @@
     {
       "__guid": "7b6d1a5a-a40c-48ac-a84f-18f348de9ec2",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3041,13 +3095,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "7b6d1a5a-a40c-48ac-a84f-18f348de9ec2",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "da5b442e-e3d6-491f-81db-ed78b95c9efb",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "de629281-c28a-4a24-affb-7e18f7be3229",
         "48041871-1f1e-4913-a351-2ab601031e47": "3bb3a0eb-49eb-8453-8f0b-b0834bb572ae",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "25e9137c-dcaf-8e48-ab87-dcd2b016d55c",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "606b339b-d39b-8c5c-9c5d-0430df50ecc1",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "163b085a-2fd7-85c1-a262-cb359f68c85f",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "2727dde6-966a-8aea-a25b-5026b2a1b8da",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "da5b442e-e3d6-491f-81db-ed78b95c9efb",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "de629281-c28a-4a24-affb-7e18f7be3229",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "3d72a791-4751-8c05-9008-facb7998725e",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "997f87a9-d040-863b-ae07-784c227d132c",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "b0c5e771-9871-8104-ba82-a6d4ea5adf3c",
@@ -3058,7 +3112,10 @@
     {
       "__guid": "d049da4d-dca6-4deb-80f8-6feb0d68196c",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3092,13 +3149,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "d049da4d-dca6-4deb-80f8-6feb0d68196c",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "04382f5f-16c3-4f23-bd46-9d3c7bc86f70",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "9d27c552-5987-83e2-b1f7-6294b6c28414",
         "48041871-1f1e-4913-a351-2ab601031e47": "66c8c446-7b81-81d4-b790-6548acc405a8",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "81ef95be-2205-81c2-91aa-7b81105f61c6",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "f04dea51-5c54-8939-851b-f521d15b14bf",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "cf01baa3-f93f-8afa-9ed9-dab9f8ce9c8a",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "9977bbeb-8f4b-8d22-8570-4db5f0bd2621",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "04382f5f-16c3-4f23-bd46-9d3c7bc86f70",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "9d27c552-5987-83e2-b1f7-6294b6c28414",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "1c3525ba-9d28-8ad7-96c8-bd64333957df",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "5e608668-bfdb-83e4-bebe-d58e83240b79",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "8698c50f-d862-8303-8964-69ccdf98e4b2",
@@ -3109,7 +3166,10 @@
     {
       "__guid": "1f530ea3-75e1-4720-b91d-d92a7901838a",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3143,13 +3203,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "1f530ea3-75e1-4720-b91d-d92a7901838a",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "95fe644d-1a50-47d2-a96c-33e65c87fca9",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "919ea0b5-cb96-48c9-9b0d-9afc606277c2",
         "48041871-1f1e-4913-a351-2ab601031e47": "73fb2969-6c5f-47ab-8a7f-3ab05e83b8b1",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "50680646-8ac3-44b3-a8ef-a841acf05684",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "46739e1c-30d9-4b88-b94b-c8afde5bf7c5",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "13a925bd-8d6f-4672-b6cf-744ef55e78ee",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "da387a7b-b62b-45b4-bc10-bb09b1f6404e",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "95fe644d-1a50-47d2-a96c-33e65c87fca9",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "919ea0b5-cb96-48c9-9b0d-9afc606277c2",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "5f14bc20-1e39-4402-99ed-36579699896e",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "3d6a404d-8611-4644-9467-d4f9f5db4283",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "981d65e1-a3ad-4758-ae7e-238fe058319e",
@@ -3160,7 +3220,10 @@
     {
       "__guid": "08070cce-cb0e-47cd-afd1-63f5c6b472e9",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3194,13 +3257,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "08070cce-cb0e-47cd-afd1-63f5c6b472e9",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "a84ea1e2-a942-436f-af24-0244de25f707",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "79ad4345-22fb-4cf5-899d-68d0effeb01a",
         "48041871-1f1e-4913-a351-2ab601031e47": "39c8b981-867a-4c21-b317-eb97e3a30d10",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "b407ec89-a588-4a8f-ba82-e726c544c0e2",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "4b0b557c-5ee7-4e38-815a-2ebfd81e600e",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "1b3432e0-97e9-4220-943e-5ee44c31d8e5",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "155d32c1-4452-4db3-8235-8f96909e98a2",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "a84ea1e2-a942-436f-af24-0244de25f707",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "79ad4345-22fb-4cf5-899d-68d0effeb01a",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "8fdfe1be-5406-470b-9de9-e2338bc74063",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "5367d8aa-90b4-47a5-9ce2-a19baa18841d",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "859d4f6f-d96f-42e9-aa6f-72a1c9680210",
@@ -3211,7 +3274,10 @@
     {
       "__guid": "dd35c58d-c9ff-48ac-ae71-8052df7d3529",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3245,13 +3311,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "dd35c58d-c9ff-48ac-ae71-8052df7d3529",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "e5976f1d-1a8d-46b8-9821-c2ddf603d7ab",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "1adc5da6-2691-4b84-a9c0-69295395d1f6",
         "48041871-1f1e-4913-a351-2ab601031e47": "4c95f621-b9e7-806e-961f-15f6e2182781",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "3ee54b0f-9be0-8c67-84e9-90e6945596b5",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "fbae6f83-7cf3-8f62-8549-ce5b44d7440d",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "b8bf733f-8b84-81fd-a82c-90f3a6c58ed2",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "f21c1205-c25a-864c-955e-eee4a6e5b3ef",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "e5976f1d-1a8d-46b8-9821-c2ddf603d7ab",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "1adc5da6-2691-4b84-a9c0-69295395d1f6",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "265857f0-ac06-8d6b-ba1a-b21660a1df89",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "1eeb2ff5-bddd-8579-922f-99a7325ec85e",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "6841f0c3-7929-8b2e-91f4-226a73680fda",
@@ -3262,7 +3328,10 @@
     {
       "__guid": "4f55ff7e-2229-430e-af43-5c2ba84c9e08",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3296,13 +3365,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "4f55ff7e-2229-430e-af43-5c2ba84c9e08",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "14007b7b-98bc-4d74-9b29-f5d7ceaa5bc3",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "044a1a70-531a-4845-b06a-55982fb1cba3",
         "48041871-1f1e-4913-a351-2ab601031e47": "567885d7-1cbc-8d31-9edd-fd733fd04c17",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "b26551ad-ed4d-8a20-b83d-31dd541a51e8",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "50803dac-49bb-8608-8dd1-a7f9056bf532",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "14749dc7-83bf-8d2b-ad1e-b8d6137400b0",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "bea0caef-539e-857f-a07b-6b6fc4c8d2ae",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "14007b7b-98bc-4d74-9b29-f5d7ceaa5bc3",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "044a1a70-531a-4845-b06a-55982fb1cba3",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "3b5f3446-5f30-8bc3-b79f-576412376845",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "d4b91a5e-654b-84d0-bf1a-a2a8036218f7",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "aee6026d-4ea5-8e13-a684-97bfd50d8059",
@@ -3313,7 +3382,10 @@
     {
       "__guid": "cb4cfb96-b686-419d-8638-9faa69addc70",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3347,13 +3419,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "cb4cfb96-b686-419d-8638-9faa69addc70",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "f2d56332-9bb8-4f48-8ce8-13bc91aa851d",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "c05f8e9a-443b-4783-bcab-7fc405376076",
         "48041871-1f1e-4913-a351-2ab601031e47": "8ac36aa0-f7fa-87e6-a0ce-4fe5e57c4324",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "9e757e6e-3e9b-8752-a76d-c15aa58e0609",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "34e37d72-f278-8283-91e8-ac23a40f5769",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "45bbfb64-0226-8bbe-80a3-b393c200f2f5",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "c2af8426-b9f4-8629-8e57-13bd57fa39a1",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "f2d56332-9bb8-4f48-8ce8-13bc91aa851d",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "c05f8e9a-443b-4783-bcab-7fc405376076",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "8f28e01a-8b35-8832-99ab-9456cd53cc68",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "a2a7abc0-86b7-86e5-bc5a-925a6c23a481",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "6333a92d-68dc-82b9-85c6-5477952756c2",
@@ -3364,7 +3436,10 @@
     {
       "__guid": "ee35ff1b-db15-4162-8971-6ff9b63106a3",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3398,13 +3473,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "ee35ff1b-db15-4162-8971-6ff9b63106a3",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "41c03b1a-d382-4fd9-9a27-3313f96b1a6b",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "fc109374-99a6-800b-bdb3-436a6612d91a",
         "48041871-1f1e-4913-a351-2ab601031e47": "a0d45780-8eee-864c-bf9e-01838d76c330",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "b13243a9-9618-84fd-beb1-899223780fb8",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "e3720a12-c149-8993-ab29-ab17cf3839b9",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "80d455cd-2474-827a-99ae-f3e729994a95",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "0b4f4bea-f1c1-83b3-bb3a-10b5e5d160e0",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "41c03b1a-d382-4fd9-9a27-3313f96b1a6b",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "fc109374-99a6-800b-bdb3-436a6612d91a",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "52fde516-0772-8ea7-9c1b-6206eb5ff27f",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "5242a755-12b4-8364-95ac-6b42bcc43984",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "c198ebe8-872e-8576-9b89-977632a5d9c6",
@@ -3415,7 +3490,10 @@
     {
       "__guid": "bb82214f-e954-4fd4-93c4-aa7e2c7b0481",
       "__version": 2,
-      "__Prefab": "prefabs/map/jumppad.prefab",
+      "__Prefab": {
+        "Id": "2947008f-098a-458d-b6aa-35dcc3aba968",
+        "Path": "prefabs/map/jumppad.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -3457,13 +3535,13 @@
       },
       "__PrefabIdToInstanceId": {
         "0aa7984f-c3c1-4843-a9bd-dfa46f101e72": "bb82214f-e954-4fd4-93c4-aa7e2c7b0481",
-        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "9d5534b9-6549-40b1-b4a8-fd54fe08b0b7",
-        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "18f30a99-c5f8-8f65-98ce-a7aed09802d9",
         "48041871-1f1e-4913-a351-2ab601031e47": "c3a74e46-a42e-8dd7-9cd2-c7fcbc3f9d6b",
         "e63338c7-2262-4e4e-80a0-56e91a9e8159": "9d04fed4-4bb4-802c-ab91-53119117e59f",
         "919e07ca-c903-43f1-97fe-c7ca6d004db8": "06226ddf-c55a-8e8d-b668-b5aebd85a583",
         "f8586086-305a-40a0-88d1-50cbdb36bd85": "a11be46c-2659-86de-aa1a-501f6635e8ea",
         "b5d4351a-ff2e-45f8-9bd1-525d4e8361e3": "a8471156-cdeb-8800-82a1-407f9887f6da",
+        "b3116030-50d0-45cf-9576-f0b8c5ea110c": "9d5534b9-6549-40b1-b4a8-fd54fe08b0b7",
+        "1f8cba7f-f0aa-4ffb-80ba-6eca151656ad": "18f30a99-c5f8-8f65-98ce-a7aed09802d9",
         "d3ff2571-7731-4874-993c-ee0571153e5b": "b0763836-ee55-87bf-819f-45f685417ea2",
         "184eaddd-bf97-4ced-9385-3da2eefe1902": "1efd1894-6361-88c7-b46f-eab48cbcd55e",
         "4fbd98fe-5578-4457-a856-1d8667e9a5f8": "008cf989-2215-8511-b7e7-6d517ac55dc9",
@@ -8231,7 +8309,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/dev/vehicle/car_dev.vmdl",
+          "Model": {
+            "Id": "fbf2e2ea-3007-4d6d-b701-9175c2459e36",
+            "Path": "models/dev/vehicle/car_dev.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8255,7 +8336,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/dev/vehicle/car_dev.vmdl",
+          "Model": {
+            "Id": "fbf2e2ea-3007-4d6d-b701-9175c2459e36",
+            "Path": "models/dev/vehicle/car_dev.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8280,7 +8364,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/dev/vehicle/car_dev.vmdl",
+          "Model": {
+            "Id": "fbf2e2ea-3007-4d6d-b701-9175c2459e36",
+            "Path": "models/dev/vehicle/car_dev.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8324,7 +8411,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/dev/vehicle/car_dev.vmdl",
+          "Model": {
+            "Id": "fbf2e2ea-3007-4d6d-b701-9175c2459e36",
+            "Path": "models/dev/vehicle/car_dev.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8348,7 +8438,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/dev/vehicle/car_dev.vmdl",
+          "Model": {
+            "Id": "fbf2e2ea-3007-4d6d-b701-9175c2459e36",
+            "Path": "models/dev/vehicle/car_dev.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8373,7 +8466,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/dev/vehicle/car_dev.vmdl",
+          "Model": {
+            "Id": "fbf2e2ea-3007-4d6d-b701-9175c2459e36",
+            "Path": "models/dev/vehicle/car_dev.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8585,9 +8681,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl",
+          "Model": {
+            "Id": "8035fc9c-3526-411b-a362-2bfa7fcfa9a1",
+            "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8612,7 +8714,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl",
+          "Model": {
+            "Id": "8035fc9c-3526-411b-a362-2bfa7fcfa9a1",
+            "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8656,7 +8761,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8683,7 +8791,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -8723,7 +8834,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8767,9 +8881,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl",
+          "Model": {
+            "Id": "8035fc9c-3526-411b-a362-2bfa7fcfa9a1",
+            "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8794,7 +8914,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl",
+          "Model": {
+            "Id": "8035fc9c-3526-411b-a362-2bfa7fcfa9a1",
+            "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8838,7 +8961,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -8865,7 +8991,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -8905,7 +9034,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -9008,9 +9140,15 @@
           "CreateBoneObjects": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl",
+          "Model": {
+            "Id": "52e3d6f3-d3d2-4733-a247-33229c6f3ee4",
+            "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -9050,7 +9188,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl",
+          "Model": {
+            "Id": "52e3d6f3-d3d2-4733-a247-33229c6f3ee4",
+            "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -9097,9 +9238,15 @@
           "CreateBoneObjects": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl",
+          "Model": {
+            "Id": "52e3d6f3-d3d2-4733-a247-33229c6f3ee4",
+            "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -9139,7 +9286,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl",
+          "Model": {
+            "Id": "52e3d6f3-d3d2-4733-a247-33229c6f3ee4",
+            "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -9186,9 +9336,15 @@
           "CreateBoneObjects": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl",
+          "Model": {
+            "Id": "52e3d6f3-d3d2-4733-a247-33229c6f3ee4",
+            "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -9228,7 +9384,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl",
+          "Model": {
+            "Id": "52e3d6f3-d3d2-4733-a247-33229c6f3ee4",
+            "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -9275,9 +9434,15 @@
           "CreateBoneObjects": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/bookcase/bookcase_01.vmdl",
+          "Model": {
+            "Id": "94ebf03b-3eca-4bec-94f3-0f7750f8d78c",
+            "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -9317,7 +9482,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/bookcase/bookcase_01.vmdl",
+          "Model": {
+            "Id": "94ebf03b-3eca-4bec-94f3-0f7750f8d78c",
+            "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10393,7 +10561,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/toilet_a/toilet_a.vmdl",
+          "Model": {
+            "Id": "959e4c31-be10-4ecd-afef-a22e913ba48f",
+            "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10420,7 +10591,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/toilet_a/toilet_a.vmdl",
+          "Model": {
+            "Id": "959e4c31-be10-4ecd-afef-a22e913ba48f",
+            "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -10460,7 +10634,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/toilet_a/toilet_a.vmdl",
+          "Model": {
+            "Id": "959e4c31-be10-4ecd-afef-a22e913ba48f",
+            "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10504,7 +10681,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/toilet_a/toilet_a.vmdl",
+          "Model": {
+            "Id": "959e4c31-be10-4ecd-afef-a22e913ba48f",
+            "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10531,7 +10711,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/toilet_a/toilet_a.vmdl",
+          "Model": {
+            "Id": "959e4c31-be10-4ecd-afef-a22e913ba48f",
+            "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -10571,7 +10754,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/toilet_a/toilet_a.vmdl",
+          "Model": {
+            "Id": "959e4c31-be10-4ecd-afef-a22e913ba48f",
+            "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10615,7 +10801,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/bathtub_a/bathtub_a.vmdl",
+          "Model": {
+            "Id": "dd657756-b98c-4216-bef1-1c5cb2ffef4c",
+            "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10639,7 +10828,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/bathtub_a/bathtub_a.vmdl",
+          "Model": {
+            "Id": "dd657756-b98c-4216-bef1-1c5cb2ffef4c",
+            "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10664,7 +10856,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/bathtub_a/bathtub_a.vmdl",
+          "Model": {
+            "Id": "dd657756-b98c-4216-bef1-1c5cb2ffef4c",
+            "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10708,7 +10903,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/bathtub_a/bathtub_a.vmdl",
+          "Model": {
+            "Id": "dd657756-b98c-4216-bef1-1c5cb2ffef4c",
+            "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10732,7 +10930,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/bathtub_a/bathtub_a.vmdl",
+          "Model": {
+            "Id": "dd657756-b98c-4216-bef1-1c5cb2ffef4c",
+            "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10757,7 +10958,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/bathtub_a/bathtub_a.vmdl",
+          "Model": {
+            "Id": "dd657756-b98c-4216-bef1-1c5cb2ffef4c",
+            "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10857,9 +11061,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/bookcase/bookcase_01.vmdl",
+          "Model": {
+            "Id": "94ebf03b-3eca-4bec-94f3-0f7750f8d78c",
+            "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10884,7 +11094,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/bookcase/bookcase_01.vmdl",
+          "Model": {
+            "Id": "94ebf03b-3eca-4bec-94f3-0f7750f8d78c",
+            "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10928,9 +11141,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/bookcase/bookcase_01.vmdl",
+          "Model": {
+            "Id": "94ebf03b-3eca-4bec-94f3-0f7750f8d78c",
+            "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10955,7 +11174,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/bookcase/bookcase_01.vmdl",
+          "Model": {
+            "Id": "94ebf03b-3eca-4bec-94f3-0f7750f8d78c",
+            "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -10999,7 +11221,10 @@
           "Health": 150,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/office_desk/office_desk.vmdl",
+          "Model": {
+            "Id": "6916a8ae-b4f7-4341-bbe1-ddd8fce57e3d",
+            "Path": "models/sbox_props/office_desk/office_desk.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11023,7 +11248,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/office_desk/office_desk.vmdl",
+          "Model": {
+            "Id": "6916a8ae-b4f7-4341-bbe1-ddd8fce57e3d",
+            "Path": "models/sbox_props/office_desk/office_desk.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11048,7 +11276,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/office_desk/office_desk.vmdl",
+          "Model": {
+            "Id": "6916a8ae-b4f7-4341-bbe1-ddd8fce57e3d",
+            "Path": "models/sbox_props/office_desk/office_desk.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11097,7 +11328,10 @@
           "MaterialGroup": "tint",
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/office_chair/office_chair.vmdl",
+          "Model": {
+            "Id": "fafad0ff-53e7-4d8b-a600-a3ce25998712",
+            "Path": "models/sbox_props/office_chair/office_chair.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -11137,7 +11371,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/office_chair/office_chair.vmdl",
+          "Model": {
+            "Id": "fafad0ff-53e7-4d8b-a600-a3ce25998712",
+            "Path": "models/sbox_props/office_chair/office_chair.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11181,9 +11418,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/shelving/modern_shelving/modern_shelving_a2.vmdl",
+          "Model": {
+            "Id": "37ff37dd-bacb-4ae8-a599-36f1f6955c6b",
+            "Path": "models/props/trim_sheets/shelving/modern_shelving/modern_shelving_a2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11208,7 +11451,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/shelving/modern_shelving/modern_shelving_a2.vmdl",
+          "Model": {
+            "Id": "37ff37dd-bacb-4ae8-a599-36f1f6955c6b",
+            "Path": "models/props/trim_sheets/shelving/modern_shelving/modern_shelving_a2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11254,7 +11500,10 @@
           "MaterialGroup": "metal_on",
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "Model": {
+            "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+            "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11279,7 +11528,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+          "Model": {
+            "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+            "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11323,9 +11575,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/drawer/drawer_a.vmdl",
+          "Model": {
+            "Id": "e10664ab-cac3-451a-9b01-0f6a107ee3fe",
+            "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11350,7 +11608,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/drawer/drawer_a.vmdl",
+          "Model": {
+            "Id": "e10664ab-cac3-451a-9b01-0f6a107ee3fe",
+            "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11394,9 +11655,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/drawer/drawer_a.vmdl",
+          "Model": {
+            "Id": "e10664ab-cac3-451a-9b01-0f6a107ee3fe",
+            "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11421,7 +11688,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/drawer/drawer_a.vmdl",
+          "Model": {
+            "Id": "e10664ab-cac3-451a-9b01-0f6a107ee3fe",
+            "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11465,9 +11735,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl",
+          "Model": {
+            "Id": "675dda7e-9a28-46aa-bdce-46cf7a0b495f",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11492,7 +11768,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl",
+          "Model": {
+            "Id": "675dda7e-9a28-46aa-bdce-46cf7a0b495f",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11536,9 +11815,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl",
+          "Model": {
+            "Id": "ab5137e4-0f33-40ef-800e-80c28608d483",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11563,7 +11848,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl",
+          "Model": {
+            "Id": "ab5137e4-0f33-40ef-800e-80c28608d483",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11607,9 +11895,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl",
+          "Model": {
+            "Id": "675dda7e-9a28-46aa-bdce-46cf7a0b495f",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11634,7 +11928,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl",
+          "Model": {
+            "Id": "675dda7e-9a28-46aa-bdce-46cf7a0b495f",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11678,9 +11975,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl",
+          "Model": {
+            "Id": "ab5137e4-0f33-40ef-800e-80c28608d483",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11705,7 +12008,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl",
+          "Model": {
+            "Id": "ab5137e4-0f33-40ef-800e-80c28608d483",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11749,7 +12055,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": "bare",
-          "Model": "models/props/trim_sheets/utility/step_ladder_02.vmdl",
+          "Model": {
+            "Id": "7bdaafcc-f47c-467e-9838-4aeab4999814",
+            "Path": "models/props/trim_sheets/utility/step_ladder_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11773,7 +12082,10 @@
           "MaterialGroup": "bare",
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/utility/step_ladder_02.vmdl",
+          "Model": {
+            "Id": "7bdaafcc-f47c-467e-9838-4aeab4999814",
+            "Path": "models/props/trim_sheets/utility/step_ladder_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11798,7 +12110,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/utility/step_ladder_02.vmdl",
+          "Model": {
+            "Id": "7bdaafcc-f47c-467e-9838-4aeab4999814",
+            "Path": "models/props/trim_sheets/utility/step_ladder_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11842,9 +12157,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_b.vmdl",
+          "Model": {
+            "Id": "07bd3b51-35e1-4c19-9747-ff3ffd8a99fc",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_b.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11869,7 +12190,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/cabinets/cabinet_b.vmdl",
+          "Model": {
+            "Id": "07bd3b51-35e1-4c19-9747-ff3ffd8a99fc",
+            "Path": "models/props/trim_sheets/cabinets/cabinet_b.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11915,7 +12239,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/bed_frame/bed_frame_02.vmdl",
+          "Model": {
+            "Id": "c4ab11cf-b23f-4bac-b2bb-3396a3099874",
+            "Path": "models/props/trim_sheets/bed_frame/bed_frame_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11940,7 +12267,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/bed_frame/bed_frame_02.vmdl",
+          "Model": {
+            "Id": "c4ab11cf-b23f-4bac-b2bb-3396a3099874",
+            "Path": "models/props/trim_sheets/bed_frame/bed_frame_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11984,7 +12314,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12011,7 +12344,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -12051,7 +12387,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/mattress/mattress.vmdl",
+          "Model": {
+            "Id": "c851a9f3-e190-4823-86c4-5e14564ddd70",
+            "Path": "models/sbox_props/mattress/mattress.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12073,7 +12412,10 @@
     {
       "__guid": "27a1a754-d142-4cac-b16a-1c40ca869b00",
       "__version": 2,
-      "__Prefab": "prefabs/map/chair.prefab",
+      "__Prefab": {
+        "Id": "fc7a66d0-f926-4330-b2e8-c4396528b0f5",
+        "Path": "prefabs/map/chair.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12135,7 +12477,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": "default",
-          "Model": "models/props/trim_sheets/pots/pot_02a.vmdl",
+          "Model": {
+            "Id": "3d329bcb-2701-4740-89e3-5363a8bc212e",
+            "Path": "models/props/trim_sheets/pots/pot_02a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12159,7 +12504,10 @@
           "MaterialGroup": "default",
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/pots/pot_02a.vmdl",
+          "Model": {
+            "Id": "3d329bcb-2701-4740-89e3-5363a8bc212e",
+            "Path": "models/props/trim_sheets/pots/pot_02a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12184,7 +12532,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/pots/pot_02a.vmdl",
+          "Model": {
+            "Id": "3d329bcb-2701-4740-89e3-5363a8bc212e",
+            "Path": "models/props/trim_sheets/pots/pot_02a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12387,7 +12738,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/table/coffeetable_a.vmdl",
+          "Model": {
+            "Id": "13e1dd1c-7a04-4406-b1d1-aba1c8c83c67",
+            "Path": "models/props/trim_sheets/table/coffeetable_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12411,7 +12765,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/table/coffeetable_a.vmdl",
+          "Model": {
+            "Id": "13e1dd1c-7a04-4406-b1d1-aba1c8c83c67",
+            "Path": "models/props/trim_sheets/table/coffeetable_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12436,7 +12793,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/table/coffeetable_a.vmdl",
+          "Model": {
+            "Id": "13e1dd1c-7a04-4406-b1d1-aba1c8c83c67",
+            "Path": "models/props/trim_sheets/table/coffeetable_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12537,7 +12897,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "Radius": 5000,
-          "Soundscape": "soundscapes/field/field_day_01a.sndscape",
+          "Soundscape": {
+            "Id": "daf81cd4-f911-496e-b59d-a56bc022b817",
+            "Path": "soundscapes/field/field_day_01a.sndscape"
+          },
           "StayActiveOnExit": true,
           "TargetMixer": {
             "Name": "game",
@@ -12630,7 +12993,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/toaster/toaster.vmdl",
+          "Model": {
+            "Id": "3868c869-7640-4b94-a95e-1dc4794ac1b3",
+            "Path": "models/props/toaster/toaster.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12654,7 +13020,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/toaster/toaster.vmdl",
+          "Model": {
+            "Id": "3868c869-7640-4b94-a95e-1dc4794ac1b3",
+            "Path": "models/props/toaster/toaster.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12679,7 +13048,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/toaster/toaster.vmdl",
+          "Model": {
+            "Id": "3868c869-7640-4b94-a95e-1dc4794ac1b3",
+            "Path": "models/props/toaster/toaster.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13896,7 +14268,10 @@
           "Health": 0,
           "IsStatic": false,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl",
+          "Model": {
+            "Id": "670cdb97-e368-44ae-8bdf-a33ce25fdd14",
+            "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13920,7 +14295,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl",
+          "Model": {
+            "Id": "670cdb97-e368-44ae-8bdf-a33ce25fdd14",
+            "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -13945,7 +14323,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl",
+          "Model": {
+            "Id": "670cdb97-e368-44ae-8bdf-a33ce25fdd14",
+            "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14024,7 +14405,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl",
+          "Model": {
+            "Id": "670cdb97-e368-44ae-8bdf-a33ce25fdd14",
+            "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14048,7 +14432,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl",
+          "Model": {
+            "Id": "670cdb97-e368-44ae-8bdf-a33ce25fdd14",
+            "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14073,7 +14460,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl",
+          "Model": {
+            "Id": "670cdb97-e368-44ae-8bdf-a33ce25fdd14",
+            "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14730,7 +15120,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/laundry/drying_rack_01.vmdl",
+          "Model": {
+            "Id": "87d3a7cf-2260-4ed8-9f31-7a952e809e7a",
+            "Path": "models/props/trim_sheets/laundry/drying_rack_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14757,7 +15150,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/laundry/drying_rack_01.vmdl",
+          "Model": {
+            "Id": "87d3a7cf-2260-4ed8-9f31-7a952e809e7a",
+            "Path": "models/props/trim_sheets/laundry/drying_rack_01.vmdl"
+          },
           "Morphs": {},
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -14797,7 +15193,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/laundry/drying_rack_01.vmdl",
+          "Model": {
+            "Id": "87d3a7cf-2260-4ed8-9f31-7a952e809e7a",
+            "Path": "models/props/trim_sheets/laundry/drying_rack_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14841,7 +15240,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/laundry/drying_rack_02.vmdl",
+          "Model": {
+            "Id": "c745d54a-93f0-445b-9852-9c734725c768",
+            "Path": "models/props/trim_sheets/laundry/drying_rack_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14865,7 +15267,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/trim_sheets/laundry/drying_rack_02.vmdl",
+          "Model": {
+            "Id": "c745d54a-93f0-445b-9852-9c734725c768",
+            "Path": "models/props/trim_sheets/laundry/drying_rack_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14890,7 +15295,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/laundry/drying_rack_02.vmdl",
+          "Model": {
+            "Id": "c745d54a-93f0-445b-9852-9c734725c768",
+            "Path": "models/props/trim_sheets/laundry/drying_rack_02.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15494,7 +15902,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl",
+          "Model": {
+            "Id": "afd772ba-cbff-42b5-b739-8a858b67467c",
+            "Path": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15518,7 +15929,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl",
+          "Model": {
+            "Id": "afd772ba-cbff-42b5-b739-8a858b67467c",
+            "Path": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15543,7 +15957,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl",
+          "Model": {
+            "Id": "afd772ba-cbff-42b5-b739-8a858b67467c",
+            "Path": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15587,7 +16004,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/electrical_panels/3phase_fuse.vmdl",
+          "Model": {
+            "Id": "09b0d8af-885e-43ca-8875-becac427d8a9",
+            "Path": "models/props/electrical_panels/3phase_fuse.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15611,7 +16031,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/props/electrical_panels/3phase_fuse.vmdl",
+          "Model": {
+            "Id": "09b0d8af-885e-43ca-8875-becac427d8a9",
+            "Path": "models/props/electrical_panels/3phase_fuse.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15636,7 +16059,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/electrical_panels/3phase_fuse.vmdl",
+          "Model": {
+            "Id": "09b0d8af-885e-43ca-8875-becac427d8a9",
+            "Path": "models/props/electrical_panels/3phase_fuse.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15682,7 +16108,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/sbox_props/electrical/switch.vmdl",
+          "Model": {
+            "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+            "Path": "models/sbox_props/electrical/switch.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15707,7 +16136,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/sbox_props/electrical/switch.vmdl",
+          "Model": {
+            "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+            "Path": "models/sbox_props/electrical/switch.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16025,9 +16457,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/desk/wooden_desk/wooden_desk_01.vmdl",
+          "Model": {
+            "Id": "54b573aa-9eed-4bfa-b0ed-e779499be9bd",
+            "Path": "models/props/trim_sheets/desk/wooden_desk/wooden_desk_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16052,7 +16490,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/desk/wooden_desk/wooden_desk_01.vmdl",
+          "Model": {
+            "Id": "54b573aa-9eed-4bfa-b0ed-e779499be9bd",
+            "Path": "models/props/trim_sheets/desk/wooden_desk/wooden_desk_01.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16096,9 +16537,15 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/trimsheets/basic/reflectivity_50_trim.vmat",
+          "MaterialOverride": {
+            "Id": "23ec8b20-6659-42d5-a313-51eb26471f88",
+            "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
+          },
           "Materials": null,
-          "Model": "models/props/trim_sheets/chairs/wooden_chair_a.vmdl",
+          "Model": {
+            "Id": "8da9028f-68a2-4821-b97e-83d71094a7e5",
+            "Path": "models/props/trim_sheets/chairs/wooden_chair_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16123,7 +16570,10 @@
           "Elasticity": null,
           "Friction": null,
           "IsTrigger": false,
-          "Model": "models/props/trim_sheets/chairs/wooden_chair_a.vmdl",
+          "Model": {
+            "Id": "8da9028f-68a2-4821-b97e-83d71094a7e5",
+            "Path": "models/props/trim_sheets/chairs/wooden_chair_a.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -24544,7 +24994,10 @@
     {
       "__guid": "b4d1f2ab-17cd-49d6-b497-f408eb114eea",
       "__version": 2,
-      "__Prefab": "prefabs/map/small_window_01.prefab",
+      "__Prefab": {
+        "Id": "3c35641d-ad97-43f3-8a54-6f28412d88fe",
+        "Path": "prefabs/map/small_window_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -24563,12 +25016,12 @@
       "__PrefabIdToInstanceId": {
         "4e49058f-d928-448a-ac61-adfe10c8ec34": "b4d1f2ab-17cd-49d6-b497-f408eb114eea",
         "2929b740-1f82-4a8a-8b1c-c556f3eaee5d": "1c956ff5-7ac6-4898-90e4-f92963f20434",
-        "07693990-a3d4-444e-9a0c-e87890db2e6f": "e7af036a-38b5-4bbf-b797-821f5f768583",
         "5d853a6d-9eab-473d-b215-36ddd3e6fc76": "975db057-5f96-439f-bfd7-aa212a248689",
-        "7334c3da-fc5e-4537-9ee8-4127fc155072": "a20e0cd9-bbc1-4d8e-828c-36b84ef4c821",
         "d8ac4bc9-0843-4ee4-b03b-0f8fdb38f8c7": "848d1fd2-b4da-406f-8dca-3c7a1320ec0c",
-        "9dac55bf-9649-4834-87b5-37e579173231": "2f43a35b-2a08-490e-ad22-36d17d13c5e7",
         "4f54b519-9911-4dfe-aab8-30431c26169b": "04856ca5-4d33-4b8c-9c88-d0f56cce13ff",
+        "07693990-a3d4-444e-9a0c-e87890db2e6f": "e7af036a-38b5-4bbf-b797-821f5f768583",
+        "7334c3da-fc5e-4537-9ee8-4127fc155072": "a20e0cd9-bbc1-4d8e-828c-36b84ef4c821",
+        "9dac55bf-9649-4834-87b5-37e579173231": "2f43a35b-2a08-490e-ad22-36d17d13c5e7",
         "16ab9b6d-87d5-4bfc-b37e-b81d66d88858": "e570488b-7c75-4e60-9bd9-dc33ff568632"
       }
     },
@@ -25380,7 +25833,10 @@
     {
       "__guid": "43d65932-3222-42cb-9574-1c558123bc58",
       "__version": 2,
-      "__Prefab": "prefabs/map/small_window_01.prefab",
+      "__Prefab": {
+        "Id": "3c35641d-ad97-43f3-8a54-6f28412d88fe",
+        "Path": "prefabs/map/small_window_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -25415,12 +25871,12 @@
       "__PrefabIdToInstanceId": {
         "4e49058f-d928-448a-ac61-adfe10c8ec34": "43d65932-3222-42cb-9574-1c558123bc58",
         "2929b740-1f82-4a8a-8b1c-c556f3eaee5d": "015ffde5-78f7-40af-8b04-9d94f67bc9f1",
-        "07693990-a3d4-444e-9a0c-e87890db2e6f": "b3dda6a3-a11e-47e6-8ed2-7dea4251e27e",
         "5d853a6d-9eab-473d-b215-36ddd3e6fc76": "431f073a-439a-4beb-8894-84f24f6ceec7",
-        "7334c3da-fc5e-4537-9ee8-4127fc155072": "1ec416b6-bc6e-46be-86db-fba411da571f",
         "d8ac4bc9-0843-4ee4-b03b-0f8fdb38f8c7": "d42d62e6-e4a8-400b-b21f-471d31c8be41",
-        "9dac55bf-9649-4834-87b5-37e579173231": "bb429bdc-a4ee-4a2f-896e-383b83f237f3",
         "4f54b519-9911-4dfe-aab8-30431c26169b": "3ed854df-c443-4b19-9301-b01f8229a20e",
+        "07693990-a3d4-444e-9a0c-e87890db2e6f": "b3dda6a3-a11e-47e6-8ed2-7dea4251e27e",
+        "7334c3da-fc5e-4537-9ee8-4127fc155072": "1ec416b6-bc6e-46be-86db-fba411da571f",
+        "9dac55bf-9649-4834-87b5-37e579173231": "bb429bdc-a4ee-4a2f-896e-383b83f237f3",
         "16ab9b6d-87d5-4bfc-b37e-b81d66d88858": "3cf5c64d-2f2d-4857-9fd0-57ea888d1b08"
       }
     },
@@ -27456,11 +27912,14 @@
                   "ShrinkDelay": 2,
                   "ShrinkDuration": 1.5,
                   "IsSplineLoop": false,
-                  "BoundingRadius": 32.858807
+                  "BoundingRadius": 32.84674
                 }
               ],
               "FlipFaces": false,
-              "Material": "materials/plasticine_vertex.vmat",
+              "Material": {
+                "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+                "Path": "materials/plasticine_vertex.vmat"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -27520,7 +27979,10 @@
               "FieldResolution": 256,
               "FullQualityRadii": 2,
               "LodHysteresis": 0.06,
-              "Material": "materials/plasticine.vmat",
+              "Material": {
+                "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+                "Path": "materials/plasticine.vmat"
+              },
               "MaxSteps": 50,
               "MeshLod1Radii": 30,
               "MeshLod2Radii": 40,
@@ -30400,7 +30862,10 @@
     {
       "__guid": "a179f8e7-4a73-4b68-8c2c-b4f1721b450c",
       "__version": 2,
-      "__Prefab": "prefabs/map/microwave.prefab",
+      "__Prefab": {
+        "Id": "7b52c159-d3e2-47f7-a530-439a8dcf45f6",
+        "Path": "prefabs/map/microwave.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -30435,16 +30900,16 @@
       "__PrefabIdToInstanceId": {
         "42353b34-c7a4-4c7b-a013-a2eaf4f7a91e": "a179f8e7-4a73-4b68-8c2c-b4f1721b450c",
         "4beaa212-d873-40ca-9586-b940d0a0c695": "258b8892-5961-4735-84b3-897ba4cfbb44",
-        "71905ba0-e945-4f42-8c09-df0fb8b09030": "89fe223c-f542-4234-9c93-bc66d3f8febd",
         "f6a4bd7a-1809-4350-ab3f-688ad7b28cf4": "c3fc923b-4d23-4a09-abc4-9eaf4429a15f",
-        "236c43bb-12b5-40c3-bf0c-79e94496d3a4": "4b66c038-5ddc-4a03-856b-651e5e82291f",
         "c05fc2d9-bd6b-48db-accc-f6c55ddf6b0b": "796b13c8-cbc5-4a77-b20a-ad6d4e68f965",
-        "bbb2c1e5-75fe-408d-a39b-e8ef4d2743b3": "2eb23219-d203-4a24-95ea-729cb8478639",
         "b4e22ca5-cb8e-4591-bba7-c169dd6aa9b3": "50698977-fc98-450f-a981-9a58962cab91",
-        "91a78da9-1b10-476e-ac51-b13fcbc94b96": "96b210a0-5f28-47eb-8b8f-3491ab4d078c",
         "1fb79186-165f-440e-8beb-146d01a16cf4": "7383c902-9f53-4d6e-b324-c8cded5cf2b4",
-        "c473518b-054b-4b1b-8dfc-7e56217d4433": "d1f90862-450e-4895-926f-618d9432acff",
         "df648303-01aa-4b00-9e3c-07fe931731e7": "eb7298c0-74fa-43d5-adf7-98c7d41d5759",
+        "71905ba0-e945-4f42-8c09-df0fb8b09030": "89fe223c-f542-4234-9c93-bc66d3f8febd",
+        "236c43bb-12b5-40c3-bf0c-79e94496d3a4": "4b66c038-5ddc-4a03-856b-651e5e82291f",
+        "bbb2c1e5-75fe-408d-a39b-e8ef4d2743b3": "2eb23219-d203-4a24-95ea-729cb8478639",
+        "91a78da9-1b10-476e-ac51-b13fcbc94b96": "96b210a0-5f28-47eb-8b8f-3491ab4d078c",
+        "c473518b-054b-4b1b-8dfc-7e56217d4433": "d1f90862-450e-4895-926f-618d9432acff",
         "f9b6fdd1-1d1c-4be9-9479-778ad1e6dd0a": "57105239-dfb6-405b-bbc4-ec5b5b397025"
       }
     },
@@ -35496,7 +35961,10 @@
     {
       "__guid": "3d62b314-0c3b-4147-a1c8-885305f1567e",
       "__version": 2,
-      "__Prefab": "prefabs/map/toaster.prefab",
+      "__Prefab": {
+        "Id": "818bf289-b6b3-49df-a7f6-f243903f085c",
+        "Path": "prefabs/map/toaster.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -35515,21 +35983,24 @@
       "__PrefabIdToInstanceId": {
         "83ce451a-9b15-485f-b56e-701014f4f4fd": "3d62b314-0c3b-4147-a1c8-885305f1567e",
         "7eb54bbb-6b2b-4c99-bac5-cc1de256cd97": "e69bb748-70a9-48e2-81ab-9d97b06d6da0",
-        "0663bfc2-ade7-41cb-94a8-af3d4f16c9f3": "795e15cd-5687-4062-afd2-1c2a46d89f6e",
         "fdc73fca-79a7-4f33-bef3-5de5c54fb0e0": "becae5d9-65e8-4675-b3f0-d8875bf5cf3a",
-        "60e207dc-147d-496f-a38b-4c1a61fe3cd2": "15149882-3836-4537-aa5d-c9183504853b",
         "d64e622b-11f6-431b-af6c-bf2664bfb2ab": "04f08952-f323-468f-af2a-675f50b61138",
-        "c43de2b6-b140-434c-9e1e-7829b33e46c6": "2f09aa58-8996-4a4e-a513-9474c7b40996",
         "a5863020-9b1b-4797-be79-d2227636ad32": "52c0e1bd-4c5d-4643-a1ab-291e71a821f0",
-        "999b90b6-5fff-4b89-892e-4892c44615fc": "9345e070-3fa2-40f0-90d1-8f8101948004",
         "b0cc6177-3b70-4056-85f3-2af8c5a491d9": "0e0be3f5-5f23-4906-a84f-fbff5d416d92",
+        "0663bfc2-ade7-41cb-94a8-af3d4f16c9f3": "795e15cd-5687-4062-afd2-1c2a46d89f6e",
+        "60e207dc-147d-496f-a38b-4c1a61fe3cd2": "15149882-3836-4537-aa5d-c9183504853b",
+        "c43de2b6-b140-434c-9e1e-7829b33e46c6": "2f09aa58-8996-4a4e-a513-9474c7b40996",
+        "999b90b6-5fff-4b89-892e-4892c44615fc": "9345e070-3fa2-40f0-90d1-8f8101948004",
         "c0488927-4e13-413f-a4f4-11ceba9b8879": "e7dd8ff0-30c9-4140-b4d3-402f7d60ab7d"
       }
     },
     {
       "__guid": "8047d873-15a4-4076-a8ab-13069cbab5f5",
       "__version": 2,
-      "__Prefab": "prefabs/map/toaster.prefab",
+      "__Prefab": {
+        "Id": "818bf289-b6b3-49df-a7f6-f243903f085c",
+        "Path": "prefabs/map/toaster.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -35564,14 +36035,14 @@
       "__PrefabIdToInstanceId": {
         "83ce451a-9b15-485f-b56e-701014f4f4fd": "8047d873-15a4-4076-a8ab-13069cbab5f5",
         "7eb54bbb-6b2b-4c99-bac5-cc1de256cd97": "91929356-797f-46ae-870d-44bc2402f5b1",
-        "0663bfc2-ade7-41cb-94a8-af3d4f16c9f3": "39beb421-6033-4aa3-8a28-a794155f4e6d",
         "fdc73fca-79a7-4f33-bef3-5de5c54fb0e0": "e5066d5e-b794-4565-80c5-deb811dfb7e1",
-        "60e207dc-147d-496f-a38b-4c1a61fe3cd2": "f1ac632f-4af0-459d-babb-9da1e16ab328",
         "d64e622b-11f6-431b-af6c-bf2664bfb2ab": "73b84d3c-93b9-4e2d-8526-b46a8da01434",
-        "c43de2b6-b140-434c-9e1e-7829b33e46c6": "fe9341f3-e7cc-4009-b4ee-d44797d4572a",
         "a5863020-9b1b-4797-be79-d2227636ad32": "42c5cde9-ff89-4275-bf39-ee41c7169309",
-        "999b90b6-5fff-4b89-892e-4892c44615fc": "395917c6-63a2-4b86-9f59-0e8cb603ca90",
         "b0cc6177-3b70-4056-85f3-2af8c5a491d9": "730c118c-9e6e-4373-9065-d6acbbe7afb8",
+        "0663bfc2-ade7-41cb-94a8-af3d4f16c9f3": "39beb421-6033-4aa3-8a28-a794155f4e6d",
+        "60e207dc-147d-496f-a38b-4c1a61fe3cd2": "f1ac632f-4af0-459d-babb-9da1e16ab328",
+        "c43de2b6-b140-434c-9e1e-7829b33e46c6": "fe9341f3-e7cc-4009-b4ee-d44797d4572a",
+        "999b90b6-5fff-4b89-892e-4892c44615fc": "395917c6-63a2-4b86-9f59-0e8cb603ca90",
         "c0488927-4e13-413f-a4f4-11ceba9b8879": "605c4593-a3d2-40ad-9d91-e7d5bcf6409c"
       }
     },
@@ -36012,7 +36483,10 @@
     {
       "__guid": "4d4e4a1b-732a-4bfe-92be-8f50385b15a9",
       "__version": 2,
-      "__Prefab": "prefabs/map/stoll.prefab",
+      "__Prefab": {
+        "Id": "4bf4e41c-8b07-4253-bb56-4cac7e0adcc3",
+        "Path": "prefabs/map/stoll.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -36047,19 +36521,22 @@
       "__PrefabIdToInstanceId": {
         "3cc189a8-6d5b-4f23-bb19-6a7d7ed48792": "4d4e4a1b-732a-4bfe-92be-8f50385b15a9",
         "388aa9fc-f4d0-43d4-b060-1482f9c4dae1": "2a7415ba-1ef0-4e47-96cd-a07e336ad44b",
-        "da9e918f-308e-4f12-8155-dc8f9fae90ba": "7b6b8566-9659-41d3-954d-c524d6dbc3c1",
         "75424e61-f77a-4487-9129-c78abad48feb": "a1ba3fdf-0c00-4136-bb40-c856d1a707a3",
-        "b9398d8b-a38a-43d6-9ffd-042280f1a446": "09600f58-96b5-4eaa-b952-fee190e69ad9",
         "ed0423c3-7ff6-48bf-b693-ce04a9fb3db8": "80f26f49-6047-454a-b281-bd08ea796dd5",
-        "34571658-d625-4800-9274-4300876d8d69": "f807696a-3a97-4919-936e-bb9caa1c5ffb",
         "892423b8-555b-4146-a892-c59fd4068afe": "0a5f76b4-80d7-47a6-a218-6cb27e8fc167",
+        "da9e918f-308e-4f12-8155-dc8f9fae90ba": "7b6b8566-9659-41d3-954d-c524d6dbc3c1",
+        "b9398d8b-a38a-43d6-9ffd-042280f1a446": "09600f58-96b5-4eaa-b952-fee190e69ad9",
+        "34571658-d625-4800-9274-4300876d8d69": "f807696a-3a97-4919-936e-bb9caa1c5ffb",
         "a793c233-9709-4f08-9539-fc54912c8de7": "04dfbe66-8ac8-4ee9-ad08-8b13b6ef596c"
       }
     },
     {
       "__guid": "082e12e5-e3d2-4dba-8d38-dc6d288645c5",
       "__version": 2,
-      "__Prefab": "prefabs/map/stepladder.prefab",
+      "__Prefab": {
+        "Id": "614b5476-de3d-443f-b39e-91b44fbe16ec",
+        "Path": "prefabs/map/stepladder.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -36094,12 +36571,12 @@
       "__PrefabIdToInstanceId": {
         "3f575d97-f7d8-442f-af7f-add4d9f5556a": "082e12e5-e3d2-4dba-8d38-dc6d288645c5",
         "bac2db87-a41f-457a-9904-6a90bd843cda": "7def3ca1-d215-485c-ba18-236bb744572b",
-        "6e275c2d-c802-4503-9a5b-ae0f3dcb266f": "1953f75f-bc39-4ecb-b218-7685e0170ffd",
         "be3e155a-0b2e-488f-bbff-18b929043e05": "dca1fb96-8f6f-46bd-b753-a02a1d2352c1",
-        "7d4ae63c-7d10-4000-8d86-ec5ef4214e31": "c05edb48-22d0-4928-955a-385c2b33c363",
         "9225e281-ebec-494e-92af-7d4c63263f09": "c828fc57-4beb-4990-8667-77c9ad98cde4",
-        "2dc148e7-2be3-49bd-a13e-398ae205d96c": "830f4e5b-b878-49ec-8435-ae5664710da4",
         "8ff938aa-4858-4163-8e6c-00285645aead": "9adf664a-49ca-4d2f-ab2d-4f0c7e2d8067",
+        "6e275c2d-c802-4503-9a5b-ae0f3dcb266f": "1953f75f-bc39-4ecb-b218-7685e0170ffd",
+        "7d4ae63c-7d10-4000-8d86-ec5ef4214e31": "c05edb48-22d0-4928-955a-385c2b33c363",
+        "2dc148e7-2be3-49bd-a13e-398ae205d96c": "830f4e5b-b878-49ec-8435-ae5664710da4",
         "ad3a3ca1-85db-4baf-9930-17f8cd4aa2f3": "b3545711-fb1e-4d79-a05c-50f552465a84"
       }
     },
@@ -36330,7 +36807,10 @@
     {
       "__guid": "e89b2089-a3c4-4a35-9954-efc8f4d29651",
       "__version": 2,
-      "__Prefab": "prefabs/map/switch_01.prefab",
+      "__Prefab": {
+        "Id": "f54120c0-58d9-44f9-9e79-322788bbe647",
+        "Path": "prefabs/map/switch_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -36356,15 +36836,18 @@
       },
       "__PrefabIdToInstanceId": {
         "c35d90f7-2019-4bf4-8684-331ed56695fc": "e89b2089-a3c4-4a35-9954-efc8f4d29651",
-        "f2746746-3446-4cf0-9c5a-c2a247462902": "648acd5e-a534-4abb-bf61-c27d3853f5d4",
         "6b3dc94b-41ae-44bc-bddc-1de4c4f56608": "d1eea711-0f9a-47fd-a75f-51b2cffbb26e",
+        "f2746746-3446-4cf0-9c5a-c2a247462902": "648acd5e-a534-4abb-bf61-c27d3853f5d4",
         "cfd468b4-e3c3-4892-a924-0de0f364895c": "4b6cfa1f-09a5-43cc-b3ca-2dc9ed40f0da"
       }
     },
     {
       "__guid": "11d188bf-a959-4294-91f1-7a01d649934f",
       "__version": 2,
-      "__Prefab": "prefabs/map/switch_01.prefab",
+      "__Prefab": {
+        "Id": "f54120c0-58d9-44f9-9e79-322788bbe647",
+        "Path": "prefabs/map/switch_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -36398,15 +36881,18 @@
       },
       "__PrefabIdToInstanceId": {
         "c35d90f7-2019-4bf4-8684-331ed56695fc": "11d188bf-a959-4294-91f1-7a01d649934f",
-        "f2746746-3446-4cf0-9c5a-c2a247462902": "5f8de706-fed1-4cec-8d33-42db3c026ef0",
         "6b3dc94b-41ae-44bc-bddc-1de4c4f56608": "d305a424-0943-4461-a1e5-f957cdfb822f",
+        "f2746746-3446-4cf0-9c5a-c2a247462902": "5f8de706-fed1-4cec-8d33-42db3c026ef0",
         "cfd468b4-e3c3-4892-a924-0de0f364895c": "186d06d9-6f2c-4f04-a62d-9150ff68e7ee"
       }
     },
     {
       "__guid": "a4496835-3750-450b-8740-e60143d44beb",
       "__version": 2,
-      "__Prefab": "prefabs/map/switch_01.prefab",
+      "__Prefab": {
+        "Id": "f54120c0-58d9-44f9-9e79-322788bbe647",
+        "Path": "prefabs/map/switch_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -36440,15 +36926,18 @@
       },
       "__PrefabIdToInstanceId": {
         "c35d90f7-2019-4bf4-8684-331ed56695fc": "a4496835-3750-450b-8740-e60143d44beb",
-        "f2746746-3446-4cf0-9c5a-c2a247462902": "1719429f-d266-49a7-a907-dbfcd102e0ac",
         "6b3dc94b-41ae-44bc-bddc-1de4c4f56608": "9e0f6b08-fb01-41c3-ab02-33c79e7d2fe7",
+        "f2746746-3446-4cf0-9c5a-c2a247462902": "1719429f-d266-49a7-a907-dbfcd102e0ac",
         "cfd468b4-e3c3-4892-a924-0de0f364895c": "55a2ba2c-3d18-422a-9fab-ffbd923e76cb"
       }
     },
     {
       "__guid": "36f1fa94-a079-4605-9d34-96176fe30a76",
       "__version": 2,
-      "__Prefab": "prefabs/map/switch_01.prefab",
+      "__Prefab": {
+        "Id": "f54120c0-58d9-44f9-9e79-322788bbe647",
+        "Path": "prefabs/map/switch_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -36474,15 +36963,18 @@
       },
       "__PrefabIdToInstanceId": {
         "c35d90f7-2019-4bf4-8684-331ed56695fc": "36f1fa94-a079-4605-9d34-96176fe30a76",
-        "f2746746-3446-4cf0-9c5a-c2a247462902": "594a4bad-a801-4858-ba16-eefe87f9d84e",
         "6b3dc94b-41ae-44bc-bddc-1de4c4f56608": "0bb6929b-b006-4c9b-bf3a-97cc6bebf99a",
+        "f2746746-3446-4cf0-9c5a-c2a247462902": "594a4bad-a801-4858-ba16-eefe87f9d84e",
         "cfd468b4-e3c3-4892-a924-0de0f364895c": "12c06c2c-e0e1-4fea-89e8-ff3a91f6f571"
       }
     },
     {
       "__guid": "d69d2fa0-1e3f-4840-9a5f-cf5984b4388e",
       "__version": 2,
-      "__Prefab": "prefabs/map/switch_01.prefab",
+      "__Prefab": {
+        "Id": "f54120c0-58d9-44f9-9e79-322788bbe647",
+        "Path": "prefabs/map/switch_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -36516,8 +37008,8 @@
       },
       "__PrefabIdToInstanceId": {
         "c35d90f7-2019-4bf4-8684-331ed56695fc": "d69d2fa0-1e3f-4840-9a5f-cf5984b4388e",
-        "f2746746-3446-4cf0-9c5a-c2a247462902": "f2ab9f3e-8779-488b-867a-1e1d6c2191a9",
         "6b3dc94b-41ae-44bc-bddc-1de4c4f56608": "41278168-053c-47cf-b6af-481787fae058",
+        "f2746746-3446-4cf0-9c5a-c2a247462902": "f2ab9f3e-8779-488b-867a-1e1d6c2191a9",
         "cfd468b4-e3c3-4892-a924-0de0f364895c": "4ac5a890-d541-44ce-9666-1e936c498ee8"
       }
     },
@@ -36978,7 +37470,10 @@
     {
       "__guid": "c7b8de3b-43c7-40bd-94fb-c4ed498a50cf",
       "__version": 2,
-      "__Prefab": "prefabs/map/chair.prefab",
+      "__Prefab": {
+        "Id": "fc7a66d0-f926-4330-b2e8-c4396528b0f5",
+        "Path": "prefabs/map/chair.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -37018,7 +37513,10 @@
     {
       "__guid": "3aeb19cd-dfe3-4b45-a521-e43c5a5b4038",
       "__version": 2,
-      "__Prefab": "prefabs/map/shelfing_rack.prefab",
+      "__Prefab": {
+        "Id": "278c3aa8-56c6-40d5-8c9b-33e7341cb908",
+        "Path": "prefabs/map/shelfing_rack.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -37037,43 +37535,46 @@
       "__PrefabIdToInstanceId": {
         "72ac1af1-2afe-4fd6-b8e5-2e865e8f3db9": "3aeb19cd-dfe3-4b45-a521-e43c5a5b4038",
         "33085c5a-1501-4fb4-8599-afc5b34f6d78": "3bcb7dd3-f200-42d9-a8e8-ef5fdd5c328a",
-        "3ce22157-c222-414c-9a0e-77af08a449d0": "304743fc-ce9a-4981-95a7-1605d70dcf18",
         "7042e011-2bf0-4dc8-a3db-71e1a17b818c": "7b8307f0-29b1-412d-9d94-31b1cff50558",
-        "3113afc2-0738-41c1-a7c3-e64c9efe6ca8": "0a95577d-f7d1-4756-99ee-7efd8aa079d1",
         "7d7c2884-4a6c-405b-9665-73ab3fe6b25c": "8987f629-7523-4155-859d-603e2a7b5602",
-        "620df303-35c6-49c9-bac9-0794b163cafd": "7b4c15a5-da65-4647-88c1-5619be586631",
         "530274b6-3c92-4eaf-83cf-653333fab032": "8b0f4983-1969-418c-90a6-5fbbbefd6c24",
-        "9f3f88eb-1c66-43d8-8563-37632f4ec9a2": "b85d8c11-9685-4015-8b6a-71e3981eb4c6",
         "c9079e95-f03c-4401-9d12-4d4bc854dfc2": "c9d690dc-a1f6-4e0d-9e44-5585975c255f",
-        "28500693-af86-4076-bd95-c9e42309dda9": "4673c9bb-71d4-4a66-bde9-6dc5130b90ed",
         "856d530f-d6e2-4430-8971-ea4ba4cbf473": "ef8144e8-d7b4-41c2-a117-33db90e12d55",
-        "9bd80d17-bc75-4fdd-a0a3-f071ddff2e0a": "24302238-5334-411b-ba53-173c43de09ee",
         "952bb47e-360e-4679-89d0-30bc28222815": "7321e29d-f9f8-4488-8ea6-ceb9a48e231a",
-        "abd4b6b0-a728-49d9-9d26-a9c4ab596191": "f9e4ad63-a488-43da-9743-6ee5f33ac5e1",
         "b0d1add5-424a-40f2-a468-51c72946dd5b": "600a149b-aee8-4946-82e7-c323b2c6019e",
-        "2087a734-a0bc-43f4-bb4a-c77306ca5779": "29d62697-f34c-471e-81bd-737b0d7d1646",
         "3a4ca51d-bc41-442b-a1ff-92bd9102d379": "eeeb862f-5f55-49ed-a242-073e0a7053a7",
-        "01d1106b-d31b-468c-bd58-d5d04121a899": "0da2f8d7-99f5-4881-8667-7b2db70d080c",
         "e580f00e-a391-4da4-b771-12fae366cd5a": "7a85db5b-0906-4c10-8c80-bd4886e8ad9a",
-        "7e47c09f-b3b3-455b-ab2c-66b316b525c7": "100ee007-8383-4100-9461-d8e14ffbe87d",
         "b63fcb13-5d0c-4c99-9ef9-2955d35f6fb4": "c9d5fbf4-bd92-4252-8cc1-03bd3854f7a6",
-        "72d6a4e6-72ad-4f05-8179-57a841cded49": "42402223-c3a3-4998-b7d0-c2307d44477a",
         "22b67a58-75be-408b-8e40-7d54619af83b": "790d9472-3385-4246-8070-60aaba5b2c46",
-        "3047a78d-3c6d-4d1e-86f2-37192034542a": "5ea42ae1-117b-4b17-8583-953e6083b94d",
         "3e6871a7-6179-4d5d-83b9-e1cf25fa062f": "ccc2eb38-d765-4d8a-8599-3f674ffd92f4",
-        "21732ca3-b9b8-4060-afd2-b829714bc8b2": "07b9b760-a73b-4c3c-a5c1-9c62ed5df9eb",
         "96314806-03fa-40cf-8cb0-5230cf778968": "383da469-de20-47e6-a2cf-d0e5356d0b37",
-        "9df0506a-7e55-4505-a28e-335557f2ef6d": "f0228700-6564-40df-820c-e07bcfb6961c",
         "967a0d75-615a-4589-848c-4c31d2949ff3": "6aa78f09-ce77-4b9c-8b7c-a7b2fad14482",
-        "e1dcb0a7-a87e-4255-825e-e7bcc169a2a2": "9243d1fb-f7ec-4a36-b0c6-33f5da090318",
         "dec440b2-6c93-41b8-9b8a-0e09827e4e8b": "b6ddd831-aee0-449e-b175-14af52369f0a",
+        "3ce22157-c222-414c-9a0e-77af08a449d0": "304743fc-ce9a-4981-95a7-1605d70dcf18",
+        "3113afc2-0738-41c1-a7c3-e64c9efe6ca8": "0a95577d-f7d1-4756-99ee-7efd8aa079d1",
+        "620df303-35c6-49c9-bac9-0794b163cafd": "7b4c15a5-da65-4647-88c1-5619be586631",
+        "9f3f88eb-1c66-43d8-8563-37632f4ec9a2": "b85d8c11-9685-4015-8b6a-71e3981eb4c6",
+        "28500693-af86-4076-bd95-c9e42309dda9": "4673c9bb-71d4-4a66-bde9-6dc5130b90ed",
+        "9bd80d17-bc75-4fdd-a0a3-f071ddff2e0a": "24302238-5334-411b-ba53-173c43de09ee",
+        "abd4b6b0-a728-49d9-9d26-a9c4ab596191": "f9e4ad63-a488-43da-9743-6ee5f33ac5e1",
+        "2087a734-a0bc-43f4-bb4a-c77306ca5779": "29d62697-f34c-471e-81bd-737b0d7d1646",
+        "01d1106b-d31b-468c-bd58-d5d04121a899": "0da2f8d7-99f5-4881-8667-7b2db70d080c",
+        "7e47c09f-b3b3-455b-ab2c-66b316b525c7": "100ee007-8383-4100-9461-d8e14ffbe87d",
+        "72d6a4e6-72ad-4f05-8179-57a841cded49": "42402223-c3a3-4998-b7d0-c2307d44477a",
+        "3047a78d-3c6d-4d1e-86f2-37192034542a": "5ea42ae1-117b-4b17-8583-953e6083b94d",
+        "21732ca3-b9b8-4060-afd2-b829714bc8b2": "07b9b760-a73b-4c3c-a5c1-9c62ed5df9eb",
+        "9df0506a-7e55-4505-a28e-335557f2ef6d": "f0228700-6564-40df-820c-e07bcfb6961c",
+        "e1dcb0a7-a87e-4255-825e-e7bcc169a2a2": "9243d1fb-f7ec-4a36-b0c6-33f5da090318",
         "29deb02b-56a5-409c-9c03-86dddfe9a886": "c77a9679-9e39-46b5-bc49-0ef29787c100"
       }
     },
     {
       "__guid": "e046c2b7-1b81-4f2f-b77d-88b39f2bc12c",
       "__version": 2,
-      "__Prefab": "prefabs/map/shelfing_rack.prefab",
+      "__Prefab": {
+        "Id": "278c3aa8-56c6-40d5-8c9b-33e7341cb908",
+        "Path": "prefabs/map/shelfing_rack.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -37100,43 +37601,46 @@
       "__PrefabIdToInstanceId": {
         "72ac1af1-2afe-4fd6-b8e5-2e865e8f3db9": "e046c2b7-1b81-4f2f-b77d-88b39f2bc12c",
         "33085c5a-1501-4fb4-8599-afc5b34f6d78": "945c4a75-2a41-44e6-9cf6-a3cdbcf962e2",
-        "3ce22157-c222-414c-9a0e-77af08a449d0": "e1f1b83e-0c14-445c-b13a-2c8361ef3954",
         "7042e011-2bf0-4dc8-a3db-71e1a17b818c": "8a30d144-74dc-4469-b345-c0d007f5d113",
-        "3113afc2-0738-41c1-a7c3-e64c9efe6ca8": "6c77b894-a70a-4b1a-adf0-0eda7c609880",
         "7d7c2884-4a6c-405b-9665-73ab3fe6b25c": "94f1cbb4-be77-48f5-bcd3-193e5769d936",
-        "620df303-35c6-49c9-bac9-0794b163cafd": "3d35e5bb-2c60-4193-bff4-41de23af62c2",
         "530274b6-3c92-4eaf-83cf-653333fab032": "9ed0fc69-4959-4ebc-afd1-b3f74ca5902d",
-        "9f3f88eb-1c66-43d8-8563-37632f4ec9a2": "a9b4ade1-0d37-46b8-b8f3-8c571340c016",
         "c9079e95-f03c-4401-9d12-4d4bc854dfc2": "7f28463e-145b-4dc3-94ce-390f7fab754a",
-        "28500693-af86-4076-bd95-c9e42309dda9": "d144ab12-2403-499b-9a82-7640e048a7a3",
         "856d530f-d6e2-4430-8971-ea4ba4cbf473": "ca8625cf-f9e9-44bc-8c63-5e8cb9d5c7f1",
-        "9bd80d17-bc75-4fdd-a0a3-f071ddff2e0a": "e7bfa3e7-debe-42a4-83c3-03406bf84650",
         "952bb47e-360e-4679-89d0-30bc28222815": "15c163b9-6c96-4544-833b-769de0fe9618",
-        "abd4b6b0-a728-49d9-9d26-a9c4ab596191": "2141933c-4c44-4efa-a6c6-639dc7448c7d",
         "b0d1add5-424a-40f2-a468-51c72946dd5b": "b9800d04-cd83-4665-81cb-85042be1fe3f",
-        "2087a734-a0bc-43f4-bb4a-c77306ca5779": "18f94b7c-e094-470d-a862-5d998e75f686",
         "3a4ca51d-bc41-442b-a1ff-92bd9102d379": "cfe0dd62-f323-4fb8-abae-8924cd9047e8",
-        "01d1106b-d31b-468c-bd58-d5d04121a899": "80246780-d8e3-4b8a-8374-a4d9788b4df1",
         "e580f00e-a391-4da4-b771-12fae366cd5a": "953287aa-0875-44f7-8d9e-710b2fdf9472",
-        "7e47c09f-b3b3-455b-ab2c-66b316b525c7": "0e5f4313-7117-4041-b87c-33861761bbdd",
         "b63fcb13-5d0c-4c99-9ef9-2955d35f6fb4": "fd785d82-bc0d-4ae7-b26e-94256ead357b",
-        "72d6a4e6-72ad-4f05-8179-57a841cded49": "76b29237-66a2-4332-a6ea-157350a173b2",
         "22b67a58-75be-408b-8e40-7d54619af83b": "bbc50755-5863-4a7f-bcf3-4be914dffa84",
-        "3047a78d-3c6d-4d1e-86f2-37192034542a": "1250e439-d157-4f08-bb0a-9b99f988f235",
         "3e6871a7-6179-4d5d-83b9-e1cf25fa062f": "7e6f1124-db4f-4c0d-bdce-ca0cd5a50582",
-        "21732ca3-b9b8-4060-afd2-b829714bc8b2": "be949919-a2bc-4ada-9cea-f46e00b764d4",
         "96314806-03fa-40cf-8cb0-5230cf778968": "8e817f47-18c0-4dfd-acad-7e604eb87b16",
-        "9df0506a-7e55-4505-a28e-335557f2ef6d": "44bd532a-020a-4e11-97ba-9ca3f6ed3998",
         "967a0d75-615a-4589-848c-4c31d2949ff3": "da0819dc-aaa8-4fbc-8422-293befeb4832",
-        "e1dcb0a7-a87e-4255-825e-e7bcc169a2a2": "d2a4b379-6079-4954-bc48-ad68da704659",
         "dec440b2-6c93-41b8-9b8a-0e09827e4e8b": "f19cb3a7-f979-456d-aa48-6a8e72628a07",
+        "3ce22157-c222-414c-9a0e-77af08a449d0": "e1f1b83e-0c14-445c-b13a-2c8361ef3954",
+        "3113afc2-0738-41c1-a7c3-e64c9efe6ca8": "6c77b894-a70a-4b1a-adf0-0eda7c609880",
+        "620df303-35c6-49c9-bac9-0794b163cafd": "3d35e5bb-2c60-4193-bff4-41de23af62c2",
+        "9f3f88eb-1c66-43d8-8563-37632f4ec9a2": "a9b4ade1-0d37-46b8-b8f3-8c571340c016",
+        "28500693-af86-4076-bd95-c9e42309dda9": "d144ab12-2403-499b-9a82-7640e048a7a3",
+        "9bd80d17-bc75-4fdd-a0a3-f071ddff2e0a": "e7bfa3e7-debe-42a4-83c3-03406bf84650",
+        "abd4b6b0-a728-49d9-9d26-a9c4ab596191": "2141933c-4c44-4efa-a6c6-639dc7448c7d",
+        "2087a734-a0bc-43f4-bb4a-c77306ca5779": "18f94b7c-e094-470d-a862-5d998e75f686",
+        "01d1106b-d31b-468c-bd58-d5d04121a899": "80246780-d8e3-4b8a-8374-a4d9788b4df1",
+        "7e47c09f-b3b3-455b-ab2c-66b316b525c7": "0e5f4313-7117-4041-b87c-33861761bbdd",
+        "72d6a4e6-72ad-4f05-8179-57a841cded49": "76b29237-66a2-4332-a6ea-157350a173b2",
+        "3047a78d-3c6d-4d1e-86f2-37192034542a": "1250e439-d157-4f08-bb0a-9b99f988f235",
+        "21732ca3-b9b8-4060-afd2-b829714bc8b2": "be949919-a2bc-4ada-9cea-f46e00b764d4",
+        "9df0506a-7e55-4505-a28e-335557f2ef6d": "44bd532a-020a-4e11-97ba-9ca3f6ed3998",
+        "e1dcb0a7-a87e-4255-825e-e7bcc169a2a2": "d2a4b379-6079-4954-bc48-ad68da704659",
         "29deb02b-56a5-409c-9c03-86dddfe9a886": "1ceddfe1-fb27-48ef-a10a-9d02b29731d9"
       }
     },
     {
       "__guid": "e6787c12-4fd5-4d44-94f0-470bf3a36d7b",
       "__version": 2,
-      "__Prefab": "prefabs/map/shelfing_rack.prefab",
+      "__Prefab": {
+        "Id": "278c3aa8-56c6-40d5-8c9b-33e7341cb908",
+        "Path": "prefabs/map/shelfing_rack.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -37163,36 +37667,36 @@
       "__PrefabIdToInstanceId": {
         "72ac1af1-2afe-4fd6-b8e5-2e865e8f3db9": "e6787c12-4fd5-4d44-94f0-470bf3a36d7b",
         "33085c5a-1501-4fb4-8599-afc5b34f6d78": "7ed660d4-1a52-4129-b186-9ab5ef2e4f10",
-        "3ce22157-c222-414c-9a0e-77af08a449d0": "a56bf83c-4b6c-43f3-8ba2-9a65fb01bf03",
         "7042e011-2bf0-4dc8-a3db-71e1a17b818c": "b1e872a5-22c8-43ed-aca8-aee659f4ac75",
-        "3113afc2-0738-41c1-a7c3-e64c9efe6ca8": "2bafba5c-0c52-46cc-8c2f-82d37c57507e",
         "7d7c2884-4a6c-405b-9665-73ab3fe6b25c": "6bfe1a35-290f-411a-bdb1-40e4f97015f8",
-        "620df303-35c6-49c9-bac9-0794b163cafd": "55e0da75-d1b9-4f8a-8980-c5935d14b462",
         "530274b6-3c92-4eaf-83cf-653333fab032": "73a72d20-7add-4a27-9dd6-0681685f437c",
-        "9f3f88eb-1c66-43d8-8563-37632f4ec9a2": "aaa323bf-fb42-42e8-9dfa-b3eb4c5d5729",
         "c9079e95-f03c-4401-9d12-4d4bc854dfc2": "9d0785ad-e535-4f29-a5f1-3794b427c80e",
-        "28500693-af86-4076-bd95-c9e42309dda9": "447fe2fb-2fc2-45f5-9841-4f6c8509f2d7",
         "856d530f-d6e2-4430-8971-ea4ba4cbf473": "039884c4-909a-46f2-999f-762c39642b85",
-        "9bd80d17-bc75-4fdd-a0a3-f071ddff2e0a": "e08a105f-be41-473b-85d6-7e249936faf5",
         "952bb47e-360e-4679-89d0-30bc28222815": "024d4a28-96ec-4577-9314-7a556cdd2a65",
-        "abd4b6b0-a728-49d9-9d26-a9c4ab596191": "933747ce-7e31-4a3b-bb9c-46bd1e9da1d9",
         "b0d1add5-424a-40f2-a468-51c72946dd5b": "b82999c1-bbda-423a-a435-e18a9ed60762",
-        "2087a734-a0bc-43f4-bb4a-c77306ca5779": "7ffa5424-9f30-454f-9818-70daca7a50f0",
         "3a4ca51d-bc41-442b-a1ff-92bd9102d379": "38145476-2f08-41ea-b8e5-0cb0fbbd2ec0",
-        "01d1106b-d31b-468c-bd58-d5d04121a899": "a9249ef1-9cd2-488f-a2f6-6bb06b517f20",
         "e580f00e-a391-4da4-b771-12fae366cd5a": "ef3f87f5-aaca-4e5a-9062-1d6f715bd080",
-        "7e47c09f-b3b3-455b-ab2c-66b316b525c7": "f16b2ec2-8b31-4dc8-956d-a80bf9f33680",
         "b63fcb13-5d0c-4c99-9ef9-2955d35f6fb4": "00e41920-4af9-4acd-93f8-acec5f13829a",
-        "72d6a4e6-72ad-4f05-8179-57a841cded49": "6d7a0336-261f-42f0-8194-f98504ee9f7d",
         "22b67a58-75be-408b-8e40-7d54619af83b": "31730cf5-0da5-4871-b3cb-a0603016e721",
-        "3047a78d-3c6d-4d1e-86f2-37192034542a": "606f0b0f-ccd0-4a11-bc38-8040c1d31a6a",
         "3e6871a7-6179-4d5d-83b9-e1cf25fa062f": "fb2b9413-83f5-45f2-b091-96d0ecbf983c",
-        "21732ca3-b9b8-4060-afd2-b829714bc8b2": "b9e4926c-c77c-42dc-9037-fa08da989947",
         "96314806-03fa-40cf-8cb0-5230cf778968": "27752105-19a9-48ba-bfbe-12f5a72f84cd",
-        "9df0506a-7e55-4505-a28e-335557f2ef6d": "bbcc633e-a6c4-42f4-8227-9db08a4f6c44",
         "967a0d75-615a-4589-848c-4c31d2949ff3": "20b3b468-fcd1-4b7a-9d16-cab16ca8bd4b",
-        "e1dcb0a7-a87e-4255-825e-e7bcc169a2a2": "62108f57-2a0f-4d9e-b161-db61c20870ba",
         "dec440b2-6c93-41b8-9b8a-0e09827e4e8b": "0f48207d-cdcc-48f2-b83d-7170b18e4efc",
+        "3ce22157-c222-414c-9a0e-77af08a449d0": "a56bf83c-4b6c-43f3-8ba2-9a65fb01bf03",
+        "3113afc2-0738-41c1-a7c3-e64c9efe6ca8": "2bafba5c-0c52-46cc-8c2f-82d37c57507e",
+        "620df303-35c6-49c9-bac9-0794b163cafd": "55e0da75-d1b9-4f8a-8980-c5935d14b462",
+        "9f3f88eb-1c66-43d8-8563-37632f4ec9a2": "aaa323bf-fb42-42e8-9dfa-b3eb4c5d5729",
+        "28500693-af86-4076-bd95-c9e42309dda9": "447fe2fb-2fc2-45f5-9841-4f6c8509f2d7",
+        "9bd80d17-bc75-4fdd-a0a3-f071ddff2e0a": "e08a105f-be41-473b-85d6-7e249936faf5",
+        "abd4b6b0-a728-49d9-9d26-a9c4ab596191": "933747ce-7e31-4a3b-bb9c-46bd1e9da1d9",
+        "2087a734-a0bc-43f4-bb4a-c77306ca5779": "7ffa5424-9f30-454f-9818-70daca7a50f0",
+        "01d1106b-d31b-468c-bd58-d5d04121a899": "a9249ef1-9cd2-488f-a2f6-6bb06b517f20",
+        "7e47c09f-b3b3-455b-ab2c-66b316b525c7": "f16b2ec2-8b31-4dc8-956d-a80bf9f33680",
+        "72d6a4e6-72ad-4f05-8179-57a841cded49": "6d7a0336-261f-42f0-8194-f98504ee9f7d",
+        "3047a78d-3c6d-4d1e-86f2-37192034542a": "606f0b0f-ccd0-4a11-bc38-8040c1d31a6a",
+        "21732ca3-b9b8-4060-afd2-b829714bc8b2": "b9e4926c-c77c-42dc-9037-fa08da989947",
+        "9df0506a-7e55-4505-a28e-335557f2ef6d": "bbcc633e-a6c4-42f4-8227-9db08a4f6c44",
+        "e1dcb0a7-a87e-4255-825e-e7bcc169a2a2": "62108f57-2a0f-4d9e-b161-db61c20870ba",
         "29deb02b-56a5-409c-9c03-86dddfe9a886": "01d1c98e-68d0-48a4-9e38-dac05e0dc723"
       }
     },
@@ -37872,7 +38376,10 @@
     {
       "__guid": "07b10c2c-653c-45fd-b070-b87cd4a1f025",
       "__version": 2,
-      "__Prefab": "prefabs/map/broom.prefab",
+      "__Prefab": {
+        "Id": "9f6afd2d-8fcb-496f-9ca5-bb5cd202dadf",
+        "Path": "prefabs/map/broom.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -37907,14 +38414,14 @@
       "__PrefabIdToInstanceId": {
         "51b28f20-0902-4a4a-b2e9-e3164accce09": "07b10c2c-653c-45fd-b070-b87cd4a1f025",
         "c7ef067a-6de5-4cd4-9e8f-fba7ee50a725": "e8a25c91-6619-460a-973a-5ab4ede148b2",
-        "009cbc37-a173-46ea-954a-a6890368abc0": "4dc247f0-e580-444a-8de7-0a5ab570046f",
         "79d3dadc-5673-4d15-8add-f69e4eba8aed": "cda12cfe-0182-42ea-be01-a44ada77385d",
-        "382a2cf9-7b39-49b1-b28f-e9ecc6ce9523": "fc8697f0-eaaf-45ef-8ced-ae3220c55cca",
         "2f837209-2979-4ac3-8a9c-efec5b835925": "7cbc4d63-2420-4807-8fc6-d2b3b92e4d1a",
-        "d32ff6f7-fb45-41c0-ad6d-e075d0ea9819": "e2e66a13-d2f7-44ae-a016-76263dee1756",
         "bf058112-28e0-410a-b77b-a6fbc1ba5352": "b99ed562-e771-4431-a55c-e04a55803d7a",
-        "a8a135de-7f1d-4a95-b767-f0751a5fc0fb": "d8da0e79-fc20-40c8-82c0-892986167a88",
         "4d2e7327-6261-4c43-92b0-897272f19f8c": "7d9339ea-d106-4013-b55f-76650b909b21",
+        "009cbc37-a173-46ea-954a-a6890368abc0": "4dc247f0-e580-444a-8de7-0a5ab570046f",
+        "382a2cf9-7b39-49b1-b28f-e9ecc6ce9523": "fc8697f0-eaaf-45ef-8ced-ae3220c55cca",
+        "d32ff6f7-fb45-41c0-ad6d-e075d0ea9819": "e2e66a13-d2f7-44ae-a016-76263dee1756",
+        "a8a135de-7f1d-4a95-b767-f0751a5fc0fb": "d8da0e79-fc20-40c8-82c0-892986167a88",
         "52b23a80-0610-44f2-b5b6-87ee97c285fe": "16e060df-a927-4e56-bc45-6af44a6148cc"
       }
     },
@@ -38257,7 +38764,10 @@
     {
       "__guid": "201d632d-9486-429b-a490-2e5be1d71848",
       "__version": 2,
-      "__Prefab": "prefabs/map/garage_table.prefab",
+      "__Prefab": {
+        "Id": "017cd7b5-456a-4be9-9f67-7ff248801652",
+        "Path": "prefabs/map/garage_table.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -38276,21 +38786,24 @@
       "__PrefabIdToInstanceId": {
         "db046838-37bb-429a-ac6c-5249c627b15e": "201d632d-9486-429b-a490-2e5be1d71848",
         "9a506625-acea-4bcc-8490-1e7408aa2a56": "7c8619fe-3391-4e5d-8db8-b90a1c578cad",
-        "c6df51ef-fdf8-42a6-a250-078435094bf3": "cac2b855-8481-49fe-8a02-62ea162d0f10",
         "4f3d4181-0754-4acf-8ee7-74560692546a": "3d3522a0-d679-4405-ae00-a615a7bfe11b",
-        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "a66e63dd-8e76-4f9d-9a3c-0142f1a66ba1",
         "d734f186-4aaf-4a5c-8cca-996cbe428ebe": "98efc6bd-cea9-4d1c-8b86-11456bd2e6b7",
-        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "8bd34e4e-3748-4553-8ed3-c2f55478e00a",
         "6b2e247b-3eb6-4b10-922b-988a001c1586": "94ba0532-2a4f-4fae-bab5-12646e3992be",
-        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "548afb9d-21d8-4898-ab90-4d83fcd075ae",
         "0aa210f8-944a-4b8d-a576-8b82a8555b05": "b597b43b-7995-4b05-b4bf-46b39b42a58a",
+        "c6df51ef-fdf8-42a6-a250-078435094bf3": "cac2b855-8481-49fe-8a02-62ea162d0f10",
+        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "a66e63dd-8e76-4f9d-9a3c-0142f1a66ba1",
+        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "8bd34e4e-3748-4553-8ed3-c2f55478e00a",
+        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "548afb9d-21d8-4898-ab90-4d83fcd075ae",
         "4cb4ab36-234f-4dbd-b887-918c789526fa": "a80305b2-d4d2-4c22-b9ff-811508a956c7"
       }
     },
     {
       "__guid": "c70a6f7e-ba4c-4bca-a814-c81e8ef85a17",
       "__version": 2,
-      "__Prefab": "prefabs/map/garage_table.prefab",
+      "__Prefab": {
+        "Id": "017cd7b5-456a-4be9-9f67-7ff248801652",
+        "Path": "prefabs/map/garage_table.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -38317,21 +38830,24 @@
       "__PrefabIdToInstanceId": {
         "db046838-37bb-429a-ac6c-5249c627b15e": "c70a6f7e-ba4c-4bca-a814-c81e8ef85a17",
         "9a506625-acea-4bcc-8490-1e7408aa2a56": "111ffcb4-65bc-48db-8d22-0d141d1600ab",
-        "c6df51ef-fdf8-42a6-a250-078435094bf3": "84b33fec-8ff6-45f6-8f0d-74ee9462de07",
         "4f3d4181-0754-4acf-8ee7-74560692546a": "c6c6dc39-56a4-4abd-8048-6a84fff87aec",
-        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "0a5598b2-52ce-4d2f-bb2b-fd8c551970ac",
         "d734f186-4aaf-4a5c-8cca-996cbe428ebe": "983afdfd-e441-481f-9f29-2e50893ce1eb",
-        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "263feb5f-a86e-49aa-b9bc-9c8f767d6b35",
         "6b2e247b-3eb6-4b10-922b-988a001c1586": "37fd0efb-1a9a-4490-a121-5b7020e6f137",
-        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "acc8a63d-0d1d-4233-b87f-58e13255be22",
         "0aa210f8-944a-4b8d-a576-8b82a8555b05": "564e3224-47ce-4815-9a82-2a7db58428d3",
+        "c6df51ef-fdf8-42a6-a250-078435094bf3": "84b33fec-8ff6-45f6-8f0d-74ee9462de07",
+        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "0a5598b2-52ce-4d2f-bb2b-fd8c551970ac",
+        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "263feb5f-a86e-49aa-b9bc-9c8f767d6b35",
+        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "acc8a63d-0d1d-4233-b87f-58e13255be22",
         "4cb4ab36-234f-4dbd-b887-918c789526fa": "8a16dff9-380f-4847-b663-af84ec7234a3"
       }
     },
     {
       "__guid": "3ad6ec26-e2ca-46d4-b30e-1972362c1ad8",
       "__version": 2,
-      "__Prefab": "prefabs/map/garage_table.prefab",
+      "__Prefab": {
+        "Id": "017cd7b5-456a-4be9-9f67-7ff248801652",
+        "Path": "prefabs/map/garage_table.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -38366,21 +38882,24 @@
       "__PrefabIdToInstanceId": {
         "db046838-37bb-429a-ac6c-5249c627b15e": "3ad6ec26-e2ca-46d4-b30e-1972362c1ad8",
         "9a506625-acea-4bcc-8490-1e7408aa2a56": "31d407d9-d015-4bd5-a999-14d7ad0d6e16",
-        "c6df51ef-fdf8-42a6-a250-078435094bf3": "6aad6e20-8839-48f0-b5ed-38cf2ffa3c6f",
         "4f3d4181-0754-4acf-8ee7-74560692546a": "8a173c5e-dac6-442a-ae37-0a434faf28d4",
-        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "46437d0f-bd29-4cbb-991a-6314c2e801c0",
         "d734f186-4aaf-4a5c-8cca-996cbe428ebe": "7488478b-dd80-47a2-8ec7-f8e0575c0343",
-        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "a294cb6a-2433-4cb5-8c17-e1bed9c8d659",
         "6b2e247b-3eb6-4b10-922b-988a001c1586": "8fc26d0d-83f7-4e33-b54a-14401b52f03d",
-        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "1814d20f-0c45-495e-83b6-92bae9094631",
         "0aa210f8-944a-4b8d-a576-8b82a8555b05": "907846a5-5f56-4d96-b14b-8d133ce3588a",
+        "c6df51ef-fdf8-42a6-a250-078435094bf3": "6aad6e20-8839-48f0-b5ed-38cf2ffa3c6f",
+        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "46437d0f-bd29-4cbb-991a-6314c2e801c0",
+        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "a294cb6a-2433-4cb5-8c17-e1bed9c8d659",
+        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "1814d20f-0c45-495e-83b6-92bae9094631",
         "4cb4ab36-234f-4dbd-b887-918c789526fa": "4f4b599d-56d7-461b-9f6b-3778a234c797"
       }
     },
     {
       "__guid": "8000c33d-f0f5-4ae9-8129-33f28255ee22",
       "__version": 2,
-      "__Prefab": "prefabs/map/garage_table.prefab",
+      "__Prefab": {
+        "Id": "017cd7b5-456a-4be9-9f67-7ff248801652",
+        "Path": "prefabs/map/garage_table.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -38415,14 +38934,14 @@
       "__PrefabIdToInstanceId": {
         "db046838-37bb-429a-ac6c-5249c627b15e": "8000c33d-f0f5-4ae9-8129-33f28255ee22",
         "9a506625-acea-4bcc-8490-1e7408aa2a56": "cce7a656-1987-4be0-b876-ed1ca09cb925",
-        "c6df51ef-fdf8-42a6-a250-078435094bf3": "45e24969-d60d-4fb1-85df-f404f2417fc3",
         "4f3d4181-0754-4acf-8ee7-74560692546a": "336a5e75-d739-421d-baad-e6a95ae743ce",
-        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "8cecb53c-469a-42bd-82a3-bd30fcf6c991",
         "d734f186-4aaf-4a5c-8cca-996cbe428ebe": "d0bc70f6-962b-4caf-8bd6-4e69626712f2",
-        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "445f97d6-0dfa-4828-841c-88ed6f609bba",
         "6b2e247b-3eb6-4b10-922b-988a001c1586": "d8ccfa3c-044a-4137-8ae2-966547bbc5ab",
-        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "0648c7e2-69ad-41ea-9434-4086a7b52b3f",
         "0aa210f8-944a-4b8d-a576-8b82a8555b05": "b8181be9-faca-4357-bf9b-37e1b90c3a61",
+        "c6df51ef-fdf8-42a6-a250-078435094bf3": "45e24969-d60d-4fb1-85df-f404f2417fc3",
+        "b4800263-d1db-4328-8ce5-b7f1878c3b42": "8cecb53c-469a-42bd-82a3-bd30fcf6c991",
+        "e73b7b5e-f488-4728-99a7-c54f6bcf3cfb": "445f97d6-0dfa-4828-841c-88ed6f609bba",
+        "4c4dae29-7966-4e51-b537-8b8928ee5cb3": "0648c7e2-69ad-41ea-9434-4086a7b52b3f",
         "4cb4ab36-234f-4dbd-b887-918c789526fa": "a2c959a3-0c8f-4a7f-9026-8d7b38088f23"
       }
     },
@@ -42331,7 +42850,10 @@
     {
       "__guid": "e060fca4-477b-47bd-b884-b44a53ae6353",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42357,17 +42879,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "e060fca4-477b-47bd-b884-b44a53ae6353",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "f17f23fb-ea70-48b4-a8ea-5554c200ee03",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "7dd5f1ad-216d-477c-987e-1d41c4aaaab0",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "7883b082-7414-4697-91d6-aa6aea6630f2",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "4a375d90-c463-45a9-8cae-5293940e7bdf",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "f17f23fb-ea70-48b4-a8ea-5554c200ee03",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "7883b082-7414-4697-91d6-aa6aea6630f2",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "8e5016f0-52e1-46f0-984e-8f3dbf34ab25"
       }
     },
     {
       "__guid": "f65d2e04-4dcd-4599-94b5-bbf07b1bef26",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42393,17 +42918,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "f65d2e04-4dcd-4599-94b5-bbf07b1bef26",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "6d77c873-2fa5-4cbd-82fd-be941098aab9",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "385e784f-e5c2-4d29-8314-79306b5ec2f3",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "e4d30df1-8fca-4d97-8e8a-f41b3fb06d08",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "94d597c8-e171-42e8-8473-e6504a3406ff",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "6d77c873-2fa5-4cbd-82fd-be941098aab9",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "e4d30df1-8fca-4d97-8e8a-f41b3fb06d08",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "3a8aad91-403b-4ea4-9c20-b2a98570f3f6"
       }
     },
     {
       "__guid": "f9d05899-2b1a-4737-9abe-eeed83519f01",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42445,17 +42973,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "f9d05899-2b1a-4737-9abe-eeed83519f01",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "d34f2ec5-7363-4d9b-ba2b-92cba74dbd08",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "3c81a20b-bb36-45dc-90ed-afd6f3e932b4",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "b8872242-8143-4b67-ad71-e21ba841af0b",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "3991d177-fc7a-451b-9e02-11ad07afc7a4",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "d34f2ec5-7363-4d9b-ba2b-92cba74dbd08",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "b8872242-8143-4b67-ad71-e21ba841af0b",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "77167505-56a3-4721-9264-95cbfd36c671"
       }
     },
     {
       "__guid": "540bfd28-dbfe-4d05-adf3-3667b056ab03",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42497,17 +43028,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "540bfd28-dbfe-4d05-adf3-3667b056ab03",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "60975c0e-5e7f-4a59-a24b-baa82573047c",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "64e8338f-386e-4b2b-a6af-0f8a62de6dc6",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "f1e6c2d4-eeb4-445e-99c7-faa2c11835f1",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "4a66319a-ac59-4bb3-81ac-c64f729fe666",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "60975c0e-5e7f-4a59-a24b-baa82573047c",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "f1e6c2d4-eeb4-445e-99c7-faa2c11835f1",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "196c0fd9-c165-4773-a235-d52aa9a68790"
       }
     },
     {
       "__guid": "5587949a-3b7d-487d-a618-0a24b4eac8dc",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42549,17 +43083,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "5587949a-3b7d-487d-a618-0a24b4eac8dc",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "4ea2b75d-24e9-4d48-bbb7-6e5eb859ea28",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "b1703b13-4ce3-4b8c-8821-f1e5e3a41710",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "6699db4b-db52-481e-9417-994e5349c965",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "f611e5a4-be8c-4fd0-b29f-2ae942689376",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "4ea2b75d-24e9-4d48-bbb7-6e5eb859ea28",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "6699db4b-db52-481e-9417-994e5349c965",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "5183c9f3-99b4-40c2-b348-14d7ba2d6a77"
       }
     },
     {
       "__guid": "7514f21b-5be8-43ad-8744-d8c29fbea7f7",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42601,17 +43138,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "7514f21b-5be8-43ad-8744-d8c29fbea7f7",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "7682b8db-7340-41ba-9259-59d4a5ecd568",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "1b7bf7bb-d0b4-4c25-ab90-face3c8fbcee",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "eff84ec7-248b-4c51-946f-1363028d2b34",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "e26f8985-60de-4cbe-afd4-0f0f37cc7f25",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "7682b8db-7340-41ba-9259-59d4a5ecd568",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "eff84ec7-248b-4c51-946f-1363028d2b34",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "4a9021c7-e748-40f0-8d8e-c230e5255851"
       }
     },
     {
       "__guid": "998d53b8-b9da-4aed-9ecd-126ee31732db",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42653,17 +43193,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "998d53b8-b9da-4aed-9ecd-126ee31732db",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "5a7b64ad-2727-4187-8294-b0a570cfe07f",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "7594042d-5f42-405e-b536-21c5ece5bbdc",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "7f399a3d-7cad-4303-942a-8938ff9c49f3",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "f9d168c4-aa12-42e5-99e5-94df861a7f60",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "5a7b64ad-2727-4187-8294-b0a570cfe07f",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "7f399a3d-7cad-4303-942a-8938ff9c49f3",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "b8b26a62-8893-4b1c-953f-a68efc47cbf3"
       }
     },
     {
       "__guid": "90b9503d-88c7-4caf-bd8a-6fa319c0e160",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42705,17 +43248,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "90b9503d-88c7-4caf-bd8a-6fa319c0e160",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "bfb09ee9-a4b7-4eb4-8278-cd9387427ce5",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "aefc9877-c167-4f39-a9db-70d5c7df5051",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "b3dc200f-9593-4d30-b86e-7faa6ac8c574",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "18288197-98aa-459a-b9a3-ed6ab6b3a420",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "bfb09ee9-a4b7-4eb4-8278-cd9387427ce5",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "b3dc200f-9593-4d30-b86e-7faa6ac8c574",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "bb500ee4-07c9-48d6-9945-046c8863c0ab"
       }
     },
     {
       "__guid": "ad861766-8b61-4c06-bbfb-8abce7f682e5",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42757,17 +43303,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "ad861766-8b61-4c06-bbfb-8abce7f682e5",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "a8a4ddc5-6412-42d7-b363-0ffb005a0dc3",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "d0d63578-bce9-4c16-b73d-c69611bc39a7",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "276e2db5-0417-4e3d-bdab-934b97b4fa4a",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "1d9f7a79-50be-4096-b710-7293ee85de2a",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "a8a4ddc5-6412-42d7-b363-0ffb005a0dc3",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "276e2db5-0417-4e3d-bdab-934b97b4fa4a",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "db1234da-19ab-4923-80b1-634ae81d2259"
       }
     },
     {
       "__guid": "0b693f45-8407-417e-acda-952736137a0f",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42809,17 +43358,20 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "0b693f45-8407-417e-acda-952736137a0f",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "2f4a4408-f323-4d42-abcc-ef2c7d85474b",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "4aa9087a-87bc-46df-91ec-de0b48364d93",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "a3262d32-4d47-449c-ada6-6bcb884a2b36",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "94062149-96c4-4d75-b4c9-f01298e2f799",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "2f4a4408-f323-4d42-abcc-ef2c7d85474b",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "a3262d32-4d47-449c-ada6-6bcb884a2b36",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "bfabe954-dc61-4768-888d-8fc28bc1c801"
       }
     },
     {
       "__guid": "60d28873-d1da-4215-b1d2-c03eb97661e3",
       "__version": 2,
-      "__Prefab": "prefabs/map/photoframe_01.prefab",
+      "__Prefab": {
+        "Id": "8cc77ca8-9347-41af-8101-bc1636a2d729",
+        "Path": "prefabs/map/photoframe_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -42861,10 +43413,10 @@
       },
       "__PrefabIdToInstanceId": {
         "6ce80aa2-5470-46ba-a2c4-eeba3fc4a979": "60d28873-d1da-4215-b1d2-c03eb97661e3",
-        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "6a0a42f7-817c-4693-ac55-25fce6db0bf8",
         "99fbfd83-66e4-4430-af2a-87ce91652e90": "43f97205-45c0-494b-9a5b-6a58867344a3",
-        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "95a09985-884b-4d76-b91c-588dfd099c4b",
         "de14b14e-00a6-41aa-9081-1af819b5ea35": "1b559e55-266c-438c-87f6-06f8759c045d",
+        "0d17270c-7933-4a0e-b110-8fd0f27922b2": "6a0a42f7-817c-4693-ac55-25fce6db0bf8",
+        "dd4063af-3ad2-4e02-b6a2-2282f978b546": "95a09985-884b-4d76-b91c-588dfd099c4b",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "7e7e9bd2-c750-4a82-8814-9b23309ac036"
       }
     },
@@ -44665,7 +45217,10 @@
     {
       "__guid": "837acd66-bd43-4545-b309-0432ba14f9ee",
       "__version": 2,
-      "__Prefab": "prefabs/map/bookshelf.prefab",
+      "__Prefab": {
+        "Id": "f08b01ce-bdef-479d-90c0-4f69304130a3",
+        "Path": "prefabs/map/bookshelf.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -44697,7 +45252,10 @@
     {
       "__guid": "7fadf48b-50f2-477a-90cd-9fad44de1a3d",
       "__version": 2,
-      "__Prefab": "prefabs/map/table_02.prefab",
+      "__Prefab": {
+        "Id": "8ea7bebf-a84f-42fc-a022-3c80acc5379a",
+        "Path": "prefabs/map/table_02.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -44724,10 +45282,10 @@
       "__PrefabIdToInstanceId": {
         "e079700d-a243-42ec-99c3-14457a43f8ec": "7fadf48b-50f2-477a-90cd-9fad44de1a3d",
         "1debcd77-f348-4a79-a1e0-65c2907100ab": "1054fcfd-b6bb-499d-81cb-364e45365668",
-        "f677f1e0-a586-4198-827f-1d30c872d90e": "12aeb16f-dd60-4b15-8941-5ae30a919ecd",
         "4e885cb2-4db5-48c8-9f28-f068bc5b8b3a": "32b7ce72-23b2-41f9-a1b8-8de1f085f4bc",
-        "797edf93-b8bf-400d-a7f1-f0139c06ba50": "6611d1d1-4ebc-42da-8dc9-47b581713b6a",
         "42eb2916-1aba-4d49-be15-ac3f05980e5c": "01e4c022-766c-47f5-88dd-293f3016cb4c",
+        "f677f1e0-a586-4198-827f-1d30c872d90e": "12aeb16f-dd60-4b15-8941-5ae30a919ecd",
+        "797edf93-b8bf-400d-a7f1-f0139c06ba50": "6611d1d1-4ebc-42da-8dc9-47b581713b6a",
         "da1b11d2-dacf-4722-a086-4e21e2bf744d": "2d7c95c9-ddd7-4c8c-9763-7d6007fd252b"
       }
     },
@@ -45683,7 +46241,10 @@
     {
       "__guid": "a952c0d7-b63e-4b90-931b-ce7b8b5271f4",
       "__version": 2,
-      "__Prefab": "prefabs/map/sofa_01.prefab",
+      "__Prefab": {
+        "Id": "f7a65b5e-ee84-4079-82d7-7aa0363e7986",
+        "Path": "prefabs/map/sofa_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -45710,15 +46271,18 @@
       "__PrefabIdToInstanceId": {
         "97639723-53f3-43b9-bc03-1d9cc1f257c2": "a952c0d7-b63e-4b90-931b-ce7b8b5271f4",
         "d0d04e21-ac7f-43e6-bc26-ae72c6fd7692": "77c93567-7b7d-4c51-9abb-351f2abdabe3",
-        "d42e44e6-86ed-41a0-adc4-b0889024606a": "5850a51d-ec19-4222-ad92-5461df317e38",
         "a76cd49a-fff0-49c8-bdd2-52be124bb32d": "f77827e8-5ec2-470d-960c-5109a54f067b",
+        "d42e44e6-86ed-41a0-adc4-b0889024606a": "5850a51d-ec19-4222-ad92-5461df317e38",
         "51acd6d6-b217-476a-a1ef-7f50b5a0ceb4": "5ea7b58a-e40f-4c39-8c5b-19eca0275c86"
       }
     },
     {
       "__guid": "3a9827fb-45b3-408b-a71a-55d4dfa1547b",
       "__version": 2,
-      "__Prefab": "prefabs/map/bookshelf.prefab",
+      "__Prefab": {
+        "Id": "f08b01ce-bdef-479d-90c0-4f69304130a3",
+        "Path": "prefabs/map/bookshelf.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -45750,7 +46314,10 @@
     {
       "__guid": "a3bfe3b8-e2b6-4295-b7cf-2615005fc11f",
       "__version": 2,
-      "__Prefab": "prefabs/map/bookshelf.prefab",
+      "__Prefab": {
+        "Id": "f08b01ce-bdef-479d-90c0-4f69304130a3",
+        "Path": "prefabs/map/bookshelf.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -45846,7 +46413,10 @@
     {
       "__guid": "6f51ec9e-a135-44c7-841c-8b46b6e9ddb3",
       "__version": 2,
-      "__Prefab": "prefabs/map/chair.prefab",
+      "__Prefab": {
+        "Id": "fc7a66d0-f926-4330-b2e8-c4396528b0f5",
+        "Path": "prefabs/map/chair.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -45878,7 +46448,10 @@
     {
       "__guid": "7408b92e-b38c-4eb3-9bc0-c23ec6f71ed1",
       "__version": 2,
-      "__Prefab": "prefabs/map/chair.prefab",
+      "__Prefab": {
+        "Id": "fc7a66d0-f926-4330-b2e8-c4396528b0f5",
+        "Path": "prefabs/map/chair.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -45918,7 +46491,10 @@
     {
       "__guid": "31ab5449-b984-443e-b5f6-554e0dfcd755",
       "__version": 2,
-      "__Prefab": "prefabs/map/chair.prefab",
+      "__Prefab": {
+        "Id": "fc7a66d0-f926-4330-b2e8-c4396528b0f5",
+        "Path": "prefabs/map/chair.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -45958,7 +46534,10 @@
     {
       "__guid": "3d0081e8-55db-483b-9285-a7620b6125f3",
       "__version": 2,
-      "__Prefab": "prefabs/map/chair.prefab",
+      "__Prefab": {
+        "Id": "fc7a66d0-f926-4330-b2e8-c4396528b0f5",
+        "Path": "prefabs/map/chair.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -45998,7 +46577,10 @@
     {
       "__guid": "475821a8-b6f3-4836-af60-d615b32c1fcc",
       "__version": 2,
-      "__Prefab": "prefabs/map/chair.prefab",
+      "__Prefab": {
+        "Id": "fc7a66d0-f926-4330-b2e8-c4396528b0f5",
+        "Path": "prefabs/map/chair.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -46038,7 +46620,10 @@
     {
       "__guid": "e83c6bb1-7a50-447a-8957-567dfd862dfc",
       "__version": 2,
-      "__Prefab": "prefabs/map/table_02.prefab",
+      "__Prefab": {
+        "Id": "8ea7bebf-a84f-42fc-a022-3c80acc5379a",
+        "Path": "prefabs/map/table_02.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -46057,10 +46642,10 @@
       "__PrefabIdToInstanceId": {
         "e079700d-a243-42ec-99c3-14457a43f8ec": "e83c6bb1-7a50-447a-8957-567dfd862dfc",
         "1debcd77-f348-4a79-a1e0-65c2907100ab": "5d781d01-eb3b-455c-94bc-cb8ab1789152",
-        "f677f1e0-a586-4198-827f-1d30c872d90e": "9a0eb55c-f789-4280-84a0-be46600a53ff",
         "4e885cb2-4db5-48c8-9f28-f068bc5b8b3a": "ddda3a2b-ff60-46a3-8c3c-1e0e236fa63c",
-        "797edf93-b8bf-400d-a7f1-f0139c06ba50": "72742438-8eba-4e2f-aac3-af8f3977c95d",
         "42eb2916-1aba-4d49-be15-ac3f05980e5c": "9f0bb9d9-bd31-486b-9899-157c5dbb08a6",
+        "f677f1e0-a586-4198-827f-1d30c872d90e": "9a0eb55c-f789-4280-84a0-be46600a53ff",
+        "797edf93-b8bf-400d-a7f1-f0139c06ba50": "72742438-8eba-4e2f-aac3-af8f3977c95d",
         "da1b11d2-dacf-4722-a086-4e21e2bf744d": "2de8414d-bd15-4b08-8327-b41d5e97c29d"
       }
     },
@@ -47879,7 +48464,10 @@
     {
       "__guid": "95c5c6bf-baef-44c0-98ff-eedf6b9667c9",
       "__version": 2,
-      "__Prefab": "prefabs/map/cabinet_01.prefab",
+      "__Prefab": {
+        "Id": "7e3114ee-b5f7-4d55-9b5f-13c0a891f344",
+        "Path": "prefabs/map/cabinet_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -47906,25 +48494,28 @@
       "__PrefabIdToInstanceId": {
         "ffdbfbcb-85c0-4c9b-8865-0312efc34d74": "95c5c6bf-baef-44c0-98ff-eedf6b9667c9",
         "4ba05031-efa2-426e-afb4-d0f614a8e4a4": "b61e793f-d760-4235-9edb-c4ed091fd65c",
-        "af8d6e6f-f650-45f0-8f95-9e5ffa91322b": "3f0f66f7-2b41-4811-9e53-07b05e8c549c",
         "83215b96-78e8-47f9-b6f9-86f49854ceb5": "f19074f2-d3b3-490f-9006-82d74da3080e",
-        "c9d1f7f3-72f2-422c-9a15-d7a554f900e2": "a5487b09-d74e-4ba6-ae0d-aa140e6183a1",
         "b0cb4ff0-4ffe-4311-88d6-d2ff4371d5c6": "714559d3-a51c-4030-9ec9-d31f23873ef6",
-        "9e54da88-84fc-4fd0-ad16-236688619ac4": "4bda7018-035c-4f55-b8af-a0d54ed23d2c",
         "cbf8508d-5b69-4699-8fc4-2c20d16fb755": "e6228e07-0561-4a0c-8f58-91459efd06a6",
-        "a9045756-4d7a-4256-851b-606ce8a0dc27": "9a2c16fd-4c2d-4af0-b04f-2213e0ff405d",
         "c1138816-ae6e-473d-a35d-fa0186704e13": "44208707-369b-4eff-bd7e-99478954dbc3",
-        "9ef6ea0e-6ad3-4d3d-baf4-476125a89c86": "0f48e486-08b4-4ed2-acfc-afc11172489c",
         "92e07cda-abcb-4a94-9e06-94d636d7e9fd": "66e7b490-5dd6-405b-9ac3-a4692a7e2b33",
-        "1a9432a7-e8a9-4c29-a991-4c17d528d831": "510156da-ae06-4dc5-9000-425fd83a0be2",
         "d0505a84-d61d-4cc8-8dd7-02dd25d65c22": "0f946f1f-3091-4c4d-8138-110fc32e9213",
+        "af8d6e6f-f650-45f0-8f95-9e5ffa91322b": "3f0f66f7-2b41-4811-9e53-07b05e8c549c",
+        "c9d1f7f3-72f2-422c-9a15-d7a554f900e2": "a5487b09-d74e-4ba6-ae0d-aa140e6183a1",
+        "9e54da88-84fc-4fd0-ad16-236688619ac4": "4bda7018-035c-4f55-b8af-a0d54ed23d2c",
+        "a9045756-4d7a-4256-851b-606ce8a0dc27": "9a2c16fd-4c2d-4af0-b04f-2213e0ff405d",
+        "9ef6ea0e-6ad3-4d3d-baf4-476125a89c86": "0f48e486-08b4-4ed2-acfc-afc11172489c",
+        "1a9432a7-e8a9-4c29-a991-4c17d528d831": "510156da-ae06-4dc5-9000-425fd83a0be2",
         "a35b8f47-f11f-4d08-8086-a101978f2ad5": "a0e81bee-e72d-4d10-a927-cbd1f122e86c"
       }
     },
     {
       "__guid": "eda5e79b-f25c-4fc5-b5fd-89bbac461187",
       "__version": 2,
-      "__Prefab": "prefabs/map/cabinet_01.prefab",
+      "__Prefab": {
+        "Id": "7e3114ee-b5f7-4d55-9b5f-13c0a891f344",
+        "Path": "prefabs/map/cabinet_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -47959,18 +48550,18 @@
       "__PrefabIdToInstanceId": {
         "ffdbfbcb-85c0-4c9b-8865-0312efc34d74": "eda5e79b-f25c-4fc5-b5fd-89bbac461187",
         "4ba05031-efa2-426e-afb4-d0f614a8e4a4": "bde7a1b0-c03d-42d7-9318-7dcc8d6cdc9d",
-        "af8d6e6f-f650-45f0-8f95-9e5ffa91322b": "863ee08f-9b9a-4d66-b64d-e7027804c3b7",
         "83215b96-78e8-47f9-b6f9-86f49854ceb5": "d7fe0836-c768-4af5-9560-796e97842386",
-        "c9d1f7f3-72f2-422c-9a15-d7a554f900e2": "20df9372-7395-4978-b711-f3427f322bba",
         "b0cb4ff0-4ffe-4311-88d6-d2ff4371d5c6": "c0eb2496-9385-4b80-bcc8-5b5012a21548",
-        "9e54da88-84fc-4fd0-ad16-236688619ac4": "969aae19-92ba-4314-a029-aad5593cbac7",
         "cbf8508d-5b69-4699-8fc4-2c20d16fb755": "2650b8e8-53f7-4f92-91c2-340ec4473bef",
-        "a9045756-4d7a-4256-851b-606ce8a0dc27": "4e2bf6ee-3f53-4ef5-b315-014bfc07ea54",
         "c1138816-ae6e-473d-a35d-fa0186704e13": "a0a27a3e-80aa-4fdf-9f3d-896233ba613b",
-        "9ef6ea0e-6ad3-4d3d-baf4-476125a89c86": "31a319e8-2d5c-4f2c-8a9c-d2c0f144c0a1",
         "92e07cda-abcb-4a94-9e06-94d636d7e9fd": "b74fd25a-8299-498b-ae59-babad328d4c3",
-        "1a9432a7-e8a9-4c29-a991-4c17d528d831": "2c405282-3402-4742-b197-a113566760b3",
         "d0505a84-d61d-4cc8-8dd7-02dd25d65c22": "38ed5ee9-4500-427b-99dc-ff311c090cf0",
+        "af8d6e6f-f650-45f0-8f95-9e5ffa91322b": "863ee08f-9b9a-4d66-b64d-e7027804c3b7",
+        "c9d1f7f3-72f2-422c-9a15-d7a554f900e2": "20df9372-7395-4978-b711-f3427f322bba",
+        "9e54da88-84fc-4fd0-ad16-236688619ac4": "969aae19-92ba-4314-a029-aad5593cbac7",
+        "a9045756-4d7a-4256-851b-606ce8a0dc27": "4e2bf6ee-3f53-4ef5-b315-014bfc07ea54",
+        "9ef6ea0e-6ad3-4d3d-baf4-476125a89c86": "31a319e8-2d5c-4f2c-8a9c-d2c0f144c0a1",
+        "1a9432a7-e8a9-4c29-a991-4c17d528d831": "2c405282-3402-4742-b197-a113566760b3",
         "a35b8f47-f11f-4d08-8086-a101978f2ad5": "5aee6eec-6ca0-42b3-997c-656ac3f8917d"
       }
     },
@@ -48201,7 +48792,10 @@
     {
       "__guid": "b48a5ac0-1a9b-41c3-8a35-5b3b96aa6ec9",
       "__version": 2,
-      "__Prefab": "prefabs/map/radiator_01.prefab",
+      "__Prefab": {
+        "Id": "b2733195-a237-4aaa-ad30-1ad78f661986",
+        "Path": "prefabs/map/radiator_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -48233,7 +48827,10 @@
     {
       "__guid": "df27e484-787c-44f6-89d4-265f955e8f4f",
       "__version": 2,
-      "__Prefab": "prefabs/map/radiator_01.prefab",
+      "__Prefab": {
+        "Id": "b2733195-a237-4aaa-ad30-1ad78f661986",
+        "Path": "prefabs/map/radiator_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -48265,7 +48862,10 @@
     {
       "__guid": "67a8ff46-1852-4cf2-a5a6-0e2d0bf66e72",
       "__version": 2,
-      "__Prefab": "prefabs/map/radiator_01.prefab",
+      "__Prefab": {
+        "Id": "b2733195-a237-4aaa-ad30-1ad78f661986",
+        "Path": "prefabs/map/radiator_01.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -48305,7 +48905,10 @@
     {
       "__guid": "50633c99-8e8e-4d10-9fd4-f5d98271ffbd",
       "__version": 2,
-      "__Prefab": "prefabs/map/radiator_02.prefab",
+      "__Prefab": {
+        "Id": "848864b5-1322-4502-b7dc-ecef11e29c95",
+        "Path": "prefabs/map/radiator_02.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -48505,7 +49108,10 @@
     {
       "__guid": "238c7311-4cc2-4575-a50a-61d03928fd2d",
       "__version": 2,
-      "__Prefab": "prefabs/map/cabinet_03.prefab",
+      "__Prefab": {
+        "Id": "ea5949f5-5732-4660-a279-f30b19deb30c",
+        "Path": "prefabs/map/cabinet_03.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -48524,10 +49130,10 @@
       "__PrefabIdToInstanceId": {
         "3d53a65b-1558-4ba8-a8a3-17d8c8192fca": "238c7311-4cc2-4575-a50a-61d03928fd2d",
         "3818a2ce-b5ef-4412-a207-9bf21574cb20": "6782ff8f-6620-41a3-a901-6e7c3a6058e9",
-        "3397e9e8-a760-4b63-8e2e-8d700ceb1592": "48b74bdc-1f44-405c-a8fa-9f33e6bf4e87",
         "884f98e3-565c-4bfb-93e6-67e28ef86fa6": "700c188c-1361-4545-9c2a-1bf310c62763",
-        "d3f06404-ee97-4d9d-aa90-7ff6ba407d81": "ecd69845-933f-4364-b4d7-dd12115ceb0a",
         "5c2b1cba-d9fe-4000-a5b7-c2f3f6b57c22": "b5e6e1f0-eac7-49ac-9f84-bf466e6e3b72",
+        "3397e9e8-a760-4b63-8e2e-8d700ceb1592": "48b74bdc-1f44-405c-a8fa-9f33e6bf4e87",
+        "d3f06404-ee97-4d9d-aa90-7ff6ba407d81": "ecd69845-933f-4364-b4d7-dd12115ceb0a",
         "ed8fe2c1-5084-46ff-9869-cde9620b597c": "36aae739-f785-4e5a-9303-939feb6b86b8"
       }
     }

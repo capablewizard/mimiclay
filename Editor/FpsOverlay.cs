@@ -98,16 +98,20 @@ public static class FpsOverlay
 	/// <summary>Make sure every viewport of the active scene view has an overlay, parked in its top-left corner.</summary>
 	static void Sync( bool repaint )
 	{
+		var viewports = SceneViewWidget.Current?._viewports;
+
+		// Switching scene tabs leaves the previous tab's viewports alive (and still reporting Visible), and our
+		// overlays are top-level windows that don't follow their parent tab being hidden — so anything not owned
+		// by the CURRENT scene view is dropped here, not just the dead ones. It's rebuilt when the tab comes back.
 		foreach ( var (viewport, widget) in _widgets.ToArray() )
 		{
-			if ( viewport.IsValid() && widget.IsValid() )
+			if ( viewport.IsValid() && widget.IsValid() && viewports is not null && viewports.Values.Contains( viewport ) )
 				continue;
 
 			widget?.Destroy();
 			_widgets.Remove( viewport );
 		}
 
-		var viewports = SceneViewWidget.Current?._viewports;
 		if ( viewports is null )
 			return;
 

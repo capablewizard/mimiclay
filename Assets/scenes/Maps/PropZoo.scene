@@ -192,7 +192,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -246,7 +249,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1195,7 +1201,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/cooker/cooker.vmdl",
+              "Model": {
+                "Id": "565b8f1c-6443-4aa5-a7e4-5e45af7ab1c6",
+                "Path": "models/props/cooker/cooker.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1238,7 +1247,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/props/fridge/fridge.vmdl",
+              "Model": {
+                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Path": "models/props/fridge/fridge.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1263,7 +1275,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/props/fridge/fridge.vmdl",
+              "Model": {
+                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Path": "models/props/fridge/fridge.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1307,7 +1322,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/washing_machine/washing_machine.vmdl",
+              "Model": {
+                "Id": "3d7cf54b-0a3f-42f1-879a-715ca72225fe",
+                "Path": "models/props/washing_machine/washing_machine.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1348,7 +1366,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/microwave/microwave.vmdl",
+              "Model": {
+                "Id": "1c26aeb3-1ede-4c0f-8e24-c66e4a65176c",
+                "Path": "models/props/microwave/microwave.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1657,7 +1678,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/kickstool/kickstool.vmdl",
+              "Model": {
+                "Id": "50a57905-70d9-4f32-b3e6-0556b4e68dea",
+                "Path": "models/props/kickstool/kickstool.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1698,7 +1722,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/trim_sheets/utility/step_ladder_01.vmdl",
+              "Model": {
+                "Id": "3090eba8-4502-4771-b23c-3cea5a589cad",
+                "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1739,7 +1766,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/toaster/toaster.vmdl",
+              "Model": {
+                "Id": "3868c869-7640-4b94-a95e-1dc4794ac1b3",
+                "Path": "models/props/toaster/toaster.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1782,7 +1812,10 @@
               "MaterialGroup": "metal_on",
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+              "Model": {
+                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1807,7 +1840,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+              "Model": {
+                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2914,7 +2950,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2939,7 +2978,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2985,7 +3027,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3010,7 +3055,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3322,7 +3370,10 @@
               "CreateAttachments": false,
               "LodOverride": null,
               "MaterialGroup": null,
-              "MaterialOverride": "materials/emissivelight.vmat",
+              "MaterialOverride": {
+                "Id": "29293922-6160-4737-a54a-e2b04736a471",
+                "Path": "materials/emissivelight.vmat"
+              },
               "Materials": null,
               "Model": "models/dev/sphere.vmdl",
               "OnComponentDestroy": null,
@@ -3348,7 +3399,10 @@
     {
       "__guid": "9332366c-1c9a-4ae3-be62-dcaf326fc509",
       "__version": 2,
-      "__Prefab": "prefabs/saved/fullorange.prefab",
+      "__Prefab": {
+        "Id": "2d76c68a-fb76-40b5-b830-44ca7b8bfb7b",
+        "Path": "prefabs/saved/fullorange.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [
           {
@@ -4166,7 +4220,10 @@
             "Maxs": "1344.04932,1673.79822,16"
           },
           "Contrast": 1,
-          "DistanceTexture": "scenes/maps/propzoo_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "DistanceTexture": {
+            "Id": "50cbea17-07ce-400c-b284-6884a54d144b",
+            "Path": "scenes/maps/propzoo_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": null,
           "NormalBias": 5,
@@ -4177,7 +4234,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "ProbeDensity": 8,
-          "RelocationTexture": "scenes/maps/propzoo_scene_data/ddgi/ddgi_relocation_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "RelocationTexture": {
+            "Id": "ccb4d654-712e-4b10-abeb-fc814d267b1e",
+            "Path": "scenes/maps/propzoo_scene_data/ddgi/ddgi_relocation_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "RenderExcludeTags": ""
         },
         {
@@ -4186,7 +4246,10 @@
           "__enabled": true,
           "Flags": 0,
           "__version": 1,
-          "BakedTexture": "scenes/maps/propzoo_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex",
+          "BakedTexture": {
+            "Id": "7a025828-08ce-443d-b90b-99577daa15c9",
+            "Path": "scenes/maps/propzoo_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex"
+          },
           "Bounds": {
             "Mins": "-1552.45752,-1663.99377,-297.174377",
             "Maxs": "1344.04932,1673.79822,16"
@@ -4220,7 +4283,10 @@
           "Flags": 0,
           "AmbientColor": "0.91628,0.78331,0.69467,1",
           "AmbientLift": 0,
-          "BaseIrradiance": "scenes/maps/propzoo_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "BaseIrradiance": {
+            "Id": "503178c9-bcdb-4094-8ef4-a0806ec2e9b6",
+            "Path": "scenes/maps/propzoo_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "BounceSaturation": 0,
           "Gain": 0.2,
           "Iterations": 8,
@@ -5016,7 +5082,10 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/plasticine_scene.vmat",
+          "MaterialOverride": {
+            "Id": "f93c4486-1005-4cf4-bdaf-ee28dc720b55",
+            "Path": "materials/plasticine_scene.vmat"
+          },
           "Materials": null,
           "Model": "models/dev/box.vmdl",
           "OnComponentDestroy": null,
@@ -5174,14 +5243,20 @@
           "BakedGeometry": null,
           "BuildCollision": true,
           "CheckInterval": 0.5,
-          "DefaultMaterial": "materials/plasticine_scene.vmat",
+          "DefaultMaterial": {
+            "Id": "f93c4486-1005-4cf4-bdaf-ee28dc720b55",
+            "Path": "materials/plasticine_scene.vmat"
+          },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "LastImport": "63 object(s), 67661 tris — 19:35:23",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
-              "Material": "materials/plasticine_scenemetal.vmat"
+              "Material": {
+                "Id": "b28bd0ca-4fa4-42b2-9cad-8f512ab2e3b5",
+                "Path": "materials/plasticine_scenemetal.vmat"
+              }
             },
             {
               "FbxMaterial": "Clay",
@@ -5189,11 +5264,17 @@
             },
             {
               "FbxMaterial": "Glass",
-              "Material": "materials/glass_scene.vmat"
+              "Material": {
+                "Id": "aa7f4156-16db-4eca-b515-6a2317736dff",
+                "Path": "materials/glass_scene.vmat"
+              }
             },
             {
               "FbxMaterial": "Fabric",
-              "Material": "materials/fabric.vmat"
+              "Material": {
+                "Id": "5c485d96-a451-4604-815b-2f98ec6923ce",
+                "Path": "materials/fabric.vmat"
+              }
             }
           ],
           "OnComponentDestroy": null,
@@ -10502,7 +10583,10 @@
     {
       "__guid": "d1511015-9083-45a5-b370-2993969c63fa",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_copper.prefab",
+      "__Prefab": {
+        "Id": "030ad016-8082-4b35-9241-5b02dc307de7",
+        "Path": "prefabs/props/kitchen/pot_copper.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -10907,7 +10991,10 @@
     {
       "__guid": "386495af-bf9d-4f52-be90-e9512ace9932",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_pitcher.prefab",
+      "__Prefab": {
+        "Id": "8df773c9-e799-4900-a837-174482147f76",
+        "Path": "prefabs/props/kitchen/pot_pitcher.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11352,7 +11439,10 @@
     {
       "__guid": "e5c5e5a4-06d7-468c-8f58-aa76f73094c7",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_polkedot.prefab",
+      "__Prefab": {
+        "Id": "7fdf2b9b-a8fc-498c-a260-8f0a1f9656b4",
+        "Path": "prefabs/props/kitchen/pot_polkedot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11550,7 +11640,10 @@
     {
       "__guid": "6e77a207-6228-4b27-9c3a-d31460695b27",
       "__version": 2,
-      "__Prefab": "prefabs/saved/pot_saucepan.prefab",
+      "__Prefab": {
+        "Id": "e3935f19-35fd-43f3-bd92-debacdad94a8",
+        "Path": "prefabs/saved/pot_saucepan.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11588,7 +11681,10 @@
     {
       "__guid": "4c1b06b9-d832-4d5a-ac10-4f9817ccf7b5",
       "__version": 2,
-      "__Prefab": "prefabs/saved/pot_stockpot.prefab",
+      "__Prefab": {
+        "Id": "53cab306-511c-4480-8084-9aa6aed52d21",
+        "Path": "prefabs/saved/pot_stockpot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11626,7 +11722,10 @@
     {
       "__guid": "c0b449cd-c716-446c-a7d2-66c6a9a1e235",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot.prefab",
+      "__Prefab": {
+        "Id": "206a5047-f9e5-4700-ae45-f630a9d83cb0",
+        "Path": "prefabs/props/kitchen/pot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11664,7 +11763,10 @@
     {
       "__guid": "a5f27b5c-77ea-41d4-aeb4-0f8e4981f072",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/stockpot.prefab",
+      "__Prefab": {
+        "Id": "3057a62f-ff12-40ee-8dcc-8d2efce65997",
+        "Path": "prefabs/props/kitchen/stockpot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [
           {
@@ -11898,7 +12000,10 @@
     {
       "__guid": "f6f1ccc5-a10d-8ad5-80ee-6c9ad653b91f",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/teapot.prefab",
+      "__Prefab": {
+        "Id": "d5ca3694-b5df-4a43-835e-cea9f1bbf625",
+        "Path": "prefabs/props/kitchen/teapot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11936,7 +12041,10 @@
     {
       "__guid": "03e77751-a1cc-4915-a060-98165f14b645",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/wine_bottle.prefab",
+      "__Prefab": {
+        "Id": "6a1bab5c-162d-4d9f-9227-855a52cca8e6",
+        "Path": "prefabs/props/kitchen/wine_bottle.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -11948,14 +12056,6 @@
             },
             "Property": "Position",
             "Value": "-202.648758,-935.066162,-518.789124"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -11983,7 +12083,10 @@
     {
       "__guid": "05fbba04-6700-4a5d-bd4d-c688334f1059",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/scene/goldknob.prefab",
+      "__Prefab": {
+        "Id": "41ba0e59-906b-4de2-a28e-c0f8ead78e73",
+        "Path": "prefabs/props/kitchen/scene/goldknob.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12029,7 +12132,10 @@
     {
       "__guid": "1c877c01-f307-49b7-917e-15b76085089a",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/mug.prefab",
+      "__Prefab": {
+        "Id": "ae21ea84-9dc4-42d1-924b-ac08b48fbf06",
+        "Path": "prefabs/props/kitchen/mug.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12067,7 +12173,10 @@
     {
       "__guid": "4cdbd8c7-dc89-4a1b-9923-846b5d18d579",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_copper.prefab",
+      "__Prefab": {
+        "Id": "030ad016-8082-4b35-9241-5b02dc307de7",
+        "Path": "prefabs/props/kitchen/pot_copper.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12480,7 +12589,10 @@
     {
       "__guid": "994dd340-2830-4b1b-ade5-29284132742f",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_pitcher.prefab",
+      "__Prefab": {
+        "Id": "8df773c9-e799-4900-a837-174482147f76",
+        "Path": "prefabs/props/kitchen/pot_pitcher.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -12914,6 +13026,14 @@
                 "BoundingRadius": 22.18174
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
+            },
+            "Property": "__enabled",
+            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12933,7 +13053,10 @@
     {
       "__guid": "67aae93b-a8af-44b4-b75e-6772fd73d1a7",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot_polkedot.prefab",
+      "__Prefab": {
+        "Id": "7fdf2b9b-a8fc-498c-a260-8f0a1f9656b4",
+        "Path": "prefabs/props/kitchen/pot_polkedot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13139,7 +13262,10 @@
     {
       "__guid": "8ce40fb9-e3b0-4d77-ad61-82b710e873ae",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/teapot.prefab",
+      "__Prefab": {
+        "Id": "d5ca3694-b5df-4a43-835e-cea9f1bbf625",
+        "Path": "prefabs/props/kitchen/teapot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13185,7 +13311,10 @@
     {
       "__guid": "e9ed6b6f-e819-4866-a62c-1231ccef65fc",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/pot.prefab",
+      "__Prefab": {
+        "Id": "206a5047-f9e5-4700-ae45-f630a9d83cb0",
+        "Path": "prefabs/props/kitchen/pot.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13231,7 +13360,10 @@
     {
       "__guid": "5db6f030-42f8-450e-840b-296c1490fda5",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/sugar.prefab",
+      "__Prefab": {
+        "Id": "2b91a3a5-1c3e-4578-a225-5a8992e8446a",
+        "Path": "prefabs/props/kitchen/sugar.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13501,7 +13633,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 15.344992
+                "BoundingRadius": 15.328206
               },
               {
                 "Shape": "Spline",
@@ -13574,7 +13706,10 @@
     {
       "__guid": "ce4d2dad-5e73-405b-a38c-fd5d81836d61",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/tap.prefab",
+      "__Prefab": {
+        "Id": "95bc1f4f-0c3d-43d8-97cf-0c106bb394c0",
+        "Path": "prefabs/props/kitchen/tap.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13612,7 +13747,10 @@
     {
       "__guid": "7f8247c4-4460-4b18-af13-9a3f68999e19",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/wine_bottle.prefab",
+      "__Prefab": {
+        "Id": "6a1bab5c-162d-4d9f-9227-855a52cca8e6",
+        "Path": "prefabs/props/kitchen/wine_bottle.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13667,7 +13805,10 @@
     {
       "__guid": "8d785a23-a0e5-49fa-82bb-6b9209e9d9d7",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/apple.prefab",
+      "__Prefab": {
+        "Id": "e8b35620-b8cc-4fa4-b1d9-8de79c4a1a60",
+        "Path": "prefabs/props/food/apple.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13693,19 +13834,22 @@
       },
       "__PrefabIdToInstanceId": {
         "ecb4ba55-b245-0b21-61d0-b97826a32b86": "8d785a23-a0e5-49fa-82bb-6b9209e9d9d7",
-        "a5a9560a-2723-8a38-5c00-5dd7757407e9": "c3383c33-d177-8e2b-96f5-3a21ce6905aa",
-        "25da98b2-cc2d-bae0-0864-c755e06f858b": "d81db17e-9157-86a3-b7cf-8706f7599404",
-        "e82a708f-3ab3-b335-277d-7f29d09a82d8": "11128a95-b007-80e9-83ca-50945d448c10",
-        "f1dfb1ed-fa85-9308-9a9b-49f51feb4c95": "0c40eb86-c34f-8c46-b303-0ac59cb0fe60",
-        "c74e386d-54ab-f466-e804-51432fd71e66": "9a662b38-c49d-8772-b9c4-c077598f6540",
+        "1fd866ad-6fc3-7706-7e9b-b988b927b657": "3e8e2a1d-e57e-8028-9643-4c88bc91b5a5",
         "8ad16c46-8c5a-323e-ec86-6ad3c0650955": "4a728230-7e8b-808a-8c6f-bd49411cea05",
-        "1fd866ad-6fc3-7706-7e9b-b988b927b657": "3e8e2a1d-e57e-8028-9643-4c88bc91b5a5"
+        "c74e386d-54ab-f466-e804-51432fd71e66": "9a662b38-c49d-8772-b9c4-c077598f6540",
+        "f1dfb1ed-fa85-9308-9a9b-49f51feb4c95": "0c40eb86-c34f-8c46-b303-0ac59cb0fe60",
+        "e82a708f-3ab3-b335-277d-7f29d09a82d8": "11128a95-b007-80e9-83ca-50945d448c10",
+        "25da98b2-cc2d-bae0-0864-c755e06f858b": "d81db17e-9157-86a3-b7cf-8706f7599404",
+        "a5a9560a-2723-8a38-5c00-5dd7757407e9": "c3383c33-d177-8e2b-96f5-3a21ce6905aa"
       }
     },
     {
       "__guid": "b2adb004-e8ee-4da0-97b3-a6de3725205e",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/banana.prefab",
+      "__Prefab": {
+        "Id": "2eeeea6a-9bb7-4609-b518-84a2b8a3ab01",
+        "Path": "prefabs/props/food/banana.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -13743,7 +13887,10 @@
     {
       "__guid": "ef6864f1-861e-4729-b77e-01eaf455f49f",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/cherries.prefab",
+      "__Prefab": {
+        "Id": "d9a007af-0e11-44e6-8246-1df9ff0eba14",
+        "Path": "prefabs/props/food/cherries.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14051,7 +14198,10 @@
     {
       "__guid": "4f131f05-b3e4-4ed5-b164-3231c6ffa6da",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/grapes.prefab",
+      "__Prefab": {
+        "Id": "bf7c6643-c608-4961-b382-feaf3f75b3e4",
+        "Path": "prefabs/props/food/grapes.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14499,7 +14649,10 @@
     {
       "__guid": "4018b3a6-88a0-4457-8a3e-8326505e9b12",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/lemon.prefab",
+      "__Prefab": {
+        "Id": "a00f9692-d69c-40d7-9d57-0d0a81aa0b27",
+        "Path": "prefabs/props/food/lemon.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14517,8 +14670,24 @@
               "Type": "Component",
               "IdValue": "d5b3fb82-684b-ab7d-9fb0-0e4c63138328"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d5b3fb82-684b-ab7d-9fb0-0e4c63138328"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d5b3fb82-684b-ab7d-9fb0-0e4c63138328"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -14537,7 +14706,10 @@
     {
       "__guid": "efdd171f-881c-49b3-bc84-10cf7258c62e",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/orange.prefab",
+      "__Prefab": {
+        "Id": "b323fd16-5918-4c0a-8f88-ae53b204e823",
+        "Path": "prefabs/props/food/orange.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -14783,7 +14955,10 @@
     {
       "__guid": "c624a4ff-4dba-4b95-8276-cb0294588bee",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/pear.prefab",
+      "__Prefab": {
+        "Id": "dcdcad04-b688-4dba-ac6f-8fa8fdb712e6",
+        "Path": "prefabs/props/food/pear.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15050,7 +15225,10 @@
     {
       "__guid": "dcbf5cb1-44ab-4755-b827-6db51779be02",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/apple.prefab",
+      "__Prefab": {
+        "Id": "e8b35620-b8cc-4fa4-b1d9-8de79c4a1a60",
+        "Path": "prefabs/props/food/apple.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15096,7 +15274,10 @@
     {
       "__guid": "276550f1-a2f1-4105-8779-f4449dc8b18f",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/cherries.prefab",
+      "__Prefab": {
+        "Id": "d9a007af-0e11-44e6-8246-1df9ff0eba14",
+        "Path": "prefabs/props/food/cherries.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15142,7 +15323,10 @@
     {
       "__guid": "85bcece4-0319-4f43-9b9c-d318335c893f",
       "__version": 2,
-      "__Prefab": "prefabs/props/food/strawberry.prefab",
+      "__Prefab": {
+        "Id": "6a99f548-9d88-4bc9-bc3f-7a476fbce76f",
+        "Path": "prefabs/props/food/strawberry.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15188,7 +15372,10 @@
     {
       "__guid": "e865bc41-0c80-4619-89e8-0440c0022f5d",
       "__version": 2,
-      "__Prefab": "prefabs/props/toys/toy_train_wagon_green.prefab",
+      "__Prefab": {
+        "Id": "1d1edb45-c770-45d2-bb6f-e0ff84d049a9",
+        "Path": "prefabs/props/toys/toy_train_wagon_green.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -15226,7 +15413,10 @@
     {
       "__guid": "e94297c4-ff96-4138-8f57-ecbfcd689a9d",
       "__version": 2,
-      "__Prefab": "prefabs/props/toys/toy_train_wagon_red.prefab",
+      "__Prefab": {
+        "Id": "45d821a8-9bc9-432c-9980-875ed81b9464",
+        "Path": "prefabs/props/toys/toy_train_wagon_red.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -16079,7 +16269,10 @@
             }
           ],
           "FlipFaces": false,
-          "Material": "materials/plasticine_vertex.vmat",
+          "Material": {
+            "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+            "Path": "materials/plasticine_vertex.vmat"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16139,7 +16332,10 @@
           "FieldResolution": 256,
           "FullQualityRadii": 2,
           "LodHysteresis": 0.06,
-          "Material": "materials/plasticine.vmat",
+          "Material": {
+            "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+            "Path": "materials/plasticine.vmat"
+          },
           "MaxSteps": 50,
           "MeshLod1Radii": 30,
           "MeshLod2Radii": 40,
@@ -16481,7 +16677,10 @@
     {
       "__guid": "3e6708a2-76d9-4eb9-acc5-3589fa6cb810",
       "__version": 2,
-      "__Prefab": "prefabs/props/toys/toy_train_engine.prefab",
+      "__Prefab": {
+        "Id": "558d0487-c2d2-4708-8d26-29e9d286b334",
+        "Path": "prefabs/props/toys/toy_train_engine.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -16520,7 +16719,10 @@
     {
       "__guid": "334007fa-942a-4f19-b87f-bd41e54cf314",
       "__version": 2,
-      "__Prefab": "prefabs/props/toys/toy_train_engine.prefab",
+      "__Prefab": {
+        "Id": "558d0487-c2d2-4708-8d26-29e9d286b334",
+        "Path": "prefabs/props/toys/toy_train_engine.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -16559,7 +16761,10 @@
     {
       "__guid": "73077d3e-e514-4b42-b540-1e69e48cdeee",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/dinnerplate.prefab",
+      "__Prefab": {
+        "Id": "77acb1ca-f0e6-43d5-9f6f-e84c2fb48882",
+        "Path": "prefabs/props/kitchen/dinnerplate.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
@@ -16598,7 +16803,10 @@
     {
       "__guid": "4577eef1-7f61-47ae-a998-c01c3dff8645",
       "__version": 2,
-      "__Prefab": "prefabs/props/kitchen/dinnerbowl.prefab",
+      "__Prefab": {
+        "Id": "26b6b1bd-a40e-4048-873e-f8e6c0b06e67",
+        "Path": "prefabs/props/kitchen/dinnerbowl.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],

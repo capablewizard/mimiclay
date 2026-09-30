@@ -192,7 +192,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -246,7 +249,10 @@
           "Health": 0,
           "IsStatic": true,
           "MaterialGroup": null,
-          "Model": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl",
+          "Model": {
+            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1195,7 +1201,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/cooker/cooker.vmdl",
+              "Model": {
+                "Id": "565b8f1c-6443-4aa5-a7e4-5e45af7ab1c6",
+                "Path": "models/props/cooker/cooker.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1238,7 +1247,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/props/fridge/fridge.vmdl",
+              "Model": {
+                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Path": "models/props/fridge/fridge.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1263,7 +1275,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/props/fridge/fridge.vmdl",
+              "Model": {
+                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Path": "models/props/fridge/fridge.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1307,7 +1322,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/washing_machine/washing_machine.vmdl",
+              "Model": {
+                "Id": "3d7cf54b-0a3f-42f1-879a-715ca72225fe",
+                "Path": "models/props/washing_machine/washing_machine.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1348,7 +1366,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/microwave/microwave.vmdl",
+              "Model": {
+                "Id": "1c26aeb3-1ede-4c0f-8e24-c66e4a65176c",
+                "Path": "models/props/microwave/microwave.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1657,7 +1678,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/kickstool/kickstool.vmdl",
+              "Model": {
+                "Id": "50a57905-70d9-4f32-b3e6-0556b4e68dea",
+                "Path": "models/props/kickstool/kickstool.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1698,7 +1722,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/trim_sheets/utility/step_ladder_01.vmdl",
+              "Model": {
+                "Id": "3090eba8-4502-4771-b23c-3cea5a589cad",
+                "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1739,7 +1766,10 @@
               "Health": 0,
               "IsStatic": true,
               "MaterialGroup": null,
-              "Model": "models/props/toaster/toaster.vmdl",
+              "Model": {
+                "Id": "3868c869-7640-4b94-a95e-1dc4794ac1b3",
+                "Path": "models/props/toaster/toaster.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1782,7 +1812,10 @@
               "MaterialGroup": "metal_on",
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+              "Model": {
+                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1807,7 +1840,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl",
+              "Model": {
+                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2914,7 +2950,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2939,7 +2978,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -2985,7 +3027,10 @@
               "MaterialGroup": null,
               "MaterialOverride": null,
               "Materials": null,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3010,7 +3055,10 @@
               "Elasticity": null,
               "Friction": null,
               "IsTrigger": false,
-              "Model": "models/sbox_props/electrical/switch.vmdl",
+              "Model": {
+                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Path": "models/sbox_props/electrical/switch.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3322,7 +3370,10 @@
               "CreateAttachments": false,
               "LodOverride": null,
               "MaterialGroup": null,
-              "MaterialOverride": "materials/emissivelight.vmat",
+              "MaterialOverride": {
+                "Id": "29293922-6160-4737-a54a-e2b04736a471",
+                "Path": "materials/emissivelight.vmat"
+              },
               "Materials": null,
               "Model": "models/dev/sphere.vmdl",
               "OnComponentDestroy": null,
@@ -3371,7 +3422,10 @@
             "Maxs": "1540.36536,1673.79822,598.060486"
           },
           "Contrast": 1,
-          "DistanceTexture": "scenes/maps/charadeszoo_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "DistanceTexture": {
+            "Id": "663a6cd0-4865-44c9-aec7-718ac6ac15f3",
+            "Path": "scenes/maps/charadeszoo_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": null,
           "NormalBias": 5,
@@ -3382,7 +3436,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "ProbeDensity": 1,
-          "RelocationTexture": "scenes/maps/charadeszoo_scene_data/ddgi/ddgi_relocation_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "RelocationTexture": {
+            "Id": "e329cdb5-59b2-4e12-9f15-962b70f94ca1",
+            "Path": "scenes/maps/charadeszoo_scene_data/ddgi/ddgi_relocation_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "RenderExcludeTags": ""
         },
         {
@@ -3391,7 +3448,10 @@
           "__enabled": true,
           "Flags": 0,
           "__version": 1,
-          "BakedTexture": "scenes/maps/propzoo_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex",
+          "BakedTexture": {
+            "Id": "7a025828-08ce-443d-b90b-99577daa15c9",
+            "Path": "scenes/maps/propzoo_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex"
+          },
           "Bounds": {
             "Mins": "-1552.45752,-1663.99377,-297.174377",
             "Maxs": "1540.36536,1673.79822,598.060486"
@@ -3425,7 +3485,10 @@
           "Flags": 0,
           "AmbientColor": "0.91628,0.78331,0.69467,1",
           "AmbientLift": 0,
-          "BaseIrradiance": "scenes/maps/charadeszoo_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
+          "BaseIrradiance": {
+            "Id": "c9338822-24d0-4abc-8793-515768ffa80d",
+            "Path": "scenes/maps/charadeszoo_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
+          },
           "BounceSaturation": 0,
           "Gain": 0.2,
           "Iterations": 8,
@@ -4349,7 +4412,10 @@
           "CreateAttachments": false,
           "LodOverride": null,
           "MaterialGroup": null,
-          "MaterialOverride": "materials/plasticine_scene.vmat",
+          "MaterialOverride": {
+            "Id": "f93c4486-1005-4cf4-bdaf-ee28dc720b55",
+            "Path": "materials/plasticine_scene.vmat"
+          },
           "Materials": null,
           "Model": "models/dev/box.vmdl",
           "OnComponentDestroy": null,
@@ -4507,14 +4573,20 @@
           "BakedGeometry": null,
           "BuildCollision": true,
           "CheckInterval": 0.5,
-          "DefaultMaterial": "materials/plasticine_scene.vmat",
+          "DefaultMaterial": {
+            "Id": "f93c4486-1005-4cf4-bdaf-ee28dc720b55",
+            "Path": "materials/plasticine_scene.vmat"
+          },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "LastImport": "63 object(s), 67661 tris — 19:35:23",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
-              "Material": "materials/plasticine_scenemetal.vmat"
+              "Material": {
+                "Id": "b28bd0ca-4fa4-42b2-9cad-8f512ab2e3b5",
+                "Path": "materials/plasticine_scenemetal.vmat"
+              }
             },
             {
               "FbxMaterial": "Clay",
@@ -4522,11 +4594,17 @@
             },
             {
               "FbxMaterial": "Glass",
-              "Material": "materials/glass_scene.vmat"
+              "Material": {
+                "Id": "aa7f4156-16db-4eca-b515-6a2317736dff",
+                "Path": "materials/glass_scene.vmat"
+              }
             },
             {
               "FbxMaterial": "Fabric",
-              "Material": "materials/fabric.vmat"
+              "Material": {
+                "Id": "5c485d96-a451-4604-815b-2f98ec6923ce",
+                "Path": "materials/fabric.vmat"
+              }
             }
           ],
           "OnComponentDestroy": null,
@@ -9835,7 +9913,10 @@
     {
       "__guid": "74bfcf9f-fae2-444b-90bf-925ef1a86b31",
       "__version": 2,
-      "__Prefab": "prefabs/charades_stage.prefab",
+      "__Prefab": {
+        "Id": "fb22aebb-ee51-473a-a8fd-3fd6cd3e863c",
+        "Path": "prefabs/charades_stage.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
         "RemovedObjects": [],
