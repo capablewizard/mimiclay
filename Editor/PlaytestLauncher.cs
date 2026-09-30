@@ -361,7 +361,7 @@ public static class PlaytestLauncher
 		set => EditorCookie.Set( AutoRelaunchCookie, value );
 	}
 
-	/// <summary>Editor thread, called from the dock's refresh: note which clients have reached the host, and
+	/// <summary>Editor thread, called from <see cref="PollTick"/>: note which clients have reached the host, and
 	/// relaunch any that crashed while booting.</summary>
 	public static void Maintain()
 	{
@@ -495,7 +495,6 @@ public static class PlaytestLauncher
 
 		_clients.Add( client );
 		Publish();
-		EnsurePoller();
 
 		Log.Info( $"Playtest: launched client #{id}{(place ? $" into slot {slot + 1}" : "")}." );
 		return client;
@@ -800,9 +799,41 @@ public static class PlaytestLauncher
 	}
 
 	// ---------------------------------------------------------------------------------------------------------
-	// Poller: one thread-pool loop for every client — process state, window handle, hung check, placement, log.
+	// Poller: process state, window handle, hung check, placement, log — for every client, every half second.
+	//
+	// NOT a long-lived async loop (it used to be): a hotload leaves an already-running loop executing the OLD
+	// assembly's code against the OLD assembly's statics, which the new code no longer updates — so it polled a
+	// stale client list forever while new clients went unwatched (crashes stayed "Starting", Re-tile did nothing,
+	// windows never tiled). Instead the editor frame tick starts one short pass at a time; each pass is launched by
+	// whatever code is current, so a hotload simply takes effect on the next pass.
 
-	const int PollMs = 500;
+	const float PollSeconds = 0.5f;
+	static Task _pollPass;
+	static RealTimeSince _sincePoll;
+
+	[EditorEvent.Frame]
+	public static void PollTick()
+	{
+		if ( _clients.Count == 0 || _sincePoll < PollSeconds )
+			return;
+
+		_sincePoll = 0;
+
+		// Editor-thread housekeeping (reads the host's connection list): boot-crash relaunch etc. Here rather than
+		// in the dock so it runs whether or not the Playtest tab is visible.
+		Maintain();
+
+		// One pass in flight at a time — cross-process queries can stall briefly on a booting client.
+		if ( _pollPass is { IsCompleted: false } )
+			return;
+
+		var clients = _snapshot;
+		_pollPass = Task.Run( () =>
+		{
+			foreach ( var c in clients )
+				Poll( c );
+		} );
+	}
 
 	// How long a window stays pinned to its tile. Not a fixed window after the handle appears: a client takes
 	// 45–50s to load the game and the engine can resize/move its own window anywhere in that (video settings
@@ -812,42 +843,6 @@ public static class PlaytestLauncher
 	static readonly TimeSpan PinCap = TimeSpan.FromMinutes( 3 );
 	static readonly TimeSpan PinAfterMove = TimeSpan.FromSeconds( 10 ); // Re-tile / drag-move / reflow
 	const int LoggedCorrections = 3;
-
-	static bool _pollerRunning;
-
-	static void EnsurePoller()
-	{
-		if ( _pollerRunning )
-			return;
-
-		_pollerRunning = true;
-		_ = Task.Run( PollLoop );
-	}
-
-	static async Task PollLoop()
-	{
-		int idle = 0;
-		while ( true )
-		{
-			await Task.Delay( PollMs ).ConfigureAwait( false );
-
-			var clients = _snapshot;
-			if ( clients.Length == 0 )
-			{
-				if ( ++idle > 20 )
-					break;
-				continue;
-			}
-
-			idle = 0;
-			foreach ( var c in clients )
-				Poll( c );
-		}
-
-		_pollerRunning = false;
-		if ( _snapshot.Length > 0 )
-			EnsurePoller();
-	}
 
 	static void Poll( Client c )
 	{

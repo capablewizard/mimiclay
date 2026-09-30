@@ -244,7 +244,6 @@ public class PlaytestDock : Widget
 
 		_sinceRefresh = 0;
 		PlaytestLauncher.CheckPlanChanged();
-		PlaytestLauncher.Maintain();
 		Refresh();
 	}
 
