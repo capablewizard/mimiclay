@@ -224,6 +224,12 @@ public static class PlaytestLauncher
 		/// <summary>We asked it to leave (graceful disconnect) — it should now be sitting at the menu.</summary>
 		public bool LeaveRequested { get; internal set; }
 
+		/// <summary>The host has seen this client's connection at least once (it got past booting).</summary>
+		public bool EverConnected { get; internal set; }
+
+		/// <summary>How many times this slot's client has been auto-relaunched after a boot crash.</summary>
+		public int BootRetries { get; internal set; }
+
 		/// <summary>Seconds from launch to first reaching <see cref="ClientStage.Ready"/>; null until then.</summary>
 		public double? ReadyAfter { get; internal set; }
 
@@ -314,13 +320,75 @@ public static class PlaytestLauncher
 	}
 
 	/// <summary>Launch one client into a specific (empty) slot.</summary>
-	public static void AddAt( int slot )
+	public static void AddAt( int slot ) => AddAt( slot, 0 );
+
+	static void AddAt( int slot, int bootRetries )
 	{
 		if ( ClientInSlot( slot ) is not null || _queued.Contains( slot ) )
 			return;
 
+		if ( bootRetries > 0 )
+			_retriesForSlot[slot] = bootRetries;
+
 		_queued.Add( slot );
 		StartSpawning();
+	}
+
+	// Carries a boot-retry count through the spawn queue to the replacement client (slot → retries so far).
+	static readonly Dictionary<int, int> _retriesForSlot = new();
+
+	// ---------------------------------------------------------------------------------------------------------
+	// Boot-crash recovery
+	//
+	// Local instances crash at a real rate (~40% of a 6-client launch in practice) while still on the s&box main
+	// menu, BEFORE our game has loaded: "ERROR: Reentrant call to CResourceSystem::BlockUntilManifestLoaded()
+	// while already in a frame update!". The -joinlocal auto-connect mounts the game package — which calls
+	// ReloadSymlinkedResidentResources — at the same moment the engine's own menu is still loading its scenes,
+	// and if that lands inside a frame update the resource system aborts. Engine-side (see the note on
+	// OnDemandRecompile in Sandbox.Tools/Assets/AssetSystem.cs about this exact reentrancy); nothing in our code
+	// runs yet. So: a client that dies before its connection ever reached the host is relaunched into its slot,
+	// up to MaxBootRetries times.
+
+	const int MaxBootRetries = 2;
+	const string BootCrashSignature = "Reentrant call to CResourceSystem";
+	const string AutoRelaunchCookie = "mimiclay.playtest.autorelaunch";
+
+	/// <summary>Relaunch clients that crash while booting (dock toggle, remembered per editor). Off = they stay
+	/// in their slot showing as crashed, for when you want to see the crash rather than paper over it.</summary>
+	public static bool AutoRelaunch
+	{
+		get => EditorCookie.Get( AutoRelaunchCookie, true );
+		set => EditorCookie.Set( AutoRelaunchCookie, value );
+	}
+
+	/// <summary>Editor thread, called from the dock's refresh: note which clients have reached the host, and
+	/// relaunch any that crashed while booting.</summary>
+	public static void Maintain()
+	{
+		foreach ( var c in _clients.ToList() )
+		{
+			if ( !c.EverConnected && ConnectionOf( c ) is not null )
+				c.EverConnected = true;
+
+			if ( !c.Exited || c.EverConnected || c.LeaveRequested || c.Slot < 0 )
+				continue;
+
+			bool signature = c.Log?.Snapshot().Any( l => l.Contains( BootCrashSignature ) ) ?? false;
+			if ( c.ExitCode == 0 && !signature )
+				continue;
+
+			if ( !AutoRelaunch || c.BootRetries >= MaxBootRetries )
+				continue; // leave it showing as crashed
+
+			int slot = c.Slot;
+			int retry = c.BootRetries + 1;
+			Log.Warning( $"Playtest: client #{c.InstanceId} crashed while booting" +
+				(signature ? " (engine resource-system race on the s&box menu, before the game loaded)" : $" (exit code {c.ExitCode})") +
+				$" — relaunching into slot {slot + 1} (retry {retry}/{MaxBootRetries})." );
+
+			Dismiss( c );
+			AddAt( slot, retry );
+		}
 	}
 
 	static void StartSpawning()
@@ -420,7 +488,8 @@ public static class PlaytestLauncher
 			return null;
 		}
 
-		var client = new Client { InstanceId = id, Process = p, StartedUtc = DateTime.UtcNow };
+		int retries = slot >= 0 && _retriesForSlot.Remove( slot, out var r ) ? r : 0;
+		var client = new Client { InstanceId = id, Process = p, StartedUtc = DateTime.UtcNow, BootRetries = retries };
 		if ( place )
 			AssignSlot( client, slot, tiles );
 
@@ -606,6 +675,35 @@ public static class PlaytestLauncher
 		} );
 	}
 
+	/// <summary>Un-minimise every running client and raise it above other windows (keeps their tiles).</summary>
+	public static void BringAllToFront()
+	{
+		var handles = _clients.Where( c => !c.Exited && c.Hwnd != IntPtr.Zero ).Select( c => c.Hwnd ).ToArray();
+		if ( handles.Length == 0 )
+			return;
+
+		// Off-thread + async posts, like all cross-process window work here. A plain HWND_TOP won't lift another
+		// process's window over the foreground one, so bounce each through TOPMOST → NOTOPMOST: that lands it at
+		// the top of the normal band without leaving it always-on-top. Nothing is activated — focus stays in the
+		// editor, where you clicked.
+		_ = Task.Run( () =>
+		{
+			const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_ASYNCWINDOWPOS = 0x4000;
+			const uint flags = SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS;
+			var topmost = new IntPtr( -1 );
+			var notopmost = new IntPtr( -2 );
+
+			foreach ( var hwnd in handles )
+			{
+				if ( IsIconic( hwnd ) )
+					ShowWindowAsync( hwnd, 4 /* SW_SHOWNOACTIVATE */ );
+
+				SetWindowPos( hwnd, topmost, 0, 0, 0, 0, flags );
+				SetWindowPos( hwnd, notopmost, 0, 0, 0, 0, flags );
+			}
+		} );
+	}
+
 	static async Task WarnIfNoSessionSoon()
 	{
 		await Task.Delay( 8000 );
@@ -633,12 +731,27 @@ public static class PlaytestLauncher
 	/// client's self-report from <see cref="ClientStatusBoard"/>).</summary>
 	public static ClientView Describe( Client c )
 	{
+		var view = DescribeCore( c );
+		if ( c.BootRetries > 0 && !c.Exited )
+			view = view with { Detail = view.Detail + $" · relaunched ×{c.BootRetries} after boot crash" };
+		return view;
+	}
+
+	static ClientView DescribeCore( Client c )
+	{
 		double age = (DateTime.UtcNow - c.StartedUtc).TotalSeconds;
 
+		string retried = c.BootRetries > 0 ? $" · relaunched ×{c.BootRetries} after boot crash" : "";
+
 		if ( c.Exited )
-			return c.ExitCode == 0
-				? new( "Exited", "", Tone.Idle )
-				: new( "Crashed", $"exit code {c.ExitCode}", Tone.Bad );
+		{
+			bool bootCrash = !c.EverConnected && (c.Log?.Snapshot().Any( l => l.Contains( BootCrashSignature ) ) ?? false);
+			if ( c.ExitCode == 0 && !bootCrash )
+				return new( "Exited", retried.TrimStart( ' ', '·' ), Tone.Idle );
+
+			return new( "Crashed", (bootCrash ? "engine boot race (s&box menu, before the game loaded)" : $"exit code {c.ExitCode}")
+				+ (!c.EverConnected && c.BootRetries >= MaxBootRetries ? $" · gave up after {MaxBootRetries} relaunches" : ""), Tone.Bad );
+		}
 
 		var connection = ConnectionOf( c );
 		string hung = c.Hung ? "NOT RESPONDING · " : "";
@@ -883,6 +996,9 @@ public static class PlaytestLauncher
 
 	[DllImport( "user32.dll" )]
 	static extern bool ShowWindowAsync( IntPtr hWnd, int cmd );
+
+	[DllImport( "user32.dll" )]
+	static extern bool IsIconic( IntPtr hWnd );
 
 	[DllImport( "user32.dll" )]
 	static extern bool SetForegroundWindow( IntPtr hWnd );

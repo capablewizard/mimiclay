@@ -59,6 +59,15 @@ public class PlaytestDock : Widget
 			set => ConsoleSystem.SetValue( "net_fakelag", value.ToString() );
 		}
 
+		/// <summary>Relaunch a client into its slot when it crashes while booting (the engine's resource-system
+		/// race on the s&amp;box menu, before the game loads) — up to twice per slot. Off leaves it showing as crashed.</summary>
+		[Title( "Auto-relaunch boot crashes" )]
+		public bool AutoRelaunch
+		{
+			get => PlaytestLauncher.AutoRelaunch;
+			set => PlaytestLauncher.AutoRelaunch = value;
+		}
+
 		/// <summary>Percentage of packets the host drops. Live. Unreliable messages only — reliable ones
 		/// (RPCs, snapshots) are never dropped.</summary>
 		[Range( 0f, 100f ), Step( 0.5f )]
@@ -133,6 +142,7 @@ public class PlaytestDock : Widget
 		var buttons = col.AddRow();
 		buttons.Spacing = 6;
 		buttons.Add( new Button.Primary( "Launch", "play_arrow" ) { ToolTip = "Enter play mode and launch a client into every empty slot", Clicked = PlaytestLauncher.Launch }, 1 );
+		buttons.Add( new Button( "Front", "flip_to_front" ) { ToolTip = "Un-minimise every client and bring them above other windows", Clicked = PlaytestLauncher.BringAllToFront } );
 		buttons.Add( new Button( "Re-tile", "grid_view" ) { ToolTip = "Snap running clients back into their slots", Clicked = PlaytestLauncher.Retile } );
 		buttons.Add( new Button.Danger( "Close all", "close" ) { ToolTip = "Kill every client this launcher started", Clicked = PlaytestLauncher.CloseAll } );
 
@@ -147,6 +157,11 @@ public class PlaytestDock : Widget
 			sheet.AddRow( so.GetProperty( nameof( NetworkSettings.SimulateLag ) ) );
 			sheet.AddRow( so.GetProperty( nameof( NetworkSettings.SimulatePacketLoss ) ) );
 			col.Add( new Widget( this ) { Layout = sheet } );
+
+			col.Add( new Label( "Launcher" ) );
+			var launcherSheet = new ControlSheet();
+			launcherSheet.AddRow( so.GetProperty( nameof( NetworkSettings.AutoRelaunch ) ) );
+			col.Add( new Widget( this ) { Layout = launcherSheet } );
 		}
 
 		col.AddSpacingCell( 4 );
@@ -229,6 +244,7 @@ public class PlaytestDock : Widget
 
 		_sinceRefresh = 0;
 		PlaytestLauncher.CheckPlanChanged();
+		PlaytestLauncher.Maintain();
 		Refresh();
 	}
 
