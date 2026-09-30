@@ -107,7 +107,8 @@ public sealed class TutorialDirector : Component
 	/// and cut); where no icon fits, the label alone carries the row.</summary>
 	public sealed class Hint
 	{
-		/// <summary>Input-prompt art (path under Assets, e.g. "inputicons/mouse_left.png") — jittering on
+		/// <summary>Input-prompt art (path under Assets, e.g. "UI/inputicons/mouse_left.png"; must live under UI/ — the sbproj
+		/// Resources glob — since a runtime string path isn't picked up by the packager) — jittering on
 		/// the clay clock until achieved. For MOUSE prompts; keyboard prompts use <see cref="KeyCap"/>.</summary>
 		public string Icon { get; init; }
 
@@ -457,9 +458,9 @@ public sealed class TutorialDirector : Component
 			Title = "Look Around",
 			Hints = new[]
 			{
-				new Hint { Icon = "inputicons/mouse_left.png", Label = "Orbit the camera", Check = d => d._orbitTravel > 60f },
-				new Hint { Icon = "inputicons/mouse_scroll.png", Label = "Pan the camera", Check = d => d._panTravel > 40f },
-				new Hint { Icon = "inputicons/mouse_right.png", Label = "Zoom in / out", Check = d => d._dollyTravel > 40f },
+				new Hint { Icon = "UI/inputicons/mouse_left.png", Label = "Orbit the camera", Check = d => d._orbitTravel > 60f },
+				new Hint { Icon = "UI/inputicons/mouse_scroll.png", Label = "Pan the camera", Check = d => d._panTravel > 40f },
+				new Hint { Icon = "UI/inputicons/mouse_right.png", Label = "Zoom in / out", Check = d => d._dollyTravel > 40f },
 			},
 			Enter = d =>
 			{
@@ -474,7 +475,7 @@ public sealed class TutorialDirector : Component
 			Title = "Pick a Shape",
 			Hints = new[]
 			{
-				new Hint { Icon = "inputicons/mouse_left.png", Label = "Select a shape", Check = d => d.Session.HasSelection },
+				new Hint { Icon = "UI/inputicons/mouse_left.png", Label = "Select a shape", Check = d => d.Session.HasSelection },
 				// He still SAYS the Tab tip (the chain's second line), but a spoken aside got missed — so it
 				// also gets a checklist row: the wireframes are how you SEE the shapes you're picking
 				// between. (The key is owned by the controllers, not a gated HUD section, so it always works.)
@@ -665,7 +666,7 @@ public sealed class TutorialDirector : Component
 				{
 					// Both halves required: notches scrolled AND the shape actually displaced — so a scrub
 					// can't tick it, and neither can dead scrolling with the push blocked.
-					Icon = "inputicons/mouse_scroll_vertical.png", Label = "Push / pull the shape",
+					Icon = "UI/inputicons/mouse_scroll_vertical.png", Label = "Push / pull the shape",
 					Check = d => d._scrollTravel >= 2f
 						&& d.AnyBrush( ( b, s ) => (b.Position - s.Position).Length > 1f ),
 				},
@@ -715,7 +716,7 @@ public sealed class TutorialDirector : Component
 			Hints = new[]
 			{
 				new Hint { KeyCap = "Space", Label = "Open the shapes", Check = d => d.Session.Tool == SculptTool.Sculpt },
-				new Hint { Icon = "inputicons/mouse_left.png", Label = "Stamp it on", Check = d => d.AuthoredCount() > d._countAtEnter },
+				new Hint { Icon = "UI/inputicons/mouse_left.png", Label = "Stamp it on", Check = d => d.AuthoredCount() > d._countAtEnter },
 			},
 			// Reactive: the moment the Add tool is up (chip or Space), the shape dock appears and he runs
 			// the placing monologue (shapes line → hotkeys reminder, ChainBeat apart). Backing out
@@ -861,7 +862,7 @@ public sealed class TutorialDirector : Component
 			Title = "The Layer Stack",
 			Hints = new[]
 			{
-				new Hint { Icon = "inputicons/mouse_left.png", Label = "Drag a layer up or down", Check = d => d.OrderChanged() },
+				new Hint { Icon = "UI/inputicons/mouse_left.png", Label = "Drag a layer up or down", Check = d => d.OrderChanged() },
 			},
 			// The instruction line chains in after the intro; completing early mustn't cut it off.
 			Done = d => d._chainDone,
