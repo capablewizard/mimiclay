@@ -337,7 +337,7 @@ public sealed class MenuCustomise : Component
 	}
 
 	// Fit-sphere distance for the head with FramingMargin breathing room, against the FOV edit mode settles
-	// at (GameSettings.OrbitFov) — the same math as HunterController.FramingDistance.
+	// at (GameSettings.EditFitDistance) — the same math as HunterController.FramingDistance.
 	float FramingDistance()
 	{
 		const float fallback = 60f;
@@ -349,12 +349,7 @@ public sealed class MenuCustomise : Component
 		if ( radius <= 0.01f )
 			return fallback;
 
-		float halfFov = GameSettings.OrbitFov.DegreeToRadian() * 0.5f;
-		float sin = MathF.Sin( halfFov );
-		if ( sin <= 0.001f )
-			return fallback;
-
-		return radius * FramingMargin / sin;
+		return GameSettings.EditFitDistance( radius, FramingMargin );
 	}
 
 	// The body is always made of the same clay as the head — every frame, copy the face's first authored

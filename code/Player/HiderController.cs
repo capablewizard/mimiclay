@@ -249,14 +249,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// dead on the key edge. 0 = the old instant response.</summary>
 	[Property, Group( "Free Cam" ), Range( 0f, 1f )] public float FreeCamSmoothing { get; set; } = 0.3f;
 
-	/// <summary>Wider FOV while free cam is active — a scouting/spectator view benefits from seeing more than
-	/// the normal orbit framing. Eased in/out by our OWN blend (<see cref="ApplySmoothFov"/>), independent of
-	/// MainCamera's shared <c>FovLerpSpeed</c> (used by every other FOV transition in the game — hunter zoom,
-	/// orbit/hunter swap — so tuning free cam's feel here can't accidentally change those too).</summary>
-	[Property, Group( "Free Cam" )] public float FreeCamFov { get; set; } = 90f;
-
-	/// <summary>How fast the FOV eases toward <see cref="FreeCamFov"/> on entry and back toward
-	/// <see cref="GameSettings.OrbitFov"/> on exit (exponential, per second — lower = slower/smoother).</summary>
+	/// <summary>How fast the FOV eases toward the free cam's wide view (<see cref="GameSettings.SpectateFov"/>,
+	/// the player's FOV preference) on entry and back toward <see cref="GameSettings.PropPlayFov"/> on exit
+	/// (exponential, per second — lower = slower/smoother). Our OWN blend (<see cref="ApplySmoothFov"/>),
+	/// independent of MainCamera's shared <c>FovLerpSpeed</c> (used by every other FOV transition in the game —
+	/// hunter zoom, orbit/hunter swap — so tuning free cam's feel here can't accidentally change those too).</summary>
 	[Property, Group( "Free Cam" )] public float FreeCamFovLerpSpeed { get; set; } = 3f;
 
 	float _fovBlend;       // our own live-eased FOV value, independent of MainCamera's internal target-lerp
@@ -1012,16 +1009,21 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			// Edit: the rig reads create-mode navigation itself (orbit/dolly/pan + the dot cursor). We leave _bodyYaw alone,
 			// so the disguise stays put and re-settles onto its shape in place while we sculpt.
 			_orbit.Tick( handleAltDrag: true );
+
+			// The rig just asserted EditFov through MainCamera's own ease; drop our blend so leaving edit
+			// re-seeds it from the live camera instead of popping back to the stale play-camera value.
+			_fovBlendSeeded = false;
 		}
 		else
 		{
 			PlayCamera();                        // free-look + bare drag nav feed the rig; may turn the disguise too
 			_orbit.Tick( handleAltDrag: false );
 
-			// Keep easing the SAME blend back toward the normal orbit FOV here too — otherwise leaving free
-			// cam would hand off from our custom glide to MainCamera's own (differently-paced) shared lerp
-			// mid-transition, reading as a speed change partway through instead of one continuous ease.
-			ApplySmoothFov( GameSettings.OrbitFov );
+			// The play camera's FOV (GameSettings.PropPlayFov) overrides the rig's EditFov. Keep
+			// easing the SAME blend here too — otherwise leaving free cam would hand off from our custom glide
+			// to MainCamera's own (differently-paced) shared lerp mid-transition, reading as a speed change
+			// partway through instead of one continuous ease.
+			ApplySmoothFov( GameSettings.PropPlayFov );
 		}
 	}
 
@@ -1076,23 +1078,25 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 		_orbit.Tick( handleAltDrag: false );
 
-		// After Tick/Apply, which just asserted GameSettings.OrbitFov via MainCamera's own target-lerp —
-		// override it with our own independently-smoothed widen (see ApplySmoothFov).
-		ApplySmoothFov( FreeCamFov );
+		// After Tick/Apply, which just asserted GameSettings.EditFov via MainCamera's own target-lerp —
+		// override it with our own independently-smoothed widen to the player's FOV (see ApplySmoothFov).
+		ApplySmoothFov( GameSettings.SpectateFov );
 	}
 
 	// Eases MainCamera's live FOV toward target at our own speed (FreeCamFovLerpSpeed), then snaps the ACTUAL
 	// camera to that pre-eased value (SetFov(..., lerp:false)) rather than handing MainCamera a raw target and
 	// trusting its shared FovLerpSpeed — so free cam's transition speed is tunable without touching every other
 	// FOV change in the game (hunter zoom, orbit/hunter swap) that also rides that shared setting. Called both
-	// entering free cam (target FreeCamFov) and leaving it (target GameSettings.OrbitFov, from UpdateCamera's
+	// entering free cam (target GameSettings.SpectateFov) and leaving it (target GameSettings.PropPlayFov, from UpdateCamera's
 	// normal play branch below), so the widen AND the return glide are both smooth and share one continuous
 	// blend value — no seam at the toggle.
 	void ApplySmoothFov( float target )
 	{
 		if ( !_fovBlendSeeded )
 		{
-			_fovBlend = MainCamera.Fov; // start from whatever's already showing — no pop on the very first frame
+			// Start from what's actually on screen (the live camera, not MainCamera's target, which may still be
+			// mid-ease — e.g. just out of edit) — no pop on the first frame.
+			_fovBlend = Scene.Camera.IsValid() ? Scene.Camera.FieldOfView : MainCamera.Fov;
 			_fovBlendSeeded = true;
 		}
 

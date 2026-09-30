@@ -33,9 +33,6 @@ public sealed class SpectatorController : Component
 	/// (accelerate in, glide to a stop). 0 = instant, no glide.</summary>
 	[Property, Range( 0f, 1f )] public float Smoothing { get; set; } = 0.3f;
 
-	/// <summary>Field of view while spectating — the free cam's wide view.</summary>
-	[Property] public float SpectateFov { get; set; } = 90f;
-
 	Vector3 _pos;
 	Angles _angles;
 	Vector3 _velocity;
@@ -95,7 +92,7 @@ public sealed class SpectatorController : Component
 	void Apply()
 	{
 		MainCamera.Set( _pos, _angles.ToRotation() );
-		MainCamera.SetFov( SpectateFov ); // eased by MainCamera's own FovLerpSpeed
+		MainCamera.SetFov( GameSettings.SpectateFov ); // the player's FOV preference, eased by MainCamera
 	}
 
 	// Multi-bump slide, the free-cam shape (see HiderController.SlideFreeCam): keep re-deflecting off every

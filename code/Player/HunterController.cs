@@ -1564,7 +1564,7 @@ public sealed class HunterController : Component
 	// The boom pulls in when geometry blocks it (same trace as the orbit rig's boom) so it can't see through
 	// walls. Transform is written directly; FOV is declared through MainCamera (which owns the ease) and
 	// asserted every frame, so whatever the previous driver left targeted — the orbit rig runs at
-	// GameSettings.OrbitFov — glides back to hunter FOV rather than sticking. Still no render-setting
+	// GameSettings.EditFov — glides back to hunter FOV (the player's preference) rather than sticking. Still no render-setting
 	// changes: one camera, left clean for the next pawn that drives it.
 	void DriveCamera( Vector3 eye )
 	{
@@ -2302,11 +2302,8 @@ public sealed class HunterController : Component
 	}
 
 	// Distance that fits the head's bounding sphere in the frame with EditFramingMargin breathing room, derived
-	// from the FOV edit mode settles at (GameSettings.OrbitFov) — NOT the live camera, which at edit entry is
-	// still easing away from the hunter's first-person FOV and would over-frame. Standard fit-sphere math: a
-	// sphere of radius r is tangent to the view cone at distance r / sin(halfFov). The FOV is the VERTICAL fov
-	// (the tighter axis on a wide screen), so fitting against it guarantees the head fits horizontally too.
-	// Falls back to a fixed distance if bounds aren't ready.
+	// in the rig's reference-FOV units (GameSettings.EditFitDistance) — the rig dolly-zooms it to the live FOV,
+	// so the head frames the same at any FOV preference. Falls back to a fixed distance if bounds aren't ready.
 	float FramingDistance() => FramingDistance( Face );
 
 	// The same fit, for any sculpture (the weapon edit fits the gun's bounds with the same margin/FOV rules).
@@ -2322,12 +2319,7 @@ public sealed class HunterController : Component
 		if ( radius <= 0.01f )
 			return fallback;
 
-		float halfFov = GameSettings.OrbitFov.DegreeToRadian() * 0.5f;
-		float sin = MathF.Sin( halfFov );
-		if ( sin <= 0.001f )
-			return fallback;
-
-		return radius * EditFramingMargin / sin;
+		return GameSettings.EditFitDistance( radius, EditFramingMargin );
 	}
 
 	// World-space centre of the face's sculpted shape (its brush bounds), so the camera frames the head itself

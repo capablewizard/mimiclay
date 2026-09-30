@@ -160,7 +160,7 @@ public sealed class MainCamera : Component
 		Current._targetBlurSize = blurSize;
 	}
 
-	/// <summary>Target vertical field of view (degrees). The live camera eases toward it; assert it every
+	/// <summary>Target field of view (degrees, along the camera's FovAxis — horizontal in every scene). The live camera eases toward it; assert it every
 	/// frame from whatever is driving the camera. Writes are ignored when no camera is live.</summary>
 	public static float Fov
 	{

@@ -379,11 +379,6 @@ public sealed class TutorialNpc : Component
 		if ( radius <= 0.01f )
 			return fallback;
 
-		float halfFov = GameSettings.OrbitFov.DegreeToRadian() * 0.5f;
-		float sin = MathF.Sin( halfFov );
-		if ( sin <= 0.001f )
-			return fallback;
-
-		return radius * FramingMargin / sin;
+		return GameSettings.EditFitDistance( radius, FramingMargin );
 	}
 }

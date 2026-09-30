@@ -80,7 +80,27 @@ public sealed class OrbitCameraController : Component
 	public string IgnoreCollisionTag { get; set; }
 
 	public Vector3 Pivot { get; set; }
+
+	/// <summary>Framing distance, in units measured at <see cref="GameSettings.ReferenceFov"/>. The camera
+	/// actually sits at <see cref="Reach"/> — this scaled by the live FOV — so the subject covers the same
+	/// share of the screen at any FOV preference (a dolly zoom). Every owner's distances, zoom limits and
+	/// saved views stay in these units and keep their tuned framing.</summary>
 	public float Distance { get; set; }
+
+	/// <summary>Where the camera really sits along the boom before collision: <see cref="Distance"/> × the
+	/// live FOV's dolly factor.</summary>
+	public float Reach => Distance * FovDistanceScale();
+
+	// tan(ref/2) / tan(live/2): a subject at Distance under the reference FOV projects to the same screen size
+	// as one at Distance × this under the live FOV. Reads the live camera, so an FOV ease dolly-zooms with it.
+	float FovDistanceScale()
+	{
+		var cam = Scene.Camera;
+		float live = cam.IsValid() ? cam.FieldOfView : GameSettings.ReferenceFov;
+		float tanLive = MathF.Tan( Math.Clamp( live, 5f, 170f ).DegreeToRadian() * 0.5f );
+		float tanRef = MathF.Tan( GameSettings.ReferenceFov.DegreeToRadian() * 0.5f );
+		return tanRef / tanLive;
+	}
 
 	/// <summary>When set, the pivot's world X/Y is pinned to this point every frame — height (Z) still comes
 	/// from the follow target + offset + pan as normal, so the player keeps their up/down framing. Lets an
@@ -97,7 +117,7 @@ public sealed class OrbitCameraController : Component
 
 	Angles _angles;
 	Vector3 _panOffset; // accumulated pan, relative to the follow target
-	float _boomPull;    // smoothed obstruction pull-in (how far short of Distance the boom currently sits)
+	float _boomPull;    // smoothed obstruction pull-in (how far short of Reach the boom sits, real units)
 	float _boomBlocked; // smoothed whisker occlusion 0..1 (raw value is quantized to quarters and jumps)
 
 	bool _seeded; // false until Pivot/Distance/_angles have been derived from a live camera
@@ -117,9 +137,12 @@ public sealed class OrbitCameraController : Component
 
 		_angles = cam.WorldRotation.Angles();
 		var fwd = cam.WorldRotation.Forward;
-		float dist = FocusHint is Vector3 f ? Vector3.Dot( f - cam.WorldPosition, fwd ) : DefaultDistance;
+		// The hint gives a REAL distance; Distance is in reference-FOV units, so convert (and back again for
+		// the pivot) to keep the current view exactly where it is.
+		float scale = FovDistanceScale();
+		float dist = FocusHint is Vector3 f ? Vector3.Dot( f - cam.WorldPosition, fwd ) / scale : DefaultDistance;
 		Distance = dist.Clamp( MinDistance, MaxDistance );
-		Pivot = cam.WorldPosition + fwd * Distance;
+		Pivot = cam.WorldPosition + fwd * Reach;
 		return true;
 	}
 
@@ -197,9 +220,11 @@ public sealed class OrbitCameraController : Component
 	// remembered maximum — orbiting away restores the old framing instead of flying out to a padded value.
 	public void Dolly( Vector2 d )
 	{
+		// The pull is in real units (it's measured along the actual boom), Distance in reference-FOV units.
+		float scale = FovDistanceScale();
 		float factor = MathF.Pow( 1f + ZoomSpeed, d.y );
-		float boom = Distance - _boomPull;
-		float target = (boom * factor).Clamp( MinDistance, MaxDistance );
+		float boom = Reach - _boomPull;
+		float target = (boom * factor / scale).Clamp( MinDistance, MaxDistance );
 
 		if ( factor < 1f )
 		{
@@ -226,7 +251,8 @@ public sealed class OrbitCameraController : Component
 	void Apply( CameraComponent cam )
 	{
 		var rot = _angles.ToRotation();
-		float boom = Distance;
+		float reach = Reach; // real boom length at the live FOV — all the collision maths below is in real units
+		float boom = reach;
 
 		// Pull the boom in if it would clip through geometry (gameplay only). Two traces: a wide one gives a
 		// resting target with headroom off walls, eased toward (fast in, slow out) so sweeping over bumpy
@@ -238,13 +264,13 @@ public sealed class OrbitCameraController : Component
 			var softTr = TraceBoom( rot, 16f );
 			var hardTr = TraceBoom( rot, 8f );
 
-			float hard = hardTr.Hit ? hardTr.Fraction * Distance : Distance;
+			float hard = hardTr.Hit ? hardTr.Fraction * reach : reach;
 			// A start-solid soft sweep (pivot within 16u of a wall — a prop hiding against one) carries no
 			// direction info and would read as "pull all the way in"; defer to the hard trace instead.
 			float soft = softTr.StartedSolid ? hard
-				: softTr.Hit ? softTr.Fraction * Distance : Distance;
+				: softTr.Hit ? softTr.Fraction * reach : reach;
 
-			float wantPull = MathF.Max( 0f, Distance - soft );
+			float wantPull = MathF.Max( 0f, reach - soft );
 
 			// Context sensitivity: only pull in as much as the obstruction actually blocks the view. Thin
 			// poles and small props near the pivot block just the centre ray — the whiskers see straight
@@ -263,10 +289,10 @@ public sealed class OrbitCameraController : Component
 			// visible teleport (eased boom far out, clamp suddenly live at the trace distance). Fully
 			// occluded = the old instant no-clip clamp; mostly clear = no clamp at all.
 			float clampWeight = MathX.Clamp( (_boomBlocked - 0.25f) / 0.5f, 0f, 1f );
-			float hardEffective = MathX.Lerp( Distance, hard, clampWeight );
+			float hardEffective = MathX.Lerp( reach, hard, clampWeight );
 
-			boom = MathF.Min( Distance - _boomPull, hardEffective );
-			_boomPull = Distance - boom; // fold the clamp back in, so easing out starts from where we really are
+			boom = MathF.Min( reach - _boomPull, hardEffective );
+			_boomPull = reach - boom; // fold the clamp back in, so easing out starts from where we really are
 		}
 		else
 		{
@@ -277,10 +303,11 @@ public sealed class OrbitCameraController : Component
 		cam.WorldPosition = Pivot - rot.Forward * boom;
 		cam.WorldRotation = rot;
 
-		// Every rig consumer (sculpt/edit, the prop's play camera) runs at the orbit FOV. Declared through
-		// MainCamera — never written to the CameraComponent directly — and asserted every frame, so the ease
-		// back from the hunter's first-person FOV happens centrally and a live settings change just applies.
-		MainCamera.Fov = GameSettings.OrbitFov;
+		// Every rig consumer runs at the edit FOV by default; the prop's play camera overrides it after Tick
+		// (HiderController.ApplySmoothFov → GameSettings.PropPlayFov). Declared through MainCamera — never
+		// written to the CameraComponent directly — and asserted every frame, so any ease from the previous
+		// driver's FOV happens centrally and a live settings change just applies (Reach dolly-zooms with it).
+		MainCamera.Fov = GameSettings.EditFov;
 	}
 
 	// How much of the view around the sight line the obstruction really blocks, 0..1. Four thin rays fan
@@ -289,7 +316,7 @@ public sealed class OrbitCameraController : Component
 	// depth; a thin pole or a small prop near the pivot crosses none. Only run when the centre trace hit.
 	float WhiskerOcclusion( Rotation rot )
 	{
-		var camPos = Pivot - rot.Forward * Distance;
+		var camPos = Pivot - rot.Forward * Reach;
 		var offsets = new Vector3[]
 		{
 			rot.Right * BoomWhiskerSpread, rot.Right * -BoomWhiskerSpread,
@@ -310,7 +337,7 @@ public sealed class OrbitCameraController : Component
 	// Sweep a sphere from the pivot out along the full boom length; the caller reads Fraction/StartedSolid.
 	SceneTraceResult TraceBoom( Rotation rot, float radius )
 	{
-		var trace = FilterBoomTrace( Scene.Trace.Ray( Pivot, Pivot - rot.Forward * Distance ).Radius( radius ) );
+		var trace = FilterBoomTrace( Scene.Trace.Ray( Pivot, Pivot - rot.Forward * Reach ).Radius( radius ) );
 		return trace.Run();
 	}
 
