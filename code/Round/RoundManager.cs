@@ -136,6 +136,15 @@ public sealed class RoundManager : Component, IRoundContext
 	/// pawn forever.</summary>
 	[Sync] public bool AllPlayersLoaded { get; set; }
 
+	/// <summary>True at the head of <see cref="RoundPhase.Starting"/> while the host waits for every machine to
+	/// finish loading (see <see cref="LoadGate"/>). Roles aren't dealt yet, so the roster is empty and nobody has a
+	/// pawn; <see cref="PhaseEndsAt"/> counts down the gate's timeout. Then roles, pawns, and the real countdown.</summary>
+	[Sync] public bool AwaitingPlayers { get; set; }
+
+	/// <summary>HUD readout while <see cref="AwaitingPlayers"/>: players loaded / players connected.</summary>
+	[Sync] public int LoadedPlayers { get; set; }
+	[Sync] public int ExpectedPlayers { get; set; }
+
 	// ── Host-only bookkeeping (not networked) ────────────────────────────────────────────────────────────────
 	readonly Dictionary<Guid, float> _scoreAccum = new();      // fractional prop score carried between integer ticks
 
@@ -144,6 +153,9 @@ public sealed class RoundManager : Component, IRoundContext
 	// real cooldown so an honest client's shots never trip it through timing jitter.
 	const float HostShotCooldown = 0.8f;
 	readonly Dictionary<Guid, RealTimeUntil> _shotGate = new();
+
+	// Holds role assignment until every machine has loaded the map (created in OnStart, host only).
+	LoadGate _loadGate;
 
 	// Whether this Hunt opened with any hunters at all. Gates the "every hunter left → end early" check so a round
 	// that legitimately never had hunters (solo direct Play spawns the lone player as a prop) keeps its timer.
@@ -219,6 +231,27 @@ public sealed class RoundManager : Component, IRoundContext
 
 		DoorSeed = Random.Shared.Next( 1, int.MaxValue );
 
+		// Don't deal roles yet: wait for everyone to finish loading first (TickLoadGate), so the countdown
+		// starts together and a nominated hunter who crashed during the load doesn't get a hunter row. The
+		// timer shows the gate's timeout meanwhile.
+		_loadGate = new LoadGate( GameObject );
+		AwaitingPlayers = true;
+		PhaseEndsAt = LoadGate.TimeoutSeconds;
+		Phase = RoundPhase.Starting;
+	}
+
+	// Host-only, while AwaitingPlayers. Once the gate opens: deal roles from whoever is connected NOW, then
+	// restart Starting with its real countdown (TransitionTo resets the timer; Phase doesn't change, so no
+	// second phase event fires).
+	void TickLoadGate()
+	{
+		var open = _loadGate?.Tick() ?? true;
+		LoadedPlayers = _loadGate?.Loaded ?? 0;
+		ExpectedPlayers = _loadGate?.Expected ?? 0;
+		if ( !open )
+			return;
+
+		AwaitingPlayers = false;
 		AssignRoles();
 		TransitionTo( RoundPhase.Starting );
 	}
@@ -246,8 +279,10 @@ public sealed class RoundManager : Component, IRoundContext
 			return;
 
 		// HOST: keep the roster in sync with who's actually connected, stand up the bodies for the players who have
-		// no machine to do it themselves, then tick the active phase.
-		ReconcileConnections();
+		// no machine to do it themselves, then tick the active phase. Not while waiting on the load gate: the
+		// roster is dealt all at once when it opens, and this would seat everyone as props in the meantime.
+		if ( !AwaitingPlayers )
+			ReconcileConnections();
 		EnsureBotPawns();
 		StampPawnIds();
 		AllPlayersLoaded = Connection.All.All( c => c.IsActive );
@@ -260,7 +295,8 @@ public sealed class RoundManager : Component, IRoundContext
 		switch ( Phase )
 		{
 			case RoundPhase.Starting:
-				if ( PhaseEndsAt <= 0f ) TransitionTo( RoundPhase.Hide );
+				if ( AwaitingPlayers ) TickLoadGate();
+				else if ( PhaseEndsAt <= 0f ) TransitionTo( RoundPhase.Hide );
 				break;
 
 			case RoundPhase.Hide:
@@ -455,6 +491,12 @@ public sealed class RoundManager : Component, IRoundContext
 		if ( me is null || !Players.TryGetValue( me.Id, out var info ) )
 		{
 			RetireOwnPawn(); // we left the roster (e.g. disconnect mid-resolve) — drop our pawn
+
+			// No row yet: waiting on the load gate (nobody has a role), or joined too late in the round to get
+			// one. Fly the ghost cam rather than sit on a frozen view. It's local-only, so it reveals nothing, and
+			// the first pass that finds our row below retires it as our pawn spawns.
+			if ( me is not null )
+				EnsureSpectator();
 			return;
 		}
 
@@ -927,7 +969,9 @@ public sealed class RoundManager : Component, IRoundContext
 		_ownPawnRole = PlayerRole.Unassigned;
 	}
 
-	// ── Spectator (an eliminated Teams prop's ghost cam — local-only, never networked) ─────────────────────────
+	// ── Spectator (the ghost cam — local-only, never networked) ─────────────────────────────────────────────────
+	// Flown by an eliminated Teams prop, and by anyone without a roster row: everyone while the load gate holds,
+	// and a joiner who arrived too late in the round for one.
 	void EnsureSpectator()
 	{
 		if ( _spectator.IsValid() )

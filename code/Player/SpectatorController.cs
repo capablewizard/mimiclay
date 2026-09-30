@@ -6,7 +6,9 @@ namespace Mimiclay;
 /// The free-fly camera an ELIMINATED player is left with — Teams mode's bench: a found prop is out for the
 /// round, their pawn pops under the caught puff, and this takes over the view. Spawned LOCALLY by
 /// <see cref="RoundManager"/> (never networked — a ghost nobody else can see, collide with or shoot) and
-/// destroyed by the manager or the end-of-round scene change.
+/// destroyed by the manager or the end-of-round scene change. Also flown by anyone the round hasn't given a
+/// roster row yet: everyone while the map waits for all players to load (<see cref="LoadGate"/>), and joiners
+/// who arrive too late in the round for a role.
 ///
 /// Deliberately the HIDER'S free cam feel — the same speed/momentum/slide tuning as the F-key cam on
 /// <see cref="HiderController"/> — but self-contained: the pawn that owned that orbit rig is gone, so this

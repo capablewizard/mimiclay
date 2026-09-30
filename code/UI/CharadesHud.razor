@@ -164,7 +164,9 @@
 
 	string PhaseCaption => Manager?.Phase switch
 	{
-		CharadesPhase.Waiting => $"Waiting for players ({Manager.Players.Count}/{Manager.Settings.MinPlayers})",
+		CharadesPhase.Waiting => Manager.AwaitingPlayers
+			? $"Loading players ({Manager.LoadedPlayers}/{Manager.ExpectedPlayers})"
+			: $"Waiting for players ({Manager.Players.Count}/{Manager.Settings.MinPlayers})",
 		CharadesPhase.Starting => "Get ready…",
 		CharadesPhase.Choosing => Manager.LocalIsMimic ? "Your turn — pick a word!" : $"{Manager.MimicName} is choosing a word…",
 		CharadesPhase.Sculpting => Manager.LocalIsMimic ? "Sculpt it!" : $"{Manager.MimicName} is sculpting — guess in chat!",
@@ -218,7 +220,7 @@
 			? 0
 			: HashCode.Combine(
 				HashCode.Combine( Manager.Phase, TimerText, Manager.MimicId, Manager.WordHint, Manager.RevealedWord ),
-				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing ),
+				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing, PhaseCaption ),
 				// Scores/guess places move without anything above noticing.
 				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedPlace ) ),
 				Manager.Players.Count );

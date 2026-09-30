@@ -324,7 +324,9 @@
 	// than widening it or overhanging the rosters. Prefer wording that breaks tidily across two lines.
 	string ClockCaption => Phase switch
 	{
-		RoundPhase.Starting => "Get Ready",
+		RoundPhase.Starting => RoundManager.Current.IsValid() && RoundManager.Current.AwaitingPlayers
+			? $"Loading Players ({RoundManager.Current.LoadedPlayers}/{RoundManager.Current.ExpectedPlayers})"
+			: "Get Ready",
 		RoundPhase.Hide => "Until Hunt Begins",
 		RoundPhase.Hunt => "Time Left",
 		RoundPhase.Reveal => "Revealing",       // not specified — sensible default
@@ -373,7 +375,8 @@
 	public static float IconSupersample { get; set; } = 1f;
 
 	// Roles only exist from Starting onward, and Consolidation has its own results readout.
-	bool ShowTally => RoundManager.Current.IsValid()
+	// (Not while the round is still waiting for everyone to load: nobody has a role yet.)
+	bool ShowTally => RoundManager.Current.IsValid() && !RoundManager.Current.AwaitingPlayers
 		&& Phase is RoundPhase.Starting or RoundPhase.Hide or RoundPhase.Hunt or RoundPhase.Reveal;
 
 	int PropsLeft => RoundManager.Current.IsValid() ? RoundManager.Current.AliveProps : 0;
@@ -875,7 +878,7 @@
 	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole (+ eliminated), so
 	// they're covered.
 	protected override int BuildHash()
-		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated ) ),
+		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, ClockCaption, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
 				TutorialDirector.IsRunning ), // lobby roster hides while the tutorial runs

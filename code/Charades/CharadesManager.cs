@@ -72,6 +72,12 @@ public sealed class CharadesManager : Component, IChatEvent
 	/// <summary>The rules, resolved by the host in OnStart (lobby courier / card override) and synced.</summary>
 	[Sync] public CharadesSettings Settings { get; set; } = CharadesSettings.Default;
 
+	/// <summary>True while the first game on this map waits for every machine to finish loading (see
+	/// <see cref="LoadGate"/>); Waiting holds until it clears. Counts are for the HUD.</summary>
+	[Sync] public bool AwaitingPlayers { get; set; }
+	[Sync] public int LoadedPlayers { get; set; }
+	[Sync] public int ExpectedPlayers { get; set; }
+
 	// ── Config copied on by RoundManagerSpawner before the NetworkSpawn (host-only fields) ────────────────
 	/// <summary>Test bots to seat (the map card's count; a lobby launch's courier count overrides in OnStart).</summary>
 	public int BotCount { get; set; }
@@ -87,6 +93,7 @@ public sealed class CharadesManager : Component, IChatEvent
 	List<string> _offeredThisTurn = new();                // what the mimic was offered (validates ChooseWord)
 	readonly List<Guid> _turnQueue = new();               // take-turns rotation (winner-stays-on's fallback)
 	readonly HashSet<string> _usedWords = new();          // no repeats until the pool runs dry
+	LoadGate _loadGate;                                   // holds the first StartGame until everyone's loaded
 	int _nextSeat;                                        // monotonic join counter → CharadesPlayer.Seat
 	int _correctThisTurn;                                 // how many have guessed it (places + mimic score cap)
 	Guid _firstCorrectThisTurn;                           // winner-stays-on's next mimic
@@ -147,7 +154,24 @@ public sealed class CharadesManager : Component, IChatEvent
 		if ( int.TryParse( Networking.GetData( RoundManager.BotCountKey ), out var n ) )
 			BotCount = Math.Max( 0, n );
 
+		_loadGate = new LoadGate( GameObject );
+		AwaitingPlayers = true;
 		TransitionTo( CharadesPhase.Waiting );
+	}
+
+	// Host-only. False until everyone has loaded the map (or the gate timed out). Only the first game on the
+	// map waits: once open it stays open, so a mid-game drought back to Waiting resumes on player count alone.
+	bool EveryoneLoaded()
+	{
+		if ( !AwaitingPlayers )
+			return true;
+
+		var open = _loadGate?.Tick() ?? true;
+		LoadedPlayers = _loadGate?.Loaded ?? 0;
+		ExpectedPlayers = _loadGate?.Expected ?? 0;
+		if ( open )
+			AwaitingPlayers = false;
+		return open;
 	}
 
 	protected override void OnUpdate()
@@ -200,7 +224,7 @@ public sealed class CharadesManager : Component, IChatEvent
 		switch ( Phase )
 		{
 			case CharadesPhase.Waiting:
-				if ( Players.Count >= Settings.MinPlayers )
+				if ( EveryoneLoaded() && Players.Count >= Settings.MinPlayers )
 					StartGame();
 				break;
 

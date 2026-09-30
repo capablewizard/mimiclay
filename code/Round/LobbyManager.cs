@@ -383,6 +383,14 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		Launching = true;
 	}
 
+	/// <summary>Host console shortcut for the Start button (playtests driven from the editor tools).</summary>
+	[ConCmd( "mimi_lobby_start" )]
+	static void StartFromConsole()
+	{
+		if ( !Current.IsValid() ) { Log.Warning( "mimi_lobby_start: no lobby in this scene." ); return; }
+		Current.RequestStart();
+	}
+
 	// ── Host-side config (the host owns this object, so it can set the synced fields directly) ────────────────
 	/// <summary>Pick which game the session plays. Re-stamps the browser-facing lobby data too, so the server
 	/// list shows what a session is set up for the moment the host changes their mind — not just what it was
