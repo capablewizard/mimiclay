@@ -117,6 +117,7 @@
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
+          "Timing": "AfterPostProcess",
           "ZIndex": 90
         },
         {
@@ -208,6 +209,7 @@
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
+          "Timing": "AfterPostProcess",
           "ZIndex": 100
         }
       ],
@@ -243,7 +245,10 @@
             "_type": "gameobject",
             "prefab": "prefabs/hunter.prefab"
           },
-          "LobbyScene": "scenes/kitchenlobby.scene",
+          "LobbyScene": {
+            "Id": "07a8eeac-ae80-4955-8ed5-047c357998f9",
+            "Path": "scenes/kitchenlobby.scene"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -291,6 +296,7 @@
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
+          "Timing": "AfterPostProcess",
           "ZIndex": 1000
         },
         {
@@ -492,7 +498,7 @@
         {
           "__type": "Sandbox.DepthOfField",
           "__guid": "be4f750a-7863-47d6-a833-fcda7813855d",
-          "__enabled": false,
+          "__enabled": true,
           "Flags": 0,
           "BackBlur": true,
           "BlurSize": 6.329114,
@@ -539,6 +545,7 @@
   ],
   "SceneProperties": {
     "NetworkInterpolation": true,
+    "PhysicsMode": "Physics3D",
     "TimeScale": 1,
     "WantsSystemScene": true,
     "Metadata": {},

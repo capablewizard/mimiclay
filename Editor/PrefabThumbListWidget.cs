@@ -76,7 +76,9 @@ public sealed class PrefabThumbListWidget : ControlWidget
 
 		List<GameObject> Entries => _property.GetValue<List<GameObject>>();
 
-		public void Rebuild()
+		// `new`, not override: ours is a separate "re-read the property" step, and ListView's own internal
+		// calls to its Rebuild must keep reaching the base implementation.
+		public new void Rebuild()
 		{
 			int count = Entries?.Count ?? 0;
 			SetItems( Enumerable.Range( 0, count ).Cast<object>() );

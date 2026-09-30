@@ -339,6 +339,11 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 	// frame: props stream in over a second or two, but the game keeps pumping and the session survives.
 	static readonly System.Threading.SemaphoreSlim BuildGate = new( 1 );
 
+	/// <summary>Mesh builds queued on or running through <see cref="BuildGate"/> on this machine — the "props still
+	/// streaming in" count the playtest launcher shows per client (see <see cref="ClientStatusReporter"/>).</summary>
+	public static int BuildsInFlight => _buildsInFlight;
+	static int _buildsInFlight;
+
 	// Three stages, in this order for a reason. The field SAMPLING is a GPU dispatch + readback, so it has to
 	// run on the main thread (SdfMeshGridGpu); the surface-nets MESHING is pure array work, so it runs on a
 	// worker; the mesh UPLOAD needs the main thread again. Sampling all three LODs up front keeps the number of
@@ -347,7 +352,17 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 	static async Task<Model> BuildModelAsync( List<SdfBrush> brushes, Material material, int resolution, bool flip,
 		SurfaceNetsMesher.MeshData reuseLod1, bool haveLod1 )
 	{
-		await BuildGate.WaitAsync();
+		System.Threading.Interlocked.Increment( ref _buildsInFlight );
+		try
+		{
+			await BuildGate.WaitAsync();
+		}
+		catch
+		{
+			System.Threading.Interlocked.Decrement( ref _buildsInFlight );
+			throw;
+		}
+
 		try
 		{
 			await GameTask.MainThread();
@@ -378,6 +393,7 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 		finally
 		{
 			BuildGate.Release();
+			System.Threading.Interlocked.Decrement( ref _buildsInFlight );
 		}
 	}
 

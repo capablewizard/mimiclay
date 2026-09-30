@@ -109,6 +109,23 @@ public sealed class SdfThumbnail : ScenePanel
 	{
 		RenderOnce = true;
 		EnsureInternalSceneSafe();
+		_live.Add( this );
+	}
+
+	static readonly HashSet<SdfThumbnail> _live = new();
+
+	/// <summary>Is this one of the private scenes a thumbnail panel owns (and GameTicks every frame)? Every Scene
+	/// gets its own copy of each GameObjectSystem, so systems that should run once per machine skip these. Can't
+	/// be told apart by <c>Game.ActiveScene</c> (ScenePanel ticks inside <c>RenderScene.Push()</c>) or by
+	/// <c>WantsSystemScene</c> (the lobby scenes have it off too).</summary>
+	public static bool IsThumbnailScene( Scene scene )
+	{
+		foreach ( var thumb in _live )
+		{
+			if ( ReferenceEquals( thumb.RenderScene, scene ) )
+				return true;
+		}
+		return false;
 	}
 
 	static bool _navWarned;
@@ -296,6 +313,7 @@ public sealed class SdfThumbnail : ScenePanel
 
 	public override void OnDeleted()
 	{
+		_live.Remove( this );
 		DisposeStage();
 		base.OnDeleted();
 	}

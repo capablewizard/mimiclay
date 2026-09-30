@@ -1618,6 +1618,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// <summary>Changes whenever the proxy geometry is rebuilt (brushes / transform / bounds mode).</summary>
 	internal int ProxyVersion => _lastHash;
 
+	/// <summary>Has a shape to show but its baked field hasn't landed yet (first bake in flight) — counted as a
+	/// "prop still building" by <see cref="ClientStatusReporter"/>.</summary>
+	internal bool FieldPending => !_released && EffectiveUseFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
+
 	/// <summary>Whether the highlight can include this renderer this frame: a live proxy and a valid baked field.</summary>
 	internal bool HighlightReady => !_released && _so.IsValid() && _fieldReady && _fieldGpu is { IsValid: true };
 
