@@ -53,7 +53,12 @@ public sealed class SyncedMusic : Component
 
 	string Key => string.IsNullOrEmpty( Channel ) ? SoundEvent?.ResourcePath ?? "" : Channel;
 
+	// Consecutive frames shorter than CalmFrameDelta needed before a fresh start (a hitching or loading frame resets the count; 10fps still qualifies).
+	const int CalmFrames = 10;
+	const float CalmFrameDelta = 0.1f;
+
 	TimeUntil _nextDriftCheck;
+	int _calmFrames;
 
 	protected override void OnEnabled()
 	{
@@ -67,7 +72,9 @@ public sealed class SyncedMusic : Component
 			return;
 		}
 
-		_channels[key] = new Entry { Handle = StartHandle(), Holder = this };
+		// Claim the channel but DON'T start yet — OnUpdate starts it once the scene has settled (see CalmFrames).
+		_channels[key] = new Entry { Holder = this };
+		_calmFrames = 0;
 	}
 
 	protected override void OnDisabled()
@@ -86,7 +93,13 @@ public sealed class SyncedMusic : Component
 
 		if ( !e.Handle.IsValid() || e.Handle.Finished )
 		{
-			e.Handle = StartHandle();
+			// Wait out the load. Starting during it (OnEnabled runs inside Scene.Load) meant the first frame
+			// after was a ~2s stall: the scene clock jumped 2s while the mixer — fed from the main thread —
+			// barely advanced, so the first drift check found 1.35s of error and seeked forward. That jump was
+			// the hiccup heard on load. A run of normal frames means the clock and the mixer move together.
+			_calmFrames = Time.Delta < CalmFrameDelta ? _calmFrames + 1 : 0;
+			if ( _calmFrames >= CalmFrames )
+				e.Handle = StartHandle();
 			return;
 		}
 
@@ -108,20 +121,39 @@ public sealed class SyncedMusic : Component
 		}
 	}
 
-	float Length => SoundEvent?.Sounds?.FirstOrDefault()?.Duration ?? 0f;
+	// 0 until the file is resident. Duration THROWS on an unloaded SoundFile (its native VSound_t is null) —
+	// and at scene load it usually isn't loaded yet — so kick a preload and report "not yet" instead.
+	float Length
+	{
+		get
+		{
+			var file = SoundEvent?.Sounds?.FirstOrDefault();
+			if ( file is null )
+				return 0f;
+
+			if ( !file.IsLoaded )
+				file.Preload();
+
+			return file.IsLoaded ? file.Duration : 0f;
+		}
+	}
 
 	static float SharedTime( float length ) => (float)(Time.NowDouble % length);
 
+	// Null until the file has loaded: starting before we know the length would play from 0 and then jump to the
+	// shared position at the first drift check — an audible skip. OnUpdate retries every frame meanwhile.
 	SoundHandle StartHandle()
 	{
+		var length = Length;
+		if ( length <= 0f )
+			return null;
+
 		var h = Sound.Play( SoundEvent, WorldPosition );
 		if ( !h.IsValid() )
 			return h;
 
 		h.Volume = Volume;
-		var length = Length;
-		if ( length > 0f )
-			h.Time = SharedTime( length );
+		h.Time = SharedTime( length );
 
 		_nextDriftCheck = DriftCheckInterval;
 		return h;

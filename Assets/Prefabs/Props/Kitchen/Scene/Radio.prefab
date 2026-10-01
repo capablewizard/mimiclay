@@ -5,7 +5,7 @@
     "Flags": 0,
     "Name": "radio",
     "Position": "0,0,0",
-    "Rotation": "0,0,0,1",
+    "Rotation": "0,0,-0.99366039,-0.11242336",
     "Scale": "1,1,1",
     "Tags": "",
     "Enabled": true,
@@ -381,7 +381,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.551985
+            "BoundingRadius": 35.367867
           },
           {
             "Shape": "Text",
@@ -417,7 +417,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.551985
+            "BoundingRadius": 35.367867
           },
           {
             "Shape": "Text",
@@ -453,7 +453,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.551985
+            "BoundingRadius": 35.367867
           },
           {
             "Shape": "Text",
@@ -489,7 +489,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.551985
+            "BoundingRadius": 35.367867
           },
           {
             "Shape": "Text",
@@ -525,7 +525,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.551985
+            "BoundingRadius": 35.367867
           },
           {
             "Shape": "Text",
@@ -561,7 +561,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.551985
+            "BoundingRadius": 35.367867
           },
           {
             "Shape": "Cylinder",
@@ -745,7 +745,10 @@
           }
         ],
         "FlipFaces": false,
-        "Material": "materials/plasticine_vertex.vmat",
+        "Material": {
+          "Id": "b617446c-be6c-4df1-a294-47a575973afe",
+          "Path": "materials/plasticine_vertex.vmat"
+        },
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
@@ -765,7 +768,7 @@
         "MaterialGroup": null,
         "MaterialOverride": null,
         "Materials": null,
-        "Model": null,
+        "Model": "sbox_procedural_model.vmdl",
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
@@ -805,7 +808,10 @@
         "FieldResolution": 256,
         "FullQualityRadii": 2,
         "LodHysteresis": 0.06,
-        "Material": "materials/plasticine.vmat",
+        "Material": {
+          "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
+          "Path": "materials/plasticine.vmat"
+        },
         "MaxSteps": 50,
         "MeshLod1Radii": 30,
         "MeshLod2Radii": 40,
@@ -901,6 +907,25 @@
         "OnComponentUpdate": null,
         "RuntimeManaged": false,
         "TextureJitter": 0.02
+      },
+      {
+        "__type": "Mimiclay.SyncedMusic",
+        "__guid": "ae4a22ce-d707-8764-9b45-d9c108a6b332",
+        "__enabled": true,
+        "Flags": 0,
+        "Channel": null,
+        "DriftTolerance": 0.25,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "SoundEvent": {
+          "Id": "a155c966-dbf6-41c7-8426-48809f5da895",
+          "Path": "sounds/music/ambient_music.sound"
+        },
+        "Volume": 1
       }
     ],
     "Children": [],
