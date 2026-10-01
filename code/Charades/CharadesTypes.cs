@@ -34,16 +34,14 @@ public enum CharadesPhase
 /// <summary>Where each turn's phrase comes from — the lobby's "Phrases" setting.</summary>
 public enum PhraseSource
 {
-	/// <summary>Drawn from the selected built-in topics. With <see cref="CharadesSettings.TopicChoices"/> the
+	/// <summary>Drawn from the ticked topics: the Standard (built-in) ones plus any ticked Community (Steam
+	/// Workshop) lists. With <see cref="CharadesSettings.TopicChoices"/> the
 	/// mimic picks one of three; without, they're handed one.</summary>
 	Topics,
 	/// <summary>Written by the players ("Write Your Own"): at the start of every round everyone submits a
 	/// phrase, and each is handed to someone else to sculpt. Anyone who doesn't write gets a random built-in
 	/// phrase as filler.</summary>
 	Players,
-	/// <summary>Drawn from the community (Steam Workshop) lists the host ticked. With <see cref="CharadesSettings.TopicChoices"/> the mimic picks one of three; without, they're handed one.
-	/// Nothing ticked (or nothing installed) falls back to every built-in topic.</summary>
-	Workshop,
 }
 
 /// <summary>
@@ -95,17 +93,19 @@ public struct CharadesSettings
 	/// The highest score after the last round wins.</summary>
 	public int Rounds;
 
-	/// <summary>Where phrases come from: built-in topics, written by the players, or workshop lists.</summary>
+	/// <summary>Where phrases come from: the ticked topics (standard + community), or written by the players.</summary>
 	public PhraseSource Source;
 
-	/// <summary>Topics source: which built-in topics feed the pool, as comma-joined topic ids ("animals,food";
-	/// see <see cref="CharadesTopics"/>). Empty = every built-in topic.</summary>
+	/// <summary>Topics source: which Standard (built-in) topics feed the pool, as comma-joined topic ids
+	/// ("animals,food"; see <see cref="CharadesTopics"/>). Empty = every built-in topic; <see cref="CharadesTopics.NoStandard"/>
+	/// = none of them (only allowed while a Community list is ticked).</summary>
 	public string Topics;
 
-	/// <summary>Topics and Workshop sources: offer the mimic three phrases to pick from (Yes), or hand them one (No).</summary>
+	/// <summary>Topics source: offer the mimic three phrases to pick from (Yes), or hand them one (No).</summary>
 	public bool TopicChoices;
 
-	/// <summary>Workshop source: the ticked community lists, as comma-joined "ws:&lt;fileId&gt;" ids.</summary>
+	/// <summary>Topics source: the ticked Community lists, as comma-joined "ws:&lt;fileId&gt;" ids. They're drawn
+	/// from alongside the Standard topics.</summary>
 	public string WorkshopLists;
 
 	/// <summary>Show guessers the masked phrase shape ("_ _ _   _ _ _ _") during the sculpt. Off = no hint at

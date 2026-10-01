@@ -483,10 +483,10 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		var s = CharadesCfg; s.Source = source; CharadesCfg = s;
 	}
 
-	/// <summary>Toggle one built-in topic in/out of the Topics pool. The empty
-	/// selection means every built-in, so toggling OFF from there first materialises the full built-in set.
-	/// The last lit topic can't be turned off — a game needs SOMETHING to draw phrases from, and "none
-	/// selected" reading as Everything would make the click look broken.</summary>
+	/// <summary>Toggle one Standard (built-in) topic. The empty selection means every built-in, so toggling OFF
+	/// from there first materialises the full set. The last Standard topic can only go off while a Community list
+	/// is ticked (the selection becomes <see cref="CharadesTopics.NoStandard"/>) — a game needs SOMETHING to draw
+	/// from, and "none selected" reading as Everything would make the click look broken.</summary>
 	public void ToggleCharadesTopic( string topicId )
 	{
 		if ( !IsHostAuthority || string.IsNullOrWhiteSpace( topicId ) || CharadesTopics.TryWorkshopId( topicId, out _ ) ) return;
@@ -494,14 +494,21 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 
 		var ids = CharadesTopics.Parse( s.Topics );
 		ids.RemoveWhere( id => CharadesTopics.TryWorkshopId( id, out _ ) ); // community lists live in WorkshopLists
-		if ( ids.Count == 0 )
+		var wasNone = ids.Remove( CharadesTopics.NoStandard );
+		if ( ids.Count == 0 && !wasNone )
 			foreach ( var t in CharadesWords.BuiltInTopics() )
 				ids.Add( t.Id );
 
 		if ( !ids.Remove( topicId ) )
 			ids.Add( topicId );
 		else if ( ids.Count == 0 )
+		{
+			if ( CharadesTopics.Parse( s.WorkshopLists ).Count == 0 )
+				return; // nothing would be left to draw from
+			s.Topics = CharadesTopics.NoStandard;
+			CharadesCfg = s;
 			return;
+		}
 
 		// Every built-in lit = the canonical Everything.
 		var builtIn = CharadesWords.BuiltInTopics().Select( t => t.Id ).ToHashSet();
@@ -509,7 +516,7 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		CharadesCfg = s;
 	}
 
-	/// <summary>Every built-in topic on — the "Everything" chip.</summary>
+	/// <summary>Every Standard topic on — the "Everything" chip.</summary>
 	public void SetCharadesAllTopics()
 	{
 		if ( !IsHostAuthority ) return;
@@ -522,8 +529,7 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		var s = CharadesCfg; s.TopicChoices = on; CharadesCfg = s;
 	}
 
-	/// <summary>Tick/untick a community list ("ws:&lt;fileId&gt;") for the Workshop source. Unticking the last one
-	/// is allowed — no lists ticked plays every built-in topic (the panel says so).</summary>
+	/// <summary>Tick/untick a Community list ("ws:&lt;fileId&gt;"); it's drawn from alongside the Standard topics.</summary>
 	public void ToggleCharadesWorkshopList( string listId )
 	{
 		if ( !IsHostAuthority || !CharadesTopics.TryWorkshopId( listId, out _ ) ) return;
@@ -531,19 +537,28 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		var ids = CharadesTopics.Parse( s.WorkshopLists );
 		if ( !ids.Remove( listId ) )
 			ids.Add( listId );
-		s.WorkshopLists = CharadesTopics.Join( ids );
+		SetWorkshopLists( ref s, ids );
 		CharadesCfg = s;
 	}
 
-	/// <summary>Untick a community list if it's ticked (it was removed or deleted).</summary>
+	/// <summary>Untick a Community list if it's ticked (it was removed or deleted).</summary>
 	public void DeselectCharadesWorkshopList( string listId )
 	{
 		if ( !IsHostAuthority ) return;
 		var s = CharadesCfg;
 		var ids = CharadesTopics.Parse( s.WorkshopLists );
 		if ( !ids.Remove( listId ) ) return;
-		s.WorkshopLists = CharadesTopics.Join( ids );
+		SetWorkshopLists( ref s, ids );
 		CharadesCfg = s;
+	}
+
+	// The last Community list going off while no Standard topic is lit would leave nothing to draw from, so the
+	// Standard topics all come back on.
+	static void SetWorkshopLists( ref CharadesSettings s, HashSet<string> ids )
+	{
+		s.WorkshopLists = CharadesTopics.Join( ids );
+		if ( ids.Count == 0 && s.Topics == CharadesTopics.NoStandard )
+			s.Topics = CharadesTopics.Everything;
 	}
 
 	public void SetCharadesWriteSeconds( float seconds )

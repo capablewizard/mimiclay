@@ -1,6 +1,17 @@
 @import "/UI/_menu.scss";   // tokens + shared kit: .paper-card, .btn, .mi
 
-// The workshop phrase-list popup. Mounted inside .round-setup, so .section-label comes from there; this sheet
+// The Set Up Game dialog's warmer concept palette (mirrors the locals at the top of RoundSetup.razor.scss), so
+// the window reads as part of the dialog rather than the older grey-cream paper.
+$w-card-bg:   #f8eedc;
+$w-line:      #e6d5b8;
+$w-ink:       #4a3624;
+$w-ink-soft:  #8a7560;
+$w-btn-bg:    #fcf5e7;
+$w-btn-edge:  #d8c4a3;
+$w-yellow:    #f6c443;
+$w-orange:    #f2a536;
+
+// The workshop phrase-list popup. Mounted inside .round-setup, so .sub-title (bold, capitals) comes from there; this sheet
 // owns the overlay, the window card and its rows.
 .workshop-lists-window {
 	position: absolute;
@@ -24,8 +35,11 @@
 		height: 600px;
 		flex-direction: column;
 		gap: $space-sm;
-		padding: $space-md $space-lg;
-		border-radius: $radius-lg;
+		padding: 18px 24px;
+		border-radius: 18px;
+		background-color: $w-card-bg;   // overrides .paper-card's grey-cream, matching the dialog's cards
+		border: 2px solid $w-line;
+		box-shadow: 0px 8px 18px rgba( 40, 26, 10, 0.22 );
 		z-index: 1;
 	}
 
@@ -34,43 +48,45 @@
 		align-items: center;
 		justify-content: space-between;
 
-		.section-label { margin-bottom: 0; }
+		.sub-title { margin-bottom: 0; }
 
 		.close-btn {
 			font-size: 26px;
-			color: $paper-ink-soft;
+			color: $w-ink-soft;
 			cursor: pointer;
 			pointer-events: all;
 			transition: all 0.1s ease-out;
-			&:hover { color: $paper-ink; transform: scale( 1.15 ); sound-in: $sound-hover; }
+			&:hover { color: $w-ink; transform: scale( 1.15 ); sound-in: $sound-hover; }
 			&:active { sound-in: $sound-click; }
 		}
 	}
 
 	.tabs {
 		flex-direction: row;
-		border-bottom: 2px solid $card-edge;
+		border-bottom: 2px solid $w-line;
 
 		.tab {
 			padding: 6px 14px;
 			margin-bottom: -2px;
 			border-bottom: 3px solid transparent;
-			font-size: 17px;
+			font-size: 16px;
 			font-weight: 800;
-			color: $paper-ink-soft;
+			text-transform: uppercase;   // capitals like the dialog's other bold labels
+			letter-spacing: 0.5px;
+			color: $w-ink-soft;
 			cursor: pointer;
 			pointer-events: all;
 
-			&:hover { color: $paper-ink; sound-in: $sound-hover; }
+			&:hover { color: $w-ink; sound-in: $sound-hover; }
 			&:active { sound-in: $sound-click; }
-			&.on { color: $paper-ink; border-bottom-color: $craft-orange; }
+			&.on { color: $w-ink; border-bottom-color: $w-orange; }
 		}
 	}
 
 	.status {
 		font-size: 15px;
 		font-weight: 600;
-		color: $paper-ink-soft;
+		color: $w-ink-soft;
 		padding: $space-xs 0;
 	}
 
@@ -88,14 +104,14 @@
 			gap: 6px;
 			padding: 6px 8px 6px 12px;
 			border-radius: $radius-md;
-			background-color: $paper-top;
-			border: 2px solid $card-edge;
+			background-color: $w-btn-bg;
+			border: 2px solid $w-line;
 
-			&.added { border-color: $craft-orange; }
+			&.added { border-color: $w-yellow; }
 
 			.row-text { flex-direction: column; flex-grow: 1; min-width: 0; }
-			.row-title { font-size: 17px; font-weight: 700; color: $paper-ink; white-space: nowrap; overflow: hidden; }
-			.row-meta { font-size: 13px; font-weight: 600; color: $paper-ink-soft; white-space: nowrap; overflow: hidden; }
+			.row-title { font-size: 17px; font-weight: 700; color: $w-ink; white-space: nowrap; overflow: hidden; text-transform: uppercase; letter-spacing: 0.5px; }
+			.row-meta { font-size: 13px; font-weight: 600; color: $w-ink-soft; white-space: nowrap; overflow: hidden; }
 		}
 	}
 
@@ -108,9 +124,9 @@
 		height: 32px;
 		padding: 0 10px 0 8px;
 		border-radius: $radius-pill;
-		border: 2px solid $card-edge;
-		background-color: $paper-tile;
-		color: $paper-ink-soft;
+		border: 2px solid $w-line;
+		background-color: $w-btn-bg;
+		color: $w-ink-soft;
 		font-size: 14px;
 		font-weight: 800;
 		cursor: pointer;
@@ -133,9 +149,9 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: $radius-pill;
-		border: 2px solid $card-edge;
-		background-color: $paper-tile;
-		color: $paper-ink;
+		border: 2px solid $w-line;
+		background-color: $w-btn-bg;
+		color: $w-ink;
 		font-size: 13px;
 		font-weight: 800;
 		cursor: pointer;
@@ -145,7 +161,7 @@
 		.mi { font-size: 18px; }
 
 		&.add { background-color: $craft-green; color: #fff; }
-		&.added { background-color: $craft-orange; color: $paper-ink; }
+		&.added { background-color: $w-yellow; color: $w-ink; }
 		&.danger:hover { color: $craft-red; }
 		&.confirm { background-color: $craft-red; color: #fff; }
 		&.busy { opacity: 0.5; pointer-events: none; }
@@ -159,7 +175,7 @@
 		border-radius: $radius-md;
 		background-color: rgba( 44, 36, 24, 0.12 );
 		border: 1.5px solid rgba( 44, 36, 24, 0.35 );
-		color: $paper-ink;
+		color: $w-ink;
 		font-size: 15px;
 		font-family: $body-font;
 		pointer-events: all;
@@ -171,7 +187,7 @@
 	.hint {
 		font-size: 14px;
 		font-weight: 600;
-		color: $paper-ink-soft;
+		color: $w-ink-soft;
 	}
 
 	.footer {
@@ -192,5 +208,5 @@
 		.mi { font-size: 18px; }
 	}
 
-	.btn-primary { background-color: $craft-orange; &:hover { background-color: $craft-orange-hi; } }
+	.btn-primary { background-color: $w-yellow; &:hover { background-color: #f9d46a; } }
 }

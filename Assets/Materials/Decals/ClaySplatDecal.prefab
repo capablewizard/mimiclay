@@ -49,7 +49,11 @@
           }
         ],
         "Depth": 27.853352,
-        "LifeTime": 3,
+        "LifeTime": {
+          "Type": "Range",
+          "Evaluation": "Seed",
+          "Constants": "3,5,0,0"
+        },
         "Looped": false,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,

@@ -16,6 +16,28 @@ public static class CharadesTopics
 	/// <summary>The default selection: every built-in topic (and no community lists).</summary>
 	public const string Everything = "";
 
+	/// <summary>The Standard selection meaning "no built-in topics at all" — only valid while a Community list
+	/// is ticked. It's an id no list has, so it matches nothing on its own.</summary>
+	public const string NoStandard = "none";
+
+	/// <summary>Everything a Topics game draws from: the Standard selection (empty = every built-in, expanded
+	/// here so it survives being joined with community ids) plus the ticked Community lists.</summary>
+	public static string Combined( string standard, string community )
+	{
+		var communityIds = Parse( community );
+		if ( communityIds.Count == 0 )
+			return standard ?? Everything;
+
+		var ids = Parse( standard );
+		if ( ids.Count == 0 )
+			foreach ( var t in CharadesWords.BuiltInTopics() )
+				ids.Add( t.Id );
+
+		ids.Remove( NoStandard );
+		ids.UnionWith( communityIds );
+		return Join( ids );
+	}
+
 	/// <summary>Prefix marking a community (Steam Workshop) list's id in a selection.</summary>
 	public const string WorkshopPrefix = "ws:";
 

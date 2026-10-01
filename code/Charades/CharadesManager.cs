@@ -131,18 +131,15 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
-	/// <summary>The selection every draw uses: the ticked built-in topics (Topics), the ticked community lists
-	/// (Workshop; none ticked = every built-in), or — in write-your-own games, where the pool is only filler for
-	/// late joiners, non-writers and bots — every built-in topic.</summary>
-	string PoolTopics => Settings.Source switch
-	{
-		PhraseSource.Topics => Settings.Topics,
-		PhraseSource.Workshop when !string.IsNullOrWhiteSpace( Settings.WorkshopLists ) => Settings.WorkshopLists,
-		_ => CharadesTopics.Everything,
-	};
+	/// <summary>The selection every draw uses: in a Topics game the ticked Standard topics plus the ticked
+	/// Community lists; in write-your-own games, where the pool is only filler for late joiners, non-writers and
+	/// bots, every built-in topic.</summary>
+	string PoolTopics => Settings.Source == PhraseSource.Topics
+		? CharadesTopics.Combined( Settings.Topics, Settings.WorkshopLists )
+		: CharadesTopics.Everything;
 
-	/// <summary>How many phrases the mimic is offered in a Topics or Workshop game: three, or one when Topic
-	/// Choices is off (same read-it-and-go card as write-your-own).</summary>
+	/// <summary>How many phrases the mimic is offered in a Topics game: three, or one when Topic Choices is off
+	/// (same read-it-and-go card as write-your-own).</summary>
 	int OfferCount => Settings.Source != PhraseSource.Players && !Settings.TopicChoices ? 1 : 3;
 
 	/// <summary>True when this machine's player is the current mimic.</summary>
