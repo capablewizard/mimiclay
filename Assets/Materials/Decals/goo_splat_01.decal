@@ -1,0 +1,29 @@
+{
+  "ColorTexture": {
+    "Id": "c3318c5e-58d7-4e35-bd48-b9297ea3228e",
+    "Path": "materials/decals/goo_splat_01_color.vtex"
+  },
+  "NormalTexture": {
+    "Id": "4ee0d763-e59a-43b9-a73d-df76b461eac4",
+    "Path": "materials/decals/goo_splat_01_normal.vtex"
+  },
+  "RoughMetalOcclusionTexture": {
+    "Id": "4a36b134-85c3-4694-8fd6-b7fbfc90dfa7",
+    "Path": "materials/decals/goo_splat_01_rmo.vtex"
+  },
+  "EmissiveTexture": null,
+  "EmissionEnergy": 1,
+  "HeightTexture": {
+    "Id": "746836b2-69a9-4281-8611-9a776f7679ab",
+    "Path": "materials/decals/goo_splat_01_height.vtex"
+  },
+  "ParallaxStrength": 1,
+  "CoverageAmount": 1,
+  "Tint": "1,1,1,1",
+  "ColorMix": 1,
+  "Width": 16,
+  "Height": 16,
+  "FilterMode": "Anisotropic",
+  "__references": [],
+  "__version": 0
+}

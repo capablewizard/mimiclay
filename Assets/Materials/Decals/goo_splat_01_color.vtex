@@ -1,0 +1,18 @@
+{
+  "Images": null,
+  "Sequences": [
+    {
+      "Source": "materials/decals/goo_splat_01_color.png",
+      "IsLooping": true,
+      "FlipBook": false,
+      "Columns": 0,
+      "Rows": 0,
+      "Frames": 64
+    }
+  ],
+  "InputColorSpace": "SRGB",
+  "OutputFormat": "BC7",
+  "OutputColorSpace": "SRGB",
+  "OutputMipAlgorithm": "Box",
+  "OutputTypeString": "2D"
+}

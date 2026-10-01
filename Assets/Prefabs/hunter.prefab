@@ -185,7 +185,8 @@
         "ThirdPersonRise": 0.675,
         "ThirdPersonShoulder": 30,
         "VisualPivot": null,
-        "WorldImpactPrefab": "prefabs/surface/default-bullet.prefab"
+        "WorldDecalPrefab": "materials/decals/claysplatdecal.prefab",
+        "WorldImpactPrefab": null
       },
       {
         "__type": "Mimiclay.HunterGun",

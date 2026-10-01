@@ -1,0 +1,109 @@
+{
+  "RootObject": {
+    "__guid": "df1253e7-d27e-450c-90e3-0bc33086e5b3",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "claysplatdecal",
+    "Position": "0,0,0",
+    "Rotation": "0.518925786,0.477200389,-0.507683158,0.495231062",
+    "Scale": "1.97326219,1.97326219,1.97326219",
+    "Tags": "",
+    "Enabled": true,
+    "NetworkMode": 2,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "Sandbox.Decal",
+        "__guid": "6427ba4d-95bc-4332-b26d-a1449b0f12d5",
+        "__enabled": true,
+        "Flags": 0,
+        "__version": 3,
+        "AttenuationAngle": 0.5,
+        "ColorMix": 1,
+        "ColorTint": "1,0.53953,0.23256,1",
+        "CoverageAmount": {
+          "Type": "Range",
+          "Evaluation": "Life",
+          "Constants": "0.800000012,0,0,0"
+        },
+        "CoverageRange": 0.5,
+        "Decals": [
+          {
+            "Id": "bada7a4c-a39c-4dbd-b4d3-e5ece9cce011",
+            "Path": "materials/decals/splat.decal"
+          },
+          {
+            "Id": "329f82c5-c265-44d2-a297-0db98baa0f87",
+            "Path": "materials/decals/goo_splat_01.decal"
+          },
+          {
+            "Id": "0299d371-f5b6-4a3f-8263-97265ccce248",
+            "Path": "materials/decals/goo_splat_02.decal"
+          },
+          {
+            "Id": "62821c04-5a2d-40b4-b4ee-64782fd3e0d5",
+            "Path": "materials/decals/goo_splat_03.decal"
+          }
+        ],
+        "Depth": 27.853352,
+        "LifeTime": 3,
+        "Looped": false,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Parallax": 0.14666785,
+        "Rotation": {
+          "Type": "Range",
+          "Evaluation": "Seed",
+          "Constants": "0,360,0,0"
+        },
+        "Scale": {
+          "Type": "Range",
+          "Evaluation": "Seed",
+          "Constants": "1,1.5,0,0"
+        },
+        "SequenceId": 0,
+        "SheetSequence": false,
+        "Size": "1.5,1.5",
+        "SortLayer": 0,
+        "Transient": false
+      }
+    ],
+    "Children": [],
+    "__properties": {
+      "NetworkInterpolation": true,
+      "PhysicsMode": "Physics3D",
+      "TimeScale": 1,
+      "WantsSystemScene": true,
+      "Metadata": {},
+      "NavMesh": {
+        "Enabled": false,
+        "IncludeStaticBodies": true,
+        "IncludeKeyframedBodies": true,
+        "EditorAutoUpdate": false,
+        "AgentHeight": 64,
+        "AgentRadius": 16,
+        "AgentStepSize": 18,
+        "AgentMaxSlope": 40,
+        "ExcludedBodies": "",
+        "IncludedBodies": "",
+        "DeferGeneration": false,
+        "CustomBounds": false
+      }
+    },
+    "__variables": []
+  },
+  "ResourceVersion": 2,
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "__references": [],
+  "__version": 2
+}

@@ -75,6 +75,12 @@ public sealed class HunterController : Component
 	/// single shared effect reads as wrong on one of the two whichever way you tune it.</summary>
 	[Property, Group( "Weapon" )] public PrefabFile WorldImpactPrefab { get; set; }
 
+	/// <summary>A clay splat left on anything that ISN'T clay, alongside <see cref="WorldImpactPrefab"/>. Clay
+	/// gets a real crater instead, so a decal there would just float over the hole. The prefab's Decal
+	/// component projects along the clone's FORWARD, so it's turned to face INTO the surface. Its authored
+	/// LifeTime is what retires it — a TemporaryEffect is added if the prefab has none.</summary>
+	[Property, Group( "Weapon" )] public PrefabFile WorldDecalPrefab { get; set; }
+
 	/// <summary>Recoil: degrees the shooter's own view kicks up per shot. Render-only (a CameraEffectSystem
 	/// punch composed into the view, never the camera transform) — the actual aim never moves, so holding
 	/// the crosshair on a prop through the kick still hits. 0 = no kick.</summary>
@@ -2408,7 +2414,8 @@ public sealed class HunterController : Component
 		// machine plays its own prefab-authored ShootSound and clones its own effect prefabs, so no asset
 		// reference crosses the wire. Still ahead of the carve broadcasts below, so the bang always lands
 		// before its craters.
-		BroadcastShotEffects( tracerEnds, normals, hitMask, clayMask );
+		// The central pellet's splat pick, rolled here like everything else so every machine draws the same one.
+		BroadcastShotEffects( tracerEnds, normals, hitMask, clayMask, Game.Random.Int( 0, 1023 ) );
 
 		// Recoil for the shooter. Owner-side only — proxies feel this shot through the epicenter shake in
 		// the RPC instead.
@@ -2817,7 +2824,7 @@ public sealed class HunterController : Component
 	// out along the surface normal — a cone emitter then sprays away from the surface instead of into it.
 	// Local and cosmetic, like the muzzle flash and the tracer: the RPC brought the positions, each machine
 	// clones its own prefab. Runs on every machine including the shooter's.
-	void SpawnImpacts( Vector3[] ends, Vector3[] normals, int hitMask, int clayMask )
+	void SpawnImpacts( Vector3[] ends, Vector3[] normals, int hitMask, int clayMask, int splatPick )
 	{
 		if ( ends is not { Length: > 0 } || normals is null || normals.Length < ends.Length )
 			return;
@@ -2827,7 +2834,21 @@ public sealed class HunterController : Component
 			if ( (hitMask & (1 << i)) == 0 )
 				continue;
 
-			var prefab = (clayMask & (1 << i)) != 0 ? ClayImpactPrefab : WorldImpactPrefab;
+			bool clay = (clayMask & (1 << i)) != 0;
+
+			// A degenerate normal (a trace that reported a zero normal) would make LookAt produce garbage —
+			// fall back to straight up, which is never worse than a NaN rotation.
+			var n = normals[i].LengthSquared > 0.001f ? normals[i].Normal : Vector3.Up;
+
+			// Central pellet only — one splat (and one wet hit) per shot; the scatter would carpet the wall.
+			// Full radius, so it plays at the same volume as the central pellet's crater splat on clay.
+			if ( i == 0 && !clay )
+			{
+				SpawnDecal( ends[i], n, splatPick );
+				PlaySplat( ends[i], CarveRadius );
+			}
+
+			var prefab = clay ? ClayImpactPrefab : WorldImpactPrefab;
 			if ( prefab is null )
 				continue;
 
@@ -2836,17 +2857,42 @@ public sealed class HunterController : Component
 				continue;
 
 			impact.WorldPosition = ends[i];
-
-			// A degenerate normal (a trace that reported a zero normal) would make LookAt produce garbage —
-			// fall back to straight up, which is never worse than a NaN rotation.
-			var n = normals[i];
-			impact.WorldRotation = n.LengthSquared > 0.001f
-				? Rotation.LookAt( n.Normal )
-				: Rotation.LookAt( Vector3.Up );
+			impact.WorldRotation = Rotation.LookAt( n );
 
 			impact.Flags |= GameObjectFlags.NotSaved; // never let a cosmetic burst bake into the scene file
 			ExpireImpact( impact );
 		}
+	}
+
+	// The splat for a non-clay hit. Forward = INTO the surface (the opposite of the burst's), since a Decal
+	// projects along its forward; its box is centred on the hit point, so the authored Depth straddles the
+	// surface and bumpy geometry still catches it. Not parented, for the same reason as the impact — and the
+	// RPC doesn't carry the hit object anyway. The decal's own LifeTime (via TemporaryEffect) cleans it up
+	// rather than ExpireImpact's fixed 4s, which would cut a longer-lived splat off mid-fade.
+	//
+	// <paramref name="pick"/> comes from the shooter. The Decal component would pick a random definition by
+	// itself, but per machine — so the list is narrowed to the shooter's pick. The definition is re-read from
+	// Decals every frame, so narrowing it after the clone has enabled still takes. Spin is left to the
+	// prefab's own Decal.Rotation (rolled per machine, so it won't match across players).
+	void SpawnDecal( Vector3 position, Vector3 normal, int pick )
+	{
+		if ( WorldDecalPrefab is null )
+			return;
+
+		var decal = SceneUtility.GetPrefabScene( WorldDecalPrefab )?.Clone();
+		if ( !decal.IsValid() )
+			return;
+
+		decal.WorldPosition = position;
+		decal.WorldRotation = Rotation.LookAt( -normal );
+		decal.Flags |= GameObjectFlags.NotSaved;
+
+		foreach ( var d in decal.Components.GetAll<Decal>( FindMode.EverythingInSelfAndDescendants ) )
+			if ( d.Decals is { Count: > 1 } list )
+				d.Decals = [list[pick % list.Count]];
+
+		if ( !decal.Components.Get<TemporaryEffect>().IsValid() )
+			decal.Components.Create<TemporaryEffect>().DestroyAfterSeconds = 0f;
 	}
 
 	// The prefab's own TemporaryEffect retires it once the burst finishes; this is only the backstop for one
@@ -2870,7 +2916,7 @@ public sealed class HunterController : Component
 	// out for themselves — they never ran the trace — and it's the same "ship concrete rolled values, never a
 	// seed" deal as the carve formation. The effect PREFABS stay local, like the muzzle flash.
 	[Rpc.Broadcast]
-	void BroadcastShotEffects( Vector3[] tracerEnds, Vector3[] normals, int hitMask, int clayMask )
+	void BroadcastShotEffects( Vector3[] tracerEnds, Vector3[] normals, int hitMask, int clayMask, int splatPick )
 	{
 		// A concealed hunter's shot leaves no trace on OUR machine — no bang, no muzzle flash, no screen shake.
 		// Hunting is already blocked during Hide so this shouldn't fire today, but a silent invisible shooter is
@@ -2889,7 +2935,7 @@ public sealed class HunterController : Component
 		// Impacts before the ShootSound early-out below — a hunter with no shot sound assigned still gets
 		// dust off the walls. Inside the Concealed gate above for the obvious reason: puffs erupting out of
 		// nowhere would give a concealed shooter away just as loudly as the bang would.
-		SpawnImpacts( tracerEnds, normals, hitMask, clayMask );
+		SpawnImpacts( tracerEnds, normals, hitMask, clayMask, splatPick );
 
 		// Everyone NEAR the shot feels it, falling off with distance from the shooter — a prop hiding by a
 		// hunter gets rattled. The shooter is excluded (IsProxy): they get the recoil punch in Shoot instead,
