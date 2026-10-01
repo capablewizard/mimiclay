@@ -579,8 +579,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			_jumpQueued = true;
 
 		// Free cam toggle — blocked while editing (the sculpt rig already owns navigation there) or while a
-		// cursor-owning panel is open (same guard PlayCamera uses, so F doesn't fire behind a menu).
-		if ( !EditMode && !PauseMenu.IsOpen && !RoundSetup.IsOpen && Input.Keyboard.Pressed( "F" ) )
+		// cursor-owning panel is open (same guard PlayCamera uses, so F doesn't fire behind a menu). Only where
+		// it's part of the game (FreeCamAllowed); dropped on the spot if we stop being in one.
+		if ( _freeCam && !FreeCamAllowed )
+			SetFreeCam( false );
+		else if ( FreeCamAllowed && !EditMode && !PauseMenu.IsOpen && !RoundSetup.IsOpen && Input.Keyboard.Pressed( "F" ) )
 			SetFreeCam( !_freeCam );
 
 		// Always drive the camera (per-frame, for smoothness) — needed during edit mode too, where movement is frozen.
@@ -1173,6 +1176,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// The only place _freeCam actually changes — attaches/detaches the orbit rig's FollowTarget exactly once at
 	// the transition (rather than every frame in UpdateFreeCam), and restores the normal boom Distance on the
 	// way out so the next UpdateCamera() frame doesn't open with the camera jammed at zero boom length.
+	/// <summary>Is the scouting free cam part of the game right now? Only in a prop-hunt round (a live
+	/// <see cref="RoundManager"/>) — the lobby, creative and charades have no use for it, and it was just a way to
+	/// fly around the map there.</summary>
+	public static bool FreeCamAllowed => RoundManager.Current.IsValid();
+
 	void SetFreeCam( bool on )
 	{
 		if ( _freeCam == on )

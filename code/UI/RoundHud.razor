@@ -815,9 +815,7 @@
 				if ( LobbyManager.Current.IsValid() )
 					yield return new( "G", "Set Up Game (Host)" ); // the setup HUD only exists in the real lobby
 				yield return new( "Q", "Edit Mode" );
-				if ( CreativeManager.Current.IsValid() && LocalRole == PlayerRole.Prop )
-					yield return new( "F", "Free Cam" );
-				yield break;
+				yield break; // no free cam outside a round (HiderController.FreeCamAllowed)
 			}
 
 			// Eliminated (a found Teams prop): out for the round, flying the spectator cam — the fly
