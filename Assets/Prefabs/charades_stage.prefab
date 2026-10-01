@@ -38,7 +38,7 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "StageRadius": 60
+        "StageRadius": 90
       },
       {
         "__type": "Mimiclay.CharadesStageFence",

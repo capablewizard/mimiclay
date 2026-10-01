@@ -31,10 +31,12 @@ public sealed class CharadesStage : Component
 	/// <summary>Where the mimic's PROP pawn spawns for their turn — a marker on the stage floor.</summary>
 	[Property, Group( "Markers" )] public GameObject MimicSpot { get; set; }
 
-	/// <summary>How far from the stage centre the mimic's prop may wander — the manager's owner-side leash,
-	/// backstopping the fence colliders (the prop must stay ON stage exactly as hard as the crowd stays off).
-	/// Keep it a touch inside the fence ring's radius.</summary>
-	[Property, Group( "Markers" )] public float StageRadius { get; set; } = 60f;
+	/// <summary>The circle the mimic's WHOLE prop stays inside — body and clay. The manager sets it as the
+	/// soft leash on the prop's <see cref="HiderController"/>: movement keeps the collider's footprint inside
+	/// it, and <see cref="BrushWorldClamp"/> stops additive brushes being sculpted past it, so a wide sculpt
+	/// has less room to walk and nothing ever overhangs. The fence ring is crowd-only and never touches the
+	/// prop; keep this a little inside the fence's inner face. Drawn as a cyan circle in the editor.</summary>
+	[Property, Group( "Markers" )] public float StageRadius { get; set; } = 90f;
 
 	protected override void OnEnabled() => Current = this;
 
@@ -54,4 +56,16 @@ public sealed class CharadesStage : Component
 	/// <summary>The scene's stage, looked up fresh (for callers running before OnEnabled ordering settles).</summary>
 	public static CharadesStage FindIn( Scene scene )
 		=> Current.IsValid() ? Current : scene?.GetAllComponents<CharadesStage>().FirstOrDefault();
+
+	// Editor preview of StageRadius at the mimic spot's height, so the leash circle can be tuned by eye
+	// against the plinth edge and the fence ring (the fence draws its own walls).
+	protected override void DrawGizmos()
+	{
+		base.DrawGizmos();
+
+		var bright = Gizmo.IsSelected || Gizmo.IsHovered;
+		Gizmo.Draw.Color = Color.Cyan.WithAlpha( bright ? 0.9f : 0.3f );
+		float z = MimicSpot.IsValid() ? WorldTransform.PointToLocal( MimicSpot.WorldPosition ).z : 0f;
+		Gizmo.Draw.LineCircle( Vector3.Up * z, Vector3.Up, StageRadius, sections: 48 );
+	}
 }

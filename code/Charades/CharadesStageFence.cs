@@ -6,9 +6,13 @@ namespace Mimiclay;
 /// The stage's invisible fence: a hollow ring of box-collider walls built at runtime around this object.
 /// Hollow on purpose — a single solid blocker (the first cut was a big capsule) can't do the job, because the
 /// mimic's prop pawn SPAWNS inside the stage: inside a solid collider it's in permanent penetration and the
-/// solver shoves it out (or through the floor). A ring of walls is symmetric by construction: the crowd
-/// outside can't push in, the prop inside can't walk out, and the interior is genuinely empty space to stand
-/// in. <see cref="CharadesManager"/> adds an owner-side leash on top for anything physics lets slip.
+/// solver shoves it out (or through the floor). A ring of walls leaves the interior genuinely empty space.
+///
+/// CROWD-ONLY: Collision.config pairs <see cref="WallTag"/> with the prop body tag as Ignore, so the mimic's
+/// prop never touches these walls. It used to — and a sculpt that grew across a wall was stuck straddling it,
+/// a lumpy collider pressed into a flat wall climbed it, and the manager's position snap fought the solver
+/// every tick. The prop is kept on stage by <see cref="HiderController.LeashCentre"/> (a velocity rule, set
+/// by <see cref="CharadesManager"/> from <see cref="CharadesStage.StageRadius"/>) instead.
 ///
 /// Walls are generated in OnStart (play only) as NotSaved children, so the prefab/scene never accumulates
 /// them and the ring re-tunes from these properties alone.

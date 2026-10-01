@@ -56,6 +56,10 @@ namespace Mimiclay;
 /// are covered by the commit-time backstop instead: <see cref="EmbeddedInWorld"/>, which
 /// <see cref="SdfCollider.Rebuild"/> consults before swapping in a new collider.
 ///
+/// One ANALYTIC boundary joins the physics world: the pawn's soft leash circle (<see cref="Region"/> — the
+/// charades stage), a one-sided vertical cylinder wall the clay can't be sculpted past. See the Leash
+/// region section for why it isn't a collider and why it skips the commit backstop.
+///
 /// Invariants:
 ///  • Owner-local only, like every validity gate — sessions only run on the editing machine, and the
 ///    backstop gates on !IsProxy. Proxies always build what they received.
@@ -331,7 +335,10 @@ public sealed class BrushWorldClamp
 	bool ResolveGroup( Scene scene, SdfSculpture target )
 	{
 		var tx = target.WorldTransform;
-		var offset = Vector3.Zero; // accumulated world-space correction, shared by the whole group
+
+		// Leash region first, uncapped, as one rigid shift of the whole group (see RegionPrePass).
+		var prePass = RegionPrePass( target, tx, _groupSolid );
+		var offset = prePass; // accumulated world-space correction, shared by the whole group
 
 		for ( int iter = 0; iter < ResolveIterations; iter++ )
 		{
@@ -378,6 +385,9 @@ public sealed class BrushWorldClamp
 
 				if ( sawMesh && StraddleContacts( scene, target, tx, offset, _samples, deadband, ref correction ) )
 					any = true;
+
+				if ( RegionContacts( target, tx, offset, _samples, deadband, ref correction ) )
+					any = true; // residual only — the pre-pass did the bulk (see ResolveEndpoint)
 			}
 
 			if ( !any )
@@ -391,7 +401,7 @@ public sealed class BrushWorldClamp
 			}
 
 			offset += correction;
-			if ( offset.Length > MaxResolve )
+			if ( (offset - prePass).Length > MaxResolve )
 				return false;
 		}
 
@@ -731,6 +741,7 @@ public sealed class BrushWorldClamp
 			if ( mesh )
 				MeshSampleContacts( scene, target, body, tx, Vector3.Zero, _samples, 0f, ref correction );
 		}
+		RegionContacts( target, tx, Vector3.Zero, _samples, 0f, ref correction ); // the curve bowing past the line
 		return correction;
 	}
 
@@ -742,6 +753,8 @@ public sealed class BrushWorldClamp
 		var tx = target.WorldTransform;
 		var query = QueryBounds( _scratch, tx, Vector3.Zero );
 		var discard = Vector3.Zero;
+		if ( RegionContacts( target, tx, Vector3.Zero, _samples, 0f, ref discard ) )
+			return false;
 		foreach ( var body in WorldBodies( scene, target, query, _scratch ) )
 		{
 			ShapeKinds( body, out bool convex, out bool mesh );
@@ -817,7 +830,17 @@ public sealed class BrushWorldClamp
 		var meshSample = new List<Vector4>( 1 ) { new( localPos.x, localPos.y, localPos.z, r ) };
 		try
 		{
+			// Leash region first, uncapped — the one-sphere form of RegionPrePass.
 			var offset = Vector3.Zero;
+			for ( int i = 0; i < ResolveIterations; i++ )
+			{
+				var inward = Vector3.Zero;
+				if ( !RegionContacts( target, tx, offset, meshSample, 0f, ref inward ) )
+					break;
+				offset += inward;
+			}
+			var prePass = offset;
+
 			for ( int i = 0; i < ResolveIterations; i++ )
 			{
 				var centre = tx.PointToWorld( localPos ) + offset;
@@ -830,17 +853,20 @@ public sealed class BrushWorldClamp
 				foreach ( var body in WorldBodies( scene, target, query, null ) )
 					candidates.Add( body );
 
-				if ( candidates.Count == 0 )
+				bool any = false;
+				var correction = Vector3.Zero;
+				if ( RegionContacts( target, tx, offset, meshSample, RestTolerance, ref correction ) )
+					any = true; // residual only (see ResolveEndpoint)
+
+				if ( candidates.Count == 0 && !any )
 					return localPos + tx.PointToLocal( tx.Position + offset );
 
-				if ( probe is null )
+				if ( probe is null && candidates.Count > 0 )
 				{
 					probe = new PhysicsBody( world ) { BodyType = PhysicsBodyType.Static, Position = ParkingSpot };
 					probe.AddSphereShape( Vector3.Zero, r, rebuildMass: false );
 				}
 
-				bool any = false;
-				var correction = Vector3.Zero;
 				foreach ( var body in candidates )
 				{
 					ShapeKinds( body, out bool convex, out bool mesh );
@@ -861,7 +887,7 @@ public sealed class BrushWorldClamp
 					return localPos + tx.PointToLocal( tx.Position + offset );
 
 				offset += correction;
-				if ( offset.Length > MaxResolve )
+				if ( (offset - prePass).Length > MaxResolve )
 					return null;
 			}
 			return null;
@@ -924,14 +950,118 @@ public sealed class BrushWorldClamp
 		remaining = tx.PointToLocal( tx.Position + slideWorld ); // world vec → sculpture-local vec
 	}
 
+	// Tags the clamp looks straight through — everything that isn't really scenery: fellow prop bodies (our
+	// physics ignores them too), the hunter's trace-only trigger colliders, and the charades stage fence,
+	// whose invisible crowd-only ring the prop's own physics ignores as well (a brush dragged into it slid
+	// along a wall that isn't there, got resolved out the FAR side, and was then held outside by it; the
+	// stamp ghost, placed from a camera outside the ring, stuck on its outer face). One list, used by the
+	// trace filter AND the hand-mirrored body filter below so the two can't drift apart.
+	static readonly string[] IgnoredTags =
+	{
+		HiderController.PropBodyTag, "movecollider", "headcollider", "trigger", "water", CharadesStageFence.WallTag,
+	};
+
 	// The world as the clamp sees it — the ground-probe filter: ignore our own pawn hierarchy (the disguise
-	// IS the shape being edited) and everything that isn't really scenery — fellow prop bodies (our physics
-	// ignores them too) and the hunter's trace-only trigger colliders. Released props, decoys and the map
-	// itself all block, exactly like they block feet. Internal so the stamp tool's anchor validation sees
-	// the same world the clamp does.
+	// IS the shape being edited) and the IgnoredTags. Released props, decoys and the map itself all block,
+	// exactly like they block feet. Internal so the stamp tool's anchor validation sees the same world the
+	// clamp does.
 	internal static SceneTrace Filtered( Scene scene, SdfSculpture target ) => scene.Trace
 		.IgnoreGameObjectHierarchy( target.GameObject.Root )
-		.WithoutTags( HiderController.PropBodyTag, "movecollider", "headcollider", "trigger", "water" );
+		.WithoutTags( IgnoredTags );
+
+	// ── Leash region (the charades stage) ───────────────────────────────────────────────────────────
+
+	// The pawn's soft leash circle, if it has one (HiderController.LeashCentre — the charades manager sets
+	// it on the mimic's prop from CharadesStage.StageRadius). An ANALYTIC world boundary the clamp treats
+	// like scenery, with two differences: it's one-sided (a vertical cylinder wall with no far side, so
+	// inward is always the right way out and never needs MaxResolve's thin-wall caution — see
+	// RegionPrePass) and it's cheap (no physics query). Why not the fence colliders: the ring is thin, so
+	// a brush that got across resolved out the FAR side and was then held outside by it — and the stamp
+	// ghost, placed from a camera outside the ring, stuck to its outer face. Deliberately NOT part of the
+	// commit backstop (EmbeddedInWorld): an overhang that slips past the live clamp (an undo restoring
+	// clay the pawn has since walked away from) is harmless to physics — the fence ignores prop bodies —
+	// and the movement leash pulls the body back inside instead; freezing the collider would be worse.
+	static bool Region( SdfSculpture target, out Vector3 centre, out float radius )
+	{
+		var hider = target.GameObject.Root.Components.Get<HiderController>();
+		if ( hider.IsValid() && hider.LeashCentre is { } c )
+		{
+			centre = c;
+			radius = hider.LeashRadius;
+			return true;
+		}
+
+		centre = default;
+		radius = 0f;
+		return false;
+	}
+
+	// Region contact for every sample (sphere centre + radius, hull corner at 0; a convex hull's farthest
+	// point from any axis is a corner, so corners alone bound it exactly): how far the sample's flat
+	// distance from the axis plus its radius exceeds the leash radius, pushed back toward the axis. Same
+	// "any" contract and deficit merge as MeshSampleContacts. A no-op without a region.
+	static bool RegionContacts( SdfSculpture target, in Transform tx, Vector3 offset, List<Vector4> samples,
+		float deadband, ref Vector3 correction )
+	{
+		if ( samples is not { Count: > 0 } || !Region( target, out var centre, out var radius ) )
+			return false;
+
+		bool any = false;
+		foreach ( var s in samples )
+		{
+			float r = MathF.Max( s.w, 0f ) * tx.Scale.x;
+			var w = tx.PointToWorld( new Vector3( s.x, s.y, s.z ) ) + offset;
+			var flat = (w - centre).WithZ( 0f );
+			float d = flat.Length;
+			float excess = d + r - radius;
+			if ( excess <= deadband )
+				continue;
+
+			any = true;
+			// Dead on the axis the way in is undefined (only a sample fatter than the whole stage gets
+			// here) — fall back to the sculpture's own inward direction so it still moves somewhere.
+			var inward = d > 1e-3f ? -flat / d : -(tx.Position - centre).WithZ( 0f ).Normal;
+			if ( inward.IsNearZeroLength )
+				inward = Vector3.Backward;
+			Deficit( ref correction, inward, excess + SlideSkin );
+		}
+
+		return any;
+	}
+
+	// Pre-pass for the shifting resolves: bring these solid brushes' shapes fully inside the region as ONE
+	// rigid translation, UNCAPPED — inward is trustworthy at any depth, so a stamp ghost dropped a whole
+	// stage-width outside (the camera's ray landing on the crowd floor) comes straight in rather than being
+	// left "free until it first comes up clear" and committed out there. The physics resolve then runs from
+	// the shifted state, and only ITS share of the correction counts against MaxResolve. Rebuilds the
+	// scratch shapes per brush (a single-brush caller's shapes come back identical; the group caller
+	// rebuilds its own afterwards anyway). Returns the world-space offset.
+	Vector3 RegionPrePass( SdfSculpture target, in Transform tx, IReadOnlyList<SdfBrush> solids )
+	{
+		if ( !Region( target, out _, out _ ) )
+			return Vector3.Zero;
+
+		var offset = Vector3.Zero;
+		for ( int iter = 0; iter < ResolveIterations; iter++ )
+		{
+			bool any = false;
+			var correction = Vector3.Zero;
+			foreach ( var b in solids )
+			{
+				if ( !SdfCollisionBuilder.BuildSweepShapes( b, _scratch, InsetFor( b ), _samples ) )
+					continue;
+				any |= RegionContacts( target, tx, offset, _samples, 0f, ref correction );
+			}
+
+			if ( !any )
+				break;
+			offset += correction;
+		}
+
+		return offset;
+	}
+
+	readonly List<SdfBrush> _single = new( 1 ); // one-element buffer for the single-brush pre-pass
 
 	// ── Resolve phase (the guarantee) ────────────────────────────────────────────────────────────────
 
@@ -951,7 +1081,12 @@ public sealed class BrushWorldClamp
 			return ShapesClear( scene, target );
 
 		var tx = target.WorldTransform;
-		var offset = Vector3.Zero; // accumulated world-space correction
+
+		// Leash region first, uncapped (see RegionPrePass); the physics loop below starts from there.
+		_single.Clear();
+		_single.Add( brush );
+		var prePass = RegionPrePass( target, tx, _single );
+		var offset = prePass; // accumulated world-space correction
 
 		// Solids run FULL-SIZE shapes, so resting contact reads as tiny penetrations — the deadband keeps
 		// those from being endlessly "fixed" (see RestTolerance). Splines run their GRACED shapes here, and
@@ -990,6 +1125,11 @@ public sealed class BrushWorldClamp
 			if ( sawMesh && StraddleContacts( scene, target, tx, offset, _samples, deadband, ref correction ) )
 				any = true;
 
+			// The leash region again, capped like scenery this time: the pre-pass left only a residual
+			// (a world contact pushing back out toward the line, a deficit-merge undershoot).
+			if ( RegionContacts( target, tx, offset, _samples, deadband, ref correction ) )
+				any = true;
+
 			if ( !any )
 			{
 				if ( !offset.IsNearZeroLength )
@@ -998,7 +1138,7 @@ public sealed class BrushWorldClamp
 			}
 
 			offset += correction;
-			if ( offset.Length > MaxResolve )
+			if ( (offset - prePass).Length > MaxResolve )
 				return false;
 		}
 
@@ -1039,9 +1179,7 @@ public sealed class BrushWorldClamp
 				if ( go.Root == root )
 					continue; // our own pawn/disguise/gun — the shape being edited included
 
-				var tags = go.Tags;
-				if ( tags.Has( HiderController.PropBodyTag ) || tags.Has( "movecollider" )
-					|| tags.Has( "headcollider" ) || tags.Has( "trigger" ) || tags.Has( "water" ) )
+				if ( go.Tags.HasAny( IgnoredTags ) )
 					continue;
 			}
 

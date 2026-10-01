@@ -779,27 +779,31 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		return m.Phase != CharadesPhase.Sculpting;
 	}
 
-	// Owner-side backstop to the stage fence: the mimic's prop must not leave the stage (the mirror image of
-	// the fence keeping the crowd out). The fence colliders are the real wall; this leash only catches what
-	// physics lets slip (a solver shove off a big disguise, a gap grazed mid-jump).
+	// Owner-side: the mimic's prop must not leave the stage. The fence ring is crowd-only (Collision.config
+	// pairs its "stagefence" tag with "propbody" as Ignore) — a prop pawn's collider is its live sculpt, and a
+	// sculpt that grew across a wall was stuck there, straddling it, while a position snap back fought the
+	// solver every tick. So the prop is kept on by HiderController's soft leash instead, live-set here from
+	// the stage so a re-tuned radius just follows: movement keeps the collider's footprint inside the
+	// circle, and BrushWorldClamp reads the same circle to stop clay being sculpted past it — a wide
+	// sculpt simply has less room to walk, and nothing overhangs.
 	void KeepMimicOnStage()
 	{
 		if ( !_ownPawnIsProp || !_ownPawn.IsValid() )
 			return;
 
+		var hider = OwnHider();
+		if ( !hider.IsValid() )
+			return;
+
 		var stage = CharadesStage.FindIn( Scene );
 		if ( !stage.IsValid() )
+		{
+			hider.LeashCentre = null;
 			return;
+		}
 
-		var centre = stage.WorldPosition;
-		var offset = _ownPawn.WorldPosition - centre;
-		var flat = offset.WithZ( 0f );
-		var radius = stage.StageRadius;
-
-		if ( flat.LengthSquared <= radius * radius )
-			return;
-
-		_ownPawn.WorldPosition = centre + flat.Normal * radius + Vector3.Up * offset.z;
+		hider.LeashCentre = stage.WorldPosition;
+		hider.LeashRadius = stage.StageRadius;
 	}
 
 	// ── Pawns (every machine spawns + owns its own — the simple, no-roles version of prop hunt's model,

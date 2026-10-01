@@ -186,6 +186,28 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// transform update.</summary>
 	public Rigidbody PhysicsBody => Body;
 
+	/// <summary>Soft leash: a horizontal circle the WHOLE body is kept inside WITHOUT a collider. Null =
+	/// off. Two consumers share the one circle: movement here, and the clay in
+	/// <see cref="BrushWorldClamp"/>, which reads it off the pawn root and stops additive brushes being
+	/// dragged, grown or stamped past it — so what fits inside is the shape AND where it can walk.
+	///
+	/// Movement applies it inside the fixed step as a velocity rule, measured on the physics BOUNDS (the
+	/// collider's flat extent is subtracted from the radius, so a wide sculpt has less room to roam and the
+	/// shape never pokes past the line): the outward radial component of the move wish and of the resulting
+	/// velocity is stripped at the edge, and a body shoved or re-sculpted past it gets a gentle inward pull
+	/// back. Never a teleport, so it can't fight the solver the way a position snap against a wall did;
+	/// vertical motion is untouched, so jumping on the spot still works. Set every tick by whoever owns the
+	/// rule (the charades stage keeps the mimic on its plinth) — it live-reads, so a re-tuned radius just
+	/// follows.</summary>
+	public Vector3? LeashCentre { get; set; }
+
+	/// <summary>Radius of <see cref="LeashCentre"/>'s circle — the line the body's bounds and its clay stay
+	/// inside. Keep it a little inside any invisible fence the circle is standing in for.</summary>
+	public float LeashRadius { get; set; } = 60f;
+
+	// Inward pull when the root is outside the leash circle: u/s per unit of overshoot, and its cap.
+	const float LeashPullRate = 4f, LeashPullMax = 160f;
+
 	// Internal: the disguise sculpture, for code that needs THE pawn's body explicitly (PlayerNameplates
 	// anchors above it) — resolved on every machine in OnStart, so proxies can read it too.
 	internal SdfSculpture DisguiseSculpture => _body;
@@ -813,6 +835,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			wish = Rotation.FromYaw( MoveYaw ) * move * speed;
 		}
 
+		// Leash: pressing outward at the edge is simply not asked for — the tangential part survives, so
+		// you slide along the circle instead of stalling against an invisible wall.
+		wish = ApplyLeash( wish, pullIn: false );
+
 		var vel = Body.Velocity;
 
 		// Chase the target velocity exponentially — snappy on the ground, looser in the air. Input of zero decays it
@@ -857,6 +883,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			float g = Gravity * (vel.z < 0f ? FallGravityMult : 1f);
 			newVel = horiz.WithZ( vel.z - g * Time.Delta );
 		}
+
+		// Leash, on the RESULT this time (a solver shove or a jump's momentum can carry the body outward with
+		// no input at all): strip outward radial velocity at the edge, and pull gently back if we're past it.
+		newVel = ApplyLeash( newVel, pullIn: true );
 
 		Body.Velocity = newVel;
 		_jumpQueued = false;
@@ -929,6 +959,38 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		return grounded;
 	}
 
+	// The leash rule on one velocity-shaped vector (see LeashCentre). Horizontal only — Z passes straight
+	// through. Measured on the physics bounds: the bounds CENTRE against the radius less the bounds' flat
+	// half-diagonal, so the circumscribed circle of the collider's footprint is what stays inside the line.
+	// At or beyond that the outward radial component is removed (tangential motion kept); with pullIn, a
+	// body already outside also gets an inward component proportional to the overshoot, so a shove — or a
+	// collider rebuilt wider by an undo — eases it back without a snap. Inside the circle it's a no-op.
+	Vector3 ApplyLeash( Vector3 v, bool pullIn )
+	{
+		if ( LeashCentre is not { } centre )
+			return v;
+
+		var bounds = Body.GetWorldBounds();
+		float reach = MathF.Max( LeashRadius - bounds.Extents.WithZ( 0f ).Length, 0f );
+		var flat = (bounds.Center - centre).WithZ( 0f );
+		float dist = flat.Length;
+		if ( dist < reach || dist < 0.001f )
+			return v;
+
+		var outward = flat / dist;
+		float radial = Vector3.Dot( v.WithZ( 0f ), outward );
+		if ( radial > 0f )
+			v -= outward * radial;
+
+		if ( pullIn && dist > reach )
+		{
+			float pull = MathF.Min( (dist - reach) * LeashPullRate, LeashPullMax );
+			v -= outward * pull;
+		}
+
+		return v;
+	}
+
 	// Reproject a flat, world-space wish velocity onto the ground plane so movement runs ALONG a slope instead of
 	// driving into it (which makes the solver eject the body upward). Speed is preserved — walking uphill covers the
 	// surface at the same rate, trading slower horizontal progress for the climb, as it should. Flat ground is a no-op.
@@ -965,13 +1027,15 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// and every OTHER player prop: traces don't consult the collision rules unless they opt in, so without this a
 	// prop would read as grounded on a fellow prop that its physics passes straight through — hovering inside one,
 	// then dropping when that player walked off. Decoys, saved props and RELEASED props are untagged (the last
-	// per UpdateReleasedSolidity) and still hold us up.
+	// per UpdateReleasedSolidity) and still hold us up. The charades stage fence is skipped too: a foot
+	// probe grazing the side of an invisible wall read it as steep "ground", and the tilted normal turned a
+	// push into the wall into an upward wish — the prop climbed a wall that isn't there.
 	const float GroundProbeRadius = 3f, GroundProbeUp = 3f, GroundProbeDown = 4f;
 
 	SceneTraceResult ProbeGround( Vector3 p ) => Scene.Trace
 		.Sphere( GroundProbeRadius, p + Vector3.Up * GroundProbeUp, p - Vector3.Up * GroundProbeDown )
 		.IgnoreGameObjectHierarchy( GameObject )
-		.WithoutTags( PropBodyTag )
+		.WithoutTags( PropBodyTag, CharadesStageFence.WallTag )
 		.Run();
 
 	// Draw every ground probe (green = found ground, red = nothing). Called every frame from OnUpdate — including edit
