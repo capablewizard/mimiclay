@@ -311,9 +311,12 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 	/// body facing is remembered per role — see SwapMemory) and only its orbit camera picks the view up,
 	/// owner-side via LobbySwapCarry (which also carries the pitch and the prop zoom the host can't see).</summary>
 	[Rpc.Host]
-	public void RequestSwapRole( float viewYaw )
+	public void RequestSwapRole( float viewYaw ) => SwapRoleFor( Rpc.Caller, viewYaw );
+
+	// Host-only: the swap itself, for connection c. Split from the RPC so debug tooling can swap on a client's
+	// behalf (see PossessionDebug).
+	internal void SwapRoleFor( Connection c, float viewYaw )
 	{
-		var c = Rpc.Caller;
 		if ( c is null || Launching )
 			return;
 
@@ -323,6 +326,10 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		row.Role = row.Role == PlayerRole.Prop ? PlayerRole.Hunter : PlayerRole.Prop;
 		Players[c.Id] = row;
 		_known.Add( c.Id );
+
+		// The swap pop, where the body we're leaving stands (a released prop stays right there).
+		if ( PropClaims.Current.IsValid() && _pawns.TryGetValue( c.Id, out var leaving ) && leaving.IsValid() )
+			PropClaims.Current.PlaySwapPop( PropClaims.PopSpot( leaving ) );
 
 		// Leaving a CLAIMED prop (a scene prop the claim service converted — see PropClaims.IsConverted): it's
 		// map furniture, not a practice body, so it's RELEASED back into the world — claimable again — instead

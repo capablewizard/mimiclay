@@ -1,0 +1,60 @@
+{
+  "UI": true,
+  "Volume": "1",
+  "Pitch": "0.600000024 0.699999988",
+  "Decibels": 70,
+  "SelectionMode": "Random",
+  "Sounds": [
+    "sounds/game/pops/pop 06.vsnd",
+    "sounds/game/pops/pop 05.vsnd",
+    "sounds/game/pops/pop 04.vsnd",
+    "sounds/game/pops/pop 03.vsnd",
+    "sounds/game/pops/pop 02.vsnd",
+    "sounds/game/pops/pop 01.vsnd"
+  ],
+  "OcclusionEnabled": true,
+  "Occlusion": true,
+  "ReverbEnabled": true,
+  "Reflections": true,
+  "AirAbsorption": true,
+  "Transmission": true,
+  "OcclusionRadius": 64,
+  "DistanceAttenuation": true,
+  "Distance": 15000,
+  "Falloff": [
+    {
+      "x": 0,
+      "y": 1,
+      "in": 0,
+      "out": -1.8,
+      "mode": "Mirrored"
+    },
+    {
+      "x": 0.05,
+      "y": 0.22,
+      "in": 3.5,
+      "out": -3.5,
+      "mode": "Mirrored"
+    },
+    {
+      "x": 0.2,
+      "y": 0.04,
+      "in": 0.16,
+      "out": -0.16,
+      "mode": "Mirrored"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "in": 0,
+      "out": 0,
+      "mode": "Mirrored"
+    }
+  ],
+  "DefaultMixer": {
+    "Name": "game",
+    "Id": "399ed3bf-0e03-4ac6-9792-44a979445b21"
+  },
+  "__references": [],
+  "__version": 1
+}

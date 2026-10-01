@@ -12,12 +12,13 @@
 	play. Proxies draw nothing, and face-edit mode draws nothing either — the orbit camera frees the real cursor
 	there, so a crosshair would just be a second dot.
 
-	Also hosts the claim service's "E to Edit" prompt (creative + lobby): when the dot is over claimable clay, the prop's COLLISION
-	GEOMETRY (SdfCollider.FramePoints) is projected into the screen rect it occupies, and a wobbling paper
-	toast hangs under that rect's bottom edge, centred. Carve-aware and pose-blind by construction — see
-	ResolvePrompt. Projection itself is the PlayerNameplates recipe. Debug the anchoring live with
-	mimiclay_toast_debug 1. Two elements, deliberately: the float carries the position (and the centring
-	translate), the card carries the clay jitter — they'd fight over `transform` on one element.
+	Also hosts the interaction prompts (see Interactions): when the dot is over something offering interactions,
+	the prop's COLLISION GEOMETRY (SdfCollider.FramePoints) is projected into the screen rect it occupies, and a
+	row of wobbling paper toasts — one per option, "E Edit", "F Turn off" — hangs under that rect's bottom edge,
+	centred. Carve-aware and pose-blind by construction — see ResolvePrompt. Projection itself is the
+	PlayerNameplates recipe. Debug the anchoring live with mimiclay_toast_debug 1. Two levels, deliberately: the
+	float carries the position (and the centring translate), each card carries its clay jitter — they'd fight
+	over `transform` on one element.
 *@
 
 <root class="hunter-crosshair">
@@ -25,13 +26,16 @@
 	{
 		<div class="dot" />
 
-		@if ( _promptAt is { } at )
+		@if ( _promptAt is { } at && _cards.Count > 0 )
 		{
-			<div class="possess-float" style=@PromptStyle( at )>
-				<div class="paper-card possess-toast" @ref=ToastPanel>
-					<span class="key">E</span>
-					<span>@(_promptTutorial ? "Learn to sculpt" : "Edit")</span>
-				</div>
+			<div class="possess-float" style=@PromptStyle( at ) @ref=FloatPanel>
+				@foreach ( var card in _cards )
+				{
+					<div class="paper-card possess-toast">
+						<span class="key">@card.Key</span>
+						<span>@card.Label</span>
+					</div>
+				}
 			</div>
 		}
 	}
@@ -67,11 +71,14 @@
 	HunterController _hunter;
 
 	// Where the prompt is drawn, as viewport fractions (resolution-independent — see PromptStyle), or null when
-	// nothing claimable is under the dot. Recomputed every frame in OnUpdate, since it tracks the world.
+	// nothing interactive is under the dot. Recomputed every frame in OnUpdate, since it tracks the world.
 	Vector2? _promptAt;
 
-	// The prompt is for the tutorial character rather than claimable clay — same toast, his label.
-	bool _promptTutorial;
+	// The cards to draw (key glyph + label), snapshotted off the hunter's hover each frame so the render
+	// reads stable data; _cardsHash is their content for BuildHash.
+	readonly record struct Card( string Key, string Label );
+	readonly List<Card> _cards = new();
+	int _cardsHash;
 
 	// Debug capture from the last ResolvePrompt (only filled while ToastDebug): the projected frame points and
 	// the screen rect they span — viewport fractions, the same space the anchor uses.
@@ -90,28 +97,49 @@
 
 	protected override void OnUpdate()
 	{
-		_promptAt = ResolvePrompt();
+		UpdateCards();
+		_promptAt = _cards.Count > 0 ? ResolvePrompt() : null;
 		UpdateToastPose();
 	}
 
-	// The toast's clay wobble, driven from ClayClock instead of the action-jitter CSS animation: it snaps
+	void UpdateCards()
+	{
+		_cards.Clear();
+		var hash = 0;
+		if ( Visible && Hunter.HoverContext.HasValue )
+		{
+			foreach ( var choice in Hunter.Hover )
+			{
+				var card = new Card( Interactions.KeyLabel( choice.Option.Slot ), choice.Option.Label );
+				_cards.Add( card );
+				hash = HashCode.Combine( hash, card );
+			}
+		}
+		_cardsHash = hash;
+	}
+
+	// The toasts' clay wobble, driven from ClayClock instead of the action-jitter CSS animation: it snaps
 	// pose on the SAME global tick the 3D clay boils on (a CSS animation free-runs from mount and can only
-	// match the rate). Card-scale amplitudes = the shared table verbatim.
-	Panel ToastPanel { get; set; }
-	Panel _posedPanel;          // the card remounts per hover — a fresh panel needs an immediate pose
+	// match the rate). Card-scale amplitudes = the shared table verbatim; each card is seeded off its index so
+	// neighbours hold different poses while still snapping together.
+	Panel FloatPanel { get; set; }
+	Panel _posedPanel;          // the row remounts per hover — a fresh panel needs an immediate pose
+	int _posedCount;
 	int _lastToastTick = int.MinValue;
 
 	void UpdateToastPose()
 	{
-		if ( ToastPanel is not { IsValid: true } )
+		if ( FloatPanel is not { IsValid: true } )
 		{
 			_posedPanel = null;
 			return;
 		}
 
-		if ( ToastPanel != _posedPanel )
+		var count = FloatPanel.ChildrenCount;
+		if ( FloatPanel != _posedPanel || count != _posedCount )
 		{
-			_posedPanel = ToastPanel;
+			_posedPanel = FloatPanel;
+			_posedCount = count;
 			_lastToastTick = int.MinValue;
 		}
 
@@ -120,13 +148,9 @@
 			return;
 		_lastToastTick = tick;
 
-		var pose = ClayClock.Pose();
-		var t = new PanelTransform();
-		t.AddRotation( 0f, 0f, pose.Rotation );
-		t.AddTranslateX( Length.Pixels( pose.Travel.x ) );
-		t.AddTranslateY( Length.Pixels( pose.Travel.y ) );
-		t.AddScale( new Vector3( pose.Scale, pose.Scale, 1f ) );
-		ToastPanel.Style.Transform = t;
+		var i = 0;
+		foreach ( var card in FloatPanel.Children )
+			card.Style.Transform = ClayClock.BuildPose( i++ * 2 );
 	}
 
 	// Where the prompt goes — the simple, pose-blind scheme: project the prop's COLLISION GEOMETRY
@@ -147,14 +171,12 @@
 		if ( !Visible )
 			return null;
 
-		// Claimable clay under the crosshair — only where a claim service is live (creative, the lobby);
-		// HoveredSculpture is never set elsewhere. The tutorial character rides the same toast with his own
-		// label (see TutorialNpc): anchored off HIS clay's collider frame, exactly like a claimable's.
-		var npc = Hunter.HoveredTutorial;
-		_promptTutorial = npc.IsValid();
-		var hovered = _promptTutorial ? npc.Sculpture : Hunter.HoveredSculpture;
+		// Whatever the hunter's hover resolved (see HunterController.UpdateInteractHover): its clay is framed by
+		// the collider points; something interactive WITHOUT clay falls back to its world bounds.
+		if ( Hunter.HoverContext is not { } hover )
+			return null;
 		var cam = Scene.Camera;
-		if ( !hovered.IsValid() || !cam.IsValid() )
+		if ( !cam.IsValid() )
 			return null;
 
 		if ( ToastDebug )
@@ -164,9 +186,9 @@
 		var max = new Vector2( float.MinValue, float.MinValue );
 		var any = false;
 
-		foreach ( var point in FramePoints( hovered ) )
+		foreach ( var world in WorldFramePoints( hover ) )
 		{
-			var screen = cam.PointToScreenNormal( hovered.WorldTransform.PointToWorld( point ), out var behind );
+			var screen = cam.PointToScreenNormal( world, out var behind );
 			if ( behind )
 				continue;
 
@@ -197,6 +219,24 @@
 	// The sculpture-local points to frame: the collider's emitted geometry. Fallback for a sculpture whose
 	// collider hasn't built yet (or has none): the brush bounds' corners — loose, but only ever a stand-in
 	// for a frame or two.
+	static IEnumerable<Vector3> WorldFramePoints( InteractContext hover )
+	{
+		var sculpture = hover.Sculpture;
+		if ( sculpture.IsValid() )
+		{
+			var t = sculpture.WorldTransform;
+			foreach ( var p in FramePoints( sculpture ) )
+				yield return t.PointToWorld( p );
+			yield break;
+		}
+
+		if ( !hover.Target.IsValid() )
+			yield break;
+
+		foreach ( var corner in hover.Target.GetBounds().Corners )
+			yield return corner;
+	}
+
 	static IEnumerable<Vector3> FramePoints( SdfSculpture sculpture )
 	{
 		var collider = sculpture.Components.Get<SdfCollider>();
@@ -226,5 +266,5 @@
 	// the prop (same reasoning as PlayerNameplates hashing its plate positions). The debug layer re-renders off
 	// the rect (the dots can't move without it moving).
 	protected override int BuildHash()
-		=> HashCode.Combine( Visible, _promptAt, _promptTutorial, ToastDebug, _debugValid, _debugMin, _debugMax, _debugPoints.Count );
+		=> HashCode.Combine( Visible, _promptAt, _cardsHash, ToastDebug, _debugValid, _debugMin, _debugMax, _debugPoints.Count );
 }

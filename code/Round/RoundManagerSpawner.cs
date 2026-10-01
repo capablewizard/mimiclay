@@ -184,6 +184,11 @@ public sealed class RoundManagerSpawner : Component
 			}
 		}
 
+		// Guessers can possess the map's clay any time (CharadesManager is the IPropClaimHost) — the claim
+		// service rides the manager's GameObject exactly as in creative, reach set before the spawn.
+		var claims = go.Components.Create<PropClaims>();
+		claims.HoverRange = card.IsValid() ? card.CreativeHoverRange : MapModeCard.DefaultCreativeHoverRange;
+
 		go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]
 	}
 

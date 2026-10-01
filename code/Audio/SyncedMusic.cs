@@ -39,6 +39,21 @@ public sealed class SyncedMusic : Component
 	/// Loose on purpose: a client's clock estimate jitters by a few ms, and a seek is an audible skip.</summary>
 	[Property] public float DriftTolerance { get; set; } = 0.25f;
 
+	/// <summary>Switched on? Off fades the handle out but keeps the channel; back on rejoins the shared clock, so
+	/// the song "kept playing" silently and every machine comes back in step. Changed on every machine at once by
+	/// <see cref="SetPlaying"/>; late joiners get it from the live snapshot (scene objects ship the host's state,
+	/// a converted pawn its owner's), and CarryExtras copies it across a possession.</summary>
+	[Property] public bool Playing { get; set; } = true;
+
+	/// <summary>Anyone → everyone: switch the music on or off. A plain broadcast — a toggle needs no host
+	/// arbitration (two players racing just end on whichever landed last, the same on every machine since the
+	/// host relays in order).</summary>
+	[Rpc.Broadcast]
+	public void SetPlaying( bool on )
+	{
+		Playing = on;
+	}
+
 	const float ParkSeconds = 1f;
 	const float DriftCheckInterval = 2f;
 
@@ -91,13 +106,23 @@ public sealed class SyncedMusic : Component
 		if ( !_channels.TryGetValue( Key, out var e ) || e.Holder != this )
 			return;
 
+		// Counted whether or not we're playing, so switching on after the load starts at once.
+		_calmFrames = Time.Delta < CalmFrameDelta ? _calmFrames + 1 : 0;
+
+		if ( !Playing )
+		{
+			if ( e.Handle.IsValid() )
+				e.Handle.Stop( 0.5f );
+			e.Handle = null;
+			return;
+		}
+
 		if ( !e.Handle.IsValid() || e.Handle.Finished )
 		{
 			// Wait out the load. Starting during it (OnEnabled runs inside Scene.Load) meant the first frame
 			// after was a ~2s stall: the scene clock jumped 2s while the mixer — fed from the main thread —
 			// barely advanced, so the first drift check found 1.35s of error and seeked forward. That jump was
 			// the hiccup heard on load. A run of normal frames means the clock and the mixer move together.
-			_calmFrames = Time.Delta < CalmFrameDelta ? _calmFrames + 1 : 0;
 			if ( _calmFrames >= CalmFrames )
 				e.Handle = StartHandle();
 			return;

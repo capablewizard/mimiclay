@@ -312,7 +312,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
-          "SkyMaterial": "materials/skybox/skybox_day_01.vmat",
+          "SkyMaterial": {
+            "Id": "e05fd285-6edd-4c7b-9b31-8a41a0265c3e",
+            "Path": "materials/skybox/skybox_day_01.vmat"
+          },
           "Tint": "1,1,1,1"
         },
         {
@@ -332,7 +335,10 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Sky": "materials/skybox/skybox_day_01.vmat",
+          "Sky": {
+            "Id": "e05fd285-6edd-4c7b-9b31-8a41a0265c3e",
+            "Path": "materials/skybox/skybox_day_01.vmat"
+          },
           "StartDistance": 800,
           "Tint": "1,1,1,1"
         },
@@ -399,6 +405,7 @@
           "BotsFollowIntoRound": true,
           "DefaultConsolidationSeconds": 12,
           "DefaultHideSeconds": 90,
+          "DefaultHintSeconds": 60,
           "DefaultHunterCount": 1,
           "DefaultHuntSeconds": 220,
           "DefaultRevealSeconds": 30,
@@ -1170,7 +1177,10 @@
     {
       "__guid": "7efd2557-b4ea-4e77-9835-3158fea01b00",
       "__version": 2,
-      "__Prefab": "prefabs/saved/gameboy.prefab",
+      "__Prefab": {
+        "Id": "66228d21-0a18-46dc-8f04-1347493730e6",
+        "Path": "prefabs/saved/gameboy.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [
           {
@@ -1182,10 +1192,7 @@
               "Type": "GameObject",
               "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
             },
-            "PreviousElement": {
-              "Type": "Component",
-              "IdValue": "db48c1f6-f208-4752-a9f1-e5896c493e3a"
-            },
+            "PreviousElement": null,
             "ContainerProperty": "Components",
             "IsContainerArray": true,
             "Data": {
@@ -1240,6 +1247,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 3.8941917,
                 "Color": "0.97,0.83,0.22,1",
                 "Metallic": 0,
@@ -1275,6 +1283,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 4.8296614,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1310,6 +1319,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.5826567,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1345,6 +1355,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.1401303,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1380,6 +1391,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.1401303,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1415,6 +1427,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1430,7 +1443,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 3.504243
+                "BoundingRadius": 3.488701
               },
               {
                 "Shape": "Text",
@@ -1450,6 +1463,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1485,6 +1499,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.47698,0.53743,0.42862,1",
                 "Metallic": 0,
@@ -1520,6 +1535,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1555,6 +1571,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1590,6 +1607,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.4164625,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1625,6 +1643,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1660,6 +1679,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1695,6 +1715,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.564161,
+                "Gap": 0,
                 "Rounding": 1.9505916,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1730,6 +1751,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.18224953,
+                "Gap": 0,
                 "Rounding": 1.9505916,
                 "Color": "0.97,0.83,0.22,1",
                 "Metallic": 0,
@@ -1756,9 +1778,34 @@
             },
             "Property": "__enabled",
             "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ffc9de5e-5882-4e3c-b6b3-7003846baf37"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           }
         ],
-        "MovedObjects": []
+        "MovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "603745c0-996b-4ad1-82c6-dca8059606e2"
+            },
+            "NewParent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "NewContainerProperty": "Components",
+            "IsNewContainerArray": true,
+            "NewPreviousElement": {
+              "Type": "Component",
+              "IdValue": "0b3f17d0-e512-480c-a9e2-6263891db7d7"
+            }
+          }
+        ]
       },
       "__PrefabIdToInstanceId": {
         "e3a2b1c7-452a-44df-a162-eaa7424cdd4a": "7efd2557-b4ea-4e77-9835-3158fea01b00",
@@ -1766,13 +1813,18 @@
         "ffc9de5e-5882-4e3c-b6b3-7003846baf37": "27837c1d-695f-4ace-b2fa-5570c4875037",
         "41820ea1-1179-47ef-8578-3c0c288101d0": "cf733122-1d70-4ef6-8c28-1a63d177d0ac",
         "cd4fbd2e-5e91-4801-ad6b-1e90d8314895": "b6d8a8e3-45c9-4121-b800-2aa4bb160795",
-        "db48c1f6-f208-4752-a9f1-e5896c493e3a": "bab7770f-369a-45f7-9b29-1ad736cb0184"
+        "77d9d5b9-1099-4737-ad6b-044ad6edbadd": "82581a53-73d7-8d49-9ee5-c66c80d435b1",
+        "8c4ab7ed-549b-4f7d-9610-5c63a0910e7f": "cfd42f09-19b7-87a9-9ce7-531b3523fd19",
+        "e93dcb54-8e1c-4434-afa1-fc3ea84aec52": "9174fb87-fc22-849c-8b92-4f13508c17e9"
       }
     },
     {
       "__guid": "b098d542-bc7d-43dc-964e-b9d344fe7946",
       "__version": 2,
-      "__Prefab": "prefabs/saved/gameboy.prefab",
+      "__Prefab": {
+        "Id": "66228d21-0a18-46dc-8f04-1347493730e6",
+        "Path": "prefabs/saved/gameboy.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [
           {
@@ -1784,10 +1836,7 @@
               "Type": "GameObject",
               "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
             },
-            "PreviousElement": {
-              "Type": "Component",
-              "IdValue": "db48c1f6-f208-4752-a9f1-e5896c493e3a"
-            },
+            "PreviousElement": null,
             "ContainerProperty": "Components",
             "IsContainerArray": true,
             "Data": {
@@ -1858,6 +1907,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 3.8941917,
                 "Color": "0.97,0.83,0.22,1",
                 "Metallic": 0,
@@ -1893,6 +1943,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 4.8296614,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1928,6 +1979,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.5826567,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1963,6 +2015,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.1401303,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -1998,6 +2051,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.1401303,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2033,6 +2087,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2048,7 +2103,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 3.504243
+                "BoundingRadius": 3.488701
               },
               {
                 "Shape": "Text",
@@ -2068,6 +2123,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2103,6 +2159,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.47698,0.53743,0.42862,1",
                 "Metallic": 0,
@@ -2138,6 +2195,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2173,6 +2231,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2208,6 +2267,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1.4164625,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2243,6 +2303,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2278,6 +2339,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2313,6 +2375,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.564161,
+                "Gap": 0,
                 "Rounding": 1.9505916,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2348,6 +2411,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.18224953,
+                "Gap": 0,
                 "Rounding": 1.9505916,
                 "Color": "0.97,0.83,0.22,1",
                 "Metallic": 0,
@@ -2378,13 +2442,38 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "ffc9de5e-5882-4e3c-b6b3-7003846baf37"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
             },
             "Property": "Displace",
             "Value": true
           }
         ],
-        "MovedObjects": []
+        "MovedObjects": [
+          {
+            "Id": {
+              "Type": "Component",
+              "IdValue": "603745c0-996b-4ad1-82c6-dca8059606e2"
+            },
+            "NewParent": {
+              "Type": "GameObject",
+              "IdValue": "e3a2b1c7-452a-44df-a162-eaa7424cdd4a"
+            },
+            "NewContainerProperty": "Components",
+            "IsNewContainerArray": true,
+            "NewPreviousElement": {
+              "Type": "Component",
+              "IdValue": "0e656899-e279-46c1-abc1-6514fa4a96fe"
+            }
+          }
+        ]
       },
       "__PrefabIdToInstanceId": {
         "e3a2b1c7-452a-44df-a162-eaa7424cdd4a": "b098d542-bc7d-43dc-964e-b9d344fe7946",
@@ -2392,7 +2481,9 @@
         "ffc9de5e-5882-4e3c-b6b3-7003846baf37": "ebcbd5b1-fabc-458d-957a-d5ffaa0b3823",
         "41820ea1-1179-47ef-8578-3c0c288101d0": "355056fc-a575-4b63-a115-b40b297d9460",
         "cd4fbd2e-5e91-4801-ad6b-1e90d8314895": "f68bf6e2-6b44-4934-aaae-d9e1fc80df95",
-        "db48c1f6-f208-4752-a9f1-e5896c493e3a": "0032d163-52ee-4f25-bc96-b9e5412a9b51"
+        "77d9d5b9-1099-4737-ad6b-044ad6edbadd": "14dfe484-63d5-8719-9acf-9ea00ffed625",
+        "8c4ab7ed-549b-4f7d-9610-5c63a0910e7f": "f5e9fed2-45ec-87ad-97c5-c43bbff5ff27",
+        "e93dcb54-8e1c-4434-afa1-fc3ea84aec52": "6bc211fe-c84e-8dd1-8bc6-4ab811dd8754"
       }
     },
     {
@@ -2422,7 +2513,10 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "prefabs/lobby/cuttingmat/cuttingmat.vmdl",
+          "Model": {
+            "Id": "b65c246c-9698-410a-a6dd-3c227ea8d0b4",
+            "Path": "prefabs/lobby/cuttingmat/cuttingmat.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2470,7 +2564,10 @@
     {
       "__guid": "dde244bb-7b79-4ac3-ab6f-467d3e29bbc3",
       "__version": 2,
-      "__Prefab": "prefabs/saved/fullorange.prefab",
+      "__Prefab": {
+        "Id": "2d76c68a-fb76-40b5-b830-44ca7b8bfb7b",
+        "Path": "prefabs/saved/fullorange.prefab"
+      },
       "__PrefabInstancePatch": {
         "AddedObjects": [
           {
@@ -2612,6 +2709,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 9.231856,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -2647,6 +2745,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 15,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -2682,6 +2781,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 5.493479,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -2717,6 +2817,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.15787041,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "1,1,1,1",
                 "Metallic": 0,
@@ -2752,6 +2853,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2787,6 +2889,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2.700001,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -2820,8 +2923,9 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0.544853,
                 "SlicePlaneN": -0.089705944,
-                "LocalCentre": "0,0,0",
+                "LocalCentre": "0,0,-3.35075402",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -2857,6 +2961,7 @@
                 "SlicePlaneN": -0.15500057,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.96,0.53,0.15,1",
                 "Metallic": 0,
@@ -2892,6 +2997,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -2927,6 +3033,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.97,0.97,0.97,1",
                 "Metallic": 0,
@@ -2962,6 +3069,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.97,0.97,0.97,1",
                 "Metallic": 0,
@@ -2997,6 +3105,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.14492,0.14492,0.15349,1",
                 "Metallic": 0,
@@ -3032,6 +3141,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0,
+                "Gap": 0,
                 "Rounding": 1,
                 "Color": "0.92,0.68,0.4,1",
                 "Metallic": 0,
@@ -3071,6 +3181,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 0.41999996,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.45,0.26,0.17,1",
                 "Metallic": 0,
@@ -3106,6 +3217,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 2,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -3141,6 +3253,7 @@
                 "SlicePlaneN": 1,
                 "LocalCentre": "0,0,0",
                 "Blend": 9.862535,
+                "Gap": 0,
                 "Rounding": 0.75,
                 "Color": "0.9,0.42,0.12,1",
                 "Metallic": 0,
@@ -3159,6 +3272,22 @@
                 "BoundingRadius": 20.731592
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "504b3663-98cb-4d3c-84d2-d7787e386222"
+            },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "504b3663-98cb-4d3c-84d2-d7787e386222"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           },
           {
             "Target": {
@@ -3185,6 +3314,7 @@
   ],
   "SceneProperties": {
     "NetworkInterpolation": true,
+    "PhysicsMode": "Physics3D",
     "TimeScale": 1,
     "WantsSystemScene": false,
     "Metadata": {

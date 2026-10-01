@@ -43,8 +43,8 @@ public interface IPropClaimHost
 /// <item>CLASSIFICATION — <see cref="IsClaimable"/>/<see cref="IsScenery"/>: any sculpture with brushes that
 /// isn't someone's body. The <see cref="SdfSculpture"/> component is the marker; there is no prop tag to keep
 /// in sync across prefabs and maps.</item>
-/// <item>HOVER — the per-frame local hover published by the owning hunter (<see cref="SetLocalHover"/>),
-/// freshness-gated for the outline system and the "E to Edit" toast.</item>
+/// <item>THE "EDIT" OPTION — registered as an <see cref="Interactions"/> source, so every claimable sculpture
+/// under a hunter's crosshair offers E Edit beside whatever the object itself offers (the radio's on/off).</item>
 /// <item>ARBITRATION — <see cref="RequestPossess"/>, THE claim point: requests arrive serially on the host,
 /// with the <see cref="ReleasedProps"/> registry remove (pawn props) and <see cref="_claimedScene"/> (scene
 /// props) as idempotency guards, so two players pressing E on the same prop in the same instant get exactly
@@ -60,7 +60,7 @@ public interface IPropClaimHost
 [Title( "Prop Claims" )]
 [Category( "Mimiclay" )]
 [Icon( "pan_tool" )]
-public sealed class PropClaims : Component
+public sealed class PropClaims : Component, IInteractable
 {
 	/// <summary>The live claim service (null wherever props aren't editable — round maps, the menu). The
 	/// hunter's hover detection and the outline system read this to know claim rules apply. Named Current like
@@ -90,25 +90,42 @@ public sealed class PropClaims : Component
 	/// answer correctly too). The host re-checks at the claim itself; this just keeps the UI honest.</summary>
 	public bool ClaimsOpen => Host?.ClaimsAllowed ?? false;
 
-	/// <summary>The claimable clay the LOCAL hunter is currently aiming at, published per-frame by
-	/// <see cref="HunterController"/> via <see cref="SetLocalHover"/>. Read through
-	/// <see cref="LocalHoverSculpture"/>, which is freshness-gated: the publisher can vanish mid-hover (the
-	/// hunter pawn is destroyed by a granted possession, or stops updating in edit mode), and component update
-	/// order is a HashSet — so staleness is told by age, never by relying on someone clearing it.</summary>
-	public static SdfSculpture LocalHover { get; private set; }
-	static RealTimeSince _hoverAge;
+	// ── The "Edit" interaction (PropClaims is a registered Interactions source) ────────────────────────────
 
-	/// <summary>Stamp this frame's hover (null = aiming at nothing claimable).</summary>
-	public static void SetLocalHover( SdfSculpture hover )
+	const string EditOption = "claims.edit";
+
+	/// <summary>Set the instant THIS machine asks to possess something, cleared by the next possession (or by
+	/// timing out). Charades reads it so its pawn-kind poll doesn't respawn a hunter in the gap between the host
+	/// destroying ours and the possession reaching us.</summary>
+	public static bool LocalClaimPending => _claimPendingSince < 3f;
+	static RealTimeSince _claimPendingSince = float.MaxValue;
+
+	/// <summary>The pending local claim landed (or was refused) — see <see cref="LocalClaimPending"/>.</summary>
+	public static void ClearLocalClaimPending() => _claimPendingSince = float.MaxValue;
+
+	void IInteractable.GetInteractions( in InteractContext ctx, List<InteractOption> options )
 	{
-		LocalHover = hover;
-		_hoverAge = 0f;
+		if ( ClaimsOpen && IsClaimable( ctx.Sculpture ) )
+			options.Add( new InteractOption( EditOption, "Edit", InteractSlot.Primary ) );
 	}
 
-	/// <summary>The hover target if it's still current and still claimable, else null — what the outline gate
-	/// and the toast actually consume.</summary>
-	public static SdfSculpture LocalHoverSculpture
-		=> IsClaimable( LocalHover ) && _hoverAge < 0.1f ? LocalHover : null;
+	void IInteractable.Interact( in InteractContext ctx, string optionId )
+	{
+		if ( optionId != EditOption || !ctx.Sculpture.IsValid() )
+			return;
+
+		// Carry the view into the prop, same as a lobby swap: yaw+pitch stashed owner-side here, consumed by
+		// ResumeControl on the possessed pawn — whatever you were looking at, you still are.
+		LobbySwapCarry.Capture( Scene, null );
+
+		// Claim by the pawn ROOT when the hover is a pawn prop, not the sculpture: the Disguise child is created
+		// per-machine in OnStart (it's not in the spawn snapshot), so its id only resolves locally — a client
+		// sending it would no-op on the host. The root is the networked object; scene clay has no root and its
+		// own scene-file id resolves everywhere. Same rule as the shot's ReportPropHit.
+		var claimHider = ctx.Sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		_claimPendingSince = 0f;
+		RequestPossess( claimHider.IsValid() ? claimHider.GameObject : ctx.Sculpture.GameObject );
+	}
 
 	/// <summary>What a claim can take: any clay in the map that isn't currently BEING someone.
 	/// A pawn prop only once its player let it go (<see cref="IsReleased"/>); a hunter's face never;
@@ -124,6 +141,9 @@ public sealed class PropClaims : Component
 
 		if ( sculpture.Components.Get<TutorialNpc>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
 			return false; // the tutorial character: his E opens the guided session locally (see TutorialNpc), never a claim
+
+		if ( sculpture.Components.Get<ClaimBlocker>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
+			return false; // authored off-limits (the charades stage) — the per-prop lock
 
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
@@ -157,6 +177,17 @@ public sealed class PropClaims : Component
 	public static bool IsReleased( HiderController hider )
 		=> hider.IsValid() && Current.IsValid() && Current.ReleasedProps.ContainsKey( hider.GameObject.Id );
 
+	/// <summary>Props someone is currently WEARING through a claim, by pawn GameObject id — the other half of the
+	/// lifecycle to <see cref="ReleasedProps"/> (host adds on every granted claim, removes on release). Synced for
+	/// the same reason: the owner's machine must know "this body is borrowed" (E pops you out of it) and only the
+	/// host saw the claim.</summary>
+	[Sync] public NetDictionary<Guid, bool> PossessedProps { get; private set; } = new();
+
+	/// <summary>Is this pawn prop being worn through a claim (as opposed to a body its player spawned as)? Safe
+	/// anywhere — false wherever no claim service runs.</summary>
+	public static bool IsPossessed( HiderController hider )
+		=> hider.IsValid() && Current.IsValid() && Current.PossessedProps.ContainsKey( hider.GameObject.Id );
+
 	// Host-only: pawns minted by ConvertSceneProp, by pawn GameObject id. The lobby reads this to tell borrowed
 	// map furniture (release it back into the world on a role swap) from a player's own practice body (destroy
 	// it, remembering the disguise). Host-only is enough — every consumer runs inside a host RPC.
@@ -174,6 +205,8 @@ public sealed class PropClaims : Component
 	{
 		if ( _converted.Remove( oldPawnId ) && fresh.IsValid() )
 			_converted.Add( fresh.Id );
+		if ( PossessedProps.Remove( oldPawnId ) && fresh.IsValid() )
+			PossessedProps[fresh.Id] = true;
 	}
 
 	// Host-side per-caller gate on RequestPossess, same shape as RoundManager's shot gate: the RPC is the trust
@@ -189,11 +222,13 @@ public sealed class PropClaims : Component
 	protected override void OnEnabled()
 	{
 		Current = this;
+		Interactions.RegisterSource( this );
 	}
 
 	protected override void OnDisabled()
 	{
 		if ( Current == this ) Current = null;
+		Interactions.UnregisterSource( this );
 	}
 
 	/// <summary>Caller claims the clay under their crosshair — the E press. THE arbitration point: requests
@@ -205,9 +240,12 @@ public sealed class PropClaims : Component
 	/// <see cref="RoundManager.ReportPropHit"/>: the caller must actually be a hunter here, within reach, and
 	/// not spamming.</summary>
 	[Rpc.Host]
-	public void RequestPossess( GameObject target )
+	public void RequestPossess( GameObject target ) => PossessFor( Rpc.Caller, target );
+
+	// Host-only: the claim itself, for connection c. Split from the RPC so debug tooling can claim on a client's
+	// behalf (see PossessionDebug).
+	internal void PossessFor( Connection c, GameObject target )
 	{
-		var c = Rpc.Caller;
 		var host = Host;
 		if ( c is null || !target.IsValid() || host is null || !host.ClaimsAllowed )
 			return;
@@ -260,9 +298,16 @@ public sealed class PropClaims : Component
 	{
 		Host.OnClaimGranted( c, hunterPawn, prop );
 		hunterPawn.Destroy();
+		PossessedProps[prop.GameObject.Id] = true;
+		PlaySwapPop( PopSpot( prop.GameObject ) );
 
 		if ( assignOwnership && Networking.IsActive )
-			prop.GameObject.Network.AssignOwnership( c );
+		{
+			// The whole tree (see NetworkTree) — a root-only assign left the Disguise owned by whoever wore the
+			// prop before, so THEIR machine kept authority over the clay the new claimant was sculpting.
+			foreach ( var net in NetworkTree( prop.GameObject ) )
+				net.Network.AssignOwnership( c );
+		}
 
 		// Tell the claimant (and only them) to resume control once the ownership change lands on their machine.
 		// Their copy consumes it in OnUpdate — acting inside the RPC could race the ownership packet.
@@ -270,6 +315,43 @@ public sealed class PropClaims : Component
 		{
 			prop.BeginPossession();
 		}
+	}
+
+	/// <summary>Host-only: play the body-swap "pop" at <paramref name="at"/> on every machine — possessing a prop,
+	/// popping out of one, the hunter ⇄ prop swap. Every swap is granted on the host, so this is called from
+	/// the grant sites (HandOver here, the modes' swap/release RPCs), once per swap.</summary>
+	public void PlaySwapPop( Vector3 at )
+	{
+		if ( Networking.IsActive && !Networking.IsHost )
+			return;
+		BroadcastSwapPop( at );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastSwapPop( Vector3 at )
+	{
+		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
+			return;
+
+		// Read off the mode's prop PREFAB (see HiderController.SwapPopSound) — every machine resolves it locally,
+		// the same way the hover reads PropPrefab.
+		var sound = Host?.PropPrefab?.Components.Get<HiderController>( FindMode.EverythingInSelf )?.SwapPopSound;
+		if ( sound is not null )
+			Sound.Play( sound, at );
+	}
+
+	// Where a pop for this body goes: the middle of its clay (a prop's root sits at its feet), else its origin.
+	public static Vector3 PopSpot( GameObject pawn )
+	{
+		if ( !pawn.IsValid() )
+			return Vector3.Zero;
+
+		var hider = pawn.Components.Get<HiderController>();
+		var clay = hider.IsValid() ? hider.DisguiseSculpture : null;
+		if ( clay.IsValid() && Sdf.TryGetBounds( clay.Brushes, out var b ) )
+			return clay.WorldTransform.PointToWorld( b.Center );
+
+		return pawn.WorldPosition + Vector3.Up * 32f;
 	}
 
 	// Host-only. Turn a scene-placed sculpture into a live prop pawn: clone the prop prefab dressed in the
@@ -327,6 +409,7 @@ public sealed class PropClaims : Component
 		DestroySceneProp( sculpture.GameObject );
 
 		pawn.Enabled = true;
+		SetOrphanedModeTree( pawn, NetworkOrphaned.ClearOwner ); // the Disguise too — see NetworkTree
 		pawn.NetworkSpawn( new NetworkSpawnOptions
 		{
 			Owner = owner,
@@ -336,10 +419,12 @@ public sealed class PropClaims : Component
 		return pawn;
 	}
 
-	// Components on a scene prop that aren't clay but belong to the OBJECT (the lobby radio's music), which
-	// would otherwise die with the original. Kept to an explicit allowlist: the SDF stack is rebuilt by the pawn
-	// prefab, and anything else on scenery (triggers, map logic) must not start riding a player around.
-	static bool IsCarried( Component c ) => c is BaseSoundComponent or SyncedMusic;
+	// Components on a scene prop that aren't clay but belong to the OBJECT (the lobby radio's music and its
+	// on/off), which would otherwise die with the original. Kept to an allowlist: the SDF stack is rebuilt by the
+	// pawn prefab, and anything else on scenery (triggers, map logic) must not start riding a player around.
+	// Interactables are carried wholesale — what a prop OFFERS is part of the object, so possessing it must not
+	// strip its interactions from everyone else.
+	internal static bool IsCarried( Component c ) => c is BaseSoundComponent or SyncedMusic or IInteractable;
 
 	// Host-only, pawn still disabled. Copy each carried component off the original onto the disguise body — it
 	// sits at exactly the original's transform, so a positional sound stays put, then follows the prop. Copied
@@ -360,6 +445,41 @@ public sealed class PropClaims : Component
 
 			copy.DeserializeImmediately( json );
 			copy.Enabled = c.Enabled;
+		}
+	}
+
+	/// <summary>A pawn's networked objects: the root plus every descendant that is its OWN network object. The
+	/// Disguise child is one — disguise.prefab is NetworkMode.Object, so when the pawn is NetworkSpawn'd the engine
+	/// spawns the dressed Disguise alongside it as a separate network object, with the same owner but its OWN
+	/// orphan action (the prefab's Destroy). So any ownership/orphan rule meant for "the prop" has to be applied to
+	/// all of them, or the clay quietly keeps the old rule: a release that only dropped the root left the Disguise
+	/// owned by the leaver, and their disconnect destroyed it — the pawn root fell forever with no clay or collider
+	/// (the fall respawn kept teleporting it back to its spawn spot, which is what late joiners saw).</summary>
+	internal static IEnumerable<GameObject> NetworkTree( GameObject root )
+	{
+		if ( !root.IsValid() )
+			yield break;
+
+		yield return root;
+		foreach ( var go in root.GetAllObjects( false ) )
+		{
+			if ( go != root && go.NetworkMode == NetworkMode.Object && go.Network.Active )
+				yield return go;
+		}
+	}
+
+	/// <summary>Before a NetworkSpawn: give every object that will spawn as its own network object (see
+	/// <see cref="NetworkTree"/>) the same orphan action as the root. Pre-spawn only — the engine reads it at the
+	/// spawn.</summary>
+	internal static void SetOrphanedModeTree( GameObject root, NetworkOrphaned mode )
+	{
+		if ( !root.IsValid() )
+			return;
+
+		foreach ( var go in root.GetAllObjects( false ) )
+		{
+			if ( go != root && go.NetworkMode == NetworkMode.Object )
+				go.Network.SetOrphanedMode( mode );
 		}
 	}
 
@@ -386,7 +506,13 @@ public sealed class PropClaims : Component
 
 		hider.ReleaseControl();
 		if ( Networking.IsActive && hider.GameObject.Network.Active )
-			hider.GameObject.Network.DropOwnership();
+		{
+			// The WHOLE network tree, not just the root — see NetworkTree: a Disguise left owned by the leaver is
+			// destroyed by the engine's orphan pass when they disconnect, taking the clay and its collider with it.
+			foreach ( var net in NetworkTree( hider.GameObject ) )
+				net.Network.DropOwnership();
+		}
+		PossessedProps.Remove( hider.GameObject.Id );
 		ReleasedProps[hider.GameObject.Id] = true;
 	}
 

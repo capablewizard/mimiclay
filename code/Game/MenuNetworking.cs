@@ -276,6 +276,8 @@ public sealed class SessionResetSystem : GameObjectSystem
 			SculptBounds.ResetBypass(); // the dev size-limit bypass never outlives the play session
 			TutorialNpc.SweepPlayEnd(); // restore the tutorial character's shape + drop runtime outlines, however teardown fell out
 			SculptSceneLibrary.NotePlayEnded(); // next play session autosaves into its OWN folder
+			Interactions.Reset(); // registered sources + the local hover are statics
+			PawnSwapKeys.Reset(); // a swap parked on the revert dialog
 		}
 
 		base.Dispose();

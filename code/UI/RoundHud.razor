@@ -90,10 +90,10 @@
 					   everyone's pip live — the icon holds still and re-renders ONCE when they exit. Pose is a
 					   prop's edit-exit camera angle (null for faces, which keep the rig's portrait pose). *@
 					<div class="pip-cell">
-						<div class="pip hunter-pip @(icon.Sculpture.IsValid() ? "" : "generic")">
-							@if ( icon.Sculpture.IsValid() )
+						<div class="pip hunter-pip @(icon.HasPicture ? "" : "generic")">
+							@if ( icon.HasPicture )
 							{
-								<SdfIcon Key=@player.Connection Source=@icon.Sculpture Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
+								<SdfIcon Key=@player.Connection Source=@icon.Sculpture Brushes=@icon.Fallback Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
 							}
 							else
 							{
@@ -246,13 +246,13 @@
 							@* One .pip either way (like the lobby's), so the paint badge is written once and
 							   survives the portrait/generic branch flipping. *@
 							<div class="pip-cell">
-								<div class="pip hunter-pip @(icon.Sculpture.IsValid() ? "" : "generic")">
-									@if ( icon.Sculpture.IsValid() )
+								<div class="pip hunter-pip @(icon.HasPicture ? "" : "generic")">
+									@if ( icon.HasPicture )
 									{
 										@* Keyed by connection so the razor rebuild (this panel re-renders every second as
 										   the clock ticks) REUSES the panel. A new panel means a new SceneWorld.
 										   Frozen while they're face-editing mid-round, same as the lobby pips. *@
-										<SdfIcon Key=@hunter.Connection Source=@icon.Sculpture Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
+										<SdfIcon Key=@hunter.Connection Source=@icon.Sculpture Brushes=@icon.Fallback Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="pip-render" />
 									}
 									else
 									{
@@ -425,14 +425,18 @@
 	// disguise), the icon camera pose that goes with it (props carry their edit-exit angle; faces keep the
 	// rig's default, so Pose stays null), and whether they're mid-edit right now — which badges the pip and
 	// freezes the render (see SdfIcon.Frozen).
-	readonly record struct PipIcon( SdfSculpture Sculpture, Angles? Pose, bool Editing );
+	readonly record struct PipIcon( SdfSculpture Sculpture, Angles? Pose, bool Editing, List<SdfBrush> Fallback = null )
+	{
+		/// <summary>Something to draw: the live subject, or the last shape we saw them as (see Fallback).</summary>
+		public bool HasPicture => Sculpture.IsValid() || Fallback is not null;
+	}
 
 	// Last subject we managed to resolve per player. Losing the pawn for even ONE frame used to swap the razor
 	// branch from portrait to generic glyph, which deletes the SdfThumbnail panel — and with it a whole
 	// SceneWorld, to be rebuilt from scratch the moment the pawn came back. That churn is what a thumbnail
 	// "flashing up for a second" looks like. A pawn blinking out is never a reason to forget whose icon it
 	// was, so we don't.
-	readonly Dictionary<Guid, (SdfSculpture Sculpture, Angles? Pose)> _iconCache = new();
+	readonly Dictionary<Guid, (SdfSculpture Sculpture, Angles? Pose, List<SdfBrush> Brushes)> _iconCache = new();
 
 	// The icon subject for a roster row, or a null sculpture if this machine has never had a pawn for them.
 	// Handing over the sculpture rather than its brushes is what lets the thumbnail update on commit instead
@@ -456,7 +460,7 @@
 
 			editing = h.NetEditing;
 			if ( h.Face.Brushes is { Count: > 0 } )
-				_iconCache[connection] = (h.Face, null);
+				_iconCache[connection] = (h.Face, null, h.Face.Brushes);
 
 			break;
 		}
@@ -478,13 +482,19 @@
 
 			editing = p.NetEditing;
 			if ( p.DisguiseSculpture.Brushes is { Count: > 0 } )
-				_iconCache[connection] = (p.DisguiseSculpture, p.IconPoseSet ? p.IconPose : null);
+				_iconCache[connection] = (p.DisguiseSculpture, p.IconPoseSet ? p.IconPose : null, p.DisguiseSculpture.Brushes);
 
 			break;
 		}
 
-		var (sculpture, pose) = _iconCache.GetValueOrDefault( connection );
-		return new PipIcon( sculpture.IsValid() ? sculpture : null, pose, editing );
+		var (sculpture, pose, brushes) = _iconCache.GetValueOrDefault( connection );
+
+		// The cached body died (a swap or possession destroys it a beat before the new one resolves here): keep
+		// drawing the last shape we saw them as, rather than dropping to the generic glyph for those frames. The
+		// list is the dead sculpture's own — nothing edits a destroyed body, so holding the reference is enough.
+		return sculpture.IsValid()
+			? new PipIcon( sculpture, pose, editing )
+			: new PipIcon( null, pose, editing, brushes is { Count: > 0 } ? brushes : null );
 	}
 
 	// The SET of icon subjects this machine can currently resolve — an order-independent hash of their object
@@ -781,6 +791,11 @@
 		}
 	}
 
+	// The local player is wearing a possessed prop (see PropClaims.IsPossessed) — E pops them out.
+	bool LocalPossessed
+		=> Scene.GetAllComponents<HiderController>().Any( c => c.IsValid() && !c.IsProxy
+			&& !RoundManager.IsBotPawn( c.GameObject ) && PropClaims.IsPossessed( c ) );
+
 	// PLACEHOLDER hotkey hints, context-switched by phase. In the lobby these mirror the temporary debug keys on
 	// LobbyController; in a round they're the pawn controls. Replace with real input-action bindings later.
 	IEnumerable<HotkeyHint> Hotkeys
@@ -791,7 +806,10 @@
 			// shares this lobby-only hint set rather than the in-round one below.
 			if ( Phase == RoundPhase.Lobby )
 			{
-				yield return new( "P", LocalRole == PlayerRole.Prop ? "Swap to Hunter" : "Swap to Prop" );
+				if ( LocalPossessed )
+					yield return new( Input.GetButtonOrigin( PawnSwapKeys.LeaveAction )?.ToUpperInvariant() ?? "E", "Leave Prop" );
+				yield return new( Input.GetButtonOrigin( PawnSwapKeys.SwapAction )?.ToUpperInvariant() ?? "R",
+					LocalRole == PlayerRole.Prop ? "Swap to Hunter" : "Swap to Prop" );
 				if ( LobbyGame == GameModeKind.PropHunt )
 					yield return new( "N", "Nominate to Hunt" ); // nominations only mean anything in prop hunt
 				if ( LobbyManager.Current.IsValid() )
@@ -881,7 +899,8 @@
 		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, ClockCaption, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
-				TutorialDirector.IsRunning ), // lobby roster hides while the tutorial runs
+				TutorialDirector.IsRunning, // lobby roster hides while the tutorial runs
+				LocalPossessed ), // the "E Leave Prop" hint
 			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount,
 				// Silhouette hints: which props are flashing (from OnUpdate) + the setting itself, so the pips
 				// re-render on every pop in/out and drop their icons the moment the host turns hints off.

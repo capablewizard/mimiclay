@@ -21,7 +21,7 @@
 		background-repeat: no-repeat;
 	}
 
-	// Creative's "E to Edit" prompt, anchored under the hovered prop in the world: the razor sets left/top as
+	// The interaction prompt row ("E Edit", "F Turn off"…), anchored under the hovered prop in the world: the razor sets left/top as
 	// viewport percentages (the projected point) and this translate pulls the float back so the card is centred
 	// on it and hangs BELOW it — the PlayerNameplates plate recipe, flipped downward.
 	//
@@ -33,6 +33,7 @@
 		transform: translateX( -50% );
 		flex-direction: row;
 		justify-content: center;
+		gap: $space-md;                    // between the option cards ("E Edit"  "F Turn off")
 		pointer-events: none;
 
 		// THE gap: the razor's anchor is the exact bottom edge of the shape's screen rect, and this constant

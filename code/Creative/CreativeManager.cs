@@ -11,7 +11,7 @@ namespace Mimiclay;
 /// <see cref="RoundManager"/>). No phases, no timers, no win state — the host's pause-menu "Return to Lobby" is
 /// the way out.
 ///
-/// The loop: everyone spawns as a HUNTER. P swaps you to a fresh prop pawn to sculpt; P again returns you to a
+/// The loop: everyone spawns as a HUNTER. R swaps you to a fresh prop pawn to sculpt; R again (or E, on a possessed prop) returns you to a
 /// hunter and the prop is RELEASED — it persists in the world as scenery (<see cref="HiderController.ReleaseControl"/>,
 /// host keeps simulating it). Aiming at a released prop as a hunter outlines it with an "E to Edit" prompt; E
 /// POSSESSES it — your hunter despawns and you take the prop over, landing in edit mode.
@@ -19,7 +19,7 @@ namespace Mimiclay;
 /// <b>Claims.</b> The whole hover/claim/convert flow lives in <see cref="PropClaims"/>, the shared service
 /// spawned beside this manager (this manager is its <see cref="IPropClaimHost"/>): the same machinery the lobby
 /// hosts for its editable props. This class keeps only what is creative's own — the roster, the pawn spawning,
-/// and the P swap.
+/// and the R swap.
 ///
 /// <b>Networking.</b> This is the LOBBY's pawn model, not the round's: a NetworkSpawn'd singleton (a scene-placed
 /// component's [Sync] changes don't replicate) where the HOST spawns every pawn and hands each to its owner —
@@ -200,61 +200,19 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 		_hud.WorkshopStatus = null;
 	}
 
-	// A P press parked on the edit session's revert confirmation (see TrySwap). Local UI state, resolved when
-	// the dialog closes: confirmed (the session exited, reverted) completes the swap; "Keep Editing" drops it.
-	bool _swapAwaitingConfirm;
-
-	// Every machine: the P swap, same raw-key shape as LobbyController.HandleDebugInput (the request is
-	// [Rpc.Host], so a client's press routes to the host). The camera carry is owner-side state the host never
-	// sees — captured at the press, consumed by our replacement pawn as it starts.
+	// Every machine: the R swap (and E out of a possessed prop), same shape as LobbyController.HandleDebugInput
+	// (the request is [Rpc.Host], so a client's press routes to the host). Mid-edit the session exits through its
+	// own gate first — PawnSwapKeys.Run parks the swap on the revert dialog for an invalid sculpt instead of the
+	// release silently force-reverting it. The camera carry is owner-side state the host never sees — captured
+	// as the swap fires, consumed by our replacement pawn as it starts.
 	void HandleInput()
 	{
 		if ( PauseMenu.IsOpen )
 			return;
 
-		// A swap waiting on the revert dialog: complete or drop it the frame the player answers. Further P
-		// presses are swallowed while it's up (the dialog's scrim owns the HUD's input; this is the raw-key
-		// equivalent).
-		if ( _swapAwaitingConfirm )
-		{
-			var session = SculptEditSession.Current;
-			if ( !session.IsValid() )
-			{
-				_swapAwaitingConfirm = false; // forced teardown took the session — nothing left to complete
-			}
-			else if ( !session.ExitConfirmPending )
-			{
-				_swapAwaitingConfirm = false;
-				if ( !session.IsEditing )
-					Swap(); // confirmed: reverted + exited — finish what the P press started
-				// still editing = "Keep Editing" — the swap is dropped with it
-			}
-			return;
-		}
-
-		if ( Input.Keyboard.Pressed( "P" ) )
-			TrySwap();
-	}
-
-	// The P press. Exiting your pawn is also exiting its edit session, so an ACTIVE session goes through the
-	// same exit gate the Q toggle uses (SculptEditSession.RequestExit): a too-big/too-small sculpt raises the
-	// revert confirmation instead of the swap silently releasing an invalid shape into the world, and the swap
-	// waits on the player's answer. A valid session just exits cleanly first — persist included, better than
-	// the force-teardown the release would otherwise run. The hunter's face edit gets the same treatment.
-	void TrySwap()
-	{
-		var session = SculptEditSession.Current;
-		if ( session.IsValid() && session.IsEditing )
-		{
-			session.RequestExit();
-			if ( session.ExitConfirmPending )
-			{
-				_swapAwaitingConfirm = true;
-				return;
-			}
-		}
-
-		Swap();
+		PawnSwapKeys.Tick();
+		if ( PawnSwapKeys.SwapPressed || PawnSwapKeys.LeavePressed( OwnProp() ) )
+			PawnSwapKeys.Run( () => { if ( this.IsValid() ) Swap(); } );
 	}
 
 	void Swap()
@@ -341,6 +299,10 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 
 		var pawn = _pawns.GetValueOrDefault( c.Id );
 		var hider = pawn.IsValid() ? pawn.Components.Get<HiderController>() : null;
+
+		// The swap pop, where the body we're leaving stands (a released prop stays right there).
+		if ( pawn.IsValid() && Claims.IsValid() )
+			Claims.PlaySwapPop( PropClaims.PopSpot( pawn ) );
 
 		if ( hider.IsValid() )
 		{
@@ -436,7 +398,10 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 		// ClearOwner, not the prefab's authored Destroy: creative props must OUTLIVE their player — a leaver's
 		// prop would otherwise be engine-destroyed at the disconnect, before the reconcile sweep can release it
 		// into the world. ClearOwner (not Host) so the ownerless frame before the sweep runs can't read as the
-		// HOST's own pawn anywhere (RosterIdOf answers null for unowned, host-id for host-owned).
+		// HOST's own pawn anywhere (RosterIdOf answers null for unowned, host-id for host-owned). The whole
+		// network tree gets it: a dressed Disguise spawns as its own network object with its own orphan action
+		// (see PropClaims.NetworkTree), and a destroyed Disguise leaves the prop with no clay and no collider.
+		PropClaims.SetOrphanedModeTree( pawn, NetworkOrphaned.ClearOwner );
 		pawn.NetworkSpawn( new NetworkSpawnOptions
 		{
 			Owner = owner,

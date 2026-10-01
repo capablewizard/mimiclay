@@ -46,7 +46,7 @@ namespace Mimiclay;
 [Title( "Charades Manager" )]
 [Category( "Mimiclay" )]
 [Icon( "theater_comedy" )]
-public sealed class CharadesManager : Component, IChatEvent
+public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 {
 	/// <summary>The active manager in this scene (null elsewhere). The HUD and the spawner read this.</summary>
 	public static CharadesManager Current { get; private set; }
@@ -99,9 +99,13 @@ public sealed class CharadesManager : Component, IChatEvent
 	Guid _firstCorrectThisTurn;                           // winner-stays-on's next mimic
 	bool _gameOver;                                       // someone reached the target — podium after the reveal
 
+	readonly Dictionary<Guid, GameObject> _borrowed = new(); // who's wearing which claimed map prop (see Borrowed props)
+
 	// ── Local (per-machine) state ─────────────────────────────────────────────────────────────────────────
 	GameObject _ownPawn;
 	bool _ownPawnIsProp;                                  // which prefab our pawn currently is (mimic = prop)
+	bool _ownPawnBorrowed;                                // _ownPawn is a CLAIMED map prop, not a body we spawned
+	Transform? _hunterSpawnAt;                            // the next hunter spawns here (clear of a prop we let go)
 	CharadesPhase _observedPhase = (CharadesPhase)(-1);
 
 	/// <summary>The words offered to THIS machine's player for the current Choosing (empty on everyone else —
@@ -188,6 +192,7 @@ public sealed class CharadesManager : Component, IChatEvent
 		// EVERY machine: our own pawn from our own roster row — the right KIND of pawn (the mimic's machine
 		// swaps its hunter for a prop on the stage for the turn, and back after). Polling, same as prop hunt,
 		// so [Sync] arrival order can't strand anything.
+		HandleBorrowedInput();
 		EnsureOwnPawn();
 		KeepMimicOnStage();
 		TickBubbles();
@@ -750,7 +755,8 @@ public sealed class CharadesManager : Component, IChatEvent
 
 		// The sculpt closes (reveal, or the turn was cut short): the editor shuts and the lock comes back
 		// down. The prop pawn — the sculpt itself — stays up through the reveal for everyone to admire.
-		if ( from == CharadesPhase.Sculpting )
+		// A guesser sculpting a borrowed map prop isn't on the clock — leave them be.
+		if ( from == CharadesPhase.Sculpting && !_ownPawnBorrowed )
 			OwnHider()?.ExitEditing();
 
 		// Pawn KIND changes (mimic ⇄ guesser) are handled by EnsureOwnPawn polling WantsPropPawn — nothing
@@ -766,8 +772,8 @@ public sealed class CharadesManager : Component, IChatEvent
 		if ( !m.IsValid() || !hider.IsValid() )
 			return false;
 
-		// Only the mimic's own prop pawn exists as an editable hider in charades, but scope the check anyway.
-		if ( !m._ownPawn.IsValid() || hider.GameObject != m._ownPawn )
+		// Only the mimic's prop is on the clock — a guesser's borrowed map prop edits freely.
+		if ( !m._ownPawn.IsValid() || hider.GameObject != m._ownPawn || m._ownPawnBorrowed )
 			return false;
 
 		return m.Phase != CharadesPhase.Sculpting;
@@ -817,6 +823,23 @@ public sealed class CharadesManager : Component, IChatEvent
 		}
 
 		var wantProp = WantsPropPawn;
+
+		// A claim is in flight: the host destroys our hunter and hands us the prop (AdoptBorrowed) — respawning
+		// a hunter into that gap would leave us with two bodies.
+		if ( !_ownPawn.IsValid() && PropClaims.LocalClaimPending )
+			return;
+
+		if ( _ownPawnBorrowed )
+		{
+			// Wearing the map's clay as a guesser: that's our body until we let go (E or R) or get picked.
+			if ( _ownPawn.IsValid() && !wantProp )
+				return;
+
+			// Picked as the mimic (or the prop died under us): drop it where it stands — it goes back to being
+			// claimable scenery — and fall through to spawn the mimic's blank prop on the stage.
+			LetGoOfBorrowed( stepClear: false );
+		}
+
 		if ( _ownPawn.IsValid() && _ownPawnIsProp == wantProp )
 			return;
 
@@ -839,7 +862,8 @@ public sealed class CharadesManager : Component, IChatEvent
 		{
 			// Guessing (or between turns): the usual hunter. Clone DISABLED, dress the saved face, then
 			// enable — the ordering that stops the prefab-default face flash everywhere else.
-			_ownPawn = prefab.Clone( new CloneConfig( SpotFor( info.SpawnIndex ), startEnabled: false, name: $"Charades Pawn {me.DisplayName}" ) );
+			var at = _hunterSpawnAt ?? SpotFor( info.SpawnIndex );
+			_ownPawn = prefab.Clone( new CloneConfig( at, startEnabled: false, name: $"Charades Pawn {me.DisplayName}" ) );
 			if ( _ownPawn.IsValid() )
 			{
 				HunterController.WearSavedHead( _ownPawn );
@@ -851,6 +875,7 @@ public sealed class CharadesManager : Component, IChatEvent
 			return;
 
 		_ownPawnIsProp = wantProp;
+		_hunterSpawnAt = null; // one-shot: only the spawn right after letting go of a prop
 
 		if ( Networking.IsActive )
 		{
@@ -864,10 +889,142 @@ public sealed class CharadesManager : Component, IChatEvent
 
 	void RetireOwnPawn()
 	{
+		// A borrowed map prop is never destroyed — it's let go back into the world.
+		if ( _ownPawnBorrowed )
+			LetGoOfBorrowed( stepClear: false );
+
 		if ( _ownPawn.IsValid() )
 			_ownPawn.Destroy();
 		_ownPawn = null;
 		_ownPawnIsProp = false;
+	}
+
+	// ── Borrowed props: guessers possessing the map's clay (the PropClaims spawned beside us) ─────────────
+	// Any time, any phase: a guesser aims at zoo clay, E Edit, and wears it — the standard claim flow (host
+	// arbitration, scene-prop conversion). The one charades twist is pawn OWNERSHIP: here every machine spawns
+	// its own pawn (EnsureOwnPawn), so the host's grant has to tell the claimant "this prop is your body now"
+	// (AdoptBorrowed), or the kind-poll would respawn a hunter the moment the host destroyed ours. Letting go —
+	// E/R, being picked as the mimic, leaving — RELEASES the prop where it stands (claimable again) rather than
+	// destroying it: it's map furniture.
+
+	bool IPropClaimHost.ClaimsAllowed => true; // the mimic is a prop already, so only guessers ever hover clay
+
+	GameObject IPropClaimHost.PropPrefab
+		=> RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.PropPrefab : null;
+
+	// Host-side: charades keeps no pawn bookkeeping for others (each machine owns its own), so find the caller's
+	// hunter by network owner. Bots' hunters are host-owned and never claim.
+	GameObject IPropClaimHost.ClaimantPawn( Connection c )
+	{
+		if ( !Players.ContainsKey( c.Id ) )
+			return null;
+
+		foreach ( var hunter in Scene.GetAllComponents<HunterController>() )
+		{
+			if ( !hunter.Bot && hunter.Network.Owner?.Id == c.Id )
+				return hunter.GameObject;
+		}
+		return null;
+	}
+
+	void IPropClaimHost.OnClaimGranted( Connection c, GameObject hunterPawn, HiderController prop )
+	{
+		_borrowed[c.Id] = prop.GameObject;
+
+		// Before PropClaims destroys the hunter, so the claimant usually knows its new body first (the pending
+		// latch covers the other order).
+		using ( Rpc.FilterInclude( c ) )
+		{
+			AdoptBorrowed( prop.GameObject );
+		}
+	}
+
+	/// <summary>Host → claimant: the prop you claimed is your body now (your hunter is being destroyed).</summary>
+	[Rpc.Broadcast]
+	void AdoptBorrowed( GameObject pawn )
+	{
+		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
+			return;
+
+		PropClaims.ClearLocalClaimPending();
+		if ( !pawn.IsValid() )
+			return;
+
+		_ownPawn = pawn; // the old hunter is already on its way out (host-side destroy) — just forget it
+		_ownPawnIsProp = false;
+		_ownPawnBorrowed = true;
+	}
+
+	// E or R lets go of a borrowed prop — the lobby/creative keys (PawnSwapKeys, which stands down while the edit row
+	// would use them, and while typing: guesses go through chat here). Charades has no prop role to swap INTO, so R on a hunter
+	// does nothing.
+	void HandleBorrowedInput()
+	{
+		PawnSwapKeys.Tick();
+		if ( !_ownPawnBorrowed || !_ownPawn.IsValid() )
+			return;
+
+		// Mid-edit, the session exits through its own gate first (PawnSwapKeys.Run). The borrow may have ended
+		// while the revert dialog was up (picked as mimic), so re-check before letting go.
+		if ( PawnSwapKeys.SwapPressed || PawnSwapKeys.LeavePressed( OwnHider() ) )
+			PawnSwapKeys.Run( () =>
+			{
+				if ( this.IsValid() && _ownPawnBorrowed )
+					LetGoOfBorrowed( stepClear: true );
+			} );
+	}
+
+	// Local: stop wearing the borrowed prop. It's silenced here at once (the host's release drops our ownership a
+	// beat later), the host releases it into the world, and EnsureOwnPawn brings back our hunter — stepped clear of
+	// the prop's hull when we let go by choice (spawning inside its collider gets solver-shoved), or the mimic body
+	// on the stage when it's our turn.
+	void LetGoOfBorrowed( bool stepClear )
+	{
+		if ( !_ownPawnBorrowed )
+			return;
+
+		var hider = OwnHider();
+		if ( hider.IsValid() )
+		{
+			var claims = Components.Get<PropClaims>();
+			if ( stepClear && claims.IsValid() )
+			{
+				var yaw = Scene.Camera.IsValid() ? Scene.Camera.WorldRotation.Yaw() : hider.WorldRotation.Yaw();
+				_hunterSpawnAt = claims.HunterSpotClearOf( hider, yaw );
+			}
+			hider.ReleaseControl();
+		}
+
+		_ownPawn = null;
+		_ownPawnIsProp = false;
+		_ownPawnBorrowed = false;
+		RequestReleaseBorrowed();
+	}
+
+	/// <summary>Claimant → host: release the prop I'm wearing back into the world.</summary>
+	[Rpc.Host]
+	void RequestReleaseBorrowed()
+	{
+		var id = Rpc.Caller?.Id ?? Connection.Local?.Id;
+		if ( id is { } who )
+			ReleaseBorrowedFor( who, pop: true );
+	}
+
+	// Host-only. The _borrowed map is the authority on who wears what, so a caller can only release their own.
+	// pop = the player chose to leave (or was picked as mimic) — the swap pop plays; a leaver's tidy-up is silent.
+	void ReleaseBorrowedFor( Guid id, bool pop = false )
+	{
+		if ( !_borrowed.Remove( id, out var pawn ) || !pawn.IsValid() )
+			return;
+
+		var hider = pawn.Components.Get<HiderController>();
+		var claims = Components.Get<PropClaims>();
+		if ( hider.IsValid() && claims.IsValid() )
+		{
+			if ( pop )
+				claims.PlaySwapPop( PropClaims.PopSpot( pawn ) );
+			claims.Release( hider );
+		}
 	}
 
 	HunterController OwnHunter()
@@ -1155,6 +1312,7 @@ public sealed class CharadesManager : Component, IChatEvent
 			Players.Remove( id );
 			_turnQueue.Remove( id );
 			_botGuessers.Remove( id );
+			ReleaseBorrowedFor( id ); // a leaver's borrowed prop goes back to being claimable scenery
 		}
 
 		foreach ( var c in Connection.All )

@@ -926,6 +926,25 @@
           "Path": "sounds/music/ambient_music.sound"
         },
         "Volume": 1
+      },
+      {
+        "__type": "Mimiclay.MusicToggleInteraction",
+        "__guid": "5b1f0c3e-7a2d-4e8b-9c61-2f4d8a3e7b90",
+        "__enabled": true,
+        "Flags": 0,
+        "OffLabel": "Turn off",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "OnLabel": "Turn on",
+        "Slot": "Secondary",
+        "ToggleSound": {
+          "Id": "d03c4c6b-4e0a-40e4-87fe-95afe87f9822",
+          "Path": "sounds/game/buttonclick.sound"
+        }
       }
     ],
     "Children": [],

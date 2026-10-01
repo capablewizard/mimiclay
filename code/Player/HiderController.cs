@@ -132,6 +132,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// editor (a single source of truth), not duplicated in code.</summary>
 	[Property, Group( "Disguise" )] public PrefabFile DisguisePrefab { get; set; }
 
+	/// <summary>The "pop" played at a body swap — possessing a prop, popping out of one, and the hunter ⇄ prop
+	/// swap. Lives on the prop pawn PREFAB (every mode's PropPrefab) rather than in code so the asset ships with
+	/// the game (a runtime string path isn't picked up by the packager); <see cref="PropClaims"/> reads it off
+	/// the prefab on every machine. See <see cref="PropClaims.PlaySwapPop"/>.</summary>
+	[Property, Group( "Audio" )] public SoundEvent SwapPopSound { get; set; }
+
 	/// <summary>Assets-relative path of the prefab this pawn's disguise was possessed from (set by
 	/// <see cref="PropClaims"/> when a scene-placed prefab instance is converted); null for a shape sculpted
 	/// from scratch. The editor HUD's Prefab "Save" writes over THIS prefab, never the disguise template.</summary>
@@ -200,6 +206,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	[Sync] public bool IconPoseSet { get; private set; }
 
 	bool _editWas; // last frame's edit state, so the owner can catch the exit edge (see OnUpdate)
+	bool _iconPoseSeeded; // owner: the portrait pose has been taken from our starting view (see OnUpdate)
 	SdfCollider _collider;   // the disguise's physics (footprint snapshot + ModelCollider), if it's solid
 	SculptEditSession _session;
 
@@ -349,6 +356,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			if ( LobbySwapCarry.PropZoom is { } zoom )
 				_orbit.Distance = Math.Clamp( zoom, MinDistance, MaxDistance );
 		}
+
+		// The portrait starts from the angle we possessed it at — a re-claimed prop still carries its previous
+		// owner's pose, and a converted one has none at all (it would render from the rig's default).
+		CaptureIconPose();
+		_iconPoseSeeded = true;
 
 		// Straight into sculpting — the prompt that got us here said "E to Edit".
 		if ( _session.IsValid() && !_session.IsEditing )
@@ -529,6 +541,15 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// HunterController gates live). The streamed disguise shape is applied by SdfNetworkSync, not here.
 		if ( IsProxy )
 			return;
+
+		// The roster portrait starts from the angle we START as this prop — the camera we came in with, not the
+		// rig's default — until the first edit exit replaces it with the angle the shape was signed off from.
+		// First owned frame, after OnStart/ResumeControl have aimed the orbit (swap carry included).
+		if ( !_iconPoseSeeded )
+		{
+			CaptureIconPose();
+			_iconPoseSeeded = true;
+		}
 
 		// Read the toggles even while control is suspended, so edit mode can be exited. Charades LOCKS the
 		// mimic's editor outside the sculpt phase (no sculpting before the word is chosen or after the

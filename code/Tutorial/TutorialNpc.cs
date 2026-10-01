@@ -13,8 +13,9 @@ namespace Mimiclay;
 /// fights over him. No <see cref="SdfNetworkSync"/> is ever attached, so nothing edited into him syncs; his
 /// canonical shape is restored on every exit path (session exit, pawn loss, lobby launch, play stop).
 ///
-/// Division of labour: <see cref="PropClaims.IsClaimable"/> excludes him (this component is the marker);
-/// <see cref="HunterController.UpdateClaimHover"/> publishes the hover and routes E here;
+/// Division of labour: <see cref="PropClaims.IsClaimable"/> excludes him (this component is the marker); he's an
+/// <see cref="IInteractable"/>, so <see cref="HunterController.UpdateInteractHover"/> publishes the hover and
+/// routes E here;
 /// <see cref="RoundOutlineSystem"/> arbitrates outline VISIBILITY through <see cref="OutlineVisible"/>, while
 /// this component is the single writer of the outline's LOOK (the hover glow).
 ///
@@ -25,8 +26,22 @@ namespace Mimiclay;
 [Title( "Tutorial NPC" )]
 [Category( "Mimiclay" )]
 [Icon( "school" )]
-public sealed class TutorialNpc : Component
+public sealed class TutorialNpc : Component, IInteractable
 {
+	const string LearnOption = "tutorial.learn";
+
+	void IInteractable.GetInteractions( in InteractContext ctx, List<InteractOption> options )
+	{
+		if ( !Running.IsValid() && Sculpture.IsValid() && !RoundManager.ControlsLocked )
+			options.Add( new InteractOption( LearnOption, "Learn to sculpt", InteractSlot.Primary, Priority: 10 ) );
+	}
+
+	void IInteractable.Interact( in InteractContext ctx, string optionId )
+	{
+		if ( optionId == LearnOption )
+			BeginTutorial( ctx.Hunter );
+	}
+
 	/// <summary>The clay he IS. Left null in the prefab and resolved off this GameObject.</summary>
 	[Property] public SdfSculpture Sculpture { get; set; }
 
@@ -47,7 +62,7 @@ public sealed class TutorialNpc : Component
 	public static TutorialNpc Running { get; private set; }
 
 	/// <summary>The tutorial character under the local hunter's crosshair, freshness-gated exactly like
-	/// <see cref="PropClaims.LocalHoverSculpture"/> — the publisher can vanish mid-hover, so staleness is
+	/// <see cref="Interactions.LocalHoverSculpture"/> — the publisher can vanish mid-hover, so staleness is
 	/// told by age, never by relying on someone clearing it.</summary>
 	public static TutorialNpc LocalHover
 		=> _localHover.IsValid() && _hoverAge < 0.1f ? _localHover : null;

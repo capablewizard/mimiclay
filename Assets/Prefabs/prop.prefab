@@ -20,6 +20,10 @@
         "__guid": "30000001-0000-4000-8000-000000000002",
         "__enabled": true,
         "Flags": 0,
+        "SwapPopSound": {
+          "Id": "eb49672b-157c-4b2f-b341-9fecd468f200",
+          "Path": "sounds/game/pops/pops.sound"
+        },
         "AirControl": 2.5,
         "AltHoldOrbits": true,
         "CameraCollision": true,

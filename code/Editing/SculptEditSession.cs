@@ -447,6 +447,11 @@ public sealed class SculptEditSession : Component
 	/// and property edits fan out to every member.</summary>
 	public bool IsMultiSelection => _selection.Count > 1;
 
+	/// <summary>Would the hold-key scrubs (A/S/D/F/G, W, R scale, E rotate) act on something right now — a
+	/// selected shape, a multi-selection, or the stamp ghost while adding? When false, E and R are free for the
+	/// body-swap keys (see <see cref="PawnSwapKeys"/>) even mid-edit.</summary>
+	public bool ScrubKeysLive => IsEditing && (ActiveBrush is not null || IsMultiSelection || BrushScrub.Active != ScrubKind.None);
+
 	/// <summary>The selected brushes themselves, in stack order (out-of-range entries skipped).</summary>
 	public IEnumerable<SdfBrush> SelectedBrushes
 	{

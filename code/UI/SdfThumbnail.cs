@@ -43,6 +43,12 @@ public sealed class SdfThumbnail : ScenePanel
 			// A brand new source hasn't committed anything yet, so take its current state now or the thumbnail
 			// would sit empty until the player next edited their face.
 			_syncPending = true;
+
+			// ...and take it even while Frozen: the hold is for the SAME subject mid-edit, never for keeping a
+			// previous subject's picture up. Possessing a prop retargets the pip to a body that's already in edit
+			// mode (possession drops you straight into sculpting), so without this the roster kept showing the
+			// old hunter face until the player left edit mode.
+			_staged = false;
 		}
 	}
 
@@ -81,8 +87,9 @@ public sealed class SdfThumbnail : ScenePanel
 	/// Hold the current picture: while true, commits (and static-brush changes) stop reaching the stage, and
 	/// the panel catches up in one re-read the moment it's cleared. This is how a roster icon sits still while
 	/// its player sculpts — their per-commit edits would otherwise replay on everyone's HUD stroke by stroke —
-	/// and updates exactly once, on edit exit. The FIRST render always goes through, frozen or not, so a
-	/// panel built mid-edit (a late joiner's HUD) shows the current shape rather than nothing.
+	/// and updates exactly once, on edit exit. The FIRST render of each <see cref="Source"/> always goes through,
+	/// frozen or not, so a panel built mid-edit (a late joiner's HUD) shows the current shape rather than nothing,
+	/// and a pip retargeted onto a body that's already being edited (a possession) shows that body at once.
 	/// </summary>
 	public bool Frozen { get; set; }
 

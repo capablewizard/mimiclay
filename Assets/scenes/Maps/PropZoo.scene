@@ -128,7 +128,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
-          "SkyMaterial": "materials/skybox/skybox_dark_01.vmat",
+          "SkyMaterial": {
+            "Id": "e585bcc3-da55-40a5-b729-35a2c54452f3",
+            "Path": "materials/skybox/skybox_dark_01.vmat"
+          },
           "Tint": "2,2,2,1"
         }
       ],
@@ -193,7 +196,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Id": "b42a9cca-f33f-4927-961a-8b7496926b8a",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -250,7 +253,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "f1e09668-ca40-44ff-9ff0-a445b4704e43",
+            "Id": "b42a9cca-f33f-4927-961a-8b7496926b8a",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1202,7 +1205,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "565b8f1c-6443-4aa5-a7e4-5e45af7ab1c6",
+                "Id": "f74fddca-f858-434a-83c3-3c272b8e7c66",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1248,7 +1251,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Id": "f6cd629c-938e-4f2f-bfa2-84b64552b6a0",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1276,7 +1279,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "38acf6d0-d528-4e12-8ff2-fbd036f000c9",
+                "Id": "f6cd629c-938e-4f2f-bfa2-84b64552b6a0",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1323,7 +1326,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "3d7cf54b-0a3f-42f1-879a-715ca72225fe",
+                "Id": "d62123dc-7d55-4a5b-a266-1e4e8617528f",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1367,7 +1370,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "1c26aeb3-1ede-4c0f-8e24-c66e4a65176c",
+                "Id": "cb04a672-93bc-401a-a65c-7c3f67430629",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1679,7 +1682,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "50a57905-70d9-4f32-b3e6-0556b4e68dea",
+                "Id": "0c7578d4-1ecc-474b-a79c-168a354e867f",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1723,7 +1726,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "3090eba8-4502-4771-b23c-3cea5a589cad",
+                "Id": "59c840ff-2009-49a5-ad4b-4e99fdb663f4",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1767,7 +1770,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "3868c869-7640-4b94-a95e-1dc4794ac1b3",
+                "Id": "26d9d3e9-4fca-48ee-82e4-249361c7da93",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1813,7 +1816,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Id": "8c1b0c98-6761-41b1-9b24-ebc5c0c8eaaf",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1841,7 +1844,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "aa9804b2-627b-4125-a1b3-d42e15b353ef",
+                "Id": "8c1b0c98-6761-41b1-9b24-ebc5c0c8eaaf",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2951,7 +2954,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Id": "0218d981-977b-4f88-83ec-55c529e7ca22",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2979,7 +2982,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Id": "0218d981-977b-4f88-83ec-55c529e7ca22",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3028,7 +3031,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Id": "0218d981-977b-4f88-83ec-55c529e7ca22",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3056,7 +3059,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "982428e7-6fa4-4c9d-9116-74a4505703bc",
+                "Id": "0218d981-977b-4f88-83ec-55c529e7ca22",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3375,7 +3378,10 @@
                 "Path": "materials/emissivelight.vmat"
               },
               "Materials": null,
-              "Model": "models/dev/sphere.vmdl",
+              "Model": {
+                "Id": "00000000-0000-0000-f09f-a6f0fe7f0000",
+                "Path": "models/dev/sphere.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -5087,7 +5093,10 @@
             "Path": "materials/plasticine_scene.vmat"
           },
           "Materials": null,
-          "Model": "models/dev/box.vmdl",
+          "Model": {
+            "Id": "8a84e5a0-01f8-0000-f0db-b088f8010000",
+            "Path": "models/dev/box.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -11420,6 +11429,14 @@
                 "BoundingRadius": 22.18174
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
+            },
+            "Property": "__enabled",
+            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11947,6 +11964,14 @@
             },
             "Property": "Position",
             "Value": "258.844757,-985.976135,-524.817383"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "277e4f91-6db6-4c00-b938-16ac49334bc2"
+            },
+            "Property": "__enabled",
+            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12056,6 +12081,14 @@
             },
             "Property": "Position",
             "Value": "-202.648758,-935.066162,-518.789124"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -13867,8 +13900,24 @@
               "Type": "Component",
               "IdValue": "8fe31688-0424-4b01-101f-4674df811c71"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8fe31688-0424-4b01-101f-4674df811c71"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8fe31688-0424-4b01-101f-4674df811c71"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -14629,8 +14678,24 @@
               "Type": "Component",
               "IdValue": "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "65bbe9cc-3752-03fa-fbe5-61f8cd3072d4"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []

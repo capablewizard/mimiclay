@@ -685,11 +685,10 @@ public sealed class HunterController : Component
 			if ( !_altOrbiting )
 				ResolveAim( eye );
 
-			// Wherever a claim service is live (creative maps, the lobby): what's under the crosshair is a
-			// thing you can TAKE, not shoot — hover claimable clay to outline it (+ the "E to Edit" prompt),
-			// press E to claim it. Runs on the fresh aim, so the prompt and the claim agree on what the dot
-			// shows.
-			UpdateClaimHover( eye );
+			// Whatever's under the crosshair that offers interactions (see Interactions): hover outlines it and
+			// raises the toast row ("E Edit", "F Turn off"…), the slot keys run them. Runs on the fresh aim, so
+			// the prompt and the action agree on what the dot shows.
+			UpdateInteractHover( eye );
 
 			// Owner-only: otherwise every machine would shoot when ITS local player clicked, from a remote pawn's
 			// eye. The trace is owner-side; a prop hit is reported to the host (authoritative) via RoundManager.
@@ -718,68 +717,62 @@ public sealed class HunterController : Component
 		ComposePawn( eye );
 	}
 
-	/// <summary>The claimable clay under this hunter's crosshair, or null — only while a claim service is live
-	/// (creative maps, the lobby). A released pawn prop OR any scene-placed sculpture (see
-	/// <see cref="PropClaims.IsClaimable"/>). The crosshair HUD reads it for the "E to Edit" toast; the same
-	/// value is published to <see cref="PropClaims.LocalHover"/> for the outline gate.</summary>
-	public SdfSculpture HoveredSculpture { get; private set; }
+	/// <summary>What this hunter's crosshair is over, if it offers any interactions — the context handed to the
+	/// providers. Null when nothing interactive is under the dot. The crosshair HUD reads this + <see cref="Hover"/>
+	/// for the toast row.</summary>
+	public InteractContext? HoverContext { get; private set; }
 
-	/// <summary>The tutorial character under the crosshair (see <see cref="TutorialNpc"/>), or null. Same ray
-	/// and reach as the claim hover — he wears the same affordance — but his E opens the guided session on
-	/// this machine instead of a possession.</summary>
-	public TutorialNpc HoveredTutorial { get; private set; }
+	/// <summary>The options on offer for <see cref="HoverContext"/>, one per slot, in slot order (empty when
+	/// nothing is hovered).</summary>
+	public IReadOnlyList<InteractChoice> Hover => _hoverChoices;
+	readonly List<InteractChoice> _hoverChoices = new();
 
-	// Owner-only, claims-only: resolve what the crosshair is over (the same ray the shot would take), keep it
-	// if it's claimable clay, and claim it on E. "Use" is the E key; sculpt-mode's E-scrub can't collide with
-	// it because this whole path is inside the !EditMode block.
-	internal void UpdateClaimHover( Vector3 eye )
+	// Owner-only: resolve what the crosshair is over (the same ray the shot would take), ask every provider what
+	// it offers (Interactions.Collect), publish it, and run whichever option's slot key was pressed. "Use" (E)
+	// can't collide with sculpt-mode's E-scrub because this whole path is inside the !EditMode block.
+	internal void UpdateInteractHover( Vector3 eye )
 	{
-		var claims = PropClaims.Current;
-		if ( !claims.IsValid() || !claims.ClaimsOpen )
-		{
-			HoveredSculpture = null;
-			HoveredTutorial = null;
-			return;
-		}
+		InteractContext? ctx = null;
+		_hoverChoices.Clear();
 
-		SdfSculpture hover = null;
-		TutorialNpc npc = null;
 		if ( !_altOrbiting && _aimDir.LengthSquared > 0.5f )
 		{
-			// The gun's ray, cut to arm's reach (PropClaims.HoverRange): shortening the ray rather than
-			// range-testing its hit keeps occlusion for free — whatever is first along it still blocks — and
-			// means a prop only lights up once you're actually close enough for E to be granted.
-			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, claims.HoverRange ) );
-			var sculpture = tr.Hit ? FindSculpture( tr.GameObject ) : null;
-
-			// The tutorial character outranks the claim classification (he IS scenery, but IsClaimable
-			// excludes him): his E stays local, so he never enters the claims hover either.
-			npc = TutorialNpc.Of( sculpture );
-			if ( !npc.IsValid() && PropClaims.IsClaimable( sculpture ) )
-				hover = sculpture;
+			// The gun's ray, cut to arm's reach (PropClaims.HoverRange where a claim service authors it):
+			// shortening the ray rather than range-testing its hit keeps occlusion for free — whatever is first
+			// along it still blocks — and means a prop only lights up once you're actually close enough for
+			// the host to grant it.
+			var claims = PropClaims.Current;
+			var reach = claims.IsValid() ? claims.HoverRange : Interactions.DefaultRange;
+			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, reach ) );
+			if ( tr.Hit && tr.GameObject.IsValid() )
+			{
+				var probe = new InteractContext
+				{
+					Hunter = this,
+					Target = tr.GameObject,
+					Sculpture = FindSculpture( tr.GameObject ),
+					HitPosition = tr.HitPosition,
+				};
+				Interactions.Collect( probe, _hoverChoices );
+				if ( _hoverChoices.Count > 0 )
+					ctx = probe;
+			}
 		}
 
-		HoveredSculpture = hover;
-		HoveredTutorial = npc;
-		PropClaims.SetLocalHover( hover );
-		TutorialNpc.SetLocalHover( npc );
+		HoverContext = ctx;
+		Interactions.PublishLocal( ctx, _hoverChoices );
+		TutorialNpc.SetLocalHover( ctx is { } h ? TutorialNpc.Of( h.Sculpture ) : null );
 
-		if ( npc.IsValid() && Input.Pressed( "Use" ) )
-		{
-			npc.BeginTutorial( this );
-		}
-		else if ( hover.IsValid() && Input.Pressed( "Use" ) )
-		{
-			// Carry the view into the prop, same as a lobby swap: yaw+pitch stashed owner-side here, consumed
-			// by ResumeControl on the possessed pawn — whatever you were looking at, you still are.
-			LobbySwapCarry.Capture( Scene, null );
+		if ( ctx is not { } at )
+			return;
 
-			// Claim by the pawn ROOT when the hover is a pawn prop, not the sculpture: the Disguise child is
-			// created per-machine in OnStart (it's not in the spawn snapshot), so its id only resolves locally —
-			// a client sending it would no-op on the host. The root is the networked object; scene clay has no
-			// root and its own scene-file id resolves everywhere. Same rule as the shot's ReportPropHit.
-			var claimHider = hover.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-			claims.RequestPossess( claimHider.IsValid() ? claimHider.GameObject : hover.GameObject );
+		foreach ( var choice in _hoverChoices )
+		{
+			if ( !Input.Pressed( Interactions.ActionFor( choice.Option.Slot ) ) )
+				continue;
+
+			choice.Provider.Interact( at, choice.Option.Id );
+			break; // one action per frame — a provider may have just swapped our pawn out from under us
 		}
 	}
 
@@ -2714,7 +2707,8 @@ public sealed class HunterController : Component
 		// carries the round-rule Heals:false, and only the brushes survive the swap. A profile still supplies
 		// its authored timing; bare clay heals on the profile defaults.
 		var profile = sculpt.GameObject.Components.Get<DamageProfile>();
-		bool sandbox = CreativeManager.Current.IsValid() || LobbyManager.Current.IsValid();
+		// Charades joins them now that guessers can possess its map clay (same possessed-prop-scars trap).
+		bool sandbox = CreativeManager.Current.IsValid() || LobbyManager.Current.IsValid() || CharadesManager.Current.IsValid();
 		bool heals = sandbox || (profile.IsValid() && profile.Heals);
 		var healDelay = profile.IsValid() ? profile.HealDelay : DamageProfile.DefaultHealDelay;
 		var healDuration = profile.IsValid() ? profile.HealDuration : DamageProfile.DefaultHealDuration;

@@ -50,24 +50,11 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		// around it. Without this branch charades maps fall through every gate below (no round, no lobby,
 		// no claims) and every pawn keeps the prefab-authored glow. One exception: the owner-only
 		// SculptBounds WARNING (locally editable + invalid sculpt) stays — that's the mimic's size-limit
-		// feedback while sculpting, not a highlight.
+		// feedback while sculpting, not a highlight — plus the interaction hover glow (see ApplyCharades), and no
+		// Reveal pulse ever.
 		if ( CharadesManager.Current.IsValid() )
 		{
-			foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
-			{
-				var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
-				outline.Hidden = !(bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid);
-			}
-
-			// And no Reveal pulse ever — asserted OFF both ways like the branches below, so a snapshot
-			// that shipped a mid-flash pawn can't leave one pulsing.
-			foreach ( var hider in Scene.GetAllComponents<HiderController>() )
-			{
-				var flash = hider.Components.Get<SdfOutlineFlash>( FindMode.EverythingInSelf );
-				if ( flash.IsValid() )
-					flash.Enabled = false;
-			}
-
+			ApplyCharades();
 			return;
 		}
 
@@ -155,8 +142,130 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	// These ARE the Lobby-phase rules plus the hover, which is what lets the lobby take this branch wholesale.
 	void ApplyClaims()
 	{
-		var hover = PropClaims.LocalHoverSculpture;
+		var hover = HoverSculpture();
+		PrepareHoverOutline( hover );
 
+		foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
+		{
+			var hovered = false;
+
+			// The tutorial character: visibility is his call (tutorial hover only, hidden while his guided
+			// session runs) and the LOOK is his own single-writer drive (see TutorialNpc) — never the claims
+			// hover tint below, which HoverSculpture keeps him out of anyway.
+			var npc = outline.Components.Get<TutorialNpc>( FindMode.EverythingInSelfAndAncestors );
+			if ( npc.IsValid() )
+			{
+				outline.Hidden = !npc.OutlineVisible;
+				continue;
+			}
+
+			var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
+			if ( hunter.IsValid() )
+			{
+				// Same as the round rules: the head-scoped invalid-face warning is owner-only information and
+				// the only hunter outline the claims branch ever shows (no hunt here, so no hunt glow).
+				outline.Hidden = !IsLocalWarning( outline );
+			}
+			else
+			{
+				var sculpture = outline.Components.Get<SdfSculpture>( FindMode.EverythingInSelf );
+				hovered = sculpture.IsValid() && sculpture == hover;
+
+				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+				var own = hider.IsValid() && !hider.IsProxy && !PropClaims.IsReleased( hider )
+					&& !RoundManager.IsBotPawn( hider.GameObject );
+				outline.Hidden = !(hovered || own);
+			}
+
+			if ( hovered )
+				TintHover( outline );
+		}
+
+		ApplyClaimBoils( hover );
+		ApplySceneBoils( hover );
+
+		// The Reveal pulse never runs here (no phases reach Reveal) — asserted OFF the same both-ways way the
+		// round branch asserts it, so a snapshot that shipped a mid-Reveal flash can't leave one pulsing.
+		DisableRevealFlashes();
+	}
+
+	// Charades: no standing outlines (see Apply) — only the owner's invalid-sculpt WARNING and the hover glow on
+	// whatever interactive clay is under the local crosshair (guessers can possess the zoo's props any time).
+	// The hover churn is stamp-only here: pawn boils (the mimic's, borrowed props') keep their own Activation.
+	void ApplyCharades()
+	{
+		var hover = HoverSculpture();
+		PrepareHoverOutline( hover );
+
+		foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
+		{
+			var hovered = false;
+			if ( !outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
+			{
+				var sculpture = outline.Components.Get<SdfSculpture>( FindMode.EverythingInSelf );
+				hovered = sculpture.IsValid() && sculpture == hover;
+			}
+
+			outline.Hidden = !(hovered || IsLocalWarning( outline ));
+			if ( hovered )
+				TintHover( outline );
+		}
+
+		if ( hover.IsValid() )
+		{
+			var hider = hover.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+			var boil = hider.IsValid()
+				? hider.Components.Get<ClayBoil>( FindMode.EverythingInSelfAndDescendants )
+				: hover.Components.Get<ClayBoil>();
+			if ( boil.IsValid() && !boil.RuntimeManaged )
+				boil.StampHover();
+		}
+		ApplySceneBoils( hover );
+
+		DisableRevealFlashes();
+	}
+
+	// The hover glow target: interactive clay under the local crosshair — except the tutorial character, whose
+	// glow is his own single-writer drive (see TutorialNpc).
+	static SdfSculpture HoverSculpture()
+	{
+		var hover = Interactions.LocalHoverSculpture;
+		return hover.IsValid() && !TutorialNpc.Of( hover ).IsValid() ? hover : null;
+	}
+
+	// The owner-only SculptBounds WARNING outline (co-located with the bounds component): the one outline that
+	// shows in every branch, exactly while the locally-edited sculpt is invalid.
+	static bool IsLocalWarning( SdfHighlightOutline outline )
+	{
+		var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
+		return bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid;
+	}
+
+	void DisableRevealFlashes()
+	{
+		foreach ( var hider in Scene.GetAllComponents<HiderController>() )
+		{
+			var flash = hider.Components.Get<SdfOutlineFlash>( FindMode.EverythingInSelf );
+			if ( flash.IsValid() )
+				flash.Enabled = false;
+		}
+	}
+
+	void TintHover( SdfHighlightOutline outline )
+	{
+		if ( _hoverDriven.Contains( outline ) )
+			return;
+
+		outline.ColorOverride = HoverColor;
+		outline.ObscuredColorOverride = HoverColor.WithAlpha( 0.35f );
+		outline.InsideColorOverride = HoverColor.WithAlpha( 0.08f );
+		outline.InsideObscuredColorOverride = HoverColor.WithAlpha( 0.08f );
+		outline.WidthOverride = HoverWidth;
+		_hoverDriven.Add( outline );
+	}
+
+	void PrepareHoverOutline( SdfSculpture hover )
+	{
 		// Not every scene prop's prefab carries an outline — only some of the saved exports do (bear yes,
 		// alarmclock no), and the prop-builder clay has none. Give the hovered sculpture one ON DEMAND, and
 		// destroy it again on unhover (below) rather than leaving it: a runtime-created component on a scene
@@ -201,62 +310,6 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				_hoverSpawned.Remove( o );
 			}
 			_hoverDriven.RemoveAt( i );
-		}
-
-		foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
-		{
-			var hovered = false;
-
-			// The tutorial character: visibility is his call (tutorial hover only, hidden while his guided
-			// session runs) and the LOOK is his own single-writer drive (see TutorialNpc) — never the claims
-			// hover tint below, which his exclusion from IsClaimable keeps him out of anyway.
-			var npc = outline.Components.Get<TutorialNpc>( FindMode.EverythingInSelfAndAncestors );
-			if ( npc.IsValid() )
-			{
-				outline.Hidden = !npc.OutlineVisible;
-				continue;
-			}
-
-			var hunter = outline.Components.Get<HunterController>( FindMode.EverythingInSelfAndAncestors );
-			if ( hunter.IsValid() )
-			{
-				// Same as the round rules: the head-scoped invalid-face warning is owner-only information and
-				// the only hunter outline the claims branch ever shows (no hunt here, so no hunt glow).
-				var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
-				outline.Hidden = !(bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid);
-			}
-			else
-			{
-				var sculpture = outline.Components.Get<SdfSculpture>( FindMode.EverythingInSelf );
-				hovered = sculpture.IsValid() && sculpture == hover;
-
-				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-				var own = hider.IsValid() && !hider.IsProxy && !PropClaims.IsReleased( hider )
-					&& !RoundManager.IsBotPawn( hider.GameObject );
-				outline.Hidden = !(hovered || own);
-			}
-
-			if ( hovered && !_hoverDriven.Contains( outline ) )
-			{
-				outline.ColorOverride = HoverColor;
-				outline.ObscuredColorOverride = HoverColor.WithAlpha( 0.35f );
-				outline.InsideColorOverride = HoverColor.WithAlpha( 0.08f );
-				outline.InsideObscuredColorOverride = HoverColor.WithAlpha( 0.08f );
-				outline.WidthOverride = HoverWidth;
-				_hoverDriven.Add( outline );
-			}
-		}
-
-		ApplyClaimBoils( hover );
-		ApplySceneBoils( hover );
-
-		// The Reveal pulse never runs here (no phases reach Reveal) — asserted OFF the same both-ways way the
-		// round branch asserts it, so a snapshot that shipped a mid-Reveal flash can't leave one pulsing.
-		foreach ( var hider in Scene.GetAllComponents<HiderController>() )
-		{
-			var flash = hider.Components.Get<SdfOutlineFlash>( FindMode.EverythingInSelf );
-			if ( flash.IsValid() )
-				flash.Enabled = false;
 		}
 	}
 

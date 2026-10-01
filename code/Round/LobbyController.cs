@@ -194,9 +194,9 @@ public sealed class LobbyController : Component
 
 	// Temporary keyboard driving for the lobby until the full UI lands. Raw keys so they need no input-config
 	// actions. Runs on any machine; the requests are [Rpc.Host] on the manager, so a client's press routes to the
-	// host. The host's G (open the setup panel) is handled by RoundSetup itself. TODO: replace P/N with lobby UI
+	// host. The host's G (open the setup panel) is handled by RoundSetup itself. TODO: replace N with lobby UI
 	// controls.
-	//   P = swap role (hunter ↔ prop)   N = toggle hunt nomination
+	//   R = swap role (hunter ↔ prop), E = leave a possessed prop (PawnSwapKeys)   N = toggle hunt nomination
 	void HandleDebugInput()
 	{
 		var lm = LobbyManager.Current;
@@ -213,10 +213,20 @@ public sealed class LobbyController : Component
 		// body ignores it and keeps its remembered facing instead); the pitch and the prop-orbit zoom are
 		// owner-only state the host never sees, so they ride LobbySwapCarry and our own replacement pawn
 		// applies them as it starts.
-		if ( Input.Keyboard.Pressed( "P" ) )
+		//
+		// R swaps (see PawnSwapKeys); E pops you out of a POSSESSED prop — the same request, since swapping off
+		// a claimed prop releases it back into the world and spawns your hunter clear of it.
+		// Mid-edit, the session exits through its own gate first (PawnSwapKeys.Run).
+		PawnSwapKeys.Tick();
+		if ( PawnSwapKeys.SwapPressed || PawnSwapKeys.LeavePressed( OwnProp() ) )
 		{
-			LobbySwapCarry.Capture( Scene, OwnProp() );
-			lm.RequestSwapRole( Scene.Camera.IsValid() ? Scene.Camera.WorldRotation.Angles().yaw : 0f );
+			PawnSwapKeys.Run( () =>
+			{
+				if ( !lm.IsValid() )
+					return;
+				LobbySwapCarry.Capture( Scene, OwnProp() );
+				lm.RequestSwapRole( Scene.Camera.IsValid() ? Scene.Camera.WorldRotation.Angles().yaw : 0f );
+			} );
 		}
 		if ( Input.Keyboard.Pressed( "N" ) ) lm.ToggleNominate();
 	}
