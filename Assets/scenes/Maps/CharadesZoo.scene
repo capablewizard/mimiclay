@@ -9580,6 +9580,14 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "8580b04b-3905-87a4-b0fd-c0bda1d07417"
+            },
+            "Property": "Ceiling",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "f9b4ff59-e645-8954-ba4f-0ec2daa8de85"
             },
             "Property": "Color",
@@ -9593,10 +9601,10 @@
         "5dce4a10-77b2-4c6e-8f31-a94f02d7e420": "c5fbaed4-286f-45cb-afed-ad0e285cb1d9",
         "5dce4a10-77b2-4c6e-8f31-a94f02d7e421": "2514fc94-401c-404f-a174-da0b7a30277a",
         "cfceb1bf-00f0-8489-9414-49ee0f9c181b": "f350c173-69df-460c-8137-33ece9845ebf",
-        "596d63d9-3af7-8f00-9a87-101d464465e4": "7adafc1b-2428-4edb-b21c-d6e49ae424f1",
-        "8580b04b-3905-87a4-b0fd-c0bda1d07417": "c4c1f711-59a9-4e19-889e-203549519de1",
         "f9b4ff59-e645-8954-ba4f-0ec2daa8de85": "d66188d9-53fb-4aab-817f-e6607c65b2f7",
-        "475feaac-94cb-8404-a4e1-4491b124e3b3": "25d04e0c-3c01-47d6-bff2-b920fc800d9c"
+        "475feaac-94cb-8404-a4e1-4491b124e3b3": "25d04e0c-3c01-47d6-bff2-b920fc800d9c",
+        "596d63d9-3af7-8f00-9a87-101d464465e4": "7adafc1b-2428-4edb-b21c-d6e49ae424f1",
+        "8580b04b-3905-87a4-b0fd-c0bda1d07417": "c4c1f711-59a9-4e19-889e-203549519de1"
       }
     },
     {
@@ -10103,7 +10111,15 @@
               "IdValue": "f7e64cb6-fb5e-4748-845a-d6968c6a15f8"
             },
             "Property": "Position",
-            "Value": "-271.891846,-98.979126,-27.0195713"
+            "Value": "304.16803,32.2745667,-27.0195713"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "f7e64cb6-fb5e-4748-845a-d6968c6a15f8"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.243053019,-0.970013022"
           },
           {
             "Target": {

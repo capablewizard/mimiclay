@@ -6,7 +6,8 @@ namespace Mimiclay;
 /// The stage's invisible fence: a hollow ring of box-collider walls built at runtime around this object.
 /// Hollow on purpose — a single solid blocker (the first cut was a big capsule) can't do the job, because the
 /// mimic's prop pawn SPAWNS inside the stage: inside a solid collider it's in permanent penetration and the
-/// solver shoves it out (or through the floor). A ring of walls leaves the interior genuinely empty space.
+/// solver shoves it out (or through the floor). A ring of walls leaves the interior genuinely empty space;
+/// a lid on the wall tops (<see cref="Ceiling"/>) closes it from above, so nobody who climbs up can drop in.
 ///
 /// CROWD-ONLY: Collision.config pairs <see cref="WallTag"/> with the prop body tag as Ignore, so the mimic's
 /// prop never touches these walls. It used to — and a sculpt that grew across a wall was stuck straddling it,
@@ -45,6 +46,11 @@ public sealed class CharadesStageFence : Component
 	/// <summary>Wall thickness (radially).</summary>
 	[Property] public float Thickness { get; set; } = 8f;
 
+	/// <summary>Close the ring with a lid resting on the wall tops, so a guesser who finds a way up (stacked
+	/// scenery, a climbable prop against the outside) can't drop in and get stuck on the stage. Same tag as
+	/// the walls: the prop, the camera booms and the brush clamp all look through it.</summary>
+	[Property] public bool Ceiling { get; set; } = true;
+
 	protected override void OnStart()
 	{
 		if ( Scene.IsEditor )
@@ -53,19 +59,38 @@ public sealed class CharadesStageFence : Component
 		for ( var i = 0; i < WallCount; i++ )
 		{
 			WallLayout( i, out var localPos, out var localRot, out var size );
-
-			var wall = new GameObject( true, $"Fence Wall {i}" );
-			wall.Flags |= GameObjectFlags.NotSaved;
-			wall.SetParent( GameObject, false );
-			wall.Tags.Add( WallTag );
-			wall.LocalPosition = localPos;
-			wall.LocalRotation = localRot;
-
-			var box = wall.Components.Create<BoxCollider>();
-			box.Center = Vector3.Zero;
-			box.Scale = size;
-			box.Static = true;
+			BuildBox( $"Fence Wall {i}", localPos, localRot, size );
 		}
+
+		if ( Ceiling )
+		{
+			LidLayout( out var lidPos, out var lidSize );
+			BuildBox( "Fence Lid", lidPos, Rotation.Identity, lidSize );
+		}
+	}
+
+	void BuildBox( string name, Vector3 localPos, Rotation localRot, Vector3 size )
+	{
+		var go = new GameObject( true, name );
+		go.Flags |= GameObjectFlags.NotSaved;
+		go.SetParent( GameObject, false );
+		go.Tags.Add( WallTag );
+		go.LocalPosition = localPos;
+		go.LocalRotation = localRot;
+
+		var box = go.Components.Create<BoxCollider>();
+		box.Center = Vector3.Zero;
+		box.Scale = size;
+		box.Static = true;
+	}
+
+	// The lid: a slab resting ON the wall tops (so there's no wall-top ledge to stand on either), wide
+	// enough to cover the ring's outer face.
+	void LidLayout( out Vector3 localPos, out Vector3 size )
+	{
+		float span = 2f * (Radius + Thickness);
+		localPos = new Vector3( 0f, 0f, Top + Thickness * 0.5f );
+		size = new Vector3( span, span, Thickness );
 	}
 
 	// One source of truth for where each wall goes — OnStart builds the colliders from it and DrawGizmos
@@ -106,6 +131,12 @@ public sealed class CharadesStageFence : Component
 
 			using ( Gizmo.Scope( $"fence-wall-{i}", new Transform( localPos, localRot ) ) )
 				Gizmo.Draw.LineBBox( BBox.FromPositionAndSize( Vector3.Zero, size ) );
+		}
+
+		if ( Ceiling )
+		{
+			LidLayout( out var lidPos, out var lidSize );
+			Gizmo.Draw.LineBBox( BBox.FromPositionAndSize( lidPos, lidSize ) );
 		}
 	}
 }
