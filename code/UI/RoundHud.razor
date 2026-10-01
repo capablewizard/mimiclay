@@ -120,6 +120,12 @@
 							<div class="paint-badge @(icon.Editing ? "editing" : "")">
 								<div class="badge-glyph">🎨</div>
 							</div>
+
+							@* Talking on voice chat — the one free corner (top-right; hand is top-left, palette
+								   bottom-right). Same always-rendered, class-revealed lifecycle as the others. *@
+							<div class="speak-badge @(SpeakingOf( player.Connection ) ? "speaking" : "")">
+								<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
+							</div>
 						</div>
 						<div class="pip-name">@player.Name</div>
 					</div>
@@ -211,6 +217,10 @@
 									<div class="paint-badge @(editing ? "editing" : "")">
 										<div class="badge-glyph">🎨</div>
 									</div>
+
+									<div class="speak-badge @(SpeakingOf( prop.Connection ) ? "speaking" : "")">
+										<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
+									</div>
 								</div>
 								<div class="pip-name">@prop.Name</div>
 							</div>
@@ -262,6 +272,10 @@
 									@* Mid-round face edit — same badge as the lobby, scaled to these pips. *@
 									<div class="paint-badge @(icon.Editing ? "editing" : "")">
 										<div class="badge-glyph">🎨</div>
+									</div>
+
+									<div class="speak-badge @(SpeakingOf( hunter.Connection ) ? "speaking" : "")">
+										<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
 									</div>
 								</div>
 								<div class="pip-name">@hunter.Name</div>
@@ -682,6 +696,33 @@
 		return false;
 	}
 
+	// Whether a player is talking on voice chat — drives the 🔊 corner badge. OUR OWN pip only for now; other
+	// players' badges stay down until the remote signal has been checked in a built game.
+	bool SpeakingOf( Guid connection ) => connection == Connection.Local?.Id && LocalSpeaking;
+
+	// How long the badge holds after the last voice frame. Packets are bursty and voice activation goes quiet
+	// between words, so the raw 0.25s IsSpeaking window would flicker the badge mid-sentence.
+	const float SpeakHold = 0.6f;
+
+	// Read off LastPlayed, NOT IsRecording. The engine's Msg_Voice broadcast runs on the sender too — our own
+	// frames are decoded locally and only muted at the mixer (SoundHandle.Loopback) — so LastPlayed ticks on our
+	// own pawn exactly as it does on a proxy, and only while audio is actually being sent. IsRecording would sit
+	// true the whole time for an open-mic user, whose mic "records" constantly. Our pawn resolved the
+	// PlayerNameplates way: not a proxy, not a bot, and RosterIdOf says it's ours (a released prop on the host
+	// reads !IsProxy but answers as nobody's). In BuildHash so the class flips and the badge springs.
+	bool LocalSpeaking
+	{
+		get
+		{
+			var localId = Connection.Local?.Id;
+			foreach ( var v in Scene.GetAllComponents<PlayerVoice>() )
+				if ( v.IsValid() && !v.IsProxy && !RoundManager.IsBotPawn( v.GameObject )
+					&& RoundManager.RosterIdOf( v.GameObject ) == localId )
+					return v.LastPlayed < SpeakHold;
+			return false;
+		}
+	}
+
 	// Who's editing (both pawn types) + every synced icon pose, hashed. In BuildHash so a player entering or
 	// leaving edit mode — or a fresh portrait angle arriving — re-renders the roster: the badge class, the
 	// Frozen flag and the Pose all only reach the panels through a razor rebuild.
@@ -906,5 +947,5 @@
 			// Lobby roster: nothing else in the hash moves when someone joins or leaves the lobby, so without
 			// this the row would sit stale until the next unrelated rebuild. EditSignal is what re-renders on
 			// enter/exit edit mode — the paint badge, the icon freeze and the portrait pose all ride it.
-			HashCode.Combine( ShowRoster, LobbyPlayerCount, LobbyNominatedCount, IconSupersample, EditSignal ) );
+			HashCode.Combine( ShowRoster, LobbyPlayerCount, LobbyNominatedCount, IconSupersample, EditSignal, LocalSpeaking ) );
 }

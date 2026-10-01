@@ -280,7 +280,35 @@ $clock-col-width: 150px;
 			}
 		}
 
-		// Shared by ALL the corner badges (the lobby hand + every paintbrush).
+		// "I'm talking" — the last free corner, TOP-right (hand top-left, palette bottom-right). Shared by both
+		// layouts like the palette, with the identical lifecycle: parked at scale(0), sprung in by .speaking,
+		// quick shrink on the way out, then the forever-jitter on the glyph.
+		.speak-badge {
+			position: absolute;
+			right: -4px;
+			top: -4px;
+			align-items: center;
+			justify-content: center;
+
+			transform: scale( 0 );
+			transition: transform 0.16s ease;
+
+			&.speaking {
+				transform: scale( 1 );
+				animation: hud-hand-raise 0.34s ease-out;
+
+				.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
+			}
+
+			// Resting tilt, ~12° anti-clockwise. On its own wrapper between the box and the glyph because both
+			// of those already own `transform` (the box its scale pop, the glyph its jitter) — a third transform
+			// on either would be overwritten by the animation, so the tilt gets a layer nobody else touches.
+			.speak-tilt {
+				transform: rotate( -12deg );
+			}
+		}
+
+		// Shared by ALL the corner badges (the lobby hand, every paintbrush and speaker).
 		//
 		// No font-family: leave it on the default so Skia's fallback picks the system emoji font for
 		// this codepoint. Forcing Material Icons here would render a missing-glyph box instead.
