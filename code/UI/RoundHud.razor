@@ -138,10 +138,10 @@
 			}
 			else if ( RoundContext.Active?.HasTimer ?? false )
 			{
-				@* Launch countdown running — the clock replaces the status in the same slot. Gated on an actual
+				@* Launch countdown running — the countdown replaces the status in the same slot. Gated on an actual
 				   timer: creative also reports the Lobby phase (for this roster layout) but never counts down,
-				   and a dead "0" clock would just look broken. *@
-				<div class="timer">@TimerText</div>
+				   and a dead countdown would just look broken. *@
+				<Countdown Title="Starting Game" Remaining=@RoundContext.Active.TimeRemaining class="lobby-countdown" />
 			}
 		}
 		else

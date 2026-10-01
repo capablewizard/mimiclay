@@ -133,7 +133,7 @@ public struct CharadesSettings
 	public const MimicRotation DefaultRotation = MimicRotation.TakeTurns;
 	public const CharadesTopics DefaultTopics = CharadesTopics.Everything;
 	public const bool DefaultWordLengthHints = true;
-	public const float DefaultStartCountdownSeconds = 10f;
+	public const float DefaultStartCountdownSeconds = 5f;
 	public const float DefaultChooseSeconds = 15f;
 	public const float DefaultSculptSeconds = 150f;
 	public const float DefaultRevealSeconds = 8f;

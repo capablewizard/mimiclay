@@ -48,7 +48,7 @@ public struct RoundSettings
 	// into a generated attribute, and an attribute argument has to be a constant expression — a `Default.HideSeconds`
 	// read is not one, and fails to compile. One place to change a default, no drift.
 	public const RoundMode DefaultMode = RoundMode.Infection;
-	public const float DefaultStartCountdownSeconds = 4f;
+	public const float DefaultStartCountdownSeconds = 5f;
 	public const float DefaultHideSeconds = 90f;
 	public const float DefaultHuntSeconds = 210f;
 	public const float DefaultRevealSeconds = 30f;

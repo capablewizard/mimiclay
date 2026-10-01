@@ -488,6 +488,11 @@ $clock-col-width: 150px;
 			.letter { text-shadow: $scene-shadow; }
 		}
 
+		// The lobby launch countdown, in the status line's slot under the roster.
+		.lobby-countdown {
+			margin-top: $space-sm;
+		}
+
 		.role-chip {
 			margin-top: $space-sm;
 			padding: $space-xs $space-md;

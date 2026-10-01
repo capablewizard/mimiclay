@@ -1,0 +1,54 @@
+@import "/UI/_theme.scss";
+
+// The shared short-countdown readout (see Countdown.razor): caption on top, one big digit under it. Sits on the
+// 3D scene, so it uses the scene text colour.
+.countdown
+{
+	flex-direction: column;
+	align-items: center;
+	pointer-events: none;
+
+	// Matches the lobby's "Press G to set up game" status line: body font, lockstep WobbleText, per-letter
+	// shadow (text-shadow doesn't inherit into the letters, so it goes on .letter).
+	.countdown-title
+	{
+		justify-content: center;
+		font-family: $body-font;
+		font-weight: $body-weight;
+		font-size: 34px;
+		color: $scene-text;
+
+		.letter { text-shadow: $scene-shadow; }
+	}
+
+	// The digit: the setup menu's big embossed clay type (.dialog-title in RoundSetup), with the offsets scaled up
+	// a touch for the larger size. Glow first so it paints UNDER the depth layer.
+	//
+	// Keyed by its number in the markup, so every new digit is a NEW element and the spring below replays on
+	// each one. Pulled up into the caption's line box, because header digits carry a tall empty band above the
+	// numerals (same optical fix as the round clock's .timer). Tune by eye if the font or size changes.
+	.countdown-digit
+	{
+		margin-top: -10px;
+		font-family: $header-font;
+		font-size: 110px;
+		color: $scene-text;
+		text-shadow:
+			12px 14px 4px $emboss-glow,
+			5px 7px 0px $emboss-depth;
+		transform-origin: center;
+		animation: countdown-pop 0.34s ease-out;
+	}
+}
+
+// Each digit springs in: from nothing, overshoots, settles. The same curve as the roster's hand-raise badge
+// (hud-hand-raise in RoundHud.razor.scss). s&box has no overshoot easing, so the spring is spelled out as poses.
+// MUST be top-level: s&box doesn't register @keyframes nested inside a selector.
+@keyframes countdown-pop
+{
+	0%   { transform: scale( 0 ); }
+	55%  { transform: scale( 1.38 ); }
+	75%  { transform: scale( 0.87 ); }
+	90%  { transform: scale( 1.08 ); }
+	100% { transform: scale( 1 ); }
+}

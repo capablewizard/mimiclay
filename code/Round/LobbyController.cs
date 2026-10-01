@@ -50,13 +50,13 @@ public sealed class LobbyController : Component
 	[Property, Group( "Round Defaults" )] public float DefaultHuntSeconds { get; set; } = 180f;
 	[Property, Group( "Round Defaults" )] public float DefaultRevealSeconds { get; set; } = 6f;
 	[Property, Group( "Round Defaults" )] public float DefaultConsolidationSeconds { get; set; } = 12f;
-	[Property, Group( "Round Defaults" )] public float DefaultStartCountdownSeconds { get; set; } = 4f;
+	[Property, Group( "Round Defaults" )] public float DefaultStartCountdownSeconds { get; set; } = RoundSettings.DefaultStartCountdownSeconds;
 	[Property, Group( "Round Defaults" )] public float DefaultTauntSeconds { get; set; } = 15f;
 	[Property, Group( "Round Defaults" )] public float DefaultHintSeconds { get; set; } = RoundSettings.DefaultHintSeconds;
 	[Property, Group( "Round Defaults" )] public int DefaultHunterCount { get; set; } = 1;
 
 	/// <summary>Seconds between hitting Start and the scene change, so everyone sees the launch coming.</summary>
-	[Property, Group( "Round Defaults" )] public float LaunchCountdownSeconds { get; set; } = 10f;
+	[Property, Group( "Round Defaults" )] public float LaunchCountdownSeconds { get; set; } = 5f;
 
 	// ── Prop editing ──────────────────────────────────────────────────────────────────────────────────────
 	/// <summary>Lobby scene props are editable exactly like creative's — aim, "E to Edit", possess. This is

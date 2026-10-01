@@ -1,0 +1,70 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	The shared short-countdown readout — a caption over one big digit ("STARTING GAME" / 5 4 3 2 1). For the
+	brief countdowns only (lobby launch, round start, charades warm-up), NOT the round clock, which stays mm:ss.
+
+		<Countdown Title="Starting Game" Remaining=@secondsLeft />
+
+	Remaining is plain seconds left; the component does the rounding, so callers just hand over their timer.
+	Each new digit plays a clock tick or tock (Ticking=false to silence it).
+*@
+
+<WobbleText Text=@Title LockStep=@true class="countdown-title" @key=@Title />
+@* Keyed by the number: each digit is a fresh element, so its spring-in animation plays on every change. *@
+<div class="countdown-digit" @key=@Digit>@Digit</div>
+
+@code
+{
+	// UI sound events (UI: true, so they play flat with no world position).
+	const string TickSound = "sounds/game/clockticks/tick.sound";
+	const string TockSound = "sounds/game/clockticks/tock.sound";
+
+	[Parameter] public string Title { get; set; } = "";
+
+	/// <summary>Seconds left on the countdown being shown.</summary>
+	[Parameter] public float Remaining { get; set; }
+
+	/// <summary>Play a tick/tock as each digit lands.</summary>
+	[Parameter] public bool Ticking { get; set; } = true;
+
+	// Ceil so the digit reads 5 for the whole first second and 1 for the last. Floored at 1: a timer that's run
+	// out is waiting on whatever happens next (the scene change, the phase flip), and a "0" sitting there for
+	// those frames just looks stuck.
+	int Digit => Math.Max( 1, (int)MathF.Ceiling( Remaining ) );
+
+	// The digit we last sounded. Starts at 0 (never a real digit) so the first one shown plays too.
+	int _soundedDigit;
+
+	public Countdown()
+	{
+		AddClass( "countdown" );
+	}
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		// Nothing on the clock (not handed a time yet, or already expired): no digit has landed, so no sound —
+		// otherwise the floored "1" would tick before the real countdown's first number.
+		if ( Remaining <= 0f )
+			return;
+
+		var digit = Digit;
+		if ( digit == _soundedDigit )
+			return;
+		_soundedDigit = digit;
+
+		// Alternates by the digit itself rather than a running toggle, so every machine (and a late-joiner
+		// who walks in mid-countdown) hears the same tick on the same number: odd ticks, even tocks — and
+		// 1, the last, is always a tick.
+		if ( Ticking )
+			Sound.Play( digit % 2 == 1 ? TickSound : TockSound );
+	}
+
+	protected override int BuildHash() => HashCode.Combine( Title, Digit );
+}

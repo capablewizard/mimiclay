@@ -4268,7 +4268,7 @@
           "OverrideRules": true,
           "PlayAs": "Hunter",
           "RevealSeconds": 30,
-          "StartCountdownSeconds": 4,
+          "StartCountdownSeconds": 5,
           "TauntSeconds": 35
         }
       ],

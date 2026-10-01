@@ -33,13 +33,13 @@
           "DefaultHuntSeconds": 220,
           "DefaultRevealSeconds": 30,
           "DefaultRoundMode": "Infection",
-          "DefaultStartCountdownSeconds": 4,
+          "DefaultStartCountdownSeconds": 5,
           "DefaultTauntSeconds": 30,
           "HunterPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/hunter.prefab"
           },
-          "LaunchCountdownSeconds": 10,
+          "LaunchCountdownSeconds": 5,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4610,42 +4610,6 @@
           "RenderExcludeTags": ""
         },
         {
-          "__type": "Sandbox.EnvmapProbe",
-          "__guid": "1b8c6701-b300-4e48-9521-9f786b67527f",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "BakedTexture": {
-            "Id": "30124bbd-4e74-467c-8670-773185591264",
-            "Path": "scenes/kitchenlobby_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex"
-          },
-          "Bounds": {
-            "Mins": "-503.445862,-539.0979,-297.174377",
-            "Maxs": "296.55426,548.902222,213.573914"
-          },
-          "DelayBetweenUpdates": 0.1,
-          "Feathering": 8,
-          "FrameInterval": 5,
-          "MaxDistance": 512,
-          "Mode": "Baked",
-          "MultiBounce": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Priority": 0,
-          "Projection": "Sphere",
-          "RenderExcludeTags": "",
-          "Resolution": "Large",
-          "Texture": null,
-          "TintColor": "1,1,1,1",
-          "UpdateStrategy": "OnEnabled",
-          "ZFar": 4096,
-          "ZNear": 16
-        },
-        {
           "__type": "Mimiclay.ProbeRadiosityBoost",
           "__guid": "4e25b30e-b1e6-43bc-a212-0c2f216d155a",
           "__enabled": true,
@@ -4672,6 +4636,61 @@
             "component_type": "IndirectLightVolume"
           },
           "WallBlocking": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "bd86318b-61a1-4f5a-9d7b-83bf65ba3364",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "EnvProbe",
+      "Position": "172.696289,-820.902222,-436.708405",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.EnvmapProbe",
+          "__guid": "2125ff8a-a4b8-495d-82ef-739be7897fa3",
+          "__enabled": true,
+          "Flags": 0,
+          "__version": 1,
+          "BakedTexture": {
+            "Id": "30124bbd-4e74-467c-8670-773185591264",
+            "Path": "scenes/kitchenlobby_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex"
+          },
+          "Bounds": {
+            "Mins": "-483.645325,-539.0979,-121.630692",
+            "Maxs": "357.108521,548.902222,414.109436"
+          },
+          "DelayBetweenUpdates": 0.1,
+          "Feathering": 8,
+          "FrameInterval": 5,
+          "MaxDistance": 512,
+          "Mode": "Baked",
+          "MultiBounce": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Priority": 0,
+          "Projection": "Sphere",
+          "RenderExcludeTags": "",
+          "Resolution": "Large",
+          "Texture": null,
+          "TintColor": "1,1,1,1",
+          "UpdateStrategy": "OnEnabled",
+          "ZFar": 4096,
+          "ZNear": 16
         }
       ],
       "Children": []
@@ -11894,22 +11913,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1242.81396,-427.365051"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11951,22 +11954,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1277.56177,-427.365051"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12139,22 +12126,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.707106829,0.707106709"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12245,6 +12216,14 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.860587358,0.509302735"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
+            "Property": "__enabled",
+            "Value": false
           },
           {
             "Target": {
@@ -15093,14 +15072,6 @@
               "Type": "Component",
               "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
             },
-            "Property": "__enabled",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -17636,14 +17607,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
-            },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
             },
             "Property": "AdaptiveQuality",
@@ -18942,14 +18905,6 @@
               "Type": "Component",
               "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19042,14 +18997,6 @@
             },
             "Property": "Position",
             "Value": "153.794373,-1134.85608,-365.04541"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "e7601da9-8ae1-4549-855f-b2b5034d6707"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19091,6 +19038,14 @@
             },
             "Property": "Rotation",
             "Value": "-3.36300582E-06,7.0720911E-05,0.0237452015,0.99971807"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
+            },
+            "Property": "__enabled",
+            "Value": false
           },
           {
             "Target": {
@@ -19649,6 +19604,14 @@
               "Type": "Component",
               "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19889,14 +19852,6 @@
             },
             "Property": "Position",
             "Value": "515.930908,-937.658752,-479.490234"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {

@@ -3351,7 +3351,7 @@
           "CharadesRotation": "TakeTurns",
           "CharadesSculptSeconds": 150,
           "CharadesSoloDebug": false,
-          "CharadesStartCountdownSeconds": 10,
+          "CharadesStartCountdownSeconds": 5,
           "CharadesTargetScore": 15,
           "CharadesTopicSet": "Everything",
           "CharadesWordLengthHints": true,
@@ -3375,7 +3375,7 @@
           "OverrideRules": false,
           "PlayAs": "Auto",
           "RevealSeconds": 30,
-          "StartCountdownSeconds": 4,
+          "StartCountdownSeconds": 5,
           "TauntSeconds": 35
         }
       ],

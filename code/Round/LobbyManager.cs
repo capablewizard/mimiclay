@@ -386,7 +386,7 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 			return;
 		}
 
-		LaunchEndsAt = LobbyController.Current.IsValid() ? LobbyController.Current.LaunchCountdownSeconds : 10f;
+		LaunchEndsAt = LobbyController.Current.IsValid() ? LobbyController.Current.LaunchCountdownSeconds : 5f;
 		Launching = true;
 	}
 
