@@ -1206,6 +1206,15 @@ PS
 		i.vPositionWithOffsetWs = p - g_vCameraPositionWs;
 		i.vNormalWs = worldN;
 
+		// Re-seat the screen position's depth on the MARCHED surface too. The rasterizer filled .z/.w
+		// for the proxy hull, and Cluster::Query picks each pixel's depth slice from them (1/w in
+		// perspective, unprojected z in ortho) — so decals and clustered lights were being looked up at
+		// the hull's depth, inches off the clay. Pixels whose hull depth fell in a slice the decal
+		// doesn't reach dropped it, which read as z-fighting blocks wherever a decal overlapped clay.
+		// 1/clip-w matches what the rasterizer supplies (1/viewDepth in perspective, 1 in ortho).
+		i.vPositionSs.z = flSurfaceDepth;
+		i.vPositionSs.w = 1.0 / max( Position4WsToPs( float4( p, 1.0 ) ).w, 1e-4 );
+
 		// Blended colour + per-brush metalness/roughness at the hit point. Matches the mesh shader's
 		// semantics so the meshed LODs and the raymarch agree: global sliders stay master controls.
 		SdfSurface surf = SdfShade( p );
