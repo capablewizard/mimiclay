@@ -72,7 +72,7 @@
         "SheetSequence": false,
         "Size": "1.5,1.5",
         "SortLayer": 0,
-        "Transient": false
+        "Transient": true
       }
     ],
     "Children": [],
