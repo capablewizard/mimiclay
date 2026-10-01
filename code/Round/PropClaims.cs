@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using Sandbox.Network;
 
 namespace Mimiclay;
@@ -317,6 +318,7 @@ public sealed class PropClaims : Component
 			disguise.LocalPosition = local.Position;
 			disguise.LocalRotation = local.Rotation;
 			disguise.LocalScale = local.Scale;
+			CarryExtras( sculpture.GameObject, disguise );
 		}
 
 		// The clone replaces the original for everyone. Scene objects share ids from the scene file, so the
@@ -332,6 +334,33 @@ public sealed class PropClaims : Component
 		} );
 		_converted.Add( pawn.Id );
 		return pawn;
+	}
+
+	// Components on a scene prop that aren't clay but belong to the OBJECT (the lobby radio's music), which
+	// would otherwise die with the original. Kept to an explicit allowlist: the SDF stack is rebuilt by the pawn
+	// prefab, and anything else on scenery (triggers, map logic) must not start riding a player around.
+	static bool IsCarried( Component c ) => c is BaseSoundComponent or SyncedMusic;
+
+	// Host-only, pawn still disabled. Copy each carried component off the original onto the disguise body — it
+	// sits at exactly the original's transform, so a positional sound stays put, then follows the prop. Copied
+	// through the serializer with the id stripped (the original still exists until end-of-frame; two components
+	// can't share a guid). Added before NetworkSpawn, so it rides the spawn snapshot to every machine; the pawn
+	// then persists through release and re-claim, so the component comes along for free.
+	static void CarryExtras( GameObject from, GameObject to )
+	{
+		foreach ( var c in from.Components.GetAll( FindMode.EverythingInSelf ) )
+		{
+			if ( !IsCarried( c ) || c.Serialize() is not JsonObject json )
+				continue;
+
+			json.Remove( "__guid" );
+			var copy = to.Components.Create( TypeLibrary.GetType( c.GetType() ), startEnabled: false );
+			if ( copy is null )
+				continue;
+
+			copy.DeserializeImmediately( json );
+			copy.Enabled = c.Enabled;
+		}
 	}
 
 	/// <summary>Host→everyone: remove a scene prop that was just converted — each machine destroys its own copy

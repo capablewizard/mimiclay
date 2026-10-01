@@ -68,7 +68,7 @@
             "Enabled": true,
             "Position": "3.30508518,-1.1920929E-06,19.0813293",
             "Rotation": "0,0,0,1",
-            "Size": "4.15390778,27.5296993,18.2338257",
+            "Size": "13.1602478,27.5296993,18.2338257",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -93,7 +93,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 33.5358
+            "BoundingRadius": 35.801434
           },
           {
             "Shape": "Box",
