@@ -8,9 +8,11 @@ namespace Mimiclay;
 /// <summary>
 /// Drives a Charades game: the host-authoritative phase machine that walks
 /// <see cref="CharadesPhase.Waiting"/> → (<see cref="CharadesPhase.Choosing"/> →
-/// <see cref="CharadesPhase.Sculpting"/> → <see cref="CharadesPhase.TurnReveal"/>) per turn until someone
-/// reaches the target score → <see cref="CharadesPhase.Podium"/> → back to the lobby (a direct Play, which has
-/// no lobby behind it, loops to Waiting instead). Runs on a picked charades MAP — one with a
+/// <see cref="CharadesPhase.Sculpting"/> → <see cref="CharadesPhase.TurnReveal"/>) per turn, one turn each
+/// per ROUND (players-write rounds open with a <see cref="CharadesPhase.Writing"/> beat where everyone types a
+/// phrase for someone else), for the configured number of rounds → <see cref="CharadesPhase.Podium"/> → back
+/// to the lobby (a direct Play, which has no lobby behind it, loops to Waiting instead). Runs on a picked
+/// charades MAP — one with a
 /// <see cref="CharadesStage"/> prefab placed in it — spawned by <see cref="RoundManagerSpawner"/> like every
 /// other game's manager.
 ///
@@ -63,6 +65,14 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	/// <summary>Whose turn it is to sculpt (<see cref="Guid.Empty"/> outside a turn).</summary>
 	[Sync] public Guid MimicId { get; set; }
 
+	/// <summary>Players-write rounds: who WROTE the phrase being sculpted (<see cref="Guid.Empty"/> when it
+	/// came from a topic list). They know the answer, so they sit the turn out — and get the ✍ badge.</summary>
+	[Sync] public Guid AuthorId { get; set; }
+
+	/// <summary>The round in progress, 1-based (0 before the first). Everyone seated takes one turn per round;
+	/// after <see cref="CharadesSettings.Rounds"/> of them the podium shows.</summary>
+	[Sync] public int Round { get; set; }
+
 	/// <summary>The masked word everyone may see ("___ _____"). Only the shape — never the word itself.</summary>
 	[Sync] public string WordHint { get; set; } = "";
 
@@ -91,13 +101,16 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	// ── Host-only bookkeeping ─────────────────────────────────────────────────────────────────────────────
 	string _currentWord;                                  // the secret — lives on the host and the mimic only
 	List<string> _offeredThisTurn = new();                // what the mimic was offered (validates ChooseWord)
-	readonly List<Guid> _turnQueue = new();               // take-turns rotation (winner-stays-on's fallback)
+	readonly List<Guid> _turnQueue = new();               // who still has to take the stage this round (seat order)
 	readonly HashSet<string> _usedWords = new();          // no repeats until the pool runs dry
 	LoadGate _loadGate;                                   // holds the first StartGame until everyone's loaded
 	int _nextSeat;                                        // monotonic join counter → CharadesPlayer.Seat
 	int _correctThisTurn;                                 // how many have guessed it (places + mimic score cap)
-	Guid _firstCorrectThisTurn;                           // winner-stays-on's next mimic
-	bool _gameOver;                                       // someone reached the target — podium after the reveal
+
+	// Players-write rounds: what each player typed this round, and who sculpts whose. Host-only — a phrase
+	// is a secret until its reveal, so none of this is ever synced.
+	readonly Dictionary<Guid, string> _submissions = new();
+	readonly Dictionary<Guid, (string Phrase, Guid Author)> _assigned = new();
 
 	readonly Dictionary<Guid, GameObject> _borrowed = new(); // who's wearing which claimed map prop (see Borrowed props)
 
@@ -117,6 +130,20 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	public string LocalWord { get; private set; }
 
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
+
+	/// <summary>The selection every draw uses: the ticked built-in topics (Topics), the ticked community lists
+	/// (Workshop; none ticked = every built-in), or — in write-your-own games, where the pool is only filler for
+	/// late joiners, non-writers and bots — every built-in topic.</summary>
+	string PoolTopics => Settings.Source switch
+	{
+		PhraseSource.Topics => Settings.Topics,
+		PhraseSource.Workshop when !string.IsNullOrWhiteSpace( Settings.WorkshopLists ) => Settings.WorkshopLists,
+		_ => CharadesTopics.Everything,
+	};
+
+	/// <summary>How many phrases the mimic is offered in a Topics or Workshop game: three, or one when Topic
+	/// Choices is off (same read-it-and-go card as write-your-own).</summary>
+	int OfferCount => Settings.Source != PhraseSource.Players && !Settings.TopicChoices ? 1 : 3;
 
 	/// <summary>True when this machine's player is the current mimic.</summary>
 	public bool LocalIsMimic => MimicId != Guid.Empty && Connection.Local?.Id == MimicId;
@@ -151,7 +178,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		// lot on a direct Play, where no keys exist) is the card's override or plain defaults.
 		Settings = CharadesSettings.ReadFromLobby( RulesOverride ?? CharadesSettings.Default );
 		if ( RulesOverride is not null )
-			Log.Info( $"CharadesManager: map card rules override active — first to {Settings.TargetScore}, {Settings.Rotation}." );
+			Log.Info( $"CharadesManager: map card rules override active — {Settings.Rounds} round(s), phrases from {Settings.Source}." );
+
+		// Community lists in the selection are normally cached from the lobby; fetch any that aren't before
+		// the first draw needs them (fire-and-forget — PoolFor falls back to the built-ins meanwhile).
+		_ = CharadesWorkshop.EnsureSelected( PoolTopics );
 
 		// A lobby that seated bots hands its count over (same courier as prop hunt); no key = direct play,
 		// the card's count stands.
@@ -235,7 +266,16 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 			case CharadesPhase.Starting:
 				if ( PhaseEndsAt <= 0f )
+					BeginRound();
+				break;
+
+			case CharadesPhase.Writing:
+				// Everyone (with a keyboard — bots submit on entry) has handed one in, or time's up.
+				if ( PhaseEndsAt <= 0f || Players.Values.All( p => p.Bot || p.Submitted ) )
+				{
+					AssignPhrases();
 					TransitionTo( CharadesPhase.Choosing );
+				}
 				break;
 
 			case CharadesPhase.Choosing:
@@ -245,9 +285,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 			case CharadesPhase.Sculpting:
 				// Early end when every guesser has it. Solo debug has zero guessers — trivially "everyone",
-				// which would skip the phase instantly, so it needs at least one actual correct guess.
-				var guessers = Players.Values.Count( p => p.Connection != MimicId );
-				var guessed = Players.Values.Count( p => p.Connection != MimicId && p.GuessedPlace > 0 );
+				// which would skip the phase instantly, so it needs at least one actual correct guess. The
+				// phrase's author isn't a guesser — they wrote it.
+				var guessers = Players.Values.Count( p => p.Connection != MimicId && p.Connection != AuthorId );
+				var guessed = Players.Values.Count( p => p.Connection != MimicId && p.Connection != AuthorId && p.GuessedPlace > 0 );
 				if ( PhaseEndsAt <= 0f || (guessers > 0 && guessed >= guessers) )
 					TransitionTo( CharadesPhase.TurnReveal );
 				break;
@@ -275,27 +316,51 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		}
 	}
 
-	// Host-only. Fresh game: zero the scores, refill the rotation, then the "get ready" countdown into the
-	// first turn.
+	// Host-only. Fresh game: zero the scores, then the "get ready" countdown into round one.
 	void StartGame()
 	{
 		ResetScores();
-		_gameOver = false;
 		_usedWords.Clear();
-		RefillTurnQueue();
+		Round = 0;
 		TransitionTo( CharadesPhase.Starting );
 	}
 
-	// Host-only. Someone won → podium; otherwise the next mimic takes the stage.
+	// Host-only. Open the next round: everyone seated right now gets a turn, in seat order. Players-write
+	// rounds collect the phrases first; topic rounds go straight to the first mimic.
+	void BeginRound()
+	{
+		Round++;
+		RefillTurnQueue();
+		_assigned.Clear();
+		_submissions.Clear();
+
+		if ( Settings.Source == PhraseSource.Players )
+		{
+			TransitionTo( CharadesPhase.Writing );
+			return;
+		}
+
+		TransitionTo( CharadesPhase.Choosing );
+	}
+
+	// Host-only. The turn is over: the next mimic takes the stage, or — the round's queue is spent — the
+	// next round opens, or the last one just ended and the podium shows.
 	void AdvanceTurn()
 	{
-		if ( _gameOver )
+		_turnQueue.RemoveAll( id => !Players.ContainsKey( id ) );
+		if ( _turnQueue.Count > 0 )
+		{
+			TransitionTo( CharadesPhase.Choosing );
+			return;
+		}
+
+		if ( Round >= Settings.Rounds )
 		{
 			TransitionTo( CharadesPhase.Podium );
 			return;
 		}
 
-		TransitionTo( CharadesPhase.Choosing );
+		BeginRound();
 	}
 
 	void RefillTurnQueue()
@@ -311,8 +376,90 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			var p = Players[id];
 			p.Score = 0;
 			p.GuessedPlace = 0;
+			p.Submitted = false;
 			Players[id] = p;
 		}
+	}
+
+	// ── Players-write rounds (host) ───────────────────────────────────────────────────────────────────────
+	// Everyone types a phrase during Writing (through the chat, which the host swallows — see JudgeChat); at
+	// the end each phrase is handed to someone ELSE on the stage queue. Bots "write" a topic-list phrase so
+	// they're authors too; anyone without a phrase written for them draws a topic-list filler at their turn.
+
+	// Host-only, on entering Writing: clear last round's hand-ins, and let the bots submit at once.
+	void OpenWriting()
+	{
+		_submissions.Clear();
+		foreach ( var id in Players.Keys.ToList() )
+		{
+			var p = Players[id];
+			p.Submitted = false;
+			if ( p.Bot )
+			{
+				var filler = CharadesWords.Draw( 1, PoolTopics, _usedWords );
+				if ( filler.Count > 0 )
+				{
+					_submissions[id] = filler[0];
+					p.Submitted = true;
+				}
+			}
+			Players[id] = p;
+		}
+	}
+
+	// Host-only: a player's phrase for this round (typed in chat during Writing). Re-typing replaces it.
+	void AcceptSubmission( Guid rosterId, string text )
+	{
+		var phrase = CharadesWords.SanitizePhrase( text );
+		if ( phrase is null )
+		{
+			Shush( rosterId, "✍ That's a bit short — type a phrase with a couple of letters in it." );
+			return;
+		}
+
+		_submissions[rosterId] = phrase;
+		if ( Players.TryGetValue( rosterId, out var p ) )
+		{
+			p.Submitted = true;
+			Players[rosterId] = p;
+		}
+
+		Shush( rosterId, $"✍ Got it: “{phrase}” — type again to change it." );
+	}
+
+	// Host-only, at the end of Writing: deal the phrases out so nobody sculpts their own. The submitters
+	// are lined up in seat order and each phrase goes to the submitter a fixed (random) number of places
+	// along — a cyclic shift, which is a perfect derangement for any two or more. A lone submitter's phrase
+	// goes to someone who didn't write (or is dropped, solo). Non-submitters draw fillers at their turn.
+	void AssignPhrases()
+	{
+		_assigned.Clear();
+
+		var authors = Players.Values
+			.Where( p => _submissions.ContainsKey( p.Connection ) )
+			.OrderBy( p => p.Seat )
+			.Select( p => p.Connection )
+			.ToList();
+
+		if ( authors.Count >= 2 )
+		{
+			var shift = Random.Shared.Int( 1, authors.Count - 1 );
+			for ( var i = 0; i < authors.Count; i++ )
+			{
+				var author = authors[i];
+				var sculptor = authors[(i + shift) % authors.Count];
+				_assigned[sculptor] = (_submissions[author], author);
+			}
+		}
+		else if ( authors.Count == 1 )
+		{
+			var author = authors[0];
+			var someoneElse = Players.Values.Where( p => p.Connection != author ).Select( p => p.Connection ).ToList();
+			if ( someoneElse.Count > 0 )
+				_assigned[someoneElse[Random.Shared.Next( someoneElse.Count )]] = (_submissions[author], author);
+		}
+
+		_submissions.Clear();
 	}
 
 	// Host-only: set the phase's timer + entry effects, flipping the synced Phase LAST (a client must never
@@ -331,10 +478,21 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 			case CharadesPhase.Starting:
 				MimicId = Guid.Empty;
+				AuthorId = Guid.Empty;
 				WordHint = "";
 				RevealedWord = "";
 				_currentWord = null;
 				PhaseEndsAt = Settings.StartCountdownSeconds;
+				break;
+
+			case CharadesPhase.Writing:
+				MimicId = Guid.Empty;
+				AuthorId = Guid.Empty;
+				WordHint = "";
+				RevealedWord = "";
+				_currentWord = null;
+				OpenWriting();
+				PhaseEndsAt = Settings.WriteSeconds;
 				break;
 
 			case CharadesPhase.Choosing:
@@ -359,6 +517,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 			case CharadesPhase.Podium:
 				MimicId = Guid.Empty;
+				AuthorId = Guid.Empty;
 				WordHint = "";
 				RevealedWord = "";
 				PhaseEndsAt = Settings.PodiumSeconds;
@@ -385,12 +544,30 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		}
 
 		MimicId = PickNextMimic();
-		_firstCorrectThisTurn = Guid.Empty;
+		AuthorId = Guid.Empty;
 
 		if ( MimicId == Guid.Empty )
 			return; // nobody left to sculpt — the drought check will bounce us to Waiting
 
-		_offeredThisTurn = CharadesWords.Draw( 3, Settings.Topics, _usedWords );
+		// Topic rounds offer three to pick from. Players-write rounds hand over the ONE phrase written for
+		// this mimic (a filler from the topic lists when nobody wrote for them — a late joiner, or a round
+		// where too few people typed) — the Choosing beat is just them reading it.
+		if ( Settings.Source == PhraseSource.Players )
+		{
+			if ( _assigned.Remove( MimicId, out var dealt ) )
+			{
+				_offeredThisTurn = new List<string> { dealt.Phrase };
+				AuthorId = Players.ContainsKey( dealt.Author ) ? dealt.Author : Guid.Empty;
+			}
+			else
+			{
+				_offeredThisTurn = CharadesWords.Draw( 1, PoolTopics, _usedWords );
+			}
+		}
+		else
+		{
+			_offeredThisTurn = CharadesWords.Draw( OfferCount, PoolTopics, _usedWords );
+		}
 
 		// A bot mimic prepares its scripted turn instead of being offered a choice.
 		if ( MimicIsBot )
@@ -402,32 +579,24 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		// The offer goes ONLY to the mimic. A broadcast body still runs locally on the host, so the RPC
 		// itself re-checks "am I the mimic" — that guard (not the filter) is what keeps a hosting
 		// non-mimic's HUD from seeing the words.
+		var packed = string.Join( '\n', _offeredThisTurn );
 		var conn = Connection.All.FirstOrDefault( c => c.Id == MimicId );
 		if ( conn is not null && Networking.IsActive )
 		{
 			using ( Rpc.FilterInclude( conn ) )
-				OfferWords( MimicId, _offeredThisTurn[0], _offeredThisTurn[1], _offeredThisTurn[2] );
+				OfferWords( MimicId, packed );
 		}
 		else
 		{
-			OfferWords( MimicId, _offeredThisTurn[0], _offeredThisTurn[1], _offeredThisTurn[2] );
+			OfferWords( MimicId, packed );
 		}
 	}
 
-	// Host-only. The next mimic under the configured rotation. Winner-stays-on hands the stage to the turn's
-	// first correct guesser; no winner (or a fresh game) falls back to the seat rotation, so the game can
-	// never stall on one mimic.
+	// Host-only. The next mimic: the round's queue in seat order, skipping leavers. Empty = the round is
+	// over (AdvanceTurn opens the next one or the podium) — this never refills by itself.
 	Guid PickNextMimic()
 	{
-		if ( Settings.Rotation == MimicRotation.WinnerStaysOn
-			&& _firstCorrectThisTurn != Guid.Empty
-			&& Players.ContainsKey( _firstCorrectThisTurn ) )
-			return _firstCorrectThisTurn;
-
-		// Seat order, skipping leavers; refill when the cycle completes.
 		_turnQueue.RemoveAll( id => !Players.ContainsKey( id ) );
-		if ( _turnQueue.Count == 0 )
-			RefillTurnQueue();
 
 		while ( _turnQueue.Count > 0 )
 		{
@@ -476,16 +645,17 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	}
 
 	// ── Word delivery (targeted — see the class summary) ─────────────────────────────────────────────────
-	/// <summary>Host→mimic: your three words to pick from. Guarded by recipient check, not just the RPC
-	/// filter: a broadcast body always runs on the calling host too.</summary>
+	/// <summary>Host→mimic: your phrases to pick from (three from the topics, or the one written for you),
+	/// newline-packed. Guarded by recipient check, not just the RPC filter: a broadcast body always runs on
+	/// the calling host too.</summary>
 	[Rpc.Broadcast]
-	void OfferWords( Guid mimic, string a, string b, string c )
+	void OfferWords( Guid mimic, string packed )
 	{
 		if ( Connection.Local?.Id != mimic )
 			return;
 
 		OfferedWords.Clear();
-		OfferedWords.AddRange( new[] { a, b, c } );
+		OfferedWords.AddRange( (packed ?? "").Split( '\n', StringSplitOptions.RemoveEmptyEntries ) );
 		LocalWord = null;
 	}
 
@@ -555,11 +725,28 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		if ( DebugChat )
 			Log.Info( $"[charades judge] roster ok, phase={Phase}, word='{_currentWord ?? "<null>"}', place={guesser.GuessedPlace}, norm-guess='{CharadesWords.Normalize( e.Message )}' vs norm-word='{CharadesWords.Normalize( _currentWord ?? "" )}'" );
 
+		// Writing: the chat box IS the hand-in slot. Swallowed at the source — the phrase is a secret until
+		// its reveal — and acknowledged privately so the vanishing line reads as "received", not broken.
+		if ( Phase == CharadesPhase.Writing )
+		{
+			e.Suppress = true;
+			AcceptSubmission( rosterId, e.Message );
+			return;
+		}
+
 		// The mimic knows the word — nothing they type mid-turn is safe to echo.
 		if ( rosterId == MimicId && Phase is CharadesPhase.Choosing or CharadesPhase.Sculpting )
 		{
 			e.Suppress = true;
 			Shush( rosterId, "🤫 No chatting during your own turn!" );
+			return;
+		}
+
+		// So does whoever wrote it.
+		if ( rosterId == AuthorId && AuthorId != Guid.Empty && Phase is CharadesPhase.Choosing or CharadesPhase.Sculpting )
+		{
+			e.Suppress = true;
+			Shush( rosterId, "✍ You wrote this one — sit back and enjoy the show!" );
 			return;
 		}
 
@@ -576,7 +763,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			return;
 		}
 
-		if ( CharadesWords.Normalize( e.Message ) == CharadesWords.Normalize( _currentWord ) )
+		if ( CharadesWords.Matches( e.Message, _currentWord ) )
 		{
 			e.Suppress = true; // the answer itself never reaches chat
 			ScoreCorrectGuess( rosterId, ref guesser );
@@ -585,12 +772,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 	// Host-only. Points by finishing place — faster is worth more: 1st = 3, 2nd = 2, everyone after = 1.
 	// The mimic earns +1 per convert (readable sculpts pay), capped at +3 so a big lobby doesn't turn the
-	// stage into the only scoring seat. First to Settings.TargetScore ends the game after the reveal.
+	// stage into the only scoring seat. A players-write phrase's author gets +1 the first time it's guessed
+	// — a sculptable phrase pays, an impossible one doesn't. The game ends when the rounds run out.
 	void ScoreCorrectGuess( Guid rosterId, ref CharadesPlayer guesser )
 	{
 		_correctThisTurn++;
-		if ( _firstCorrectThisTurn == Guid.Empty )
-			_firstCorrectThisTurn = rosterId;
 
 		guesser.GuessedPlace = _correctThisTurn;
 		guesser.Score += _correctThisTurn switch { 1 => 3, 2 => 2, _ => 1 };
@@ -602,10 +788,13 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			Players[MimicId] = mimic;
 		}
 
-		AnnounceCorrect( rosterId, guesser.Name );
+		if ( _correctThisTurn == 1 && AuthorId != Guid.Empty && AuthorId != MimicId && Players.TryGetValue( AuthorId, out var author ) )
+		{
+			author.Score += 1;
+			Players[AuthorId] = author;
+		}
 
-		if ( Players.Values.Any( p => p.Score >= Settings.TargetScore ) )
-			_gameOver = true;
+		AnnounceCorrect( rosterId, guesser.Name );
 	}
 
 	// ── Chat-line delivery (host → every machine's engine chat; Chat.AddText is local-only by design) ────
@@ -1197,7 +1386,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 	string RandomDecoyWord()
 	{
-		var pool = CharadesWords.PoolFor( Settings.Topics );
+		var pool = CharadesWords.PoolFor( PoolTopics );
 		var norm = CharadesWords.Normalize( _currentWord ?? "" );
 		var decoys = pool.Where( w => CharadesWords.Normalize( w ) != norm ).ToList();
 		return decoys.Count > 0 ? decoys[Random.Shared.Next( decoys.Count )] : "hmm…";
@@ -1316,6 +1505,8 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			Players.Remove( id );
 			_turnQueue.Remove( id );
 			_botGuessers.Remove( id );
+			_submissions.Remove( id );
+			_assigned.Remove( id ); // the phrase dealt to a leaver goes unsculpted (its author still gets nothing — fine)
 			ReleaseBorrowedFor( id ); // a leaver's borrowed prop goes back to being claimable scenery
 		}
 
@@ -1339,10 +1530,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		}
 
 		// Bot guess brains: one per seated bot, re-rolled at each sculpt start (see ReactToPhase — but the
-		// roll happens host-side here so a brain always exists by the first TickBots).
+		// roll happens host-side here so a brain always exists by the first TickBots). A bot that wrote the
+		// phrase doesn't guess it.
 		if ( Phase == CharadesPhase.Sculpting )
 		{
-			foreach ( var row in Players.Values.Where( p => p.Bot && p.Connection != MimicId ) )
+			foreach ( var row in Players.Values.Where( p => p.Bot && p.Connection != MimicId && p.Connection != AuthorId ) )
 			{
 				if ( _botGuessers.ContainsKey( row.Connection ) )
 					continue;

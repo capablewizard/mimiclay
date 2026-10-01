@@ -115,20 +115,28 @@ public sealed class MapModeCard : Component
 	/// play. Only consulted on a direct play with <see cref="DirectPlayGame"/> = Charades.</summary>
 	[Property, Group( "Charades (Override)" )] public bool OverrideCharadesRules { get; set; }
 
-	/// <summary>First player to this score wins.</summary>
-	[Property, Group( "Charades (Override)" )] public int CharadesTargetScore { get; set; } = CharadesSettings.DefaultTargetScore;
+	/// <summary>How many rounds to play (one turn each per round).</summary>
+	[Property, Group( "Charades (Override)" ), Range( CharadesSettings.MinRounds, CharadesSettings.MaxRounds )]
+	public int CharadesRounds { get; set; } = CharadesSettings.DefaultRounds;
 
-	/// <summary>How the next mimic is picked (take turns / winner stays on).</summary>
-	[Property, Group( "Charades (Override)" )] public MimicRotation CharadesRotation { get; set; } = CharadesSettings.DefaultRotation;
+	/// <summary>Where phrases come from: the topic lists, or written by the players each round.</summary>
+	[Property, Group( "Charades (Override)" )] public PhraseSource CharadesSource { get; set; } = CharadesSettings.DefaultSource;
 
-	/// <summary>Which word topics are in play.</summary>
-	[Property, Group( "Charades (Override)" )] public CharadesTopics CharadesTopicSet { get; set; } = CharadesSettings.DefaultTopics;
+	/// <summary>Which topic lists are in play, as comma-joined topic ids ("animals,food"; empty = every
+	/// built-in). Community lists by "ws:&lt;fileId&gt;".</summary>
+	[Property, Group( "Charades (Override)" )] public string CharadesTopicIds { get; set; } = CharadesSettings.DefaultTopics;
 
-	/// <summary>Show guessers the masked word shape ("_ _ _   _ _ _ _").</summary>
+	/// <summary>Topics source: offer the mimic three phrases (on) or hand them one (off).</summary>
+	[Property, Group( "Charades (Override)" )] public bool CharadesTopicChoices { get; set; } = CharadesSettings.DefaultTopicChoices;
+
+	/// <summary>Show guessers the masked phrase shape ("_ _ _   _ _ _ _").</summary>
 	[Property, Group( "Charades (Override)" )] public bool CharadesWordLengthHints { get; set; } = CharadesSettings.DefaultWordLengthHints;
 
 	/// <summary>Warm-up countdown before the first turn (free wander, no freeze). 0 = skip straight in.</summary>
 	[Property, Group( "Charades (Override)" )] public float CharadesStartCountdownSeconds { get; set; } = CharadesSettings.DefaultStartCountdownSeconds;
+
+	/// <summary>Players-write rounds: how long everyone has to type their phrase.</summary>
+	[Property, Group( "Charades (Override)" )] public float CharadesWriteSeconds { get; set; } = CharadesSettings.DefaultWriteSeconds;
 
 	/// <summary>Word-pick time before the first offer auto-plays.</summary>
 	[Property, Group( "Charades (Override)" )] public float CharadesChooseSeconds { get; set; } = CharadesSettings.DefaultChooseSeconds;
@@ -146,11 +154,14 @@ public sealed class MapModeCard : Component
 	/// <summary>The authored charades rules as the manager wants them.</summary>
 	public CharadesSettings AuthoredCharadesRules => new()
 	{
-		TargetScore = CharadesTargetScore,
-		Rotation = CharadesRotation,
-		Topics = CharadesTopicSet,
+		Rounds = System.Math.Clamp( CharadesRounds, CharadesSettings.MinRounds, CharadesSettings.MaxRounds ),
+		Source = CharadesSource,
+		Topics = CharadesTopicIds ?? CharadesSettings.DefaultTopics,
+		TopicChoices = CharadesTopicChoices,
+		WorkshopLists = CharadesSettings.DefaultWorkshopLists,
 		WordLengthHints = CharadesWordLengthHints,
 		StartCountdownSeconds = CharadesStartCountdownSeconds,
+		WriteSeconds = CharadesWriteSeconds,
 		ChooseSeconds = CharadesChooseSeconds,
 		SculptSeconds = CharadesSculptSeconds,
 		RevealSeconds = CharadesRevealSeconds,

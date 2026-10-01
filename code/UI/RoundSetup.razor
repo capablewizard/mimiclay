@@ -67,23 +67,13 @@
 					}
 					else if ( G == GameModeKind.Charades )
 					{
-					@* First to X points wins the game. *@
+					@* How many rounds — everyone takes the stage once per round; highest score at the end wins. *@
 					<div class="setting-row">
-						<div class="setting-name"><div class="mi">flag</div><span>First To</span></div>
+						<div class="setting-name"><div class="mi">flag</div><span>Rounds</span></div>
 						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => AddCharadesTarget( -1 ))>remove</div>
-							<div class="step-value">@Ch.TargetScore</div>
-							<div class="step-btn" @onclick=@(() => AddCharadesTarget( 1 ))>add</div>
-						</div>
-					</div>
-
-					@* Who takes the stage next — take turns, or the turn's winner. *@
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">theater_comedy</div><span>Mimic</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@CycleCharadesRotation>chevron_left</div>
-							<div class="step-value mode-value">@RotationLabel( Ch.Rotation )</div>
-							<div class="step-btn" @onclick=@CycleCharadesRotation>chevron_right</div>
+							<div class="step-btn" @onclick=@(() => AddCharadesRounds( -1 ))>remove</div>
+							<div class="step-value">@Ch.Rounds</div>
+							<div class="step-btn" @onclick=@(() => AddCharadesRounds( 1 ))>add</div>
 						</div>
 					</div>
 
@@ -96,40 +86,92 @@
 						</div>
 					</div>
 
-					<div class="setting-row">
-						<div class="setting-name"><div class="mi">schedule</div><span>Choose Time</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@(() => AddCharadesChoose( -5f ))>remove</div>
-							<div class="step-value">@Secs( Ch.ChooseSeconds )</div>
-							<div class="step-btn" @onclick=@(() => AddCharadesChoose( 5f ))>add</div>
-						</div>
-					</div>
-
-					@* Show guessers the masked word shape ("_ _ _  _ _ _ _"). Yes/No through the same
-					   two-value scrubber as creative's Spawn Props — both arrows just flip it. *@
+					@* Show guessers the masked phrase shape ("_ _ _  _ _ _ _"). *@
 					<div class="setting-row">
 						<div class="setting-name"><div class="mi">password</div><span>Length Hints</span></div>
-						<div class="stepper">
-							<div class="step-btn" @onclick=@ToggleCharadesHints>chevron_left</div>
-							<div class="step-value">@(Ch.WordLengthHints ? "Yes" : "No")</div>
-							<div class="step-btn" @onclick=@ToggleCharadesHints>chevron_right</div>
+						<div class="toggle">
+							<div class="toggle-opt @(Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( true ))>Yes</div>
+							<div class="toggle-opt @(!Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( false ))>No</div>
 						</div>
 					</div>
 
-					@* Which word topics are in the pool — chips toggle; Everything lights them all. The last
-					   lit chip won't turn off (the manager needs SOMETHING to draw from). *@
-					<div class="setting-row topics-row">
-						<div class="setting-name"><div class="mi">category</div><span>Topics</span></div>
+					@* ── Phrases: where each turn's phrase comes from, then that source's own options ── *@
+					<div class="subsection-label"><div class="mi">edit_note</div><span>Phrases</span></div>
+					<div class="segmented">
+						<div class="seg @(Ch.Source == PhraseSource.Topics ? "on" : "")" @onclick=@(() => SetCharadesSource( PhraseSource.Topics ))>Topics</div>
+						<div class="seg @(Ch.Source == PhraseSource.Players ? "on" : "")" @onclick=@(() => SetCharadesSource( PhraseSource.Players ))>Write Your Own</div>
+						<div class="seg @(Ch.Source == PhraseSource.Workshop ? "on" : "")" @onclick=@(() => SetCharadesSource( PhraseSource.Workshop ))>Workshop</div>
 					</div>
+
+					@if ( Ch.Source == PhraseSource.Topics )
+					{
+					@* Yes = the mimic picks one of three; No = they're handed one. *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">style</div><span>Topic Choices</span></div>
+						<div class="toggle">
+							<div class="toggle-opt @(Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( true ))>Yes</div>
+							<div class="toggle-opt @(!Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( false ))>No</div>
+						</div>
+					</div>
+
+					@* The built-in topics — chips toggle; Everything lights them all. The last lit chip won't turn
+					   off (the manager needs SOMETHING to draw from). *@
 					<div class="topic-grid">
-						<div class="topic-chip everything @(Ch.Topics == CharadesTopics.Everything ? "on" : "")"
+						<div class="topic-chip everything @(IsEverything ? "on" : "")"
 							 @onclick=@(() => LobbyManager.Current?.SetCharadesAllTopics())>Everything</div>
-						@foreach ( var topic in AllTopics )
+						@foreach ( var topic in CharadesWords.BuiltInTopics() )
 						{
-							<div class="topic-chip @(Ch.Topics.HasFlag( topic ) ? "on" : "")"
-								 @onclick=@(() => LobbyManager.Current?.ToggleCharadesTopic( topic ))>@topic</div>
+							var t = topic;
+							<div class="topic-chip @(TopicOn( t.Id ) ? "on" : "")"
+								 @onclick=@(() => LobbyManager.Current?.ToggleCharadesTopic( t.Id ))>@t.Title</div>
 						}
 					</div>
+					}
+					else if ( Ch.Source == PhraseSource.Players )
+					{
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">schedule</div><span>Write Time</span></div>
+						<div class="stepper">
+							<div class="step-btn" @onclick=@(() => AddCharadesWrite( -15f ))>remove</div>
+							<div class="step-value">@Secs( Ch.WriteSeconds )</div>
+							<div class="step-btn" @onclick=@(() => AddCharadesWrite( 15f ))>add</div>
+						</div>
+					</div>
+					<div class="phrases-hint">Each round everyone writes a phrase in chat for someone else to sculpt.</div>
+					}
+					else
+					{
+					@* Same setting as under Topics: Yes = pick one of three, No = handed one. *@
+					<div class="setting-row">
+						<div class="setting-name"><div class="mi">style</div><span>Topic Choices</span></div>
+						<div class="toggle">
+							<div class="toggle-opt @(Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( true ))>Yes</div>
+							<div class="toggle-opt @(!Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( false ))>No</div>
+						</div>
+					</div>
+
+					@* The community lists added on this machine — chips toggle which ones play. *@
+					<div class="topic-grid">
+						@foreach ( var list in CharadesWorkshop.Added )
+						{
+							var id = CharadesTopics.WorkshopId( list.FileId );
+							<div class="topic-chip @(WorkshopOn( id ) ? "on" : "")"
+								 @onclick=@(() => LobbyManager.Current?.ToggleCharadesWorkshopList( id ))>@list.Title</div>
+						}
+					</div>
+					@if ( CharadesWorkshop.Added.Count == 0 )
+					{
+						<div class="phrases-hint">No lists yet — browse the Workshop or make your own.</div>
+					}
+					else if ( CharadesTopics.Parse( Ch.WorkshopLists ).Count == 0 )
+					{
+						<div class="phrases-hint">Nothing ticked — every built-in topic will play.</div>
+					}
+					<div class="phrases-actions">
+						<div class="btn btn-small" @onclick=@(() => OpenWorkshop( WorkshopListsView.Browse ))><div class="mi">public</div><span>Browse</span></div>
+						<div class="btn btn-small" @onclick=@(() => OpenWorkshop( WorkshopListsView.Make ))><div class="mi">edit_note</div><span>Make a List</span></div>
+					</div>
+					}
 					}
 					else
 					{
@@ -202,10 +244,10 @@
 					}
 				</div>
 
-				@* ── Right: maps (from the Prop Hunt Map assets). Shared by every game that plays on a map —
-				   prop hunt launches into the pick; creative stores it for when its own launch path lands. *@
 				@if ( Game.UsesMaps )
 				{
+				@* ── Right: maps (from the Prop Hunt Map assets). Shared by every game that plays on a map —
+				   prop hunt launches into the pick; creative stores it for when its own launch path lands. *@
 				<div class="paper-card panel maps-panel">
 					<div class="section-label"><span>Maps</span></div>
 
@@ -247,6 +289,13 @@
 				<WobbleText Text="Back" />
 			</div>
 		</div>
+
+		@* The workshop phrase-list window (Phrases → Workshop → Browse / Make a List) pops over the dialog,
+		   so the two panels never move. *@
+		@if ( _workshopView is { } view && G == GameModeKind.Charades )
+		{
+			<WorkshopListsWindow View=@view OnClose=@(() => OpenWorkshop( null ))></WorkshopListsWindow>
+		}
 	}
 </root>
 
@@ -313,9 +362,35 @@
 		}
 	}
 
+	/// <summary>Debug: toggle the host's setup panel without pressing G (UI screenshots from tooling).
+	/// Optional arg picks the game: "charades", "creative", "prophunt".</summary>
+	[ConCmd( "mimi_dbg_setup" )]
+	public static void DebugToggle( string game = "" )
+	{
+		var panel = System.Linq.Enumerable.FirstOrDefault( Sandbox.Game.ActiveScene?.GetAllComponents<RoundSetup>() ?? System.Linq.Enumerable.Empty<RoundSetup>() );
+		if ( panel is null )
+		{
+			Log.Warning( "mimi_dbg_setup: no RoundSetup in this scene (host, in the lobby)." );
+			return;
+		}
+
+		var kind = game.ToLowerInvariant() switch
+		{
+			"charades" => GameModeKind.Charades,
+			"creative" => GameModeKind.Creative,
+			"prophunt" => GameModeKind.PropHunt,
+			_ => (GameModeKind?)null,
+		};
+		if ( kind is { } k )
+			LobbyManager.Current?.SetGame( k );
+
+		panel.SetOpen( kind is not null || !panel._open );
+	}
+
 	void SetOpen( bool open )
 	{
 		_open = open;
+		if ( !open ) _workshopView = null; // the workshop popup never outlives the dialog
 		IsOpen = open;
 		StateHasChanged();
 	}
@@ -368,25 +443,31 @@
 	// ── Charades settings (host-authority enforced by the LobbyManager setters) ─────────────────────────────
 	CharadesSettings Ch => LobbyManager.Current.IsValid() ? LobbyManager.Current.CharadesCfg : CharadesSettings.Default;
 
-	// Everything is a chip of its own, so the per-topic list excludes the aggregate (and None).
-	static readonly CharadesTopics[] AllTopics =
-	{
-		CharadesTopics.Animals, CharadesTopics.Food, CharadesTopics.Objects,
-		CharadesTopics.Vehicles, CharadesTopics.Nature, CharadesTopics.Characters,
-	};
-
-	void AddCharadesTarget( int d ) => LobbyManager.Current?.SetCharadesTarget( Ch.TargetScore + d );
+	void AddCharadesRounds( int d ) => LobbyManager.Current?.SetCharadesRounds( Ch.Rounds + d );
 	void AddCharadesSculpt( float d ) => LobbyManager.Current?.SetCharadesSculptSeconds( Ch.SculptSeconds + d );
-	void AddCharadesChoose( float d ) => LobbyManager.Current?.SetCharadesChooseSeconds( Ch.ChooseSeconds + d );
-	void ToggleCharadesHints() => LobbyManager.Current?.SetCharadesWordHints( !Ch.WordLengthHints );
+	void SetCharadesHints( bool on ) => LobbyManager.Current?.SetCharadesWordHints( on );
+	void SetCharadesChoices( bool on ) => LobbyManager.Current?.SetCharadesTopicChoices( on );
+	void SetCharadesSource( PhraseSource source ) => LobbyManager.Current?.SetCharadesSource( source );
+	void AddCharadesWrite( float d ) => LobbyManager.Current?.SetCharadesWriteSeconds( Ch.WriteSeconds + d );
 
-	// Two values, so both arrows just flip it — same convention as creative's Yes/No scrubber.
-	void CycleCharadesRotation()
-		=> LobbyManager.Current?.SetCharadesRotation(
-			Ch.Rotation == MimicRotation.TakeTurns ? MimicRotation.WinnerStaysOn : MimicRotation.TakeTurns );
+	// Built-in topic chips: the empty selection means every one is lit (that's the Everything chip).
+	bool IsEverything => CharadesTopics.Parse( Ch.Topics ).Count == 0;
+	bool TopicOn( string id )
+	{
+		var ids = CharadesTopics.Parse( Ch.Topics );
+		return ids.Count == 0 || ids.Contains( id );
+	}
 
-	static string RotationLabel( MimicRotation r )
-		=> r == MimicRotation.WinnerStaysOn ? "Winner Stays On" : "Take Turns";
+	// Workshop list chips.
+	bool WorkshopOn( string id ) => CharadesTopics.Parse( Ch.WorkshopLists ).Contains( id );
+
+	// The workshop window over the dialog (null = closed).
+	WorkshopListsView? _workshopView;
+	void OpenWorkshop( WorkshopListsView? view )
+	{
+		_workshopView = view;
+		StateHasChanged();
+	}
 
 	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
 	void PickMap( string ident )
@@ -412,6 +493,7 @@
 		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
 			HashCode.Combine( G, C.SpawnProps ),
-			HashCode.Combine( Ch.TargetScore, Ch.Rotation, Ch.Topics, Ch.SculptSeconds, Ch.ChooseSeconds, Ch.WordLengthHints ),
-			_picked, LobbyPlayerCount );
+			HashCode.Combine( Ch.Rounds, Ch.Source, Ch.Topics, Ch.SculptSeconds, Ch.TopicChoices, Ch.WriteSeconds, Ch.WordLengthHints ),
+			HashCode.Combine( Ch.WorkshopLists, CharadesWorkshop.Added.Count, _workshopView, _picked ),
+			LobbyPlayerCount );
 }

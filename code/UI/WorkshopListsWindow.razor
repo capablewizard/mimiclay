@@ -1,0 +1,369 @@
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	The Steam Workshop phrase-list window — a popup over the host's setup dialog (RoundSetup opens it from the
+	Phrases section's Workshop buttons), so the dialog's two panels never move or resize.
+
+	  • Browse — Top Rated / Newest / Trending / Mine. Add pulls a list in and ticks it for this lobby. Mine is
+	             where your own lists can be edited or deleted.
+	  • Make   — a title and one phrase per line, then Steam's publish overlay. Edit reuses it, prefilled, and
+	             updates the same workshop item.
+
+	Ticking goes through LobbyManager's host-checked setters, like the rest of the dialog.
+*@
+
+<root class="workshop-lists-window">
+	<div class="scrim" @onclick=@(() => OnClose?.Invoke())></div>
+
+	<div class="paper-card window">
+		@if ( View == WorkshopListsView.Make )
+		{
+			<div class="header-row">
+				<div class="section-label"><span>@(_editId != 0 ? "Edit List" : "Make a List")</span></div>
+				<div class="mi close-btn" @onclick=@(() => OnClose?.Invoke())>close</div>
+			</div>
+
+			<TextEntry class="field title-field" Value:bind=@_title Placeholder="List title" />
+			<TextEntry class="field lines-field" Multiline=@true Value:bind=@_text Placeholder="One phrase per line…" />
+			<div class="hint">@MakeHint</div>
+
+			@if ( _status is not null )
+			{
+				<div class="status">@_status</div>
+			}
+
+			<div class="footer">
+				<div class="btn btn-small" @onclick=@(() => SetView( WorkshopListsView.Browse ))><div class="mi">public</div><span>Browse</span></div>
+				<div class="spacer"></div>
+				<div class="btn btn-small btn-primary @(CanPublish ? "" : "disabled")" @onclick=@Publish>
+					<div class="mi">publish</div><span>@(_editId != 0 ? "Update" : "Publish")</span>
+				</div>
+			</div>
+		}
+		else
+		{
+			<div class="header-row">
+				<div class="section-label"><span>Workshop</span></div>
+				<div class="mi close-btn" @onclick=@(() => OnClose?.Invoke())>close</div>
+			</div>
+
+			<div class="tabs">
+				@for ( var i = 0; i < CharadesWorkshop.Sorts.Length; i++ )
+				{
+					var idx = i;
+					<div class="tab @(_sort == idx ? "on" : "")" @onclick=@(() => SetSort( idx ))>@CharadesWorkshop.Sorts[idx]</div>
+				}
+			</div>
+
+			@if ( _status is not null )
+			{
+				<div class="status">@_status</div>
+			}
+
+			<div class="list">
+				@foreach ( var item in _items ?? Enumerable.Empty<Storage.QueryItem>() )
+				{
+					var it = item;
+					var added = CharadesWorkshop.IsAdded( it.Id );
+					var mine = _sort == CharadesWorkshop.MineSort;
+					<div class="row @(added ? "added" : "")">
+						<div class="row-text">
+							<div class="row-title">@TitleOf( it )</div>
+							<div class="row-meta">@MetaFor( it, mine )</div>
+						</div>
+						@* In-game like (s&box stats, not Steam votes): heart + how many players like it. *@
+						<div class="like-btn @(CharadesWorkshop.IsLiked( it.Id ) ? "liked" : "")" @onclick=@(() => ToggleLike( it ))>
+							<div class="mi">@(CharadesWorkshop.IsLiked( it.Id ) ? "favorite" : "favorite_border")</div>
+							<span>@CharadesWorkshop.Likes( it )</span>
+						</div>
+						@if ( mine )
+						{
+							<div class="icon-btn" @onclick=@(() => BeginEdit( it ))><div class="mi">edit</div></div>
+							<div class="icon-btn danger @(_confirmDelete == it.Id ? "confirm" : "")" @onclick=@(() => DeleteMine( it ))>
+								@if ( _confirmDelete == it.Id )
+								{
+									<span>Delete?</span>
+								}
+								else
+								{
+									<div class="mi">delete</div>
+								}
+							</div>
+						}
+						<div class="icon-btn @(added ? "added" : "add") @(_busyId == it.Id ? "busy" : "")" @onclick=@(() => ToggleAdded( it ))>
+							<div class="mi">@(added ? "check" : "add")</div>
+						</div>
+					</div>
+				}
+			</div>
+
+			<div class="footer">
+				<div class="spacer"></div>
+				<div class="btn btn-small" @onclick=@BeginMake><div class="mi">edit_note</div><span>Make a List</span></div>
+			</div>
+		}
+	</div>
+</root>
+
+@code
+{
+	/// <summary>Which view the window shows. The owner sets it when opening (Browse / Make a List buttons).</summary>
+	public WorkshopListsView View { get; set; } = WorkshopListsView.Browse;
+
+	/// <summary>Close the window (the X and a click on the dimmed backdrop).</summary>
+	public Action OnClose { get; set; }
+
+	// Browse state.
+	int _sort;
+	List<Storage.QueryItem> _items;
+	string _status;
+	ulong _busyId;
+	ulong _confirmDelete;
+	int _searchGen;
+	bool _searched;
+
+	// Make/Edit state. _editId = the own workshop item being edited (0 = a new list).
+	string _title = "";
+	string _text = "";
+	ulong _editId;
+
+	protected override void OnAfterTreeRender( bool firstTime )
+	{
+		base.OnAfterTreeRender( firstTime );
+		if ( View == WorkshopListsView.Browse && !_searched )
+			Refresh();
+	}
+
+	void SetView( WorkshopListsView view )
+	{
+		View = view;
+		_status = null;
+		_confirmDelete = 0;
+		if ( view == WorkshopListsView.Browse )
+			Refresh();
+		StateHasChanged();
+	}
+
+	// Tick a list for this lobby's Workshop phrases (after adding or publishing it).
+	static void Select( ulong fileId )
+	{
+		var lm = LobbyManager.Current;
+		var id = CharadesTopics.WorkshopId( fileId );
+		if ( lm.IsValid() && !CharadesTopics.Parse( lm.CharadesCfg.WorkshopLists ).Contains( id ) )
+			lm.ToggleCharadesWorkshopList( id );
+	}
+
+	static void Deselect( ulong fileId )
+		=> LobbyManager.Current?.DeselectCharadesWorkshopList( CharadesTopics.WorkshopId( fileId ) );
+
+	// ── Browse ───────────────────────────────────────────────────────────────────────────────────────────
+	void SetSort( int i )
+	{
+		if ( _sort == i )
+			return;
+		_sort = i;
+		_confirmDelete = 0;
+		Refresh();
+	}
+
+	async void Refresh()
+	{
+		_searched = true;
+		var gen = ++_searchGen;
+		_items = null;
+		_status = "Searching…";
+		StateHasChanged();
+
+		try
+		{
+			var items = await CharadesWorkshop.Browse( _sort );
+			if ( gen != _searchGen || !IsValid )
+				return; // a newer search superseded this one, or the window is gone
+
+			_items = items;
+			_status = items.Count > 0 ? null
+				: _sort == CharadesWorkshop.MineSort ? "You haven't published any lists yet."
+				: "No lists published yet — make the first one!";
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"WorkshopListsWindow: workshop query failed — {e.Message}" );
+			if ( gen != _searchGen || !IsValid )
+				return;
+			_status = "Workshop unavailable";
+		}
+
+		StateHasChanged();
+	}
+
+	async void ToggleAdded( Storage.QueryItem item )
+	{
+		if ( _busyId != 0 )
+			return;
+
+		if ( CharadesWorkshop.IsAdded( item.Id ) )
+		{
+			Deselect( item.Id );
+			CharadesWorkshop.Remove( item.Id );
+			StateHasChanged();
+			return;
+		}
+
+		_busyId = item.Id;
+		StateHasChanged();
+		try
+		{
+			var list = await CharadesWorkshop.Add( item );
+			if ( !IsValid )
+				return;
+
+			if ( list is null )
+				_status = "That list has no usable phrases";
+			else
+				Select( list.FileId );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"WorkshopListsWindow: couldn't install list {item.Id} — {e.Message}" );
+			if ( IsValid )
+				_status = "Couldn't download that list";
+		}
+		finally
+		{
+			_busyId = 0;
+			if ( IsValid )
+				StateHasChanged();
+		}
+	}
+
+	// Two clicks: the bin turns into "Delete?", the second click deletes.
+	void DeleteMine( Storage.QueryItem item )
+	{
+		if ( _confirmDelete != item.Id )
+		{
+			_confirmDelete = item.Id;
+			StateHasChanged();
+			return;
+		}
+
+		_confirmDelete = 0;
+		Deselect( item.Id );
+		CharadesWorkshop.Delete( item.Id );
+		_items?.Remove( item );
+		_status = "Deleted here. To remove it from the Workshop too, delete it on its Steam page — link copied.";
+		StateHasChanged();
+	}
+
+	// Bumped on every like so the row re-renders (the count lives in CharadesWorkshop, outside this panel's state).
+	int _likeTick;
+
+	void ToggleLike( Storage.QueryItem item )
+	{
+		CharadesWorkshop.ToggleLike( item.Id );
+		_likeTick++;
+		StateHasChanged();
+	}
+
+	static string TitleOf( Storage.QueryItem it ) => string.IsNullOrWhiteSpace( it.Title ) ? "Untitled" : it.Title;
+
+	static string MetaFor( Storage.QueryItem it, bool mine )
+	{
+		var parts = new List<string>();
+		if ( !mine && !string.IsNullOrWhiteSpace( it.Owner?.Name ) )
+			parts.Add( it.Owner.Name );
+		var count = CharadesWorkshop.AdvertisedCount( it );
+		if ( count > 0 )
+			parts.Add( $"{count} phrases" );
+		return string.Join( "  ·  ", parts );
+	}
+
+	// ── Make / Edit ──────────────────────────────────────────────────────────────────────────────────────
+	void BeginMake()
+	{
+		_editId = 0;
+		_title = "";
+		_text = "";
+		SetView( WorkshopListsView.Make );
+	}
+
+	async void BeginEdit( Storage.QueryItem item )
+	{
+		if ( _busyId != 0 )
+			return;
+
+		_busyId = item.Id;
+		_status = "Loading…";
+		StateHasChanged();
+		try
+		{
+			var list = await CharadesWorkshop.LoadForEdit( item );
+			if ( !IsValid )
+				return;
+
+			if ( list is null )
+			{
+				_status = "Couldn't load that list";
+				return;
+			}
+
+			_editId = item.Id;
+			_title = TitleOf( item );
+			_text = string.Join( "\n", list.Phrases );
+			SetView( WorkshopListsView.Make );
+		}
+		catch ( Exception e )
+		{
+			Log.Warning( $"WorkshopListsWindow: couldn't load list {item.Id} for editing — {e.Message}" );
+			if ( IsValid )
+				_status = "Couldn't load that list";
+		}
+		finally
+		{
+			_busyId = 0;
+			if ( IsValid )
+				StateHasChanged();
+		}
+	}
+
+	int PhraseCount => CharadesWords.ParseLines( _text ).Count;
+	bool CanPublish => PhraseCount > 0;
+
+	string MakeHint => PhraseCount switch
+	{
+		0 => "One phrase per line — \"duck\", \"mario sunbathing on the beach\"…",
+		1 => "1 phrase",
+		var n => $"{n} phrases",
+	};
+
+	void Publish()
+	{
+		if ( !CanPublish )
+			return;
+
+		CharadesWorkshop.Publish( _title, _text, _editId, list =>
+		{
+			if ( !IsValid )
+				return;
+
+			// Published: it's in the Phrases section's list now, ticked for this lobby.
+			Select( list.FileId );
+			_title = "";
+			_text = "";
+			_editId = 0;
+			OnClose?.Invoke();
+		} );
+
+		_status = "Finish in the Steam overlay…";
+	}
+
+	protected override int BuildHash()
+		=> HashCode.Combine(
+			HashCode.Combine( View, _sort, _status, _items?.Count ?? -1, _busyId, _confirmDelete, _editId ),
+			CharadesWorkshop.Added.Count, PhraseCount, _likeTick );
+}

@@ -4663,8 +4663,8 @@
           "Flags": 0,
           "__version": 1,
           "BakedTexture": {
-            "Id": "30124bbd-4e74-467c-8670-773185591264",
-            "Path": "scenes/kitchenlobby_scene_data/envmap/bake_1b8c6701-b300-4e48-9521-9f786b67527f.vtex"
+            "Id": "6b36c2b6-5cd1-42dd-a28f-bdaea99f5a67",
+            "Path": "scenes/kitchenlobby_scene_data/envmap/bake_2125ff8a-a4b8-495d-82ef-739be7897fa3.vtex"
           },
           "Bounds": {
             "Mins": "-483.645325,-539.0979,-121.630692",
@@ -4685,7 +4685,7 @@
           "Priority": 0,
           "Projection": "Sphere",
           "RenderExcludeTags": "",
-          "Resolution": "Large",
+          "Resolution": "Huge",
           "Texture": null,
           "TintColor": "1,1,1,1",
           "UpdateStrategy": "OnEnabled",
@@ -11913,6 +11913,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1242.81396,-427.365051"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11954,6 +11970,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1277.56177,-427.365051"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12036,6 +12068,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1129.97668,-483.758209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12216,14 +12264,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.860587358,0.509302735"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
-            },
-            "Property": "__enabled",
-            "Value": false
           },
           {
             "Target": {
@@ -17607,6 +17647,14 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
             },
             "Property": "AdaptiveQuality",
@@ -18905,6 +18953,14 @@
               "Type": "Component",
               "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19038,14 +19094,6 @@
             },
             "Property": "Rotation",
             "Value": "-3.36300582E-06,7.0720911E-05,0.0237452015,0.99971807"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
-            },
-            "Property": "__enabled",
-            "Value": false
           },
           {
             "Target": {
@@ -19604,14 +19652,6 @@
               "Type": "Component",
               "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19919,47 +19959,6 @@
         "91a78da9-1b10-476e-ac51-b13fcbc94b96": "4031ea90-dd57-4a0d-9f7d-d0b0f88beb51",
         "c473518b-054b-4b1b-8dfc-7e56217d4433": "a0b68459-5837-42ae-ada4-1cd389ca320c",
         "f9b6fdd1-1d1c-4be9-9479-778ad1e6dd0a": "0a189606-19f1-44cc-86d0-d622de2ace56"
-      }
-    },
-    {
-      "__guid": "5262d419-0262-4be2-9468-c54ccea4df9a",
-      "__version": 2,
-      "__Prefab": {
-        "Id": "65baeb8a-2e45-43e9-9d37-75471ea9ef5b",
-        "Path": "prefabs/props/food/lemon_slice.prefab"
-      },
-      "__PrefabInstancePatch": {
-        "AddedObjects": [],
-        "RemovedObjects": [],
-        "PropertyOverrides": [
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "6b38f9e6-1de8-4b25-909d-d69a7650e047"
-            },
-            "Property": "Position",
-            "Value": "-177.315201,-1259.12,-379.341644"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
-            },
-            "Property": "__enabled",
-            "Value": true
-          }
-        ],
-        "MovedObjects": []
-      },
-      "__PrefabIdToInstanceId": {
-        "6b38f9e6-1de8-4b25-909d-d69a7650e047": "5262d419-0262-4be2-9468-c54ccea4df9a",
-        "b11c56df-e494-4178-8c37-2edb0fab3b40": "1428ad77-885b-4812-aca1-04873699854d",
-        "9286d036-db3f-46dd-9fb8-c7fa569d0bda": "fb39574e-9bb1-41d1-b962-7a3b2b48ab29",
-        "74827999-5c7c-45b4-8a0d-748a8977f733": "1ed1cea7-b7dc-4c8f-a50e-dbcf193d8e8a",
-        "463de68f-0ca7-4044-bf65-7382c72c98ac": "0b9d82bc-fb9e-42ed-98e1-534287533ac6",
-        "71789026-cd2c-437e-a127-43cad0967769": "6b1591c6-276a-4613-917c-3006bfda7862",
-        "c9dfe495-6074-4c2d-95db-5dce49a9f77f": "952daa73-2419-4546-8bdf-3ed1196b097d",
-        "75c880a2-7b4a-46ce-a67f-f6f6c7ec5ff9": "437cb4e7-4664-4a6b-bac8-8611c03be983"
       }
     },
     {
@@ -20887,6 +20886,128 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "47ad9ba5-a9b7-4ed4-b98c-14e1e88ef368",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "7cbc394d-828a-4f8e-998f-8ef7b0c3f3d1",
+        "Path": "prefabs/props/kitchen/kitchensponge.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3dffefb3-459b-4176-ab50-d39dd53a1a27"
+            },
+            "Property": "Name",
+            "Value": "kitchensponge (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3dffefb3-459b-4176-ab50-d39dd53a1a27"
+            },
+            "Property": "Position",
+            "Value": "-228.197586,-1042.17639,-381.225372"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "3dffefb3-459b-4176-ab50-d39dd53a1a27"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.49750194,0.867462873"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
+            },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "3dffefb3-459b-4176-ab50-d39dd53a1a27": "47ad9ba5-a9b7-4ed4-b98c-14e1e88ef368",
+        "b1bce1f0-c029-44f7-ae47-4223e4584741": "5d80a8ab-cc2d-4316-b22d-e7e3c6096639",
+        "88a529ec-e7c0-4048-aae1-f8d474313c8e": "a6f03e83-8ad8-4aa9-b359-aebeb32d4bc7",
+        "6a71afea-4d24-45c7-b96e-237af6fa8697": "69a7fdd9-3b0d-4ccb-aca2-36659477b5ec",
+        "f39e91ba-4214-4cd4-84b9-19d9d4c36468": "abc8a0b5-5752-4408-91c5-96a7a3d91aca",
+        "40cc7b34-1f6e-4c1c-9c7d-53aa77591750": "cb119fc6-a788-46ca-92fc-7f82f198c6c7",
+        "345ddfce-6f98-4fa4-941a-2a9b57617200": "909b77b1-6b93-4811-9da5-8d782ac96e62",
+        "087cf5a0-545c-44a0-89ee-00d5f75b1409": "d97f037d-6927-4eee-bfb1-376654df6806"
+      }
+    },
+    {
+      "__guid": "d02e6811-a4ac-4483-9d02-b5b39d3be170",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "65baeb8a-2e45-43e9-9d37-75471ea9ef5b",
+        "Path": "prefabs/props/food/lemon_slice.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6b38f9e6-1de8-4b25-909d-d69a7650e047"
+            },
+            "Property": "Name",
+            "Value": "lemon_slice (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6b38f9e6-1de8-4b25-909d-d69a7650e047"
+            },
+            "Property": "Position",
+            "Value": "-181.684311,-1262.29712,-378.952789"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
+            },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "6b38f9e6-1de8-4b25-909d-d69a7650e047": "d02e6811-a4ac-4483-9d02-b5b39d3be170",
+        "b11c56df-e494-4178-8c37-2edb0fab3b40": "59b56d41-54ad-4988-b04b-3a5c18c95c4b",
+        "9286d036-db3f-46dd-9fb8-c7fa569d0bda": "228238f6-db11-4f43-a8e2-9d961c61c459",
+        "74827999-5c7c-45b4-8a0d-748a8977f733": "7806c101-ca8d-4f71-b834-3865db9853a2",
+        "463de68f-0ca7-4044-bf65-7382c72c98ac": "a1128212-60eb-438c-8d99-5e827c606142",
+        "71789026-cd2c-437e-a127-43cad0967769": "b27169cb-2c69-418b-9c94-349a8518656a",
+        "c9dfe495-6074-4c2d-95db-5dce49a9f77f": "96cf6351-c631-4559-a746-c40844e6ba5c",
+        "75c880a2-7b4a-46ce-a67f-f6f6c7ec5ff9": "d3422cbd-ccf9-4166-a871-a1db57ca17eb"
+      }
     }
   ],
   "SceneProperties": {

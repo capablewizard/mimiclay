@@ -21,7 +21,7 @@
         "__enabled": true,
         "Flags": 0,
         "__version": 3,
-        "AttenuationAngle": 0.5,
+        "AttenuationAngle": 1,
         "ColorMix": 1,
         "ColorTint": "1,0.53953,0.23256,1",
         "CoverageAmount": {

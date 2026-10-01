@@ -471,36 +471,85 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 	}
 
 	// ── Charades config (same copy-mutate-write shape again) ──────────────────────────────────────────────────
-	public void SetCharadesTarget( int score )
+	public void SetCharadesRounds( int rounds )
 	{
 		if ( !IsHostAuthority ) return;
-		var s = CharadesCfg; s.TargetScore = Math.Clamp( score, 3, 50 ); CharadesCfg = s;
+		var s = CharadesCfg; s.Rounds = Math.Clamp( rounds, CharadesSettings.MinRounds, CharadesSettings.MaxRounds ); CharadesCfg = s;
 	}
 
-	public void SetCharadesRotation( MimicRotation rotation )
+	public void SetCharadesSource( PhraseSource source )
 	{
 		if ( !IsHostAuthority ) return;
-		var s = CharadesCfg; s.Rotation = rotation; CharadesCfg = s;
+		var s = CharadesCfg; s.Source = source; CharadesCfg = s;
 	}
 
-	/// <summary>Toggle one topic in/out of the pool. The last lit topic can't be turned off — a game needs
-	/// SOMETHING to draw words from, and "none selected" reading as Everything would make the click look broken.</summary>
-	public void ToggleCharadesTopic( CharadesTopics topic )
+	/// <summary>Toggle one built-in topic in/out of the Topics pool. The empty
+	/// selection means every built-in, so toggling OFF from there first materialises the full built-in set.
+	/// The last lit topic can't be turned off — a game needs SOMETHING to draw phrases from, and "none
+	/// selected" reading as Everything would make the click look broken.</summary>
+	public void ToggleCharadesTopic( string topicId )
 	{
-		if ( !IsHostAuthority ) return;
+		if ( !IsHostAuthority || string.IsNullOrWhiteSpace( topicId ) || CharadesTopics.TryWorkshopId( topicId, out _ ) ) return;
 		var s = CharadesCfg;
-		var next = s.Topics ^ topic;
-		if ( (next & CharadesTopics.Everything) == CharadesTopics.None )
+
+		var ids = CharadesTopics.Parse( s.Topics );
+		ids.RemoveWhere( id => CharadesTopics.TryWorkshopId( id, out _ ) ); // community lists live in WorkshopLists
+		if ( ids.Count == 0 )
+			foreach ( var t in CharadesWords.BuiltInTopics() )
+				ids.Add( t.Id );
+
+		if ( !ids.Remove( topicId ) )
+			ids.Add( topicId );
+		else if ( ids.Count == 0 )
 			return;
-		s.Topics = next;
+
+		// Every built-in lit = the canonical Everything.
+		var builtIn = CharadesWords.BuiltInTopics().Select( t => t.Id ).ToHashSet();
+		s.Topics = ids.SetEquals( builtIn ) ? CharadesTopics.Everything : CharadesTopics.Join( ids );
 		CharadesCfg = s;
 	}
 
-	/// <summary>All topics on — the "Everything" chip.</summary>
+	/// <summary>Every built-in topic on — the "Everything" chip.</summary>
 	public void SetCharadesAllTopics()
 	{
 		if ( !IsHostAuthority ) return;
 		var s = CharadesCfg; s.Topics = CharadesTopics.Everything; CharadesCfg = s;
+	}
+
+	public void SetCharadesTopicChoices( bool on )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.TopicChoices = on; CharadesCfg = s;
+	}
+
+	/// <summary>Tick/untick a community list ("ws:&lt;fileId&gt;") for the Workshop source. Unticking the last one
+	/// is allowed — no lists ticked plays every built-in topic (the panel says so).</summary>
+	public void ToggleCharadesWorkshopList( string listId )
+	{
+		if ( !IsHostAuthority || !CharadesTopics.TryWorkshopId( listId, out _ ) ) return;
+		var s = CharadesCfg;
+		var ids = CharadesTopics.Parse( s.WorkshopLists );
+		if ( !ids.Remove( listId ) )
+			ids.Add( listId );
+		s.WorkshopLists = CharadesTopics.Join( ids );
+		CharadesCfg = s;
+	}
+
+	/// <summary>Untick a community list if it's ticked (it was removed or deleted).</summary>
+	public void DeselectCharadesWorkshopList( string listId )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg;
+		var ids = CharadesTopics.Parse( s.WorkshopLists );
+		if ( !ids.Remove( listId ) ) return;
+		s.WorkshopLists = CharadesTopics.Join( ids );
+		CharadesCfg = s;
+	}
+
+	public void SetCharadesWriteSeconds( float seconds )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = CharadesCfg; s.WriteSeconds = Math.Clamp( seconds, 15f, 180f ); CharadesCfg = s;
 	}
 
 	public void SetCharadesWordHints( bool on )

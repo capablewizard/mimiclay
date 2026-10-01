@@ -154,12 +154,85 @@
 		.mode-value { min-width: 120px; }
 	}
 
-	// ── Charades topic chips (word-pool multi-select; same pill recipe as the map rows) ────────────────────
+	// ── Two-value switch (On/Off) — both options visible, the picked one orange ─────────────────────────
+	.toggle {
+		flex-direction: row;
+		padding: 3px;
+		gap: 3px;
+		border-radius: $radius-md;
+		background-color: rgba( 44, 36, 24, 0.10 );
+
+		.toggle-opt {
+			min-width: 52px;
+			padding: 5px 10px;
+			justify-content: center;
+			border-radius: $radius-sm;
+			font-size: 17px;
+			font-weight: 800;
+			color: $paper-ink-soft;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+
+			&:hover { color: $paper-ink; sound-in: $sound-hover; }
+			&:active { sound-in: $sound-click; }
+			&.on { background-color: $craft-orange; color: $paper-ink; box-shadow: $shadow-edge; }
+		}
+	}
+
+
+
+
+	// ── Charades: Phrases section ──────────────────────────────────────────────────────────────────────────
+	// A smaller heading than .section-label, splitting the panel's game rules from where phrases come from.
+	.subsection-label {
+		flex-direction: row;
+		align-items: center;
+		gap: $space-sm;
+		margin-top: $space-sm;
+		padding-top: $space-sm;
+		border-top: 2px solid $card-edge;
+		font-size: 24px;
+		font-weight: 700;
+		letter-spacing: 1px;
+		text-transform: uppercase;
+		color: $paper-ink;
+
+		.mi { font-size: 22px; color: $craft-blue; }
+	}
+
+	// Three-way source switch — every option visible, the picked one orange.
+	.segmented {
+		flex-direction: row;
+		padding: 4px;
+		gap: 4px;
+		border-radius: $radius-md;
+		background-color: rgba( 44, 36, 24, 0.10 );
+
+		.seg {
+			flex: 1 1 0;
+			justify-content: center;
+			padding: 7px 4px;
+			border-radius: $radius-sm;
+			font-size: 17px;
+			font-weight: 800;
+			color: $paper-ink-soft;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+
+			&:hover { color: $paper-ink; sound-in: $sound-hover; }
+			&:active { sound-in: $sound-click; }
+			&.on { background-color: $craft-orange; color: $paper-ink; box-shadow: $shadow-edge; }
+		}
+	}
+
+	// Topic / workshop-list chips (same pill recipe as the map rows).
 	.topic-grid {
 		flex-direction: row;
 		flex-wrap: wrap;
 		gap: $space-xs;
-		padding: 0 0 $space-sm 0;
+		padding: $space-xs 0;
 
 		.topic-chip {
 			padding: 4px 14px;
@@ -183,8 +256,26 @@
 		}
 	}
 
-	// The Topics label row has no stepper — stop space-between stretching a lone label oddly.
-	.topics-row { justify-content: flex-start; padding-bottom: 0; }
+	.phrases-hint {
+		font-size: 17px;
+		font-weight: 600;
+		color: $paper-ink-soft;
+		padding: $space-xs 0;
+	}
+
+	.phrases-actions {
+		flex-direction: row;
+		gap: $space-sm;
+		padding-top: $space-xs;
+
+		.btn-small {
+			flex-direction: row;
+			gap: 6px;
+			padding: 8px 14px;
+			font-size: 15px;
+			.mi { font-size: 18px; }
+		}
+	}
 
 	// ── Map picker ──────────────────────────────────────────────────────────────────────────────────────────
 	.map-preview {

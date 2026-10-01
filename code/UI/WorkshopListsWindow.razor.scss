@@ -1,0 +1,196 @@
+@import "/UI/_menu.scss";   // tokens + shared kit: .paper-card, .btn, .mi
+
+// The workshop phrase-list popup. Mounted inside .round-setup, so .section-label comes from there; this sheet
+// owns the overlay, the window card and its rows.
+.workshop-lists-window {
+	position: absolute;
+	top: 0; left: 0;
+	width: 100%; height: 100%;
+	align-items: center;
+	justify-content: center;
+	z-index: 10;
+	pointer-events: all;
+
+	.scrim {
+		position: absolute;
+		top: 0; left: 0;
+		width: 100%; height: 100%;
+		background-color: rgba( 20, 14, 6, 0.35 );
+		pointer-events: all;
+	}
+
+	.window {
+		width: 560px;
+		height: 600px;
+		flex-direction: column;
+		gap: $space-sm;
+		padding: $space-md $space-lg;
+		border-radius: $radius-lg;
+		z-index: 1;
+	}
+
+	.header-row {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+
+		.section-label { margin-bottom: 0; }
+
+		.close-btn {
+			font-size: 26px;
+			color: $paper-ink-soft;
+			cursor: pointer;
+			pointer-events: all;
+			transition: all 0.1s ease-out;
+			&:hover { color: $paper-ink; transform: scale( 1.15 ); sound-in: $sound-hover; }
+			&:active { sound-in: $sound-click; }
+		}
+	}
+
+	.tabs {
+		flex-direction: row;
+		border-bottom: 2px solid $card-edge;
+
+		.tab {
+			padding: 6px 14px;
+			margin-bottom: -2px;
+			border-bottom: 3px solid transparent;
+			font-size: 17px;
+			font-weight: 800;
+			color: $paper-ink-soft;
+			cursor: pointer;
+			pointer-events: all;
+
+			&:hover { color: $paper-ink; sound-in: $sound-hover; }
+			&:active { sound-in: $sound-click; }
+			&.on { color: $paper-ink; border-bottom-color: $craft-orange; }
+		}
+	}
+
+	.status {
+		font-size: 15px;
+		font-weight: 600;
+		color: $paper-ink-soft;
+		padding: $space-xs 0;
+	}
+
+	.list {
+		flex-direction: column;
+		gap: $space-xs;
+		flex-grow: 1;
+		overflow-y: scroll;
+		pointer-events: all;
+
+		.row {
+			flex-direction: row;
+			align-items: center;
+			flex-shrink: 0;
+			gap: 6px;
+			padding: 6px 8px 6px 12px;
+			border-radius: $radius-md;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
+
+			&.added { border-color: $craft-orange; }
+
+			.row-text { flex-direction: column; flex-grow: 1; min-width: 0; }
+			.row-title { font-size: 17px; font-weight: 700; color: $paper-ink; white-space: nowrap; overflow: hidden; }
+			.row-meta { font-size: 13px; font-weight: 600; color: $paper-ink-soft; white-space: nowrap; overflow: hidden; }
+		}
+	}
+
+	// In-game like: a heart pill with the count; red and filled once you've liked it.
+	.like-btn {
+		flex-direction: row;
+		align-items: center;
+		flex-shrink: 0;
+		gap: 3px;
+		height: 32px;
+		padding: 0 10px 0 8px;
+		border-radius: $radius-pill;
+		border: 2px solid $card-edge;
+		background-color: $paper-tile;
+		color: $paper-ink-soft;
+		font-size: 14px;
+		font-weight: 800;
+		cursor: pointer;
+		pointer-events: all;
+		transition: all 0.1s ease-out;
+
+		.mi { font-size: 18px; }
+
+		&:hover { color: $craft-red; transform: scale( 1.06 ); sound-in: $sound-hover; }
+		&:active { transform: scale( 0.94 ); sound-in: $sound-click; }
+		&.liked { color: $craft-red; border-color: rgba( $craft-red, 0.6 ); background-color: rgba( $craft-red, 0.1 ); }
+	}
+
+	// Small round row buttons: add (green +), added (orange ✓), edit, delete (red on confirm).
+	.icon-btn {
+		min-width: 32px;
+		height: 32px;
+		flex-shrink: 0;
+		padding: 0 6px;
+		align-items: center;
+		justify-content: center;
+		border-radius: $radius-pill;
+		border: 2px solid $card-edge;
+		background-color: $paper-tile;
+		color: $paper-ink;
+		font-size: 13px;
+		font-weight: 800;
+		cursor: pointer;
+		pointer-events: all;
+		transition: all 0.1s ease-out;
+
+		.mi { font-size: 18px; }
+
+		&.add { background-color: $craft-green; color: #fff; }
+		&.added { background-color: $craft-orange; color: $paper-ink; }
+		&.danger:hover { color: $craft-red; }
+		&.confirm { background-color: $craft-red; color: #fff; }
+		&.busy { opacity: 0.5; pointer-events: none; }
+		&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; }
+		&:active { transform: scale( 0.96 ); sound-in: $sound-click; }
+	}
+
+	// Maker fields — the recessed "gap" field recipe (HostPage .name-entry).
+	.field {
+		padding: 9px 14px;
+		border-radius: $radius-md;
+		background-color: rgba( 44, 36, 24, 0.12 );
+		border: 1.5px solid rgba( 44, 36, 24, 0.35 );
+		color: $paper-ink;
+		font-size: 15px;
+		font-family: $body-font;
+		pointer-events: all;
+	}
+
+	.title-field { height: 40px; flex-shrink: 0; }
+	.lines-field { flex-grow: 1; align-items: flex-start; white-space: pre-wrap; }
+
+	.hint {
+		font-size: 14px;
+		font-weight: 600;
+		color: $paper-ink-soft;
+	}
+
+	.footer {
+		flex-direction: row;
+		align-items: center;
+		gap: $space-sm;
+		padding-top: $space-sm;
+		flex-shrink: 0;
+
+		.spacer { flex-grow: 1; }
+	}
+
+	.btn-small {
+		flex-direction: row;
+		gap: 6px;
+		padding: 8px 14px;
+		font-size: 15px;
+		.mi { font-size: 18px; }
+	}
+
+	.btn-primary { background-color: $craft-orange; &:hover { background-color: $craft-orange-hi; } }
+}

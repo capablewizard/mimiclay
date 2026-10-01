@@ -6,8 +6,17 @@
   "SelectionMode": "Random",
   "Sounds": [
     {
-      "Id": "549eaeae-874e-4ae8-9bf5-c5693115d3e1",
-      "Path": "sounds/music/elevator music (loop).vsnd"
+      "Id": "be2b86e5-1b01-491f-b709-605a726cb911",
+      "Path": "sounds/music/elevator music.vsnd"
+    },
+    "sounds/music/be this elevator music.vsnd",
+    {
+      "Id": "048f81dc-4b09-4686-a172-1d2c03c9f5cb",
+      "Path": "sounds/music/be for elevator music.vsnd"
+    },
+    {
+      "Id": "ff1411a4-0d68-48f5-8b20-12a4573c5136",
+      "Path": "sounds/music/for elevator music.vsnd"
     }
   ],
   "OcclusionEnabled": true,

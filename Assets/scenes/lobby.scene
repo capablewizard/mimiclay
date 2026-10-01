@@ -410,13 +410,13 @@
           "DefaultHuntSeconds": 220,
           "DefaultRevealSeconds": 30,
           "DefaultRoundMode": "Infection",
-          "DefaultStartCountdownSeconds": 5,
+          "DefaultStartCountdownSeconds": 4,
           "DefaultTauntSeconds": 30,
           "HunterPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/hunter.prefab"
           },
-          "LaunchCountdownSeconds": 5,
+          "LaunchCountdownSeconds": 10,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,

@@ -6,53 +6,44 @@ namespace Mimiclay;
 /// <summary>
 /// The phases of a Charades game, in loop order. Charades plays on a picked MAP like every other game
 /// (lobby → <see cref="LobbyManager"/> launch → <see cref="RoundManagerSpawner"/> spawns
-/// <see cref="CharadesManager"/>), and the manager walks this loop: wait for players → turns (choose a word,
-/// sculpt it on the stage while everyone guesses, reveal) → first player to the target score → podium →
-/// back to the lobby (or, on a direct Play, back to Waiting forever).
+/// <see cref="CharadesManager"/>), and the manager walks this loop: wait for players → rounds (everyone takes
+/// one turn per round: pick/read a phrase, sculpt it on the stage while everyone guesses, reveal) for the
+/// configured number of rounds → podium → back to the lobby (or, on a direct Play, back to Waiting forever).
 /// </summary>
 public enum CharadesPhase
 {
 	/// <summary>Not enough players yet (or a direct-play game just ended). Everyone wanders; nothing is timed.</summary>
 	Waiting,
 	/// <summary>Warm-up countdown once enough players are in — free wander, nothing locked (unlike prop
-	/// hunt's frozen Starting). Ends into the first <see cref="Choosing"/>.</summary>
+	/// hunt's frozen Starting). Ends into the first round.</summary>
 	Starting,
-	/// <summary>The next mimic is picking one of three offered words. Everyone else sees who's up.</summary>
+	/// <summary>Players-write-the-phrases rounds only: everyone types a phrase (in chat — the host swallows
+	/// it) for someone ELSE to sculpt this round. Ends when the clock runs out or everyone has submitted.</summary>
+	Writing,
+	/// <summary>The next mimic is picking one of the offered phrases (or reading the one written for them).
+	/// Everyone else sees who's up.</summary>
 	Choosing,
 	/// <summary>The mimic sculpts on the stage; everyone else guesses by text. The turn's main clock.</summary>
 	Sculpting,
-	/// <summary>The word is revealed and the turn's scores are shown; the sculpt stays up to admire/mourn.</summary>
+	/// <summary>The phrase is revealed and the turn's scores are shown; the sculpt stays up to admire/mourn.</summary>
 	TurnReveal,
-	/// <summary>Someone reached the target score: final standings before the game hands back to the lobby.</summary>
+	/// <summary>The last round is done: final standings before the game hands back to the lobby.</summary>
 	Podium,
 }
 
-/// <summary>How the next mimic is chosen after each turn — the lobby's "Mimic" setting.</summary>
-public enum MimicRotation
+/// <summary>Where each turn's phrase comes from — the lobby's "Phrases" setting.</summary>
+public enum PhraseSource
 {
-	/// <summary>Everyone takes the stage in seat order, round and round.</summary>
-	TakeTurns,
-	/// <summary>The turn's FIRST correct guesser takes the stage next ("winner stays on"). Nobody guessed —
-	/// or the winner would repeat because they were already up — falls back to seat order, so a game can
-	/// never stall on one mimic.</summary>
-	WinnerStaysOn,
-}
-
-/// <summary>The word-pool topics, multi-selectable in the lobby ("Everything" = all of them). Flags so the
-/// whole selection travels as one int — synced on <see cref="LobbyManager.CharadesCfg"/> and couriered as a
-/// number.</summary>
-[Flags]
-public enum CharadesTopics
-{
-	None = 0,
-	Animals = 1,
-	Food = 2,
-	Objects = 4,
-	Vehicles = 8,
-	Nature = 16,
-	Characters = 32,
-
-	Everything = Animals | Food | Objects | Vehicles | Nature | Characters,
+	/// <summary>Drawn from the selected built-in topics. With <see cref="CharadesSettings.TopicChoices"/> the
+	/// mimic picks one of three; without, they're handed one.</summary>
+	Topics,
+	/// <summary>Written by the players ("Write Your Own"): at the start of every round everyone submits a
+	/// phrase, and each is handed to someone else to sculpt. Anyone who doesn't write gets a random built-in
+	/// phrase as filler.</summary>
+	Players,
+	/// <summary>Drawn from the community (Steam Workshop) lists the host ticked. With <see cref="CharadesSettings.TopicChoices"/> the mimic picks one of three; without, they're handed one.
+	/// Nothing ticked (or nothing installed) falls back to every built-in topic.</summary>
+	Workshop,
 }
 
 /// <summary>
@@ -68,7 +59,8 @@ public struct CharadesPlayer
 	/// <summary>Display name, snapshotted at join.</summary>
 	public string Name;
 
-	/// <summary>Total score this game — guessing (faster = more) and being guessed as the mimic.</summary>
+	/// <summary>Total score this game — guessing (faster = more), being guessed as the mimic, and (players-write
+	/// rounds) having the phrase you wrote guessed.</summary>
 	public int Score;
 
 	/// <summary>Join order — the host's monotonic seat counter. The take-turns rotation is ordered by this,
@@ -81,6 +73,10 @@ public struct CharadesPlayer
 	/// <summary>What place this player's correct guess took THIS turn (1 = first). 0 = hasn't guessed it yet.
 	/// Doubles as the "already scored, stop re-scoring" flag; cleared by the host at the start of each turn.</summary>
 	public int GuessedPlace;
+
+	/// <summary>Players-write rounds: this player has handed in their phrase for the current round (the
+	/// roster's ✍ badge, and what ends Writing early once everyone has one).</summary>
+	public bool Submitted;
 
 	/// <summary>A test-bot row — no machine behind it, the host holds its body (see <see cref="RoundBots"/>).</summary>
 	public bool Bot;
@@ -95,29 +91,41 @@ public struct CharadesPlayer
 /// </summary>
 public struct CharadesSettings
 {
-	/// <summary>First player to reach this score wins the game — the lobby's "First to: X".</summary>
-	public int TargetScore;
+	/// <summary>How many rounds to play — a round is one turn on the stage for everyone seated when it starts.
+	/// The highest score after the last round wins.</summary>
+	public int Rounds;
 
-	/// <summary>How the next mimic is picked (take turns / winner stays on).</summary>
-	public MimicRotation Rotation;
+	/// <summary>Where phrases come from: built-in topics, written by the players, or workshop lists.</summary>
+	public PhraseSource Source;
 
-	/// <summary>Which word-pool topics are in play. <see cref="CharadesTopics.Everything"/> = all.</summary>
-	public CharadesTopics Topics;
+	/// <summary>Topics source: which built-in topics feed the pool, as comma-joined topic ids ("animals,food";
+	/// see <see cref="CharadesTopics"/>). Empty = every built-in topic.</summary>
+	public string Topics;
 
-	/// <summary>Show guessers the masked word shape ("_ _ _   _ _ _ _") during the sculpt. Off = no hint at
-	/// all: the synced hint is simply never written, so nothing about the word's length reaches clients.</summary>
+	/// <summary>Topics and Workshop sources: offer the mimic three phrases to pick from (Yes), or hand them one (No).</summary>
+	public bool TopicChoices;
+
+	/// <summary>Workshop source: the ticked community lists, as comma-joined "ws:&lt;fileId&gt;" ids.</summary>
+	public string WorkshopLists;
+
+	/// <summary>Show guessers the masked phrase shape ("_ _ _   _ _ _ _") during the sculpt. Off = no hint at
+	/// all: the synced hint is simply never written, so nothing about the phrase's length reaches clients.</summary>
 	public bool WordLengthHints;
 
-	/// <summary>Warm-up countdown after enough players gather, before the first turn (free wander, no freeze).</summary>
+	/// <summary>Warm-up countdown after enough players gather, before the first round (free wander, no freeze).</summary>
 	public float StartCountdownSeconds;
 
-	/// <summary>How long the mimic has to pick one of the offered words before the first is auto-picked.</summary>
+	/// <summary>Players-write rounds: how long everyone has to type their phrase before fillers are drawn.</summary>
+	public float WriteSeconds;
+
+	/// <summary>How long the mimic has to pick one of the offered phrases before the first is auto-picked
+	/// (players-write rounds: how long they get to read theirs before the sculpt opens).</summary>
 	public float ChooseSeconds;
 
 	/// <summary>The sculpting/guessing time — the turn's main clock.</summary>
 	public float SculptSeconds;
 
-	/// <summary>How long the revealed word + turn scores linger before the next turn.</summary>
+	/// <summary>How long the revealed phrase + turn scores linger before the next turn.</summary>
 	public float RevealSeconds;
 
 	/// <summary>How long the final standings show before the game returns to the lobby.</summary>
@@ -129,24 +137,33 @@ public struct CharadesSettings
 	// One place for defaults, mirrored as consts so [Property] initializers elsewhere can compile-time seed
 	// from the same numbers (attribute arguments must be constant expressions — see RoundSettings for the
 	// precedent and the s&box generated-attribute reason).
-	public const int DefaultTargetScore = 15;
-	public const MimicRotation DefaultRotation = MimicRotation.TakeTurns;
-	public const CharadesTopics DefaultTopics = CharadesTopics.Everything;
+	public const int DefaultRounds = 2;
+	public const PhraseSource DefaultSource = PhraseSource.Topics;
+	public const string DefaultTopics = CharadesTopics.Everything;
+	public const bool DefaultTopicChoices = true;
+	public const string DefaultWorkshopLists = "";
 	public const bool DefaultWordLengthHints = true;
 	public const float DefaultStartCountdownSeconds = 5f;
-	public const float DefaultChooseSeconds = 15f;
+	public const float DefaultWriteSeconds = 45f;
+	public const float DefaultChooseSeconds = 10f;
 	public const float DefaultSculptSeconds = 150f;
 	public const float DefaultRevealSeconds = 8f;
 	public const float DefaultPodiumSeconds = 14f;
 	public const int DefaultMinPlayers = 2;
 
+	public const int MinRounds = 1;
+	public const int MaxRounds = 10;
+
 	public static CharadesSettings Default => new()
 	{
-		TargetScore = DefaultTargetScore,
-		Rotation = DefaultRotation,
+		Rounds = DefaultRounds,
+		Source = DefaultSource,
 		Topics = DefaultTopics,
+		TopicChoices = DefaultTopicChoices,
+		WorkshopLists = DefaultWorkshopLists,
 		WordLengthHints = DefaultWordLengthHints,
 		StartCountdownSeconds = DefaultStartCountdownSeconds,
+		WriteSeconds = DefaultWriteSeconds,
 		ChooseSeconds = DefaultChooseSeconds,
 		SculptSeconds = DefaultSculptSeconds,
 		RevealSeconds = DefaultRevealSeconds,
@@ -158,11 +175,14 @@ public struct CharadesSettings
 	// "ch." keys — "c." belongs to CreativeSettings, "r." to RoundSettings.
 	static class Keys
 	{
-		public const string Target = "ch.target";
-		public const string Rotation = "ch.rot";
+		public const string Rounds = "ch.rounds";
+		public const string Source = "ch.source";
 		public const string Topics = "ch.topics";
+		public const string Choices = "ch.choices";
+		public const string WorkshopLists = "ch.ws";
 		public const string Hints = "ch.hints";
 		public const string Start = "ch.start";
+		public const string Write = "ch.write";
 		public const string Choose = "ch.choose";
 		public const string Sculpt = "ch.sculpt";
 		public const string Reveal = "ch.reveal";
@@ -178,11 +198,14 @@ public struct CharadesSettings
 	/// <summary>Host-only: flatten these settings into session data right before the lobby's ChangeScene.</summary>
 	public readonly void WriteToLobby()
 	{
-		Networking.SetData( Keys.Target, TargetScore.ToString( CultureInfo.InvariantCulture ) );
-		Networking.SetData( Keys.Rotation, ((int)Rotation).ToString( CultureInfo.InvariantCulture ) );
-		Networking.SetData( Keys.Topics, ((int)Topics).ToString( CultureInfo.InvariantCulture ) );
+		Networking.SetData( Keys.Rounds, Rounds.ToString( CultureInfo.InvariantCulture ) );
+		Networking.SetData( Keys.Source, ((int)Source).ToString( CultureInfo.InvariantCulture ) );
+		Networking.SetData( Keys.Topics, Topics ?? "" );
+		Networking.SetData( Keys.Choices, TopicChoices ? "1" : "0" );
+		Networking.SetData( Keys.WorkshopLists, WorkshopLists ?? "" );
 		Networking.SetData( Keys.Hints, WordLengthHints ? "1" : "0" );
 		Networking.SetData( Keys.Start, Str( StartCountdownSeconds ) );
+		Networking.SetData( Keys.Write, Str( WriteSeconds ) );
 		Networking.SetData( Keys.Choose, Str( ChooseSeconds ) );
 		Networking.SetData( Keys.Sculpt, Str( SculptSeconds ) );
 		Networking.SetData( Keys.Reveal, Str( RevealSeconds ) );
@@ -197,16 +220,28 @@ public struct CharadesSettings
 	{
 		var d = fallback;
 
-		if ( int.TryParse( Networking.GetData( Keys.Target ), NumberStyles.Integer, CultureInfo.InvariantCulture, out var target ) )
-			d.TargetScore = Math.Max( 1, target );
+		if ( int.TryParse( Networking.GetData( Keys.Rounds ), NumberStyles.Integer, CultureInfo.InvariantCulture, out var rounds ) )
+			d.Rounds = Math.Clamp( rounds, MinRounds, MaxRounds );
 
-		if ( int.TryParse( Networking.GetData( Keys.Rotation ), NumberStyles.Integer, CultureInfo.InvariantCulture, out var rot )
-			&& Enum.IsDefined( typeof( MimicRotation ), rot ) )
-			d.Rotation = (MimicRotation)rot;
+		if ( int.TryParse( Networking.GetData( Keys.Source ), NumberStyles.Integer, CultureInfo.InvariantCulture, out var src )
+			&& Enum.IsDefined( typeof( PhraseSource ), src ) )
+			d.Source = (PhraseSource)src;
 
-		if ( int.TryParse( Networking.GetData( Keys.Topics ), NumberStyles.Integer, CultureInfo.InvariantCulture, out var topics )
-			&& (topics & (int)CharadesTopics.Everything) != 0 )
-			d.Topics = (CharadesTopics)topics & CharadesTopics.Everything;
+		// The lobby wrote the key (possibly as "" = everything) only if it launched us — a direct Play has no
+		// key at all and keeps the fallback's selection. GetData returns null for an absent key.
+		var topics = Networking.GetData( Keys.Topics );
+		if ( topics is not null && CameFromLobby )
+			d.Topics = topics;
+
+		var ws = Networking.GetData( Keys.WorkshopLists );
+		if ( ws is not null && CameFromLobby )
+			d.WorkshopLists = ws;
+
+		var choices = Networking.GetData( Keys.Choices );
+		if ( choices == "0" )
+			d.TopicChoices = false;
+		else if ( choices == "1" )
+			d.TopicChoices = true;
 
 		var hints = Networking.GetData( Keys.Hints );
 		if ( hints == "0" )
@@ -215,6 +250,7 @@ public struct CharadesSettings
 			d.WordLengthHints = true;
 
 		d.StartCountdownSeconds = Read( Keys.Start, d.StartCountdownSeconds );
+		d.WriteSeconds = Read( Keys.Write, d.WriteSeconds );
 		d.ChooseSeconds = Read( Keys.Choose, d.ChooseSeconds );
 		d.SculptSeconds = Read( Keys.Sculpt, d.SculptSeconds );
 		d.RevealSeconds = Read( Keys.Reveal, d.RevealSeconds );
@@ -229,11 +265,14 @@ public struct CharadesSettings
 	/// flag, making a direct Play try to "return" to a lobby it never came from.</summary>
 	public static void ClearLobbyData()
 	{
-		Networking.SetData( Keys.Target, "" );
-		Networking.SetData( Keys.Rotation, "" );
+		Networking.SetData( Keys.Rounds, "" );
+		Networking.SetData( Keys.Source, "" );
 		Networking.SetData( Keys.Topics, "" );
+		Networking.SetData( Keys.Choices, "" );
+		Networking.SetData( Keys.WorkshopLists, "" );
 		Networking.SetData( Keys.Hints, "" );
 		Networking.SetData( Keys.Start, "" );
+		Networking.SetData( Keys.Write, "" );
 		Networking.SetData( Keys.Choose, "" );
 		Networking.SetData( Keys.Sculpt, "" );
 		Networking.SetData( Keys.Reveal, "" );
