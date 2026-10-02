@@ -56,7 +56,7 @@
 			@* The spring lives on a wrapper: the card's own jitter already owns its `transform`. It plays once as
 			   .revealed goes on (the switch to the uppercase answer). *@
 			<div class="word-pop @(revealed ? "popped" : "")">
-			<div class="word-strip paper-card @(revealed ? "revealed" : "") @(Manager.LocalIsMimic && Manager.Phase == CharadesPhase.Sculpting ? "mine" : "") @(WordStrip.Length > 12 ? "long" : "")">
+			<div class="word-strip paper-card @(revealed ? "revealed" : "") @((Manager.LocalIsMimic && Manager.Phase is CharadesPhase.Sculpting or CharadesPhase.Choosing) || Manager.Phase == CharadesPhase.Writing ? "mine" : "") @(WordStrip.Length > 12 ? "long" : "")">
 				<div class="word">
 					@foreach ( var w in WordStripWords )
 					{
@@ -76,44 +76,26 @@
 
 	@if ( Manager is not null && !Editing )
 	{
-
-		@* Writing (players-write rounds): everyone types a phrase for someone else — through the chat, which
-		   the host swallows and answers privately. The card says where the verb is and who's handed one in. *@
+		@* Writing (players-write rounds): everyone types a phrase for someone else — through the chat, which the
+		   host swallows and answers privately. Charades' usual pieces carry it: "WRITE!" over the clock, YOUR
+		   hand-in on the word card once sent (WordStrip), the ✏️ badges on the board for who's in, and this —
+		   the guess hint's plain line, saying where the verb is and how many are handed in. *@
 		@if ( Manager.Phase == CharadesPhase.Writing )
 		{
-			<div class="writing-card paper-card">
-				<div class="choice-title">Round @Manager.Round — write a phrase for someone else to sculpt!</div>
-				@if ( LocalSubmitted )
-				{
-					<div class="writing-line done">✍ Sent! Press <span class="key">Enter</span> and type again to change it.</div>
-				}
-				else
-				{
-					<div class="writing-line">press <span class="key">Enter</span> and type your phrase</div>
-				}
-				<div class="writing-count">@SubmittedCount / @WriterCount handed in</div>
+			<div class="guess-hint">
+				<span>Press</span>
+				<div class="key-chip">Enter</div>
+				<span>@(LocalSubmitted ? "to change your phrase." : "to write a phrase.")</span>
+				<span class="hint-count">@SubmittedCount / @WriterCount handed in</span>
 			</div>
 		}
 
-		@* Choosing: the mimic picks — bottom centre, by click or the 1/2/3 keys (they're standing on the
-		   stage as their prop, so the hands stay on the movement keys). A players-write round offers ONE
-		   phrase — the one written for them — so the card is a read-it-then-go. Everyone else watches the name. *@
+		@* Choosing between several phrases: the mimic picks with the big centre buttons or the 1/2/3 keys. A
+		   single phrase (players-write, or Topic Choices off) is no choice at all — that beat is a short READ:
+		   the phrase sits on the word card (WordStrip) while the clock counts it down, then the sculpt opens. *@
 		@if ( Manager.Phase == CharadesPhase.Choosing )
 		{
-			@if ( Manager.LocalIsMimic && Manager.OfferedWords.Count == 1 )
-			{
-				<div class="word-choice paper-card single">
-					<div class="choice-title">Your phrase:</div>
-					<div class="single-phrase">@Manager.OfferedWords[0]</div>
-					<div class="choice-row">
-						<div class="btn choice-btn" onclick=@( () => Manager.ChooseWord( 0 ) )>
-							<div class="choice-key">1</div>
-							<span>Let's go!</span>
-						</div>
-					</div>
-				</div>
-			}
-			else if ( Manager.LocalIsMimic && Manager.OfferedWords.Count > 0 )
+			@if ( Manager.LocalIsMimic && Manager.OfferedWords.Count > 1 )
 			{
 				@* The pick: the lobby's clay Start button (.btn-jitter) per phrase, in a row under the prop. Play holds
 				   still and the cursor shows until one's chosen (CharadesManager.LocalPicking); 1/2/3 still pick
@@ -148,7 +130,7 @@
 
 		@* Scoreboard — right edge, always on: the Set Up Game title (clay WobbleText + spark dashes, smaller) saying where we are
 		   in the game, over one paper card with a ruled row per player. Each row leads with the player's rendered
-		   head, the turn badge (🎨 miming · ✍ wrote it · 🥇🥈✅ guessed) pinned to its corner where the roster pips
+		   head, the turn badge (🎨 miming · ✏️ wrote it · 🥇🥈✅ guessed) pinned to its corner where the roster pips
 		   wear their 🎨 edit palette. The mimic's row is an inset, rounded selection-orange block. *@
 		<div class="scoreboard">
 			<div class="board-heading">
@@ -215,7 +197,7 @@
 			   Gone once you've got it — the host swallows anything further you type until the reveal. *@
 			@if ( LocalIsAuthor )
 			{
-				<div class="guess-hint"><span>✍ You wrote this one!</span></div>
+				<div class="guess-hint"><span>✏️ You wrote this one!</span></div>
 			}
 			else if ( string.IsNullOrEmpty( Manager.SolvedWord ) )
 			{
@@ -255,7 +237,7 @@
 		// The mimic's 1/2/3 word pick — keyboard-direct (like RoundSetup's G) so it works while they drive
 		// their prop around the stage; the on-screen buttons stay clickable for mouse people.
 		if ( Manager is null || Manager.Phase != CharadesPhase.Choosing
-			|| !Manager.LocalIsMimic || Manager.OfferedWords.Count == 0 )
+			|| !Manager.LocalIsMimic || Manager.OfferedWords.Count < 2 ) // a single phrase is a read beat, not a pick
 			return;
 
 		for ( var i = 0; i < Math.Min( 3, Manager.OfferedWords.Count ); i++ )
@@ -358,6 +340,15 @@
 			if ( Manager.Phase == CharadesPhase.TurnReveal )
 				return Manager.RevealedWord;
 
+			// Writing: the phrase you handed in (echoed back by the host), once you have — yours, uppercase like the
+			// mimic's brief.
+			if ( Manager.Phase == CharadesPhase.Writing )
+				return Manager.LocalSubmission ?? "";
+
+			// A single-phrase turn's read beat: the mimic's phrase, before the sculpt opens.
+			if ( Manager.Phase == CharadesPhase.Choosing )
+				return Manager.LocalIsMimic && Manager.OfferedWords.Count == 1 ? Manager.OfferedWords[0] : "";
+
 			if ( Manager.Phase != CharadesPhase.Sculpting )
 				return "";
 
@@ -441,10 +432,10 @@
 			return "🎨";
 
 		if ( m.IsValid() && m.Phase == CharadesPhase.Writing )
-			return p.Submitted ? "✍" : "";
+			return p.Submitted ? "✏️" : "";
 
 		if ( m.IsValid() && m.AuthorId != Guid.Empty && p.Connection == m.AuthorId )
-			return "✍";
+			return "✏️";
 
 		return p.GuessedPlace switch { 0 => "", 1 => "🥇", 2 => "🥈", _ => "✅" }; // ✅ not ✔: emoji colour comes from the font, and ✔ draws purple
 	}

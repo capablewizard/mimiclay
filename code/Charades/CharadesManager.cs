@@ -66,7 +66,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	[Sync] public Guid MimicId { get; set; }
 
 	/// <summary>Players-write rounds: who WROTE the phrase being sculpted (<see cref="Guid.Empty"/> when it
-	/// came from a topic list). They know the answer, so they sit the turn out — and get the ✍ badge.</summary>
+	/// came from a topic list). They know the answer, so they sit the turn out — and get the ✏️ badge.</summary>
 	[Sync] public Guid AuthorId { get; set; }
 
 	/// <summary>The round in progress, 1-based (0 before the first). Everyone seated takes one turn per round;
@@ -133,6 +133,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	/// their correct guess so the HUD can type it into the word box; cleared when the sculpt ends.</summary>
 	public string SolvedWord { get; private set; }
 
+	/// <summary>Players-write rounds: the phrase THIS machine's player handed in this round (null until they do).
+	/// Echoed back by targeted RPC so the HUD can show it on the word card; cleared when Writing ends.</summary>
+	public string LocalSubmission { get; private set; }
+
 	/// <summary>
 	/// True while THIS machine's player is the mimic choosing between offered phrases (more than one — a single
 	/// offer is a read-and-go, not a pick). While it's on, the HUD's centre buttons own the screen: the cursor
@@ -153,6 +157,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 	/// <summary>How many phrases the mimic is offered in a Topics game: three, or one when Topic Choices is off
 	/// (same read-it-and-go card as write-your-own).</summary>
+	/// <summary>How long a single-phrase turn gives the mimic to read it before the sculpt opens (the HUD's clock
+	/// counts it down 5-4-3-2-1).</summary>
+	const float ReadSeconds = 5f;
+
 	int OfferCount => Settings.Source != PhraseSource.Players && !Settings.TopicChoices ? 1 : 3;
 
 	/// <summary>True when this machine's player is the current mimic.</summary>
@@ -423,7 +431,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		var phrase = CharadesWords.SanitizePhrase( text );
 		if ( phrase is null )
 		{
-			Shush( rosterId, "✍ That's a bit short — type a phrase with a couple of letters in it." );
+			Shush( rosterId, "✏️ That's a bit short — type a phrase with a couple of letters in it." );
 			return;
 		}
 
@@ -434,7 +442,30 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			Players[rosterId] = p;
 		}
 
-		Shush( rosterId, $"✍ Got it: “{phrase}” — type again to change it." );
+		Shush( rosterId, $"✏️ Got it: “{phrase}” — type again to change it." );
+
+		// And privately back to their HUD, which shows it on the word card while everyone writes.
+		var conn = Connection.All.FirstOrDefault( c => c.Id == rosterId );
+		if ( conn is not null && Networking.IsActive )
+		{
+			using ( Rpc.FilterInclude( conn ) )
+				TellSubmission( rosterId, phrase );
+		}
+		else
+		{
+			TellSubmission( rosterId, phrase );
+		}
+	}
+
+	/// <summary>Host→writer: the phrase you handed in (sanitised), for your HUD's word card. Same targeted
+	/// pattern as <see cref="TellWord"/> — a phrase is a secret until its reveal.</summary>
+	[Rpc.Broadcast]
+	void TellSubmission( Guid writer, string phrase )
+	{
+		if ( Connection.Local?.Id != writer )
+			return;
+
+		LocalSubmission = phrase;
 	}
 
 	// Host-only, at the end of Writing: deal the phrases out so nobody sculpts their own. The submitters
@@ -507,7 +538,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 			case CharadesPhase.Choosing:
 				BeginTurn();
-				PhaseEndsAt = Settings.ChooseSeconds;
+				// One phrase (players-write, or Topic Choices off) is nothing to choose — the beat is just the
+				// mimic READING their phrase and getting ready, then the sculpt opens on its own (the timeout's
+				// HostPickWord( 0 )). Several get the full pick window.
+				PhaseEndsAt = _offeredThisTurn.Count == 1 ? ReadSeconds : Settings.ChooseSeconds;
 				// A bot can't dither over a menu — it "picks" almost immediately (a short beat so the
 				// "Bot N is choosing" caption is legible before the sculpt opens).
 				if ( MimicIsBot )
@@ -767,7 +801,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		if ( rosterId == AuthorId && AuthorId != Guid.Empty && Phase is CharadesPhase.Choosing or CharadesPhase.Sculpting )
 		{
 			e.Suppress = true;
-			Shush( rosterId, "✍ You wrote this one — sit back and enjoy the show!" );
+			Shush( rosterId, "✏️ You wrote this one — sit back and enjoy the show!" );
 			return;
 		}
 
@@ -982,6 +1016,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		// A guesser's solved word is only theirs for the rest of the sculpt (the reveal shows everyone anyway).
 		if ( to != CharadesPhase.Sculpting )
 			SolvedWord = null;
+
+		// Your hand-in shows only while everyone's writing (it becomes someone else's secret after).
+		if ( to != CharadesPhase.Writing )
+			LocalSubmission = null;
 
 		// A new turn opens and we're the mimic AGAIN (solo debug, or the rotation's fallback re-picked us):
 		// the kind-poll in EnsureOwnPawn wouldn't respawn an already-prop pawn, so force it — every turn

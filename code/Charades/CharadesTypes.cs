@@ -73,7 +73,7 @@ public struct CharadesPlayer
 	public int GuessedPlace;
 
 	/// <summary>Players-write rounds: this player has handed in their phrase for the current round (the
-	/// roster's ✍ badge, and what ends Writing early once everyone has one).</summary>
+	/// roster's ✏️ badge, and what ends Writing early once everyone has one).</summary>
 	public bool Submitted;
 
 	/// <summary>A test-bot row — no machine behind it, the host holds its body (see <see cref="RoundBots"/>).</summary>
@@ -143,11 +143,11 @@ public struct CharadesSettings
 	public const bool DefaultTopicChoices = true;
 	public const string DefaultWorkshopLists = "";
 	public const bool DefaultWordLengthHints = true;
-	public const float DefaultStartCountdownSeconds = 5f;
+	public const float DefaultStartCountdownSeconds = 10f;
 	public const float DefaultWriteSeconds = 45f;
 	public const float DefaultChooseSeconds = 10f;
 	public const float DefaultSculptSeconds = 150f;
-	public const float DefaultRevealSeconds = 8f;
+	public const float DefaultRevealSeconds = 10f;
 	public const float DefaultPodiumSeconds = 14f;
 	public const int DefaultMinPlayers = 2;
 

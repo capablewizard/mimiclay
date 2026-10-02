@@ -116,7 +116,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "70c2780e-1ae1-4586-819f-28117c2da77c",
+            "Id": "a978086c-7d90-498c-b95d-cc75bb0c21da",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -173,7 +173,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "70c2780e-1ae1-4586-819f-28117c2da77c",
+            "Id": "a978086c-7d90-498c-b95d-cc75bb0c21da",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1125,7 +1125,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "28cc06cf-618a-4b53-99eb-b16e97e2e364",
+                "Id": "f2ff92a3-9da0-43c5-bda8-84e385a8e613",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1171,7 +1171,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "1df7541a-7c8e-46ad-8b35-84e7337d686c",
+                "Id": "0e1289ed-ea7c-4dad-b3b4-14e039c006ac",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1199,7 +1199,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "1df7541a-7c8e-46ad-8b35-84e7337d686c",
+                "Id": "0e1289ed-ea7c-4dad-b3b4-14e039c006ac",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1246,7 +1246,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "ddf86805-2eec-44d7-920c-e40f744953b1",
+                "Id": "3f2b55c6-f6f7-47af-bf6c-f74abf0cff6d",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1290,7 +1290,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "c1aa7636-c5fa-496e-b183-82fc9b6f57ee",
+                "Id": "374009d9-b1b9-4436-a2c6-0e22e361d2c8",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1602,7 +1602,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "44050a5b-e7c9-43f7-b324-d07880238c69",
+                "Id": "25ad9a5a-d46c-420e-866c-f4f6a1b54705",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1646,7 +1646,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "8a312586-4619-4d9c-b9d2-84d3f5281bf4",
+                "Id": "9c2b21f0-699d-42d5-ac33-cbd9a0eaba56",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1690,7 +1690,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "f761d500-a95d-4dd2-8745-db0deb5e725c",
+                "Id": "cb19d238-8740-4ac2-bad9-f8f1ad424957",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1736,7 +1736,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "dd3e812b-589c-4533-9a5f-5b56c07f8ab0",
+                "Id": "b78c53d6-8dce-430f-be55-9a79ab76f279",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1764,7 +1764,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "dd3e812b-589c-4533-9a5f-5b56c07f8ab0",
+                "Id": "b78c53d6-8dce-430f-be55-9a79ab76f279",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2874,7 +2874,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "b44849c2-3b56-4c7a-893b-537ccd6b5dcf",
+                "Id": "2be48d28-1bec-4d41-924a-4cb988fea980",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2902,7 +2902,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "b44849c2-3b56-4c7a-893b-537ccd6b5dcf",
+                "Id": "2be48d28-1bec-4d41-924a-4cb988fea980",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2951,7 +2951,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "b44849c2-3b56-4c7a-893b-537ccd6b5dcf",
+                "Id": "2be48d28-1bec-4d41-924a-4cb988fea980",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2979,7 +2979,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "b44849c2-3b56-4c7a-893b-537ccd6b5dcf",
+                "Id": "2be48d28-1bec-4d41-924a-4cb988fea980",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3351,7 +3351,7 @@
           "CharadesRounds": 2,
           "CharadesSculptSeconds": 150,
           "CharadesSoloDebug": false,
-          "CharadesSource": "Topics",
+          "CharadesSource": "Players",
           "CharadesStartCountdownSeconds": 10,
           "CharadesTopicChoices": true,
           "CharadesTopicIds": "",
