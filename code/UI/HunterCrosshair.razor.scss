@@ -42,6 +42,18 @@
 		padding-top: 32px;
 	}
 
+	// The slot each card sits in: it takes the code-driven clay wobble (UpdateToastPose), so the card inside is
+	// free to animate its own transform.
+	.toast-slot {
+		flex-direction: row;
+	}
+
+	// A card's key just fired: the one-shot "ta-da" spring (pop-spring, _button.scss), like a pressed button.
+	.possess-toast.fired {
+		transform-origin: center;
+		animation: pop-spring 0.4s ease-out;
+	}
+
 	.possess-toast {
 		flex-direction: row;
 		align-items: center;
@@ -60,7 +72,8 @@
 
 		// The stop-motion wobble is CODE-driven here (HunterCrosshair.UpdateToastPose writes this element's
 		// transform from ClayClock each global tick — phase-locked to the 3D clay's boil, which a CSS
-		// animation can't be). This element still owns its transform — see the note on .possess-float.
+		// animation can't be). That transform lives on its .toast-slot wrapper, so this card's own is free for the
+		// press spring (.fired).
 
 		// The keyboard-key chip, same language as the round HUD's hotkey hints.
 		.key {

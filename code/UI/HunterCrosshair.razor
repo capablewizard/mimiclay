@@ -31,9 +31,13 @@
 			<div class="possess-float" style=@PromptStyle( at ) @ref=FloatPanel>
 				@foreach ( var card in _cards )
 				{
-					<div class="paper-card possess-toast">
-						<span class="key">@card.Key</span>
-						<span>@card.Label</span>
+					@* Two layers, because two things drive `transform`: the slot takes the code-driven clay wobble
+					   (UpdateToastPose poses FloatPanel's children), the card inside springs when its key fires. *@
+					<div class="toast-slot">
+						<div class="paper-card possess-toast @(Fired( card ) ? "fired" : "")">
+							<span class="key">@card.Key</span>
+							<span>@card.Label</span>
+						</div>
 					</div>
 				}
 			</div>
@@ -76,7 +80,7 @@
 
 	// The cards to draw (key glyph + label), snapshotted off the hunter's hover each frame so the render
 	// reads stable data; _cardsHash is their content for BuildHash.
-	readonly record struct Card( string Key, string Label );
+	readonly record struct Card( string Key, string Label, InteractSlot Slot );
 	readonly List<Card> _cards = new();
 	int _cardsHash;
 
@@ -110,7 +114,7 @@
 		{
 			foreach ( var choice in Hunter.Hover )
 			{
-				var card = new Card( Interactions.KeyLabel( choice.Option.Slot ), choice.Option.Label );
+				var card = new Card( Interactions.KeyLabel( choice.Option.Slot ), choice.Option.Label, choice.Option.Slot );
 				_cards.Add( card );
 				hash = HashCode.Combine( hash, card );
 			}
@@ -266,5 +270,15 @@
 	// the prop (same reasoning as PlayerNameplates hashing its plate positions). The debug layer re-renders off
 	// the rect (the dots can't move without it moving).
 	protected override int BuildHash()
-		=> HashCode.Combine( Visible, _promptAt, _cardsHash, ToastDebug, _debugValid, _debugMin, _debugMax, _debugPoints.Count );
+		=> HashCode.Combine( Visible, _promptAt, _cardsHash, ToastDebug, _debugValid, _debugMin, _debugMax,
+			HashCode.Combine( _debugPoints.Count, FiredSignal ) );
+
+	// A card springs (pop-spring, _button.scss) for FiredSeconds after its slot's key fires — the class going on
+	// replays the one-shot animation, coming off resets it for the next press.
+	const float FiredSeconds = 0.4f;
+
+	bool Fired( Card card )
+		=> Hunter.IsValid() && Hunter.LastFiredSlot == card.Slot && Hunter.SinceFired < FiredSeconds;
+
+	int FiredSignal => Hunter.IsValid() && Hunter.SinceFired < FiredSeconds ? (int)(Hunter.LastFiredSlot ?? 0) + 1 : 0;
 }

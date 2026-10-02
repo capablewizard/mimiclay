@@ -908,6 +908,44 @@
         "OnComponentUpdate": null,
         "RuntimeManaged": false,
         "TextureJitter": 0.02
+      },
+      {
+        "__type": "Mimiclay.SyncedMusic",
+        "__guid": "1dd1e757-27ca-4e15-bc1d-c7ed9219c1d3",
+        "__enabled": true,
+        "Flags": 0,
+        "Channel": null,
+        "DriftTolerance": 0.25,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "SoundEvent": {
+          "Id": "a155c966-dbf6-41c7-8426-48809f5da895",
+          "Path": "sounds/music/ambient_music.sound"
+        },
+        "Volume": 1
+      },
+      {
+        "__type": "Mimiclay.MusicToggleInteraction",
+        "__guid": "6da20a3c-6fe8-4eaf-be99-7653f3a7eb42",
+        "__enabled": true,
+        "Flags": 0,
+        "OffLabel": "Turn off",
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "OnLabel": "Turn on",
+        "Slot": "Secondary",
+        "ToggleSound": {
+          "Id": "d03c4c6b-4e0a-40e4-87fe-95afe87f9822",
+          "Path": "sounds/game/buttonclick.sound"
+        }
       }
     ],
     "Children": [],

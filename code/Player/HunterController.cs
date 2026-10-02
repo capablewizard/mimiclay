@@ -731,6 +731,13 @@ public sealed class HunterController : Component
 	/// <summary>The options on offer for <see cref="HoverContext"/>, one per slot, in slot order (empty when
 	/// nothing is hovered).</summary>
 	public IReadOnlyList<InteractChoice> Hover => _hoverChoices;
+
+	/// <summary>The interaction slot this player last fired from a hover prompt, and how long ago — owner-local UI
+	/// feedback (HunterCrosshair springs that slot's card, like a button press).</summary>
+	public InteractSlot? LastFiredSlot { get; private set; }
+
+	/// <inheritdoc cref="LastFiredSlot"/>
+	public RealTimeSince SinceFired { get; private set; }
 	readonly List<InteractChoice> _hoverChoices = new();
 
 	// Owner-only: resolve what the crosshair is over (the same ray the shot would take), ask every provider what
@@ -776,6 +783,10 @@ public sealed class HunterController : Component
 		{
 			if ( !Input.Pressed( Interactions.ActionFor( choice.Option.Slot ) ) )
 				continue;
+
+			// Stamped BEFORE the interact (which may swap our pawn away): the crosshair springs the matching card.
+			LastFiredSlot = choice.Option.Slot;
+			SinceFired = 0;
 
 			choice.Provider.Interact( at, choice.Option.Id );
 			break; // one action per frame — a provider may have just swapped our pawn out from under us
