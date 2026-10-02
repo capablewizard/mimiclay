@@ -61,13 +61,15 @@
 		animation: action-jitter $wobble-duration linear 0s infinite;
 
 		// Words of fixed-width character slots: a "_" and the letter typed over it take the same room, so the
-		// box holds its size as a solved answer types in. em-sized, so the .long font size scales them too.
+		// box holds its size as a solved answer types in. PX, not em: on a scaled-down screen an em length here
+		// took the UI scale twice and the slots shrank under the glyphs (letters overlapped) — px scales exactly
+		// like the font does. The .long variant below sets its own pair to match its smaller font.
 		// Words wrap as whole units (a phrase stays inside the centre-safe area).
 		.word {
 			flex-direction: row;
 			flex-wrap: wrap;
 			justify-content: center;
-			column-gap: 0.45em; // the space between words
+			column-gap: 15px; // the space between words (≈ 0.45 × the 34px font)
 			font-family: $body-font;
 			font-size: 34px;
 			font-weight: 800;
@@ -77,7 +79,8 @@
 		.word-group { flex-direction: row; }
 
 		.ch {
-			width: 0.78em; // wide enough for a bold "w"/"m"
+			width: 27px; // wide enough for a bold "w"/"m" at 34px (≈ 0.78 × the font)
+			flex-shrink: 0; // a slot never gives up width to a crowded row
 			justify-content: center;
 		}
 
@@ -102,9 +105,12 @@
 
 			.word {
 				font-size: 24px;
+				column-gap: 11px;
 				white-space: normal;
 				text-align: center;
 			}
+
+			.ch { width: 19px; } // the same 0.78 × font, for the 24px phrase size
 
 			.pencil { font-size: 26px; }
 		}
@@ -129,44 +135,12 @@
 		}
 	}
 
-	// ── Podium ───────────────────────────────────────────────────────────────────────────────────────
-	.podium {
-		position: absolute;
-		top: 22%;
-		left: 0;
-		right: 0;
-		margin: 0 auto;
-		width: 480px;
-		flex-direction: column;
-		padding: 20px 26px;
-
-		.podium-title {
-			font-size: 28px;
-			font-weight: 900;
-			color: #2c2418;
-			align-self: center;
-			margin-bottom: 12px;
-		}
-
-		.podium-row {
-			align-items: center;
-			gap: 12px;
-			padding: 4px 6px;
-			font-size: 20px;
-			color: #2c2418;
-
-			&.rank-0 { font-size: 26px; font-weight: 900; }
-
-			.rank { width: 30px; font-weight: 900; }
-			.name { flex-grow: 1; }
-			.score { font-weight: 800; }
-		}
-	}
-
 	// ── Scoreboard (right edge) ──────────────────────────────────────────────────────────────────────
 	// A clay WobbleText heading over one .paper-card of ruled rows (.divider) — heads + corner badges from the
 	// roster kit. Layout only here.
-	.scoreboard {
+	// Shared by the corner board and the podium: every row / card / heading rule below. (.podium re-places
+	// itself after this block.)
+	.scoreboard, .podium {
 		position: absolute;
 		right: $panel-inset;
 		top: $panel-inset;
@@ -306,6 +280,17 @@
 
 		.name { flex-grow: 1; font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 		.score { font-size: 24px; font-weight: 800; }
+	}
+
+	// ── Podium (final scores) ────────────────────────────────────────────────────────────────────────
+	// The corner board's pieces (shared block above), re-placed centre stage and a touch wider, under the top
+	// title + clock. Layout only.
+	.podium {
+		left: 0;
+		right: 0;
+		top: 210px;
+		margin: 0 auto;
+		width: 420px;
 	}
 
 	// ── Guess hint (bottom centre): the chat is the engine overlay — this just points at it ──────────

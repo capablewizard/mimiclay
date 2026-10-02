@@ -564,11 +564,7 @@
 		height: 100%;
 		border-radius: 4px;
 		background-color: $craft-yellow;
-		// The titles' two-layer clay shadow on each dash: a soft cast glow — the LETTERS' $emboss-glow, since a dash is a
-		// thin stroke like them, not a solid card — under the hard depth line. Offsets track each title size.
-		box-shadow:
-			8px 10px 4px $emboss-glow,
-			0px 2px 0px $emboss-depth-primary;
+		box-shadow: 0px 2px 0px $emboss-depth-primary; // the hard depth line only — no blurred glow
 		transform-origin: center;
 		animation-name: spark-jitter;
 		animation-duration: $wobble-duration;
@@ -606,7 +602,7 @@
 	height: 140px;
 
 	.spark { width: 46px; height: 14px; }
-	.spark-body { border-radius: 7px; box-shadow: 15px 17px 5px $emboss-glow, 0px 4px 0px $emboss-depth-primary; }
+	.spark-body { border-radius: 7px; box-shadow: 0px 4px 0px $emboss-depth-primary; }
 
 	&.left
 	{
@@ -632,7 +628,7 @@
 	height: 36px;
 
 	.spark { width: 12px; height: 4px; }
-	.spark-body { border-radius: 2px; box-shadow: 4px 5px 2px $emboss-glow, 0px 1px 0px $emboss-depth-primary; }
+	.spark-body { border-radius: 2px; box-shadow: 0px 1px 0px $emboss-depth-primary; }
 
 	&.left
 	{

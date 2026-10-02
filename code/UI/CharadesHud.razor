@@ -112,19 +112,50 @@
 			}
 		}
 
-		@* Podium: the standings, big. *@
+		@* Podium: the final standings, centre stage — the scoreboard's own pieces at full size: the winner line as
+		   the clay title between spark dashes, then a ruled card of the top rows (heads, medal badges, rank, name,
+		   score), the winner's row lit in the selection highlight. The corner board steps aside meanwhile. *@
 		@if ( Manager.Phase == CharadesPhase.Podium )
 		{
-			<div class="podium paper-card">
-				<div class="podium-title">@WinnerLine</div>
-				@foreach ( var (p, i) in Manager.Scoreboard.Take( 8 ).Select( ( p, i ) => (p, i) ) )
-				{
-					<div class="podium-row rank-@i">
-						<div class="rank">@(i + 1)</div>
-						<div class="name">@p.Name</div>
-						<div class="score">@p.Score</div>
-					</div>
-				}
+			<div class="podium">
+				<div class="board-heading">
+					<div class="sparks small left"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+					<WobbleText Text=@WinnerLine class="clay-title auto" @key=@WinnerLine />
+					<div class="sparks small right"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+				</div>
+
+				<div class="paper-card board-card">
+					@foreach ( var (row, i) in RankedRows( PodiumCap ).Select( ( r, i ) => (r, i) ) )
+					{
+						var p = row.Player;
+						var icon = _icons.Of( Scene, p.Connection, facesOnly: true );
+						var medal = MedalFor( row.Rank );
+						@if ( i > 0 )
+						{
+							<div class="divider"></div>
+						}
+						<div class="board-row @(row.Rank == 1 ? "selected" : "")" style="z-index: @(RowZ( i ))">
+							<div class="player-icon">
+								<div class="icon-body">
+									@if ( icon.HasPicture )
+									{
+										<SdfIcon Key=@p.Connection Source=@icon.Sculpture Brushes=@icon.Fallback Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@IconOutline Supersample=@RoundHud.IconSupersample class="icon-render" />
+									}
+									else
+									{
+										<div class="generic">person</div>
+									}
+									<div class="corner-badge @(medal != "" ? "on" : "")">
+										<div class="badge-glyph">@medal</div>
+									</div>
+								</div>
+							</div>
+							<div class="rank">@(row.Rank).</div>
+							<div class="name">@p.Name</div>
+							<div class="score">@p.Score</div>
+						</div>
+					}
+				</div>
 			</div>
 		}
 
@@ -132,6 +163,9 @@
 		   in the game, over one paper card with a ruled row per player. Each row leads with the player's rendered
 		   head, the turn badge (🎨 miming · ✏️ wrote it · 🥇🥈✅ guessed) pinned to its corner where the roster pips
 		   wear their 🎨 edit palette. The mimic's row is an inset, rounded selection-orange block. *@
+		@* Not during the podium — it shows the standings centre stage. *@
+		@if ( Manager.Phase != CharadesPhase.Podium )
+		{
 		<div class="scoreboard">
 			<div class="board-heading">
 				<div class="sparks small left"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
@@ -188,6 +222,7 @@
 			</div>
 			}
 		</div>
+		}
 
 		@* Guessing happens in the ENGINE chat (Enter) — the HUD just reminds guessers where the verb is.
 		   The phrase's author knows the answer, so they get told to sit this one out instead. *@
@@ -535,14 +570,34 @@
 		return _lastBadge.GetValueOrDefault( player, "" );
 	}
 
+	// The podium's title: the winner by name, or a tie when the top score is shared (competition ranks — several
+	// players can be "1."). Plain words: it's a clay WobbleText, and an emoji there would take the letter emboss.
 	string WinnerLine
 	{
 		get
 		{
-			var top = Manager?.Scoreboard.FirstOrDefault();
-			return top is { Name.Length: > 0 } ? $"🏆 {top.Value.Name} wins!" : "Game over!";
+			var all = Manager?.Scoreboard;
+			if ( all is not { Count: > 0 } || string.IsNullOrEmpty( all[0].Name ) )
+				return "Game over!";
+
+			return all.Count( p => p.Score == all[0].Score ) > 1 ? "It's a tie!" : $"{all[0].Name} wins!";
 		}
 	}
+
+	// How many standings the podium card lists.
+	const int PodiumCap = 8;
+
+	// The top `take` players with their competition ranks (see BoardCards for the "1, 2, 2, 4" rule).
+	List<BoardRow> RankedRows( int take )
+	{
+		var all = Manager.Scoreboard;
+		return all.Take( take )
+			.Select( ( p, i ) => new BoardRow( p, 1 + all.Count( q => q.Score > p.Score ) ) )
+			.ToList();
+	}
+
+	// The podium's corner badge by finishing place — the guess medals, plus bronze for third.
+	static string MedalFor( int rank ) => rank switch { 1 => "🥇", 2 => "🥈", 3 => "🥉", _ => "" };
 
 	protected override int BuildHash()
 		=> Manager is null
