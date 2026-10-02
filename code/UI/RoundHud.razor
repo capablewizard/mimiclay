@@ -454,10 +454,6 @@
 	/// <summary>How long each silhouette flash stays up before the pip returns to the anonymous blob.</summary>
 	const float HintShowSeconds = 2f;
 
-	// Pure interface feedback, so played as a raw file exactly like HunterController's denied-shot blip —
-	// ListenLocal, no world spatialisation.
-	const string HintSoundPath = "sounds/kenney/ui/maximize_006.wav";
-
 	bool HintsEnabled => RoundManager.Current.IsValid() && RoundManager.Current.Settings.HintSeconds > 0f;
 
 	// Machines where the prop pips show the REAL disguises openly — full-colour portrait, ink outline, no
@@ -576,18 +572,8 @@
 		}
 	}
 
-	void PlayHintSound()
-	{
-		var handle = Sound.PlayFile( SoundFile.Load( HintSoundPath ) );
-		if ( !handle.IsValid() )
-			return;
-
-		handle.ListenLocal = true;
-		handle.DistanceAttenuation = false;
-		handle.AirAbsorption = false;
-		handle.OcclusionEnabled = false;
-		handle.ReverbEnabled = false;
-	}
+	// Pure interface feedback: a flat 2D blip (UiSounds), no world spatialisation.
+	void PlayHintSound() => UiSounds.Play( UiSounds.Silhouette );
 
 	// Whether a player is mid-edit, for rows that don't resolve a full icon (the anonymous prop pips). Only
 	// answerable for pawns this machine can see — a concealed prop's synced state never reaches us, so its

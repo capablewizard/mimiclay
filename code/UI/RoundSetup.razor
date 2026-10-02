@@ -490,6 +490,7 @@
 		i = ((i + dir) % games.Length + games.Length) % games.Length; // wrap both directions
 		LobbyManager.Current?.SetGame( games[i].Kind );
 		Nudge.Poke( "game", dir );
+		UiSounds.Play( UiSounds.Silhouette ); // the silhouette-hint pop: "something new picked"
 	}
 
 	// ── Prop hunt's mode-within-the-game (Infection / Teams) ────────────────────────────────────────────────
@@ -608,8 +609,10 @@
 	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
 	void PickMap( string ident )
 	{
+		if ( IsPicked( ident ) ) return; // already the pick: no hop, no sound
 		LobbyManager.Current?.SetMap( ident );
 		Nudge.Poke( "map" );
+		UiSounds.Play( UiSounds.Silhouette );
 	}
 
 	bool IsPicked( string ident ) => string.Equals( _picked, ident, StringComparison.OrdinalIgnoreCase );
