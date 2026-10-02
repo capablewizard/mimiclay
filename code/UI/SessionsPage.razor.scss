@@ -81,7 +81,7 @@
 		pointer-events: all; // whole row is clickable to select
 		transition: transform 0.1s ease-out, background-color 0.1s ease-out;
 
-		&:hover { transform: translateY( -2px ); sound-in: $sound-hover; } // lift on hover (no recolour; orange = selected)
+		&:hover { transform: translateY( -2px ); sound-in: $sound-hover; animation: hover-lift-2 $spring-duration ease-out; } // lift on hover (no recolour; orange = selected)
 		&:active { sound-in: $sound-click; } // click = select
 
 		// Server name — first column, single line, clips if too long for its (flexing) column.
@@ -184,3 +184,7 @@
 		}
 	}
 }
+
+// Click-through insides (see "Click targets" in _button.scss).
+.head *,
+.lobby-row * { pointer-events: none; }

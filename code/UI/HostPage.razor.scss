@@ -62,7 +62,7 @@
 		.mode-blurb { font-size: 16px; color: $paper-ink-soft; } // a sentence — left in normal case
 
 		// Hover never recolours — it just enlarges. Orange is reserved for the selected state.
-		&:hover { transform: scale( 1.03 ); sound-in: $sound-hover; }
+		&:hover { transform: scale( 1.03 ); sound-in: $sound-hover; animation: hover-spring-103 $spring-duration ease-out; }
 		&:active { sound-in: $sound-click; }
 
 		// Selected = orange fill with dark ink (matches an EditHud selected row).

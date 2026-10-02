@@ -30,7 +30,7 @@
 				</div>
 				<div class="stepper">
 					<div class="step-btn" @onclick=@(() => Step( -1 ))>remove</div>
-					<div class="step-value">@_maxPlayers</div>
+					<div class="step-value @Nudge.Class( nameof( Step ) )">@_maxPlayers</div>
 					<div class="step-btn" @onclick=@(() => Step( +1 ))>add</div>
 				</div>
 			</div>
@@ -40,9 +40,9 @@
 					<div class="mi">lock</div><span>Privacy</span>
 				</div>
 				<div class="seg">
-					<div class="pill @(_privacy == LobbyPrivacy.Public ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Public)>Public</div>
-					<div class="pill @(_privacy == LobbyPrivacy.FriendsOnly ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.FriendsOnly)>Friends</div>
-					<div class="pill @(_privacy == LobbyPrivacy.Private ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Private)>Private</div>
+					<div class="pill @(_privacy == LobbyPrivacy.Public ? $"on {Nudge.Class( nameof( SetPrivacy ) )}" : "")" @onclick=@(() => SetPrivacy( LobbyPrivacy.Public ))>Public</div>
+					<div class="pill @(_privacy == LobbyPrivacy.FriendsOnly ? $"on {Nudge.Class( nameof( SetPrivacy ) )}" : "")" @onclick=@(() => SetPrivacy( LobbyPrivacy.FriendsOnly ))>Friends</div>
+					<div class="pill @(_privacy == LobbyPrivacy.Private ? $"on {Nudge.Class( nameof( SetPrivacy ) )}" : "")" @onclick=@(() => SetPrivacy( LobbyPrivacy.Private ))>Private</div>
 				</div>
 			</div>
 
@@ -66,14 +66,25 @@
 @code
 {
 	int _maxPlayers = MenuNetworking.DefaultMaxPlayers;
+	readonly PickNudge Nudge = new(); // the value wobbles toward the step (see PickNudge)
 	LobbyPrivacy _privacy = LobbyPrivacy.Public;
 	string _sessionName = "";
 
 	// Placeholder shown when the host leaves the name blank — mirrors what MenuNetworking will name it.
 	string DefaultName => MenuNetworking.DefaultSessionName;
 
+	// Left-to-right order of the privacy pills, so the picked one wobbles toward the side it moved to.
+	static readonly LobbyPrivacy[] PrivacyOrder = { LobbyPrivacy.Public, LobbyPrivacy.FriendsOnly, LobbyPrivacy.Private };
+
+	void SetPrivacy( LobbyPrivacy p )
+		=> Nudge.Change( nameof( SetPrivacy ), Math.Sign( Array.IndexOf( PrivacyOrder, p ) - Array.IndexOf( PrivacyOrder, _privacy ) ),
+			() => _privacy, () => _privacy = p );
+
 	void Step( int dir )
-		=> _maxPlayers = Math.Clamp( _maxPlayers + dir, MenuNetworking.MinMaxPlayers, MenuNetworking.MaxMaxPlayers );
+	{
+		Nudge.Change( nameof( Step ), dir, () => _maxPlayers,
+			() => _maxPlayers = Math.Clamp( _maxPlayers + dir, MenuNetworking.MinMaxPlayers, MenuNetworking.MaxMaxPlayers ) );
+	}
 
 	void StartGame()
 	{
@@ -85,5 +96,5 @@
 	}
 
 	protected override int BuildHash()
-		=> HashCode.Combine( _maxPlayers, _privacy, _sessionName, MenuNetworking.Busy );
+		=> HashCode.Combine( _maxPlayers, _privacy, _sessionName, MenuNetworking.Busy, Nudge.Version );
 }

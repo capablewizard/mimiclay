@@ -40,9 +40,11 @@
 
 					@* The game banner: the key art behind it (temporary, the same for every game), < name > centred over it. *@
 					<div class="game-banner">
-						<div class="art-shade full"></div>
+						@* The face (art + frame + shade) and the name spring sideways on a pick; the arrows sit still on top, so
+						   rapid clicking never has its target slide out from under the cursor. *@
+						<div class="banner-face @GameBumpClass"><div class="art-shade full"></div></div>
 						<div class="banner-arrow" @onclick=@(() => CycleGame( -1 ))><div class="mi">chevron_left</div></div>
-						<div class="banner-name">@Game.Label</div>
+						<div class="banner-name @GameBumpClass">@Game.Label</div>
 						<div class="banner-arrow" @onclick=@(() => CycleGame( 1 ))><div class="mi">chevron_right</div></div>
 					</div>
 
@@ -98,7 +100,7 @@
 							<div class="option-name">Hunters</div>
 							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddHunters( -1 ))>remove</div>
-								<div class="step-value">@((int)S.HunterCount)</div>
+								<div class="step-value @Nudge.Class( nameof( AddHunters ) )">@((int)S.HunterCount)</div>
 								<div class="step-btn" @onclick=@(() => AddHunters( 1 ))>add</div>
 							</div>
 						</div>
@@ -106,7 +108,7 @@
 							<div class="option-name">Hide time</div>
 							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddHide( -15f ))>remove</div>
-								<div class="step-value">@Secs( S.HideSeconds )</div>
+								<div class="step-value @Nudge.Class( nameof( AddHide ) )">@Secs( S.HideSeconds )</div>
 								<div class="step-btn" @onclick=@(() => AddHide( 15f ))>add</div>
 							</div>
 						</div>
@@ -114,7 +116,7 @@
 							<div class="option-name">Hunt time</div>
 							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddHunt( -15f ))>remove</div>
-								<div class="step-value">@Secs( S.HuntSeconds )</div>
+								<div class="step-value @Nudge.Class( nameof( AddHunt ) )">@Secs( S.HuntSeconds )</div>
 								<div class="step-btn" @onclick=@(() => AddHunt( 15f ))>add</div>
 							</div>
 						</div>
@@ -125,7 +127,7 @@
 							<div class="option-name">Rounds</div>
 							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddCharadesRounds( -1 ))>remove</div>
-								<div class="step-value">@Ch.Rounds</div>
+								<div class="step-value @Nudge.Class( nameof( AddCharadesRounds ) )">@Ch.Rounds</div>
 								<div class="step-btn" @onclick=@(() => AddCharadesRounds( 1 ))>add</div>
 							</div>
 						</div>
@@ -133,7 +135,7 @@
 							<div class="option-name">Sculpt time</div>
 							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddCharadesSculpt( -15f ))>remove</div>
-								<div class="step-value">@Secs( Ch.SculptSeconds )</div>
+								<div class="step-value @Nudge.Class( nameof( AddCharadesSculpt ) )">@Secs( Ch.SculptSeconds )</div>
 								<div class="step-btn" @onclick=@(() => AddCharadesSculpt( 15f ))>add</div>
 							</div>
 						</div>
@@ -143,7 +145,7 @@
 								<div class="option-name">Write time</div>
 								<div class="stepper compact">
 									<div class="step-btn" @onclick=@(() => AddCharadesWrite( -15f ))>remove</div>
-									<div class="step-value">@Secs( Ch.WriteSeconds )</div>
+									<div class="step-value @Nudge.Class( nameof( AddCharadesWrite ) )">@Secs( Ch.WriteSeconds )</div>
 									<div class="step-btn" @onclick=@(() => AddCharadesWrite( 15f ))>add</div>
 								</div>
 							</div>
@@ -153,8 +155,8 @@
 							<div class="option-row">
 								<div class="option-name">Topic choices</div>
 								<div class="seg compact">
-									<div class="pill @(Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( true ))>Yes</div>
-									<div class="pill @(!Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( false ))>No</div>
+									<div class="pill @(Ch.TopicChoices ? $"on {Nudge.Class( nameof( SetCharadesChoices ) )}" : "")" @onclick=@(() => SetCharadesChoices( true ))>Yes</div>
+									<div class="pill @(!Ch.TopicChoices ? $"on {Nudge.Class( nameof( SetCharadesChoices ) )}" : "")" @onclick=@(() => SetCharadesChoices( false ))>No</div>
 								</div>
 							</div>
 						}
@@ -163,8 +165,8 @@
 						<div class="option-row">
 							<div class="option-name">Length hints</div>
 							<div class="seg compact">
-								<div class="pill @(Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( true ))>Yes</div>
-								<div class="pill @(!Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( false ))>No</div>
+								<div class="pill @(Ch.WordLengthHints ? $"on {Nudge.Class( nameof( SetCharadesHints ) )}" : "")" @onclick=@(() => SetCharadesHints( true ))>Yes</div>
+								<div class="pill @(!Ch.WordLengthHints ? $"on {Nudge.Class( nameof( SetCharadesHints ) )}" : "")" @onclick=@(() => SetCharadesHints( false ))>No</div>
 							</div>
 						</div>
 					}
@@ -173,8 +175,8 @@
 						<div class="option-row">
 							<div class="option-name">Spawn props</div>
 							<div class="seg compact">
-								<div class="pill @(C.SpawnProps ? "on" : "")" @onclick=@(() => SetSpawnProps( true ))>Yes</div>
-								<div class="pill @(!C.SpawnProps ? "on" : "")" @onclick=@(() => SetSpawnProps( false ))>No</div>
+								<div class="pill @(C.SpawnProps ? $"on {Nudge.Class( nameof( SetSpawnProps ) )}" : "")" @onclick=@(() => SetSpawnProps( true ))>Yes</div>
+								<div class="pill @(!C.SpawnProps ? $"on {Nudge.Class( nameof( SetSpawnProps ) )}" : "")" @onclick=@(() => SetSpawnProps( false ))>No</div>
 							</div>
 						</div>
 					}
@@ -192,7 +194,7 @@
 									<div class="option-name">Taunt timer</div>
 									<div class="stepper compact">
 										<div class="step-btn" @onclick=@(() => AddTaunt( -5f ))>remove</div>
-										<div class="step-value">@SecsOrNone( S.TauntSeconds )</div>
+										<div class="step-value @Nudge.Class( nameof( AddTaunt ) )">@SecsOrNone( S.TauntSeconds )</div>
 										<div class="step-btn" @onclick=@(() => AddTaunt( 5f ))>add</div>
 									</div>
 								</div>
@@ -200,7 +202,7 @@
 									<div class="option-name">Silhouette hints</div>
 									<div class="stepper compact">
 										<div class="step-btn" @onclick=@(() => AddHint( -15f ))>remove</div>
-										<div class="step-value">@SecsOrNone( S.HintSeconds )</div>
+										<div class="step-value @Nudge.Class( nameof( AddHint ) )">@SecsOrNone( S.HintSeconds )</div>
 										<div class="step-btn" @onclick=@(() => AddHint( 15f ))>add</div>
 									</div>
 								</div>
@@ -208,7 +210,7 @@
 									<div class="option-name">Reveal time</div>
 									<div class="stepper compact">
 										<div class="step-btn" @onclick=@(() => AddReveal( -5f ))>remove</div>
-										<div class="step-value">@Secs( S.RevealSeconds )</div>
+										<div class="step-value @Nudge.Class( nameof( AddReveal ) )">@Secs( S.RevealSeconds )</div>
 										<div class="step-btn" @onclick=@(() => AddReveal( 5f ))>add</div>
 									</div>
 								</div>
@@ -266,7 +268,7 @@
 						@* The picked map, big, or the Surprise me card when Random is picked. *@
 						@if ( SelectedMap is { } sel )
 						{
-							<div class="map-card featured selected">
+							<div class="map-card featured selected @MapBumpClass">
 								@if ( sel.Preview is not null )
 								{
 									<CoverImage class="map-img" Texture=@sel.Preview />
@@ -278,7 +280,7 @@
 						}
 						else
 						{
-							<div class="map-card featured selected surprise">
+							<div class="map-card featured selected surprise @MapBumpClass">
 								<div class="surprise-art"><div class="spark a"></div><div class="q">?</div><div class="spark b"></div></div>
 								<div class="map-name dark">Surprise me</div>
 								<div class="map-check"><div class="mi">check</div></div>
@@ -353,6 +355,11 @@
 	public static bool IsOpen { get; private set; }
 
 	bool _open;
+
+	// Pick feedback springs (banner nudge, map hop, stepper value wobble) — see PickNudge. Cleared on open.
+	readonly PickNudge Nudge = new();
+	string GameBumpClass => Nudge.Class( "game" );
+	string MapBumpClass => Nudge.Class( "map", "bump" );
 
 	// The picked map: the lobby's own setting, read straight through (the host's setters write the synced struct
 	// immediately, so the cards update on click). A separate local copy used to drift from it — switching games
@@ -458,6 +465,7 @@
 	void SetOpen( bool open )
 	{
 		_open = open;
+		Nudge.Clear();
 		if ( !open ) _workshopView = null; // the workshop popup never outlives the dialog
 		IsOpen = open;
 		StateHasChanged();
@@ -481,6 +489,7 @@
 		if ( i < 0 ) i = 0;
 		i = ((i + dir) % games.Length + games.Length) % games.Length; // wrap both directions
 		LobbyManager.Current?.SetGame( games[i].Kind );
+		Nudge.Poke( "game", dir );
 	}
 
 	// ── Prop hunt's mode-within-the-game (Infection / Teams) ────────────────────────────────────────────────
@@ -498,15 +507,15 @@
 	}
 
 	// ── Settings steppers (clamped by the LobbyManager setters) ──────────────────────────────────────────────
-	void AddHunters( int d ) => LobbyManager.Current?.SetHunterCount( (int)S.HunterCount + d );
-	void AddHide( float d ) => LobbyManager.Current?.SetHideSeconds( S.HideSeconds + d );
-	void AddHunt( float d ) => LobbyManager.Current?.SetHuntSeconds( S.HuntSeconds + d );
-	void AddTaunt( float d ) => LobbyManager.Current?.SetTauntSeconds( S.TauntSeconds + d );
-	void AddHint( float d ) => LobbyManager.Current?.SetHintSeconds( S.HintSeconds + d );
-	void AddReveal( float d ) => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d );
+	void AddHunters( int d ) => Nudge.Change( nameof( AddHunters ), MathF.Sign( d ), () => S.HunterCount, () => LobbyManager.Current?.SetHunterCount( (int)S.HunterCount + d ) );
+	void AddHide( float d ) => Nudge.Change( nameof( AddHide ), MathF.Sign( d ), () => S.HideSeconds, () => LobbyManager.Current?.SetHideSeconds( S.HideSeconds + d ) );
+	void AddHunt( float d ) => Nudge.Change( nameof( AddHunt ), MathF.Sign( d ), () => S.HuntSeconds, () => LobbyManager.Current?.SetHuntSeconds( S.HuntSeconds + d ) );
+	void AddTaunt( float d ) => Nudge.Change( nameof( AddTaunt ), MathF.Sign( d ), () => S.TauntSeconds, () => LobbyManager.Current?.SetTauntSeconds( S.TauntSeconds + d ) );
+	void AddHint( float d ) => Nudge.Change( nameof( AddHint ), MathF.Sign( d ), () => S.HintSeconds, () => LobbyManager.Current?.SetHintSeconds( S.HintSeconds + d ) );
+	void AddReveal( float d ) => Nudge.Change( nameof( AddReveal ), MathF.Sign( d ), () => S.RevealSeconds, () => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d ) );
 
 	// Creative's toggle (host-authority enforced by the LobbyManager setter, like everything above).
-	void SetSpawnProps( bool on ) => LobbyManager.Current?.SetSpawnProps( on );
+	void SetSpawnProps( bool on ) => Nudge.Change( nameof( SetSpawnProps ), on ? -1 : 1, () => C.SpawnProps, () => LobbyManager.Current?.SetSpawnProps( on ) );
 
 	// ── Layout helpers (the concept layout: banner, radios, round rules, More rules, map cards) ─────────────
 	// Short radio-row blurbs (the catalogue descriptions are sentence-long).
@@ -570,12 +579,12 @@
 	// ── Charades settings (host-authority enforced by the LobbyManager setters) ─────────────────────────────
 	CharadesSettings Ch => LobbyManager.Current.IsValid() ? LobbyManager.Current.CharadesCfg : CharadesSettings.Default;
 
-	void AddCharadesRounds( int d ) => LobbyManager.Current?.SetCharadesRounds( Ch.Rounds + d );
-	void AddCharadesSculpt( float d ) => LobbyManager.Current?.SetCharadesSculptSeconds( Ch.SculptSeconds + d );
-	void SetCharadesHints( bool on ) => LobbyManager.Current?.SetCharadesWordHints( on );
-	void SetCharadesChoices( bool on ) => LobbyManager.Current?.SetCharadesTopicChoices( on );
+	void AddCharadesRounds( int d ) => Nudge.Change( nameof( AddCharadesRounds ), MathF.Sign( d ), () => Ch.Rounds, () => LobbyManager.Current?.SetCharadesRounds( Ch.Rounds + d ) );
+	void AddCharadesSculpt( float d ) => Nudge.Change( nameof( AddCharadesSculpt ), MathF.Sign( d ), () => Ch.SculptSeconds, () => LobbyManager.Current?.SetCharadesSculptSeconds( Ch.SculptSeconds + d ) );
+	void SetCharadesHints( bool on ) => Nudge.Change( nameof( SetCharadesHints ), on ? -1 : 1, () => Ch.WordLengthHints, () => LobbyManager.Current?.SetCharadesWordHints( on ) );
+	void SetCharadesChoices( bool on ) => Nudge.Change( nameof( SetCharadesChoices ), on ? -1 : 1, () => Ch.TopicChoices, () => LobbyManager.Current?.SetCharadesTopicChoices( on ) );
 	void SetCharadesSource( PhraseSource source ) => LobbyManager.Current?.SetCharadesSource( source );
-	void AddCharadesWrite( float d ) => LobbyManager.Current?.SetCharadesWriteSeconds( Ch.WriteSeconds + d );
+	void AddCharadesWrite( float d ) => Nudge.Change( nameof( AddCharadesWrite ), MathF.Sign( d ), () => Ch.WriteSeconds, () => LobbyManager.Current?.SetCharadesWriteSeconds( Ch.WriteSeconds + d ) );
 
 	// Built-in topic chips: the empty selection means every one is lit (that's the Everything chip).
 	bool IsEverything => CharadesTopics.Parse( Ch.Topics ).Count == 0;
@@ -600,6 +609,7 @@
 	void PickMap( string ident )
 	{
 		LobbyManager.Current?.SetMap( ident );
+		Nudge.Poke( "map" );
 	}
 
 	bool IsPicked( string ident ) => string.Equals( _picked, ident, StringComparison.OrdinalIgnoreCase );
@@ -620,6 +630,6 @@
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
 			HashCode.Combine( G, C.SpawnProps ),
 			HashCode.Combine( Ch.Rounds, Ch.Source, Ch.Topics, Ch.SculptSeconds, Ch.TopicChoices, Ch.WriteSeconds, Ch.WordLengthHints ),
-			HashCode.Combine( Ch.WorkshopLists, CharadesWorkshop.Added.Count, _workshopView, _picked ),
+			HashCode.Combine( Ch.WorkshopLists, CharadesWorkshop.Added.Count, _workshopView, _picked, Nudge.Version ),
 			LobbyPlayerCount );
 }

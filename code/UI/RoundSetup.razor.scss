@@ -170,14 +170,32 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		flex-shrink: 0;
 		height: 92px;
 		margin-bottom: $space-sm;
-		border-radius: $radius-md;
-		background-color: $craft-orange-hi;   // shows while the art loads
-		background-image: url( "/mimiclaythumb_KeyArt.png" );
-		background-size: cover;
-		background-position: center;
-		background-repeat: no-repeat;
-		border: 2px solid $card-edge;
-		overflow: hidden;
+
+		// The visible banner (art, frame, shade) is its own layer behind the arrows, so it can spring sideways on a pick
+		// (nudge-* below) while the arrows hold still for the next click.
+		.banner-face {
+			position: absolute;
+			top: 0; left: 0; right: 0; bottom: 0;
+			border-radius: $radius-md;
+			background-color: $craft-orange-hi;   // shows while the art loads
+			background-image: url( "/mimiclaythumb_KeyArt.png" );
+			background-size: cover;
+			background-position: center;
+			background-repeat: no-repeat;
+			border: 2px solid $card-edge;
+			overflow: hidden;
+		}
+
+		.nudge-right-a { animation: banner-nudge-right-a 0.42s ease-out; }
+		.nudge-right-b { animation: banner-nudge-right-b 0.42s ease-out; }
+		.nudge-left-a { animation: banner-nudge-left-a 0.42s ease-out; }
+		.nudge-left-b { animation: banner-nudge-left-b 0.42s ease-out; }
+
+		// Parallax: the name swings further, and peaks a beat later, than the art behind it (banner-name-nudge-*).
+		.banner-name.nudge-right-a { animation: banner-name-nudge-right-a 0.46s ease-out; }
+		.banner-name.nudge-right-b { animation: banner-name-nudge-right-b 0.46s ease-out; }
+		.banner-name.nudge-left-a { animation: banner-name-nudge-left-a 0.46s ease-out; }
+		.banner-name.nudge-left-b { animation: banner-name-nudge-left-b 0.46s ease-out; }
 
 		// The game name: big cream display text on the (shaded) art, with the title's layered clay emboss. A
 		// FIXED-width slot (text centred in it) so the arrows stay in the same place whatever the name's length.
@@ -211,8 +229,9 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 
 			.mi { font-size: 28px; color: $paper-ink; }
 
-			&:hover { background-color: $craft-orange-hi; transform: scale( 1.08 ); sound-in: $sound-hover; }
-			&:active { transform: scale( 0.95 ); box-shadow: none; sound-in: $sound-click; }
+			&:hover { background-color: $craft-orange-hi; transform: scale( 1.08 ); sound-in: $sound-hover; animation: hover-spring-108 $spring-duration ease-out; }
+			&:active { sound-in: $sound-click; }
+			&:hover:active { transform: scale( 1 ); box-shadow: none; }
 		}
 	}
 
@@ -287,6 +306,11 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 
 		&.featured {
 			height: 300px;
+			&.bump-a { animation: map-bump-a 0.4s ease-out; }   // a small hop on each pick (MapBumpClass)
+			&.bump-b { animation: map-bump-b 0.4s ease-out; }
+			// Parallax: the name rides the card and adds its own, later swing on top (it inherits the card's motion).
+			&.bump-a .map-name { animation: map-name-bump-a 0.44s ease-out; }
+			&.bump-b .map-name { animation: map-name-bump-b 0.44s ease-out; }
 			margin-bottom: $space-sm;   // + the grid's headroom = the old 12px gap
 			cursor: default;
 			.map-name { font-size: 32px; left: 18px; bottom: $space-md; }
@@ -297,7 +321,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		&.small {
 			width: 288px;
 			height: 128px;
-			&:hover { transform: translateY( -2px ); border-color: $craft-orange-hi; sound-in: $sound-hover; }
+			&:hover { transform: translateY( -2px ); border-color: $craft-orange-hi; sound-in: $sound-hover; animation: hover-lift-2 $spring-duration ease-out; }
 			&:active { sound-in: $sound-click; }
 		}
 
@@ -411,4 +435,133 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 	82%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
 	99%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
 	100% { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
+}
+
+// Click-through insides (see "Click targets" in _button.scss).
+.banner-arrow *,
+.map-card * { pointer-events: none; }
+
+// Pick springs. Each pair (-a/-b) is the same motion under two names: the markup alternates them per press, because
+// the engine restarts an animation only when its keyframes change. Banner: kicks toward the arrow pressed, swings
+// back past centre, settles. Featured map: hops up, dips, settles. Top-level so s&box registers them.
+@keyframes banner-nudge-right-a
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( 12px ); }
+	50%  { transform: translateX( -6px ); }
+	72%  { transform: translateX( 3px ); }
+	88%  { transform: translateX( -1px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes banner-nudge-right-b
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( 12px ); }
+	50%  { transform: translateX( -6px ); }
+	72%  { transform: translateX( 3px ); }
+	88%  { transform: translateX( -1px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes banner-nudge-left-a
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( -12px ); }
+	50%  { transform: translateX( 6px ); }
+	72%  { transform: translateX( -3px ); }
+	88%  { transform: translateX( 1px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes banner-nudge-left-b
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( -12px ); }
+	50%  { transform: translateX( 6px ); }
+	72%  { transform: translateX( -3px ); }
+	88%  { transform: translateX( 1px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes map-bump-a
+{
+	0%   { transform: translateY( 0px ); }
+	25%  { transform: translateY( -8px ); }
+	50%  { transform: translateY( 4px ); }
+	72%  { transform: translateY( -2px ); }
+	88%  { transform: translateY( 0.5px ); }
+	100% { transform: translateY( 0px ); }
+}
+
+@keyframes map-bump-b
+{
+	0%   { transform: translateY( 0px ); }
+	25%  { transform: translateY( -8px ); }
+	50%  { transform: translateY( 4px ); }
+	72%  { transform: translateY( -2px ); }
+	88%  { transform: translateY( 0.5px ); }
+	100% { transform: translateY( 0px ); }
+}
+
+@keyframes banner-name-nudge-right-a
+{
+	0%   { transform: translateX( 0px ); }
+	30%  { transform: translateX( 20px ); }
+	56%  { transform: translateX( -10px ); }
+	76%  { transform: translateX( 5px ); }
+	90%  { transform: translateX( -2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes banner-name-nudge-right-b
+{
+	0%   { transform: translateX( 0px ); }
+	30%  { transform: translateX( 20px ); }
+	56%  { transform: translateX( -10px ); }
+	76%  { transform: translateX( 5px ); }
+	90%  { transform: translateX( -2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes banner-name-nudge-left-a
+{
+	0%   { transform: translateX( 0px ); }
+	30%  { transform: translateX( -20px ); }
+	56%  { transform: translateX( 10px ); }
+	76%  { transform: translateX( -5px ); }
+	90%  { transform: translateX( 2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes banner-name-nudge-left-b
+{
+	0%   { transform: translateX( 0px ); }
+	30%  { transform: translateX( -20px ); }
+	56%  { transform: translateX( 10px ); }
+	76%  { transform: translateX( -5px ); }
+	90%  { transform: translateX( 2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+// Relative to the card (it's a child), so these are the EXTRA travel on top of map-bump.
+@keyframes map-name-bump-a
+{
+	0%   { transform: translateY( 0px ); }
+	30%  { transform: translateY( -6px ); }
+	56%  { transform: translateY( 4px ); }
+	76%  { transform: translateY( -2px ); }
+	90%  { transform: translateY( 0.5px ); }
+	100% { transform: translateY( 0px ); }
+}
+
+// Relative to the card (it's a child), so these are the EXTRA travel on top of map-bump.
+@keyframes map-name-bump-b
+{
+	0%   { transform: translateY( 0px ); }
+	30%  { transform: translateY( -6px ); }
+	56%  { transform: translateY( 4px ); }
+	76%  { transform: translateY( -2px ); }
+	90%  { transform: translateY( 0.5px ); }
+	100% { transform: translateY( 0px ); }
 }

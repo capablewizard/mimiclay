@@ -43,7 +43,7 @@
 			cursor: pointer;
 			pointer-events: all;
 			transition: all 0.1s ease-out;
-			&:hover { color: $paper-ink; transform: scale( 1.15 ); sound-in: $sound-hover; }
+			&:hover { color: $paper-ink; transform: scale( 1.15 ); sound-in: $sound-hover; animation: hover-spring-115 $spring-duration ease-out; }
 			&:active { sound-in: $sound-click; }
 		}
 	}
@@ -101,8 +101,9 @@
 
 		.mi { font-size: 18px; }
 
-		&:hover { color: $craft-red; transform: scale( 1.06 ); sound-in: $sound-hover; }
-		&:active { transform: scale( 0.94 ); sound-in: $sound-click; }
+		&:hover { color: $craft-red; transform: scale( 1.06 ); sound-in: $sound-hover; animation: hover-spring-106 $spring-duration ease-out; }
+		&:active { sound-in: $sound-click; }
+		&:hover:active { transform: scale( 1 ); }
 		&.liked { color: $craft-red; border-color: $craft-red; }
 	}
 
@@ -126,3 +127,6 @@
 		.spacer { flex-grow: 1; }
 	}
 }
+
+// Click-through insides (see "Click targets" in _button.scss).
+.like-btn * { pointer-events: none; }

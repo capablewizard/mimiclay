@@ -98,6 +98,9 @@ $panel-inset: 24px;   // inset from the screen edge so cards float off the corne
 // screen reads mechanical, and per-letter stagger depends on offsets.
 $wobble-duration: 1.5s;
 
+// Hover spring: how long a button takes to overshoot and settle into its hover size (hover-spring-* in _button.scss).
+$spring-duration: 0.3s;
+
 // --- UI sounds ---------------------------------------------------------------
 // Two built-in s&box menu sound events, played via CSS `sound-in` on a button's :hover / :active. `sound-in`
 // fires when the selector STARTS matching, so on :hover it triggers on hover-enter and on :active on press —

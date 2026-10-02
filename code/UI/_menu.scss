@@ -138,7 +138,7 @@ $menu-left: 64px;
 	}
 
 	// Whole-label enlarge on hover (per-letter jitter is the combined rule below). No colour change on hover.
-	&:hover { transform: scale( 1.06 ); sound-in: $sound-hover; }
+	&:hover { transform: scale( 1.06 ); sound-in: $sound-hover; animation: hover-spring-106 $spring-duration ease-out; }
 	&:active { sound-in: $sound-click; }
 
 	// Headline action — warm terracotta (e.g. Quick Play). Only the DEPTH colour changes; glow stays shared.
@@ -164,6 +164,11 @@ $menu-left: 64px;
 		transform: none;
 	}
 }
+
+// Click-through letters: each WobbleText .letter jitters on hover, so as its own hit target it slid out from under
+// a still cursor and dropped the click. See "Click targets" in _button.scss.
+.menu-button *,
+.footer-button * { pointer-events: none; }
 
 // While the sculpt toy is alt-navigated (orbit/zoom/pan) the menu goes inert (nav-inert on .menu-bg, set from
 // AltNav.Held): the interactive labels — which opt into pointer-events:all above — drop back to
@@ -206,7 +211,7 @@ $menu-left: 64px;
 	// No filter:drop-shadow — it clips the right overhang + re-casts a jittering shadow on hover (see .menu-button).
 	// The emboss text-shadow (.menu-footer .footer-button .letter, below) provides the depth.
 
-	&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }
+	&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; animation: hover-spring-112 $spring-duration ease-out; }
 	&:active { sound-in: $sound-click; }
 	// Per-letter jitter on hover is shared with the landing buttons — see the combined rule below.
 }

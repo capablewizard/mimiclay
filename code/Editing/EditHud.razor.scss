@@ -305,8 +305,9 @@
 				white-space: nowrap;
 			}
 
-			&:hover { transform: translateY( -3px ) scale( 1.03 ); sound-in: $sound-hover; }
-			&:active { transform: translateY( 1px ); sound-in: $sound-click; }
+			&:hover { transform: translateY( -3px ) scale( 1.03 ); sound-in: $sound-hover; animation: hover-pop-3-103 $spring-duration ease-out; }
+			&:active { sound-in: $sound-click; }
+			&:hover:active { transform: translateY( 0px ); }
 		}
 	}
 
@@ -594,8 +595,9 @@
 		}
 		.label { font-size: 16px; font-weight: 700; color: $paper-ink; text-transform: uppercase; }
 
-		&:hover { transform: translateY( -2px ); background-color: #fff; sound-in: $sound-hover; }
-		&:active { transform: translateY( 1px ); sound-in: $sound-click; }
+		&:hover { transform: translateY( -2px ); background-color: #fff; sound-in: $sound-hover; animation: hover-lift-2 $spring-duration ease-out; }
+		&:active { sound-in: $sound-click; }
+		&:hover:active { transform: translateY( 0px ); }
 	}
 
 	.layers {
@@ -631,7 +633,7 @@
 				4px 6px 0px $emboss-depth;
 		}
 
-		&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }
+		&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; animation: hover-spring-112 $spring-duration ease-out; }
 		&:active { sound-in: $sound-click; }
 	}
 
@@ -761,8 +763,12 @@
 		span { text-transform: uppercase; }
 		transition: transform 0.1s ease, background-color 0.1s ease;
 
-		&:hover { transform: translateY( -2px ); background-color: #fff; }
-		&:active { transform: translateY( 1px ); }
+		&:hover { transform: translateY( -2px ); background-color: #fff; animation: hover-lift-2 $spring-duration ease-out; }
+		&:hover:active { transform: translateY( 0px ); }
+
+		// A tutorial-ringed chip keeps its glow while hovered: the hover spring above owns the `animation`
+		// shorthand (animations replace, never merge), so without this the ring went dark under the cursor.
+		&.tutorial-highlight:hover { animation: tutorial-glow 1.2s ease-in-out 0s infinite; }
 
 		&.on {
 			background-color: $craft-orange;
@@ -1128,3 +1134,12 @@
 	50% { box-shadow: 0 0 0 8px rgba( $craft-orange-hi, 0.55 ); }
 	100% { box-shadow: 0 0 0 3px rgba( $craft-orange-hi, 1 ); }
 }
+
+// Click-through insides of the HUD's own click targets, so the target itself is always the panel pressed — a press
+// on the image/letters/swatch (the swatch scales on hover) and a release a pixel off it otherwise dropped the click.
+// See "Click targets" in _button.scss. Not the layer row: its .iconbtn cells are click targets in their own right.
+.shape-tile *,
+.back-btn *,
+.workshop-tile *,
+.swatch-cell *,
+.layer .iconbtn * { pointer-events: none; }

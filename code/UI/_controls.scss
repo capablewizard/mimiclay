@@ -25,6 +25,14 @@
 
 @import "/UI/_theme.scss";
 
+// Click-through insides, so the control itself is always the panel pressed — see "Click targets" in _button.scss.
+// Press states stay at or above rest size for the same reason: a hit box that shrinks under a still cursor drops it.
+.stepper .step-btn *,
+.pill *,
+.radio *,
+.icon-btn *,
+.tabs .tab * { pointer-events: none; }
+
 // --- Headings + structure ----------------------------------------------------
 .sub-title
 {
@@ -88,8 +96,9 @@
 		pointer-events: all;
 		transition: all 0.1s ease-out;
 
-		&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }
-		&:active { transform: scale( 0.96 ); background-color: $craft-orange; sound-in: $sound-click; }
+		&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; animation: hover-spring-112 $spring-duration ease-out; }
+		&:active { sound-in: $sound-click; }
+		&:hover:active { transform: scale( 1.04 ); background-color: $craft-orange; }
 	}
 
 	.step-value
@@ -99,6 +108,12 @@
 		font-size: 20px;
 		font-weight: 700;
 		color: $paper-ink;
+
+		// Wobbles toward the step on each press (− left, + right) — PickNudge alternates -a/-b so it replays.
+		&.nudge-right-a { animation: value-nudge-right-a 0.36s ease-out; }
+		&.nudge-right-b { animation: value-nudge-right-b 0.36s ease-out; }
+		&.nudge-left-a { animation: value-nudge-left-a 0.36s ease-out; }
+		&.nudge-left-b { animation: value-nudge-left-b 0.36s ease-out; }
 	}
 
 	// Dense cards (the Set Up Game dialog): smaller squares, a wider value slot for "220s".
@@ -114,7 +129,15 @@
 .seg
 {
 	flex-direction: row;
-	gap: $space-sm;
+	gap: $space-md;   // room for the picked pill's wobble (below) without it touching its neighbour
+
+	// The newly-picked pill wobbles toward the side it moved to (PickNudge). It's under the cursor, so the poses
+	// keep its 1.08 hover scale — the animation replaces transform, and dropping it would shrink the pill mid-wobble.
+	// .seg-qualified so it out-ranks .pill:hover's own spring (both set `animation`).
+	.pill.nudge-right-a { animation: pill-nudge-right-a 0.36s ease-out; }
+	.pill.nudge-right-b { animation: pill-nudge-right-b 0.36s ease-out; }
+	.pill.nudge-left-a { animation: pill-nudge-left-a 0.36s ease-out; }
+	.pill.nudge-left-b { animation: pill-nudge-left-b 0.36s ease-out; }
 }
 
 .pill-grid
@@ -140,7 +163,7 @@
 	pointer-events: all;
 	transition: all 0.1s ease-out;
 
-	&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; }   // enlarge only — no recolour
+	&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; animation: hover-spring-108 $spring-duration ease-out; }   // enlarge only — no recolour
 	&:active { sound-in: $sound-click; }
 	&.on { background-color: $craft-orange; }                       // orange = selected
 
@@ -156,7 +179,7 @@
 	font-size: 15px;
 }
 
-.seg.compact { gap: 4px; }
+.seg.compact { gap: 10px; }
 
 // --- Radio options -------------------------------------------------------------
 .radio-row
@@ -236,8 +259,9 @@
 	&.danger:hover { color: $craft-red; }
 	&.confirm { background-color: $craft-red; color: $scene-text; }
 	&.busy { opacity: 0.5; pointer-events: none; }
-	&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; }
-	&:active { transform: scale( 0.96 ); sound-in: $sound-click; }
+	&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; animation: hover-spring-108 $spring-duration ease-out; }
+	&:active { sound-in: $sound-click; }
+	&:hover:active { transform: scale( 1.02 ); }
 }
 
 // --- Tabs -----------------------------------------------------------------------
@@ -358,3 +382,80 @@
 
 	&.full { background: linear-gradient( to bottom, rgba( $art-shade, 0.3 ), rgba( $art-shade, 0.6 ) ); }
 }
+
+// Stepper value wobble: kicks toward the step, swings back, settles. -a/-b are the same motion under two names (see
+// PickNudge). Top-level so s&box registers them.
+@keyframes value-nudge-right-a
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( 8px ); }
+	50%  { transform: translateX( -4px ); }
+	75%  { transform: translateX( 2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes value-nudge-right-b
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( 8px ); }
+	50%  { transform: translateX( -4px ); }
+	75%  { transform: translateX( 2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes value-nudge-left-a
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( -8px ); }
+	50%  { transform: translateX( 4px ); }
+	75%  { transform: translateX( -2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+@keyframes value-nudge-left-b
+{
+	0%   { transform: translateX( 0px ); }
+	25%  { transform: translateX( -8px ); }
+	50%  { transform: translateX( 4px ); }
+	75%  { transform: translateX( -2px ); }
+	100% { transform: translateX( 0px ); }
+}
+
+
+// Picked-pill wobble (.seg above): the value wobble, at the 1.08 hover scale. -a/-b = same motion, two names.
+@keyframes pill-nudge-right-a
+{
+	0%   { transform: translateX( 0px ) scale( 1.08 ); }
+	25%  { transform: translateX( 6px ) scale( 1.08 ); }
+	50%  { transform: translateX( -3px ) scale( 1.08 ); }
+	75%  { transform: translateX( 1px ) scale( 1.08 ); }
+	100% { transform: translateX( 0px ) scale( 1.08 ); }
+}
+
+@keyframes pill-nudge-right-b
+{
+	0%   { transform: translateX( 0px ) scale( 1.08 ); }
+	25%  { transform: translateX( 6px ) scale( 1.08 ); }
+	50%  { transform: translateX( -3px ) scale( 1.08 ); }
+	75%  { transform: translateX( 1px ) scale( 1.08 ); }
+	100% { transform: translateX( 0px ) scale( 1.08 ); }
+}
+
+@keyframes pill-nudge-left-a
+{
+	0%   { transform: translateX( 0px ) scale( 1.08 ); }
+	25%  { transform: translateX( -6px ) scale( 1.08 ); }
+	50%  { transform: translateX( 3px ) scale( 1.08 ); }
+	75%  { transform: translateX( -1px ) scale( 1.08 ); }
+	100% { transform: translateX( 0px ) scale( 1.08 ); }
+}
+
+@keyframes pill-nudge-left-b
+{
+	0%   { transform: translateX( 0px ) scale( 1.08 ); }
+	25%  { transform: translateX( -6px ) scale( 1.08 ); }
+	50%  { transform: translateX( 3px ) scale( 1.08 ); }
+	75%  { transform: translateX( -1px ) scale( 1.08 ); }
+	100% { transform: translateX( 0px ) scale( 1.08 ); }
+}
+

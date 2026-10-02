@@ -17,6 +17,19 @@
 
 @import "/UI/_theme.scss";
 
+// --- Click targets -------------------------------------------------------------
+// pointer-events INHERITS in s&box, so a button's text label / icon / letters are each their own hit target. The
+// engine only clicks when release lands on the exact panel pressed (PanelInput: hovered == Active), so pressing
+// the glyph and releasing a pixel off it played the :active sound but never fired onclick. Text and the insides of
+// the button kits are click-through, so the BUTTON is always the panel pressed. TextEntry keeps its label live
+// (caret placement / drag-select). `mimi_dbg_clicks 1` logs any miss that's left.
+label { pointer-events: none; }
+.textentry label { pointer-events: all; }
+
+.btn *,
+.btn-jitter *,
+.chip * { pointer-events: none; }
+
 // --- Paper card surface ------------------------------------------------------
 // The cream "clay paper" recipe shared by every solid card/control: cream fill,
 // soft ink outline, and a float shadow lifting it off the scene. Drop it
@@ -48,8 +61,9 @@
 	box-shadow: $shadow-float;
 	transition: transform 0.12s ease-out, background-color 0.12s ease-out;
 
-	&:hover { background-color: #fff; transform: translateY( -2px ); sound-in: $sound-hover; }
-	&:active { transform: translateY( 1px ); box-shadow: $shadow-press; sound-in: $sound-click; }
+	&:hover { background-color: #fff; transform: translateY( -2px ); sound-in: $sound-hover; animation: hover-lift-2 $spring-duration ease-out; }
+	&:active { sound-in: $sound-click; }
+	&:hover:active { transform: translateY( 0px ); box-shadow: $shadow-press; } // pressed look only while still over it; never past rest (a moving hit box drops the click)
 
 	&.disabled { opacity: 0.4; pointer-events: none; transform: none; }
 
@@ -141,8 +155,9 @@
 
 	.letter { text-shadow: 0px 3px 0px $emboss-depth-primary; }
 
-	&:hover { transform: scale( 1.08 ); background-color: $craft-orange-hi; sound-in: $sound-hover; }
-	&:active { transform: scale( 1.02 ); sound-in: $sound-click; }
+	&:hover { transform: scale( 1.08 ); background-color: $craft-orange-hi; sound-in: $sound-hover; animation: hover-spring-108 $spring-duration ease-out; }
+	&:active { sound-in: $sound-click; }
+	&:hover:active { transform: scale( 1.02 ); }
 
 	&:hover .letter { animation: clay-jitter $wobble-duration linear 0s infinite; }
 	&:hover .letter:nth-child(  2 ) { animation-delay: 0.10s; }
@@ -176,7 +191,7 @@
 	box-shadow: $shadow-float;
 	transition: transform 0.1s ease-out, background-color 0.1s ease-out;
 
-	&:hover { background-color: #fff; transform: translateY( -1px ); sound-in: $sound-hover; }
+	&:hover { background-color: #fff; transform: translateY( -1px ); sound-in: $sound-hover; animation: hover-lift-1 $spring-duration ease-out; }
 	&:active { sound-in: $sound-click; }
 
 	// Active toggle (selected tool / enabled option).
@@ -223,4 +238,85 @@
 	color: $paper-ink;
 
 	&.selected { background-color: $craft-orange; }
+}
+
+// --- Hover spring ----------------------------------------------------------------
+// Buttons spring into their hover size — the roster badge's overshoot-and-settle (hud-hand-raise), toned down.
+// Pair each with the :hover transform it lands on: &:hover { transform: scale( 1.08 ); animation: hover-spring-108
+// $spring-duration ease-out; }. s&box has no overshoot easing, so the spring is spelled out as poses, one family per
+// hover size (keyframes are absolute). Every pose stays AT OR ABOVE rest size: dipping below would pull the edge out
+// from under a cursor that just arrived, drop :hover, and loop the button between states.
+// Top-level so s&box registers them; every sheet that imports this kit gets a copy.
+@keyframes hover-spring-103
+{
+	0%   { transform: scale( 1 ); }
+	50%  { transform: scale( 1.05 ); }
+	75%  { transform: scale( 1.02 ); }
+	90%  { transform: scale( 1.035 ); }
+	100% { transform: scale( 1.03 ); }
+}
+
+@keyframes hover-spring-106
+{
+	0%   { transform: scale( 1 ); }
+	50%  { transform: scale( 1.1 ); }
+	75%  { transform: scale( 1.045 ); }
+	90%  { transform: scale( 1.065 ); }
+	100% { transform: scale( 1.06 ); }
+}
+
+@keyframes hover-spring-108
+{
+	0%   { transform: scale( 1 ); }
+	50%  { transform: scale( 1.13 ); }
+	75%  { transform: scale( 1.06 ); }
+	90%  { transform: scale( 1.09 ); }
+	100% { transform: scale( 1.08 ); }
+}
+
+@keyframes hover-spring-112
+{
+	0%   { transform: scale( 1 ); }
+	50%  { transform: scale( 1.19 ); }
+	75%  { transform: scale( 1.09 ); }
+	90%  { transform: scale( 1.13 ); }
+	100% { transform: scale( 1.12 ); }
+}
+
+@keyframes hover-spring-115
+{
+	0%   { transform: scale( 1 ); }
+	50%  { transform: scale( 1.24 ); }
+	75%  { transform: scale( 1.11 ); }
+	90%  { transform: scale( 1.165 ); }
+	100% { transform: scale( 1.15 ); }
+}
+
+// Lifts (translateY hovers): overshoot upward, never below rest.
+@keyframes hover-lift-1
+{
+	0%   { transform: translateY( 0px ); }
+	50%  { transform: translateY( -2px ); }
+	75%  { transform: translateY( -0.5px ); }
+	90%  { transform: translateY( -1.2px ); }
+	100% { transform: translateY( -1px ); }
+}
+
+@keyframes hover-lift-2
+{
+	0%   { transform: translateY( 0px ); }
+	50%  { transform: translateY( -3.5px ); }
+	75%  { transform: translateY( -1.5px ); }
+	90%  { transform: translateY( -2.2px ); }
+	100% { transform: translateY( -2px ); }
+}
+
+// Lift + grow (the EditHud workshop tiles).
+@keyframes hover-pop-3-103
+{
+	0%   { transform: translateY( 0px ) scale( 1 ); }
+	50%  { transform: translateY( -5px ) scale( 1.05 ); }
+	75%  { transform: translateY( -2px ) scale( 1.02 ); }
+	90%  { transform: translateY( -3.3px ) scale( 1.035 ); }
+	100% { transform: translateY( -3px ) scale( 1.03 ); }
 }
