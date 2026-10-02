@@ -97,8 +97,8 @@
           "AutoExposureEnabled": true,
           "ExposureCompensation": 0,
           "ExposureMethod": "RGB",
-          "MaximumExposure": 2,
-          "MinimumExposure": 0.9,
+          "MaximumExposure": 1,
+          "MinimumExposure": 0.6,
           "Mode": "AgX",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -685,12 +685,12 @@
               },
               "Contrast": 2,
               "DistanceTexture": {
-                "Id": "452aea80-c70b-426a-8dce-a9326c3892f2",
+                "Id": "1d59e2ee-b651-4f85-b0b6-4ada53c34659",
                 "Path": "scenes/maps/charadeszoo_art_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
               },
               "InsideGeometry": "Relocate",
               "IrradianceTexture": {
-                "Id": "fb9fdbac-f5da-411e-81a4-3d5eade6268b",
+                "Id": "ea2a2384-2bf6-436f-8e68-ee4a57bd9c40",
                 "Path": "scenes/maps/charadeszoo_art_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
               },
               "NormalBias": 5,
@@ -702,7 +702,7 @@
               "OnComponentUpdate": null,
               "ProbeDensity": 30,
               "RelocationTexture": {
-                "Id": "1db1b251-f9d4-4768-8831-215ce2919995",
+                "Id": "0bafb6fd-a984-48be-9a8d-18b810336cd4",
                 "Path": "scenes/maps/charadeszoo_art_scene_data/ddgi/ddgi_relocation_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
               },
               "RenderExcludeTags": ""
@@ -763,12 +763,12 @@
           "Children": []
         },
         {
-          "__guid": "12735860-a06d-4d3f-a428-6cb7cfc1e551",
+          "__guid": "b30b468f-4e80-45d4-894c-44613f08c162",
           "__version": 2,
           "Flags": 0,
           "Name": "Spot Light",
-          "Position": "-1101.6438,-147.010101,966.92218",
-          "Rotation": "0,0.412743032,0,0.910847545",
+          "Position": "-437.233948,-147.009613,885.654358",
+          "Rotation": "0,0.642651439,0,0.7661587",
           "Scale": "1,1,1",
           "Tags": "light_spot,light",
           "Enabled": true,
@@ -780,7 +780,7 @@
           "Components": [
             {
               "__type": "Sandbox.SpotLight",
-              "__guid": "189bec6e-cd79-4dbd-9079-19553de30b12",
+              "__guid": "995a9c5f-7fd1-4df8-bc54-019f732af7ed",
               "__enabled": true,
               "Flags": 0,
               "Attenuation": 0.75,
@@ -1255,11 +1255,11 @@
         "5dce4a10-77b2-4c6e-8f31-a94f02d7e421": "29a64c5a-90cc-4bc6-9093-9e7f9b936dd0",
         "c8a30319-2508-4501-85ad-bf58f7e9c53c": "fa7da8df-b7cf-4222-80ee-baee3244935c",
         "6c0e9b9f-c55c-465f-9ff4-708a91197152": "88360e59-7bdb-4bc0-8bd2-16d9899a404c",
+        "596d63d9-3af7-8f00-9a87-101d464465e4": "da3aafec-cc61-4c73-a76e-65fd158b0ee0",
         "8580b04b-3905-87a4-b0fd-c0bda1d07417": "34f46f84-8dea-449f-8490-85d56d3a161d",
         "08791f85-2579-4327-872a-184b90330f38": "48e1e5ff-503c-4bb9-a736-7f3b7913b08b",
         "7b4ab120-d52a-426b-91e0-362add1fec03": "4b2111fb-20ec-4449-afd6-3e614e6462eb",
-        "79f3ebf1-3729-4ed6-b3d2-e0a97dc7f9dc": "f337b79c-a4bd-43b1-b06d-e239a6e9c26b",
-        "596d63d9-3af7-8f00-9a87-101d464465e4": "da3aafec-cc61-4c73-a76e-65fd158b0ee0"
+        "79f3ebf1-3729-4ed6-b3d2-e0a97dc7f9dc": "f337b79c-a4bd-43b1-b06d-e239a6e9c26b"
       }
     },
     {
@@ -6288,7 +6288,7 @@
               "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -6353,7 +6353,7 @@
               "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -7264,6 +7264,646 @@
         "0d17270c-7933-4a0e-b110-8fd0f27922b2": "dab710ad-0abe-41c4-acaf-4ffb5b34d9b5",
         "dd4063af-3ad2-4e02-b6a2-2282f978b546": "18fa180d-06ae-492c-88eb-8edc73662602",
         "b21aa15c-4ab8-43ec-bec0-57ab6ace3665": "ef044bd4-be6e-439a-9b16-c8033c2cad0c"
+      }
+    },
+    {
+      "__guid": "7ca9845a-f194-45e8-84ce-e804ca031b72",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "2bbb4a9b-2ba5-45a1-965c-b705ffa79bbe",
+        "Path": "prefabs/saved/block_1.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "77942b9e-d559-4149-a0be-847b64ff5f43"
+            },
+            "Property": "Position",
+            "Value": "-355.978088,408.830017,-39.4826317"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "77942b9e-d559-4149-a0be-847b64ff5f43"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.439290464,0.898344994"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3c27a4a3-c7ff-4b37-8888-e7b3dd486401"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 6,
+                "Gap": 0,
+                "Rounding": 1.8907343,
+                "Color": "0.88542,0.66249,0.17376,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 22.284609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Gap": 0,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "1",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "30.6588898,15.3294449,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.84346,0.6472,0.21695,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 9.611581
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "247caa18-0f6c-476e-bb9a-13a4706dd74f"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "247caa18-0f6c-476e-bb9a-13a4706dd74f"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "247caa18-0f6c-476e-bb9a-13a4706dd74f"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "77942b9e-d559-4149-a0be-847b64ff5f43": "7ca9845a-f194-45e8-84ce-e804ca031b72",
+        "3c27a4a3-c7ff-4b37-8888-e7b3dd486401": "16038433-29ac-4280-8cb3-1dde5867f858",
+        "247caa18-0f6c-476e-bb9a-13a4706dd74f": "f200d96e-cce7-4ad2-969e-60ef04c4510d",
+        "253c76f0-6a9a-459b-9d26-7df191da49e0": "1a08599a-074c-4cd5-90c5-65c4de5b9371",
+        "b40977a5-c8ec-448c-b3ae-aab30ac53c06": "753c7c76-dd7e-403b-8812-52a854c3b291",
+        "5c1ba39d-b25c-4fa1-b2e8-3776bd5615ee": "bd5effc9-7a5c-4df9-bbe9-f7cabbba1680",
+        "f8ce70d4-02af-464c-9a24-52fbbd9b2764": "ba69a550-c66f-4ec1-9847-5006d598cc6a",
+        "07bf32af-7dc9-42a6-a982-d0ed6ab1ba4c": "d2f96a21-0214-40e2-80bf-40c1474354d7"
+      }
+    },
+    {
+      "__guid": "603bf39a-29ec-4690-9fdd-4f8da65d4f4a",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "6c29622a-65ce-4118-b107-39502503152e",
+        "Path": "prefabs/saved/block_2.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "dec06d48-73df-4288-af22-0425a7b65fd0"
+            },
+            "Property": "Position",
+            "Value": "-370.350922,381.635468,-51.8000946"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "dec06d48-73df-4288-af22-0425a7b65fd0"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.159434423,0.987208605"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e72a6486-7018-456e-823f-82053c882afc"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 14.803666,
+                "Gap": 0,
+                "Rounding": 1.8907343,
+                "Color": "0.95,0.42,0.6,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 24.485525
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Gap": 0,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "2",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "30.2740498,15.1370249,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.95,0.42,0.6,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.171775
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f43222a1-02a8-40f1-951b-f7b38b29c627"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f43222a1-02a8-40f1-951b-f7b38b29c627"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f43222a1-02a8-40f1-951b-f7b38b29c627"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "dec06d48-73df-4288-af22-0425a7b65fd0": "603bf39a-29ec-4690-9fdd-4f8da65d4f4a",
+        "e72a6486-7018-456e-823f-82053c882afc": "ec6d9dee-11f4-40af-a610-0b774df6f71e",
+        "f43222a1-02a8-40f1-951b-f7b38b29c627": "f96c8b40-2112-4126-99a5-d88c66fa1137",
+        "0c7c4e0a-becf-45a5-af09-459685312921": "8c39ed10-0aa6-4e7c-aff8-b62ec872716d",
+        "7ff49eb5-07e1-4755-941a-58f993bafbdc": "f4b12f67-680a-48e5-a448-470bba176ddd",
+        "50c984f1-3016-477f-9656-30204caa1336": "13324043-2390-4395-9ce7-9d9c24a45ba4",
+        "97267fc3-0b07-4a5c-a9f1-c258b9199ed1": "2219252d-b5a5-4e94-a4f3-ac0c66bdf48c",
+        "b8acaabf-3d16-49bf-a73c-af3fc2286139": "54bb88d9-ecbc-418d-86bb-69898268fccb"
+      }
+    },
+    {
+      "__guid": "dd63d681-d540-4ed5-b11a-29a3c22263e4",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "b2f22559-3a89-4a1a-8d57-e61846c8e730",
+        "Path": "prefabs/saved/block_3.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1b63fe26-5fe0-4fac-aa91-35d1a828bb03"
+            },
+            "Property": "Position",
+            "Value": "-324.177734,417.205505,-52.0710602"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "1b63fe26-5fe0-4fac-aa91-35d1a828bb03"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.688114524,0.72560209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "117e1e76-f4f9-44b9-becf-9fceccd57847"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,16",
+                "Rotation": "0,0,0,1",
+                "Size": "12,12,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 15,
+                "Gap": 0,
+                "Rounding": 1.8907343,
+                "Color": "0.5388,0.40637,0.60501,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 24.534609
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "10.8721457,1.04904175E-05,16",
+                "Rotation": "0,0,0,1",
+                "Size": "2.08569455,9.57816029,9.57816029",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.20141953,
+                "Gap": 0,
+                "Rounding": 1.062813,
+                "Color": "0.97,0.97,0.97,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.755552
+              },
+              {
+                "Shape": "Text",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "3",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "9.38838291,-2.74181366E-06,16.4369507",
+                "Rotation": "0.5,0.5,0.5,0.5",
+                "Size": "30.6588898,15.3294449,4.98312521",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.35532528,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.61347,0.42823,0.70609,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 10.328539
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7ddf420f-a563-4fa4-9e8e-c64396bc0320"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7ddf420f-a563-4fa4-9e8e-c64396bc0320"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7ddf420f-a563-4fa4-9e8e-c64396bc0320"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "1b63fe26-5fe0-4fac-aa91-35d1a828bb03": "dd63d681-d540-4ed5-b11a-29a3c22263e4",
+        "117e1e76-f4f9-44b9-becf-9fceccd57847": "5e1f926a-1643-4fbb-a062-6108e866ad7e",
+        "7ddf420f-a563-4fa4-9e8e-c64396bc0320": "6ce86717-4e3f-490d-a241-9feafd1132df",
+        "d4031c71-7ad9-4c2d-b946-e991603d0b2e": "b07f6cc5-984c-459e-a1a6-c511abf4ce5f",
+        "b9fe40db-c0fb-4e95-b07f-343e977560d0": "454ba6b8-d6be-40b2-af8d-40f4451723db",
+        "d65c959e-4333-413b-ba5c-4ddf1d40bdc7": "41f89cd8-d87c-4d4e-8ba3-7cbc7db23a09",
+        "42de6427-7ff2-4a8a-bf67-fdf32e1576aa": "6445c2b1-4173-4ecb-a7f9-25a48622bf12",
+        "4f6d1431-e7ee-4085-82fa-312db5997406": "5277aed1-09d5-4815-89c9-fe9ed5c875d4"
+      }
+    },
+    {
+      "__guid": "e4ac4d04-12cd-4993-9572-3312849ab525",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "8109c9a7-ff4d-4a71-ae02-e25430e0c1ee",
+        "Path": "prefabs/saved/buildingblock_plank.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "973f715d-3f73-4683-90e2-09bf7a56d810"
+            },
+            "Property": "Position",
+            "Value": "-356.490204,422.849762,-39.9999924"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "973f715d-3f73-4683-90e2-09bf7a56d810"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.273713529,0.961811244"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8847a2cf-336f-45ff-849b-04fddf247c42"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Box",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,0,-2.07596946",
+                "Rotation": "0,0,0.467654586,0.883911192",
+                "Size": "24,12,6",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 2,
+                "Gap": 0,
+                "Rounding": 2,
+                "Color": "0.3,0.62,0.24,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 27.995455
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "18b4dc43-4676-440f-9c47-230ea12e082b"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "973f715d-3f73-4683-90e2-09bf7a56d810": "e4ac4d04-12cd-4993-9572-3312849ab525",
+        "8847a2cf-336f-45ff-849b-04fddf247c42": "40ac4812-a8dc-44df-9f18-7cb05b1c69fd",
+        "18b4dc43-4676-440f-9c47-230ea12e082b": "659fc3d7-f989-4d5c-a2a1-6944136edfe7",
+        "84063aeb-13b8-4e10-82b4-ded1858ebf95": "2a61ef20-c31f-49dc-82be-656de3c2b00f",
+        "e6b1157d-76d6-43d4-84aa-e13ec3a28c75": "c03d7a26-b976-4a0a-bbbc-e1c9b0ed6416",
+        "89388751-fca0-4340-a9c6-d74406986741": "63884b11-3463-4a75-a4c9-ccfeccd6c8c2",
+        "9af8f981-1cd4-4c40-a128-fd00696f1192": "730d690c-86c5-4cd1-964f-5ae2e593092b",
+        "940f143e-bcbb-488b-b205-96f346e5cb22": "b8a83f01-3022-481e-9145-0ac45a1cc227"
       }
     }
   ],
