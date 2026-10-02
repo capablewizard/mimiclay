@@ -3353,6 +3353,7 @@
           "CharadesSoloDebug": false,
           "CharadesSource": "Topics",
           "CharadesStartCountdownSeconds": 10,
+          "CharadesTopicChoices": true,
           "CharadesTopicIds": "",
           "CharadesWordLengthHints": true,
           "CharadesWriteSeconds": 45,

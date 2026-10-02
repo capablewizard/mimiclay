@@ -449,25 +449,7 @@
 		}
 	}
 
-	// Section header: a small icon + bold label (e.g. "✦ ADD SHAPE").
-	.section-title {
-		flex-direction: row;
-		align-items: center;
-		gap: 8px;
-		margin-top: $space-sm;
-		margin-bottom: 2px;
-
-		span {
-			font-family: $header-font;
-			font-size: 24px;
-			font-weight: 800;
-			letter-spacing: 1px;
-			text-transform: uppercase;
-			color: $paper-ink;
-		}
-
-		.icon { font-size: 20px; color: $paper-ink; }
-	}
+	// Section header (.section-title) comes from the shared card-stack kit in _button.scss.
 
 	.shape-grid {
 		flex-direction: row;
@@ -655,14 +637,11 @@
 
 	.back-btn:hover .letter { animation: clay-jitter 0.95s linear 0s infinite; }
 
-	// A layer row: a chunky floating paper card toolbar — eye · shape · colour · op · symmetry · bin.
+	// A layer row: a chunky floating paper card toolbar — eye · shape · colour · op · symmetry · bin. The card
+	// itself (.paper-card .stack-row, orange .selected) is the shared card-stack kit in _button.scss.
 	.layer {
 		pointer-events: all;
-		flex-direction: row;
-		align-items: center;
 		justify-content: space-between; // spread the cells evenly across the row, in order
-		padding: 8px 12px;
-		border-radius: 22px; // surface (fill/outline/shadow) comes from .paper-card
 		cursor: pointer; // point hand — the grab-hover cursor (drag to reorder); grabbing shows the closed hand
 		// NO transform transition on the base — so the dragged row follows the cursor with zero easing.
 		// Only the shuffling siblings animate their transform (see &.shuffle below).

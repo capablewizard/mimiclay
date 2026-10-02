@@ -1,5 +1,6 @@
 @import "/UI/_theme.scss";
 @import "/UI/_button.scss"; // for the action-jitter keyframes (the raised hand badge wobbles like the validity toast)
+@import "/UI/_badges.scss"; // .icon-farm, .badge-glyph, hud-hand-raise — the shared roster kit
 
 // Roster icon size, in one place because several rules have to agree on it: the pip box, the image inside it,
 // the fallback glyph, the divider's height, and how wide each side needs to be to fit a sensible number per
@@ -32,17 +33,6 @@ $clock-col-width: 150px;
 	top: 0; left: 0;
 	width: 100%; height: 100%;
 	pointer-events: none;
-
-	// ── Off-screen icon renderers ───────────────────────────────────────────────────────────────────────────
-	// Parked off-screen rather than hidden, on purpose: a ScenePanel skips rendering entirely when its layout
-	// box is zero, so display:none or width:0 would silently produce no textures at all. Off-screen still lays
-	// out, still ticks, still renders.
-	.icon-farm {
-		position: absolute;
-		left: -8192px;
-		top: 0;
-		flex-direction: column;
-	}
 
 	// ── Thumbnail bisect (mimiclay_debug_thumb) ─────────────────────────────────────────────────────────────
 	// Deliberately the dumbest styling that can work: the panel is a normal flex child at a fixed size, with
@@ -308,35 +298,8 @@ $clock-col-width: 150px;
 			}
 		}
 
-		// Shared by ALL the corner badges (the lobby hand, every paintbrush and speaker).
-		//
-		// No font-family: leave it on the default so Skia's fallback picks the system emoji font for
-		// this codepoint. Forcing Material Icons here would render a missing-glyph box instead.
-		//
-		// The outline is a RING OF SHADOWS, not text-stroke. text-stroke does nothing to a colour
-		// emoji — those are drawn as layered/bitmap glyphs rather than fillable outlines, so there's no
-		// path for Skia to stroke. Shadows are composited from the rendered glyph whatever produced it,
-		// so they work regardless. Eight offsets at the house 2px, diagonals pulled in slightly so the
-		// corners don't read heavier than the edges.
-		//
-		// 35px suits the big lobby pips ($pip-size-lobby); the in-round rosters run the smaller $pip-size,
-		// so their glyphs scale down with them (the override below — .hud-columns wraps only the in-round
-		// layout).
-		.badge-glyph {
-			font-size: 35px;
-			text-transform: none;
-			letter-spacing: 0;
-			text-shadow:
-				2px 0px 0px $paper-edge,
-				-2px 0px 0px $paper-edge,
-				0px 2px 0px $paper-edge,
-				0px -2px 0px $paper-edge,
-				1.4px 1.4px 0px $paper-edge,
-				-1.4px 1.4px 0px $paper-edge,
-				1.4px -1.4px 0px $paper-edge,
-				-1.4px -1.4px 0px $paper-edge;
-		}
-
+		// .badge-glyph (the ink-outlined emoji) comes from the shared roster kit (_badges.scss); the in-round
+		// rosters run the smaller $pip-size, so their glyphs scale down with them.
 		.hud-columns .badge-glyph { font-size: 25px; }
 
 		// De-sync the badge jitters pip-to-pip, the menu-button way (see _menu.scss): everyone still springs
@@ -624,20 +587,4 @@ $clock-col-width: 150px;
 			text-align: right;
 		}
 	}
-}
-
-// Hand going up: springs out from nothing, overshoots, settles. Four steps rather than an easing curve —
-// a decaying overshoot is what reads as "spring", and spelling out the poses doesn't depend on s&box
-// supporting any particular easing function.
-//
-// MUST be top-level: s&box doesn't register @keyframes nested inside a selector (see the same warning in
-// WobbleText.razor.scss). Scaling is about the panel's centre, so the badge stays pinned to its corner
-// throughout rather than growing out of it.
-@keyframes hud-hand-raise
-{
-	0%   { transform: scale( 0 ); }
-	55%  { transform: scale( 1.38 ); }
-	75%  { transform: scale( 0.87 ); }
-	90%  { transform: scale( 1.08 ); }
-	100% { transform: scale( 1 ); }
 }

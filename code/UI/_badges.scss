@@ -1,0 +1,95 @@
+// =============================================================================
+//  Mimiclay roster kit — what every screen that shows player icons shares
+//  (RoundHud's pips, the charades scoreboard).
+//
+//  .icon-farm      the off-screen SdfIconFarm parking spot
+//  .corner-badge   an emoji pinned to an icon's corner: parked at scale(0), sprung in by .on,
+//                  then the glyph jitters forever. Position it per corner in the screen sheet.
+//  .badge-glyph    the emoji itself, ink-outlined (size it per screen)
+//  hud-hand-raise  the corner badges' spring-in keyframes
+//
+//  Theme tokens only, like the other kits.
+// =============================================================================
+
+@import "/UI/_theme.scss";
+@import "/UI/_button.scss"; // action-jitter keyframes
+
+// --- Off-screen icon renderers -------------------------------------------------
+// Parked off-screen rather than hidden, on purpose: a ScenePanel skips rendering entirely when its layout
+// box is zero, so display:none or width:0 would silently produce no textures at all. Off-screen still lays
+// out, still ticks, still renders.
+.icon-farm
+{
+	position: absolute;
+	left: -8192px;
+	top: 0;
+	flex-direction: column;
+}
+
+// --- Corner badge ----------------------------------------------------------------
+// No chrome — the emoji IS the badge; the box just parks it on a corner of a position:relative icon, so it
+// has no size of its own and hugs the glyph.
+//
+// ALWAYS mounted and revealed by .on — a removed element can't animate on its way out. Going DOWN is the
+// transition (a quick shrink, which only fires on a CHANGE, so first render doesn't animate in). Going UP is
+// the keyframes, because s&box has no overshoot easing — the spring is spelled out as poses. Once it lands
+// the glyph wobbles forever; that lives on the GLYPH because both animations drive `transform`.
+.corner-badge
+{
+	position: absolute;
+	align-items: center;
+	justify-content: center;
+
+	transform: scale( 0 );
+	transition: transform 0.16s ease;
+
+	&.on
+	{
+		transform: scale( 1 );
+		animation: hud-hand-raise 0.34s ease-out;
+
+		.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
+	}
+}
+
+// --- Badge glyph -----------------------------------------------------------------
+// No font-family: leave it on the default so Skia's fallback picks the system emoji font for the codepoint.
+// Forcing Material Icons here would render a missing-glyph box instead.
+//
+// The outline is a RING OF SHADOWS, not text-stroke. text-stroke does nothing to a colour emoji — those are
+// drawn as layered/bitmap glyphs rather than fillable outlines, so there's no path for Skia to stroke.
+// Shadows are composited from the rendered glyph whatever produced it, so they work regardless. Eight offsets
+// at the house 2px, diagonals pulled in slightly so the corners don't read heavier than the edges.
+//
+// 35px suits the big lobby pips; smaller icons override the size.
+.badge-glyph
+{
+	font-size: 35px;
+	text-transform: none;
+	letter-spacing: 0;
+	text-shadow:
+		2px 0px 0px $paper-edge,
+		-2px 0px 0px $paper-edge,
+		0px 2px 0px $paper-edge,
+		0px -2px 0px $paper-edge,
+		1.4px 1.4px 0px $paper-edge,
+		-1.4px 1.4px 0px $paper-edge,
+		1.4px -1.4px 0px $paper-edge,
+		-1.4px -1.4px 0px $paper-edge;
+}
+
+// Badge going up: springs out from nothing, overshoots, settles. Four steps rather than an easing curve —
+// a decaying overshoot is what reads as "spring", and spelling out the poses doesn't depend on s&box
+// supporting any particular easing function.
+//
+// MUST be top-level: s&box doesn't register @keyframes nested inside a selector (see the same warning in
+// WobbleText.razor.scss). Scaling is about the panel's centre, so the badge stays pinned to its corner
+// throughout rather than growing out of it.
+@keyframes hud-hand-raise
+{
+	0%   { transform: scale( 0 ); }
+	55%  { transform: scale( 1.38 ); }
+	75%  { transform: scale( 0.87 ); }
+	90%  { transform: scale( 1.08 ); }
+	100% { transform: scale( 1 ); }
+}

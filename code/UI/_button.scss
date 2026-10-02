@@ -8,6 +8,9 @@
 //  .btn-action  the big raised-orange "clay" headline button (Start / Join)
 //  .btn-jitter  the same clay look, smaller; grows on hover while its WobbleText letters jitter
 //  .chip        compact toggle / grid item
+//  .section-title  bold capitals header over a floating card stack ("SHAPES"), Material icon + label
+//  .stack-row   one chunky floating row card in such a stack (the layer rows, the charades scoreboard);
+//               .selected = the orange highlight row
 //
 //  Reuse these instead of re-deriving the look per panel.
 // =============================================================================
@@ -184,4 +187,40 @@
 
 		&:hover { background-color: $craft-orange-hi; }
 	}
+}
+
+// --- Card stack: section header + rows -----------------------------------------
+// The edit HUD's layer stack look, shared: a header over a column of chunky floating row cards, straight on
+// the scene (no panel behind them). Put .stack-row alongside .paper-card (the surface) and let the screen own
+// the row's contents and any hover/drag behaviour.
+.section-title
+{
+	flex-direction: row;
+	align-items: center;
+	gap: 8px;
+	margin-top: $space-sm;
+	margin-bottom: 2px;
+
+	span
+	{
+		font-family: $header-font;
+		font-size: 24px;
+		font-weight: 800;
+		letter-spacing: 1px;
+		text-transform: uppercase;
+		color: $paper-ink;
+	}
+
+	.icon { font-family: Material Icons; font-size: 20px; color: $paper-ink; }
+}
+
+.stack-row
+{
+	flex-direction: row;
+	align-items: center;
+	padding: 8px 12px;
+	border-radius: 22px; // surface (fill/outline/shadow) comes from .paper-card
+	color: $paper-ink;
+
+	&.selected { background-color: $craft-orange; }
 }

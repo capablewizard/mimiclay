@@ -38,7 +38,7 @@
 			@* Thumbnail tally. tally = is the rail drawn at all; iconsig = identity hash of the sculpts resolvable
 			   right now (0 usually means NONE resolved — the problem is pawn/sculpt lookup; nonzero with no
 			   portraits showing means the panel or its CSS); cached = how many we've ever resolved. *@
-			<div>tally=@ShowTally hunters=@HunterCount props=@PropsLeft iconsig=@IconSignal cached=@_iconCache.Count</div>
+			<div>tally=@ShowTally hunters=@HunterCount props=@PropsLeft iconsig=@IconSignal cached=@_icons.CachedCount</div>
 		</div>
 	}
 
@@ -435,103 +435,12 @@
 	bool ShowRoster => Phase == RoundPhase.Lobby ? LobbyPlayerCount > 0 : ShowTally;
 
 
-	// What a roster pip should portray for one player: their sculpture (hunter face, or a prop's whole
-	// disguise), the icon camera pose that goes with it (props carry their edit-exit angle; faces keep the
-	// rig's default, so Pose stays null), and whether they're mid-edit right now — which badges the pip and
-	// freezes the render (see SdfIcon.Frozen).
-	readonly record struct PipIcon( SdfSculpture Sculpture, Angles? Pose, bool Editing, List<SdfBrush> Fallback = null )
-	{
-		/// <summary>Something to draw: the live subject, or the last shape we saw them as (see Fallback).</summary>
-		public bool HasPicture => Sculpture.IsValid() || Fallback is not null;
-	}
+	// Player → icon subject resolution, shared with the charades scoreboard (see RosterIcons).
+	readonly RosterIcons _icons = new();
 
-	// Last subject we managed to resolve per player. Losing the pawn for even ONE frame used to swap the razor
-	// branch from portrait to generic glyph, which deletes the SdfThumbnail panel — and with it a whole
-	// SceneWorld, to be rebuilt from scratch the moment the pawn came back. That churn is what a thumbnail
-	// "flashing up for a second" looks like. A pawn blinking out is never a reason to forget whose icon it
-	// was, so we don't.
-	readonly Dictionary<Guid, (SdfSculpture Sculpture, Angles? Pose, List<SdfBrush> Brushes)> _iconCache = new();
+	PipIcon IconOf( Guid connection ) => _icons.Of( Scene, connection );
 
-	// The icon subject for a roster row, or a null sculpture if this machine has never had a pawn for them.
-	// Handing over the sculpture rather than its brushes is what lets the thumbnail update on commit instead
-	// of following a live drag — see SdfThumbnail.Source. Whichever pawn type is live wins the cache row, so
-	// a lobby role swap retargets the pip to the new body on its first resolvable frame.
-	PipIcon IconOf( Guid connection )
-	{
-		var editing = false;
-
-		foreach ( var h in Scene.GetAllComponents<HunterController>() )
-		{
-			if ( !h.IsValid() || !h.Face.IsValid() )
-				continue;
-
-			// RosterIdOf handles the awkward cases: a pawn that hasn't gone on the wire yet has no Network.Owner
-			// (if it isn't a proxy, it's ours), and every bot pawn is host-owned, so an owner match alone would
-			// pin all of their faces — and the host's own — onto the host's row.
-			var owner = RoundManager.RosterIdOf( h.GameObject );
-			if ( owner != connection )
-				continue;
-
-			editing = h.NetEditing;
-			if ( h.Face.Brushes is { Count: > 0 } )
-				_iconCache[connection] = (h.Face, null, h.Face.Brushes);
-
-			break;
-		}
-
-		// Prop players portray the disguise itself, from the angle its player last signed it off at. A prop the
-		// round is concealing from us never resolves — the cache can't leak what this machine was never shown —
-		// though in practice a concealed prop's pawn isn't even on this machine's network until the Reveal.
-		// Released props (creative/lobby scenery) belong to NOBODY and must never portray anyone — skipped before the
-		// owner resolve so no resolver quirk (an unowned pawn resolves null today, but a host-orphaned one
-		// answers the host) can pin scenery onto a player's row.
-		foreach ( var p in Scene.GetAllComponents<HiderController>() )
-		{
-			if ( !p.IsValid() || !p.DisguiseSculpture.IsValid() || p.Concealed || PropClaims.IsReleased( p ) )
-				continue;
-
-			var owner = RoundManager.RosterIdOf( p.GameObject );
-			if ( owner != connection )
-				continue;
-
-			editing = p.NetEditing;
-			if ( p.DisguiseSculpture.Brushes is { Count: > 0 } )
-				_iconCache[connection] = (p.DisguiseSculpture, p.IconPoseSet ? p.IconPose : null, p.DisguiseSculpture.Brushes);
-
-			break;
-		}
-
-		var (sculpture, pose, brushes) = _iconCache.GetValueOrDefault( connection );
-
-		// The cached body died (a swap or possession destroys it a beat before the new one resolves here): keep
-		// drawing the last shape we saw them as, rather than dropping to the generic glyph for those frames. The
-		// list is the dead sculpture's own — nothing edits a destroyed body, so holding the reference is enough.
-		return sculpture.IsValid()
-			? new PipIcon( sculpture, pose, editing )
-			: new PipIcon( null, pose, editing, brushes is { Count: > 0 } ? brushes : null );
-	}
-
-	// The SET of icon subjects this machine can currently resolve — an order-independent hash of their object
-	// ids, folded into BuildHash so a pawn spawning (or its sculpt arriving) triggers a re-render. Identities,
-	// deliberately NOT a count: a lobby role swap destroys one pawn and spawns another, so a count reads 1→1
-	// and the HUD can skip the rebuild entirely — the pip keeps requesting the destroyed sculpture and sits on
-	// the old body's last render. Ids see old-out/new-in and force the rebuild that retargets the pip. XOR
-	// because GetAllComponents' enumeration order reshuffles on despawn/respawn (it's a HashSet underneath),
-	// and an order-sensitive hash would fire spurious rebuilds every time the slots got reused.
-	int IconSignal
-	{
-		get
-		{
-			var n = 0;
-			foreach ( var h in Scene.GetAllComponents<HunterController>() )
-				if ( h.IsValid() && h.Face.IsValid() && h.Face.Brushes is { Count: > 0 } )
-					n ^= h.Face.GameObject.Id.GetHashCode();
-			foreach ( var p in Scene.GetAllComponents<HiderController>() )
-				if ( p.IsValid() && p.DisguiseSculpture.IsValid() && p.DisguiseSculpture.Brushes is { Count: > 0 } )
-					n ^= p.DisguiseSculpture.GameObject.Id.GetHashCode();
-			return n;
-		}
-	}
+	int IconSignal => RosterIcons.Signal( Scene );
 
 	// ── Silhouette hints ────────────────────────────────────────────────────────────────────────────────────
 	// "Who's that pokemon": during the Hunt, every HintSeconds each surviving prop's anonymous pip briefly flips
@@ -940,7 +849,7 @@
 				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
 				TutorialDirector.IsRunning, // lobby roster hides while the tutorial runs
 				LocalPossessed ), // the "E Leave Prop" hint
-			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _iconCache.Count, DebugThumb, DebugPlayerCount,
+			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _icons.CachedCount, DebugThumb, DebugPlayerCount,
 				// Silhouette hints: which props are flashing (from OnUpdate) + the setting itself, so the pips
 				// re-render on every pop in/out and drop their icons the moment the host turns hints off.
 				HashCode.Combine( _hintSignal, _hintingNow.Count, HintsEnabled ) ),

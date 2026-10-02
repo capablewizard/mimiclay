@@ -1,5 +1,6 @@
 @import "/UI/_theme.scss";
-@import "/UI/_button.scss"; // .paper-card + .btn — the shared craft kit
+@import "/UI/_button.scss"; // .paper-card + .btn + the card stack (.section-title/.stack-row) — the shared craft kit
+@import "/UI/_badges.scss"; // .icon-farm + corner badges — the shared roster kit
 
 // Charades HUD. Same soft-clay language as the round HUD: chunky rounded cards, ink outlines, cream paper.
 
@@ -233,42 +234,40 @@
 	}
 
 	// ── Scoreboard (right edge) ──────────────────────────────────────────────────────────────────────
+	// The edit HUD's layer stack, mirrored onto the right edge: .section-title + .paper-card .stack-row from
+	// the card-stack kit, corner badges from the roster kit. Layout only here.
 	.scoreboard {
 		position: absolute;
-		right: 16px;
-		top: 120px;
-		width: 230px;
+		right: $panel-inset;
+		top: $panel-inset;
+		width: 300px;
 		flex-direction: column;
-		gap: 4px;
+		gap: 10px; // the layer stack's spacing
 
-		// The finish line the whole game is racing to.
-		.target-line {
-			align-self: center;
-			font-size: 15px;
-			font-weight: 800;
-			letter-spacing: 1px;
-			text-transform: uppercase;
-			color: white;
-			text-shadow: 0 1px 2px rgba( black, 0.4 );
-			margin-bottom: 2px;
-		}
+		.section-title { justify-content: flex-end; } // right-edge header, like the edit HUD's right panel
 
 		.score-row {
-			align-items: center;
-			gap: 8px;
-			padding: 5px 10px;
-			background-color: rgba( #fff8ea, 0.85 );
-			border: 2px solid #2c2418;
-			border-radius: 10px;
-			font-size: 16px;
-			color: #2c2418;
+			gap: 12px;
 
-			&.miming { background-color: rgba( #ffe9a8, 0.95 ); }
-			&.guessed { background-color: rgba( #d3f2c5, 0.95 ); }
+			// The rendered head. position:relative so the corner badge anchors to it.
+			.player-icon {
+				position: relative;
+				width: 44px;
+				height: 44px;
+				flex-shrink: 0;
+				align-items: center;
+				justify-content: center;
 
-			.badge { width: 22px; font-size: 15px; }
-			.name { flex-grow: 1; white-space: nowrap; overflow: hidden; }
-			.score { font-weight: 800; }
+				.icon-render { width: 44px; height: 44px; }
+				.generic { font-family: Material Icons; font-size: 34px; color: $paper-ink-soft; }
+			}
+
+			// Bottom-right, where the roster pips wear their 🎨 edit palette.
+			.corner-badge { right: -8px; bottom: -8px; }
+			.badge-glyph { font-size: 20px; }
+
+			.name { flex-grow: 1; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+			.score { font-family: $header-font; font-size: 24px; }
 		}
 	}
 

@@ -983,7 +983,7 @@
 	// Build a layer row's class list as one expression (component attributes can't mix literal + markup).
 	string LayerClass( int idx )
 	{
-		string c = "paper-card layer";
+		string c = "paper-card stack-row layer";
 		if ( Session.IsSelected( idx ) ) c += " selected";
 
 		if ( _dragIndex >= 0 )

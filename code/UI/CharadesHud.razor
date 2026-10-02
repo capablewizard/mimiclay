@@ -23,6 +23,9 @@
 *@
 
 <root class="charades-hud">
+	@* Off-screen icon renderers for the scoreboard heads. FIRST, so it exists before any SdfIcon asks it. *@
+	<SdfIconFarm class="icon-farm" />
+
 	@if ( Manager is null )
 	{
 		<div class="top-centre">
@@ -122,13 +125,33 @@
 			</div>
 		}
 
-		@* Scoreboard — right edge, always on, topped by where we are in the game. *@
+		@* Scoreboard — right edge, always on, topped by where we are in the game. The edit HUD's layer-stack
+		   look (section header + floating row cards): each row leads with the player's rendered head, the
+		   turn badge (🎨 miming · ✍ wrote it · 🥇🥈✔ guessed) pinned to its corner where the roster pips
+		   wear their 🎨 edit palette. The mimic's row is the stack's orange "selected" row. *@
 		<div class="scoreboard">
-			<div class="target-line">@RoundLine</div>
+			<div class="section-title"><div class="icon">leaderboard</div><span>@RoundLine</span></div>
 			@foreach ( var p in Manager.Scoreboard.Take( 10 ) )
 			{
-				<div class="score-row @(p.Connection == Manager.MimicId ? "miming" : "") @(p.GuessedPlace > 0 ? "guessed" : "")">
-					<div class="badge">@BadgeFor( p )</div>
+				var icon = _icons.Of( Scene, p.Connection, facesOnly: true );
+				var badge = BadgeFor( p );
+				<div class="paper-card stack-row score-row @(p.Connection == Manager.MimicId ? "selected" : "")">
+					<div class="player-icon">
+						@if ( icon.HasPicture )
+						{
+							<SdfIcon Key=@p.Connection Source=@icon.Sculpture Brushes=@icon.Fallback Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@IconOutline Supersample=@RoundHud.IconSupersample class="icon-render" />
+						}
+						else
+						{
+							<div class="generic">person</div>
+						}
+
+						@* Always mounted, revealed by .on — a removed element can't animate out. The glyph keeps the
+						   last badge it showed so the shrink-out doesn't blank first. *@
+						<div class="corner-badge @(badge != "" ? "on" : "")">
+							<div class="badge-glyph">@BadgeGlyph( p.Connection, badge )</div>
+						</div>
+					</div>
 					<div class="name">@p.Name</div>
 					<div class="score">@p.Score</div>
 				</div>
@@ -277,6 +300,24 @@
 		return p.GuessedPlace switch { 0 => "", 1 => "🥇", 2 => "🥈", _ => "✔" };
 	}
 
+	// Player heads for the scoreboard — the same resolver the round HUD's pips use, faces only: the mimic's
+	// borrowed prop is the puzzle, not who they are (their row keeps the face it last saw them wear).
+	readonly RosterIcons _icons = new();
+
+	// Ink outline on the heads, in screen px — the house 2px, matching the round HUD's pips.
+	const float IconOutline = 2f;
+
+	// Last non-empty badge per player, so a badge shrinking away (turn over) still shows its glyph on the way out.
+	readonly Dictionary<Guid, string> _lastBadge = new();
+
+	string BadgeGlyph( Guid player, string badge )
+	{
+		if ( badge != "" )
+			_lastBadge[player] = badge;
+
+		return _lastBadge.GetValueOrDefault( player, "" );
+	}
+
 	string WinnerLine
 	{
 		get
@@ -295,5 +336,7 @@
 				HashCode.Combine( Manager.Round, Manager.AuthorId, Manager.Settings.Rounds ),
 				// Scores/guess places/hand-ins move without anything above noticing.
 				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedPlace, p.Submitted ) ),
-				Manager.Players.Count );
+				Manager.Players.Count,
+				// Heads: a pawn spawning / its sculpt arriving / a body swap (see RosterIcons.Signal).
+				HashCode.Combine( RosterIcons.Signal( Scene ), _icons.CachedCount, RoundHud.IconSupersample ) );
 }
