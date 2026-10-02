@@ -975,6 +975,10 @@
 	// being dragged (-1 = none); _dropIndex = the row currently under it (where it'll land). Both index
 	// into Target.Brushes. _dragOffsetY = how far (style px) the floating row has moved from its slot;
 	// _stride = one row's height + gap, so the others can shift by exactly one slot. All feed BuildHash.
+	// Hover-out springs on the layer rows (see .layer.unhover-* in the sheet + PickNudge). Keyed by row index.
+	readonly PickNudge _rowNudge = new();
+	static string RowKey( int idx ) => idx.ToString( CultureInfo.InvariantCulture );
+
 	int _dragIndex = -1;
 	int _dropIndex = -1;
 	float _dragOffsetY;
@@ -985,6 +989,8 @@
 	{
 		string c = "paper-card stack-row layer";
 		if ( Session.IsSelected( idx ) ) c += " selected";
+		var unhover = _rowNudge.Class( RowKey( idx ), "unhover" );
+		if ( unhover.Length > 0 ) c += " " + unhover;
 
 		if ( _dragIndex >= 0 )
 			c += idx == _dragIndex ? " dragging" : " shuffle"; // dragged row tracks instantly; others ease
@@ -1077,6 +1083,9 @@
 	void HandleRowHover( int idx ) => SculptEditSession.UiHoverBrush = idx;
 	void HandleRowUnhover( int idx )
 	{
+		// Spring back down from the hover grow (.layer.unhover-*) — but not when the hover dropped because a drag
+		// began (the engine clears it on drag start); that row is floating, and would pulse after a quick drop.
+		if ( _dragIndex < 0 ) _rowNudge.Poke( RowKey( idx ) );
 		if ( SculptEditSession.UiHoverBrush == idx )
 			SculptEditSession.UiHoverBrush = -1;
 	}
@@ -1708,6 +1717,7 @@
 		var hc = new HashCode();
 		hc.Add( s );
 		hc.Add( s?.IsEditing ?? false );
+		hc.Add( _rowNudge.Version ); // a row's hover-out spring class goes on
 		hc.Add( InvalidBounds is { } iv ? (iv.TooBig ? 1 : 2) : 0 ); // validity toast appears/disappears/relabels
 		hc.Add( NoSolidToast ); // transient "must have at least 1 shape" toast appears/disappears
 		hc.Add( s?.ExitConfirmPending ?? false ); // exit-confirm dialog mounts/unmounts

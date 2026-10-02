@@ -649,11 +649,23 @@
 		// Only the shuffling siblings animate their transform (see &.shuffle below).
 		transition: background-color 0.1s ease;
 
-		&:hover { background-color: #fff; sound-in: $sound-hover; }
+		// Hover grow, sprung like every other button. A transform can't move the neighbours (it doesn't touch
+		// layout). It has to be an ANIMATION, held with `forwards`: every row carries an inline
+		// transform (LayerStyle — the drag shuffle), which beats any stylesheet transform, but animations are
+		// applied after inline. Leaving the row can't transition (the inline value never changes), so EditHud
+		// adds .unhover-a/-b for a moment and that springs it back down. Order matters: hover after unhover (a
+		// quick re-hover wins), and the drag rows' `animation: none` after both.
+		&.unhover-a { animation: layer-unhover-a $spring-duration ease-out; }
+		&.unhover-b { animation: layer-unhover-b $spring-duration ease-out; }
+		&:hover { background-color: #fff; sound-in: $sound-hover; animation: hover-spring-103 $spring-duration ease-out forwards; }
 		&:active { sound-in: $sound-click; } // click = select (also fires on grab-to-drag)
 
 		// Non-dragged rows during a drag: ease into the gap as it opens/moves.
 		&.shuffle { transition: transform 0.14s ease, background-color 0.1s ease; }
+
+		// Drag rows never animate: a held hover grow (or a hover-out spring) would override the inline
+		// shuffle / follow-the-cursor transform, since animations apply after inline styles.
+		&.dragging, &.shuffle { animation: none; }
 
 		// The dragged row floats under the cursor; never gets .shuffle so it tracks exactly.
 		// pointer-events:none lets the cursor see the rows underneath.
@@ -1143,3 +1155,22 @@
 .workshop-tile *,
 .swatch-cell *,
 .layer .iconbtn * { pointer-events: none; }
+
+// Layer row hover-out: from the 1.03 hover grow back down, dipping just under rest before it settles (the cursor has
+// already left, so the dip can't flicker :hover). -a/-b = same motion, two names, so a repeat leave replays.
+@keyframes layer-unhover-a
+{
+	0%   { transform: scale( 1.03 ); }
+	45%  { transform: scale( 0.99 ); }
+	75%  { transform: scale( 1.006 ); }
+	100% { transform: scale( 1 ); }
+}
+
+@keyframes layer-unhover-b
+{
+	0%   { transform: scale( 1.03 ); }
+	45%  { transform: scale( 0.99 ); }
+	75%  { transform: scale( 1.006 ); }
+	100% { transform: scale( 1 ); }
+}
+
