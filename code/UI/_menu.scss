@@ -50,7 +50,7 @@
 // --- Shared page frame -------------------------------------------------------
 // ONE consistent left-aligned frame every menu page sits in: WobbleText title at the top, content in the band
 // below — the same spot the landing-page menu occupies. Bump $menu-left to move everything in from the left.
-$menu-left: 64px;
+$menu-left: 112px; // room for the landing wordmark's left spark fan (80px, hung into this margin) plus 32px clear
 
 .menu-page
 {

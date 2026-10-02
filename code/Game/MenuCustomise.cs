@@ -54,9 +54,20 @@ public sealed class MenuCustomise : Component
 	SdfSculpture[] _bodySculpts; // everything sculpted on the model EXCEPT the face — mirrors the face's clay
 	SculptWorkshop _workshop;    // the Workshop column's save/load/browse flow (shared with creative mode)
 	EditHud _hud;
+
+	// The weapon: a visuals-only gun.prefab clone beside the head, edited by its OWN session (the HUD's
+	// Head/Weapon dock switches — the in-game hunter's two-session setup). Edited at the in-hand display scale
+	// (HunterGun.WorldGunScale), because gun.prefab's SculptBounds limits are tuned for that brush scale; saved
+	// to SculptLibrary.GunSlot inverse-scaled back to canonical, exactly like HunterGun.OnEditCommitted.
+	SdfSculpture _gunSculpt;
+	SculptEditSession _gunSession;
+	float _gunScale = 0.5f;
+	bool _editingGun;            // the gun session owns the stage (gates the commit → slot save, like _editingWorld)
+
 	bool _frameQueued;           // frame-on-the-head still pending (waits for the session to self-activate)
 	Vector3 _cameraReturnPos;    // the menu camera's pose before customise — the orbit rig moves AND rotates
 	Rotation _cameraReturnRot;   // the camera, so leaving the page has to put both back
+	float _cameraReturnFov;      // …and sets the edit FOV, which MainCamera would otherwise keep
 	bool _hasCameraReturn;
 
 	// The scene's EditHud, found once (it's scene-placed in menu.scene, and EnsureHud never duplicates it).
@@ -125,8 +136,19 @@ public sealed class MenuCustomise : Component
 			// in. With the camera already on the framed pose, the rig's enable-seed reproduces this exact
 			// view (angles from the camera, distance along it from the session's FocusHint), so entry is
 			// seamless — the queued FrameHead below just trues up pivot/distance on the rig itself.
-			var (pivot, distance, rot) = HeadFraming();
-			cam.WorldPosition = pivot - rot.Forward * distance;
+			// SNAP to the edit FOV in the same frame. The rig asserts GameSettings.EditFov (the player's
+			// preferred FOV) every tick and MainCamera eases toward it — from the menu's authored 60° that ease
+			// read as a zoom right after the cut.
+			_cameraReturnFov = cam.FieldOfView;
+			MainCamera.SetFov( GameSettings.EditFov, lerp: false );
+
+			// The head's remembered view if there is one (the last visit), else the front framing. Distance is
+			// in the rig's reference-FOV units; the camera sits at the REAL boom (OrbitCameraController.Reach),
+			// converted here for the edit FOV just snapped to, so the rig's seed lands on this exact view.
+			var (pivot, distance, rot) = s_headView is { } v ? (v.Pivot, v.Distance, v.Angles.ToRotation()) : HeadFraming();
+			float tanRef = MathF.Tan( GameSettings.ReferenceFov.DegreeToRadian() * 0.5f );
+			float tanLive = MathF.Tan( Math.Clamp( GameSettings.EditFov, 5f, 170f ).DegreeToRadian() * 0.5f );
+			cam.WorldPosition = pivot - rot.Forward * (distance * tanRef / tanLive);
 			cam.WorldRotation = rot;
 		}
 
@@ -148,28 +170,41 @@ public sealed class MenuCustomise : Component
 
 		ApplyHudTrim();
 
+		// Keep where the current part's camera was, for the next visit (and the next switch back to it).
+		RememberView();
+
 		// Orbit rig off BEFORE the deferred destroy — a destroy-pending component could still tick this frame
 		// and stamp its view back over the camera restore below. Its OnDisabled also resets the shared AltNav.
 		if ( _orbit.IsValid() )
 			_orbit.Enabled = false;
+
+		// Leaving mid-weapon-edit: end the gun session HERE, while the commit → GunSlot save can still run
+		// (it needs the live sculpt + the _editingGun gate) — the deferred destroy below would be too late.
+		if ( _editingGun && _gunSession.IsValid() )
+			_gunSession.SetActive( false );
+		_editingGun = false;
 
 		// The session's own teardown commits any pending edit on the way out, which also saves the head slot.
 		if ( _model.IsValid() )
 			_model.Destroy();
 		_model = null;
 		_session = null;
+		_gunSession = null;
+		_gunSculpt = null;
 		_orbit = null;
 		_face = null;
 		_bodySculpts = null;
 		_workshop = null;
 
-		// Put the camera back exactly as the menu had it — the orbit rig moved and rotated it, and the home
-		// page should come back framed as if we never left. (FOV needs no restore: the rig asserts it through
-		// MainCamera, which eases back to its authored baseline once nothing asserts.)
+		// Put the camera back exactly as the menu had it — the orbit rig moved and rotated it AND set its FOV,
+		// and the home page should come back framed as if we never left. The FOV needs restoring too: MainCamera
+		// has no FOV baseline to drift back to (only DoF), so the rig's EditFov target would otherwise stick.
+		// Snapped, not eased, to match the position/rotation cut.
 		if ( _hasCameraReturn && Scene.Camera.IsValid() )
 		{
 			Scene.Camera.WorldPosition = _cameraReturnPos;
 			Scene.Camera.WorldRotation = _cameraReturnRot;
+			MainCamera.SetFov( _cameraReturnFov, lerp: false );
 		}
 		_hasCameraReturn = false;
 
@@ -228,12 +263,23 @@ public sealed class MenuCustomise : Component
 	}
 
 	// Clone hunter.prefab and reduce it to art: the Visuals subtree (head + body sculptures) with the
-	// gameplay stripped off. No hand/gun for now — the Shoulder arm goes with the rest.
+	// gameplay stripped off, plus a floating gun beside the head (the Shoulder arm goes with the rest).
 	GameObject SpawnModel()
 	{
 		var clone = HunterPrefab.Clone( new CloneConfig( WorldTransform, startEnabled: false, name: "Customise Hunter" ) );
 		if ( !clone.IsValid() )
 			return null;
+
+		// The arm + gun's tuning, read off the prefab's HunterGun / HunterController before they're stripped
+		// below — the menu poses the arm with the SAME numbers the game does (see PoseArm).
+		var hunterGun = clone.Components.Get<HunterGun>( true );
+		var hunterCtl = clone.Components.Get<HunterController>( true );
+		var gunPrefab = hunterGun.IsValid() ? hunterGun.GunPrefab : null;
+		_gunScale = hunterGun.IsValid() && hunterGun.WorldGunScale > 0f ? hunterGun.WorldGunScale : 0.5f;
+		var shoulderOffset = hunterGun.IsValid() ? hunterGun.ShoulderOffset : new Vector3( 0f, -9f, -13f );
+		var handOffset = hunterGun.IsValid() ? hunterGun.HandOffset : Vector3.Zero;
+		var gunRotation = hunterGun.IsValid() ? hunterGun.RotationOffset : new Angles( 0f, -90f, 0f );
+		var neckDrop = hunterCtl.IsValid() ? hunterCtl.NeckDrop : 16f;
 
 		clone.Flags |= GameObjectFlags.NotSaved; // runtime-only: never let this end up serialised into an asset
 		clone.SetParent( GameObject, true );
@@ -255,10 +301,11 @@ public sealed class MenuCustomise : Component
 		Strip( clone.Components.Get<SdfNetworkSync>( true ) );
 		Strip( clone.Components.Get<SdfHighlightOutline>( true ) ); // root only — the Head keeps its WarningOnly one
 
-		// Everything that isn't the art: hand/gun arm, movement colliders, pawn HUD, run dust.
+		// Everything that isn't the art: movement colliders, pawn HUD, run dust. The Shoulder arm stays — its Hand
+		// holds the gun, like the pawn's (the GunWorld/GunView clones are runtime-only, never in the prefab).
 		foreach ( var child in clone.Children.ToArray() )
 		{
-			if ( child.Name == "Visuals" )
+			if ( child.Name is "Visuals" or "Shoulder" )
 				continue;
 
 			child.Enabled = false;
@@ -300,8 +347,214 @@ public sealed class MenuCustomise : Component
 		session.PersistSlot = SculptLibrary.HeadSlot;
 		_session = session;
 
+		var hand = PoseArm( clone, shoulderOffset, neckDrop );
+		SpawnGun( hand.IsValid() ? hand : clone, gunPrefab, handOffset, gunRotation );
+
+		// The Head/Weapon dock (EditHud, bottom-centre while nothing's selected) — the in-game hunter's two
+		// buttons, each session marking its own part. No gun → no dock, the head edit stands alone.
+		if ( _gunSession.IsValid() )
+		{
+			_session.EditParts = new (string, bool, Action)[]
+			{
+				("Head", true, () => SetEditPart( gun: false )),
+				("Weapon", false, () => SetEditPart( gun: true )),
+			};
+			_gunSession.EditParts = new (string, bool, Action)[]
+			{
+				("Head", false, () => SetEditPart( gun: false )),
+				("Weapon", true, () => SetEditPart( gun: true )),
+			};
+		}
+
 		clone.Enabled = true;
 		return clone;
+	}
+
+	// The arm, posed exactly as HunterGun.Place poses it for a hunter standing still and looking level along the
+	// model's facing: the Shoulder pivot at eye + yaw·ShoulderOffset, rotated to the aim, its Hand child where the
+	// prefab authored it. The eye is NeckDrop above the head object's origin (the head is parked at the neck —
+	// HunterController.UpdateVisuals). Returns the Hand (the gun's mount), or null if the prefab has no arm.
+	GameObject PoseArm( GameObject model, Vector3 shoulderOffset, float neckDrop )
+	{
+		var shoulder = model.Children.FirstOrDefault( c => c.Name == "Shoulder" );
+		if ( !shoulder.IsValid() || !_face.IsValid() )
+			return null;
+
+		// Aim along the HEAD's facing, level — in game the head and the shoulder take the same aim
+		// (HunterController.UpdateVisuals / HunterGun.Place), so this is what makes the arm point straight out the
+		// way the face looks. Not the model root's yaw: hunter.prefab's root carries its own baked rotation.
+		var aim = new Angles( 0f, _face.GameObject.WorldRotation.Angles().yaw, 0f );
+		var eye = _face.GameObject.WorldPosition + Vector3.Up * neckDrop;
+		shoulder.WorldPosition = eye + Rotation.FromYaw( aim.yaw ) * shoulderOffset;
+		shoulder.WorldRotation = aim.ToRotation();
+
+		return shoulder.Children.FirstOrDefault( c => c.Name == "Hand" );
+	}
+
+	// The weapon in the hand: gun.prefab cloned and reduced to visuals (HunterGun's own strip), mounted on the
+	// Hand at HunterGun's HandOffset / RotationOffset (the GunWorld mount), wearing the saved GunSlot (or the
+	// prefab's stock gun) scaled down to the in-hand display scale, with its own dormant edit session.
+	void SpawnGun( GameObject mount, PrefabFile prefab, Vector3 handOffset, Angles gunRotation )
+	{
+		_gunSculpt = null;
+		_gunSession = null;
+		_editingGun = false;
+
+		if ( prefab is null )
+			return;
+
+		var go = SceneUtility.GetPrefabScene( prefab )?.Clone();
+		if ( !go.IsValid() )
+			return;
+
+		go.Name = "Customise Gun";
+		go.Flags |= GameObjectFlags.NotSaved;
+		go.SetParent( mount, false ); // GunWorld's mount: under the Hand, at HunterGun's offsets
+		HunterGun.StripNonVisuals( go );
+
+		var sculpt = go.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndDescendants );
+		if ( !sculpt.IsValid() || sculpt.Brushes is not { Count: > 0 } )
+		{
+			go.Destroy();
+			return;
+		}
+
+		// Canonical (prefab-scale) brushes: the player's saved gun, else the stock one the clone came with —
+		// then down to display scale for editing (see the fields).
+		var entry = SculptLibrary.Load( SculptLibrary.GunSlot );
+		var canonical = entry?.Brushes is { Count: > 0 } ? entry.Brushes : sculpt.Brushes;
+		sculpt.Brushes = canonical.Select( b => HunterGun.ScaledCopy( b, _gunScale ) ).ToList();
+
+		go.LocalPosition = handOffset;
+		go.LocalRotation = gunRotation.ToRotation();
+		go.Tags.Add( HunterGun.CloneTag ); // tagged like the pawn's GunWorld — it's the gun, not body clay
+
+		sculpt.Committed += OnGunCommitted;
+
+		var session = sculpt.Components.Create<SculptEditSession>();
+		session.Target = sculpt;
+		session.OrbitCamera = _orbit; // NO PersistSlot: it would save display-scale brushes (see OnGunCommitted)
+
+		_gunSculpt = sculpt;
+		_gunSession = session;
+	}
+
+	// Every gun commit while weapon-editing: inverse-scale back to canonical and save the GunSlot — the same
+	// funnel as HunterGun.OnEditCommitted, so the next round's hunter spawns holding exactly this gun. An
+	// invalid shape (SculptBounds) is work-in-progress and never saved, mirroring the session's persist gate.
+	void OnGunCommitted()
+	{
+		if ( !_editingGun || !_gunSculpt.IsValid() || _gunSculpt.Brushes is not { Count: > 0 } )
+			return;
+
+		var bounds = _gunSculpt.GameObject.Components.Get<SculptBounds>();
+		if ( bounds.IsValid() && !bounds.EvaluateNow() )
+			return;
+
+		float inv = 1f / _gunScale;
+		SculptLibrary.Save( new SculptLibrary.Entry
+		{
+			Name = SculptLibrary.GunSlot,
+			Resolution = _gunSculpt.Resolution,
+			FlipFaces = _gunSculpt.FlipFaces,
+			Brushes = _gunSculpt.Brushes.Select( b => HunterGun.ScaledCopy( b, inv ) ).ToList(),
+		} );
+	}
+
+	// The dock lands here: hand the stage (orbit camera + HUD) from one session to the other — each side commits
+	// on its way out (SetActive( false ) is the same funnel any exit runs). The Workshop column is HEADS only, so
+	// it steps aside while the gun is up.
+	void SetEditPart( bool gun )
+	{
+		if ( !_session.IsValid() || !_gunSession.IsValid() )
+			return;
+
+		if ( gun )
+		{
+			if ( !_session.IsEditing || _gunSession.IsEditing )
+				return;
+
+			RememberView(); // the head's view, while it still owns the stage
+			_session.SetActive( false );
+			_editingGun = true;
+			_gunSession.SetActive( true );
+			ShowWorkshop( false );
+			FrameGun();
+		}
+		else
+		{
+			if ( !_gunSession.IsEditing || _session.IsEditing )
+				return;
+
+			RememberView(); // the gun's view, while it still owns the stage
+			_gunSession.SetActive( false );
+			_editingGun = false;
+			_session.SetActive( true );
+			ShowWorkshop( true );
+			FrameHead();
+		}
+	}
+
+	void ShowWorkshop( bool show )
+	{
+		if ( !Hud.IsValid() || _workshop is null )
+			return;
+
+		Hud.WorkshopSave = show ? _workshop.Save : null;
+		Hud.WorkshopLoad = show ? _workshop.Load : null;
+		Hud.WorkshopClose = show ? _workshop.Close : null;
+		if ( !show )
+			Hud.WorkshopBrowserOpen = false;
+	}
+
+	// Frame the gun from the same front-on angle as the head, at its own fit distance.
+	void FrameGun()
+	{
+		if ( !_orbit.IsValid() || !_gunSculpt.IsValid() )
+			return;
+
+		if ( s_gunView is { } saved )
+		{
+			ApplyView( saved );
+			return;
+		}
+
+		if ( !Sdf.TryGetBounds( _gunSculpt.Brushes, out var bounds, SculptEditSession.PendingStamp( _gunSculpt ) ) )
+			return;
+
+		float radius = bounds.Size.Length * 0.5f * _gunSculpt.WorldScale.x;
+		var (_, _, rot) = HeadFraming();
+		_orbit.Pivot = _gunSculpt.WorldTransform.PointToWorld( bounds.Center );
+		_orbit.Distance = radius > 0.01f ? GameSettings.EditFitDistance( radius, FramingMargin ) : 40f;
+		_orbit.Angles = rot.Angles();
+	}
+
+	// ── Remembered views ─────────────────────────────────────────────────────────────────────────────────
+	// The orbit rig's last view per part (pivot, distance, angles), so switching Head ↔ Weapon — or leaving
+	// Customise and coming back — returns to exactly where you left each one. Plain world-space values: the menu
+	// model always rebuilds on this same GameObject's transform. Static so a page exit/re-entry keeps them.
+	static (Vector3 Pivot, float Distance, Angles Angles)? s_headView;
+	static (Vector3 Pivot, float Distance, Angles Angles)? s_gunView;
+
+	(Vector3 Pivot, float Distance, Angles Angles) CaptureView() => (_orbit.Pivot, _orbit.Distance, _orbit.Angles);
+
+	void ApplyView( (Vector3 Pivot, float Distance, Angles Angles) v )
+	{
+		_orbit.Pivot = v.Pivot;
+		_orbit.Distance = v.Distance;
+		_orbit.Angles = v.Angles;
+	}
+
+	// Stash the live view into whichever part currently owns the stage.
+	void RememberView()
+	{
+		if ( !_orbit.IsValid() || !_orbit.Enabled )
+			return;
+
+		if ( _editingGun )
+			s_gunView = CaptureView();
+		else
+			s_headView = CaptureView();
 	}
 
 	// The head framing — pivot on the face, fit distance, camera in front looking back — shared by the
@@ -319,6 +572,12 @@ public sealed class MenuCustomise : Component
 	{
 		if ( !_orbit.IsValid() || !_face.IsValid() )
 			return;
+
+		if ( s_headView is { } saved )
+		{
+			ApplyView( saved );
+			return;
+		}
 
 		var (pivot, distance, rot) = HeadFraming();
 		_orbit.Pivot = pivot;

@@ -14,7 +14,13 @@
 
 <root class="home-page menu-page">
 
-	<WobbleText Text="Mimiclay" class="menu-title hero auto" />
+	@* The wordmark between the Set Up Game title's spark dashes, at wordmark scale (.sparks.large, _controls.scss).
+	   The left fan hangs into the margin (.hero-heading) so the title itself keeps its place. *@
+	<div class="hero-heading">
+		<div class="sparks large left"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+		<WobbleText Text="Mimiclay" class="menu-title hero auto" />
+		<div class="sparks large right"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+	</div>
 
 	<div class="menu-content">
 		@* Labels are <WobbleText> so each letter can do the claymation jitter on hover (driven by .menu-button:hover
@@ -34,12 +40,8 @@
 			<div class="menu-button" @onclick=@Customise>
 				<WobbleText Text="Customise" />
 			</div>
-			<div class="menu-button" @onclick=@Library>
-				<WobbleText Text="Library" />
-			</div>
-			<div class="menu-button" @onclick=@Options>
-				<WobbleText Text="Options" />
-			</div>
+			@* Library + Options are hidden for now — their pages, routes and the Library()/Options() handlers below
+			   are untouched, so bringing either back is just restoring its button here. *@
 
 			@* Absolutely positioned (see scss) so showing/hiding it never resizes the centred button block. *@
 			@if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) )

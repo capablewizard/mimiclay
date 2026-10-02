@@ -142,7 +142,7 @@ public struct CharadesSettings
 	public const string DefaultTopics = CharadesTopics.Everything;
 	public const bool DefaultTopicChoices = true;
 	public const string DefaultWorkshopLists = "";
-	public const bool DefaultWordLengthHints = true;
+	public const bool DefaultWordLengthHints = false;
 	public const float DefaultStartCountdownSeconds = 10f;
 	public const float DefaultWriteSeconds = 45f;
 	public const float DefaultChooseSeconds = 10f;

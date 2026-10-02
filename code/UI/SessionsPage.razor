@@ -55,7 +55,7 @@
 			{
 				<div class="menu-empty">
 					<span>No public games right now.</span>
-					<div class="btn btn-action empty-host" @onclick=@HostInstead>Host Game</div>
+					<div class="btn-jitter empty-host" @onclick=@HostInstead><WobbleText Text="Host Game" /></div>
 					@if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) )
 					{
 						<div class="menu-error" @key=@MenuNetworking.ErrorStamp>@MenuNetworking.LastError</div>

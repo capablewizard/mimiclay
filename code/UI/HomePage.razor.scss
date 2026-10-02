@@ -5,6 +5,16 @@
 // here we only style the home-specific button column. The hero title size lives in .menu-title.hero.
 .home-page
 {
+	// The wordmark row: spark fans either side of MIMICLAY. Pulled left by the left fan's footprint
+	// (.sparks.large: 72px + its 8px margin) so the title stays exactly where it was and the fan sits in the margin.
+	.hero-heading
+	{
+		flex-direction: row;
+		align-items: center;
+		flex-shrink: 0;
+		margin-left: -80px;
+	}
+
 	// Buttons hug the left edge; the .menu-content wrapper handles the vertical centring. position: relative so
 	// the error can anchor to it (below).
 	.menu-options

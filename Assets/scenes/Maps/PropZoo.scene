@@ -196,7 +196,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -253,7 +253,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1205,7 +1205,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "47ae1467-f66c-4680-aab6-6a46288ee00c",
+                "Id": "9ca30dda-c173-4220-a24d-3d06c2b9a641",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1251,7 +1251,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "d9ef3e6e-3376-4089-b7b8-61245434db0d",
+                "Id": "d840ce89-7f89-4e32-923e-856b9ed68be2",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1279,7 +1279,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "d9ef3e6e-3376-4089-b7b8-61245434db0d",
+                "Id": "d840ce89-7f89-4e32-923e-856b9ed68be2",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1326,7 +1326,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "bc78c28f-22d4-48f7-95ad-7406b8895e2d",
+                "Id": "cc9ab8d2-1036-4692-9e0b-339637ebe02d",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1370,7 +1370,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "10744f4a-f2f3-4295-b69b-701ebc54871a",
+                "Id": "8de00088-9415-4857-a8ce-bdd3fdd75968",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1682,7 +1682,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "a0651d3c-de70-436c-8b63-ee83e85571fc",
+                "Id": "7071840f-43a5-4b4c-acd0-6da21a93eb60",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1726,7 +1726,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "a71a950d-fe9c-4540-bf63-087ce16e1926",
+                "Id": "7337217b-9d9b-45ab-9ce7-eacd29df659c",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1770,7 +1770,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "8a6ddecb-7d07-4974-a1c2-7418ae91e3f1",
+                "Id": "7f1f417a-2e80-49dc-b781-7cec5f5ceb95",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1816,7 +1816,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "21257936-39f6-48fa-babb-d91985d0738e",
+                "Id": "155a0fbc-4e47-4b3e-a4de-e112c8148111",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1844,7 +1844,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "21257936-39f6-48fa-babb-d91985d0738e",
+                "Id": "155a0fbc-4e47-4b3e-a4de-e112c8148111",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2954,7 +2954,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2982,7 +2982,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3031,7 +3031,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3059,7 +3059,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -4344,6 +4344,7 @@
           "CharadesSoloDebug": false,
           "CharadesSource": "Topics",
           "CharadesStartCountdownSeconds": 10,
+          "CharadesTopicChoices": true,
           "CharadesTopicIds": "",
           "CharadesWordLengthHints": true,
           "CharadesWriteSeconds": 45,

@@ -171,17 +171,8 @@
 	{
 		.btn { margin-top: $space-md; pointer-events: all; }
 
-		// .empty-host = the shared .btn-action (orange clay, 3D emboss, hover jitter) scaled down from the big
-		// Host/Start size. Just shrink the font/padding/radius and the 3D offsets to match.
-		.empty-host
-		{
-			font-size: 28px;
-			padding: 8px 22px;
-			border-radius: 18px;
-			box-shadow:
-				8px 10px 6px $emboss-glow-box,
-				3px 4px 0px $emboss-depth-primary;
-		}
+		// .empty-host = the shared .btn-jitter (the lobby's Start Game: grows on hover, letters jitter), as-is.
+		.empty-host { margin-top: $space-md; }
 	}
 }
 

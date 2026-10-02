@@ -914,7 +914,7 @@ public sealed class HunterGun : Component
 
 	// A copy of the brush with every length-like field scaled together, so the shape is a true uniform
 	// miniature of the source. BoundingRadius/LocalCentre are computed properties — nothing to touch.
-	static SdfBrush ScaledCopy( SdfBrush src, float s )
+	internal static SdfBrush ScaledCopy( SdfBrush src, float s ) // also MenuCustomise's gun (same display-scale edit)
 	{
 		var b = src.Copy();
 		b.Position *= s;
@@ -1126,7 +1126,7 @@ public sealed class HunterGun : Component
 	// The prefab is a full sculpt-save export; as an attachment only the visual stack survives. Colliders would
 	// bind into the pawn's physics, and the outline would glow through walls for everyone (RoundOutlineSystem's
 	// hunter rule applies to every outline under the pawn).
-	static void StripNonVisuals( GameObject go )
+	internal static void StripNonVisuals( GameObject go ) // also MenuCustomise's gun
 	{
 		foreach ( var c in go.Components.GetAll<Component>( FindMode.EverythingInSelfAndDescendants ).ToArray() )
 		{

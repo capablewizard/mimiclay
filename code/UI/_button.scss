@@ -76,8 +76,9 @@ label { pointer-events: none; }
 .nav-inert .btn { pointer-events: none; }
 
 // --- Clay action button ------------------------------------------------------
-// The big raised orange "clay" button for a screen's headline action — the Host "Start Game" and the Sessions
-// "Join". Self-contained (sets its own size/colour/shadow); pair with the base .btn for flex/cursor/pointer-events/
+// The big raised orange "clay" button for a screen's headline action — the Sessions footer "Join" (Host's Start Game
+// and the empty-list Host Game moved to .btn-jitter, the lobby's style). Self-contained (sets its own size/colour/
+// shadow); pair with the base .btn for flex/cursor/pointer-events/
 // disabled: class="btn btn-action". Kept here (not per-page) so every instance is byte-for-byte identical AND so
 // the hover keyframe below is reachable from any sheet that pulls in the kit (e.g. the footer in MainMenuNav).
 .btn-action
@@ -158,6 +159,9 @@ label { pointer-events: none; }
 	&:hover { transform: scale( 1.08 ); background-color: $craft-orange-hi; sound-in: $sound-hover; animation: hover-spring-108 $spring-duration ease-out; }
 	&:active { sound-in: $sound-click; }
 	&:hover:active { transform: scale( 1.02 ); }
+
+	// Busy / unavailable (Host's Start Game while a connection is in flight): faded and inert, no hover grow.
+	&.disabled { opacity: 0.4; pointer-events: none; transform: none; }
 
 	&:hover .letter { animation: clay-jitter $wobble-duration linear 0s infinite; }
 	&:hover .letter:nth-child(  2 ) { animation-delay: 0.10s; }

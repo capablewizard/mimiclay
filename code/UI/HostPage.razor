@@ -55,8 +55,9 @@
 		</div>
 
 		<div class="host-footer">
-			<div class="btn btn-action @(MenuNetworking.Busy ? "disabled" : "")" @onclick=@StartGame>
-				<span>Start Game</span>
+			@* The lobby's Start Game (Set Up Game): .btn-jitter, the button grows while its WobbleText letters jitter. *@
+			<div class="btn-jitter @(MenuNetworking.Busy ? "disabled" : "")" @onclick=@StartGame>
+				<WobbleText Text="Start Game" />
 			</div>
 		</div>
 

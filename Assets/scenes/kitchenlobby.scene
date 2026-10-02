@@ -559,7 +559,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "2e12e723-513e-4583-8254-8c8093c973f6",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -616,7 +616,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "2e12e723-513e-4583-8254-8c8093c973f6",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1568,7 +1568,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "7b417f9d-f8cf-4469-89db-fa6f795c7863",
+                "Id": "9ca30dda-c173-4220-a24d-3d06c2b9a641",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1614,7 +1614,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "81d27c47-5218-424b-8448-9935ba4185b9",
+                "Id": "d840ce89-7f89-4e32-923e-856b9ed68be2",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1642,7 +1642,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "81d27c47-5218-424b-8448-9935ba4185b9",
+                "Id": "d840ce89-7f89-4e32-923e-856b9ed68be2",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1689,7 +1689,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "a36cc846-0bd6-4ac8-bd7b-dc552cf85b0e",
+                "Id": "cc9ab8d2-1036-4692-9e0b-339637ebe02d",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1733,7 +1733,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "f35b590d-c3a0-4b16-9fb4-3d157b0192fd",
+                "Id": "8de00088-9415-4857-a8ce-bdd3fdd75968",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2045,7 +2045,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "973498bf-9494-43b8-9574-debed8f75993",
+                "Id": "7071840f-43a5-4b4c-acd0-6da21a93eb60",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2089,7 +2089,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "722fd558-f060-4b1b-945a-c782f13e3a51",
+                "Id": "7337217b-9d9b-45ab-9ce7-eacd29df659c",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2133,7 +2133,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "c8a9462f-bf79-48db-9f49-f8338b254905",
+                "Id": "7f1f417a-2e80-49dc-b781-7cec5f5ceb95",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2179,7 +2179,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f3a0ae8d-4ec8-4eb4-812a-d9f922fa6e33",
+                "Id": "155a0fbc-4e47-4b3e-a4de-e112c8148111",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2207,7 +2207,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f3a0ae8d-4ec8-4eb4-812a-d9f922fa6e33",
+                "Id": "155a0fbc-4e47-4b3e-a4de-e112c8148111",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3317,7 +3317,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3345,7 +3345,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3394,7 +3394,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3422,7 +3422,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
+                "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -5520,7 +5520,7 @@
           },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 12:34:21",
+          "LastImport": "63 object(s), 67661 tris — 16:53:52",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -12027,22 +12027,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1101.1239,-483.758209"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -20889,7 +20873,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "9e799676-1246-47cb-a56c-a3ead03e599a",
+            "Id": "4e19d1d2-c8f2-4161-b61a-b7dda2c8a675",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
