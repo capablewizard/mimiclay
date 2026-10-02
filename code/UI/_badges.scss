@@ -3,6 +3,7 @@
 //  (RoundHud's pips, the charades scoreboard).
 //
 //  .icon-farm      the off-screen SdfIconFarm parking spot
+//  .icon-render    an SdfIcon showing its farm texture whole (size it per screen)
 //  .corner-badge   an emoji pinned to an icon's corner: parked at scale(0), sprung in by .on,
 //                  then the glyph jitters forever. Position it per corner in the screen sheet.
 //  .badge-glyph    the emoji itself, ink-outlined (size it per screen)
@@ -24,6 +25,16 @@
 	left: -8192px;
 	top: 0;
 	flex-direction: column;
+}
+
+// --- Displayed icon ----------------------------------------------------------------
+// An SdfIcon is just a div with the farm's texture as its background — and the farm renders at several times
+// the display size (supersampling), so without `contain` the image shows at native size, cropped to the box.
+.icon-render
+{
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: center;
 }
 
 // --- Corner badge ----------------------------------------------------------------

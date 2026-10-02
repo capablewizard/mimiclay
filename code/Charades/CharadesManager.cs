@@ -801,6 +801,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	{
 		Sandbox.Platform.Chat.AddText( $"⭐ {name} guessed it!" );
 		ShowBubble( rosterId, "Got it! ⭐" );
+
+		// The success sting + the guesser's scoreboard head springs and jitters (every machine runs this RPC).
+		UiSounds.PlayEvent( UiSounds.Success );
+		foreach ( var hud in Scene.GetAllComponents<CharadesHud>() )
+			hud.Celebrate( rosterId );
 	}
 
 	/// <summary>Host→everyone: a system line into every machine's chat (turn skipped, waiting, …).</summary>

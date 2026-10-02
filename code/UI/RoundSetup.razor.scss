@@ -66,55 +66,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		}
 	}
 
-	// Three short dashes fanning out from the title.
-	.sparks {
-		position: relative;
-		width: 36px;
-		height: 70px;
-
-		// The outer .spark holds the dash's place and angle; the inner .spark-body is the pill, and it jitters
-		// (the keyframe sets transform, which would otherwise wipe the fan-out angle).
-		.spark {
-			position: absolute;
-			width: 22px;
-			height: 7px;
-		}
-
-		.spark-body {
-			width: 100%;
-			height: 100%;
-			border-radius: 4px;
-			background-color: $craft-yellow;
-			box-shadow: 0px 2px 0px $emboss-depth-primary;
-			transform-origin: center;
-			animation-name: spark-jitter;
-			animation-duration: $wobble-duration;
-			animation-timing-function: linear;
-			animation-iteration-count: infinite;
-		}
-
-		&.left {
-			margin-right: 4px;
-			.s1 { top: 8px; left: 10px; transform: rotate( 35deg ); }
-			.s2 { top: 32px; left: 2px; transform: rotate( 0deg ); }
-			.s3 { top: 56px; left: 10px; transform: rotate( -35deg ); }
-		}
-
-		&.right {
-			margin-left: 8px;
-			.s1 { top: 6px; left: 4px; transform: rotate( -35deg ); }
-			.s2 { top: 30px; left: 10px; transform: rotate( 0deg ); }
-			.s3 { top: 54px; left: 4px; transform: rotate( 35deg ); }
-		}
-
-		// Staggered like the title's letters, so the six dashes never snap in unison.
-		&.left .s1 .spark-body  { animation-delay: 0.00s; }
-		&.left .s2 .spark-body  { animation-delay: 0.30s; }
-		&.left .s3 .spark-body  { animation-delay: 0.60s; }
-		&.right .s1 .spark-body { animation-delay: 0.15s; }
-		&.right .s2 .spark-body { animation-delay: 0.45s; }
-		&.right .s3 .spark-body { animation-delay: 0.75s; }
-	}
+	// The spark dashes either side of the title are the shared .sparks (_controls.scss).
 
 	.columns {
 		flex-direction: row;
@@ -416,25 +368,6 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		width: 100%;
 		z-index: 1;   // above the backdrop so the button takes clicks
 	}
-}
-
-// The title dashes' jitter: the same held-pose stop-motion as WobbleText's clay-jitter (each pose HELD, then
-// snapped over a 1% sliver), with a stronger swing and scale pulse because the dashes are small.
-@keyframes spark-jitter
-{
-	0%   { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
-	15%  { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
-	16%  { transform: rotate(  4deg ) translate( 1px, -1px ) scale( 1.08 ); }
-	31%  { transform: rotate(  4deg ) translate( 1px, -1px ) scale( 1.08 ); }
-	32%  { transform: rotate( -3deg ) translate( -1px, 1px ) scale( 0.94 ); }
-	47%  { transform: rotate( -3deg ) translate( -1px, 1px ) scale( 0.94 ); }
-	48%  { transform: rotate(  7deg ) translate( 1px,  1px ) scale( 1.1 ); }
-	64%  { transform: rotate(  7deg ) translate( 1px,  1px ) scale( 1.1 ); }
-	65%  { transform: rotate( -7deg ) translate( -1px, -1px ) scale( 1 ); }
-	81%  { transform: rotate( -7deg ) translate( -1px, -1px ) scale( 1 ); }
-	82%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
-	99%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
-	100% { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
 }
 
 // Click-through insides (see "Click targets" in _button.scss).

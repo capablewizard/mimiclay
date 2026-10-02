@@ -559,7 +559,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "2e12e723-513e-4583-8254-8c8093c973f6",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -616,7 +616,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "2e12e723-513e-4583-8254-8c8093c973f6",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1568,7 +1568,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "47ae1467-f66c-4680-aab6-6a46288ee00c",
+                "Id": "7b417f9d-f8cf-4469-89db-fa6f795c7863",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1614,7 +1614,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "d9ef3e6e-3376-4089-b7b8-61245434db0d",
+                "Id": "81d27c47-5218-424b-8448-9935ba4185b9",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1642,7 +1642,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "d9ef3e6e-3376-4089-b7b8-61245434db0d",
+                "Id": "81d27c47-5218-424b-8448-9935ba4185b9",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1689,7 +1689,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "bc78c28f-22d4-48f7-95ad-7406b8895e2d",
+                "Id": "a36cc846-0bd6-4ac8-bd7b-dc552cf85b0e",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1733,7 +1733,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "10744f4a-f2f3-4295-b69b-701ebc54871a",
+                "Id": "f35b590d-c3a0-4b16-9fb4-3d157b0192fd",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2045,7 +2045,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "a0651d3c-de70-436c-8b63-ee83e85571fc",
+                "Id": "973498bf-9494-43b8-9574-debed8f75993",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2089,7 +2089,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "a71a950d-fe9c-4540-bf63-087ce16e1926",
+                "Id": "722fd558-f060-4b1b-945a-c782f13e3a51",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2133,7 +2133,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "8a6ddecb-7d07-4974-a1c2-7418ae91e3f1",
+                "Id": "c8a9462f-bf79-48db-9f49-f8338b254905",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2179,7 +2179,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "21257936-39f6-48fa-babb-d91985d0738e",
+                "Id": "f3a0ae8d-4ec8-4eb4-812a-d9f922fa6e33",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2207,7 +2207,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "21257936-39f6-48fa-babb-d91985d0738e",
+                "Id": "f3a0ae8d-4ec8-4eb4-812a-d9f922fa6e33",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3317,7 +3317,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3345,7 +3345,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3394,7 +3394,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3422,7 +3422,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+                "Id": "f2edadb4-705c-4ccf-a939-2e8e1890342f",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -5520,7 +5520,7 @@
           },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 12:53:27",
+          "LastImport": "63 object(s), 67661 tris — 12:34:21",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -11478,7 +11478,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11495,7 +11495,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11831,22 +11831,6 @@
             },
             "Property": "Position",
             "Value": "-250.648331,-584.849365,-371.277924"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11888,22 +11872,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-465.34613"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12009,7 +11977,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -12173,22 +12141,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-504.864471"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -15982,6 +15934,14 @@
               "Type": "Component",
               "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           },
@@ -19109,14 +19069,6 @@
             },
             "Property": "Position",
             "Value": "153.794373,-1134.85608,-365.04541"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "e7601da9-8ae1-4549-855f-b2b5034d6707"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19256,14 +19208,6 @@
             },
             "Property": "Position",
             "Value": "-214.278351,-1185.62463,-185.156311"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -19617,14 +19561,6 @@
               "Type": "Component",
               "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19669,14 +19605,6 @@
             },
             "Property": "Rotation",
             "Value": "2.98023206E-08,2.09211084E-08,1,-4.37113883E-08"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -19734,14 +19662,6 @@
             },
             "Property": "Rotation",
             "Value": "2.98023206E-08,2.09211084E-08,1,-4.37113883E-08"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -20969,7 +20889,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "cd0570c1-ef80-494c-8176-b05755080efa",
+            "Id": "9e799676-1246-47cb-a56c-a3ead03e599a",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,

@@ -19,6 +19,8 @@
 //  .field            recessed text-entry groove (TextEntry)
 //  .scroll-wrap      wraps a scroll area with .scroll-fade top/bottom hints (driven by can-up / can-down)
 //  .art-shade        dark gradient over a picture so text on it reads (.full = whole picture)
+//  .status-line      the big jittering status sentence over the scene (a LockStep WobbleText)
+//  .sparks           three jittering yellow dashes beside a title (.left/.right; .small)
 //
 //  Imported by _menu.scss, so any sheet that imports the menu kit gets these.
 // =============================================================================
@@ -459,3 +461,119 @@
 	100% { transform: translateX( 0px ) scale( 1.08 ); }
 }
 
+
+// --- Status line ------------------------------------------------------------------
+// The big jittering sentence over the scene that says what's happening ("Press G to set up game", "Waiting for
+// players"). Put it on a WobbleText with LockStep (class="status-line" LockStep=@true); the screen sheet owns
+// only its spacing. Wraps rather than running wide.
+.status-line
+{
+	max-width: 640px;
+	justify-content: center;
+	flex-wrap: wrap;
+	font-family: $body-font;
+	font-weight: $body-weight;
+	font-size: 34px;
+	color: $scene-text;
+
+	// Through .wobble-text so it out-ranks WobbleText's own per-letter shadow regardless of sheet order.
+	&.wobble-text .letter { text-shadow: $scene-shadow; }
+}
+
+// --- Sparkle dashes --------------------------------------------------------------
+// Three short yellow dashes fanning out either side of a title (.sparks.left / .sparks.right), each jittering
+// on its own beat. Sized for the big clay titles (Set Up Game); .sparks.small for ~40px titles.
+// Three short dashes fanning out from the title.
+.sparks {
+	position: relative;
+	width: 36px;
+	height: 70px;
+
+	// The outer .spark holds the dash's place and angle; the inner .spark-body is the pill, and it jitters
+	// (the keyframe sets transform, which would otherwise wipe the fan-out angle).
+	.spark {
+		position: absolute;
+		width: 22px;
+		height: 7px;
+	}
+
+	.spark-body {
+		width: 100%;
+		height: 100%;
+		border-radius: 4px;
+		background-color: $craft-yellow;
+		box-shadow: 0px 2px 0px $emboss-depth-primary;
+		transform-origin: center;
+		animation-name: spark-jitter;
+		animation-duration: $wobble-duration;
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+	}
+
+	&.left {
+		margin-right: 4px;
+		.s1 { top: 8px; left: 10px; transform: rotate( 35deg ); }
+		.s2 { top: 32px; left: 2px; transform: rotate( 0deg ); }
+		.s3 { top: 56px; left: 10px; transform: rotate( -35deg ); }
+	}
+
+	&.right {
+		margin-left: 8px;
+		.s1 { top: 6px; left: 4px; transform: rotate( -35deg ); }
+		.s2 { top: 30px; left: 10px; transform: rotate( 0deg ); }
+		.s3 { top: 54px; left: 4px; transform: rotate( 35deg ); }
+	}
+
+	// Staggered like the title's letters, so the six dashes never snap in unison.
+	&.left .s1 .spark-body  { animation-delay: 0.00s; }
+	&.left .s2 .spark-body  { animation-delay: 0.30s; }
+	&.left .s3 .spark-body  { animation-delay: 0.60s; }
+	&.right .s1 .spark-body { animation-delay: 0.15s; }
+	&.right .s2 .spark-body { animation-delay: 0.45s; }
+	&.right .s3 .spark-body { animation-delay: 0.75s; }
+}
+
+// Half scale, for the smaller clay titles (~40px — the charades scoreboard heading).
+.sparks.small
+{
+	width: 20px;
+	height: 36px;
+
+	.spark { width: 12px; height: 4px; }
+	.spark-body { border-radius: 2px; box-shadow: 0px 1px 0px $emboss-depth-primary; }
+
+	&.left
+	{
+		margin-right: 4px;
+		.s1 { top: 4px; left: 6px; transform: rotate( 35deg ); }
+		.s2 { top: 16px; left: 2px; transform: rotate( 0deg ); }
+		.s3 { top: 28px; left: 6px; transform: rotate( -35deg ); }
+	}
+
+	&.right
+	{
+		margin-left: 6px;
+		.s1 { top: 3px; left: 2px; transform: rotate( -35deg ); }
+		.s2 { top: 15px; left: 6px; transform: rotate( 0deg ); }
+		.s3 { top: 27px; left: 2px; transform: rotate( 35deg ); }
+	}
+}
+
+// The title dashes' jitter: the same held-pose stop-motion as WobbleText's clay-jitter (each pose HELD, then
+// snapped over a 1% sliver), with a stronger swing and scale pulse because the dashes are small.
+@keyframes spark-jitter
+{
+	0%   { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
+	15%  { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
+	16%  { transform: rotate(  4deg ) translate( 1px, -1px ) scale( 1.08 ); }
+	31%  { transform: rotate(  4deg ) translate( 1px, -1px ) scale( 1.08 ); }
+	32%  { transform: rotate( -3deg ) translate( -1px, 1px ) scale( 0.94 ); }
+	47%  { transform: rotate( -3deg ) translate( -1px, 1px ) scale( 0.94 ); }
+	48%  { transform: rotate(  7deg ) translate( 1px,  1px ) scale( 1.1 ); }
+	64%  { transform: rotate(  7deg ) translate( 1px,  1px ) scale( 1.1 ); }
+	65%  { transform: rotate( -7deg ) translate( -1px, -1px ) scale( 1 ); }
+	81%  { transform: rotate( -7deg ) translate( -1px, -1px ) scale( 1 ); }
+	82%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
+	99%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
+	100% { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
+}

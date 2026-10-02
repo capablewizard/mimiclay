@@ -1,6 +1,7 @@
 @import "/UI/_theme.scss";
 @import "/UI/_button.scss"; // for the action-jitter keyframes (the raised hand badge wobbles like the validity toast)
 @import "/UI/_badges.scss"; // .icon-farm, .badge-glyph, hud-hand-raise — the shared roster kit
+@import "/UI/_controls.scss"; // .status-line — the lobby status sentence, shared with the charades HUD
 
 // Roster icon size, in one place because several rules have to agree on it: the pip box, the image inside it,
 // the fallback glyph, the divider's height, and how wide each side needs to be to fit a sensible number per
@@ -464,19 +465,9 @@ $clock-col-width: 150px;
 			margin-top: -6px;
 		}
 
-		// The jittering line beneath the header (WobbleText "auto"), scaled up. It's a row of letters, so centre them
-		// and let it wrap if a long message needs two lines; per-letter shadow keeps it legible over the scene.
+		// The jittering line beneath the header — the look is the shared .status-line (_controls.scss); spacing only.
 		.lobby-status {
-			max-width: 640px;
 			margin-top: $space-sm;
-			justify-content: center;
-			flex-wrap: wrap;
-			font-family: $body-font;
-			font-weight: $body-weight;
-			font-size: 34px;
-			color: $scene-text;
-
-			.letter { text-shadow: $scene-shadow; }
 		}
 
 		// The lobby launch countdown, in the status line's slot under the roster.

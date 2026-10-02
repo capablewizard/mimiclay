@@ -140,7 +140,7 @@
 			@if ( ShowLobbyStatus )
 			{
 				@* Idle lobby (before the host starts): the jittering status line stands in for the timer. *@
-				<WobbleText Text=@LobbyStatus class="lobby-status" LockStep=@true @key=@LobbyStatus />
+				<WobbleText Text=@LobbyStatus class="status-line lobby-status" LockStep=@true @key=@LobbyStatus />
 			}
 			else if ( RoundContext.Active?.HasTimer ?? false )
 			{
@@ -658,7 +658,8 @@
 	string LobbyStatus => LocalIsHost ? "Press G to set up game" : "Waiting for host to start the game";
 
 	// The GAME this session is playing right now: told by which manager is live in a map scene (RoundManager IS
-	// prop hunt, CreativeManager IS creative), by the host's live selection in the lobby, PropHunt by fallback.
+	// prop hunt, CreativeManager IS creative, CharadesManager IS charades), by the host's live selection in the lobby,
+	// PropHunt by fallback.
 	// Gates the prop-hunt-only lobby furniture: the nominate hint and which mode card shows.
 	GameModeKind LobbyGame
 	{
@@ -666,6 +667,7 @@
 		{
 			if ( RoundManager.Current.IsValid() ) return GameModeKind.PropHunt;
 			if ( CreativeManager.Current.IsValid() ) return GameModeKind.Creative;
+			if ( CharadesManager.Current.IsValid() ) return GameModeKind.Charades;
 			if ( LobbyManager.Current.IsValid() ) return LobbyManager.Current.SelectedGame;
 			return GameModeKind.PropHunt;
 		}
@@ -699,6 +701,9 @@
 	{
 		get
 		{
+			// Charades runs no IRoundContext (its manager owns its own phases), so a live charades map is "in-map"
+			// by itself — the card names the game for every phase there, Waiting included.
+			if ( CharadesManager.Current.IsValid() ) return true;
 			if ( RoundContext.Active is null ) return false;
 			if ( Phase == RoundPhase.Lobby ) return RoundContext.Active.HasTimer; // launching countdown only
 			return true; // any in-map phase

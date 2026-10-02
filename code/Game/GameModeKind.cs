@@ -40,10 +40,10 @@ public static class GameModes
 	{
 		new( GameModeKind.PropHunt, "Prop Hunt", "Create a disguise to blend in and evade the hunters.",
 			"", "visibility" ), // scene comes from the map picker (MapCatalog), not the catalogue
+		new( GameModeKind.Charades, "Charades", "One player sculpts a secret word, everyone else guesses.",
+			"", "theater_comedy" ), // plays on a picked charades map (one with a stage — see MapResource.ForCharades)
 		new( GameModeKind.Creative, "Creative", "A quiet sandbox, let your creativity run wild",
 			"", "brush" ),      // plays on the picked map too — the mode key tells the map to run creative
-		new( GameModeKind.Charades, "Charades", "One player sculpts a secret word — everyone else guesses.",
-			"", "theater_comedy" ), // plays on a picked charades map (one with a stage — see MapResource.ForCharades)
 	};
 
 	public static GameModeInfo Get( GameModeKind kind )

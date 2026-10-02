@@ -229,17 +229,27 @@
 	// the owning connection's display name so debug scenes and the lobby still label pawns. Resolved through
 	// RosterIdOf, not Network.Owner: bot pawns are all host-owned, so the owner's name would label every one of
 	// them (and only the host's row would ever be found) — "Bot 3" comes from its row.
+	// Charades keeps its own roster (CharadesManager.Players, not RoundManager's) — without it every bot fell
+	// through to the owner fallback and wore the HOST's name. And a bot pawn never takes the owner's name even
+	// when no roster answers: the owner is just whoever hosts.
 	string NameFor( GameObject pawn )
 	{
 		var id = RoundManager.RosterIdOf( pawn );
 
-		if ( id is not null
-			&& RoundManager.Current.IsValid()
-			&& RoundManager.Current.Players.TryGetValue( id.Value, out var info )
-			&& !string.IsNullOrWhiteSpace( info.Name ) )
-			return info.Name;
+		if ( id is not null )
+		{
+			if ( RoundManager.Current.IsValid()
+				&& RoundManager.Current.Players.TryGetValue( id.Value, out var info )
+				&& !string.IsNullOrWhiteSpace( info.Name ) )
+				return info.Name;
 
-		return pawn.Network.Owner?.DisplayName;
+			if ( CharadesManager.Current.IsValid()
+				&& CharadesManager.Current.Players.TryGetValue( id.Value, out var row )
+				&& !string.IsNullOrWhiteSpace( row.Name ) )
+				return row.Name;
+		}
+
+		return RoundManager.IsBotPawn( pawn ) ? null : pawn.Network.Owner?.DisplayName;
 	}
 
 	// Where the plate anchors in the world: the top of the pawn's OWN sculpture bounds — the hunter's Head sits

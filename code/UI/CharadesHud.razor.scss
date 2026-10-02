@@ -1,6 +1,7 @@
 @import "/UI/_theme.scss";
-@import "/UI/_button.scss"; // .paper-card + .btn + the card stack (.section-title/.stack-row) — the shared craft kit
+@import "/UI/_button.scss"; // .paper-card + .btn — the shared craft kit
 @import "/UI/_badges.scss"; // .icon-farm + corner badges — the shared roster kit
+@import "/UI/_controls.scss"; // .sub-title, .divider, .sparks — the shared control kit
 
 // Charades HUD. Same soft-clay language as the round HUD: chunky rounded cards, ink outlines, cream paper.
 
@@ -20,13 +21,6 @@
 		right: 0;
 		flex-direction: column;
 		align-items: center;
-	}
-
-	.phase-caption {
-		font-size: 22px;
-		font-weight: 700;
-		color: white;
-		text-shadow: 0 2px 3px rgba( black, 0.3 );
 	}
 
 	.timer {
@@ -234,41 +228,121 @@
 	}
 
 	// ── Scoreboard (right edge) ──────────────────────────────────────────────────────────────────────
-	// The edit HUD's layer stack, mirrored onto the right edge: .section-title + .paper-card .stack-row from
-	// the card-stack kit, corner badges from the roster kit. Layout only here.
+	// A clay WobbleText heading over one .paper-card of ruled rows (.divider) — heads + corner badges from the
+	// roster kit. Layout only here.
 	.scoreboard {
 		position: absolute;
 		right: $panel-inset;
 		top: $panel-inset;
 		width: 300px;
 		flex-direction: column;
-		gap: 10px; // the layer stack's spacing
+		color: $paper-ink;
 
-		.section-title { justify-content: flex-end; } // right-edge header, like the edit HUD's right panel
+		// TRIAL: the Set Up Game title (RoundSetup's .dialog-title) at about half size — same header font, cream
+		// and layered clay emboss, the emboss offsets halved with it — between the half-scale spark dashes.
+		.board-heading {
+			flex-direction: row;
+			align-items: center;
+			align-self: center;
+			margin-bottom: 6px;
+		}
 
-		.score-row {
+		.board-title {
+			font-family: $header-font;
+			font-size: 40px;
+			color: $scene-text;
+			text-transform: uppercase;
+
+			.letter {
+				text-shadow:
+					5px 6px 2px $emboss-glow,
+					2px 3px 0px $emboss-depth;
+			}
+		}
+
+		.board-card {
+			flex-direction: column;
+			padding: 18px 10px 18px 10px; // 18 top + bottom: the first/last heads overhang their rows by ~13px
+			border-radius: $radius-lg;
+		}
+
+		// Clear air between each rule and the rows either side, so the mimic's orange block floats between its
+		// lines rather than touching them.
+		.divider { margin: 10px 6px; }
+
+		// The mimic's row is an inset, rounded block of selection orange — padded inside the card rather than
+		// running edge to edge.
+		.board-row {
+			flex-direction: row;
+			align-items: center;
 			gap: 12px;
+			padding: 9px 16px 9px 4px; // a touch taller than the text needs; tight left of the head, more air right of the score
+			border-radius: $radius-md;
 
-			// The rendered head. position:relative so the corner badge anchors to it.
-			.player-icon {
+			&.selected { background-color: $craft-orange-hi; } // the lighter selection orange
+		}
+
+		// The rendered head — between the in-round (64px) and lobby (96px) pip sizes. position:relative so the
+		// corner badge anchors to it.
+		// Negative vertical margins take the head OUT of the row's height: the row (and the mimic's orange block)
+		// sizes to the name/score text, and the head overhangs it top and bottom.
+		.player-icon {
+			position: relative;
+			width: 76px;
+			height: 76px;
+			margin: -22px 0;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+
+			// Eases back to rest when the celebration ends (the class coming off), like a button losing :hover.
+			transition: transform 0.16s ease;
+
+			// The head + its badge. Its own element so the celebration jitter here and the spring on .player-icon
+			// don't fight over one `transform`. Positioned, so the corner badge anchors to it.
+			.icon-body {
 				position: relative;
-				width: 44px;
-				height: 44px;
-				flex-shrink: 0;
+				width: 100%;
+				height: 100%;
 				align-items: center;
 				justify-content: center;
-
-				.icon-render { width: 44px; height: 44px; }
-				.generic { font-family: Material Icons; font-size: 34px; color: $paper-ink-soft; }
 			}
 
-			// Bottom-right, where the roster pips wear their 🎨 edit palette.
-			.corner-badge { right: -8px; bottom: -8px; }
-			.badge-glyph { font-size: 20px; }
+			.icon-render { width: 76px; height: 76px; }
+			.generic { font-family: Material Icons; font-size: 52px; color: $paper-ink-soft; }
 
-			.name { flex-grow: 1; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-			.score { font-family: $header-font; font-size: 24px; }
+			// Bottom-right, where the roster pips wear their 🎨 edit palette (same offset as theirs).
+			// (Drawing over the NEXT row's head is the rows' paint order — see RowZ in the razor.)
+			.corner-badge { right: -4px; bottom: -4px; }
+			.badge-glyph { font-size: 28px; }
+
+			// Correct guess (CharadesHud.Celebrate, CelebrateSeconds long): spring up to a held 1.12× exactly the
+			// way a button springs into its hover size, while the whole head jitters like a hovered clay button.
+			&.celebrate {
+				transform: scale( 1.12 );
+				animation: hover-spring-112 $spring-duration ease-out;
+
+				.icon-body { animation: action-jitter $wobble-duration linear 0s infinite; }
+			}
 		}
+
+		// De-sync the badge jitters row to row, RoundHud's way (its .pip-cell:nth-child table): each row's glyph
+		// runs a slightly different DURATION, so badges sprung in together drift apart within a cycle. Duration,
+		// not delay — a delay would park the glyph between the spring landing and the wobble starting. Rows sit
+		// at the ODD children (a .divider between each), covering the board's 10-row cap.
+		.board-row:nth-child(  1 ) .badge-glyph { animation-duration: 0.90s; }
+		.board-row:nth-child(  3 ) .badge-glyph { animation-duration: 1.10s; }
+		.board-row:nth-child(  5 ) .badge-glyph { animation-duration: 0.80s; }
+		.board-row:nth-child(  7 ) .badge-glyph { animation-duration: 1.05s; }
+		.board-row:nth-child(  9 ) .badge-glyph { animation-duration: 0.95s; }
+		.board-row:nth-child( 11 ) .badge-glyph { animation-duration: 1.15s; }
+		.board-row:nth-child( 13 ) .badge-glyph { animation-duration: 0.85s; }
+		.board-row:nth-child( 15 ) .badge-glyph { animation-duration: 1.00s; }
+		.board-row:nth-child( 17 ) .badge-glyph { animation-duration: 0.92s; }
+		.board-row:nth-child( 19 ) .badge-glyph { animation-duration: 1.08s; }
+
+		.name { flex-grow: 1; font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.score { font-size: 24px; font-weight: 800; }
 	}
 
 	// ── Guess hint (bottom centre): the chat is the engine overlay — this just points at it ──────────
