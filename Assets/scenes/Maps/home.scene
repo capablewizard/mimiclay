@@ -32,6 +32,7 @@
           "CharadesSoloDebug": false,
           "CharadesSource": "Topics",
           "CharadesStartCountdownSeconds": 10,
+          "CharadesTopicChoices": true,
           "CharadesTopicIds": "",
           "CharadesWordLengthHints": true,
           "CharadesWriteSeconds": 45,
@@ -92,6 +93,7 @@
           "CharadesSoloDebug": false,
           "CharadesSource": "Topics",
           "CharadesStartCountdownSeconds": 10,
+          "CharadesTopicChoices": true,
           "CharadesTopicIds": "",
           "CharadesWordLengthHints": true,
           "CharadesWriteSeconds": 45,
@@ -2692,7 +2694,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -2749,7 +2751,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -2806,7 +2808,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -2863,7 +2865,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -2920,7 +2922,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -2977,7 +2979,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -3034,7 +3036,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -3091,7 +3093,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d5af021f-01fd-4244-adf7-cfabe5de9a99",
+            "Id": "46d29bdd-f850-4290-b64f-3245bd4fff46",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8392,7 +8394,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "3a8425e7-8a29-493c-82d9-66f452011c24",
+            "Id": "24cfcb33-17cc-4eb0-a75f-f55fc5fadc42",
             "Path": "models/dev/vehicle/car_dev.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8419,7 +8421,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "3a8425e7-8a29-493c-82d9-66f452011c24",
+            "Id": "24cfcb33-17cc-4eb0-a75f-f55fc5fadc42",
             "Path": "models/dev/vehicle/car_dev.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8447,7 +8449,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "3a8425e7-8a29-493c-82d9-66f452011c24",
+            "Id": "24cfcb33-17cc-4eb0-a75f-f55fc5fadc42",
             "Path": "models/dev/vehicle/car_dev.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8494,7 +8496,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "3a8425e7-8a29-493c-82d9-66f452011c24",
+            "Id": "24cfcb33-17cc-4eb0-a75f-f55fc5fadc42",
             "Path": "models/dev/vehicle/car_dev.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8521,7 +8523,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "3a8425e7-8a29-493c-82d9-66f452011c24",
+            "Id": "24cfcb33-17cc-4eb0-a75f-f55fc5fadc42",
             "Path": "models/dev/vehicle/car_dev.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8549,7 +8551,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "3a8425e7-8a29-493c-82d9-66f452011c24",
+            "Id": "24cfcb33-17cc-4eb0-a75f-f55fc5fadc42",
             "Path": "models/dev/vehicle/car_dev.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8764,12 +8766,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "bf693cf1-2339-4f90-b9a2-f08438337cb3",
+            "Id": "ac7b48c9-8444-48f1-b040-fa21c5676e79",
             "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8797,7 +8799,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "bf693cf1-2339-4f90-b9a2-f08438337cb3",
+            "Id": "ac7b48c9-8444-48f1-b040-fa21c5676e79",
             "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8844,7 +8846,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8874,7 +8876,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "Morphs": {},
@@ -8911,7 +8913,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8958,12 +8960,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "bf693cf1-2339-4f90-b9a2-f08438337cb3",
+            "Id": "ac7b48c9-8444-48f1-b040-fa21c5676e79",
             "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -8991,7 +8993,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "bf693cf1-2339-4f90-b9a2-f08438337cb3",
+            "Id": "ac7b48c9-8444-48f1-b040-fa21c5676e79",
             "Path": "models/props/trim_sheets/bed_frame/bed_frame_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -9038,7 +9040,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "OnComponentDestroy": null,
@@ -9068,7 +9070,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "Morphs": {},
@@ -9105,7 +9107,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "OnComponentDestroy": null,
@@ -9211,12 +9213,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "07ba1f39-7831-4d40-a23b-92ffa2ad7cb1",
+            "Id": "b89c32df-fffd-4de0-b4fd-24c1768f5317",
             "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
           },
           "Morphs": {},
@@ -9253,7 +9255,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "07ba1f39-7831-4d40-a23b-92ffa2ad7cb1",
+            "Id": "b89c32df-fffd-4de0-b4fd-24c1768f5317",
             "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -9303,12 +9305,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "07ba1f39-7831-4d40-a23b-92ffa2ad7cb1",
+            "Id": "b89c32df-fffd-4de0-b4fd-24c1768f5317",
             "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
           },
           "Morphs": {},
@@ -9345,7 +9347,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "07ba1f39-7831-4d40-a23b-92ffa2ad7cb1",
+            "Id": "b89c32df-fffd-4de0-b4fd-24c1768f5317",
             "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -9395,12 +9397,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "07ba1f39-7831-4d40-a23b-92ffa2ad7cb1",
+            "Id": "b89c32df-fffd-4de0-b4fd-24c1768f5317",
             "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
           },
           "Morphs": {},
@@ -9437,7 +9439,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "07ba1f39-7831-4d40-a23b-92ffa2ad7cb1",
+            "Id": "b89c32df-fffd-4de0-b4fd-24c1768f5317",
             "Path": "models/props/trim_sheets/wardrobes/wardrobe_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -9487,12 +9489,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "8b8ef3da-9585-4b7d-a040-1171499eecbc",
+            "Id": "48c6c002-447a-4488-bf98-7a758d5951fa",
             "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
           },
           "Morphs": {},
@@ -9529,7 +9531,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "8b8ef3da-9585-4b7d-a040-1171499eecbc",
+            "Id": "48c6c002-447a-4488-bf98-7a758d5951fa",
             "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10608,7 +10610,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "9421b2ad-2f48-4e4c-91b1-0b2e091c8ff3",
+            "Id": "5203c296-e9d9-4b93-bfb1-d45bcc135b7a",
             "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10638,7 +10640,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "9421b2ad-2f48-4e4c-91b1-0b2e091c8ff3",
+            "Id": "5203c296-e9d9-4b93-bfb1-d45bcc135b7a",
             "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
           },
           "Morphs": {},
@@ -10675,7 +10677,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "9421b2ad-2f48-4e4c-91b1-0b2e091c8ff3",
+            "Id": "5203c296-e9d9-4b93-bfb1-d45bcc135b7a",
             "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10722,7 +10724,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "9421b2ad-2f48-4e4c-91b1-0b2e091c8ff3",
+            "Id": "5203c296-e9d9-4b93-bfb1-d45bcc135b7a",
             "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10752,7 +10754,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "9421b2ad-2f48-4e4c-91b1-0b2e091c8ff3",
+            "Id": "5203c296-e9d9-4b93-bfb1-d45bcc135b7a",
             "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
           },
           "Morphs": {},
@@ -10789,7 +10791,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "9421b2ad-2f48-4e4c-91b1-0b2e091c8ff3",
+            "Id": "5203c296-e9d9-4b93-bfb1-d45bcc135b7a",
             "Path": "models/sbox_props/toilet_a/toilet_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10836,7 +10838,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "840d3201-c377-475b-b7ad-4248d3f1c175",
+            "Id": "4042fbba-58f8-4d29-9e7c-b92ceea5b311",
             "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10863,7 +10865,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "840d3201-c377-475b-b7ad-4248d3f1c175",
+            "Id": "4042fbba-58f8-4d29-9e7c-b92ceea5b311",
             "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10891,7 +10893,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "840d3201-c377-475b-b7ad-4248d3f1c175",
+            "Id": "4042fbba-58f8-4d29-9e7c-b92ceea5b311",
             "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10938,7 +10940,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "840d3201-c377-475b-b7ad-4248d3f1c175",
+            "Id": "4042fbba-58f8-4d29-9e7c-b92ceea5b311",
             "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10965,7 +10967,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "840d3201-c377-475b-b7ad-4248d3f1c175",
+            "Id": "4042fbba-58f8-4d29-9e7c-b92ceea5b311",
             "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -10993,7 +10995,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "840d3201-c377-475b-b7ad-4248d3f1c175",
+            "Id": "4042fbba-58f8-4d29-9e7c-b92ceea5b311",
             "Path": "models/sbox_props/bathtub_a/bathtub_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11096,12 +11098,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "8b8ef3da-9585-4b7d-a040-1171499eecbc",
+            "Id": "48c6c002-447a-4488-bf98-7a758d5951fa",
             "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11129,7 +11131,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "8b8ef3da-9585-4b7d-a040-1171499eecbc",
+            "Id": "48c6c002-447a-4488-bf98-7a758d5951fa",
             "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11176,12 +11178,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "8b8ef3da-9585-4b7d-a040-1171499eecbc",
+            "Id": "48c6c002-447a-4488-bf98-7a758d5951fa",
             "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11209,7 +11211,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "8b8ef3da-9585-4b7d-a040-1171499eecbc",
+            "Id": "48c6c002-447a-4488-bf98-7a758d5951fa",
             "Path": "models/props/trim_sheets/bookcase/bookcase_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11256,7 +11258,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "21d9b062-7790-4f51-bfa9-2c7793fd1b51",
+            "Id": "9fcb3146-259f-49a7-a2f3-4407de89ddb3",
             "Path": "models/sbox_props/office_desk/office_desk.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11283,7 +11285,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "21d9b062-7790-4f51-bfa9-2c7793fd1b51",
+            "Id": "9fcb3146-259f-49a7-a2f3-4407de89ddb3",
             "Path": "models/sbox_props/office_desk/office_desk.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11311,7 +11313,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "21d9b062-7790-4f51-bfa9-2c7793fd1b51",
+            "Id": "9fcb3146-259f-49a7-a2f3-4407de89ddb3",
             "Path": "models/sbox_props/office_desk/office_desk.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11363,7 +11365,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "b92b1bc7-3c60-48ae-8e9f-ef6fd4e6cf72",
+            "Id": "ac95fae0-b403-485a-ba88-523a7c48143d",
             "Path": "models/sbox_props/office_chair/office_chair.vmdl"
           },
           "Morphs": {},
@@ -11400,7 +11402,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "b92b1bc7-3c60-48ae-8e9f-ef6fd4e6cf72",
+            "Id": "ac95fae0-b403-485a-ba88-523a7c48143d",
             "Path": "models/sbox_props/office_chair/office_chair.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11447,12 +11449,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "cbb497c5-8f1c-4d36-b01e-6fcf175b2c01",
+            "Id": "84a69eb2-ff8b-4b0e-af05-bbab414e506a",
             "Path": "models/props/trim_sheets/shelving/modern_shelving/modern_shelving_a2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11480,7 +11482,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "cbb497c5-8f1c-4d36-b01e-6fcf175b2c01",
+            "Id": "84a69eb2-ff8b-4b0e-af05-bbab414e506a",
             "Path": "models/props/trim_sheets/shelving/modern_shelving/modern_shelving_a2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11529,7 +11531,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "21257936-39f6-48fa-babb-d91985d0738e",
+            "Id": "155a0fbc-4e47-4b3e-a4de-e112c8148111",
             "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11557,7 +11559,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "21257936-39f6-48fa-babb-d91985d0738e",
+            "Id": "155a0fbc-4e47-4b3e-a4de-e112c8148111",
             "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11604,12 +11606,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "04439d49-fe66-46c2-ac9b-92f3a7c483ba",
+            "Id": "399d8621-198e-4956-a8a3-6955f8008846",
             "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11637,7 +11639,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "04439d49-fe66-46c2-ac9b-92f3a7c483ba",
+            "Id": "399d8621-198e-4956-a8a3-6955f8008846",
             "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11684,12 +11686,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "04439d49-fe66-46c2-ac9b-92f3a7c483ba",
+            "Id": "399d8621-198e-4956-a8a3-6955f8008846",
             "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11717,7 +11719,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "04439d49-fe66-46c2-ac9b-92f3a7c483ba",
+            "Id": "399d8621-198e-4956-a8a3-6955f8008846",
             "Path": "models/props/trim_sheets/drawer/drawer_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11764,12 +11766,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "db5e7dcd-5255-44e0-94cb-b71a2813d088",
+            "Id": "db70ac26-bbac-4e1e-9fd7-2613aba19670",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11797,7 +11799,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "db5e7dcd-5255-44e0-94cb-b71a2813d088",
+            "Id": "db70ac26-bbac-4e1e-9fd7-2613aba19670",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11844,12 +11846,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "af64ae1c-02d5-4210-a111-ee14d47a06c3",
+            "Id": "2282a8c1-7ebd-4333-9fea-c459a40db71e",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11877,7 +11879,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "af64ae1c-02d5-4210-a111-ee14d47a06c3",
+            "Id": "2282a8c1-7ebd-4333-9fea-c459a40db71e",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11924,12 +11926,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "db5e7dcd-5255-44e0-94cb-b71a2813d088",
+            "Id": "db70ac26-bbac-4e1e-9fd7-2613aba19670",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
           },
           "OnComponentDestroy": null,
@@ -11957,7 +11959,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "db5e7dcd-5255-44e0-94cb-b71a2813d088",
+            "Id": "db70ac26-bbac-4e1e-9fd7-2613aba19670",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a1.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12004,12 +12006,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "af64ae1c-02d5-4210-a111-ee14d47a06c3",
+            "Id": "2282a8c1-7ebd-4333-9fea-c459a40db71e",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12037,7 +12039,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "af64ae1c-02d5-4210-a111-ee14d47a06c3",
+            "Id": "2282a8c1-7ebd-4333-9fea-c459a40db71e",
             "Path": "models/props/trim_sheets/cabinets/cabinet_a2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12084,7 +12086,7 @@
           "IsStatic": true,
           "MaterialGroup": "bare",
           "Model": {
-            "Id": "e1d74c27-04b7-4689-b67b-cde1b8b46900",
+            "Id": "31667058-8185-4861-861d-224a853446be",
             "Path": "models/props/trim_sheets/utility/step_ladder_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12111,7 +12113,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "e1d74c27-04b7-4689-b67b-cde1b8b46900",
+            "Id": "31667058-8185-4861-861d-224a853446be",
             "Path": "models/props/trim_sheets/utility/step_ladder_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12139,7 +12141,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "e1d74c27-04b7-4689-b67b-cde1b8b46900",
+            "Id": "31667058-8185-4861-861d-224a853446be",
             "Path": "models/props/trim_sheets/utility/step_ladder_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12186,12 +12188,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "1da0e612-fd7b-49f0-ae34-d220e4702b08",
+            "Id": "d5988724-95e3-4676-9fe5-7a24fd73afd1",
             "Path": "models/props/trim_sheets/cabinets/cabinet_b.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12219,7 +12221,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "1da0e612-fd7b-49f0-ae34-d220e4702b08",
+            "Id": "d5988724-95e3-4676-9fe5-7a24fd73afd1",
             "Path": "models/props/trim_sheets/cabinets/cabinet_b.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12268,7 +12270,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "46ce3f5c-7e5e-4f73-9086-f93e23c93d19",
+            "Id": "bbdc1f02-19a1-44a0-beae-4752d361faf7",
             "Path": "models/props/trim_sheets/bed_frame/bed_frame_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12296,7 +12298,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "46ce3f5c-7e5e-4f73-9086-f93e23c93d19",
+            "Id": "bbdc1f02-19a1-44a0-beae-4752d361faf7",
             "Path": "models/props/trim_sheets/bed_frame/bed_frame_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12343,7 +12345,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12373,7 +12375,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "Morphs": {},
@@ -12410,7 +12412,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "73e6d286-f72d-4bbc-b090-139502ba7916",
+            "Id": "019b85b9-19b9-49f5-a0d0-ce34dfb8ae06",
             "Path": "models/sbox_props/mattress/mattress.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12500,7 +12502,7 @@
           "IsStatic": true,
           "MaterialGroup": "default",
           "Model": {
-            "Id": "bb658c42-e227-4866-a878-12c004475882",
+            "Id": "e18006cc-0541-4410-bcc8-8eb6ad55c55a",
             "Path": "models/props/trim_sheets/pots/pot_02a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12527,7 +12529,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "bb658c42-e227-4866-a878-12c004475882",
+            "Id": "e18006cc-0541-4410-bcc8-8eb6ad55c55a",
             "Path": "models/props/trim_sheets/pots/pot_02a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12555,7 +12557,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "bb658c42-e227-4866-a878-12c004475882",
+            "Id": "e18006cc-0541-4410-bcc8-8eb6ad55c55a",
             "Path": "models/props/trim_sheets/pots/pot_02a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12761,7 +12763,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "77402ab1-f53d-4c87-a5a0-1711050cc17a",
+            "Id": "b8c11dcc-68ab-4934-8916-a2c4ffbca215",
             "Path": "models/props/trim_sheets/table/coffeetable_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12788,7 +12790,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "77402ab1-f53d-4c87-a5a0-1711050cc17a",
+            "Id": "b8c11dcc-68ab-4934-8916-a2c4ffbca215",
             "Path": "models/props/trim_sheets/table/coffeetable_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12816,7 +12818,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "77402ab1-f53d-4c87-a5a0-1711050cc17a",
+            "Id": "b8c11dcc-68ab-4934-8916-a2c4ffbca215",
             "Path": "models/props/trim_sheets/table/coffeetable_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -12920,7 +12922,7 @@
           "OnComponentUpdate": null,
           "Radius": 5000,
           "Soundscape": {
-            "Id": "b2365e32-4402-4ec1-b069-b25a7c5efb57",
+            "Id": "7cef67bd-bd09-4d27-978f-55859efd245c",
             "Path": "soundscapes/field/field_day_01a.sndscape"
           },
           "StayActiveOnExit": true,
@@ -13016,7 +13018,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "8a6ddecb-7d07-4974-a1c2-7418ae91e3f1",
+            "Id": "7f1f417a-2e80-49dc-b781-7cec5f5ceb95",
             "Path": "models/props/toaster/toaster.vmdl"
           },
           "OnComponentDestroy": null,
@@ -13043,7 +13045,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "8a6ddecb-7d07-4974-a1c2-7418ae91e3f1",
+            "Id": "7f1f417a-2e80-49dc-b781-7cec5f5ceb95",
             "Path": "models/props/toaster/toaster.vmdl"
           },
           "OnComponentDestroy": null,
@@ -13071,7 +13073,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "8a6ddecb-7d07-4974-a1c2-7418ae91e3f1",
+            "Id": "7f1f417a-2e80-49dc-b781-7cec5f5ceb95",
             "Path": "models/props/toaster/toaster.vmdl"
           },
           "OnComponentDestroy": null,
@@ -14291,7 +14293,7 @@
           "IsStatic": false,
           "MaterialGroup": null,
           "Model": {
-            "Id": "71eb70bd-22b7-4e30-8adb-53f8d1b0b45f",
+            "Id": "e4e1a494-0112-4895-bf1a-66d34314b6f9",
             "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -14318,7 +14320,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "71eb70bd-22b7-4e30-8adb-53f8d1b0b45f",
+            "Id": "e4e1a494-0112-4895-bf1a-66d34314b6f9",
             "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -14346,7 +14348,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "71eb70bd-22b7-4e30-8adb-53f8d1b0b45f",
+            "Id": "e4e1a494-0112-4895-bf1a-66d34314b6f9",
             "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -14428,7 +14430,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "71eb70bd-22b7-4e30-8adb-53f8d1b0b45f",
+            "Id": "e4e1a494-0112-4895-bf1a-66d34314b6f9",
             "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -14455,7 +14457,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "71eb70bd-22b7-4e30-8adb-53f8d1b0b45f",
+            "Id": "e4e1a494-0112-4895-bf1a-66d34314b6f9",
             "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -14483,7 +14485,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "71eb70bd-22b7-4e30-8adb-53f8d1b0b45f",
+            "Id": "e4e1a494-0112-4895-bf1a-66d34314b6f9",
             "Path": "models/props/trim_sheets/shelving/industrial_ shelving/industrial_ shelving_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15143,7 +15145,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "59f1c3b2-8e88-4167-bbd0-5792692dc1e3",
+            "Id": "46169472-2e56-4b1a-9910-31264889d01f",
             "Path": "models/props/trim_sheets/laundry/drying_rack_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15173,7 +15175,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "59f1c3b2-8e88-4167-bbd0-5792692dc1e3",
+            "Id": "46169472-2e56-4b1a-9910-31264889d01f",
             "Path": "models/props/trim_sheets/laundry/drying_rack_01.vmdl"
           },
           "Morphs": {},
@@ -15210,7 +15212,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "59f1c3b2-8e88-4167-bbd0-5792692dc1e3",
+            "Id": "46169472-2e56-4b1a-9910-31264889d01f",
             "Path": "models/props/trim_sheets/laundry/drying_rack_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15257,7 +15259,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "c9d61149-6c7f-470a-8a6b-53da722e4df7",
+            "Id": "75951b7c-c27e-4d5a-9d8c-b8192cf50165",
             "Path": "models/props/trim_sheets/laundry/drying_rack_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15284,7 +15286,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "c9d61149-6c7f-470a-8a6b-53da722e4df7",
+            "Id": "75951b7c-c27e-4d5a-9d8c-b8192cf50165",
             "Path": "models/props/trim_sheets/laundry/drying_rack_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15312,7 +15314,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "c9d61149-6c7f-470a-8a6b-53da722e4df7",
+            "Id": "75951b7c-c27e-4d5a-9d8c-b8192cf50165",
             "Path": "models/props/trim_sheets/laundry/drying_rack_02.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15919,7 +15921,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "fd47d5b8-c59c-4b54-864a-f09af864e1ec",
+            "Id": "7085baf6-bd79-4b16-bcbe-d86368822384",
             "Path": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15946,7 +15948,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "fd47d5b8-c59c-4b54-864a-f09af864e1ec",
+            "Id": "7085baf6-bd79-4b16-bcbe-d86368822384",
             "Path": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -15974,7 +15976,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "fd47d5b8-c59c-4b54-864a-f09af864e1ec",
+            "Id": "7085baf6-bd79-4b16-bcbe-d86368822384",
             "Path": "models/props/electrical_panels_industrial/electrical_industrial_panel_2.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16021,7 +16023,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "a21fdd3a-7e67-4c12-ae4f-492816e25c6e",
+            "Id": "7dd698d6-b72c-4413-b710-37d8a3f0b22a",
             "Path": "models/props/electrical_panels/3phase_fuse.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16048,7 +16050,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "a21fdd3a-7e67-4c12-ae4f-492816e25c6e",
+            "Id": "7dd698d6-b72c-4413-b710-37d8a3f0b22a",
             "Path": "models/props/electrical_panels/3phase_fuse.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16076,7 +16078,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "a21fdd3a-7e67-4c12-ae4f-492816e25c6e",
+            "Id": "7dd698d6-b72c-4413-b710-37d8a3f0b22a",
             "Path": "models/props/electrical_panels/3phase_fuse.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16125,7 +16127,7 @@
           "MaterialOverride": null,
           "Materials": null,
           "Model": {
-            "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+            "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
             "Path": "models/sbox_props/electrical/switch.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16153,7 +16155,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "4514a01c-2510-4ae0-8b8f-e7920920fc60",
+            "Id": "8def2e97-4c5c-4803-bdc4-c3e25f6c1f5e",
             "Path": "models/sbox_props/electrical/switch.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16474,12 +16476,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "33559ac7-8cd0-4e9f-89f4-93bac5fd39ec",
+            "Id": "1a0d3566-aa65-4766-8613-4669d40da1db",
             "Path": "models/props/trim_sheets/desk/wooden_desk/wooden_desk_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16507,7 +16509,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "33559ac7-8cd0-4e9f-89f4-93bac5fd39ec",
+            "Id": "1a0d3566-aa65-4766-8613-4669d40da1db",
             "Path": "models/props/trim_sheets/desk/wooden_desk/wooden_desk_01.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16554,12 +16556,12 @@
           "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": {
-            "Id": "53baabec-fbe4-4e58-ba25-97ea32719e13",
+            "Id": "dffbf2be-d125-49f1-8283-d9230e48f8fb",
             "Path": "materials/trimsheets/basic/reflectivity_50_trim.vmat"
           },
           "Materials": null,
           "Model": {
-            "Id": "cb476525-0013-4d3e-b156-902ee1efa8d4",
+            "Id": "038b9c68-6b1c-4a0e-8816-fc16b1ffb86d",
             "Path": "models/props/trim_sheets/chairs/wooden_chair_a.vmdl"
           },
           "OnComponentDestroy": null,
@@ -16587,7 +16589,7 @@
           "Friction": null,
           "IsTrigger": false,
           "Model": {
-            "Id": "cb476525-0013-4d3e-b156-902ee1efa8d4",
+            "Id": "038b9c68-6b1c-4a0e-8816-fc16b1ffb86d",
             "Path": "models/props/trim_sheets/chairs/wooden_chair_a.vmdl"
           },
           "OnComponentDestroy": null,
