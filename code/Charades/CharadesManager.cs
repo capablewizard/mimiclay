@@ -133,6 +133,15 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	/// their correct guess so the HUD can type it into the word box; cleared when the sculpt ends.</summary>
 	public string SolvedWord { get; private set; }
 
+	/// <summary>
+	/// True while THIS machine's player is the mimic choosing between offered phrases (more than one — a single
+	/// offer is a read-and-go, not a pick). While it's on, the HUD's centre buttons own the screen: the cursor
+	/// is forced visible (PauseMenuSystem) and the prop's movement + camera hold still (HiderController), until
+	/// the pick lands (TellWord clears the offers). Static so the controllers can ask without a manager lookup.
+	/// </summary>
+	public static bool LocalPicking => Current.IsValid() && Current.Phase == CharadesPhase.Choosing
+		&& Current.LocalIsMimic && Current.OfferedWords.Count > 1;
+
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
 	/// <summary>The selection every draw uses: in a Topics game the ticked Standard topics plus the ticked
@@ -791,12 +800,15 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		_correctThisTurn++;
 
 		guesser.GuessedPlace = _correctThisTurn;
-		guesser.Score += _correctThisTurn switch { 1 => 3, 2 => 2, _ => 1 };
+		var points = _correctThisTurn switch { 1 => 3, 2 => 2, _ => 1 };
+		guesser.Score += points;
 		Players[rosterId] = guesser;
 
+		var mimicPoints = 0;
 		if ( _correctThisTurn <= 3 && Players.TryGetValue( MimicId, out var mimic ) )
 		{
-			mimic.Score += 1;
+			mimicPoints = 1;
+			mimic.Score += mimicPoints;
 			Players[MimicId] = mimic;
 		}
 
@@ -806,7 +818,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			Players[AuthorId] = author;
 		}
 
-		AnnounceCorrect( rosterId, guesser.Name );
+		AnnounceCorrect( rosterId, guesser.Name, points, MimicId, mimicPoints );
 
 		// The guesser's HUD types the word into their box — filtered to THEIR connection like TellWord, so the
 		// answer never goes on the wire to anyone still guessing. Bots have no machine to tell.
@@ -828,15 +840,20 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	// ── Chat-line delivery (host → every machine's engine chat; Chat.AddText is local-only by design) ────
 	/// <summary>Host→everyone: the censored "got it" — a chat line + a bubble; never the word itself.</summary>
 	[Rpc.Broadcast]
-	void AnnounceCorrect( Guid rosterId, string name )
+	void AnnounceCorrect( Guid rosterId, string name, int points, Guid mimicId, int mimicPoints )
 	{
 		Sandbox.Platform.Chat.AddText( $"⭐ {name} guessed it!" );
 		ShowBubble( rosterId, "Got it! ⭐" );
 
-		// The success sting + the guesser's scoreboard head springs and jitters (every machine runs this RPC).
+		// The success sting + the guesser's scoreboard head springs and jitters, a green +points beside it
+		// (every machine runs this RPC, so the points ride along rather than waiting on the Players sync).
 		UiSounds.PlayEvent( UiSounds.Success );
 		foreach ( var hud in Scene.GetAllComponents<CharadesHud>() )
-			hud.Celebrate( rosterId );
+		{
+			hud.Celebrate( rosterId, points );
+			if ( mimicPoints > 0 )
+				hud.AwardPoints( mimicId, mimicPoints ); // the sculptor's +1 for a readable sculpt — a pop, no head celebration
+		}
 	}
 
 	/// <summary>Host→everyone: a system line into every machine's chat (turn skipped, waiting, …).</summary>

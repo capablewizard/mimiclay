@@ -56,7 +56,7 @@
 			@* The spring lives on a wrapper: the card's own jitter already owns its `transform`. It plays once as
 			   .revealed goes on (the switch to the uppercase answer). *@
 			<div class="word-pop @(revealed ? "popped" : "")">
-			<div class="word-strip paper-card @(revealed ? "revealed" : "") @(WordStrip.Length > 12 ? "long" : "")">
+			<div class="word-strip paper-card @(revealed ? "revealed" : "") @(Manager.LocalIsMimic && Manager.Phase == CharadesPhase.Sculpting ? "mine" : "") @(WordStrip.Length > 12 ? "long" : "")">
 				<div class="word">
 					@foreach ( var w in WordStripWords )
 					{
@@ -115,17 +115,17 @@
 			}
 			else if ( Manager.LocalIsMimic && Manager.OfferedWords.Count > 0 )
 			{
-				<div class="word-choice paper-card">
-					<div class="choice-title">Sculpt one:</div>
-					<div class="choice-row">
-						@foreach ( var (word, i) in Manager.OfferedWords.Select( ( w, i ) => (w, i) ) )
-						{
-							<div class="btn choice-btn" onclick=@( () => Manager.ChooseWord( i ) )>
-								<div class="choice-key">@(i + 1)</div>
-								<span>@word</span>
-							</div>
-						}
-					</div>
+				@* The pick: the lobby's clay Start button (.btn-jitter) per phrase, in a row under the prop. Play holds
+				   still and the cursor shows until one's chosen (CharadesManager.LocalPicking); 1/2/3 still pick
+				   (OnUpdate), each button wearing its key. *@
+				<div class="pick-stack">
+					@foreach ( var (word, i) in Manager.OfferedWords.Select( ( w, i ) => (w, i) ) )
+					{
+						<div class="btn-jitter pick-btn" onclick=@( () => Manager.ChooseWord( i ) )>
+							<div class="key-chip">@(i + 1)</div>
+							<WobbleText Text=@word />
+						</div>
+					}
 				</div>
 			}
 		}
@@ -157,9 +157,14 @@
 				<div class="sparks small right"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
 			</div>
 
-			<div class="paper-card board-card">
-				@foreach ( var (p, i) in Manager.Scoreboard.Take( 10 ).Select( ( p, i ) => (p, i) ) )
+			@* The board, then — only when you rank below its cap — a second card holding just YOUR row, so your own
+			   score is always on screen however big the lobby. *@
+			@foreach ( var card in BoardCards )
+			{
+			<div class="paper-card board-card @(card.Self ? "self-card" : "")">
+				@foreach ( var (row, i) in card.Rows.Select( ( r, i ) => (r, i) ) )
 				{
+					var p = row.Player;
 					var icon = _icons.Of( Scene, p.Connection, facesOnly: true );
 					var badge = BadgeFor( p );
 					@if ( i > 0 )
@@ -186,25 +191,35 @@
 									<div class="badge-glyph">@BadgeGlyph( p.Connection, badge )</div>
 								</div>
 							</div>
+							@* +points, on the head's top-left corner (the roster's nominate-hand spot) when they score — the
+							   corner-badge lifecycle (always mounted, sprung in by .on, the glyph jittering once it lands), so it
+							   shrinks away when the jitter stops. AFTER the head so it paints over it. *@
+							<div class="corner-badge score-pop @(IsPopping( p.Connection ) ? "on" : "")">
+								<div class="badge-glyph">@ScorePopText( p.Connection )</div>
+							</div>
 						</div>
+						<div class="rank">@(row.Rank).</div>
 						<div class="name">@p.Name</div>
 						<div class="score">@p.Score</div>
 					</div>
 				}
 			</div>
+			}
 		</div>
 
 		@* Guessing happens in the ENGINE chat (Enter) — the HUD just reminds guessers where the verb is.
 		   The phrase's author knows the answer, so they get told to sit this one out instead. *@
 		@if ( Manager.Phase == CharadesPhase.Sculpting && !Manager.LocalIsMimic )
 		{
+			@* A plain line over the scene, bottom centre, with the house keycap (.key-chip, _controls.scss) for Enter.
+			   Gone once you've got it — the host swallows anything further you type until the reveal. *@
 			@if ( LocalIsAuthor )
 			{
-				<div class="guess-hint">✍ you wrote this one — enjoy the show!</div>
+				<div class="guess-hint"><span>✍ You wrote this one!</span></div>
 			}
-			else
+			else if ( string.IsNullOrEmpty( Manager.SolvedWord ) )
 			{
-				<div class="guess-hint">press <span class="key">Enter</span> and type your guess</div>
+				<div class="guess-hint"><span>Press</span><div class="key-chip">Enter</div><span>to type your guess</span></div>
 			}
 		}
 	}
@@ -441,25 +456,82 @@
 	// Ink outline on the heads, in screen px — the house 2px, matching the round HUD's pips.
 	const float IconOutline = 2f;
 
+	// The board: the top BoardCap rows. When the local player ranks below them, a second card follows holding
+	// only THEIR row (with their real rank), so you can always see your own score however big the lobby.
+	const int BoardCap = 10;
+
+	readonly record struct BoardRow( CharadesPlayer Player, int Rank );
+	readonly record struct BoardCard( List<BoardRow> Rows, bool Self );
+
+	List<BoardCard> BoardCards
+	{
+		get
+		{
+			var all = Manager.Scoreboard;
+
+			// Competition ranking ("1, 2, 2, 4"): one more than the number of players strictly ahead, so ties share
+			// a place rather than the seat order deciding who's "2nd" on equal points.
+			int RankOf( int index ) => 1 + all.Count( q => q.Score > all[index].Score );
+
+			var top = new List<BoardRow>( BoardCap );
+			for ( var i = 0; i < Math.Min( all.Count, BoardCap ); i++ )
+				top.Add( new BoardRow( all[i], RankOf( i ) ) );
+
+			var cards = new List<BoardCard> { new( top, false ) };
+
+			var me = Connection.Local?.Id ?? Guid.Empty;
+			var mine = all.FindIndex( q => q.Connection == me );
+			if ( mine >= BoardCap )
+				cards.Add( new BoardCard( new List<BoardRow> { new( all[mine], RankOf( mine ) ) }, true ) );
+
+			return cards;
+		}
+	}
+
 	// Paint order for the board's rows: TOP row drawn LAST, so each row's head + badge (which overhang downward)
 	// land over the row below — z-index only sorts siblings, and a badge and the next row's head are cousins.
 	// The engine's sibling key is SiblingIndex + ZIndex (unstable sort); row i is sibling 2i (a divider between
 	// each), so z = 1000 − 3i gives keys 1000 − i: strictly descending, and far above the dividers (≤ 20).
 	static int RowZ( int row ) => 1000 - 3 * row;
 
-	// Correct-guess celebration: when each player's started (CharadesManager.AnnounceCorrect calls Celebrate on
-	// every machine). Their head springs + jitters for CelebrateSeconds, then eases back.
+	// Correct-guess celebration (CharadesManager.AnnounceCorrect, on every machine): the guesser's head springs +
+	// jitters for CelebrateSeconds, then eases back. Points pop separately — a green "+X" on the head's corner for
+	// the same span — because the sculptor scores too (+1 per early guess) without a head celebration of their own.
 	const float CelebrateSeconds = 2f;
 	readonly Dictionary<Guid, RealTimeSince> _celebrating = new();
 
-	/// <summary>Play the correct-guess celebration on this player's scoreboard head.</summary>
-	public void Celebrate( Guid player ) => _celebrating[player] = 0;
+	// Pop entries outlive their showing span so the +X keeps its number while it shrinks away.
+	readonly Dictionary<Guid, (RealTimeSince Since, int Points)> _pops = new();
+
+	/// <summary>Play the correct-guess celebration on this player's scoreboard head, popping +<paramref name="points"/>.</summary>
+	public void Celebrate( Guid player, int points )
+	{
+		_celebrating[player] = 0;
+		AwardPoints( player, points );
+	}
+
+	/// <summary>Pop +<paramref name="points"/> on this player's head. Points landing while a pop is still up add to
+	/// it (two quick guesses read "+2" on the sculptor) and restart its span.</summary>
+	public void AwardPoints( Guid player, int points )
+	{
+		var total = IsPopping( player ) ? _pops[player].Points + points : points;
+		_pops[player] = (0, total);
+	}
 
 	bool IsCelebrating( Guid player )
 		=> _celebrating.TryGetValue( player, out var since ) && since < CelebrateSeconds;
 
-	// Folded into BuildHash so the class goes on AND comes off (the end is time-driven, nothing else changes).
-	int CelebratingSignal => _celebrating.Aggregate( 0, ( h, kv ) => kv.Value < CelebrateSeconds ? h ^ kv.Key.GetHashCode() : h );
+	bool IsPopping( Guid player )
+		=> _pops.TryGetValue( player, out var p ) && p.Since < CelebrateSeconds;
+
+	string ScorePopText( Guid player )
+		=> _pops.TryGetValue( player, out var p ) ? $"+{p.Points}" : "";
+
+	// Folded into BuildHash so the classes go on AND come off (the ends are time-driven, nothing else changes),
+	// and a pop's total changing re-renders its number.
+	int CelebratingSignal
+		=> _celebrating.Aggregate( 0, ( h, kv ) => kv.Value < CelebrateSeconds ? h ^ kv.Key.GetHashCode() : h )
+		^ _pops.Aggregate( 17, ( h, kv ) => kv.Value.Since < CelebrateSeconds ? h ^ HashCode.Combine( kv.Key, kv.Value.Points ) : h );
 
 	// Last non-empty badge per player, so a badge shrinking away (turn over) still shows its glyph on the way out.
 	readonly Dictionary<Guid, string> _lastBadge = new();

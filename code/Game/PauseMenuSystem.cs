@@ -37,11 +37,17 @@ public sealed class PauseMenuSystem : GameObjectSystem
 		// Same cursor force for any full-screen modal that needs clicking — the pause menu and the host's round
 		// setup. Running at FinishUpdate, this wins over a gameplay controller that hid the cursor earlier in the
 		// frame, which also stops look capture (the controllers only read look while the cursor is hidden).
-		if ( !PauseMenu.IsOpen && !RoundSetup.IsOpen )
+		// (Also the charades mimic's phrase pick — its big centre buttons are clicked, and play holds still.)
+		if ( !PauseMenu.IsOpen && !RoundSetup.IsOpen && !CharadesManager.LocalPicking )
 			return;
 
 		Mouse.Visibility = MouseVisibility.Visible;
-		Mouse.CursorType = default; // plain arrow (clear any "dot-large" the orbit camera left set)
+
+		// The charades pick navigates the camera with the edit-mode drag nav, whose Tick owns CursorType
+		// ("dot-large" mid-drag, the hover cursor otherwise) — leave it be there, like edit mode does. The true
+		// modals still want the plain arrow (clear any "dot-large" the orbit camera left set).
+		if ( PauseMenu.IsOpen || RoundSetup.IsOpen )
+			Mouse.CursorType = default;
 	}
 
 	void EnsureHud()

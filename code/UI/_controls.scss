@@ -19,6 +19,7 @@
 //  .field            recessed text-entry groove (TextEntry)
 //  .scroll-wrap      wraps a scroll area with .scroll-fade top/bottom hints (driven by can-up / can-down)
 //  .art-shade        dark gradient over a picture so text on it reads (.full = whole picture)
+//  .key-chip         the house keycap: a cream square with a key on it ("1", "Enter")
 //  .clay-title       the half-size Set Up Game title (a WobbleText "auto"), between .sparks.small
 //  .clock-timer      the big mm:ss round clock at top centre
 //  .status-line      the big jittering status sentence over the scene (a LockStep WobbleText)
@@ -463,6 +464,26 @@
 	100% { transform: translateX( 0px ) scale( 1.08 ); }
 }
 
+
+// --- Key chip -----------------------------------------------------------------------
+// The house keycap: a cream square with the key on it, the interaction prompt's "E" (HunterCrosshair
+// .possess-toast .key) and the tutorial card's .keycap. min-width, so "Enter" / "Space" grow it sideways.
+.key-chip
+{
+	min-width: 40px;
+	height: 40px;
+	padding: 0 8px;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	font-family: $header-font;
+	font-size: 24px;
+	color: $paper-ink;
+	text-transform: uppercase;
+	background-color: $paper-top;
+	border: 2px solid $card-edge;
+	border-radius: $radius-md;
+}
 
 // --- Clay title ----------------------------------------------------------------------
 // The Set Up Game title at about half size: header font, cream, uppercase, the layered clay emboss (offsets

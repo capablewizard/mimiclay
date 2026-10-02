@@ -255,7 +255,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// body stays physically live and the camera keeps running — so a frozen prop still settles onto the ground and
 	// you can look around, you just can't walk or jump until the round begins. Free cam (see UpdateFreeCam) stops
 	// it the same way: the body just sits/settles wherever it was left while the camera flies off without it.
-	bool ControlActive => !EditMode && !RoundManager.ControlsLocked && !_freeCam;
+	// The charades mimic's phrase pick (CharadesManager.LocalPicking) holds the prop too, until they've chosen.
+	bool ControlActive => !EditMode && !RoundManager.ControlsLocked && !CharadesManager.LocalPicking && !_freeCam;
 
 	// ── Free cam ──────────────────────────────────────────────────────────────────────────────────────
 	/// <summary>Detaches the camera from the disguise entirely and flies it around the map, noclip-style —
@@ -605,7 +606,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// it's part of the game (FreeCamAllowed); dropped on the spot if we stop being in one.
 		if ( _freeCam && !FreeCamAllowed )
 			SetFreeCam( false );
-		else if ( FreeCamAllowed && !EditMode && !PauseMenu.IsOpen && !RoundSetup.IsOpen && Input.Keyboard.Pressed( "F" ) )
+		else if ( FreeCamAllowed && !EditMode && !PauseMenu.IsOpen && !RoundSetup.IsOpen && !CharadesManager.LocalPicking && Input.Keyboard.Pressed( "F" ) )
 			SetFreeCam( !_freeCam );
 
 		// Always drive the camera (per-frame, for smoothness) — needed during edit mode too, where movement is frozen.
@@ -1101,6 +1102,15 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			// The rig just asserted EditFov through MainCamera's own ease; drop our blend so leaving edit
 			// re-seeds it from the live camera instead of popping back to the stale play-camera value.
 			_fovBlendSeeded = false;
+		}
+		else if ( CharadesManager.LocalPicking )
+		{
+			// The charades mimic picking a phrase: the cursor is out for the centre buttons (PauseMenuSystem), so
+			// look around the stage the edit-mode way — the rig's own click-drag nav (LMB orbit / RMB dolly / MMB
+			// pan, a plain click is a tap that never orbits) — while the body holds still. Keeps the PLAY fov, so
+			// the view doesn't zoom as the pick opens and closes.
+			_orbit.Tick( handleAltDrag: true );
+			ApplySmoothFov( GameSettings.PropPlayFov );
 		}
 		else
 		{

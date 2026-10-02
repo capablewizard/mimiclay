@@ -85,6 +85,9 @@
 		.pencil { font-size: 30px; }
 
 		// The answer, at the reveal: lit in the soft selection highlight (the scoreboard's mimic row).
+		// The mimic's own word while they sculpt it: uppercase, so the brief reads like the answer will.
+		&.mine .word { text-transform: uppercase; }
+
 		// Uppercase too — the slots are fixed-width, so the switch never resizes the box.
 		&.revealed {
 			background-color: $craft-orange-hi;
@@ -107,7 +110,26 @@
 		}
 	}
 
-	// ── Word choice (mimic, Choosing) — centre bottom, keyed 1/2/3 ───────────────────────────────────
+	// ── Phrase pick (mimic, Choosing between several) — big clay buttons under the prop ──────────────
+	// .btn-jitter (the lobby's Start Game) per phrase, a .key-chip on each, in one centred row along the bottom,
+	// twice as far up from it as the top title sits down from the top ($panel-inset, 24px).
+	.pick-stack {
+		position: absolute;
+		bottom: 48px; // twice $panel-inset (the top title's inset from the top edge)
+		left: 0;
+		right: 0;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		gap: 22px;
+
+		.pick-btn {
+			gap: 16px;
+			padding: 12px 34px 12px 16px; // the chip side sits tighter than the label's
+		}
+	}
+
+	// ── Word choice (mimic, single offer) — centre bottom, keyed 1 ───────────────────────────────────
 	.word-choice {
 		position: absolute;
 		bottom: 90px;
@@ -255,7 +277,7 @@
 		position: absolute;
 		right: $panel-inset;
 		top: $panel-inset;
-		width: 300px;
+		width: 320px; // room for the rank before the name
 		flex-direction: column;
 		color: $paper-ink;
 
@@ -323,6 +345,34 @@
 			.corner-badge { right: -4px; bottom: -4px; }
 			.badge-glyph { font-size: 28px; }
 
+			// The "+X" for a correct guess: the head's TOP-LEFT corner, where the lobby roster's nominate hand sits
+			// (RoundHud .nominated-badge, same -4px offsets), bright green ringed in a deeper green
+			// (.badge-glyph's ring, recoloured). Re-anchored from the bottom-right corner-badge spot above.
+			.corner-badge.score-pop {
+				right: auto;
+				bottom: auto;
+				left: -4px;
+				top: -4px;
+
+				.badge-glyph {
+					font-family: $header-font;
+					font-size: 32px;
+					color: $craft-green-bright;
+
+					// The badges' 8-offset ring, but in a deep green ($craft-green-deep) rather than ink — the near-black
+					// outline was too contrasty against the bright fill.
+					text-shadow:
+						2px 0px 0px $craft-green-deep,
+						-2px 0px 0px $craft-green-deep,
+						0px 2px 0px $craft-green-deep,
+						0px -2px 0px $craft-green-deep,
+						1.4px 1.4px 0px $craft-green-deep,
+						-1.4px 1.4px 0px $craft-green-deep,
+						1.4px -1.4px 0px $craft-green-deep,
+						-1.4px -1.4px 0px $craft-green-deep;
+				}
+			}
+
 			// Correct guess (CharadesHud.Celebrate, CelebrateSeconds long): spring up to a held 1.12× exactly the
 			// way a button springs into its hover size, while the whole head jitters like a hovered clay button.
 			&.celebrate {
@@ -348,32 +398,49 @@
 		.board-row:nth-child( 17 ) .badge-glyph { animation-duration: 0.92s; }
 		.board-row:nth-child( 19 ) .badge-glyph { animation-duration: 1.08s; }
 
+		// "1." before the name — fixed width so names line up whether the rank is "1." or "12.".
+		.rank {
+			min-width: 26px;
+			margin-right: -6px; // sits closer to its name than the row's 12px gap
+			flex-shrink: 0;
+			font-size: 20px;
+			font-weight: 800;
+			color: $paper-ink-soft;
+		}
+
+		// Your own row, in its own card under the board, when you rank below the board's cap.
+		.self-card { margin-top: 10px; }
+
 		.name { flex-grow: 1; font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 		.score { font-size: 24px; font-weight: 800; }
 	}
 
 	// ── Guess hint (bottom centre): the chat is the engine overlay — this just points at it ──────────
+	// Plain scene text (body font, cream, the scene shadow), holding still, with the house keycap (.key-chip)
+	// at about three-quarter size for Enter.
 	.guess-hint {
 		position: absolute;
-		bottom: 24px;
+		bottom: 24px; // $panel-inset — half the phrase pick's 48
 		left: 0;
 		right: 0;
+		flex-direction: row;
 		justify-content: center;
 		align-items: center;
-		gap: 6px;
-		font-size: 17px;
-		font-weight: 700;
-		color: white;
-		text-shadow: 0 1px 2px rgba( black, 0.4 );
+		gap: 8px;
+		font-family: $body-font;
+		font-size: 20px;
+		font-weight: $body-weight;
+		color: $scene-text-dim; // the mode card blurb's muted cream (RoundHud .mode-blurb)
+		text-shadow: $scene-shadow;
+		text-transform: uppercase;
 
-		.key {
-			padding: 1px 8px;
-			font-size: 14px;
-			font-weight: 900;
-			color: #2c2418;
-			background-color: rgba( #fff8ea, 0.92 );
-			border: 2px solid #2c2418;
-			border-radius: 7px;
+		.key-chip {
+			min-width: 30px;
+			height: 33px;
+			padding: 0 9px;
+			font-size: 19px;
+			border-radius: $radius-sm;
+			text-shadow: none;
 		}
 	}
 }
