@@ -7,7 +7,7 @@
 @*
 	The host's round-setup modal, opened with G in the lobby (host only — spawned by LobbyController.EnsureSetupHud,
 	which never makes one on a client). Laid out to the "Set Up Game" concept: the clay title with spark dashes,
-	then two fixed-size cards. Left, "How are we playing?": the game banner (art either side, < name >), the game's
+	then two fixed-size cards. Left, "What are we playing?": the game banner (key art behind < name >), the game's
 	top-level choice as radio rows (prop hunt mode, charades phrase source), the three main round rules, and a
 	"More rules" expander for everything else. Right, "Pick a place": the picked map big, the rest as a grid with
 	Surprise me (random), then the summary pill and Start Game. Both cards keep their size across games; the left
@@ -34,31 +34,16 @@
 			</div>
 
 			<div class="columns">
-				@* ── Left: how are we playing? ─────────────────────────────────────────────────────────────── *@
-				<div class="card play-card">
-					<div class="card-title">How are we playing?</div>
+				@* ── Left: what are we playing? ─────────────────────────────────────────────────────────────── *@
+				<div class="paper-card card play-card">
+					<div class="card-title">What are we playing?</div>
 
-					@* The game banner — art either side, < name > in the middle. *@
+					@* The game banner: the key art behind it (temporary, the same for every game), < name > centred over it. *@
 					<div class="game-banner">
-						@if ( BannerArt( "left" ) is { } leftArt )
-						{
-							<img class="banner-art left" src=@leftArt />
-						}
-						else
-						{
-							<div class="banner-icon"><div class="mi">@Game.Icon</div></div>
-						}
+						<div class="art-shade full"></div>
 						<div class="banner-arrow" @onclick=@(() => CycleGame( -1 ))><div class="mi">chevron_left</div></div>
 						<div class="banner-name">@Game.Label</div>
 						<div class="banner-arrow" @onclick=@(() => CycleGame( 1 ))><div class="mi">chevron_right</div></div>
-						@if ( BannerArt( "right" ) is { } rightArt )
-						{
-							<img class="banner-art right" src=@rightArt />
-						}
-						else
-						{
-							<div class="banner-spacer"></div>
-						}
 					</div>
 
 					@* Scroll fades: shown only while there is more to see in that direction (see UpdateScrollFades). *@
@@ -109,25 +94,25 @@
 					<div class="sub-title">Round rules</div>
 					@if ( G == GameModeKind.PropHunt )
 					{
-						<div class="rule">
-							<div class="rule-name">Hunters</div>
-							<div class="stepper">
+						<div class="option-row">
+							<div class="option-name">Hunters</div>
+							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddHunters( -1 ))>remove</div>
 								<div class="step-value">@((int)S.HunterCount)</div>
 								<div class="step-btn" @onclick=@(() => AddHunters( 1 ))>add</div>
 							</div>
 						</div>
-						<div class="rule">
-							<div class="rule-name">Hide time</div>
-							<div class="stepper">
+						<div class="option-row">
+							<div class="option-name">Hide time</div>
+							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddHide( -15f ))>remove</div>
 								<div class="step-value">@Secs( S.HideSeconds )</div>
 								<div class="step-btn" @onclick=@(() => AddHide( 15f ))>add</div>
 							</div>
 						</div>
-						<div class="rule">
-							<div class="rule-name">Hunt time</div>
-							<div class="stepper">
+						<div class="option-row">
+							<div class="option-name">Hunt time</div>
+							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddHunt( -15f ))>remove</div>
 								<div class="step-value">@Secs( S.HuntSeconds )</div>
 								<div class="step-btn" @onclick=@(() => AddHunt( 15f ))>add</div>
@@ -136,17 +121,17 @@
 					}
 					else if ( G == GameModeKind.Charades )
 					{
-						<div class="rule">
-							<div class="rule-name">Rounds</div>
-							<div class="stepper">
+						<div class="option-row">
+							<div class="option-name">Rounds</div>
+							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddCharadesRounds( -1 ))>remove</div>
 								<div class="step-value">@Ch.Rounds</div>
 								<div class="step-btn" @onclick=@(() => AddCharadesRounds( 1 ))>add</div>
 							</div>
 						</div>
-						<div class="rule">
-							<div class="rule-name">Sculpt time</div>
-							<div class="stepper">
+						<div class="option-row">
+							<div class="option-name">Sculpt time</div>
+							<div class="stepper compact">
 								<div class="step-btn" @onclick=@(() => AddCharadesSculpt( -15f ))>remove</div>
 								<div class="step-value">@Secs( Ch.SculptSeconds )</div>
 								<div class="step-btn" @onclick=@(() => AddCharadesSculpt( 15f ))>add</div>
@@ -154,9 +139,9 @@
 						</div>
 						@if ( Ch.Source == PhraseSource.Players )
 						{
-							<div class="rule">
-								<div class="rule-name">Write time</div>
-								<div class="stepper">
+							<div class="option-row">
+								<div class="option-name">Write time</div>
+								<div class="stepper compact">
 									<div class="step-btn" @onclick=@(() => AddCharadesWrite( -15f ))>remove</div>
 									<div class="step-value">@Secs( Ch.WriteSeconds )</div>
 									<div class="step-btn" @onclick=@(() => AddCharadesWrite( 15f ))>add</div>
@@ -165,31 +150,31 @@
 						}
 						else
 						{
-							<div class="rule">
-								<div class="rule-name">Topic choices</div>
-								<div class="toggle">
-									<div class="toggle-opt @(Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( true ))>Yes</div>
-									<div class="toggle-opt @(!Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( false ))>No</div>
+							<div class="option-row">
+								<div class="option-name">Topic choices</div>
+								<div class="seg compact">
+									<div class="pill @(Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( true ))>Yes</div>
+									<div class="pill @(!Ch.TopicChoices ? "on" : "")" @onclick=@(() => SetCharadesChoices( false ))>No</div>
 								</div>
 							</div>
 						}
 
 						@* Show guessers the masked phrase shape ("_ _ _  _ _ _ _"). *@
-						<div class="rule">
-							<div class="rule-name">Length hints</div>
-							<div class="toggle">
-								<div class="toggle-opt @(Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( true ))>Yes</div>
-								<div class="toggle-opt @(!Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( false ))>No</div>
+						<div class="option-row">
+							<div class="option-name">Length hints</div>
+							<div class="seg compact">
+								<div class="pill @(Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( true ))>Yes</div>
+								<div class="pill @(!Ch.WordLengthHints ? "on" : "")" @onclick=@(() => SetCharadesHints( false ))>No</div>
 							</div>
 						</div>
 					}
 					else
 					{
-						<div class="rule">
-							<div class="rule-name">Spawn props</div>
-							<div class="toggle">
-								<div class="toggle-opt @(C.SpawnProps ? "on" : "")" @onclick=@(() => SetSpawnProps( true ))>Yes</div>
-								<div class="toggle-opt @(!C.SpawnProps ? "on" : "")" @onclick=@(() => SetSpawnProps( false ))>No</div>
+						<div class="option-row">
+							<div class="option-name">Spawn props</div>
+							<div class="seg compact">
+								<div class="pill @(C.SpawnProps ? "on" : "")" @onclick=@(() => SetSpawnProps( true ))>Yes</div>
+								<div class="pill @(!C.SpawnProps ? "on" : "")" @onclick=@(() => SetSpawnProps( false ))>No</div>
 							</div>
 						</div>
 					}
@@ -203,25 +188,25 @@
 						<div class="more-body">
 							@if ( G == GameModeKind.PropHunt )
 							{
-								<div class="rule">
-									<div class="rule-name">Taunt timer</div>
-									<div class="stepper">
+								<div class="option-row">
+									<div class="option-name">Taunt timer</div>
+									<div class="stepper compact">
 										<div class="step-btn" @onclick=@(() => AddTaunt( -5f ))>remove</div>
 										<div class="step-value">@SecsOrNone( S.TauntSeconds )</div>
 										<div class="step-btn" @onclick=@(() => AddTaunt( 5f ))>add</div>
 									</div>
 								</div>
-								<div class="rule">
-									<div class="rule-name">Silhouette hints</div>
-									<div class="stepper">
+								<div class="option-row">
+									<div class="option-name">Silhouette hints</div>
+									<div class="stepper compact">
 										<div class="step-btn" @onclick=@(() => AddHint( -15f ))>remove</div>
 										<div class="step-value">@SecsOrNone( S.HintSeconds )</div>
 										<div class="step-btn" @onclick=@(() => AddHint( 15f ))>add</div>
 									</div>
 								</div>
-								<div class="rule">
-									<div class="rule-name">Reveal time</div>
-									<div class="stepper">
+								<div class="option-row">
+									<div class="option-name">Reveal time</div>
+									<div class="stepper compact">
 										<div class="step-btn" @onclick=@(() => AddReveal( -5f ))>remove</div>
 										<div class="step-value">@Secs( S.RevealSeconds )</div>
 										<div class="step-btn" @onclick=@(() => AddReveal( 5f ))>add</div>
@@ -232,26 +217,26 @@
 							{
 								@* Standard: the built-in topics. Chips toggle; Everything lights them all. The last one
 								   only goes off while a Community list is ticked (something must be left to draw from). *@
-								<div class="rule-name chips-label">Standard</div>
-								<div class="topic-grid">
-									<div class="topic-chip everything @(IsEverything ? "on" : "")"
+								<div class="option-name chips-label">Standard</div>
+								<div class="pill-grid">
+									<div class="pill all @(IsEverything ? "on" : "")"
 										 @onclick=@(() => LobbyManager.Current?.SetCharadesAllTopics())>Everything</div>
 									@foreach ( var topic in CharadesWords.BuiltInTopics() )
 									{
 										var t = topic;
-										<div class="topic-chip @(TopicOn( t.Id ) ? "on" : "")"
+										<div class="pill @(TopicOn( t.Id ) ? "on" : "")"
 											 @onclick=@(() => LobbyManager.Current?.ToggleCharadesTopic( t.Id ))>@t.Title</div>
 									}
 								</div>
 
 								@* Community: lists added from the Workshop (or made here). Ticked ones play alongside
 								   the Standard topics. *@
-								<div class="rule-name chips-label">Community</div>
-								<div class="topic-grid">
+								<div class="option-name chips-label">Community</div>
+								<div class="pill-grid">
 									@foreach ( var list in CharadesWorkshop.Added )
 									{
 										var id = CharadesTopics.WorkshopId( list.FileId );
-										<div class="topic-chip @(WorkshopOn( id ) ? "on" : "")"
+										<div class="pill @(WorkshopOn( id ) ? "on" : "")"
 											 @onclick=@(() => LobbyManager.Current?.ToggleCharadesWorkshopList( id ))>@list.Title</div>
 									}
 								</div>
@@ -273,7 +258,7 @@
 				</div>
 
 				@* ── Right: pick a place ────────────────────────────────────────────────────────────────── *@
-				<div class="card place-card">
+				<div class="paper-card card place-card">
 					<div class="card-title">Pick a place</div>
 
 					@if ( Game.UsesMaps )
@@ -286,7 +271,7 @@
 								{
 									<CoverImage class="map-img" Texture=@sel.Preview />
 								}
-								<div class="map-shade"></div>
+								<div class="art-shade"></div>
 								<div class="map-name">@sel.Title</div>
 								<div class="map-check"><div class="mi">check</div></div>
 							</div>
@@ -313,7 +298,7 @@
 									{
 										<CoverImage class="map-img" Texture=@map.Preview />
 									}
-									<div class="map-shade"></div>
+									<div class="art-shade"></div>
 									<div class="map-name">@map.Title</div>
 								</div>
 							}
@@ -338,7 +323,7 @@
 						<div class="summary-pill">@Summary</div>
 						@* Start Game: the clay button grows on hover and its LETTERS jitter (the WobbleText inside), while the
 						   button itself stays still. *@
-						<div class="start-btn" @onclick=@StartGame><WobbleText Text="Start Game" /></div>
+						<div class="btn-jitter" @onclick=@StartGame><WobbleText Text="Start Game" /></div>
 					</div>
 				</div>
 			</div>
@@ -369,9 +354,10 @@
 
 	bool _open;
 
-	// The picked map's ResourcePath (or RandomIdent). Mirrors LobbyManager.Settings.MapIdent, kept here so the
-	// row highlight + preview update instantly on click.
-	string _picked = MapCatalog.RandomIdent;
+	// The picked map: the lobby's own setting, read straight through (the host's setters write the synced struct
+	// immediately, so the cards update on click). A separate local copy used to drift from it — switching games
+	// left a map the new game couldn't host on screen while the launch quietly re-rolled.
+	string _picked => string.IsNullOrEmpty( S.MapIdent ) ? MapCatalog.RandomIdent : S.MapIdent;
 
 	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
 
@@ -523,25 +509,6 @@
 	void SetSpawnProps( bool on ) => LobbyManager.Current?.SetSpawnProps( on );
 
 	// ── Layout helpers (the concept layout: banner, radios, round rules, More rules, map cards) ─────────────
-	// Banner art per game, from Assets/UI/Setup/banner_<game>_<side>.png. A game without art shows its
-	// Material icon on the left and nothing on the right. (The prop hunt pair are stand-ins cropped from the
-	// layout concept, to be replaced with real renders.)
-	string BannerArt( string side )
-	{
-		var key = G switch
-		{
-			GameModeKind.PropHunt => "prophunt",
-			GameModeKind.Creative => "creative",
-			GameModeKind.Charades => "charades",
-			_ => null,
-		};
-		if ( key is null )
-			return null;
-
-		var path = $"UI/Setup/banner_{key}_{side}.png";
-		return FileSystem.Mounted.FileExists( path ) ? path : null;
-	}
-
 	// Short radio-row blurbs (the catalogue descriptions are sentence-long).
 	static string ModeBlurb( RoundMode mode ) => mode switch
 	{
@@ -632,7 +599,6 @@
 	// Point the round's map setting at the clicked map (its ResourcePath, or RandomIdent).
 	void PickMap( string ident )
 	{
-		_picked = ident;
 		LobbyManager.Current?.SetMap( ident );
 	}
 

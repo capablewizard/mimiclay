@@ -4,6 +4,7 @@
   "Preview": null,
   "Scene": "scenes/maps/charadeszoo.scene",
   "Hidden": false,
+  "DefaultPick": true,
   "ForPropHunt": false,
   "ForCreative": false,
   "ForCharades": true,

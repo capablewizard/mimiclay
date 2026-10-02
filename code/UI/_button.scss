@@ -6,6 +6,7 @@
 //  .paper-card  the cream card surface recipe (fill + ink outline + float shadow)
 //  .btn         full-weight action tile (a paper card; lifts on hover)
 //  .btn-action  the big raised-orange "clay" headline button (Start / Join)
+//  .btn-jitter  the same clay look, smaller; grows on hover while its WobbleText letters jitter
 //  .chip        compact toggle / grid item
 //
 //  Reuse these instead of re-deriving the look per panel.
@@ -48,6 +49,9 @@
 	&:active { transform: translateY( 1px ); box-shadow: $shadow-press; sound-in: $sound-click; }
 
 	&.disabled { opacity: 0.4; pointer-events: none; transform: none; }
+
+	// The primary choice in a group of .btn (Publish beside Browse): orange, like every other selected/primary state.
+	&.primary { background-color: $craft-orange; &:hover { background-color: $craft-orange-hi; } }
 }
 
 // Inert while the sculpt toy is alt-navigated (see _menu.scss .nav-inert): action buttons drop pointer-events so
@@ -101,6 +105,54 @@
 	82%  { transform: rotate(  1deg )   translate( 1px,  2px ) scale( 1 ); }
 	99%  { transform: rotate(  1deg )   translate( 1px,  2px ) scale( 1 ); }
 	100% { transform: rotate( -2deg )   translate( 0px,  0px ) scale( 1 ); }
+}
+
+// --- Clay jitter button ------------------------------------------------------
+// The clay action button's look (orange, cream label, hard depth extrude), but on hover the BUTTON just grows
+// while the LETTERS of its label jitter — unlike .btn-action, whose whole box wobbles. The label must be a
+// <WobbleText> (no "auto" class): <div class="btn-jitter"><WobbleText Text="Start Game" /></div>.
+// Letters run the title's clock ($wobble-duration, staggered by start delay) so the wobble matches the big
+// headers; clay-jitter lives in WobbleText.razor.scss.
+.btn-jitter
+{
+	flex-direction: row;
+	align-items: center;
+	padding: 8px 26px;
+	border-radius: 24px;
+	background-color: $craft-orange;
+	box-shadow:
+		10px 12px 8px $emboss-glow-box,
+		4px 6px 0px $emboss-depth-primary;
+	cursor: pointer;
+	pointer-events: all;
+	transform-origin: center;
+	transition: transform 0.12s ease-out, background-color 0.12s ease-out;
+
+	.wobble-text, .letter
+	{
+		font-family: $header-font;
+		font-size: 40px;
+		color: $scene-text;
+		text-transform: uppercase;
+	}
+
+	.letter { text-shadow: 0px 3px 0px $emboss-depth-primary; }
+
+	&:hover { transform: scale( 1.08 ); background-color: $craft-orange-hi; sound-in: $sound-hover; }
+	&:active { transform: scale( 1.02 ); sound-in: $sound-click; }
+
+	&:hover .letter { animation: clay-jitter $wobble-duration linear 0s infinite; }
+	&:hover .letter:nth-child(  2 ) { animation-delay: 0.10s; }
+	&:hover .letter:nth-child(  3 ) { animation-delay: 0.20s; }
+	&:hover .letter:nth-child(  4 ) { animation-delay: 0.30s; }
+	&:hover .letter:nth-child(  5 ) { animation-delay: 0.40s; }
+	&:hover .letter:nth-child(  6 ) { animation-delay: 0.50s; }
+	&:hover .letter:nth-child(  7 ) { animation-delay: 0.60s; }
+	&:hover .letter:nth-child(  8 ) { animation-delay: 0.70s; }
+	&:hover .letter:nth-child(  9 ) { animation-delay: 0.00s; }
+	&:hover .letter:nth-child( 10 ) { animation-delay: 0.10s; }
+	&:hover .letter:nth-child( 11 ) { animation-delay: 0.20s; }
+	&:hover .letter:nth-child( 12 ) { animation-delay: 0.30s; }
 }
 
 // --- Compact chip (grid pickers + toggles) -----------------------------------

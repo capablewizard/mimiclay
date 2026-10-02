@@ -156,7 +156,9 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		// Seed the synced config from the scene's inspector defaults. Fresh each lobby visit (results carry-back
 		// is still the TODO on RoundManager.ReturnToLobby).
 		var lc = LobbyController.Current;
-		Settings = lc.IsValid() ? lc.DefaultSettings : RoundSettings.Default;
+		var s = lc.IsValid() ? lc.DefaultSettings : RoundSettings.Default;
+		s.MapIdent = MapCatalog.DefaultFor( SelectedGame ); // the game's default map, not Random
+		Settings = s;
 	}
 
 	protected override void OnUpdate()
@@ -408,6 +410,13 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		SelectedGame = game;
 		if ( Networking.IsActive )
 			Networking.SetData( MenuNetworking.Keys.Mode, game.ToString() );
+
+		// A pick the new game can't host (Home → Charades) moves to that game's default map, rather than staying
+		// on screen and silently re-rolling at launch. Random, or a map both games share, is kept.
+		if ( !MapCatalog.IsValidPick( Settings.MapIdent, game ) )
+		{
+			var s = Settings; s.MapIdent = MapCatalog.DefaultFor( game ); Settings = s;
+		}
 	}
 
 	public void SetRoundMode( RoundMode mode )

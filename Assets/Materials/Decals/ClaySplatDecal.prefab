@@ -23,7 +23,7 @@
         "__version": 3,
         "AttenuationAngle": 1,
         "ColorMix": 1,
-        "ColorTint": "1,0.53953,0.23256,1",
+        "ColorTint": "1,0.45302,0.31628,1",
         "CoverageAmount": {
           "Type": "Range",
           "Evaluation": "Life",

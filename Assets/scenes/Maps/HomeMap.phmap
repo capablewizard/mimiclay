@@ -4,6 +4,7 @@
   "Preview": "scenes/maps/home_thumb.vtex",
   "Scene": "scenes/maps/home.scene",
   "Hidden": false,
+  "DefaultPick": true,
   "__references": [],
   "__version": 0
 }

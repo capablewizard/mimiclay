@@ -1,25 +1,13 @@
-@import "/UI/_menu.scss";   // tokens + shared kit: .paper-card, .btn, .mi, .menu-footer, keyframes
+@import "/UI/_menu.scss";   // theme tokens + shared kits: .paper-card / .btn (_button), controls (_controls), .menu-footer
 
-// Host round-setup modal, laid out to the "Set Up Game" concept: the clay title, then two
-// fixed-size cream cards. Left, "How are we playing?": the game banner (art either side, < name >), the game's
-// top-level choice as radio rows, the three main round rules and a "More rules" expander. Right, "Pick a place":
-// the picked map big, the rest as a grid, and a footer with the summary pill and the orange Start Game button.
-// The cards never change size between games; every section is always open, and anything taller still scrolls.
-
-// Concept palette (local — warmer and lighter than the menu's paper tokens).
-$card-bg:      #f8eedc;
-$card-line:    #e6d5b8;
-$ink:          #4a3624;
-$ink-soft:     #8a7560;
-$banner-a:     #fae19a;
-$banner-b:     #fcebb9;
-$banner-edge:  #efcf7a;
-$yellow:       #f6c443;
-$yellow-hi:    #f9d46a;
-$orange:       #f2a536;
-$orange-hi:    #f7b551;
-$btn-bg:       #fcf5e7;
-$btn-edge:     #d8c4a3;
+// Host round-setup modal, laid out to the "Set Up Game" concept: the clay title, then two fixed-size paper cards.
+// Left, "What are we playing?": the game banner (key art behind < name >), the game's top-level choice as radio
+// rows, the main round rules, and the always-open extra section (More rules / Topics). Right, "Pick a place": the
+// picked map big, the rest as a grid, and a footer with the summary pill and Start Game.
+//
+// This sheet is LAYOUT ONLY. Every control (stepper, pills, radios, sub-titles, dividers, scroll fades, small
+// buttons) comes from _controls.scss, the card surface from .paper-card, Start from .btn-jitter, and every colour
+// from _theme.scss — retune the theme, not this file.
 
 $card-h: 770px;   // tall enough that every section shows without folding (charades Topics is the longest)
 
@@ -32,7 +20,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 	justify-content: center;
 	pointer-events: none;
 	font-family: $body-font;
-	color: $ink;
+	color: $paper-ink;
 
 	&.open { pointer-events: all; }
 
@@ -51,7 +39,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		align-items: flex-start;   // the title sits over the left card, as in the concept
 	}
 
-	// ── Title: SET UP GAME, sparkle dashes either side ───────────────────────────────────────────────────────────────────────────────
+	// ── Title: SET UP GAME, spark dashes either side ─────────────────────────────────────────────────────────
 	.title-block {
 		flex-direction: row;
 		align-items: center;
@@ -78,7 +66,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		}
 	}
 
-	// Three short yellow dashes fanning out from the title.
+	// Three short dashes fanning out from the title.
 	.sparks {
 		position: relative;
 		width: 36px;
@@ -96,8 +84,8 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 			width: 100%;
 			height: 100%;
 			border-radius: 4px;
-			background-color: $yellow;
-			box-shadow: 0px 2px 0px rgb( 196, 140, 30 );
+			background-color: $craft-yellow;
+			box-shadow: 0px 2px 0px $emboss-depth-primary;
 			transform-origin: center;
 			animation-name: spark-jitter;
 			animation-duration: $wobble-duration;
@@ -133,15 +121,12 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		gap: 24px;
 	}
 
-	// ── Cards ───────────────────────────────────────────────────────────────────────────────────────────────
+	// ── Cards (surface from .paper-card) ─────────────────────────────────────────────────────────────────────
 	.card {
 		flex-direction: column;
 		height: $card-h;
 		padding: 18px 24px;
-		border-radius: 18px;
-		background-color: $card-bg;
-		border: 2px solid $card-line;
-		box-shadow: 0px 8px 18px rgba( 40, 26, 10, 0.22 );
+		border-radius: $radius-lg;
 	}
 
 	.play-card { width: 560px; }
@@ -150,26 +135,14 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 	.card-title {
 		font-size: 30px;
 		font-weight: 800;
-		color: $ink;
+		color: $paper-ink;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
 		margin-bottom: 10px;
 		flex-shrink: 0;
 	}
 
-	.sub-title {
-		font-size: 22px;
-		font-weight: 800;
-		color: $ink;
-		margin-bottom: 4px;
-	}
-
-	.divider {
-		height: 2px;
-		flex-shrink: 0;
-		margin: 8px 0;
-		background-color: $card-line;
-	}
-
-	// Everything under the banner scrolls, so opening More rules never grows the card.
+	// Everything under the banner scrolls (inside a .scroll-wrap), so a long Community list never grows the card.
 	.play-scroll {
 		flex-direction: column;
 		flex: 1 1 0;     // a zero basis + min-height 0 pins it to the space left in the card — without them it grew
@@ -178,52 +151,48 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		overflow-y: scroll;
 		pointer-events: all;
 
-		// Nothing in here may shrink to fit: once More rules outgrows the card, items must overflow (and scroll)
-		// rather than being squashed into each other — which crushed the radios into the divider.
+		// Nothing in here may shrink to fit: once the content outgrows the card, items must overflow (and scroll)
+		// rather than being squashed into each other.
 		> * { flex-shrink: 0; }
 	}
 
-	// ── Game banner ─────────────────────────────────────────────────────────────────────────────────────────
+	// ── Game banner ──────────────────────────────────────────────────────────────────────────────────────────
+	// TEMPORARY: the game's key art (Assets/mimiclaythumb_KeyArt.png) behind every game's banner, fitted to the
+	// banner's width and cropped top/bottom (the engine's "cover" fits to width, which is right for this wide strip).
+	// A dark .art-shade.full over the art keeps the embossed cream name readable; the name sits in a fixed slot so
+	// the arrows never move.
 	.game-banner {
+		position: relative;   // holds the .art-shade.full that dims the art under the name
 		flex-direction: row;
 		align-items: center;
+		justify-content: center;
+		gap: $space-md;
 		flex-shrink: 0;
 		height: 92px;
-		padding: 0 6px;
-		margin-bottom: 8px;
-		border-radius: 14px;
-		background: linear-gradient( to right, $banner-a, $banner-b );
-		border: 2px solid $banner-edge;
+		margin-bottom: $space-sm;
+		border-radius: $radius-md;
+		background-color: $craft-orange-hi;   // shows while the art loads
+		background-image: url( "/mimiclaythumb_KeyArt.png" );
+		background-size: cover;
+		background-position: center;
+		background-repeat: no-repeat;
+		border: 2px solid $card-edge;
 		overflow: hidden;
 
-		.banner-art {
-			height: 96px;
-			object-fit: contain;
-			flex-shrink: 0;
-			&.left { width: 92px; margin-right: 6px; }
-			&.right { width: 98px; margin-left: 6px; }
-		}
-
-		.banner-icon {
-			width: 84px;
-			height: 84px;
-			margin-right: 10px;
-			flex-shrink: 0;
-			align-items: center;
-			justify-content: center;
-			border-radius: 42px;
-			background-color: rgba( 255, 255, 255, 0.45 );
-			.mi { font-size: 46px; color: $ink; }
-		}
-
-		.banner-spacer { width: 102px; flex-shrink: 0; }
-
+		// The game name: big cream display text on the (shaded) art, with the title's layered clay emboss. A
+		// FIXED-width slot (text centred in it) so the arrows stay in the same place whatever the name's length.
 		.banner-name {
-			flex-grow: 1;
+			width: 330px;
+			flex-shrink: 0;
 			justify-content: center;
-			font-size: 30px;
-			font-weight: 800;
-			color: $ink;
+			font-family: $header-font;
+			font-size: 48px;
+			color: $scene-text;
+			text-transform: uppercase;
+			white-space: nowrap;
+			text-shadow:
+				6px 7px 3px $emboss-glow,
+				3px 4px 0px $emboss-depth;
 		}
 
 		.banner-arrow {
@@ -232,207 +201,61 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 			flex-shrink: 0;
 			align-items: center;
 			justify-content: center;
-			border-radius: 10px;
-			background-color: $yellow;
-			box-shadow: 0px 3px 0px rgb( 214, 160, 40 );
+			border-radius: $radius-md;
+			background-color: $craft-orange;
+			border: 2px solid $card-edge;   // the same outline as a selected .pill (Yes/No)
+			box-shadow: 0px 3px 0px $emboss-depth-primary;
 			cursor: pointer;
 			pointer-events: all;
 			transition: all 0.1s ease-out;
 
-			.mi { font-size: 28px; color: $ink; }
+			.mi { font-size: 28px; color: $paper-ink; }
 
-			&:hover { background-color: $yellow-hi; transform: scale( 1.08 ); sound-in: $sound-hover; }
+			&:hover { background-color: $craft-orange-hi; transform: scale( 1.08 ); sound-in: $sound-hover; }
 			&:active { transform: scale( 0.95 ); box-shadow: none; sound-in: $sound-click; }
 		}
 	}
 
-	// ── Radio rows (prop hunt mode, charades phrase source) ─────────────────────────────────────────────────
-	// Options sized to their text (not equal thirds — "WRITE YOUR OWN" outgrew a third and ran into "WORKSHOP").
-	.radio-row {
-		flex-direction: row;
-		gap: 10px;
-		padding: 0 2px;
-	}
-
-	.radio {
-		flex: 0 0 auto;
-		flex-direction: row;
-		align-items: center;
-		gap: 8px;
-		padding: 6px 8px 6px 6px;
-		border-radius: 10px;
-		cursor: pointer;
-		pointer-events: all;
-		transition: background-color 0.1s ease-out;
-
-		&:hover { background-color: rgba( 255, 255, 255, 0.6 ); sound-in: $sound-hover; }
-		&:active { sound-in: $sound-click; }
-
-		.radio-dot {
-			width: 24px;
-			height: 24px;
-			flex-shrink: 0;
-			border-radius: 12px;
-			border: 2px solid $ink-soft;
-			background-color: #fff;
-		}
-
-		.radio-text { flex-direction: column; flex-shrink: 0; }
-		.radio-label { font-size: 17px; font-weight: 800; color: $ink; white-space: nowrap; }
-		.radio-desc { font-size: 13px; font-weight: 600; color: $ink-soft; white-space: nowrap; }
-
-		&.on .radio-dot {
-			border-color: $orange;
-			border-width: 7px;
-		}
-	}
+	.radio-row { padding: 0 2px; }
 
 	.game-blurb {
 		font-size: 18px;
 		font-weight: 600;
-		color: $ink-soft;
-		padding: 4px;
-	}
-
-	// ── Rules ───────────────────────────────────────────────────────────────────────────────────────────────
-	.rule {
-		flex-direction: row;
-		align-items: center;
-		justify-content: space-between;
-		flex-shrink: 0;
-		padding: 2px 4px 2px 12px;
-	}
-
-	.rule-name {
-		font-size: 19px;
-		font-weight: 700;
-		color: $ink;
-	}
-
-	.stepper {
-		flex-direction: row;
-		align-items: center;
-		gap: 6px;
-
-		.step-btn {
-			font-family: "Material Icons";
-			font-size: 18px;
-			width: 32px;
-			height: 32px;
-			align-items: center;
-			justify-content: center;
-			border-radius: 8px;
-			background-color: $btn-bg;
-			border: 2px solid $btn-edge;
-			color: $ink;
-			cursor: pointer;
-			pointer-events: all;
-			transition: all 0.1s ease-out;
-
-			&:hover { transform: scale( 1.1 ); sound-in: $sound-hover; }
-			&:active { transform: scale( 0.95 ); background-color: $yellow; sound-in: $sound-click; }
-		}
-
-		.step-value {
-			min-width: 64px;
-			justify-content: center;
-			font-size: 19px;
-			font-weight: 800;
-			color: $ink;
-		}
-	}
-
-	// Two-value switch (Yes/No): both visible, the picked one yellow.
-	.toggle {
-		flex-direction: row;
-		padding: 3px;
-		gap: 3px;
-		border-radius: 10px;
-		background-color: rgba( 74, 54, 36, 0.08 );
-		border: 2px solid $card-line;
-
-		.toggle-opt {
-			min-width: 52px;
-			padding: 3px 10px;
-			justify-content: center;
-			border-radius: 7px;
-			font-size: 16px;
-			font-weight: 800;
-			color: $ink-soft;
-			cursor: pointer;
-			pointer-events: all;
-			transition: all 0.1s ease-out;
-
-			&:hover { color: $ink; sound-in: $sound-hover; }
-			&:active { sound-in: $sound-click; }
-			&.on { background-color: $yellow; color: $ink; }
-		}
+		color: $paper-ink-soft;
+		padding: $space-xs;
 	}
 
 	// ── The always-open extra section (prop hunt More rules, charades Topics) ────────────────────────────────
 	.more-body {
 		flex-direction: column;
 		flex-shrink: 0;
-		padding-top: 4px;
+		padding-top: $space-xs;
 	}
 
-	.chips-label { padding: 8px 4px 2px 12px; }
-
-	// Topic / workshop-list chips.
-	.topic-grid {
-		flex-direction: row;
-		flex-wrap: wrap;
-		gap: 6px;
-		padding: 4px 4px 4px 12px;
-
-		.topic-chip {
-			padding: 3px 14px;
-			border-radius: $radius-pill;
-			background-color: $btn-bg;
-			border: 2px solid $btn-edge;
-			font-size: 16px;
-			font-weight: 700;
-			color: $ink;
-			cursor: pointer;
-			pointer-events: all;
-			transition: all 0.1s ease-out;
-
-			&:hover { transform: scale( 1.05 ); sound-in: $sound-hover; }
-			&:active { sound-in: $sound-click; }
-			&.on { background-color: $yellow; border-color: rgb( 214, 160, 40 ); }
-			&.everything.on { background-color: $orange; border-color: rgb( 196, 128, 30 ); }
-		}
-	}
+	.chips-label { padding: $space-sm 4px 2px $space-md; }
+	.more-body .pill-grid { padding: $space-xs 4px $space-xs $space-md; }
 
 	.phrases-hint {
 		font-size: 15px;
 		font-weight: 600;
-		color: $ink-soft;
-		padding: 4px 4px 4px 12px;
+		color: $paper-ink-soft;
+		padding: $space-xs 4px $space-xs $space-md;
 	}
 
 	.phrases-actions {
 		flex-direction: row;
 		gap: $space-sm;
-		padding: 6px 4px 4px 12px;
-
-		.btn-small {
-			flex-direction: row;
-			gap: 6px;
-			padding: 7px 14px;
-			font-size: 15px;
-			.mi { font-size: 18px; }
-		}
+		padding: 6px 4px $space-xs $space-md;
 	}
 
-	// ── Map cards ───────────────────────────────────────────────────────────────────────────────────────────
+	// ── Map cards ────────────────────────────────────────────────────────────────────────────────────────────
 	.map-card {
 		position: relative;
 		flex-shrink: 0;
-		border-radius: 14px;
+		border-radius: $radius-md;
 		overflow: hidden;
-		background-color: #e9dcc4;
-		border: 2px solid $card-line;
+		background-color: $paper-top;
+		border: 2px solid $card-edge;
 		cursor: pointer;
 		pointer-events: all;
 		transition: all 0.12s ease-out;
@@ -448,39 +271,33 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 			background-repeat: no-repeat;
 		}
 
-		// Bottom fade so the name reads over any picture.
-		.map-shade {
-			position: absolute;
-			left: 0; right: 0; bottom: 0;
-			height: 50%;
-			background: linear-gradient( to bottom, rgba( 0, 0, 0, 0 ), rgba( 20, 12, 4, 0.55 ) );
-		}
-
 		.map-name {
 			position: absolute;
 			left: 14px;
-			bottom: 8px;
+			bottom: $space-sm;
 			font-size: 20px;
 			font-weight: 800;
-			color: #fff;
-			text-shadow: 0px 2px 4px rgba( 0, 0, 0, 0.6 );
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			color: $scene-text;
+			text-shadow: $scene-shadow;
 
-			&.dark { color: $ink; text-shadow: none; }
+			&.dark { color: $paper-ink; text-shadow: none; }
 		}
 
 		&.featured {
 			height: 300px;
-			margin-bottom: 12px;
+			margin-bottom: $space-sm;   // + the grid's headroom = the old 12px gap
 			cursor: default;
-			.map-name { font-size: 32px; left: 18px; bottom: 12px; }
+			.map-name { font-size: 32px; left: 18px; bottom: $space-md; }
 		}
 
-		&.selected { border: 4px solid $yellow; }
+		&.selected { border: 4px solid $craft-orange; }
 
 		&.small {
 			width: 288px;
 			height: 128px;
-			&:hover { transform: translateY( -2px ); border-color: $yellow-hi; sound-in: $sound-hover; }
+			&:hover { transform: translateY( -2px ); border-color: $craft-orange-hi; sound-in: $sound-hover; }
 			&:active { sound-in: $sound-click; }
 		}
 
@@ -493,16 +310,14 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 			align-items: center;
 			justify-content: center;
 			border-radius: 20px;
-			background-color: $yellow;
-			border: 3px solid #fff8e6;
-			box-shadow: 0px 2px 4px rgba( 0, 0, 0, 0.25 );
-			.mi { font-size: 24px; color: $ink; }
+			background-color: $craft-orange;
+			border: 3px solid $paper-top;
+			box-shadow: $shadow-float;
+			.mi { font-size: 24px; color: $paper-ink; }
 		}
 
-		// Surprise me: a big orange question mark with two yellow dashes, on plain card colour.
+		// Surprise me: a big orange question mark with two dashes, on plain paper.
 		&.surprise {
-			background-color: #f1e3c8;
-
 			.surprise-art {
 				position: absolute;
 				top: 0; left: 0; right: 0; bottom: 30px;
@@ -515,15 +330,15 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 			.q {
 				font-family: $header-font;
 				font-size: 72px;
-				color: $orange;
-				text-shadow: 3px 4px 0px rgb( 186, 110, 30 );
+				color: $craft-orange;
+				text-shadow: 3px 4px 0px $emboss-depth-primary;
 			}
 
 			.spark {
 				width: 18px;
 				height: 6px;
 				border-radius: 3px;
-				background-color: $yellow;
+				background-color: $craft-yellow;
 				&.a { transform: rotate( 20deg ); }
 				&.b { transform: rotate( -20deg ); }
 			}
@@ -535,7 +350,8 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 	.map-grid {
 		flex-direction: row;
 		flex-wrap: wrap;
-		gap: 12px;
+		gap: $space-md;
+		padding-top: $space-xs;   // headroom: a hovered card lifts 2px, and the scroll area clips anything above its top edge
 		flex: 1 1 0;     // pinned to the wrap's height (see .play-scroll — same grow-to-content trap)
 		min-height: 0;
 		align-content: flex-start;
@@ -545,127 +361,29 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		> * { flex-shrink: 0; }
 	}
 
-	// ── Scroll fades ────────────────────────────────────────────────────────────────────────────────────────
-	// A scroll area sits in a .scroll-wrap that overlays two card-coloured fades: the bottom one (with a bobbing
-	// chevron) while there's more below, the top one once you've scrolled. The wrap's can-up / can-down classes
-	// are set per frame from the real scroll position (RoundSetup.UpdateScrollFades), so content that fits shows
-	// nothing. The fades live outside the scrolling panel so they stay put while the content moves.
-	.scroll-wrap {
-		position: relative;
-		flex-direction: column;
-		flex: 1 1 0;
-		min-height: 0;
-	}
-
-	.scroll-fade {
-		position: absolute;
-		left: 0;
-		right: 0;
-		height: 46px;
-		pointer-events: none;
-		opacity: 0;
-		transition: opacity 0.15s ease-out;
-		justify-content: center;
-		align-items: flex-end;
-
-		&.top {
-			top: 0;
-			height: 28px;
-			background: linear-gradient( to bottom, $card-bg, rgba( $card-bg, 0 ) );
-		}
-
-		&.bottom {
-			bottom: 0;
-			background: linear-gradient( to bottom, rgba( $card-bg, 0 ), $card-bg 75% );
-		}
-
-		.scroll-hint {
-			font-size: 26px;
-			color: $ink-soft;
-			margin-bottom: -4px;
-			animation-name: scroll-hint-bob;
-			animation-duration: 1.4s;
-			animation-iteration-count: infinite;
-			animation-timing-function: ease-in-out;
-		}
-	}
-
-	.scroll-wrap.can-up > .scroll-fade.top,
-	.scroll-wrap.can-down > .scroll-fade.bottom { opacity: 1; }
-
-	// ── Card footer: summary pill + Start ───────────────────────────────────────────────────────────────────────
+	// ── Card footer: summary pill + Start (.btn-jitter, from _button.scss) ────────────────────────────────────
 	.place-footer {
 		flex-direction: row;
 		align-items: center;
 		justify-content: space-between;
 		flex-shrink: 0;
-		padding-top: 12px;
+		padding-top: $space-md;
 	}
 
 	.summary-pill {
 		padding: 10px 18px;
-		border-radius: 12px;
-		background-color: $btn-bg;
-		border: 2px solid $btn-edge;
+		border-radius: $radius-md;
+		background-color: $paper-top;
+		border: 2px solid $card-edge;
 		font-size: 16px;
 		font-weight: 700;
-		color: $ink;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: $paper-ink;
 		white-space: nowrap;
 	}
 
-	// Start Game: the clay action button's look (orange, cream label, hard depth extrude), but on hover the
-	// BUTTON just grows while the LETTERS of its WobbleText jitter — unlike .btn-action, whose whole box wobbles.
-	.start-btn {
-		flex-direction: row;
-		align-items: center;
-		padding: 8px 26px;
-		border-radius: 24px;
-		background-color: $craft-orange;
-		box-shadow:
-			10px 12px 8px $emboss-glow-box,
-			4px 6px 0px $emboss-depth-primary;
-		cursor: pointer;
-		pointer-events: all;
-		transform-origin: center;
-		transition: transform 0.12s ease-out, background-color 0.12s ease-out;
-
-		.wobble-text, .letter {
-			font-family: $header-font;
-			font-size: 40px;
-			color: $scene-text;
-			text-transform: uppercase;
-		}
-
-		.letter { text-shadow: 0px 3px 0px rgba( 120, 70, 10, 0.35 ); }
-
-		&:hover { transform: scale( 1.08 ); background-color: $craft-orange-hi; sound-in: $sound-hover; }
-		&:active { transform: scale( 1.02 ); sound-in: $sound-click; }
-
-		// Letter jitter while hovered, on the title's clock: every letter runs the same $wobble-duration cycle as
-		// SET UP GAME (WobbleText "auto"), staggered by start delay so the wobble ripples across the word. (The
-		// menu's footer-button timings — 0.8–1.15s per letter — read as noticeably quicker next to the title.)
-		&:hover .letter { animation: clay-jitter $wobble-duration linear 0s infinite; }
-		&:hover .letter:nth-child(  2 ) { animation-delay: 0.10s; }
-		&:hover .letter:nth-child(  3 ) { animation-delay: 0.20s; }
-		&:hover .letter:nth-child(  4 ) { animation-delay: 0.30s; }
-		&:hover .letter:nth-child(  5 ) { animation-delay: 0.40s; }
-		&:hover .letter:nth-child(  6 ) { animation-delay: 0.50s; }
-		&:hover .letter:nth-child(  7 ) { animation-delay: 0.60s; }
-		&:hover .letter:nth-child(  8 ) { animation-delay: 0.70s; }
-		&:hover .letter:nth-child(  9 ) { animation-delay: 0.00s; }
-		&:hover .letter:nth-child( 10 ) { animation-delay: 0.10s; }
-		&:hover .letter:nth-child( 11 ) { animation-delay: 0.20s; }
-	}
-
-	// ── Capitals: every bold heading, label, button and chip is uppercase; descriptions, hints and the More
-	// rules summary stay in sentence case (they're body text). A touch of tracking keeps the capitals airy.
-	.card-title, .sub-title, .banner-name, .radio-label, .rule-name, .toggle-opt,
-	.topic-chip, .btn-small, .map-name, .summary-pill {
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	// ── Footer (Back) ───────────────────────────────────────────────────────────────────────────────────────
+	// ── Footer (Back) ────────────────────────────────────────────────────────────────────────────────────────
 	// The front-end menu footer (.menu-footer / .footer-button from _menu.scss): Back, pinned bottom-left.
 	.menu-footer {
 		position: absolute;
@@ -677,8 +395,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 }
 
 // The title dashes' jitter: the same held-pose stop-motion as WobbleText's clay-jitter (each pose HELD, then
-// snapped over a 1% sliver), with a stronger swing and scale pulse because the dashes are small. Defined here
-// rather than reusing clay-jitter so the dashes can be tuned without touching every title in the game.
+// snapped over a 1% sliver), with a stronger swing and scale pulse because the dashes are small.
 @keyframes spark-jitter
 {
 	0%   { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
@@ -694,12 +411,4 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 	82%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
 	99%  { transform: rotate(  3deg ) translate( 0px,  1px ) scale( 0.96 ); }
 	100% { transform: rotate( -6deg ) translate( 0px,  0px ) scale( 1 ); }
-}
-
-// The "more below" chevron's gentle bob in the bottom scroll fade.
-@keyframes scroll-hint-bob
-{
-	0%   { transform: translateY( 0px ); }
-	50%  { transform: translateY( 4px ); }
-	100% { transform: translateY( 0px ); }
 }

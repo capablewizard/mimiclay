@@ -41,7 +41,7 @@
 			<div class="footer">
 				<div class="btn btn-small" @onclick=@(() => SetView( WorkshopListsView.Browse ))><div class="mi">public</div><span>Browse</span></div>
 				<div class="spacer"></div>
-				<div class="btn btn-small btn-primary @(CanPublish ? "" : "disabled")" @onclick=@Publish>
+				<div class="btn btn-small primary @(CanPublish ? "" : "disabled")" @onclick=@Publish>
 					<div class="mi">publish</div><span>@(_editId != 0 ? "Update" : "Publish")</span>
 				</div>
 			</div>
@@ -96,7 +96,7 @@
 								}
 							</div>
 						}
-						<div class="icon-btn @(added ? "added" : "add") @(_busyId == it.Id ? "busy" : "")" @onclick=@(() => ToggleAdded( it ))>
+						<div class="icon-btn @(added ? "on" : "add") @(_busyId == it.Id ? "busy" : "")" @onclick=@(() => ToggleAdded( it ))>
 							<div class="mi">@(added ? "check" : "add")</div>
 						</div>
 					</div>

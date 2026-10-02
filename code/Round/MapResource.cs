@@ -41,6 +41,12 @@ public sealed class MapResource : GameResource
 	/// prefab placed in the scene qualify — the game needs somewhere to put the canvas.</summary>
 	public bool ForCharades { get; set; } = false;
 
+	/// <summary>The setup dialog picks this map by default for every game it supports (see
+	/// <see cref="MapCatalog.DefaultFor"/>) — when the lobby opens, and when the host switches to a game the
+	/// current pick can't host. Tick it on ONE map per game; if several are ticked the first by title wins, and
+	/// a game with none ticked starts on its first map.</summary>
+	public bool DefaultPick { get; set; } = false;
+
 	/// <summary>Whether this map can host <paramref name="game"/>.</summary>
 	public bool Supports( GameModeKind game ) => game switch
 	{

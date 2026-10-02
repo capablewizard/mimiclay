@@ -4,11 +4,12 @@
 //  The menu floats over the 3D menu scene (no opaque backdrop), so it reads like
 //  the in-game HUD: light cream text + craft accents sitting on the scene, with
 //  any solid controls drawn as cream paper cards (see _button.scss). Per-control
-//  look comes from _theme.scss + _button.scss; this is the arrangement glue.
+//  look comes from _theme.scss + _button.scss + _controls.scss; this is the arrangement glue.
 // =============================================================================
 
 @import "/UI/_theme.scss";
 @import "/UI/_button.scss";
+@import "/UI/_controls.scss";   // steppers, pills, radios, tabs, fields, scroll hints — shared form controls
 
 // --- Menu shell --------------------------------------------------------------
 // Transparent: the 3D menu scene shows through. Just the layout column + base

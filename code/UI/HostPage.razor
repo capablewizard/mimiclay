@@ -40,9 +40,9 @@
 					<div class="mi">lock</div><span>Privacy</span>
 				</div>
 				<div class="seg">
-					<div class="seg-item @(_privacy == LobbyPrivacy.Public ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Public)>Public</div>
-					<div class="seg-item @(_privacy == LobbyPrivacy.FriendsOnly ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.FriendsOnly)>Friends</div>
-					<div class="seg-item @(_privacy == LobbyPrivacy.Private ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Private)>Private</div>
+					<div class="pill @(_privacy == LobbyPrivacy.Public ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Public)>Public</div>
+					<div class="pill @(_privacy == LobbyPrivacy.FriendsOnly ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.FriendsOnly)>Friends</div>
+					<div class="pill @(_privacy == LobbyPrivacy.Private ? "on" : "")" @onclick=@(() => _privacy = LobbyPrivacy.Private)>Private</div>
 				</div>
 			</div>
 
@@ -50,7 +50,7 @@
 				<div class="setting-name">
 					<div class="mi">badge</div><span>Session Name</span>
 				</div>
-				<TextEntry class="name-entry" Value:bind=@_sessionName Placeholder=@DefaultName />
+				<TextEntry class="field name-field" Value:bind=@_sessionName Placeholder=@DefaultName />
 			</div>
 		</div>
 

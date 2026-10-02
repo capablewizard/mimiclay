@@ -29,6 +29,20 @@ public static class MapCatalog
 	public static IReadOnlyList<MapResource> For( GameModeKind game )
 		=> All.Where( m => m.Supports( game ) ).ToList();
 
+	/// <summary>The map ident the setup dialog starts <paramref name="game"/> on: its <see cref="MapResource.DefaultPick"/>
+	/// map, else its first map by title, else <see cref="RandomIdent"/> when no map supports the game.</summary>
+	public static string DefaultFor( GameModeKind game )
+	{
+		var maps = For( game );
+		var pick = maps.FirstOrDefault( m => m.DefaultPick ) ?? maps.FirstOrDefault();
+		return pick?.ResourcePath ?? RandomIdent;
+	}
+
+	/// <summary>True when <paramref name="ident"/> is a usable pick for <paramref name="game"/>: Random, or a map
+	/// that supports the game.</summary>
+	public static bool IsValidPick( string ident, GameModeKind game )
+		=> ident == RandomIdent || (TryGet( ident, out var map ) && map.Supports( game ));
+
 	/// <summary>Look up a map by its <c>ResourcePath</c>. <see cref="RandomIdent"/> / unknown / empty return false.</summary>
 	public static bool TryGet( string ident, out MapResource map )
 	{

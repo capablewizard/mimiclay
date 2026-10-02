@@ -1,0 +1,360 @@
+// =============================================================================
+//  Mimiclay control kit — the small form controls shared by every settings-style
+//  screen (Host Game, the lobby's Set Up Game dialog, the workshop list window).
+//  Theme tokens only: no screen-specific colours live here or in the screens
+//  that use it, so retuning _theme.scss retunes them all.
+//
+//  .sub-title        bold capitals heading inside a card ("ROUND RULES")
+//  .divider          thin rule between card sections
+//  .option-row       a label on the left, its control on the right
+//    .option-name    the label
+//  .stepper          − value + (Host's recipe); .stepper.compact for dense cards
+//  .seg              a row of .pill options, one lit (.on) — Yes/No, Public/Friends/Private; .seg.compact = small
+//  .pill-grid        a wrapping set of toggleable .pill chips (topics)
+//  .pill             the cream pill both use; .on = selected (orange), .pill.all.on = blue headline chip
+//  .radio            radio option: dot + label + one-line description; .radio-row lays them out
+//  .icon-btn         small round icon button (.add / .on / .danger / .confirm / .busy)
+//  .btn-small        compact .btn (icon + label)
+//  .tabs / .tab      underlined tab strip
+//  .field            recessed text-entry groove (TextEntry)
+//  .scroll-wrap      wraps a scroll area with .scroll-fade top/bottom hints (driven by can-up / can-down)
+//  .art-shade        dark gradient over a picture so text on it reads (.full = whole picture)
+//
+//  Imported by _menu.scss, so any sheet that imports the menu kit gets these.
+// =============================================================================
+
+@import "/UI/_theme.scss";
+
+// --- Headings + structure ----------------------------------------------------
+.sub-title
+{
+	font-size: 22px;
+	font-weight: 800;
+	color: $paper-ink;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: $space-xs;
+	flex-shrink: 0;
+}
+
+.divider
+{
+	height: 2px;
+	flex-shrink: 0;
+	margin: $space-sm 0;
+	background-color: $card-edge;
+}
+
+// --- Option rows -------------------------------------------------------------
+.option-row
+{
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	flex-shrink: 0;
+	padding: 2px 4px 2px $space-md;
+}
+
+.option-name
+{
+	font-size: 19px;
+	font-weight: 700;
+	color: $paper-ink;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+// --- Stepper (− value +) -----------------------------------------------------
+// Material-icon cream squares that enlarge on hover and flash orange while held (the Host Game recipe).
+.stepper
+{
+	flex-direction: row;
+	align-items: center;
+	gap: $space-sm;
+
+	.step-btn
+	{
+		font-family: "Material Icons";
+		font-size: 20px;
+		width: 38px;
+		height: 38px;
+		align-items: center;
+		justify-content: center;
+		border-radius: $radius-md;
+		background-color: $paper-top;
+		border: 2px solid $card-edge;
+		color: $paper-ink;
+		cursor: pointer;
+		pointer-events: all;
+		transition: all 0.1s ease-out;
+
+		&:hover { transform: scale( 1.12 ); sound-in: $sound-hover; }
+		&:active { transform: scale( 0.96 ); background-color: $craft-orange; sound-in: $sound-click; }
+	}
+
+	.step-value
+	{
+		min-width: 40px;
+		justify-content: center;
+		font-size: 20px;
+		font-weight: 700;
+		color: $paper-ink;
+	}
+
+	// Dense cards (the Set Up Game dialog): smaller squares, a wider value slot for "220s".
+	&.compact
+	{
+		gap: 6px;
+		.step-btn { width: 32px; height: 32px; font-size: 18px; border-radius: $radius-sm; }
+		.step-value { min-width: 64px; font-size: 19px; font-weight: 800; }
+	}
+}
+
+// --- Pills: segmented choices + chip grids -------------------------------------
+.seg
+{
+	flex-direction: row;
+	gap: $space-sm;
+}
+
+.pill-grid
+{
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.pill
+{
+	padding: 8px 18px;
+	border-radius: $radius-pill;
+	background-color: $paper-top;
+	border: 2px solid $card-edge;
+	font-family: $body-font;
+	font-size: 14px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: $paper-ink;
+	cursor: pointer;
+	pointer-events: all;
+	transition: all 0.1s ease-out;
+
+	&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; }   // enlarge only — no recolour
+	&:active { sound-in: $sound-click; }
+	&.on { background-color: $craft-orange; }                       // orange = selected
+
+	// The headline "select everything" chip reads as a different kind of switch: blue when lit.
+	&.all.on { background-color: $craft-blue; color: $scene-text; }
+}
+
+// Dense cards: chips in a grid, and a .seg marked .compact (Yes/No in an option row), use a smaller pill.
+.pill-grid .pill,
+.seg.compact .pill
+{
+	padding: 3px 14px;
+	font-size: 15px;
+}
+
+.seg.compact { gap: 4px; }
+
+// --- Radio options -------------------------------------------------------------
+.radio-row
+{
+	flex-direction: row;
+	gap: 10px;
+}
+
+.radio
+{
+	flex: 0 0 auto;   // sized to its text, so a long label never runs into its neighbour
+	flex-direction: row;
+	align-items: center;
+	gap: $space-sm;
+	padding: 6px $space-sm 6px 6px;
+	border-radius: $radius-md;
+	cursor: pointer;
+	pointer-events: all;
+	transition: background-color 0.1s ease-out;
+
+	&:hover { background-color: $paper-top; sound-in: $sound-hover; }
+	&:active { sound-in: $sound-click; }
+
+	.radio-dot
+	{
+		width: 24px;
+		height: 24px;
+		flex-shrink: 0;
+		border-radius: 12px;
+		border: 2px solid $paper-ink-soft;
+		background-color: $paper-top;
+	}
+
+	.radio-text { flex-direction: column; flex-shrink: 0; }
+	.radio-label { font-size: 17px; font-weight: 800; color: $paper-ink; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.5px; }
+	.radio-desc { font-size: 13px; font-weight: 600; color: $paper-ink-soft; white-space: nowrap; }
+
+	&.on .radio-dot { border-color: $craft-orange; border-width: 7px; }
+}
+
+// --- Small buttons ---------------------------------------------------------------
+// Compact .btn: pair as class="btn btn-small", optional leading .mi icon.
+.btn-small
+{
+	flex-direction: row;
+	gap: 6px;
+	padding: 7px 14px;
+	font-size: 15px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	.mi { font-size: 18px; }
+}
+
+// Small round icon button (list rows): .add green, .on orange, .danger reddens on hover, .confirm red.
+.icon-btn
+{
+	min-width: 32px;
+	height: 32px;
+	flex-shrink: 0;
+	padding: 0 6px;
+	align-items: center;
+	justify-content: center;
+	border-radius: $radius-pill;
+	border: 2px solid $card-edge;
+	background-color: $paper-top;
+	color: $paper-ink;
+	font-size: 13px;
+	font-weight: 800;
+	cursor: pointer;
+	pointer-events: all;
+	transition: all 0.1s ease-out;
+
+	.mi { font-size: 18px; }
+
+	&.add { background-color: $craft-green; color: $scene-text; }
+	&.on { background-color: $craft-orange; }
+	&.danger:hover { color: $craft-red; }
+	&.confirm { background-color: $craft-red; color: $scene-text; }
+	&.busy { opacity: 0.5; pointer-events: none; }
+	&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; }
+	&:active { transform: scale( 0.96 ); sound-in: $sound-click; }
+}
+
+// --- Tabs -----------------------------------------------------------------------
+.tabs
+{
+	flex-direction: row;
+	flex-shrink: 0;
+	border-bottom: 2px solid $card-edge;
+
+	.tab
+	{
+		padding: 6px 14px;
+		margin-bottom: -2px;
+		border-bottom: 3px solid transparent;
+		font-size: 16px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: $paper-ink-soft;
+		cursor: pointer;
+		pointer-events: all;
+
+		&:hover { color: $paper-ink; sound-in: $sound-hover; }
+		&:active { sound-in: $sound-click; }
+		&.on { color: $paper-ink; border-bottom-color: $craft-orange; }
+	}
+}
+
+// --- Text field ---------------------------------------------------------------------
+// A recessed "gap" groove (like the EditHud slider track) rather than a raised pill, so it reads as somewhere to
+// type. Keep the radius well under half the height: the base .textentry clips (overflow:hidden), and a full pill
+// radius tapers the first glyphs away.
+.field
+{
+	padding: 9px 16px;
+	border-radius: $radius-md;
+	background-color: rgba( 44, 36, 24, 0.12 );
+	border: 1.5px solid rgba( 44, 36, 24, 0.35 );
+	color: $paper-ink;
+	font-size: 15px;
+	font-family: $body-font;
+	pointer-events: all;
+}
+
+// --- Scroll hints ---------------------------------------------------------------------
+// Wrap a scroll area (which must sit inside a $paper-tile card): <div class="scroll-wrap"> [scroller]
+// <div class="scroll-fade top"/> <div class="scroll-fade bottom"><div class="mi scroll-hint">expand_more</div></div>.
+// The owner sets can-up / can-down on the wrap from the scroller's ScrollOffset/ScrollSize each frame (see
+// RoundSetup.UpdateScrollFades). The scroller itself needs flex: 1 1 0 + min-height: 0, or it grows to its content
+// and never scrolls; its children need flex-shrink: 0, or they squash instead of overflowing.
+.scroll-wrap
+{
+	position: relative;
+	flex-direction: column;
+	flex: 1 1 0;
+	min-height: 0;
+}
+
+.scroll-fade
+{
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 46px;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s ease-out;
+	justify-content: center;
+	align-items: flex-end;
+
+	&.top
+	{
+		top: 0;
+		height: 28px;
+		background: linear-gradient( to bottom, $paper-tile, rgba( $paper-tile, 0 ) );
+	}
+
+	&.bottom
+	{
+		bottom: 0;
+		background: linear-gradient( to bottom, rgba( $paper-tile, 0 ), $paper-tile 75% );
+	}
+
+	.scroll-hint
+	{
+		font-size: 26px;
+		color: $paper-ink-soft;
+		margin-bottom: -4px;
+		animation-name: scroll-hint-bob;
+		animation-duration: 1.4s;
+		animation-iteration-count: infinite;
+		animation-timing-function: ease-in-out;
+	}
+}
+
+.scroll-wrap.can-up > .scroll-fade.top,
+.scroll-wrap.can-down > .scroll-fade.bottom { opacity: 1; }
+
+// The "more below" chevron's gentle bob.
+@keyframes scroll-hint-bob
+{
+	0%   { transform: translateY( 0px ); }
+	50%  { transform: translateY( 4px ); }
+	100% { transform: translateY( 0px ); }
+}
+
+// --- Art shade ------------------------------------------------------------------------------
+// A dark gradient laid over a picture so text on top reads (map card names, the game banner). Put it as the FIRST
+// child of a position:relative, overflow:hidden box, after the picture: <div class="art-shade"></div>. The default
+// darkens the lower half (a caption along the bottom); .full dims the whole picture, darker towards the bottom
+// (text across the middle).
+.art-shade
+{
+	position: absolute;
+	top: 0; left: 0; right: 0; bottom: 0;
+	pointer-events: none;
+	background: linear-gradient( to bottom, rgba( $art-shade, 0 ) 50%, rgba( $art-shade, 0.55 ) );
+
+	&.full { background: linear-gradient( to bottom, rgba( $art-shade, 0.3 ), rgba( $art-shade, 0.6 ) ); }
+}

@@ -1,18 +1,8 @@
-@import "/UI/_menu.scss";   // tokens + shared kit: .paper-card, .btn, .mi
+@import "/UI/_menu.scss";   // theme tokens + shared kits: .paper-card / .btn (_button), controls (_controls)
 
-// The Set Up Game dialog's warmer concept palette (mirrors the locals at the top of RoundSetup.razor.scss), so
-// the window reads as part of the dialog rather than the older grey-cream paper.
-$w-card-bg:   #f8eedc;
-$w-line:      #e6d5b8;
-$w-ink:       #4a3624;
-$w-ink-soft:  #8a7560;
-$w-btn-bg:    #fcf5e7;
-$w-btn-edge:  #d8c4a3;
-$w-yellow:    #f6c443;
-$w-orange:    #f2a536;
-
-// The workshop phrase-list popup. Mounted inside .round-setup, so .sub-title (bold, capitals) comes from there; this sheet
-// owns the overlay, the window card and its rows.
+// The workshop phrase-list popup (over the Set Up Game dialog). LAYOUT ONLY: the card surface is .paper-card, the
+// heading .sub-title, the tab strip .tabs, the text boxes .field, the buttons .btn-small / .icon-btn — all from
+// the shared kits — and every colour is a _theme.scss token.
 .workshop-lists-window {
 	position: absolute;
 	top: 0; left: 0;
@@ -36,10 +26,7 @@ $w-orange:    #f2a536;
 		flex-direction: column;
 		gap: $space-sm;
 		padding: 18px 24px;
-		border-radius: 18px;
-		background-color: $w-card-bg;   // overrides .paper-card's grey-cream, matching the dialog's cards
-		border: 2px solid $w-line;
-		box-shadow: 0px 8px 18px rgba( 40, 26, 10, 0.22 );
+		border-radius: $radius-lg;
 		z-index: 1;
 	}
 
@@ -52,44 +39,23 @@ $w-orange:    #f2a536;
 
 		.close-btn {
 			font-size: 26px;
-			color: $w-ink-soft;
+			color: $paper-ink-soft;
 			cursor: pointer;
 			pointer-events: all;
 			transition: all 0.1s ease-out;
-			&:hover { color: $w-ink; transform: scale( 1.15 ); sound-in: $sound-hover; }
+			&:hover { color: $paper-ink; transform: scale( 1.15 ); sound-in: $sound-hover; }
 			&:active { sound-in: $sound-click; }
-		}
-	}
-
-	.tabs {
-		flex-direction: row;
-		border-bottom: 2px solid $w-line;
-
-		.tab {
-			padding: 6px 14px;
-			margin-bottom: -2px;
-			border-bottom: 3px solid transparent;
-			font-size: 16px;
-			font-weight: 800;
-			text-transform: uppercase;   // capitals like the dialog's other bold labels
-			letter-spacing: 0.5px;
-			color: $w-ink-soft;
-			cursor: pointer;
-			pointer-events: all;
-
-			&:hover { color: $w-ink; sound-in: $sound-hover; }
-			&:active { sound-in: $sound-click; }
-			&.on { color: $w-ink; border-bottom-color: $w-orange; }
 		}
 	}
 
 	.status {
 		font-size: 15px;
 		font-weight: 600;
-		color: $w-ink-soft;
+		color: $paper-ink-soft;
 		padding: $space-xs 0;
 	}
 
+	// ── Browse list ──────────────────────────────────────────────────────────────────────────────────────────
 	.list {
 		flex-direction: column;
 		gap: $space-xs;
@@ -102,16 +68,16 @@ $w-orange:    #f2a536;
 			align-items: center;
 			flex-shrink: 0;
 			gap: 6px;
-			padding: 6px 8px 6px 12px;
+			padding: 6px $space-sm 6px $space-md;
 			border-radius: $radius-md;
-			background-color: $w-btn-bg;
-			border: 2px solid $w-line;
+			background-color: $paper-top;
+			border: 2px solid $card-edge;
 
-			&.added { border-color: $w-yellow; }
+			&.added { border-color: $craft-orange; }
 
 			.row-text { flex-direction: column; flex-grow: 1; min-width: 0; }
-			.row-title { font-size: 17px; font-weight: 700; color: $w-ink; white-space: nowrap; overflow: hidden; text-transform: uppercase; letter-spacing: 0.5px; }
-			.row-meta { font-size: 13px; font-weight: 600; color: $w-ink-soft; white-space: nowrap; overflow: hidden; }
+			.row-title { font-size: 17px; font-weight: 700; color: $paper-ink; white-space: nowrap; overflow: hidden; text-transform: uppercase; letter-spacing: 0.5px; }
+			.row-meta { font-size: 13px; font-weight: 600; color: $paper-ink-soft; white-space: nowrap; overflow: hidden; }
 		}
 	}
 
@@ -122,11 +88,11 @@ $w-orange:    #f2a536;
 		flex-shrink: 0;
 		gap: 3px;
 		height: 32px;
-		padding: 0 10px 0 8px;
+		padding: 0 10px 0 $space-sm;
 		border-radius: $radius-pill;
-		border: 2px solid $w-line;
-		background-color: $w-btn-bg;
-		color: $w-ink-soft;
+		border: 2px solid $card-edge;
+		background-color: $paper-tile;
+		color: $paper-ink-soft;
 		font-size: 14px;
 		font-weight: 800;
 		cursor: pointer;
@@ -137,57 +103,17 @@ $w-orange:    #f2a536;
 
 		&:hover { color: $craft-red; transform: scale( 1.06 ); sound-in: $sound-hover; }
 		&:active { transform: scale( 0.94 ); sound-in: $sound-click; }
-		&.liked { color: $craft-red; border-color: rgba( $craft-red, 0.6 ); background-color: rgba( $craft-red, 0.1 ); }
+		&.liked { color: $craft-red; border-color: $craft-red; }
 	}
 
-	// Small round row buttons: add (green +), added (orange ✓), edit, delete (red on confirm).
-	.icon-btn {
-		min-width: 32px;
-		height: 32px;
-		flex-shrink: 0;
-		padding: 0 6px;
-		align-items: center;
-		justify-content: center;
-		border-radius: $radius-pill;
-		border: 2px solid $w-line;
-		background-color: $w-btn-bg;
-		color: $w-ink;
-		font-size: 13px;
-		font-weight: 800;
-		cursor: pointer;
-		pointer-events: all;
-		transition: all 0.1s ease-out;
-
-		.mi { font-size: 18px; }
-
-		&.add { background-color: $craft-green; color: #fff; }
-		&.added { background-color: $w-yellow; color: $w-ink; }
-		&.danger:hover { color: $craft-red; }
-		&.confirm { background-color: $craft-red; color: #fff; }
-		&.busy { opacity: 0.5; pointer-events: none; }
-		&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; }
-		&:active { transform: scale( 0.96 ); sound-in: $sound-click; }
-	}
-
-	// Maker fields — the recessed "gap" field recipe (HostPage .name-entry).
-	.field {
-		padding: 9px 14px;
-		border-radius: $radius-md;
-		background-color: rgba( 44, 36, 24, 0.12 );
-		border: 1.5px solid rgba( 44, 36, 24, 0.35 );
-		color: $w-ink;
-		font-size: 15px;
-		font-family: $body-font;
-		pointer-events: all;
-	}
-
+	// ── Create / edit ────────────────────────────────────────────────────────────────────────────────────────
 	.title-field { height: 40px; flex-shrink: 0; }
 	.lines-field { flex-grow: 1; align-items: flex-start; white-space: pre-wrap; }
 
 	.hint {
 		font-size: 14px;
 		font-weight: 600;
-		color: $w-ink-soft;
+		color: $paper-ink-soft;
 	}
 
 	.footer {
@@ -199,14 +125,4 @@ $w-orange:    #f2a536;
 
 		.spacer { flex-grow: 1; }
 	}
-
-	.btn-small {
-		flex-direction: row;
-		gap: 6px;
-		padding: 8px 14px;
-		font-size: 15px;
-		.mi { font-size: 18px; }
-	}
-
-	.btn-primary { background-color: $w-yellow; &:hover { background-color: #f9d46a; } }
 }
