@@ -129,6 +129,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	/// the turn starts, cleared with the turn.</summary>
 	public string LocalWord { get; private set; }
 
+	/// <summary>The word THIS machine's player just guessed correctly (null until they do). Set by targeted RPC on
+	/// their correct guess so the HUD can type it into the word box; cleared when the sculpt ends.</summary>
+	public string SolvedWord { get; private set; }
+
 	bool IsHostAuthority => !Networking.IsActive || Networking.IsHost;
 
 	/// <summary>The selection every draw uses: in a Topics game the ticked Standard topics plus the ticked
@@ -667,6 +671,17 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		OfferedWords.Clear();
 	}
 
+	/// <summary>Host→guesser: you got it — here's the word, for your HUD to type into the word box. Same
+	/// targeted pattern as <see cref="TellWord"/> (the recipient guard is the load-bearing part).</summary>
+	[Rpc.Broadcast]
+	void TellSolved( Guid guesser, string word )
+	{
+		if ( Connection.Local?.Id != guesser )
+			return;
+
+		SolvedWord = word;
+	}
+
 	/// <summary>Mimic→host: I pick offered word <paramref name="index"/>. The HUD's word buttons call this.</summary>
 	[Rpc.Host]
 	public void ChooseWord( int index )
@@ -792,6 +807,22 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		}
 
 		AnnounceCorrect( rosterId, guesser.Name );
+
+		// The guesser's HUD types the word into their box — filtered to THEIR connection like TellWord, so the
+		// answer never goes on the wire to anyone still guessing. Bots have no machine to tell.
+		if ( !guesser.Bot )
+		{
+			var conn = Connection.All.FirstOrDefault( c => c.Id == rosterId );
+			if ( conn is not null && Networking.IsActive )
+			{
+				using ( Rpc.FilterInclude( conn ) )
+					TellSolved( rosterId, _currentWord );
+			}
+			else
+			{
+				TellSolved( rosterId, _currentWord );
+			}
+		}
 	}
 
 	// ── Chat-line delivery (host → every machine's engine chat; Chat.AddText is local-only by design) ────
@@ -930,6 +961,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			OfferedWords.Clear();
 			LocalWord = null;
 		}
+
+		// A guesser's solved word is only theirs for the rest of the sculpt (the reveal shows everyone anyway).
+		if ( to != CharadesPhase.Sculpting )
+			SolvedWord = null;
 
 		// A new turn opens and we're the mimic AGAIN (solo debug, or the rotation's fallback re-picked us):
 		// the kind-poll in EnsureOwnPawn wouldn't respawn an already-prop pawn, so force it — every turn

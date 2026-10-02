@@ -432,11 +432,8 @@ $clock-col-width: 150px;
 			// line box: it includes the font's ascent and leading above the cap height, and digits have no
 			// ascenders, so at 72px there's a visible empty band before anything draws. The icons have no such
 			// band — their box is the image. Purely optical, so tune by eye if the font or size changes.
+			// The look is the shared .clock-timer (_controls.scss).
 			margin-top: -14px;
-			font-family: $header-font;
-			font-size: 72px;
-			color: $scene-text;
-			text-shadow: $scene-shadow;
 		}
 
 		// Context line under the clock during a round (e.g. "Until Hunt Begins") — smaller than the timer.

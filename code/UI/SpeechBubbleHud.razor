@@ -73,8 +73,7 @@
 	// The per-letter blip: the menu hover sound pitched up into a typing tick. One blip per frame at most,
 	// however many characters that frame revealed — per-char at typing speed is machine-gun fire. Loudness
 	// and its wobble live on the BUBBLE (TypeVolume / TypeVolumeJitter), so each speaker can have its own
-	// voice; the sample and the pitch roll are shared.
-	const string TypeSound = "ui.button.over";
+	// voice; the sample and the pitch roll are shared (UiSounds.TypeBlip).
 
 	// How long a bubble must be OFF (hidden, out of range, behind the camera) before its next appearance
 	// re-types — so a quick bounce across the range boundary continues the line instead of restarting it.
@@ -240,19 +239,7 @@
 	}
 
 	void PlayTypeBlip( SpeechBubble bubble )
-	{
-		float volume = MathF.Max( 0f, bubble.TypeVolume );
-		if ( volume <= 0f )
-			return; // this bubble types silently — don't spend a sound channel on it
-
-		var snd = Sound.Play( TypeSound );
-		if ( snd is null )
-			return;
-
-		float jitter = Math.Clamp( bubble.TypeVolumeJitter, 0f, 1f );
-		snd.Volume = volume * Game.Random.Float( 1f - jitter, 1f + jitter );
-		snd.Pitch = Game.Random.Float( 1.15f, 1.35f ); // pitched up out of "button hover", into "type tick"
-	}
+		=> UiSounds.TypeBlip( MathF.Max( 0f, bubble.TypeVolume ), bubble.TypeVolumeJitter );
 
 	// State entries for destroyed/removed bubbles — swept so the dictionary can't grow for a scene's
 	// lifetime. (An entry for a merely-hidden bubble stays: its timers drive the retype and the linger.)

@@ -292,6 +292,18 @@ label { pointer-events: none; }
 	100% { transform: scale( 1.15 ); }
 }
 
+// A one-shot "ta-da" pop that lands back at REST size (the hover springs above land on their hover size): for
+// something that just changed state — the charades word box flipping to its revealed answer. Same overshoot-and-
+// settle poses as the hover family; animation: pop-spring $spring-duration ease-out.
+@keyframes pop-spring
+{
+	0%   { transform: scale( 1 ); }
+	40%  { transform: scale( 1.14 ); }
+	65%  { transform: scale( 0.96 ); }
+	85%  { transform: scale( 1.03 ); }
+	100% { transform: scale( 1 ); }
+}
+
 // Lifts (translateY hovers): overshoot upward, never below rest.
 @keyframes hover-lift-1
 {

@@ -19,6 +19,8 @@
 //  .field            recessed text-entry groove (TextEntry)
 //  .scroll-wrap      wraps a scroll area with .scroll-fade top/bottom hints (driven by can-up / can-down)
 //  .art-shade        dark gradient over a picture so text on it reads (.full = whole picture)
+//  .clay-title       the half-size Set Up Game title (a WobbleText "auto"), between .sparks.small
+//  .clock-timer      the big mm:ss round clock at top centre
 //  .status-line      the big jittering status sentence over the scene (a LockStep WobbleText)
 //  .sparks           three jittering yellow dashes beside a title (.left/.right; .small)
 //
@@ -461,6 +463,45 @@
 	100% { transform: translateX( 0px ) scale( 1.08 ); }
 }
 
+
+// --- Clay title ----------------------------------------------------------------------
+// The Set Up Game title at about half size: header font, cream, uppercase, the layered clay emboss (offsets
+// halved with it; glow first so it paints UNDER the depth). Put it on a WobbleText with "auto" for the jitter
+// (class="clay-title auto"), usually between a pair of .sparks.small. The screen owns its spacing.
+.clay-title
+{
+	font-family: $header-font;
+	font-size: 40px;
+	color: $scene-text;
+	text-transform: uppercase;
+
+	&.wobble-text .letter
+	{
+		text-shadow:
+			5px 6px 2px $emboss-glow,
+			2px 3px 0px $emboss-depth;
+	}
+}
+
+// --- Round clock ---------------------------------------------------------------------
+// The big mm:ss clock at top centre (prop hunt's round clock, the charades clock). The screen owns its spacing.
+.clock-timer
+{
+	font-family: $header-font;
+	font-size: 72px;
+	color: $scene-text;
+	text-shadow: $scene-shadow;
+
+	// As a WobbleText (class="clock-timer auto"): the standard clay header — the Set Up Game / scoreboard title's
+	// layered emboss, offsets scaled for 72px (glow first so it paints UNDER the depth). A plain-text clock (prop
+	// hunt's) has no .letter, so it keeps the flat shadow above.
+	&.wobble-text .letter
+	{
+		text-shadow:
+			9px 10px 3px $emboss-glow,
+			3.5px 5px 0px $emboss-depth;
+	}
+}
 
 // --- Status line ------------------------------------------------------------------
 // The big jittering sentence over the scene that says what's happening ("Press G to set up game", "Waiting for

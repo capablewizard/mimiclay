@@ -59,11 +59,18 @@
 			return;
 		_soundedDigit = digit;
 
+		if ( Ticking )
+			PlayTick( digit );
+	}
+
+	/// <summary>The countdown's sound for <paramref name="digit"/> landing — shared with any clock that counts
+	/// down its own way (the charades clock's last five seconds).</summary>
+	public static void PlayTick( int digit )
+	{
 		// Alternates by the digit itself rather than a running toggle, so every machine (and a late-joiner
 		// who walks in mid-countdown) hears the same tick on the same number: odd ticks, even tocks — and
 		// 1, the last, is always a tick.
-		if ( Ticking )
-			Sound.Play( digit % 2 == 1 ? TickSound : TockSound );
+		Sound.Play( digit % 2 == 1 ? TickSound : TockSound );
 	}
 
 	protected override int BuildHash() => HashCode.Combine( Title, Digit );

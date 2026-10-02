@@ -11,51 +11,71 @@
 	programmatically by the manager (Ensure below), so charades maps need no HUD wiring of their own.
 
 	Layout:
-	  • top-centre — phase caption + timer + the word strip: the mimic sees their word, guessers see the
-	    masked hint, the reveal shows everyone the answer.
+	  • top-centre — prop hunt's clock column, in EVERY state: mm:ss clock, status line, the word strip (the
+	    mimic sees their word, guessers the masked hint, the reveal the answer), and the lobby countdown for a
+	    timed phase's last five seconds.
 	  • bottom centre — the mimic's three word buttons during Choosing (keyed 1/2/3), or the guessers'
 	    "press Enter" hint during the sculpt. Guessing itself lives in the ENGINE chat overlay — the
 	    familiar Enter box — with CharadesManager censoring correct guesses host-side (IChatEvent).
 	  • right edge — the scoreboard with the target score, always up (it IS the game's tension).
 
-	Hidden wholesale while the local player sculpt-edits (the mimic keeps a slim word reminder only) —
-	the edit HUD owns the screen there, same deal as RoundHud's hotkey strip.
+	Everything BUT the top-centre column hides while the local player sculpt-edits — the edit HUD owns the
+	screen there, same deal as RoundHud's hotkey strip; the clock column sits in the centre corridor it leaves.
 *@
 
 <root class="charades-hud">
 	@* Off-screen icon renderers for the scoreboard heads. FIRST, so it exists before any SdfIcon asks it. *@
 	<SdfIconFarm class="icon-farm" />
 
-	@if ( Manager is null )
-	{
-		<div class="top-centre">
-			<WobbleText Text="Setting up" class="status-line" LockStep=@true />
+	@* Top centre — prop hunt's clock column (RoundHud's .timer), the SAME in every state, sculpt-editing
+	   included: a one-or-two-word clay title (the scoreboard heading's look), the mm:ss clock under it, then the
+	   word strip. For a timed phase's last five seconds the clock itself becomes the lobby countdown: one big
+	   digit that springs in fresh each second, with Countdown's tick/tock. *@
+	<div class="top-centre">
+		@* The scoreboard heading's look: the shared .clay-title between .sparks.small, re-keyed so each new title
+		   starts fresh. *@
+		<div class="phase-heading">
+			<div class="sparks small left"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+			<WobbleText Text=@PhaseCaption class="clay-title auto" @key=@PhaseCaption />
+			<div class="sparks small right"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
 		</div>
-	}
-	else if ( Editing )
-	{
-		@* Mimic, in the editor: everything gets out of the edit HUD's way except what they must not
-		   forget — the word and the clock. *@
-		<div class="mimic-strip">
-			<div class="strip-word">@(Manager.LocalWord ?? "")</div>
-			<div class="strip-timer">@TimerText</div>
-		</div>
-	}
-	else
-	{
-		<div class="top-centre">
-			@* The lobby's status line (shared .status-line), re-keyed so each new caption starts fresh. *@
-			<WobbleText Text=@PhaseCaption class="status-line" LockStep=@true @key=@PhaseCaption />
-			@if ( HasTimer )
-			{
-				<div class="timer">@TimerText</div>
-			}
+		@* The clock in the standard clay header (the scoreboard title's WobbleText look), at the round-clock size.
+		   Counting down, it's re-keyed per digit so each one is a new element and its spring replays. *@
+		@if ( ShowCountdown )
+		{
+			<WobbleText Text=@TimerText class="timer clock-timer counting auto" @key=@TimerText />
+		}
+		else
+		{
+			<WobbleText Text=@TimerText class="timer clock-timer auto" />
+		}
 
-			@if ( WordStrip != "" )
-			{
-				<div class="word-strip @(Manager.Phase == CharadesPhase.TurnReveal ? "revealed" : "") @(WordStrip.Length > 16 ? "long" : "")">@WordStrip</div>
-			}
-		</div>
+		@if ( WordStrip != "" )
+		{
+			var revealed = Manager.Phase == CharadesPhase.TurnReveal || LocalSolved;
+			@* The spring lives on a wrapper: the card's own jitter already owns its `transform`. It plays once as
+			   .revealed goes on (the switch to the uppercase answer). *@
+			<div class="word-pop @(revealed ? "popped" : "")">
+			<div class="word-strip paper-card @(revealed ? "revealed" : "") @(WordStrip.Length > 12 ? "long" : "")">
+				<div class="word">
+					@foreach ( var w in WordStripWords )
+					{
+						<div class="word-group">
+							@foreach ( var c in w )
+							{
+								<div class="ch">@c</div>
+							}
+						</div>
+					}
+				</div>
+				<div class="pencil badge-glyph">✏️</div>
+			</div>
+			</div>
+		}
+	</div>
+
+	@if ( Manager is not null && !Editing )
+	{
 
 		@* Writing (players-write rounds): everyone types a phrase for someone else — through the chat, which
 		   the host swallows and answers privately. The card says where the verb is and who's handed one in. *@
@@ -133,7 +153,7 @@
 		<div class="scoreboard">
 			<div class="board-heading">
 				<div class="sparks small left"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
-				<WobbleText Text=@RoundLine class="board-title auto" @key=@RoundLine />
+				<WobbleText Text=@RoundLine class="clay-title auto" @key=@RoundLine />
 				<div class="sparks small right"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
 			</div>
 
@@ -214,6 +234,9 @@
 
 	protected override void OnUpdate()
 	{
+		TickTypingSound();
+		TickCountdownSound();
+
 		// The mimic's 1/2/3 word pick — keyboard-direct (like RoundSetup's G) so it works while they drive
 		// their prop around the stage; the on-screen buttons stay clickable for mouse people.
 		if ( Manager is null || Manager.Phase != CharadesPhase.Choosing
@@ -229,31 +252,62 @@
 
 	bool HasTimer => Manager is not null && Manager.Phase != CharadesPhase.Waiting;
 
+	// The clock turns into the lobby countdown for a timed phase's last five seconds.
+	const float CountdownSeconds = 5f;
+	// Not during the reveal ("It was..."): that pause is for reading the answer, not a race.
+	bool ShowCountdown => HasTimer && Manager.Phase != CharadesPhase.TurnReveal
+		&& Manager.PhaseEndsAt > 0f && Manager.PhaseEndsAt <= CountdownSeconds;
+	int CountdownDigit => Math.Max( 1, (int)MathF.Ceiling( Manager.PhaseEndsAt ) );
+
+	// Countdown's tick/tock as each digit lands. Starts at 0 (never a real digit) so the first one sounds too.
+	int _soundedDigit;
+
+	void TickCountdownSound()
+	{
+		if ( !ShowCountdown )
+		{
+			_soundedDigit = 0;
+			return;
+		}
+
+		var digit = CountdownDigit;
+		if ( digit == _soundedDigit )
+			return;
+
+		_soundedDigit = digit;
+		Countdown.PlayTick( digit );
+	}
+
 	string TimerText
 	{
 		get
 		{
 			if ( Manager is null || !HasTimer )
-				return "0";
+				return "0:00"; // untimed (Waiting, or no manager yet): the clock still holds its place
+
+			// The last five seconds: one digit, the lobby countdown's way (floored at 1 — see Countdown.Digit).
+			if ( ShowCountdown )
+				return CountdownDigit.ToString();
 
 			var t = MathF.Ceiling( MathF.Max( 0f, Manager.PhaseEndsAt ) );
 			return $"{(int)(t / 60f)}:{(int)(t % 60f):00}";
 		}
 	}
 
-	// The status line, in the lobby's voice: plain sentence case, no ellipses or dashes ("Press G to set up game").
-	string PhaseCaption => Manager?.Phase switch
+	// The title over the clock — kept to a word or two ("Sculpt it!", "Guess!"): the clock, word strip and the
+	// cards below carry the detail.
+	string PhaseCaption => Manager is null ? "Setting up!" : Manager.Phase switch
 	{
 		CharadesPhase.Waiting => Manager.AwaitingPlayers
-			? $"Loading players ({Manager.LoadedPlayers}/{Manager.ExpectedPlayers})"
-			: $"Waiting for players ({Manager.Players.Count}/{Manager.Settings.MinPlayers})",
-		CharadesPhase.Starting => "Starting game",
-		CharadesPhase.Writing => "Write a phrase for someone else",
-		CharadesPhase.Choosing when SingleOffer => Manager.LocalIsMimic ? "Here's your phrase" : $"{Manager.MimicName} is reading their phrase",
-		CharadesPhase.Choosing => Manager.LocalIsMimic ? "Pick a phrase" : $"{Manager.MimicName} is picking a phrase",
-		CharadesPhase.Sculpting => Manager.LocalIsMimic ? "Sculpt it" : $"{Manager.MimicName} is sculpting, guess in chat",
-		CharadesPhase.TurnReveal => "The phrase was",
-		CharadesPhase.Podium => "Final standings",
+			? $"Loading ({Manager.LoadedPlayers}/{Manager.ExpectedPlayers})"
+			: $"Waiting ({Manager.Players.Count}/{Manager.Settings.MinPlayers})",
+		CharadesPhase.Starting => "Starting!",
+		CharadesPhase.Writing => "Write!",
+		CharadesPhase.Choosing when SingleOffer => Manager.LocalIsMimic ? "Your phrase!" : "Reading!",
+		CharadesPhase.Choosing => Manager.LocalIsMimic ? "Pick one!" : "Picking!",
+		CharadesPhase.Sculpting => Manager.LocalIsMimic ? "Sculpt it!" : "Guess!",
+		CharadesPhase.TurnReveal => "It was...",
+		CharadesPhase.Podium => "Final scores!",
 		_ => "",
 	} ?? "";
 
@@ -295,10 +349,73 @@
 			if ( Manager.LocalIsMimic )
 				return Manager.LocalWord ?? "";
 
-			// "___ _____" reads better letter-spaced: "_ _ _   _ _ _ _ _".
-			return string.Join( " ", (Manager.WordHint ?? "").Select( c => c == ' ' ? " " : c.ToString() ) );
+			// Solved: the answer, typed into the box over the mask, one slot at a time.
+			if ( Manager.SolvedWord is { Length: > 0 } solved )
+			{
+				var typed = TypedCount( solved );
+				return new string( solved.Select( ( c, i ) => c == ' ' ? ' ' : i < typed ? c : '_' ).ToArray() );
+			}
+
+			return Manager.WordHint ?? "";
 		}
 	}
+
+	// The strip drawn as words of fixed-width character slots (see .ch in the sheet): a "_" and the letter that
+	// replaces it take the same room, so the box never resizes as a solved answer types in — and the mask, the
+	// mimic's word and the reveal all share one spacing.
+	IEnumerable<string> WordStripWords => WordStrip.Split( ' ', StringSplitOptions.RemoveEmptyEntries );
+
+	// The local guesser's correct answer typing itself out: one character per TypeSeconds from the moment this
+	// machine first sees it (CharadesManager.SolvedWord, sent by targeted RPC on the correct guess).
+	const float TypeSeconds = 0.08f;
+	string _typingWord;
+	RealTimeSince _typingSince;
+
+	int TypedCount( string word )
+	{
+		if ( word != _typingWord )
+		{
+			_typingWord = word;
+			_typingSince = 0;
+		}
+
+		return Math.Min( word.Length, (int)(_typingSince / TypeSeconds) + 1 );
+	}
+
+	// The speech bubbles' typewriter tick as each letter of the solved answer lands — at most one per frame,
+	// like theirs. Spaces type silently.
+	int _soundedTyped;
+
+	void TickTypingSound()
+	{
+		var word = Manager is not null && Manager.Phase == CharadesPhase.Sculpting && !Manager.LocalIsMimic
+			? Manager.SolvedWord
+			: null;
+
+		if ( string.IsNullOrEmpty( word ) )
+		{
+			_soundedTyped = 0;
+			return;
+		}
+
+		var typed = TypedCount( word );
+		if ( typed <= _soundedTyped )
+			return;
+
+		if ( word[typed - 1] != ' ' )
+			UiSounds.TypeBlip();
+
+		_soundedTyped = typed;
+	}
+
+	// The word box lights up (the reveal's highlight, uppercase) once the local guesser's answer has finished
+	// typing AND sat there for SolvedPause — a beat to read what was typed before it flips to the revealed look.
+	// The last letter lands at (length − 1) × TypeSeconds (TypedCount shows the first one immediately).
+	const float SolvedPause = 0.4f;
+
+	bool LocalSolved => Manager is not null && Manager.Phase == CharadesPhase.Sculpting && !Manager.LocalIsMimic
+		&& Manager.SolvedWord is { Length: > 0 } w && TypedCount( w ) >= w.Length
+		&& _typingSince >= (w.Length - 1) * TypeSeconds + SolvedPause;
 
 	// The row badge: the mimic's easel, the phrase's author (writing-round hand-in, or the turn's writer), or
 	// the guess-place medal (faster = shinier).
@@ -370,7 +487,7 @@
 			: HashCode.Combine(
 				HashCode.Combine( Manager.Phase, TimerText, Manager.MimicId, Manager.WordHint, Manager.RevealedWord ),
 				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing, PhaseCaption ),
-				HashCode.Combine( Manager.Round, Manager.AuthorId, Manager.Settings.Rounds ),
+				HashCode.Combine( Manager.Round, Manager.AuthorId, Manager.Settings.Rounds, WordStrip, LocalSolved ), // the solved answer types out, then flips after a pause — both time-driven
 				// Scores/guess places/hand-ins move without anything above noticing.
 				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedPlace, p.Submitted ) ),
 				Manager.Players.Count,
