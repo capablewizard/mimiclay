@@ -40,8 +40,13 @@
 			<div class="menu-button" @onclick=@Customise>
 				<WobbleText Text="Customise" />
 			</div>
-			@* Library + Options are hidden for now — their pages, routes and the Library()/Options() handlers below
-			   are untouched, so bringing either back is just restoring its button here. *@
+			@* Options opens s&box's own settings overlay (graphics / audio / controls) — the pause menu's button, same call. *@
+			<div class="menu-button" @onclick=@Options>
+				<WobbleText Text="Options" />
+			</div>
+
+			@* Library is hidden for now — its page, route and the Library() handler below are untouched, so bringing
+			   it back is just restoring its button here. *@
 
 			@* Absolutely positioned (see scss) so showing/hiding it never resizes the centred button block. *@
 			@if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) )
@@ -68,7 +73,8 @@
 	void Sessions() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/sessions");
 	void Customise() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/customise");
 	void Library() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/library");
-	void Options() => Sandbox.UI.Navigation.NavigationExtensions.Navigate(this, "/options");
+	// s&box's settings overlay, like the in-game pause menu (PauseMenu.OpenSettings) — not our /options page.
+	void Options() => Game.Overlay.ShowSettingsModal();
 
 	// Re-render while a network action is in flight (label / disabled state) and when an error appears/clears.
 	// ErrorStamp is included so a repeat of the same message still re-renders → re-keys → replays the fade.

@@ -596,28 +596,9 @@
 	// players' badges stay down until the remote signal has been checked in a built game.
 	bool SpeakingOf( Guid connection ) => connection == Connection.Local?.Id && LocalSpeaking;
 
-	// How long the badge holds after the last voice frame. Packets are bursty and voice activation goes quiet
-	// between words, so the raw 0.25s IsSpeaking window would flicker the badge mid-sentence.
-	const float SpeakHold = 0.6f;
-
-	// Read off LastPlayed, NOT IsRecording. The engine's Msg_Voice broadcast runs on the sender too — our own
-	// frames are decoded locally and only muted at the mixer (SoundHandle.Loopback) — so LastPlayed ticks on our
-	// own pawn exactly as it does on a proxy, and only while audio is actually being sent. IsRecording would sit
-	// true the whole time for an open-mic user, whose mic "records" constantly. Our pawn resolved the
-	// PlayerNameplates way: not a proxy, not a bot, and RosterIdOf says it's ours (a released prop on the host
-	// reads !IsProxy but answers as nobody's). In BuildHash so the class flips and the badge springs.
-	bool LocalSpeaking
-	{
-		get
-		{
-			var localId = Connection.Local?.Id;
-			foreach ( var v in Scene.GetAllComponents<PlayerVoice>() )
-				if ( v.IsValid() && !v.IsProxy && !RoundManager.IsBotPawn( v.GameObject )
-					&& RoundManager.RosterIdOf( v.GameObject ) == localId )
-					return v.LastPlayed < SpeakHold;
-			return false;
-		}
-	}
+	// Our own voice, off the shared lookup (PlayerVoice.Speakers: LastPlayed with the badge hold, keyed by roster
+	// id — see there for why not IsRecording). In BuildHash so the class flips and the badge springs.
+	bool LocalSpeaking => Connection.Local is { } me && PlayerVoice.Speakers( Scene ).Contains( me.Id );
 
 	// Who's editing (both pawn types) + every synced icon pose, hashed. In BuildHash so a player entering or
 	// leaving edit mode — or a fresh portrait angle arriving — re-renders the roster: the badge class, the

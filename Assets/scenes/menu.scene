@@ -245,208 +245,6 @@
       "Children": []
     },
     {
-      "__guid": "721b6d71-91ed-4abe-808f-846554e36ab1",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Camera",
-      "Position": "-101.965836,19.2547894,0",
-      "Rotation": "3.75149156E-08,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.MainCamera",
-          "__guid": "49af7bbc-71f3-4eab-afbc-1d1cc1867de4",
-          "__enabled": true,
-          "Flags": 0,
-          "AuthoredBlurSize": 29.050278,
-          "AuthoredFocalDistance": 118.20112,
-          "AuthoredFocusRange": 616.03375,
-          "BlurReferenceHeight": 1080,
-          "DepthOfField": {
-            "_type": "component",
-            "component_id": "73f91203-b8db-4d56-a282-6b086ee3d1e5",
-            "go": "721b6d71-91ed-4abe-808f-846554e36ab1",
-            "component_type": "DepthOfField"
-          },
-          "EnableDepthOfFieldOnStart": true,
-          "FocusLerpSpeed": 30,
-          "FovLerpSpeed": 8,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.CameraComponent",
-          "__guid": "436e4df9-449b-45ab-9939-67eb39ebfa49",
-          "__enabled": true,
-          "Flags": 0,
-          "BackgroundColor": "0.12357,0.21769,0.26047,1",
-          "ClearFlags": "All",
-          "EnablePostProcessing": true,
-          "FieldOfView": 60,
-          "FovAxis": "Horizontal",
-          "IsMainCamera": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Orthographic": false,
-          "OrthographicHeight": 1204,
-          "PostProcessAnchor": null,
-          "Priority": 1,
-          "RenderExcludeTags": "",
-          "RenderTags": "",
-          "RenderTexture": null,
-          "TargetEye": "None",
-          "Viewport": "0,0,1,1",
-          "ZFar": 10000,
-          "ZNear": 10
-        },
-        {
-          "__type": "Sandbox.Bloom",
-          "__guid": "d24bd1df-dd47-4d39-9371-c77aa6c1de40",
-          "__enabled": false,
-          "Flags": 0,
-          "__version": 1,
-          "Mode": "Additive",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Strength": 0.4819277,
-          "Threshold": 1.4297189,
-          "Tint": "0.3814,0.3814,0.3814,1"
-        },
-        {
-          "__type": "Sandbox.Tonemapping",
-          "__guid": "c3a04856-2eba-4f33-9f0b-f765f10b52d1",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 3,
-          "AutoExposureEnabled": false,
-          "ExposureCompensation": 0,
-          "ExposureMethod": "RGB",
-          "MaximumExposure": 2,
-          "MinimumExposure": 1,
-          "Mode": "AgX",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Rate": 1
-        },
-        {
-          "__type": "Sandbox.Sharpen",
-          "__guid": "c466c5f7-e6d9-4f95-b3d4-1341807bc2bd",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Scale": 0.4,
-          "TexelSize": 1
-        },
-        {
-          "__type": "Sandbox.Highlight",
-          "__guid": "c871b247-1c61-4709-81e9-b8ef0426fc1b",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.ChromaticAberration",
-          "__guid": "c5bad938-631b-4d34-a938-5ba25976d1cc",
-          "__enabled": true,
-          "Flags": 0,
-          "Offset": "6,2,4",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Scale": 0.08294931
-        },
-        {
-          "__type": "Sandbox.ColorAdjustments",
-          "__guid": "a2c3c2d5-526d-48b9-af03-e6acb73ffcfa",
-          "__enabled": true,
-          "Flags": 0,
-          "Blend": 1,
-          "Brightness": 1.5,
-          "Contrast": 1,
-          "HueRotate": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Saturation": 1.1
-        },
-        {
-          "__type": "Sandbox.AmbientOcclusion",
-          "__guid": "92b0ebf6-8660-420c-8781-518771f6ef02",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "FalloffRange": 0.3,
-          "Intensity": 0.8,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Radius": 100,
-          "ThinCompensation": 1
-        },
-        {
-          "__type": "Sandbox.DepthOfField",
-          "__guid": "73f91203-b8db-4d56-a282-6b086ee3d1e5",
-          "__enabled": false,
-          "Flags": 0,
-          "BackBlur": true,
-          "BlurSize": 29.050278,
-          "DebugView": false,
-          "FocalDistance": 118.20112,
-          "FocusRange": 616.03375,
-          "FrontBlur": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "df1d6b93-2fbc-4408-ba9f-35da45b5b843",
       "__version": 2,
       "Flags": 0,
@@ -1545,6 +1343,156 @@
         "e6daedc0-a599-48c1-8889-f39cca700d07": "237324cd-1198-4650-b311-2d3a780926bf",
         "0a5ddf49-fb0f-4df5-abbb-049c24cfa144": "525ae35e-38cc-478d-a33e-17292866d01f",
         "5b027c8f-9264-40ce-b1d1-80f090b148ae": "b7d196b2-cde7-4554-a82d-56d3ba98ae25"
+      }
+    },
+    {
+      "__guid": "63e8420c-c79c-4b47-9fac-4ea8008846e4",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "52238254-e93b-4dbd-9a8d-5c6189bc5333",
+        "Path": "prefabs/main_camera.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Name",
+            "Value": "Camera"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Position",
+            "Value": "-101.965836,19.2547894,0"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f768da68-015e-4fc3-8c75-f9a9d0fe56c8"
+            },
+            "Property": "AuthoredBlurSize",
+            "Value": 29.050278
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f768da68-015e-4fc3-8c75-f9a9d0fe56c8"
+            },
+            "Property": "AuthoredFocalDistance",
+            "Value": 118.20112
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f768da68-015e-4fc3-8c75-f9a9d0fe56c8"
+            },
+            "Property": "FovLerpSpeed",
+            "Value": 8
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "693dd09b-b376-414d-a549-5958bb2ab336"
+            },
+            "Property": "BackgroundColor",
+            "Value": "0.12357,0.21769,0.26047,1"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "693dd09b-b376-414d-a549-5958bb2ab336"
+            },
+            "Property": "FieldOfView",
+            "Value": 60
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "693dd09b-b376-414d-a549-5958bb2ab336"
+            },
+            "Property": "ZNear",
+            "Value": 10
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a67bb9f7-07e7-430c-b615-f0ff747d5d9f"
+            },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2629216e-9a81-4c73-8274-0fd708d110ee"
+            },
+            "Property": "FalloffRange",
+            "Value": 0.3
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2629216e-9a81-4c73-8274-0fd708d110ee"
+            },
+            "Property": "Intensity",
+            "Value": 0.8
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2629216e-9a81-4c73-8274-0fd708d110ee"
+            },
+            "Property": "Radius",
+            "Value": 100
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2629216e-9a81-4c73-8274-0fd708d110ee"
+            },
+            "Property": "ThinCompensation",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5bb504da-cf04-44a7-976a-5e7c4197f6cc"
+            },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2c1d1357-a0b1-41aa-89f6-16cfc215bf4c"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "b1422753-36f9-4396-841c-dd770c338dfc": "63e8420c-c79c-4b47-9fac-4ea8008846e4",
+        "f768da68-015e-4fc3-8c75-f9a9d0fe56c8": "81ea5fe5-4535-48ca-a5e0-a4800dbfaf93",
+        "693dd09b-b376-414d-a549-5958bb2ab336": "7dd0d64a-7482-4883-84c2-06251f137011",
+        "a67bb9f7-07e7-430c-b615-f0ff747d5d9f": "811979ab-6478-4cad-9a1a-4ad464c1f217",
+        "bf4f889e-0290-40d7-95aa-8d37f3fdbce5": "daa17536-a392-4db0-8c51-d8c6ea2f5860",
+        "6467dae2-473b-4f40-93f3-c656b7e5a73b": "81594b08-6408-47f8-8bab-1cac311b03fc",
+        "85c8e7e9-12dd-4606-a3cb-94e6804a0951": "bd293ff2-2273-4364-9716-54bb7b6819ab",
+        "ad1ba8a3-22a0-4903-a6b9-d78e4d6c79af": "93ed6726-521c-4368-bc2e-010d100dc884",
+        "827bc2e6-0f11-456f-a165-c97833e39030": "9bca016a-2e79-4451-9ab0-d47e85c529fc",
+        "2629216e-9a81-4c73-8274-0fd708d110ee": "ffa46d80-2225-4d34-94f2-650c977b3f92",
+        "5bb504da-cf04-44a7-976a-5e7c4197f6cc": "c53d46b9-0f7a-4d99-b47f-6c4b6d6ff2e7",
+        "2c1d1357-a0b1-41aa-89f6-16cfc215bf4c": "fc025d88-0590-4138-8cf0-e9fafce84411",
+        "015be4f3-b057-4606-9a8f-53c2cb842e9a": "4af952b3-184b-4ca9-87f6-4fda2c81b8a2"
       }
     }
   ],

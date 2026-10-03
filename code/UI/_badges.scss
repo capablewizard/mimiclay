@@ -6,6 +6,7 @@
 //  .icon-render    an SdfIcon showing its farm texture whole (size it per screen)
 //  .corner-badge   an emoji pinned to an icon's corner: parked at scale(0), sprung in by .on,
 //                  then the glyph jitters forever. Position it per corner in the screen sheet.
+//  .speak-tilt     the 🔊 talking badge's resting tilt (wrapper between badge box and glyph)
 //  .badge-glyph    the emoji itself, ink-outlined (size it per screen)
 //  hud-hand-raise  the corner badges' spring-in keyframes
 //
@@ -61,6 +62,15 @@
 
 		.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
 	}
+}
+
+// --- Speaker tilt ----------------------------------------------------------------
+// The 🔊 "talking" badge's resting tilt, ~12° anti-clockwise. On its own wrapper between the badge box and the
+// glyph because both of those already own `transform` (the box its scale pop, the glyph its jitter) — a third
+// transform on either would be overwritten by the animation, so the tilt gets a layer nobody else touches.
+.speak-tilt
+{
+	transform: rotate( -12deg );
 }
 
 // --- Badge glyph -----------------------------------------------------------------

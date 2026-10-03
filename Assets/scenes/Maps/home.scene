@@ -37258,234 +37258,6 @@
       "Children": []
     },
     {
-      "__guid": "50097881-939f-4954-9f67-55726ba37c12",
-      "__version": 2,
-      "Flags": 2048,
-      "Name": "Camera",
-      "Position": "-991.888,-891.359497,41.1179581",
-      "Rotation": "0.0600111224,0.0434744731,-0.807599187,0.585057378",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.MainCamera",
-          "__guid": "3b23f19d-09ef-4432-a7ff-6baa7a988dbb",
-          "__enabled": true,
-          "Flags": 0,
-          "AuthoredBlurSize": 6.329114,
-          "AuthoredFocalDistance": 704.9367,
-          "AuthoredFocusRange": 616.03375,
-          "BlurReferenceHeight": 1080,
-          "DepthOfField": {
-            "_type": "component",
-            "component_id": "67781fff-7ffe-4a44-b342-4cacb858d9ca",
-            "go": "50097881-939f-4954-9f67-55726ba37c12",
-            "component_type": "DepthOfField"
-          },
-          "EnableDepthOfFieldOnStart": true,
-          "FocusLerpSpeed": 30,
-          "FovLerpSpeed": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.CameraComponent",
-          "__guid": "15b9f214-4488-4265-ae22-aa41c6bb1d53",
-          "__enabled": true,
-          "Flags": 0,
-          "BackgroundColor": "0.40744,0.59419,0.67907,1",
-          "ClearFlags": "All",
-          "EnablePostProcessing": true,
-          "FieldOfView": 84.52017,
-          "FovAxis": "Horizontal",
-          "IsMainCamera": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Orthographic": false,
-          "OrthographicHeight": 1204,
-          "PostProcessAnchor": null,
-          "Priority": 1,
-          "RenderExcludeTags": "",
-          "RenderTags": "",
-          "RenderTexture": null,
-          "TargetEye": "None",
-          "Viewport": "0,0,1,1",
-          "ZFar": 10000,
-          "ZNear": 5
-        },
-        {
-          "__type": "Sandbox.Bloom",
-          "__guid": "40df600a-074e-46de-ae85-5df0cbd6742b",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "Mode": "Additive",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Strength": 1.6037736,
-          "Threshold": 1.0377358,
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.Tonemapping",
-          "__guid": "ef45c1ec-8dde-49aa-8212-7f5dd0adc8f6",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 3,
-          "AutoExposureEnabled": false,
-          "ExposureCompensation": 0,
-          "ExposureMethod": "RGB",
-          "MaximumExposure": 2,
-          "MinimumExposure": 1,
-          "Mode": "AgX",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Rate": 1
-        },
-        {
-          "__type": "Sandbox.Sharpen",
-          "__guid": "4334b2a0-ba7f-4d3c-8997-b4330777e356",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Scale": 0.4,
-          "TexelSize": 1
-        },
-        {
-          "__type": "Sandbox.Highlight",
-          "__guid": "9154afd9-ab29-4dc0-a750-64f2f74d00b7",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.ChromaticAberration",
-          "__guid": "f7003715-0c7a-445b-8390-86a9a4b15d1a",
-          "__enabled": true,
-          "Flags": 0,
-          "Offset": "6,2,4",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Scale": 0.08294931
-        },
-        {
-          "__type": "Sandbox.ColorAdjustments",
-          "__guid": "03630aa3-1186-462a-a261-9f724c2b6b02",
-          "__enabled": true,
-          "Flags": 0,
-          "Blend": 1,
-          "Brightness": 1.5,
-          "Contrast": 1,
-          "HueRotate": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Saturation": 1.1
-        },
-        {
-          "__type": "Sandbox.AmbientOcclusion",
-          "__guid": "39889ad7-6481-4788-9b75-30f51901319f",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "FalloffRange": 0.45,
-          "Intensity": 0.75,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Radius": 21,
-          "ThinCompensation": 0
-        },
-        {
-          "__type": "Sandbox.DepthOfField",
-          "__guid": "67781fff-7ffe-4a44-b342-4cacb858d9ca",
-          "__enabled": true,
-          "Flags": 0,
-          "BackBlur": true,
-          "BlurSize": 3.4858387,
-          "DebugView": false,
-          "FocalDistance": 952.1176,
-          "FocusRange": 1046.6819,
-          "FrontBlur": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.ScreenSpaceReflections",
-          "__guid": "188f3d29-ba86-47d1-8bff-8d23a1775493",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.FilmGrain",
-          "__guid": "db62d342-3556-4ddb-824b-55e8b469446c",
-          "__enabled": false,
-          "Flags": 0,
-          "Intensity": 0.03,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Response": 0.5
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "c7b8de3b-43c7-40bd-94fb-c4ed498a50cf",
       "__version": 2,
       "__Prefab": {
@@ -49153,6 +48925,68 @@
         "3397e9e8-a760-4b63-8e2e-8d700ceb1592": "48b74bdc-1f44-405c-a8fa-9f33e6bf4e87",
         "d3f06404-ee97-4d9d-aa90-7ff6ba407d81": "ecd69845-933f-4364-b4d7-dd12115ceb0a",
         "ed8fe2c1-5084-46ff-9869-cde9620b597c": "36aae739-f785-4e5a-9303-939feb6b86b8"
+      }
+    },
+    {
+      "__guid": "d44743b6-d817-4326-88a8-8e3daad38593",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "52238254-e93b-4dbd-9a8d-5c6189bc5333",
+        "Path": "prefabs/main_camera.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Name",
+            "Value": "Camera"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Position",
+            "Value": "-991.888,-891.359497,41.1179581"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Rotation",
+            "Value": "0.0600111298,0.0434744768,-0.807599247,0.585057378"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Flags",
+            "Value": 2048
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "b1422753-36f9-4396-841c-dd770c338dfc": "d44743b6-d817-4326-88a8-8e3daad38593",
+        "f768da68-015e-4fc3-8c75-f9a9d0fe56c8": "fb8a84d0-0327-4d2f-9ed5-b3314d7616c2",
+        "693dd09b-b376-414d-a549-5958bb2ab336": "dc1147fa-1f04-4c1a-b1c5-a45cc111548a",
+        "a67bb9f7-07e7-430c-b615-f0ff747d5d9f": "fc9dec69-be1f-4e75-b838-21c400164ff1",
+        "bf4f889e-0290-40d7-95aa-8d37f3fdbce5": "7aa792e9-91b5-4a9a-90f5-fd6c409b2b8f",
+        "6467dae2-473b-4f40-93f3-c656b7e5a73b": "d7d03eb3-60b0-41ce-8eff-afbf7c3a8471",
+        "85c8e7e9-12dd-4606-a3cb-94e6804a0951": "dd682f86-2b66-4ffb-af78-aa7f1d3c26f6",
+        "ad1ba8a3-22a0-4903-a6b9-d78e4d6c79af": "69ff95a0-09db-4273-99be-7b31a9de6688",
+        "827bc2e6-0f11-456f-a165-c97833e39030": "c6381b4a-1960-45e5-8c4d-b941e1bb8d51",
+        "2629216e-9a81-4c73-8274-0fd708d110ee": "1614b8d8-ffc4-43e6-94fc-d4606a8253e1",
+        "5bb504da-cf04-44a7-976a-5e7c4197f6cc": "6e052061-1ef0-4228-bdc9-19e4155eadd5",
+        "2c1d1357-a0b1-41aa-89f6-16cfc215bf4c": "14b3cb80-26be-4245-9294-b5543c88dd67",
+        "015be4f3-b057-4606-9a8f-53c2cb842e9a": "c61b32d7-12e1-4ff6-bf31-3c3c8dd5fc85"
       }
     }
   ],

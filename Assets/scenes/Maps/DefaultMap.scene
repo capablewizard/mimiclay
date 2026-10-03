@@ -60,6 +60,7 @@
           "__guid": "d3659344-a90d-48fa-927a-095f70fe041f",
           "__enabled": true,
           "Flags": 0,
+          "ContactShadows": true,
           "Contribution": "Diffuse, Specular, Transmissive",
           "FogMode": "Enabled",
           "FogStrength": 1,
@@ -109,7 +110,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
-          "SkyMaterial": "materials/skybox/skybox_overcast_01.vmat",
+          "SkyMaterial": {
+            "Id": "ee79b336-e58d-423b-ab21-8c99b5dcfdbb",
+            "Path": "materials/skybox/skybox_overcast_01.vmat"
+          },
           "Tint": "1,1,1,1"
         },
         {
@@ -162,7 +166,10 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Sky": "materials/skybox/skybox_overcast_01.vmat",
+          "Sky": {
+            "Id": "ee79b336-e58d-423b-ab21-8c99b5dcfdbb",
+            "Path": "materials/skybox/skybox_overcast_01.vmat"
+          },
           "StartDistance": 87.52665,
           "Tint": "1,1,1,1"
         }
@@ -196,7 +203,10 @@
           "MaterialGroup": null,
           "MaterialOverride": "materials/plasticine_floor.vmat",
           "Materials": null,
-          "Model": "models/dev/plane.vmdl",
+          "Model": {
+            "Id": "00000000-0000-0000-306d-2b8df8010000",
+            "Path": "models/dev/plane.vmdl"
+          },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -237,208 +247,6 @@
           "Static": false,
           "Surface": null,
           "SurfaceVelocity": "0,0,0"
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Camera",
-      "Position": "-200,0,0",
-      "Rotation": "3.75149156E-08,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.MainCamera",
-          "__guid": "42ff365a-a35f-4d34-a38c-b4bc7813ea30",
-          "__enabled": true,
-          "Flags": 0,
-          "AuthoredBlurSize": 6.329114,
-          "AuthoredFocalDistance": 704.9367,
-          "AuthoredFocusRange": 616.03375,
-          "BlurReferenceHeight": 1080,
-          "DepthOfField": {
-            "_type": "component",
-            "component_id": "30da5074-073e-4be5-9ce7-adc264496667",
-            "go": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
-            "component_type": "DepthOfField"
-          },
-          "EnableDepthOfFieldOnStart": true,
-          "FocusLerpSpeed": 30,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.CameraComponent",
-          "__guid": "cf3cbf96-22b6-4be4-a5d0-672a96c17f9f",
-          "__enabled": true,
-          "Flags": 0,
-          "BackgroundColor": "0.40744,0.59419,0.67907,1",
-          "ClearFlags": "All",
-          "EnablePostProcessing": true,
-          "FieldOfView": 60,
-          "FovAxis": "Horizontal",
-          "IsMainCamera": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Orthographic": false,
-          "OrthographicHeight": 1204,
-          "PostProcessAnchor": null,
-          "Priority": 1,
-          "RenderExcludeTags": "",
-          "RenderTags": "",
-          "RenderTexture": null,
-          "TargetEye": "None",
-          "Viewport": "0,0,1,1",
-          "ZFar": 10000,
-          "ZNear": 10
-        },
-        {
-          "__type": "Sandbox.Bloom",
-          "__guid": "d73ef723-c888-41d4-802e-f797c79318be",
-          "__enabled": false,
-          "Flags": 0,
-          "__version": 1,
-          "Filter": "Bilinear",
-          "Gamma": 2.2,
-          "Mode": "Additive",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Strength": 0.4819277,
-          "Threshold": 1.4297189,
-          "Tint": "0.3814,0.3814,0.3814,1"
-        },
-        {
-          "__type": "Sandbox.Tonemapping",
-          "__guid": "9d76f362-7227-40eb-a189-69353c780c46",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 3,
-          "AutoExposureEnabled": false,
-          "ExposureCompensation": 0,
-          "ExposureMethod": "RGB",
-          "MaximumExposure": 2,
-          "MinimumExposure": 1,
-          "Mode": "AgX",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Rate": 1
-        },
-        {
-          "__type": "Sandbox.Sharpen",
-          "__guid": "0bffee5e-19f2-41c4-88f9-faefbcce6bf4",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Scale": 0.4,
-          "TexelSize": 1
-        },
-        {
-          "__type": "Sandbox.Highlight",
-          "__guid": "31b8ac90-0d7f-472e-8285-bd5ab6f1f806",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.ChromaticAberration",
-          "__guid": "9056b9b1-e13b-4446-8b3b-a1bfa36b3922",
-          "__enabled": true,
-          "Flags": 0,
-          "Offset": "6,2,4",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Scale": 0.08294931
-        },
-        {
-          "__type": "Sandbox.ColorAdjustments",
-          "__guid": "98ae7904-8920-49c6-a712-7832342cad6f",
-          "__enabled": true,
-          "Flags": 0,
-          "Blend": 1,
-          "Brightness": 1.5,
-          "Contrast": 1,
-          "HueRotate": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Saturation": 1.1
-        },
-        {
-          "__type": "Sandbox.AmbientOcclusion",
-          "__guid": "e0d6bea7-d835-415a-86cd-0d2a68436e01",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "FalloffRange": 0.3,
-          "Intensity": 0.8,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Radius": 100,
-          "ThinCompensation": 1
-        },
-        {
-          "__type": "Sandbox.DepthOfField",
-          "__guid": "30da5074-073e-4be5-9ce7-adc264496667",
-          "__enabled": true,
-          "Flags": 0,
-          "BackBlur": true,
-          "BlurSize": 6.329114,
-          "FocalDistance": 704.9367,
-          "FocusRange": 616.03375,
-          "FrontBlur": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
         }
       ],
       "Children": []
@@ -533,6 +341,7 @@
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
+          "Timing": "AfterPostProcess",
           "ZIndex": 100
         }
       ],
@@ -602,6 +411,7 @@
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
+          "Timing": "AfterPostProcess",
           "ZIndex": 90
         },
         {
@@ -728,10 +538,65 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "313a0904-f968-4632-9c1c-26611ecb9e27",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "52238254-e93b-4dbd-9a8d-5c6189bc5333",
+        "Path": "prefabs/main_camera.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Name",
+            "Value": "Camera"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Flags",
+            "Value": 2048
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Position",
+            "Value": "-200,0,0"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "b1422753-36f9-4396-841c-dd770c338dfc": "313a0904-f968-4632-9c1c-26611ecb9e27",
+        "f768da68-015e-4fc3-8c75-f9a9d0fe56c8": "8f51107e-0d1e-458d-95de-1cbbfd1351f0",
+        "693dd09b-b376-414d-a549-5958bb2ab336": "370b286d-8b27-43d4-a6f6-1b0ba02d67d4",
+        "a67bb9f7-07e7-430c-b615-f0ff747d5d9f": "ea332eee-0646-4ae8-90f3-123b19f4f414",
+        "bf4f889e-0290-40d7-95aa-8d37f3fdbce5": "9ea6a491-16ad-4406-82cd-80a37600f555",
+        "6467dae2-473b-4f40-93f3-c656b7e5a73b": "8af9e080-a461-40cd-806b-1b750ccf606c",
+        "85c8e7e9-12dd-4606-a3cb-94e6804a0951": "196fbbf0-b563-430d-becf-dc524a8fca6f",
+        "ad1ba8a3-22a0-4903-a6b9-d78e4d6c79af": "500a0fcf-2fd8-49bd-90ed-9f09fab36b9d",
+        "827bc2e6-0f11-456f-a165-c97833e39030": "44d5f20d-e07c-46c1-9988-1ecf36f5e36b",
+        "2629216e-9a81-4c73-8274-0fd708d110ee": "73d86890-c5b2-4452-bc27-dffd0c21dc31",
+        "5bb504da-cf04-44a7-976a-5e7c4197f6cc": "f0bda9b6-c0e7-4f6b-9c91-486c11e37ea2",
+        "2c1d1357-a0b1-41aa-89f6-16cfc215bf4c": "62805558-760f-49d1-9620-c5a9460d41a6",
+        "015be4f3-b057-4606-9a8f-53c2cb842e9a": "864f7910-897a-45e6-a35c-7c12b3767ebd"
+      }
     }
   ],
   "SceneProperties": {
     "NetworkInterpolation": true,
+    "PhysicsMode": "Physics3D",
     "TimeScale": 1,
     "WantsSystemScene": true,
     "Metadata": {
@@ -754,7 +619,8 @@
     "GameObjectSystems": {
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
-          "$blob": "b82d7b19-5707-45dc-b6f2-43ecce93d191"
+          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
+          "$refs": []
         }
       },
       "Sandbox.SelectionSetsSystem": {

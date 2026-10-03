@@ -291,12 +291,7 @@ $clock-col-width: 150px;
 				.badge-glyph { animation: action-jitter $wobble-duration linear 0.34s infinite; }
 			}
 
-			// Resting tilt, ~12° anti-clockwise. On its own wrapper between the box and the glyph because both
-			// of those already own `transform` (the box its scale pop, the glyph its jitter) — a third transform
-			// on either would be overwritten by the animation, so the tilt gets a layer nobody else touches.
-			.speak-tilt {
-				transform: rotate( -12deg );
-			}
+			// The resting tilt (.speak-tilt) is the shared roster kit's (_badges.scss) — the charades board wears it too.
 		}
 
 		// .badge-glyph (the ink-outlined emoji) comes from the shared roster kit (_badges.scss); the in-round

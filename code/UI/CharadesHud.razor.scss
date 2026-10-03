@@ -212,6 +212,13 @@
 			.corner-badge { right: -4px; bottom: -4px; }
 			.badge-glyph { font-size: 28px; }
 
+			// 🔊 talking on voice chat: the one free corner, TOP-right — the round HUD's speak-badge spot (same
+			// offsets, same -12° .speak-tilt from the roster kit). Turn badge bottom-right, "+X" top-left.
+			.corner-badge.speak {
+				bottom: auto;
+				top: -4px;
+			}
+
 			// The "+X" for a correct guess: the head's TOP-LEFT corner, where the lobby roster's nominate hand sits
 			// (RoundHud .nominated-badge, same -4px offsets), bright green ringed in a deeper green
 			// (.badge-glyph's ring, recoloured). Re-anchored from the bottom-right corner-badge spot above.

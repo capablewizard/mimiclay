@@ -148,6 +148,10 @@
 									<div class="corner-badge @(medal != "" ? "on" : "")">
 										<div class="badge-glyph">@medal</div>
 									</div>
+									@* Talking on voice chat — top-right, the round HUD's 🔊 spot. *@
+									<div class="corner-badge speak @(_speakers.Contains( p.Connection ) ? "on" : "")">
+										<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
+									</div>
 								</div>
 							</div>
 							<div class="rank">@(row.Rank).</div>
@@ -205,6 +209,11 @@
 								   last badge it showed so the shrink-out doesn't blank first. *@
 								<div class="corner-badge @(badge != "" ? "on" : "")">
 									<div class="badge-glyph">@BadgeGlyph( p.Connection, badge )</div>
+								</div>
+								@* Talking on voice chat — the one free corner, top-right (the round HUD's 🔊 spot; turn badge
+								   bottom-right, "+X" top-left). Inside .icon-body so it rides the celebration jitter with the head. *@
+								<div class="corner-badge speak @(_speakers.Contains( p.Connection ) ? "on" : "")">
+									<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
 								</div>
 							</div>
 							@* +points, on the head's top-left corner (the roster's nominate-hand spot) when they score — the
@@ -599,10 +608,21 @@
 	// The podium's corner badge by finishing place — the guess medals, plus bronze for third.
 	static string MedalFor( int rank ) => rank switch { 1 => "🥇", 2 => "🥈", 3 => "🥉", _ => "" };
 
+	// Who's talking on voice chat (roster ids, with the badge hold) — drives the 🔊 corner badges. Refreshed in
+	// BuildHash, which runs every frame, so the render reads the same set the hash saw.
+	HashSet<Guid> _speakers = new();
+
+	int SpeakersSignal()
+	{
+		_speakers = PlayerVoice.Speakers( Scene );
+		return _speakers.Aggregate( 31, ( h, id ) => h ^ id.GetHashCode() );
+	}
+
 	protected override int BuildHash()
 		=> Manager is null
 			? 0
 			: HashCode.Combine(
+				SpeakersSignal(),
 				HashCode.Combine( Manager.Phase, TimerText, Manager.MimicId, Manager.WordHint, Manager.RevealedWord ),
 				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing, PhaseCaption ),
 				HashCode.Combine( Manager.Round, Manager.AuthorId, Manager.Settings.Rounds, WordStrip, LocalSolved ), // the solved answer types out, then flips after a pause — both time-driven

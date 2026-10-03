@@ -1,3 +1,5 @@
+using System;
+
 namespace Mimiclay;
 
 /// <summary>
@@ -26,6 +28,25 @@ public sealed class PlayerVoice : Voice
 
 	/// <summary>True while this player's voice is actually coming out of the speakers — drives the nameplate icon.</summary>
 	public bool IsSpeaking => LastPlayed < SpeakingWindow;
+
+	/// <summary>How long a roster 🔊 badge holds after the last voice frame. Packets are bursty and voice
+	/// activation goes quiet between words, so the raw <see cref="SpeakingWindow"/> would flicker a badge
+	/// mid-sentence.</summary>
+	public const float BadgeHold = 0.6f;
+
+	/// <summary>Roster ids of everyone whose voice played within <paramref name="hold"/> seconds, on this machine.
+	/// LastPlayed, NOT IsRecording: the engine's Msg_Voice broadcast also runs on the sender (decoded locally, muted
+	/// only at the mixer), so it ticks for our own pawn exactly as for a proxy — and only while audio is actually
+	/// sent, where IsRecording sits true the whole time for an open-mic user. Keyed by RosterIdOf, the bot-safe
+	/// resolver (a released prop on the host reads !IsProxy but answers as nobody's).</summary>
+	public static HashSet<Guid> Speakers( Scene scene, float hold = BadgeHold )
+	{
+		var set = new HashSet<Guid>();
+		foreach ( var v in scene.GetAllComponents<PlayerVoice>() )
+			if ( v.IsValid() && v.LastPlayed < hold && RoundManager.RosterIdOf( v.GameObject ) is { } id )
+				set.Add( id );
+		return set;
+	}
 
 	/// <summary>Per-machine mute for a body nobody is driving. The engine gates recording on !IsProxy alone —
 	/// and an UNOWNED pawn reads !IsProxy on the HOST, so every released prop would otherwise open the host's

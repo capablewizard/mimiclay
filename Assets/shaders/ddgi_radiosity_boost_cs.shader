@@ -4,7 +4,7 @@
 // changes), so extra bounces can't come from re-rendering. Instead this diffuses light directly between probes:
 // each irradiance texel gathers from its 6 axis-neighbour probes, weighted by how much the texel faces them and
 // by a Chebyshev visibility test against the probe's own baked distance moments (so light doesn't glow through
-// walls). One iteration ~= one fake bounce: out = base + gain * gather(prev). Runs in milliseconds on the tiny
+// walls). One iteration ~= one fake bounce: out = base * baseScale + gain * gather(prev). Runs in milliseconds on the tiny
 // atlas, so ProbeRadiosityBoost re-runs it live as sliders move.
 //
 // Atlas layout facts (must match ddgi_integrate_cs): irradiance = 8x8 borderless octahedral tiles, LINEAR values;
@@ -28,14 +28,23 @@ CS
 
 	float3 g_vProbeCounts  < Attribute( "BoostCounts" ); >;                // probes per axis
 	float3 g_vProbeSpacing < Attribute( "BoostSpacing" ); >;               // world units between probes per axis
-	float  g_flGain        < Attribute( "BoostGain" ); Default( 0.5 ); >;
+	float  g_flBaseScale   < Attribute( "BoostBaseScale" ); Default( 1.0 ); >; // Level <= 1: blend bake -> fallback
+
+	// What the scene's ambient would be with NO DDGI volume (AmbientLight::FromEnvMapProbe): the envmap cubemap at
+	// its blurriest mip × the probe's tint. Level < 1 blends the bake toward this instead of toward black.
+	TextureCube<float4> g_tFallbackEnv < Attribute( "BoostFallbackEnv" ); >;
+	SamplerState g_sFallbackEnv < Filter( TRILINEAR ); AddressU( WRAP ); AddressV( WRAP ); AddressW( WRAP ); >;
+	float  g_flFallbackMip  < Attribute( "BoostFallbackMip" ); Default( 0.0 ); >;
+	float3 g_vFallbackTint  < Attribute( "BoostFallbackTint" ); Default3( 1.0, 1.0, 1.0 ); >;
+	int    g_nUseFallback   < Attribute( "BoostUseFallback" ); Default( 0 ); >;
+	float  g_flGain        < Attribute( "BoostGain" ); Default( 0.5 ); >;      // Level - 1
 	float  g_flWall        < Attribute( "BoostWall" ); Default( 1.0 ); >;  // 0 = light ignores geometry
 	// 1 = physically coloured bounce; 0 = bounce carries the same energy but white. Kills the compounding
 	// tint takeover (yellow floor -> everything yellow after a few iterations) without losing the fill.
 	float  g_flBounceSat   < Attribute( "BoostBounceSat" ); Default( 1.0 ); >;
-	// Ambient floor, applied on the final iteration only: texels darker than this level get lifted toward it,
-	// brighter texels are untouched. The "add flat white ambient to the whole volume" dial.
-	float3 g_vAmbientFloor < Attribute( "BoostAmbientFloor" ); Default3( 0.0, 0.0, 0.0 ); >;
+	// Hue-only bounce tint (unit luminance). Applied every iteration, so it compounds like a coloured surface would.
+	// Ambient floor + contrast live in ddgi_grade_cs, run once after the last iteration.
+	float3 g_vBounceTint   < Attribute( "BoostTint" ); Default3( 1.0, 1.0, 1.0 ); >;
 	int    g_nUseRelocation < Attribute( "BoostUseRelocation" ); Default( 1 ); >;
 	int    g_nUseDistance   < Attribute( "BoostUseDistance" ); Default( 1 ); >;
 
@@ -93,6 +102,9 @@ CS
 
 		float3 dir = OctahedralDecode( ( float2( texel ) + 0.5f ) / float( IRR_RES ) );
 		float4 basePx = g_tBase.Load( int4( atlasCoord, 0 ) );
+		// Sanitize: the bake can hold Inf texels (BC6H decode / integrate overflow). Harmless when sampled raw, but
+		// lerp( fallback, base, 0 ) = fallback + 0 * Inf = NaN — black splotches smeared by TAA at Level 0.
+		basePx.rgb = clamp( basePx.rgb, 0.0f, 65504.0f );
 
 		float3 gathered = 0.0f;
 		float weightSum = 0.0f;
@@ -139,15 +151,16 @@ CS
 		float bounceLum = dot( bounce, float3( 0.2126f, 0.7152f, 0.0722f ) );
 		bounce = lerp( bounceLum.xxx, bounce, g_flBounceSat );
 
-		float3 result = basePx.rgb + g_flGain * bounce;
+		bounce *= g_vBounceTint;
 
-		// Ambient floor: lift toward the target level, scaled by how far below it this texel sits.
-		float floorLum = dot( g_vAmbientFloor, float3( 0.2126f, 0.7152f, 0.0722f ) );
-		if ( floorLum > 0.0f )
-		{
-			float resultLum = dot( result, float3( 0.2126f, 0.7152f, 0.0722f ) );
-			result += g_vAmbientFloor * saturate( 1.0f - resultLum / floorLum );
-		}
+		// The engine looks a surface up at texel = -normal (DDGI::Evaluate), so texel dir d serves surfaces facing -d:
+		// sample the envmap at -d, as FromEnvMapProbe would for that normal. Verified against the real no-DDGI render
+		// (CharadesZoo_art2, sky fallback): -d matches, +d visibly doesn't.
+		float3 fallback = 0.0f;
+		if ( g_nUseFallback != 0 )
+			fallback = g_tFallbackEnv.SampleLevel( g_sFallbackEnv, -dir, g_flFallbackMip ).rgb * g_vFallbackTint;
+
+		float3 result = lerp( fallback, basePx.rgb, g_flBaseScale ) + g_flGain * bounce;
 
 		// Seam blend, same scheme as the integrator: borderless octahedral tiles are discontinuous at the
 		// edges, so edge texels average 50/50 with their mirrored partner on the same edge.

@@ -2,6 +2,52 @@
   "__guid": "325a4042-0696-43dd-a79d-dcc314299ba3",
   "GameObjects": [
     {
+      "__guid": "0f3611cd-f39b-49df-8534-d23861254413",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "52238254-e93b-4dbd-9a8d-5c6189bc5333",
+        "Path": "prefabs/main_camera.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Name",
+            "Value": "Camera"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
+            },
+            "Property": "Flags",
+            "Value": 2048
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "b1422753-36f9-4396-841c-dd770c338dfc": "0f3611cd-f39b-49df-8534-d23861254413",
+        "f768da68-015e-4fc3-8c75-f9a9d0fe56c8": "a6bf3ff4-cd39-4047-bc00-ff73447acba6",
+        "693dd09b-b376-414d-a549-5958bb2ab336": "ba1d7f7c-bb2b-43b2-8da9-ea06126f13e5",
+        "a67bb9f7-07e7-430c-b615-f0ff747d5d9f": "51094bd1-61d6-4764-b4e3-8e1918ec3811",
+        "bf4f889e-0290-40d7-95aa-8d37f3fdbce5": "30194da0-fff2-4c43-b9c2-f54f6d951725",
+        "6467dae2-473b-4f40-93f3-c656b7e5a73b": "3bc17787-6d89-4bcb-bd0f-f1aab8aff0d7",
+        "85c8e7e9-12dd-4606-a3cb-94e6804a0951": "e45ba8ad-719e-4e06-b3ff-7851b691a73d",
+        "ad1ba8a3-22a0-4903-a6b9-d78e4d6c79af": "391cd329-4f7d-40a1-966e-ed2d21a8a30f",
+        "827bc2e6-0f11-456f-a165-c97833e39030": "0feb4d09-a518-46c8-90df-8270b0475cb9",
+        "2629216e-9a81-4c73-8274-0fd708d110ee": "3e2c1c86-3954-473e-b782-b88ea2df1c0c",
+        "5bb504da-cf04-44a7-976a-5e7c4197f6cc": "f73f0486-8107-43cd-b321-b28cf35d6bf0",
+        "2c1d1357-a0b1-41aa-89f6-16cfc215bf4c": "9c55dea5-631b-4375-a183-d63ff8803946",
+        "015be4f3-b057-4606-9a8f-53c2cb842e9a": "bf2b2c8b-eb07-43e3-b8fd-98bb85f29d7f"
+      }
+    },
+    {
       "__guid": "7999ac44-2a14-47b4-8ad7-57e69799eaab",
       "__version": 2,
       "Flags": 0,
