@@ -644,7 +644,7 @@
 
 	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during an
 	   alt-nav drag or a hold param scrub). *@
-	@if ( (AltNav.Dragging || (Session?.IsScrubbing ?? false)) && Session is not null && Session.IsEditing )
+	@if ( ((AltNav.Dragging || (Session?.IsScrubbing ?? false)) && Session is not null && Session.IsEditing) || _captureHandover )
 	{
 		<div class="alt-cursor" style=@AltCursorStyle()></div>
 	}
@@ -1035,6 +1035,10 @@
 
 	static string Px( float v ) => v.ToString( "0.#", CultureInfo.InvariantCulture ) + "px";
 
+	// Capture held past its session for a still-held button (see OnUpdate), and where the dot last sat.
+	bool _captureHandover;
+	Vector2 _dotAnchor;
+
 	// Inline position for the drawn alt-drag dot: a 64px cursor image (its hotspot is the centre) placed at the
 	// frozen anchor. Everything is converted from screen px to panel px (the same scale the palette uses).
 	string AltCursorStyle()
@@ -1044,10 +1048,13 @@
 		// the cursor is locked to the ghost, so a screen-frozen dot reads as wrong. Without a stamp (edit
 		// mode), each frozen-cursor gesture pins the dot at its own start point as before.
 		Vector2 a;
-		if ( Session is { } s && s.TryGetStampScreenPos( out var stampPx ) )
+		if ( _captureHandover )
+			a = _dotAnchor; // the session's gone: hold the dot where the gesture left it until the release
+		else if ( Session is { } s && s.TryGetStampScreenPos( out var stampPx ) )
 			a = stampPx;
 		else
 			a = AltNav.Dragging ? AltNav.Anchor : BrushScrub.Anchor;
+		_dotAnchor = a;
 		float size = 64f * scale;
 		float x = a.x * scale - size * 0.5f;
 		float y = a.y * scale - size * 0.5f;
@@ -1162,6 +1169,18 @@
 		// "mouse-down" (which would start a phantom layer drag the moment you hover a row after orbiting).
 		bool wantCapture = (AltNav.Dragging || (Session?.IsScrubbing ?? false)) && (Session?.IsEditing ?? false);
 		bool hasCapture = Panel?.HasMouseCapture ?? false;
+
+		// Never drop a running capture while a mouse button is still physically held. Leaving relative mode
+		// mid-press loses that button's release (it reads Down until the NEXT click) — hit when the session
+		// vanishes under an orbit drag (charades: the hunter is swapped for the mimic's prop mid-orbit, so the
+		// release then kept the new pawn orbiting). Holding on until the release lands matches the normal
+		// order anyway: a plain orbit's capture also ends the frame its button comes up.
+		// The drawn dot holds on through that handover too (at its last spot — AltNav's own anchor re-arms
+		// under the swap), so the cursor never just vanishes mid-gesture.
+		_captureHandover = hasCapture && !wantCapture
+			&& (Input.Down( "Attack1" ) || Input.Down( "Attack2" ) || Input.Down( "CameraPan" ));
+		if ( _captureHandover )
+			wantCapture = true;
 		if ( wantCapture != hasCapture )
 		{
 			Panel?.SetMouseCapture( wantCapture );
@@ -1789,6 +1808,7 @@
 		hc.Add( _dragOffsetY );
 		hc.Add( _stride );
 		hc.Add( AltNav.Dragging );
+		hc.Add( _captureHandover );
 		hc.Add( AltNav.Anchor );
 		hc.Add( AltNav.Held );
 		hc.Add( PauseMenu.IsOpen ); // re-render so the HUD goes inert (alt-nav class) while paused

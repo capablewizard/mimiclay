@@ -693,6 +693,12 @@ PS
 	// light side -> the real path light travels through the body. Directional, so it captures back-lit
 	// thinness the normal tap misses. TRANS_MARCH_STEPS fetches: cheap on D_FIELD_TEX, a brush-loop
 	// per step on the analytic path (hence: prefer the cached field when using this).
+	// Each step counts SOFT coverage: the field value at the step centre says how much of the step lies
+	// inside (|d| < stepLen/2 means the step straddles the surface). Same sample positions as the old
+	// binary inside/outside test, so it inherits that test's stability on grazing rays through the
+	// boil-displaced surface (a first-exit sphere trace speckled there) — but thickness is now
+	// continuous instead of quantised to stepLen, which drew absorption contours across smooth bodies
+	// (7 visible bands at the default MaxDist 16 / 6 steps).
 	#define TRANS_MARCH_STEPS 6
 	float SdfThicknessMarch( float3 p, float3 L )
 	{
@@ -702,8 +708,8 @@ PS
 		[loop]
 		for ( int s = 0; s < TRANS_MARCH_STEPS; s++ )
 		{
-			if ( SdfDistWs( p + L * t ) < 0.0 )
-				inside += stepLen;
+			float d = SdfDistWs( p + L * t );
+			inside += stepLen * saturate( 0.5 - d / stepLen );
 			t += stepLen;
 		}
 		return inside;
@@ -714,39 +720,54 @@ PS
 	// (inches) -> exponential absorption. Added as emission so it sits on top of the standard direct
 	// lighting that ShadingModelStandard::Shade still computes for the front face.
 	//
-	// The directional thickness march is GATED: it's the only real per-light cost, and it only runs
-	// when the light both reaches this pixel (lightMask) AND is behind the surface relative to the
-	// camera (backlit > 0). Most lights at most pixels fail that test and bail for the price of a dot
-	// product. `ambient` is the always-on view-independent fill — pass 0 for fill lights so it doesn't
-	// accumulate per light and wash the prop out.
-	void ApplyTransLight( inout Material m, float3 transColor, float3 p, float3 L, float3 lightColor, float lightMask, float tapThick, float ambient, float3 viewDir )
+	// Two terms, two thicknesses, two masks:
+	//  * back-scatter: backlit lobe x absorption over the LIGHT-PATH thickness (the directional march)
+	//    x lightMask. The march alone — it used to be max()'d with the inward tap, but at a back-lit
+	//    silhouette the tap measures the body's full width exactly where the light path is a thin
+	//    tangent, so the max always picked the fat value and killed the rim glow (and with Probe >
+	//    MaxDist the march could never win at all: dead code). lightMask must NOT carry a shadow sampled
+	//    at this back face — the body always self-shadows it (see ApplyTransmission).
+	//  * ambient fill: `ambient` x absorption over the INWARD tap (how fat the body is here, direction-
+	//    agnostic) x ambientMask. This is the view-independent fill; pass ambient = 0 for lights that
+	//    shouldn't stack it. ambientMask may carry a shadow: the fill is what would otherwise leak a
+	//    sun into a roofed interior.
+	// The directional march is GATED: it's the only real per-light cost, and it only runs when the
+	// light both reaches this pixel (lightMask) AND is behind the surface relative to the camera
+	// (backlit > 0). Most lights at most pixels fail that test and bail for the price of a dot product.
+	// The wrap factor saturate( 1 - N.L ) fades the back-scatter out on faces the light hits directly:
+	// there the light path through the body to this point is ~0, so without it a side-lit face gets a
+	// free full-strength lobe on top of its real direct lighting. Back faces and silhouettes (N.L <= 0)
+	// are untouched.
+	// geoN is the FIELD normal (SdfNormal), not m.Normal: m.Normal carries the triplanar normal map,
+	// and transmission is a volume effect that shouldn't see surface micro-detail — through the lobe
+	// bend (Distortion), the wrap and the inward tap it printed the fingerprint texture into the glow.
+	void ApplyTransLight( inout Material m, float3 transColor, float3 p, float3 geoN, float3 L, float3 lightColor, float lightMask, float ambientMask, float tapThick, float ambient, float3 viewDir )
 	{
-		if ( lightMask <= 0.001 )
-			return; // attenuated to nothing / fully shadowed
-
-		float3 scatterDir = normalize( L + m.Normal * g_flTransDistortion );
+		float invFalloff = 1.0 / max( g_flTransFalloff, 1e-3 );
+		float3 scatterDir = normalize( L + geoN * g_flTransDistortion );
 		float backlit = pow( saturate( dot( viewDir, -scatterDir ) ), g_flTransPower );
 
-		// Only pay for the march when there's a back-scatter lobe to shape. Off the lobe we still emit
-		// the cheap ambient fill from the inward tap, so flat/edge-on areas stay consistent.
-		float thick = tapThick;
-		if ( backlit > 0.002 )
-			thick = max( tapThick, SdfThicknessMarch( p, L ) );
+		float backScatter = 0.0;
+		if ( lightMask > 0.001 && backlit > 0.002 )
+		{
+			float wrap = saturate( 1.0 - dot( geoN, L ) );
+			backScatter = backlit * wrap * g_flTransScale * exp( -SdfThicknessMarch( p, L ) * invFalloff ) * lightMask;
+		}
 
-		float atten = exp( -thick / max( g_flTransFalloff, 1e-3 ) ); // thin -> ~1, thick -> ~0
-		m.Emission += transColor * lightColor * ( backlit * g_flTransScale + ambient ) * atten * lightMask;
+		float fill = ambient * ambientMask * exp( -tapThick * invFalloff ); // thin -> ~1, thick -> ~0
+		m.Emission += transColor * lightColor * ( backScatter + fill );
 	}
 
 	// p is the raw world hit (the frame SdfDistWs marches in); m.WorldPosition / m.ScreenPosition are
 	// what the engine's shadow + light queries expect (camera-relative + the high-precision offset).
-	void ApplyTransmission( inout Material m, float3 p, float3 viewDir )
+	void ApplyTransmission( inout Material m, float3 p, float3 geoN, float3 viewDir )
 	{
 		// Through-colour from our own diffuse (free — albedo is already shaded at this point): deepen
 		// the albedo so it reads as denser pigment, blend it against the flat tint, bias by the tint.
 		float3 deepened = pow( max( m.Albedo, 1e-4 ), g_flTransDeepen );
 		float3 transColor = g_vTransTint * lerp( float3( 1, 1, 1 ), deepened, g_flTransFromAlbedo );
 
-		float tapThick = SdfThicknessTap( p, m.Normal );
+		float tapThick = SdfThicknessTap( p, geoN );
 
 		// Key light (sun). Owns the ambient fill so it's added once, not once per light.
 		if ( g_DirectionalLightEnabled )
@@ -765,24 +786,44 @@ PS
 				if ( cascade >= 0 )
 					vis = DirectionalLightShadow::SampleCascade( cascade, m.WorldPosition, m.ScreenPosition.xy );
 			}
-			// Let some sun scatter through even when the front face is shadowed (back-lit leaves/skin
-			// still glow), like foliage.shader does for its sun term.
-			ApplyTransLight( m, transColor, p, L, g_DirectionalLightColor.rgb, lerp( 0.2, 1.0, vis ), tapThick, g_flTransAmbient, viewDir );
+			// That visibility masks the AMBIENT FILL ONLY (floored so shadowed props keep a little fill,
+			// like foliage.shader's sun term). It must not touch the back-scatter: it's sampled at this
+			// face, and a back-lit face is always inside the body's own sun shadow — the same self-shadow
+			// bug fixed for cluster lights below. With it on the back-scatter the sun's transmission sat
+			// at the 0.2 floor everywhere it should have been full, with 0.2<->1.0 bands wherever the
+			// cascade depth test was borderline near the terminator. Kept on the fill because the fill is
+			// what would otherwise light a roofed interior's props with a sun they can't see.
+			ApplyTransLight( m, transColor, p, geoN, L, g_DirectionalLightColor.rgb, 1.0, lerp( 0.2, 1.0, vis ), tapThick, g_flTransAmbient, viewDir );
 		}
 
-		// Cluster (point/spot) lights affecting this screen tile — each gets its own gated directional
-		// march via ApplyTransLight. The count is bounded by the cluster (a handful of lights per tile,
-		// not the whole scene), and the march only fires for the ones genuinely back-lighting this
-		// pixel, so off-lobe lights cost ~nothing. No ambient (it would accumulate per light); the sun
-		// is handled above, so skip any directional light here to avoid double-counting it.
+		// Cluster (point/spot) lights affecting this screen tile — the same gated march as the sun via
+		// ApplyTransLight, with ONE difference: the light mask is cone/range attenuation only, never
+		// light.Visibility. That visibility is the shadow map sampled at this BACK face, which the body
+		// always shadows itself — it zeroed transmission exactly where it should show, plus hard bands
+		// where the coarse map's depth test was borderline. The shadow map can't help anywhere near the
+		// body either (measured 2026-10-03 with a debug paint: at a sun-like spot distance its texels are
+		// ~10in and the body's own stored depth was off by 60in+ in blocky patches; PCF, point-sample and
+		// occluder-distance variants at the back face and at the light's entry point all gave stripes,
+		// speckle or a black body). A first-exit sphere trace for thickness was tried too and speckles on
+		// grazing rays through the boil-displaced surface — the accumulating 6-step march is stable there.
+		// KNOWN LIMITATION: a wall between a spot and a back-lit prop does not block the prop's glow.
+		//
+		// Ambient fill: the sun owns it when present. With no sun (spot-lit interiors, the common case)
+		// the fill moves to the cluster lights under a shared budget, so overlapping spots can't stack it
+		// past g_flTransAmbient. Any directional light is skipped (the sun is handled above).
+		// Explicit receiver normal: the overload without one derives it from screen-space derivatives,
+		// which the engine documents as invalid inside a per-light loop (non-uniform control flow).
+		float ambientBudget = g_DirectionalLightEnabled ? 0.0 : g_flTransAmbient;
 		uint lightCount = Light::Count( m.ScreenPosition );
 		[loop]
 		for ( uint li = 0; li < lightCount; li++ )
 		{
-			Light light = Light::From( m.WorldPosition, m.ScreenPosition, li );
+			Light light = Light::From( m.WorldPosition, m.ScreenPosition, li, 0.0f, m.Normal );
 			if ( light.LightData.Type == LightType::LightTypeDirectional )
 				continue;
-			ApplyTransLight( m, transColor, p, light.Direction, light.Color, light.Attenuation * light.Visibility, tapThick, 0.0, viewDir );
+			float ambient = ambientBudget;
+			ambientBudget -= ambient * saturate( light.Attenuation );
+			ApplyTransLight( m, transColor, p, geoN, light.Direction, light.Color, light.Attenuation, light.Attenuation, tapThick, ambient, viewDir );
 		}
 	}
 #endif
@@ -1248,7 +1289,7 @@ PS
 	#if ( D_TRANSMISSION && S_MODE_DEPTH == 0 )
 		// Back-scatter using SDF-derived thickness. Runs once here, after the hit — the march above
 		// is untouched. viewDir points from the surface toward the camera (toward -scatterDir = glow).
-		ApplyTransmission( m, p, normalize( g_vCameraPositionWs - p ) );
+		ApplyTransmission( m, p, baseN, normalize( g_vCameraPositionWs - p ) );
 	#endif
 
 		o.vColor = ShadingModelStandard::Shade( i, m );

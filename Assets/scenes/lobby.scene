@@ -3139,6 +3139,14 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "a67bb9f7-07e7-430c-b615-f0ff747d5d9f"
+            },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "2629216e-9a81-4c73-8274-0fd708d110ee"
             },
             "Property": "FalloffRange",
@@ -3167,14 +3175,6 @@
             },
             "Property": "ThinCompensation",
             "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a67bb9f7-07e7-430c-b615-f0ff747d5d9f"
-            },
-            "Property": "__enabled",
-            "Value": false
           },
           {
             "Target": {
@@ -3209,6 +3209,39 @@
         "5bb504da-cf04-44a7-976a-5e7c4197f6cc": "1d21477e-082c-4426-9336-cdb4bc137dfb",
         "2c1d1357-a0b1-41aa-89f6-16cfc215bf4c": "72a6fa91-1945-4172-8c46-d6368cecbf87",
         "015be4f3-b057-4606-9a8f-53c2cb842e9a": "9f2cd2de-520a-4ada-b572-954eafe0709c"
+      }
+    },
+    {
+      "__guid": "83f389ac-aa7f-4ef5-b865-f140ec73ebc3",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "98aa64a8-4c94-400b-bcee-cd75ea429f29",
+        "Path": "prefabs/props/kitchen/egg_cup.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "e8a025a6-dbef-43c8-92ac-4dc460b37686"
+            },
+            "Property": "Position",
+            "Value": "-74.7709961,7.76642609,28.4749985"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "e8a025a6-dbef-43c8-92ac-4dc460b37686": "83f389ac-aa7f-4ef5-b865-f140ec73ebc3",
+        "a90165d2-d29e-4d28-8411-a67495f75194": "aef082dd-6770-4bef-aec6-dd5203fca954",
+        "e7601da9-8ae1-4549-855f-b2b5034d6707": "3a7e9769-1d33-4c8c-96de-4348a6a5d6bd",
+        "208e5f1e-dc36-4d2a-adda-aaab62430af8": "fa146ca6-994d-44c6-b5f4-d3211c8b0f12",
+        "782a0ba5-e8ce-470c-901b-2c71cb7d98ee": "e4d591e0-3aa9-4209-a011-2b4091d89378",
+        "5c9cd17c-4d2c-4f4c-a13a-f6615a536c47": "eafb7919-f386-47ee-bf49-095ce896afaf",
+        "b7045aae-ba66-4d6d-8111-c44071b50cf7": "113b0e6e-d7e8-4495-9583-df1cc5ce62a4",
+        "d1101a7f-79e9-4fc4-ac5c-a0c583a0123f": "3fd66d14-1255-4815-b355-314839644b48"
       }
     }
   ],

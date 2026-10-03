@@ -171,6 +171,21 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 	public string MimicName => Players.TryGetValue( MimicId, out var p ) ? p.Name : "";
 
+	/// <summary>The mimic's prop pawn on this machine while they're on stage, else null. Guns trace straight
+	/// through it (HunterController.ShotTrace) — the sculptor's work is not a target, and the stage fence no
+	/// longer stops shots on the way in.</summary>
+	public GameObject ShotProofPawn
+	{
+		get
+		{
+			if ( MimicId == Guid.Empty )
+				return null;
+
+			var pawn = FindPawnOf( MimicId );
+			return pawn.IsValid() && pawn.Components.Get<HiderController>().IsValid() ? pawn : null;
+		}
+	}
+
 	/// <summary>Everyone, highest score first (stable within ties by seat) — the HUD scoreboard order.</summary>
 	public List<CharadesPlayer> Scoreboard => Players.Values
 		.OrderByDescending( p => p.Score ).ThenBy( p => p.Seat ).ToList();

@@ -2539,11 +2539,8 @@ public sealed class HunterController : Component
 		// Our own hierarchy ignored — in third person the pawn is directly in front of the lens and would
 		// otherwise swallow every crosshair ray. Other filters match TraceShot, so the crosshair converges on
 		// exactly the set of things a shot can hit.
-		var look = Scene.Trace
-			.Ray( rayStart, rayStart + camDir * Range )
-			.IgnoreGameObjectHierarchy( GameObject )
-			.HitTriggers()
-			.WithoutTags( "trigger", "water" )
+		var look = ShotTrace( rayStart, rayStart + camDir * Range )
+			.WithoutTags( "trigger", "water", CharadesStageFence.WallTag )
 			.Run();
 
 		var to = ( look.Hit ? look.EndPosition : rayStart + camDir * Range ) - eye;
@@ -2612,13 +2609,25 @@ public sealed class HunterController : Component
 	// Both gun rays HitTriggers(): hunter heads are TRIGGER colliders (SdfCollider.BuildAsTrigger — physically
 	// contactless, bullet-visible only), so without it a shot could never land on a face. The WithoutTags guard
 	// keeps actual volume triggers bullet-transparent — any map trigger volume must carry the "trigger" (or
-	// "water") tag or it will eat shots.
-	SceneTraceResult TraceShot( Vector3 from, Vector3 dir, float? range = null ) => Scene.Trace
-		.Ray( from, from + dir * (range ?? Range) )
-		.IgnoreGameObjectHierarchy( GameObject )
-		.HitTriggers()
-		.WithoutTags( "trigger", "water" )
+	// "water") tag or it will eat shots. The charades stage's invisible fence walls are bullet-transparent too:
+	// they only exist to keep the crowd off the stage, not to stop shots at whatever is beyond it.
+	SceneTraceResult TraceShot( Vector3 from, Vector3 dir, float? range = null ) => ShotTrace( from, from + dir * (range ?? Range) )
+		.WithoutTags( "trigger", "water", CharadesStageFence.WallTag )
 		.Run();
+
+	// The base every gun ray (crosshair, shot, carve) is built on, so they all agree on what is solid: our own
+	// hierarchy ignored, triggers hit (see TraceShot), and in charades the mimic's prop is bullet-transparent —
+	// nobody gets to shoot the sculptor or crater their work; shots carry on to whatever is behind them.
+	SceneTrace ShotTrace( Vector3 from, Vector3 to )
+	{
+		var trace = Scene.Trace
+			.Ray( from, to )
+			.IgnoreGameObjectHierarchy( GameObject )
+			.HitTriggers();
+
+		var mimic = CharadesManager.Current.IsValid() ? CharadesManager.Current.ShotProofPawn : null;
+		return mimic.IsValid() ? trace.IgnoreGameObjectHierarchy( mimic ) : trace;
+	}
 
 	// The GameObject tag on invisible MOVEMENT colliders (the hunter's capsule) that the carve trace sees
 	// through: the capsule fully encloses the sculpted head, so the gameplay trace always stops on it and a
@@ -2637,11 +2646,8 @@ public sealed class HunterController : Component
 	// sculpture collider behind the capsule), bounded to just past wherever the gameplay ray stopped.
 	void PelletCarve( Vector3 from, Vector3 dir, float radius, float blockDistance )
 	{
-		var tr = Scene.Trace
-			.Ray( from, from + dir * Range )
-			.IgnoreGameObjectHierarchy( GameObject )
-			.HitTriggers()
-			.WithoutTags( MoveColliderTag, "trigger", "water" )
+		var tr = ShotTrace( from, from + dir * Range )
+			.WithoutTags( MoveColliderTag, "trigger", "water", CharadesStageFence.WallTag )
 			.Run();
 
 		if ( tr.Hit && tr.Distance <= blockDistance + CarvePassDepth )

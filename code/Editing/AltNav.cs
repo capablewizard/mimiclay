@@ -94,7 +94,8 @@ public static class AltNav
 			_dbgBeat = 0f;
 			Log.Info( $"AltNav alive: pause={PauseMenu.IsOpen} active={_active} pending={_pending} " +
 				$"lmbDown={Input.Down( "Attack1" )} mmbDown={Input.Down( "CameraPan" )} rmbDown={Input.Down( "Attack2" )} " +
-				$"overUi={EditHud.PointerOverUi}" );
+				$"altDown={Input.Down( "Walk" )} held={Held} dragging={Dragging} " +
+				$"editing={SculptEditSession.Current?.IsEditing} overUi={EditHud.PointerOverUi}" );
 		}
 
 		LmbTapped = false;

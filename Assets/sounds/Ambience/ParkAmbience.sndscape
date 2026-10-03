@@ -2,7 +2,7 @@
   "MasterVolume": "1",
   "LoopedSounds": [
     {
-      "SoundFile": null,
+      "SoundFile": "sounds/ambience/park ambience loop.vsnd",
       "Volume": "1"
     }
   ],
