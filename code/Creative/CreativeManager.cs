@@ -29,7 +29,7 @@ namespace Mimiclay;
 [Title( "Creative Manager" )]
 [Category( "Mimiclay" )]
 [Icon( "brush" )]
-public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
+public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost, Component.INetworkListener
 {
 	/// <summary>The live creative manager (null everywhere but a creative map). HUD + input read this to know
 	/// creative rules apply.</summary>
@@ -136,10 +136,37 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost
 		// rather than a change hook, so a late joiner's snapshot value lands without any event plumbing.
 		SculptBounds.SetSessionBypass( BoundsBypass );
 
+		WatchRoster();
+
 		if ( !IsHostAuthority )
 			return;
 
 		ReconcileConnections();
+	}
+
+	// ── Roster re-sync (see NetStateResync) ──────────────────────────────────────────────────────────────────
+	// The engine drops reliable NetDictionary deltas at a machine that is mid-scene-load and never resends them,
+	// so a slow loader can arrive missing roster rows. The host re-sends this manager's full state the moment a
+	// connection finishes loading; clients also ask whenever their roster has fewer rows than connections.
+	void Component.INetworkListener.OnActive( Connection channel ) => NetStateResync.OnPlayerActive( this, channel );
+
+	[Rpc.Host]
+	void RequestStateResync()
+		=> NetStateResync.Refresh( this, $"{Rpc.Caller?.DisplayName ?? "a client"} reports an incomplete roster" );
+
+	readonly NetStateResync.RowWatch _rosterWatch = new();
+
+	void WatchRoster()
+	{
+		if ( !Networking.IsActive || IsHostAuthority || Connection.Local is not { } me )
+			return;
+
+		var complete = Players.ContainsKey( me.Id ) && Players.Values.Count( p => !p.Bot ) >= Connection.All.Count();
+		if ( _rosterWatch.Tick( complete ) )
+		{
+			Log.Info( $"CreativeManager: roster incomplete here ({Players.Count} rows, {Connection.All.Count()} connections) — asking the host to re-send." );
+			RequestStateResync();
+		}
 	}
 
 	// ── Workshop column on the edit HUD (local UI, every machine) ─────────────────────────────────────────────

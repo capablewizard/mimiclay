@@ -32,6 +32,14 @@
 	   word strip. For a timed phase's last five seconds the clock itself becomes the lobby countdown: one big
 	   digit that springs in fresh each second, with Countdown's tick/tock. *@
 	<div class="top-centre">
+		@if ( LobbyReturn.Active )
+		{
+			@* Returning to the lobby (the podium ran out, or the host ended it): title and clock give way to the
+			   shared five-second readout — the lobby launch countdown's look, the same in every mode. *@
+			<Countdown Title=@LobbyReturn.Caption Remaining=@LobbyReturn.Remaining class="return-countdown" />
+		}
+		else
+		{
 		@* The scoreboard heading's look: the shared .clay-title between .sparks.small, re-keyed so each new title
 		   starts fresh. *@
 		<div class="phase-heading">
@@ -41,13 +49,15 @@
 		</div>
 		@* The clock in the standard clay header (the scoreboard title's WobbleText look), at the round-clock size.
 		   Counting down, it's re-keyed per digit so each one is a new element and its spring replays. *@
+		@* Hidden while Waiting (loading in / short of players): nothing's timed until the game properly starts. *@
 		@if ( ShowCountdown )
 		{
 			<WobbleText Text=@TimerText class="timer clock-timer counting auto" @key=@TimerText />
 		}
-		else
+		else if ( HasTimer )
 		{
 			<WobbleText Text=@TimerText class="timer clock-timer auto" />
+		}
 		}
 
 		@if ( WordStrip != "" )
@@ -57,15 +67,22 @@
 			   .revealed goes on (the switch to the uppercase answer). *@
 			<div class="word-pop @(revealed ? "popped" : "")">
 			<div class="word-strip paper-card @(revealed ? "revealed" : "") @((Manager.LocalIsMimic && Manager.Phase is CharadesPhase.Sculpting or CharadesPhase.Choosing) || Manager.Phase == CharadesPhase.Writing ? "mine" : "") @(WordStrip.Length > 12 ? "long" : "")">
-				<div class="word">
-					@foreach ( var w in WordStripWords )
+				<div class="word-col">
+					<div class="word">
+						@foreach ( var w in WordStripWords )
+						{
+							<div class="word-group">
+								@foreach ( var c in w )
+								{
+									<div class="ch">@c</div>
+								}
+							</div>
+						}
+					</div>
+					@* The sculptor hint — the bracket off the end of the phrase, for the mimic's eyes only. *@
+					@if ( StripHint != "" )
 					{
-						<div class="word-group">
-							@foreach ( var c in w )
-							{
-								<div class="ch">@c</div>
-							}
-						</div>
+						<div class="word-hint">(@StripHint)</div>
 					}
 				</div>
 				<div class="pencil badge-glyph">✏️</div>
@@ -82,11 +99,14 @@
 		   the guess hint's plain line, saying where the verb is and how many are handed in. *@
 		@if ( Manager.Phase == CharadesPhase.Writing )
 		{
-			<div class="guess-hint">
-				<span>Press</span>
-				<div class="key-chip">Enter</div>
-				<span>@(LocalSubmitted ? "to change your phrase." : "to write a phrase.")</span>
-				<span class="hint-count">@SubmittedCount / @WriterCount handed in</span>
+			<div class="guess-hint writing">
+				<div class="hint-row">
+					<span>Press</span>
+					<div class="key-chip">Enter</div>
+					<span>@(LocalSubmitted ? "to change your phrase." : "to write a phrase.")</span>
+					<span class="hint-count">@SubmittedCount / @WriterCount handed in</span>
+				</div>
+				<div class="hint-tip">Brackets are a hint for the sculptor only - e.g. Rust (Video Game)</div>
 			</div>
 		}
 
@@ -103,9 +123,16 @@
 				<div class="pick-stack">
 					@foreach ( var (word, i) in Manager.OfferedWords.Select( ( w, i ) => (w, i) ) )
 					{
+						var (answer, hint) = CharadesWords.Split( word );
 						<div class="btn-jitter pick-btn" onclick=@( () => Manager.ChooseWord( i ) )>
 							<div class="key-chip">@(i + 1)</div>
-							<WobbleText Text=@word />
+							<div class="pick-text">
+								<WobbleText Text=@answer />
+								@if ( hint != "" )
+								{
+									<div class="pick-hint">(@hint)</div>
+								}
+							</div>
 						</div>
 					}
 				</div>
@@ -295,8 +322,10 @@
 
 	// The clock turns into the lobby countdown for a timed phase's last five seconds.
 	const float CountdownSeconds = 5f;
-	// Not during the reveal ("It was..."): that pause is for reading the answer, not a race.
-	bool ShowCountdown => HasTimer && Manager.Phase != CharadesPhase.TurnReveal
+	// Not during the reveal ("It was..."): that pause is for reading the answer, not a race. Nor while returning
+	// to the lobby: the frozen phase's clock may still be inside its last five seconds, and the return readout
+	// (its own Countdown, with its own tick/tock) has taken the clock's place.
+	bool ShowCountdown => HasTimer && Manager.Phase != CharadesPhase.TurnReveal && !LobbyReturn.Active
 		&& Manager.PhaseEndsAt > 0f && Manager.PhaseEndsAt <= CountdownSeconds;
 	int CountdownDigit => Math.Max( 1, (int)MathF.Ceiling( Manager.PhaseEndsAt ) );
 
@@ -324,7 +353,7 @@
 		get
 		{
 			if ( Manager is null || !HasTimer )
-				return "0:00"; // untimed (Waiting, or no manager yet): the clock still holds its place
+				return "0:00"; // untimed (Waiting, or no manager yet): the clock isn't drawn then
 
 			// The last five seconds: one digit, the lobby countdown's way (floored at 1 — see Countdown.Digit).
 			if ( ShowCountdown )
@@ -344,7 +373,7 @@
 			: $"Waiting ({Manager.Players.Count}/{Manager.Settings.MinPlayers})",
 		CharadesPhase.Starting => "Starting!",
 		CharadesPhase.Writing => "Write!",
-		CharadesPhase.Choosing when SingleOffer => Manager.LocalIsMimic ? "Your phrase!" : "Reading!",
+		CharadesPhase.Choosing when SingleOffer => "Get ready!",
 		CharadesPhase.Choosing => Manager.LocalIsMimic ? "Pick one!" : "Picking!",
 		CharadesPhase.Sculpting => Manager.LocalIsMimic ? "Sculpt it!" : "Guess!",
 		CharadesPhase.TurnReveal => "It was...",
@@ -374,6 +403,8 @@
 	};
 
 	// The word strip under the clock: your word (mimic), the letter-spaced hint (guessers), the answer (reveal).
+	// The strings that are YOURS (your hand-in, your offer, your brief) may carry a bracketed sculptor hint —
+	// the strip shows their answer, StripHint the bracket.
 	string WordStrip
 	{
 		get
@@ -387,17 +418,17 @@
 			// Writing: the phrase you handed in (echoed back by the host), once you have — yours, uppercase like the
 			// mimic's brief.
 			if ( Manager.Phase == CharadesPhase.Writing )
-				return Manager.LocalSubmission ?? "";
+				return CharadesWords.Answer( Manager.LocalSubmission );
 
 			// A single-phrase turn's read beat: the mimic's phrase, before the sculpt opens.
 			if ( Manager.Phase == CharadesPhase.Choosing )
-				return Manager.LocalIsMimic && Manager.OfferedWords.Count == 1 ? Manager.OfferedWords[0] : "";
+				return Manager.LocalIsMimic && Manager.OfferedWords.Count == 1 ? CharadesWords.Answer( Manager.OfferedWords[0] ) : "";
 
 			if ( Manager.Phase != CharadesPhase.Sculpting )
 				return "";
 
 			if ( Manager.LocalIsMimic )
-				return Manager.LocalWord ?? "";
+				return CharadesWords.Answer( Manager.LocalWord );
 
 			// Solved: the answer, typed into the box over the mask, one slot at a time.
 			if ( Manager.SolvedWord is { Length: > 0 } solved )
@@ -407,6 +438,34 @@
 			}
 
 			return Manager.WordHint ?? "";
+		}
+	}
+
+	// The sculptor hint under the strip: from a phrase that is the local player's own to see, or — once the
+	// answer is out (the reveal, or your own correct guess fully typed) — the one behind it.
+	string StripHint
+	{
+		get
+		{
+			if ( Manager is null )
+				return "";
+
+			if ( Manager.Phase == CharadesPhase.TurnReveal )
+				return Manager.RevealedHint ?? "";
+
+			if ( LocalSolved )
+				return Manager.SolvedHint ?? "";
+
+			if ( Manager.Phase == CharadesPhase.Writing )
+				return CharadesWords.Hint( Manager.LocalSubmission );
+
+			if ( Manager.Phase == CharadesPhase.Choosing )
+				return Manager.LocalIsMimic && Manager.OfferedWords.Count == 1 ? CharadesWords.Hint( Manager.OfferedWords[0] ) : "";
+
+			if ( Manager.Phase == CharadesPhase.Sculpting && Manager.LocalIsMimic )
+				return CharadesWords.Hint( Manager.LocalWord );
+
+			return "";
 		}
 	}
 
@@ -623,9 +682,9 @@
 			? 0
 			: HashCode.Combine(
 				SpeakersSignal(),
-				HashCode.Combine( Manager.Phase, TimerText, Manager.MimicId, Manager.WordHint, Manager.RevealedWord ),
+				HashCode.Combine( Manager.Phase, TimerText, Manager.MimicId, Manager.WordHint, Manager.RevealedWord, LobbyReturn.Signal ),
 				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing, PhaseCaption ),
-				HashCode.Combine( Manager.Round, Manager.AuthorId, Manager.Settings.Rounds, WordStrip, LocalSolved ), // the solved answer types out, then flips after a pause — both time-driven
+				HashCode.Combine( Manager.Round, Manager.AuthorId, Manager.Settings.Rounds, WordStrip, StripHint, LocalSolved ), // the solved answer types out, then flips after a pause — both time-driven
 				// Scores/guess places/hand-ins move without anything above noticing.
 				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedPlace, p.Submitted ) ),
 				Manager.Players.Count,

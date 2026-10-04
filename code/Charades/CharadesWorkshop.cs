@@ -119,13 +119,16 @@ public static class CharadesWorkshop
 		Changed?.Invoke();
 	}
 
-	static void Save()
+	/// <param name="data">The game's data filesystem, for callers that run outside the game context (Steam's
+	/// publish overlay completes in the menu context, where <see cref="FileSystem.Data"/> is null).</param>
+	static void Save( BaseFileSystem data = null )
 	{
 		EnsureLoaded();
 		try
 		{
-			FileSystem.Data.CreateDirectory( "charades" );
-			FileSystem.Data.WriteJson( SavePath, new SaveData { Lists = _added.Values.ToList(), Deleted = _deleted.ToList(), Liked = _liked.ToList() } );
+			data ??= FileSystem.Data;
+			data.CreateDirectory( "charades" );
+			data.WriteJson( SavePath, new SaveData { Lists = _added.Values.ToList(), Deleted = _deleted.ToList(), Liked = _liked.ToList() } );
 		}
 		catch ( Exception e )
 		{
@@ -194,16 +197,35 @@ public static class CharadesWorkshop
 
 	// ── In-game likes ─────────────────────────────────────────────────────────────────────────────────────
 	// Games can't vote on Steam Workshop items (s&box keeps its UGC service internal), so likes live in s&box's
-	// own stats backend instead: one stat per list, "phrases_like_<fileId>", that each player SETS to 1 (liked)
-	// or 0 (unliked). The stat's global Sum is then the number of players who like it — deduped per player and
-	// undoable, unlike an increment. The local liked set (saved with the added lists) drives the heart at once;
-	// a per-session delta keeps the count honest until the backend's aggregate catches up.
+	// own stats backend instead: one stat per list, "phrases_like_<fileId>", that a like INCREMENTS by +1 and an
+	// unlike by -1, so the stat's global Sum is the net like count. (Not SetValue 1/0: every flushed SetValue is
+	// its own backend record and Sum adds them all, so toggling like/unlike/like summed to 2+ for one player.)
+	// The local liked set (saved with the added lists) is what stops one player counting twice, and drives the
+	// heart at once; a per-session delta keeps the count honest until the backend's aggregate catches up.
 
 	const string LikePrefix = "phrases_like_";
 
 	static string LikeStat( ulong fileId ) => LikePrefix + fileId;
 
-	static readonly Dictionary<ulong, int> _likeDelta = new();
+	// This session's unconfirmed change per list, and the global Sum it was made against. Once a refresh
+	// shows a different Sum, the backend has taken our increments in and the delta is dropped (otherwise
+	// it'd count twice).
+	static readonly Dictionary<ulong, (double BaseSum, int Delta)> _likeDelta = new();
+
+	static double GlobalLikeSum( ulong fileId )
+	{
+		try
+		{
+			if ( Sandbox.Services.Stats.Global.TryGet( LikeStat( fileId ), out var stat ) )
+				return stat.Sum;
+		}
+		catch
+		{
+			// Stats backend unavailable (offline, editor without a published package) — local delta only.
+		}
+
+		return 0;
+	}
 
 	/// <summary>True when the local player has liked this list.</summary>
 	public static bool IsLiked( ulong fileId )
@@ -217,18 +239,17 @@ public static class CharadesWorkshop
 
 	public static int Likes( ulong fileId )
 	{
-		var global = 0;
-		try
+		var sum = GlobalLikeSum( fileId );
+		var delta = 0;
+		if ( _likeDelta.TryGetValue( fileId, out var pending ) )
 		{
-			if ( Sandbox.Services.Stats.Global.TryGet( LikeStat( fileId ), out var stat ) )
-				global = (int)Math.Round( stat.Sum );
-		}
-		catch
-		{
-			// Stats backend unavailable (offline, editor without a published package) — local delta only.
+			if ( sum != pending.BaseSum )
+				_likeDelta.Remove( fileId );
+			else
+				delta = pending.Delta;
 		}
 
-		return Math.Max( 0, global + (_likeDelta.TryGetValue( fileId, out var d ) ? d : 0) );
+		return Math.Max( 0, (int)Math.Round( sum ) + delta );
 	}
 
 	/// <summary>Like or unlike a list. Returns the new liked state.</summary>
@@ -241,12 +262,14 @@ public static class CharadesWorkshop
 		else
 			_liked.Remove( fileId );
 
-		_likeDelta[fileId] = (_likeDelta.TryGetValue( fileId, out var d ) ? d : 0) + (liked ? 1 : -1);
+		if ( !_likeDelta.TryGetValue( fileId, out var pending ) )
+			pending = (GlobalLikeSum( fileId ), 0);
+		_likeDelta[fileId] = (pending.BaseSum, pending.Delta + (liked ? 1 : -1));
 		Save();
 
 		try
 		{
-			Sandbox.Services.Stats.SetValue( LikeStat( fileId ), liked ? 1 : 0 );
+			Sandbox.Services.Stats.Increment( LikeStat( fileId ), liked ? 1 : -1 );
 			Sandbox.Services.Stats.Flush();
 		}
 		catch ( Exception e )
@@ -407,6 +430,9 @@ public static class CharadesWorkshop
 		if ( existingId != 0 )
 			entry.SetMeta( "_workshopId", existingId );
 
+		// Captured now: OnComplete fires from the menu context, where FileSystem.Data isn't ours.
+		var data = FileSystem.Data;
+
 		entry.Publish( new WorkshopPublishOptions
 		{
 			Title = cleanTitle,
@@ -427,7 +453,7 @@ public static class CharadesWorkshop
 					Phrases = phrases,
 				};
 				AddedMap[id] = list;
-				Save();
+				Save( data );
 				Changed?.Invoke();
 				onPublished?.Invoke( list );
 			},

@@ -4,10 +4,10 @@
   "Preview": null,
   "Scene": "scenes/maps/charadeszoo.scene",
   "Hidden": false,
-  "DefaultPick": true,
+  "DefaultPick": false,
   "ForPropHunt": false,
   "ForCreative": false,
-  "ForCharades": true,
+  "ForCharades": false,
   "__references": [],
   "__version": 0
 }

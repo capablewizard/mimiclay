@@ -137,7 +137,15 @@
 			</div>
 			}
 
-			@if ( ShowLobbyStatus )
+			@if ( LobbyReturn.Active && !CharadesManager.Current.IsValid() )
+			{
+				@* The host is taking everyone back to the lobby (creative's exit): the shared five-second readout,
+				   the launch countdown's own look, in the same slot. NOT in charades — it runs no IRoundContext, so
+				   this HUD sits in its Lobby layout there too, and CharadesHud already draws the readout in its
+				   clock column; both would be a double. *@
+				<Countdown Title=@LobbyReturn.Caption Remaining=@LobbyReturn.Remaining class="lobby-countdown" />
+			}
+			else if ( ShowLobbyStatus )
 			{
 				@* Idle lobby (before the host starts): the jittering status line stands in for the timer. *@
 				<WobbleText Text=@LobbyStatus class="status-line lobby-status" LockStep=@true @key=@LobbyStatus />
@@ -232,16 +240,27 @@
 			@* Fixed width, so nothing stacked underneath — a long caption, a role chip — can widen this column
 			   and shove the two rosters outward. That's what keeps the clock nailed to screen centre. *@
 			<div class="hud-col col-clock">
-				<div class="timer clock-timer">@TimerText</div>
-				<div class="clock-caption">@ClockCaption</div>
-
-				@if ( LocalRole is PlayerRole.Hunter or PlayerRole.Prop )
+				@if ( LobbyReturn.Active )
 				{
-					<div class="role-chip role-@(LocalRole.ToString().ToLower())">@LocalRole.ToString().ToUpper()</div>
+					@* Returning to the lobby (results over, or the host ended it): the round clock gives way to the
+					   shared five-second readout — the lobby launch countdown's look, the same in every mode. The
+					   caption is wider than this column, so it's a full-width overlay here (see .return-countdown)
+					   rather than wrapping inside the 150px clock slot. *@
+					<Countdown Title=@LobbyReturn.Caption Remaining=@LobbyReturn.Remaining class="return-countdown" />
 				}
-				else if ( RoundManager.LocalEliminated )
+				else
 				{
-					<div class="role-chip role-spectator">SPECTATING</div>
+					<div class="timer clock-timer">@TimerText</div>
+					<div class="clock-caption">@ClockCaption</div>
+
+					@if ( LocalRole is PlayerRole.Hunter or PlayerRole.Prop )
+					{
+						<div class="role-chip role-@(LocalRole.ToString().ToLower())">@LocalRole.ToString().ToUpper()</div>
+					}
+					else if ( RoundManager.LocalEliminated )
+					{
+						<div class="role-chip role-spectator">SPECTATING</div>
+					}
 				}
 			</div>
 
@@ -326,6 +345,49 @@
 @code
 {
 	readonly record struct HotkeyHint( string Key, string Label );
+
+	/// <summary>The one live round HUD on this machine. The system scene carries a RoundHUD object into every
+	/// map, and some map scenes (DefaultMap, Medieval, perftest) ALSO place their own — two identical HUDs then
+	/// stack exactly on top of each other, invisible until something animates (the return-to-lobby countdown's
+	/// digit sprang in twice and double-ticked). Same guard as PauseMenu: first instance wins, later copies
+	/// destroy themselves in OnAwake.</summary>
+	public static RoundHud Current { get; private set; }
+
+	protected override void OnAwake()
+	{
+		base.OnAwake();
+
+		if ( Current.IsValid() && Current != this )
+		{
+			Log.Warning( $"RoundHud: a second instance appeared on '{GameObject.Name}' — destroying it. " +
+				"A map scene is placing its own RoundHUD alongside the system scene's; remove the map's copy." );
+			DestroySurplus();
+			return;
+		}
+
+		Current = this;
+	}
+
+	// Take the host object with us when it exists only to carry this HUD (a ScreenPanel and us, nothing else) —
+	// otherwise a dead root panel would be left behind.
+	void DestroySurplus()
+	{
+		var hostIsOurs = !GameObject.Children.Any()
+			&& GameObject.Components.GetAll( FindMode.EverythingInSelf ).All( c => c == this || c is ScreenPanel );
+
+		if ( hostIsOurs )
+			GameObject.Destroy();
+		else
+			Destroy();
+	}
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+
+		if ( Current == this )
+			Current = null;
+	}
 
 	RoundPhase Phase => RoundContext.Active?.Phase ?? RoundPhase.Lobby;
 
@@ -817,7 +879,7 @@
 	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole (+ eliminated), so
 	// they're covered.
 	protected override int BuildHash()
-		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, ClockCaption, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated ) ),
+		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, ClockCaption, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated, LobbyReturn.Signal ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
 				TutorialDirector.IsRunning, // lobby roster hides while the tutorial runs

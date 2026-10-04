@@ -11,7 +11,7 @@
 //  .stepper          − value + (Host's recipe); .stepper.compact for dense cards
 //  .seg              a row of .pill options, one lit (.on) — Yes/No, Public/Friends/Private; .seg.compact = small
 //  .pill-grid        a wrapping set of toggleable .pill chips (topics)
-//  .pill             the cream pill both use; .on = selected (orange), .pill.all.on = blue headline chip
+//  .pill             the cream pill both use; .on = selected (orange)
 //  .radio            radio option: dot + label + one-line description; .radio-row lays them out
 //  .icon-btn         small round icon button (.add / .on / .danger / .confirm / .busy)
 //  .btn-small        compact .btn (icon + label)
@@ -171,9 +171,6 @@
 	&:hover { transform: scale( 1.08 ); sound-in: $sound-hover; animation: hover-spring-108 $spring-duration ease-out; }   // enlarge only — no recolour
 	&:active { sound-in: $sound-click; }
 	&.on { background-color: $craft-orange; }                       // orange = selected
-
-	// The headline "select everything" chip reads as a different kind of switch: blue when lit.
-	&.all.on { background-color: $craft-blue; color: $scene-text; }
 }
 
 // Dense cards: chips in a grid, and a .seg marked .compact (Yes/No in an option row), use a smaller pill.

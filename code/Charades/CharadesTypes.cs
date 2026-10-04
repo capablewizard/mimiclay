@@ -78,6 +78,13 @@ public struct CharadesPlayer
 
 	/// <summary>A test-bot row — no machine behind it, the host holds its body (see <see cref="RoundBots"/>).</summary>
 	public bool Bot;
+
+	/// <summary>The GameObject id of this player's NETWORKED pawn (hunter or mimic prop), stamped by the HOST from
+	/// its own scene — the ground truth of which pawn object should exist on every machine. <see cref="Guid.Empty"/>
+	/// while unpublished (the publish gate) or gone. Same contract as prop hunt's <c>PlayerInfo.PawnId</c>: the
+	/// engine drops object creates that land on a machine mid-scene-load, so each machine reconciles what it
+	/// holds against this column (see <c>CharadesManager.ReconcilePawnPresence</c>).</summary>
+	public Guid PawnId;
 }
 
 /// <summary>

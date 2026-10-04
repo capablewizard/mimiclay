@@ -27,14 +27,14 @@ Layer0
 
 	//---- Transmission ----
 	g_flTransAmbient "0.300"
-	g_flTransDeepen "2.537"
-	g_flTransDistortion "0.200"
+	g_flTransDeepen "2.500"
+	g_flTransDistortion "0.300"
 	g_flTransFalloff "3.850"
 	g_flTransFromAlbedo "0.900"
-	g_flTransMaxDist "6.000"
-	g_flTransPower "4.032"
+	g_flTransMaxDist "10.000"
+	g_flTransPower "6.000"
 	g_flTransProbe "6.000"
-	g_flTransScale "8.000"
+	g_flTransScale "4.000"
 	g_vTransTint "[1.000000 0.450980 0.298039 0.000000]"
 
 	Attributes

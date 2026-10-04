@@ -762,10 +762,17 @@ PS
 	// what the engine's shadow + light queries expect (camera-relative + the high-precision offset).
 	void ApplyTransmission( inout Material m, float3 p, float3 geoN, float3 viewDir )
 	{
+		// Metal has no subsurface transport. m.Metalness is already the per-brush metal lane (blended
+		// across joins by SdfShade) plus the material slider, so this masks per brush for free, fading
+		// over the blend radius rather than cutting at a seam. Fully metal skips the per-light march.
+		float dielectric = 1.0 - m.Metalness;
+		if ( dielectric <= 0.001 )
+			return;
+
 		// Through-colour from our own diffuse (free — albedo is already shaded at this point): deepen
 		// the albedo so it reads as denser pigment, blend it against the flat tint, bias by the tint.
 		float3 deepened = pow( max( m.Albedo, 1e-4 ), g_flTransDeepen );
-		float3 transColor = g_vTransTint * lerp( float3( 1, 1, 1 ), deepened, g_flTransFromAlbedo );
+		float3 transColor = g_vTransTint * lerp( float3( 1, 1, 1 ), deepened, g_flTransFromAlbedo ) * dielectric;
 
 		float tapThick = SdfThicknessTap( p, geoN );
 

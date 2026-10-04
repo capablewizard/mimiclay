@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace Mimiclay;
 
@@ -32,6 +33,8 @@ public sealed class CharadesWordList : GameResource
 	/// <summary>Keep this list out of every game without deleting the asset.</summary>
 	public bool Hidden { get; set; } = false;
 
-	/// <summary>The phrases. Spaces are fine ("ice cream"); blanks are skipped.</summary>
+	/// <summary>The phrases. Spaces are fine ("ice cream"); blanks are skipped. A bracket at the end is a hint
+	/// only the sculptor sees — "Steve (Minecraft)" asks for "Steve".</summary>
+	[Description( "One phrase per entry. Context in brackets is shown to the sculptor only - e.g. Rust (Video Game)" )]
 	public List<string> Words { get; set; } = new();
 }

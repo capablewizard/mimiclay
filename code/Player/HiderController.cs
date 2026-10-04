@@ -249,7 +249,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	float _prevFacingYaw;
 	bool _turnSeeded; // false until the first step / after a freeze, so resuming doesn't snap from a stale yaw
 
-	bool EditMode => _session?.IsEditing ?? false;
+	internal bool EditMode => _session?.IsEditing ?? false;
 
 	// Edit mode AND the Starting-countdown freeze (RoundManager.ControlsLocked) both stop locomotion input, but the
 	// body stays physically live and the camera keeps running — so a frozen prop still settles onto the ground and

@@ -110,10 +110,7 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
-          "SkyMaterial": {
-            "Id": "e05fd285-6edd-4c7b-9b31-8a41a0265c3e",
-            "Path": "materials/skybox/skybox_day_01.vmat"
-          },
+          "SkyMaterial": "materials/skybox/skybox_day_01.vmat",
           "Tint": "1,1,1,1"
         },
         {
@@ -133,10 +130,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Sky": {
-            "Id": "e05fd285-6edd-4c7b-9b31-8a41a0265c3e",
-            "Path": "materials/skybox/skybox_day_01.vmat"
-          },
+          "Sky": "materials/skybox/skybox_day_01.vmat",
           "StartDistance": 800,
           "Tint": "1,1,1,1"
         },

@@ -467,6 +467,19 @@ $clock-col-width: 150px;
 			margin-top: $space-sm;
 		}
 
+		// The "Returning to Lobby" readout standing in for the round clock (and its caption + role chip). Its
+		// caption is wider than the clock column, so it's an absolute overlay centred on the column's own
+		// centre line — keeping the clock's screen position without widening the column (which would shove
+		// the rosters outward) and without wrapping the caption. Absolute children position against the
+		// parent here (Yoga), so left is the column's half-width minus half of this width: a 400px box
+		// centred on the 150px $clock-col-width column → (150 - 400) / 2. Retune if either width changes.
+		.return-countdown {
+			position: absolute;
+			top: 0;
+			width: 400px;
+			left: -125px;
+		}
+
 		.role-chip {
 			margin-top: $space-sm;
 			padding: $space-xs $space-md;

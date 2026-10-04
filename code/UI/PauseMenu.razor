@@ -126,24 +126,30 @@
 	bool LeaveStrandsOthers => Networking.IsActive && Networking.IsHost && Connection.All.Count > 1;
 
 	// The host can pull the whole session back to the lobby hub from any GAME scene — the general "end this
-	// game early" (and creative's only exit that keeps the session together). Hidden in the lobby itself, and
-	// for clients: the scene change is the host's call, everyone else follows it automatically.
-	bool CanReturnToLobby => (!Networking.IsActive || Networking.IsHost) && !LobbyManager.Current.IsValid();
+	// game early" (and creative's only exit that keeps the session together). Hidden in the lobby itself, for
+	// clients (the scene change is the host's call, everyone else follows it automatically), and once the
+	// return countdown is already running.
+	bool CanReturnToLobby => (!Networking.IsActive || Networking.IsHost) && !LobbyManager.Current.IsValid()
+		&& !LobbyReturn.Active;
 
-	// Resolve the lobby through whichever scene spawner is live (a SceneFile REFERENCE — the string lookup is
-	// only the last resort; it has returned null mid-session before), then change scene. No confirmation: the
-	// session survives, everyone lands together in the lobby.
+	// Arm the shared "Returning to Lobby" countdown (LobbyReturn): the game freezes, every HUD shows the ten
+	// second readout, then the host changes scene for the whole session. No confirmation: the session survives,
+	// everyone lands together in the lobby. A scene with no LobbyReturn (the DebugGameMode harness) still gets
+	// the old immediate scene change.
 	void ReturnToLobby()
 	{
 		SetOpen( false );
 
-		SceneFile lobby = null;
-		if ( RoundManagerSpawner.Current.IsValid() )
-			lobby = RoundManagerSpawner.Current.LobbyScene;
+		if ( LobbyReturn.Begin( "the host ended the game" ) )
+			return;
+
+		// Begin also refuses CLIENTS — the button is host-only, but never let a client fork off into its own
+		// private lobby scene through the fallback below.
+		if ( Networking.IsActive && !Networking.IsHost )
+			return;
 
 		var options = new SceneLoadOptions();
-		var resolved = lobby is not null ? options.SetScene( lobby ) : options.SetScene( LobbyController.LobbyScene );
-		if ( !resolved )
+		if ( !LobbyReturn.TryResolveLobby( options ) )
 		{
 			Log.Warning( "PauseMenu: couldn't resolve the lobby scene to return to." );
 			return;

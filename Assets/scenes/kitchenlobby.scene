@@ -420,10 +420,7 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
-          "SkyMaterial": {
-            "Id": "e585bcc3-da55-40a5-b729-35a2c54452f3",
-            "Path": "materials/skybox/skybox_dark_01.vmat"
-          },
+          "SkyMaterial": "materials/skybox/skybox_dark_01.vmat",
           "Tint": "2,2,2,1"
         }
       ],
@@ -559,7 +556,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "2dca1a8c-f7b5-4c7f-a24e-2eb42e0cb261",
+            "Id": "a868b16e-bff8-42a4-bca4-4f2768aea7e7",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -616,7 +613,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "2dca1a8c-f7b5-4c7f-a24e-2eb42e0cb261",
+            "Id": "a868b16e-bff8-42a4-bca4-4f2768aea7e7",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1568,7 +1565,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "676395f7-cf15-469f-962f-d90feb6d3a26",
+                "Id": "71529367-60d1-48a2-85a9-03ff7cfb1aba",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1614,7 +1611,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "ae4c5152-ecb4-462c-80e8-3163726b8469",
+                "Id": "2f9b3fc2-a152-4c19-8e29-2de23741e6c1",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1642,7 +1639,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "ae4c5152-ecb4-462c-80e8-3163726b8469",
+                "Id": "2f9b3fc2-a152-4c19-8e29-2de23741e6c1",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1689,7 +1686,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "a14730cc-c4f1-4929-989e-69b921565aa7",
+                "Id": "3dccf697-819b-4bea-88fc-d5b3a66afac9",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1733,7 +1730,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "3711a37b-31d9-4d2e-9f96-664df7cc2767",
+                "Id": "09366856-a537-4ddf-b261-fd80e4f2279f",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2045,7 +2042,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "487b1ff7-3a8c-4883-98e1-2dcd9f0b4ed6",
+                "Id": "b2e69263-b940-43b0-842b-15dafeb38ca9",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2089,7 +2086,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "51b00e80-1e38-4a13-8c47-f100b6f5b764",
+                "Id": "68a46f86-7ee9-4077-955f-dcf1b77d0c67",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2133,7 +2130,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "6d2c772d-b8d5-4e73-ab8e-9e601175cb5b",
+                "Id": "839a160e-a767-4e5d-a9bb-93d6d037115d",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2179,7 +2176,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "a6f46576-7244-4ef8-bdf7-323277949132",
+                "Id": "b79433f1-0461-4ff4-a2ae-ca3aa44f52c6",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2207,7 +2204,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "a6f46576-7244-4ef8-bdf7-323277949132",
+                "Id": "b79433f1-0461-4ff4-a2ae-ca3aa44f52c6",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3317,7 +3314,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "71448820-bfe4-4bdd-8254-2551d9cec041",
+                "Id": "ec510627-b850-4783-8c41-815505803390",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3345,7 +3342,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "71448820-bfe4-4bdd-8254-2551d9cec041",
+                "Id": "ec510627-b850-4783-8c41-815505803390",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3394,7 +3391,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "71448820-bfe4-4bdd-8254-2551d9cec041",
+                "Id": "ec510627-b850-4783-8c41-815505803390",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3422,7 +3419,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "71448820-bfe4-4bdd-8254-2551d9cec041",
+                "Id": "ec510627-b850-4783-8c41-815505803390",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3741,10 +3738,7 @@
                 "Path": "materials/emissivelight.vmat"
               },
               "Materials": null,
-              "Model": {
-                "Id": "00000000-0000-0000-f09f-a6f0fe7f0000",
-                "Path": "models/dev/sphere.vmdl"
-              },
+              "Model": "models/dev/sphere.vmdl",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -5179,10 +5173,7 @@
             "Path": "materials/plasticine_scene.vmat"
           },
           "Materials": null,
-          "Model": {
-            "Id": "8a84e5a0-01f8-0000-f0db-b088f8010000",
-            "Path": "models/dev/box.vmdl"
-          },
+          "Model": "models/dev/box.vmdl",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -5347,7 +5338,7 @@
           },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 16:33:46",
+          "LastImport": "63 object(s), 67661 tris — 02:19:53",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -10943,8 +10934,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11000,8 +11007,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11057,8 +11080,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11114,8 +11153,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11171,8 +11226,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11305,7 +11376,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11322,7 +11393,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -11478,6 +11549,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-424.970551"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11617,6 +11704,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-465.638519"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11658,6 +11761,22 @@
             },
             "Property": "Position",
             "Value": "-250.648331,-584.849365,-371.277924"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11699,6 +11818,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-465.34613"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11747,7 +11882,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -11804,7 +11939,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -11854,6 +11989,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1101.1239,-483.758209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11895,6 +12046,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1129.97668,-483.758209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11936,6 +12103,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-504.864471"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12635,7 +12818,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12652,7 +12835,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -12863,7 +13046,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12880,7 +13063,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13091,7 +13274,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13108,7 +13291,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13319,7 +13502,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13336,7 +13519,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13547,7 +13730,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13564,7 +13747,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13775,7 +13958,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13792,7 +13975,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -14003,7 +14186,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14020,7 +14203,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15723,14 +15906,6 @@
                 "BoundingRadius": 3.7116888
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
-            },
-            "Property": "__enabled",
-            "Value": false
           },
           {
             "Target": {
@@ -17553,6 +17728,380 @@
             },
             "Property": "Position",
             "Value": "-123.03093,-899.811279,-370.419769"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4964bfbb-63e6-4850-9538-71b0f9d308d2"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-0.502661347,0.0211231858,4.93103027",
+                "Rotation": "0,0,0,1",
+                "Size": "29.0538864,28.2159214,4.48965597",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 3,
+                "Gap": 0,
+                "Rounding": 1.65,
+                "Color": "0.34902,0.34902,0.34902,1",
+                "Metallic": 1,
+                "Roughness": 0.55744445,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 30.14873
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "13.6121979,-24.3873596,8.39779758",
+                "Rotation": "-0.707106829,-4.47034836E-08,1.49011612E-08,0.707106769",
+                "Size": "17.1378727,15.0153103,12.7513218",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.8599991,
+                "Gap": 0,
+                "Rounding": 0.91129494,
+                "Color": "0.34902,0.34902,0.34902,1",
+                "Metallic": 1,
+                "Roughness": 0.55744445,
+                "MirrorX": false,
+                "MirrorY": true,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 26.57558
+              },
+              {
+                "Shape": "Box",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-12.6394749,0.786725521,7.36331224",
+                "Rotation": "-0.49999997,0.49999994,-0.49999997,0.499999911",
+                "Size": "30.1725388,12.0702362,22.6874485",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 3,
+                "Gap": 0,
+                "Rounding": 0.91129494,
+                "Color": "0.34902,0.34902,0.34902,1",
+                "Metallic": 1,
+                "Roughness": 0.55744445,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 40.383232
+              },
+              {
+                "Shape": "Spline",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "36.3305931,29.2685089,-1.76766205",
+                "Rotation": "0,0,0,1",
+                "Size": "3.08441257,3.08441257,3.08441257",
+                "Points": [
+                  "29.9559898,0,5.09553671,2.25203109",
+                  "41.6841888,0,8.62334347,3.10188675",
+                  "55.8174248,0,10.3785057,3.60316753",
+                  "70.99086,0,9.85829353,4.2146244"
+                ],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": true,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 5.479999,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.27057,0.27057,0.27057,1",
+                "Metallic": 1,
+                "Roughness": 0.4352222,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 4.4544125
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-0.849591255,0.0211334452,7.49574137",
+                "Rotation": "0,0,0,1",
+                "Size": "27.1626511,27.1626511,18.6743088",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.24,
+                "Gap": 0,
+                "Rounding": 5.8124776,
+                "Color": "0.33488,0.33488,0.33488,1",
+                "Metallic": 1,
+                "Roughness": 0.53333336,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 33.022697
+              },
+              {
+                "Shape": "Extruded",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,-22.7205048,15.6262636",
+                "Rotation": "0.962037683,0,0,0.272917151",
+                "Size": "14.6007442,14.6007442,10.0379992",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 2.3999991,
+                "Gap": 0,
+                "Rounding": 5.447955,
+                "Color": "0.33488,0.33488,0.33488,1",
+                "Metallic": 1,
+                "Roughness": 0.53333336,
+                "MirrorX": true,
+                "MirrorY": true,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 23.5592
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-0.426546574,-1.04220891,22.0039864",
+                "Rotation": "0,0,0,1",
+                "Size": "43.1919403,27.1626511,8.57014275",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.48,
+                "Gap": 0,
+                "Rounding": 5.447955,
+                "Color": "0.33488,0.33488,0.33488,1",
+                "Metallic": 1,
+                "Roughness": 0.53333336,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 44.153976
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "-0.849591255,0.0211334452,10.4683485",
+                "Rotation": "0,0,0,1",
+                "Size": "23.8271599,23.4277744,15.2789869",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.3199997,
+                "Gap": 0,
+                "Rounding": 4.920993,
+                "Color": "0.33333,0.33333,0.33333,1",
+                "Metallic": 1,
+                "Roughness": 0.533,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 28.63514
+              },
+              {
+                "Shape": "Extruded",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "0,-18.4686432,15.7458811",
+                "Rotation": "0.979790151,0,-7.4505806E-09,0.200028807",
+                "Size": "14.6007442,14.6007442,10.0379992",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.02,
+                "Gap": 0,
+                "Rounding": 4.2479544,
+                "Color": "0.33333,0.33333,0.33333,1",
+                "Metallic": 1,
+                "Roughness": 0.533,
+                "MirrorX": true,
+                "MirrorY": true,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 23.2142
+              },
+              {
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "Enabled": true,
+                "Position": "22.0001526,-6.55969334,5.61498737",
+                "Rotation": "-0.127568007,-0.695504248,-0.127567992,0.695504308",
+                "Size": "2.43141675,2.43141675,1.18130875",
+                "Points": [],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Gap": 0,
+                "Rounding": 0.91129494,
+                "Color": "0.34902,0.34902,0.34902,1",
+                "Metallic": 1,
+                "Roughness": 0.55744445,
+                "MirrorX": false,
+                "MirrorY": true,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": true,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 2.7031977
+              }
+            ]
           }
         ],
         "MovedObjects": []
@@ -18864,6 +19413,14 @@
             },
             "Property": "Position",
             "Value": "153.794373,-1134.85608,-365.04541"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e7601da9-8ae1-4549-855f-b2b5034d6707"
+            },
+            "Property": "__enabled",
+            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19003,6 +19560,14 @@
             },
             "Property": "Position",
             "Value": "-214.278351,-1185.62463,-185.156311"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -19356,6 +19921,14 @@
               "Type": "Component",
               "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19400,6 +19973,14 @@
             },
             "Property": "Rotation",
             "Value": "2.98023206E-08,2.09211084E-08,1,-4.37113883E-08"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -19457,6 +20038,14 @@
             },
             "Property": "Rotation",
             "Value": "2.98023206E-08,2.09211084E-08,1,-4.37113883E-08"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -20684,7 +21273,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "93353551-71d3-442f-86c4-f137f5167929",
+            "Id": "f756bb45-e912-4803-9ca4-503d4284f2ef",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,

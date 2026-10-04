@@ -138,16 +138,16 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 			overflow: hidden;
 		}
 
-		.nudge-right-a { animation: banner-nudge-right-a 0.42s ease-out; }
-		.nudge-right-b { animation: banner-nudge-right-b 0.42s ease-out; }
-		.nudge-left-a { animation: banner-nudge-left-a 0.42s ease-out; }
-		.nudge-left-b { animation: banner-nudge-left-b 0.42s ease-out; }
+		.nudge-right-a { animation: banner-nudge-right-a 0.4s linear; }
+		.nudge-right-b { animation: banner-nudge-right-b 0.4s linear; }
+		.nudge-left-a { animation: banner-nudge-left-a 0.4s linear; }
+		.nudge-left-b { animation: banner-nudge-left-b 0.4s linear; }
 
-		// Parallax: the name swings further, and peaks a beat later, than the art behind it (banner-name-nudge-*).
-		.banner-name.nudge-right-a { animation: banner-name-nudge-right-a 0.46s ease-out; }
-		.banner-name.nudge-right-b { animation: banner-name-nudge-right-b 0.46s ease-out; }
-		.banner-name.nudge-left-a { animation: banner-name-nudge-left-a 0.46s ease-out; }
-		.banner-name.nudge-left-b { animation: banner-name-nudge-left-b 0.46s ease-out; }
+		// Same kick as the art, longer ring-out: the name keeps wobbling after the art has settled (banner-name-nudge-*).
+		.banner-name.nudge-right-a { animation: banner-name-nudge-right-a 0.6s linear; }
+		.banner-name.nudge-right-b { animation: banner-name-nudge-right-b 0.6s linear; }
+		.banner-name.nudge-left-a { animation: banner-name-nudge-left-a 0.6s linear; }
+		.banner-name.nudge-left-b { animation: banner-name-nudge-left-b 0.6s linear; }
 
 		// The game name: big cream display text on the (shaded) art, with the title's layered clay emboss. A
 		// FIXED-width slot (text centred in it) so the arrows stay in the same place whatever the name's length.
@@ -231,15 +231,11 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 		pointer-events: all;
 		transition: all 0.12s ease-out;
 
-		// A CoverImage (the map shot as a background). The engine's "cover" fits to WIDTH (both object-fit on Image and
-		// background-size), leaving a gap under wide shots — so size to full HEIGHT and let the card crop the sides.
-		// That IS cover for any shot wider than the card, which map thumbnails are (~2.4:1 vs the cards' 2.0–2.25:1).
+		// A CoverImage (the map shot as a background). It sizes + centres the image itself (cover, in percentages) —
+		// the engine's own cover and `auto 100%` both get it wrong, see CoverImage — so this is layout only.
 		.map-img {
 			position: absolute;
 			top: 0; left: 0; right: 0; bottom: 0;
-			background-size: auto 100%;
-			background-position: center;
-			background-repeat: no-repeat;
 		}
 
 		.map-name {
@@ -258,11 +254,11 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 
 		&.featured {
 			height: 300px;
-			&.bump-a { animation: map-bump-a 0.4s ease-out; }   // a small hop on each pick (MapBumpClass)
-			&.bump-b { animation: map-bump-b 0.4s ease-out; }
+			&.bump-a { animation: map-bump-a 0.4s linear; }   // a small hop on each pick (MapBumpClass)
+			&.bump-b { animation: map-bump-b 0.4s linear; }
 			// Parallax: the name rides the card and adds its own, later swing on top (it inherits the card's motion).
-			&.bump-a .map-name { animation: map-name-bump-a 0.44s ease-out; }
-			&.bump-b .map-name { animation: map-name-bump-b 0.44s ease-out; }
+			&.bump-a .map-name { animation: map-name-bump-a 0.6s linear; }
+			&.bump-b .map-name { animation: map-name-bump-b 0.6s linear; }
 			margin-bottom: $space-sm;   // + the grid's headroom = the old 12px gap
 			cursor: default;
 			.map-name { font-size: 32px; left: 18px; bottom: $space-md; }
@@ -377,124 +373,309 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 // Pick springs. Each pair (-a/-b) is the same motion under two names: the markup alternates them per press, because
 // the engine restarts an animation only when its keyframes change. Banner: kicks toward the arrow pressed, swings
 // back past centre, settles. Featured map: hops up, dips, settles. Top-level so s&box registers them.
+// Banner art: a loose damped sine timed to the map hop (period 0.3s, peak 12px at ~60ms, settled by 0.4s), sampled every
+// 5% so the engine's linear lerp between keyframes reads as a curve. linear timing: the engine eases the WHOLE animation.
 @keyframes banner-nudge-right-a
 {
-	0%   { transform: translateX( 0px ); }
-	25%  { transform: translateX( 12px ); }
-	50%  { transform: translateX( -6px ); }
-	72%  { transform: translateX( 3px ); }
-	88%  { transform: translateX( -1px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( 6.2px ); }
+	10%  { transform: translateX( 10.3px ); }
+	15%  { transform: translateX( 12.0px ); }
+	20%  { transform: translateX( 11.3px ); }
+	25%  { transform: translateX( 8.9px ); }
+	30%  { transform: translateX( 5.5px ); }
+	35%  { transform: translateX( 1.8px ); }
+	40%  { transform: translateX( -1.6px ); }
+	45%  { transform: translateX( -4.1px ); }
+	50%  { transform: translateX( -5.4px ); }
+	55%  { transform: translateX( -5.6px ); }
+	60%  { transform: translateX( -4.9px ); }
+	65%  { transform: translateX( -3.4px ); }
+	70%  { transform: translateX( -1.7px ); }
+	75%  { transform: translateX( -0.0px ); }
+	80%  { transform: translateX( 1.4px ); }
+	85%  { transform: translateX( 2.3px ); }
+	90%  { transform: translateX( 2.7px ); }
+	95%  { transform: translateX( 2.5px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
 @keyframes banner-nudge-right-b
 {
-	0%   { transform: translateX( 0px ); }
-	25%  { transform: translateX( 12px ); }
-	50%  { transform: translateX( -6px ); }
-	72%  { transform: translateX( 3px ); }
-	88%  { transform: translateX( -1px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( 6.2px ); }
+	10%  { transform: translateX( 10.3px ); }
+	15%  { transform: translateX( 12.0px ); }
+	20%  { transform: translateX( 11.3px ); }
+	25%  { transform: translateX( 8.9px ); }
+	30%  { transform: translateX( 5.5px ); }
+	35%  { transform: translateX( 1.8px ); }
+	40%  { transform: translateX( -1.6px ); }
+	45%  { transform: translateX( -4.1px ); }
+	50%  { transform: translateX( -5.4px ); }
+	55%  { transform: translateX( -5.6px ); }
+	60%  { transform: translateX( -4.9px ); }
+	65%  { transform: translateX( -3.4px ); }
+	70%  { transform: translateX( -1.7px ); }
+	75%  { transform: translateX( -0.0px ); }
+	80%  { transform: translateX( 1.4px ); }
+	85%  { transform: translateX( 2.3px ); }
+	90%  { transform: translateX( 2.7px ); }
+	95%  { transform: translateX( 2.5px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
 @keyframes banner-nudge-left-a
 {
-	0%   { transform: translateX( 0px ); }
-	25%  { transform: translateX( -12px ); }
-	50%  { transform: translateX( 6px ); }
-	72%  { transform: translateX( -3px ); }
-	88%  { transform: translateX( 1px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( -6.2px ); }
+	10%  { transform: translateX( -10.3px ); }
+	15%  { transform: translateX( -12.0px ); }
+	20%  { transform: translateX( -11.3px ); }
+	25%  { transform: translateX( -8.9px ); }
+	30%  { transform: translateX( -5.5px ); }
+	35%  { transform: translateX( -1.8px ); }
+	40%  { transform: translateX( 1.6px ); }
+	45%  { transform: translateX( 4.1px ); }
+	50%  { transform: translateX( 5.4px ); }
+	55%  { transform: translateX( 5.6px ); }
+	60%  { transform: translateX( 4.9px ); }
+	65%  { transform: translateX( 3.4px ); }
+	70%  { transform: translateX( 1.7px ); }
+	75%  { transform: translateX( 0.0px ); }
+	80%  { transform: translateX( -1.4px ); }
+	85%  { transform: translateX( -2.3px ); }
+	90%  { transform: translateX( -2.7px ); }
+	95%  { transform: translateX( -2.5px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
 @keyframes banner-nudge-left-b
 {
-	0%   { transform: translateX( 0px ); }
-	25%  { transform: translateX( -12px ); }
-	50%  { transform: translateX( 6px ); }
-	72%  { transform: translateX( -3px ); }
-	88%  { transform: translateX( 1px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( -6.2px ); }
+	10%  { transform: translateX( -10.3px ); }
+	15%  { transform: translateX( -12.0px ); }
+	20%  { transform: translateX( -11.3px ); }
+	25%  { transform: translateX( -8.9px ); }
+	30%  { transform: translateX( -5.5px ); }
+	35%  { transform: translateX( -1.8px ); }
+	40%  { transform: translateX( 1.6px ); }
+	45%  { transform: translateX( 4.1px ); }
+	50%  { transform: translateX( 5.4px ); }
+	55%  { transform: translateX( 5.6px ); }
+	60%  { transform: translateX( 4.9px ); }
+	65%  { transform: translateX( 3.4px ); }
+	70%  { transform: translateX( 1.7px ); }
+	75%  { transform: translateX( 0.0px ); }
+	80%  { transform: translateX( -1.4px ); }
+	85%  { transform: translateX( -2.3px ); }
+	90%  { transform: translateX( -2.7px ); }
+	95%  { transform: translateX( -2.5px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
+// Featured map hop: the game banner's spring (period 0.3s, d=5) turned upward, 8px. Sampled every 5%, linear timing.
 @keyframes map-bump-a
 {
-	0%   { transform: translateY( 0px ); }
-	25%  { transform: translateY( -8px ); }
-	50%  { transform: translateY( 4px ); }
-	72%  { transform: translateY( -2px ); }
-	88%  { transform: translateY( 0.5px ); }
-	100% { transform: translateY( 0px ); }
+	0%   { transform: translateY( -0.0px ); }
+	5%   { transform: translateY( -4.2px ); }
+	10%  { transform: translateY( -6.9px ); }
+	15%  { transform: translateY( -8.0px ); }
+	20%  { transform: translateY( -7.5px ); }
+	25%  { transform: translateY( -5.9px ); }
+	30%  { transform: translateY( -3.7px ); }
+	35%  { transform: translateY( -1.2px ); }
+	40%  { transform: translateY( 1.1px ); }
+	45%  { transform: translateY( 2.7px ); }
+	50%  { transform: translateY( 3.6px ); }
+	55%  { transform: translateY( 3.7px ); }
+	60%  { transform: translateY( 3.2px ); }
+	65%  { transform: translateY( 2.3px ); }
+	70%  { transform: translateY( 1.1px ); }
+	75%  { transform: translateY( 0.0px ); }
+	80%  { transform: translateY( -0.9px ); }
+	85%  { transform: translateY( -1.5px ); }
+	90%  { transform: translateY( -1.8px ); }
+	95%  { transform: translateY( -1.7px ); }
+	100% { transform: translateY( 0.0px ); }
 }
 
 @keyframes map-bump-b
 {
-	0%   { transform: translateY( 0px ); }
-	25%  { transform: translateY( -8px ); }
-	50%  { transform: translateY( 4px ); }
-	72%  { transform: translateY( -2px ); }
-	88%  { transform: translateY( 0.5px ); }
-	100% { transform: translateY( 0px ); }
+	0%   { transform: translateY( -0.0px ); }
+	5%   { transform: translateY( -4.2px ); }
+	10%  { transform: translateY( -6.9px ); }
+	15%  { transform: translateY( -8.0px ); }
+	20%  { transform: translateY( -7.5px ); }
+	25%  { transform: translateY( -5.9px ); }
+	30%  { transform: translateY( -3.7px ); }
+	35%  { transform: translateY( -1.2px ); }
+	40%  { transform: translateY( 1.1px ); }
+	45%  { transform: translateY( 2.7px ); }
+	50%  { transform: translateY( 3.6px ); }
+	55%  { transform: translateY( 3.7px ); }
+	60%  { transform: translateY( 3.2px ); }
+	65%  { transform: translateY( 2.3px ); }
+	70%  { transform: translateY( 1.1px ); }
+	75%  { transform: translateY( 0.0px ); }
+	80%  { transform: translateY( -0.9px ); }
+	85%  { transform: translateY( -1.5px ); }
+	90%  { transform: translateY( -1.8px ); }
+	95%  { transform: translateY( -1.7px ); }
+	100% { transform: translateY( 0.0px ); }
 }
 
+// Banner name: the same sine, same instant and period as the art, swinging a touch further and damped lighter, so the
+// two move as one at first and the name is still swaying after the art has stopped.
 @keyframes banner-name-nudge-right-a
 {
-	0%   { transform: translateX( 0px ); }
-	30%  { transform: translateX( 20px ); }
-	56%  { transform: translateX( -10px ); }
-	76%  { transform: translateX( 5px ); }
-	90%  { transform: translateX( -2px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( 9.4px ); }
+	10%  { transform: translateX( 13.8px ); }
+	15%  { transform: translateX( 12.5px ); }
+	20%  { transform: translateX( 7.0px ); }
+	25%  { transform: translateX( 0.0px ); }
+	30%  { transform: translateX( -5.8px ); }
+	35%  { transform: translateX( -8.5px ); }
+	40%  { transform: translateX( -7.8px ); }
+	45%  { transform: translateX( -4.4px ); }
+	50%  { transform: translateX( -0.0px ); }
+	55%  { transform: translateX( 3.6px ); }
+	60%  { transform: translateX( 5.3px ); }
+	65%  { transform: translateX( 4.8px ); }
+	70%  { transform: translateX( 2.7px ); }
+	75%  { transform: translateX( 0.0px ); }
+	80%  { transform: translateX( -2.2px ); }
+	85%  { transform: translateX( -3.3px ); }
+	90%  { transform: translateX( -3.0px ); }
+	95%  { transform: translateX( -1.7px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
 @keyframes banner-name-nudge-right-b
 {
-	0%   { transform: translateX( 0px ); }
-	30%  { transform: translateX( 20px ); }
-	56%  { transform: translateX( -10px ); }
-	76%  { transform: translateX( 5px ); }
-	90%  { transform: translateX( -2px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( 9.4px ); }
+	10%  { transform: translateX( 13.8px ); }
+	15%  { transform: translateX( 12.5px ); }
+	20%  { transform: translateX( 7.0px ); }
+	25%  { transform: translateX( 0.0px ); }
+	30%  { transform: translateX( -5.8px ); }
+	35%  { transform: translateX( -8.5px ); }
+	40%  { transform: translateX( -7.8px ); }
+	45%  { transform: translateX( -4.4px ); }
+	50%  { transform: translateX( -0.0px ); }
+	55%  { transform: translateX( 3.6px ); }
+	60%  { transform: translateX( 5.3px ); }
+	65%  { transform: translateX( 4.8px ); }
+	70%  { transform: translateX( 2.7px ); }
+	75%  { transform: translateX( 0.0px ); }
+	80%  { transform: translateX( -2.2px ); }
+	85%  { transform: translateX( -3.3px ); }
+	90%  { transform: translateX( -3.0px ); }
+	95%  { transform: translateX( -1.7px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
 @keyframes banner-name-nudge-left-a
 {
-	0%   { transform: translateX( 0px ); }
-	30%  { transform: translateX( -20px ); }
-	56%  { transform: translateX( 10px ); }
-	76%  { transform: translateX( -5px ); }
-	90%  { transform: translateX( 2px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( -9.4px ); }
+	10%  { transform: translateX( -13.8px ); }
+	15%  { transform: translateX( -12.5px ); }
+	20%  { transform: translateX( -7.0px ); }
+	25%  { transform: translateX( -0.0px ); }
+	30%  { transform: translateX( 5.8px ); }
+	35%  { transform: translateX( 8.5px ); }
+	40%  { transform: translateX( 7.8px ); }
+	45%  { transform: translateX( 4.4px ); }
+	50%  { transform: translateX( 0.0px ); }
+	55%  { transform: translateX( -3.6px ); }
+	60%  { transform: translateX( -5.3px ); }
+	65%  { transform: translateX( -4.8px ); }
+	70%  { transform: translateX( -2.7px ); }
+	75%  { transform: translateX( -0.0px ); }
+	80%  { transform: translateX( 2.2px ); }
+	85%  { transform: translateX( 3.3px ); }
+	90%  { transform: translateX( 3.0px ); }
+	95%  { transform: translateX( 1.7px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
 @keyframes banner-name-nudge-left-b
 {
-	0%   { transform: translateX( 0px ); }
-	30%  { transform: translateX( -20px ); }
-	56%  { transform: translateX( 10px ); }
-	76%  { transform: translateX( -5px ); }
-	90%  { transform: translateX( 2px ); }
-	100% { transform: translateX( 0px ); }
+	0%   { transform: translateX( 0.0px ); }
+	5%   { transform: translateX( -9.4px ); }
+	10%  { transform: translateX( -13.8px ); }
+	15%  { transform: translateX( -12.5px ); }
+	20%  { transform: translateX( -7.0px ); }
+	25%  { transform: translateX( -0.0px ); }
+	30%  { transform: translateX( 5.8px ); }
+	35%  { transform: translateX( 8.5px ); }
+	40%  { transform: translateX( 7.8px ); }
+	45%  { transform: translateX( 4.4px ); }
+	50%  { transform: translateX( 0.0px ); }
+	55%  { transform: translateX( -3.6px ); }
+	60%  { transform: translateX( -5.3px ); }
+	65%  { transform: translateX( -4.8px ); }
+	70%  { transform: translateX( -2.7px ); }
+	75%  { transform: translateX( -0.0px ); }
+	80%  { transform: translateX( 2.2px ); }
+	85%  { transform: translateX( 3.3px ); }
+	90%  { transform: translateX( 3.0px ); }
+	95%  { transform: translateX( 1.7px ); }
+	100% { transform: translateX( 0.0px ); }
 }
 
-// Relative to the card (it's a child), so these are the EXTRA travel on top of map-bump.
+// Map name: it rides the card, so these are the banner-name curve (lighter damping, rings to 0.6s) MINUS the card hop —
+// the name's total motion then matches the game banner's name exactly: as one with the card at first, swaying on after it stops.
 @keyframes map-name-bump-a
 {
-	0%   { transform: translateY( 0px ); }
-	30%  { transform: translateY( -6px ); }
-	56%  { transform: translateY( 4px ); }
-	76%  { transform: translateY( -2px ); }
-	90%  { transform: translateY( 0.5px ); }
-	100% { transform: translateY( 0px ); }
+	0%   { transform: translateY( 0.0px ); }
+	5%   { transform: translateY( -0.5px ); }
+	10%  { transform: translateY( -1.2px ); }
+	15%  { transform: translateY( -1.5px ); }
+	20%  { transform: translateY( -1.0px ); }
+	25%  { transform: translateY( -0.0px ); }
+	30%  { transform: translateY( 1.2px ); }
+	35%  { transform: translateY( 1.9px ); }
+	40%  { transform: translateY( 1.9px ); }
+	45%  { transform: translateY( 1.2px ); }
+	50%  { transform: translateY( 0.0px ); }
+	55%  { transform: translateY( -1.1px ); }
+	60%  { transform: translateY( -1.7px ); }
+	65%  { transform: translateY( -1.7px ); }
+	70%  { transform: translateY( -1.8px ); }
+	75%  { transform: translateY( -0.0px ); }
+	80%  { transform: translateY( 1.5px ); }
+	85%  { transform: translateY( 2.2px ); }
+	90%  { transform: translateY( 2.0px ); }
+	95%  { transform: translateY( 1.1px ); }
+	100% { transform: translateY( 0.0px ); }
 }
 
-// Relative to the card (it's a child), so these are the EXTRA travel on top of map-bump.
 @keyframes map-name-bump-b
 {
-	0%   { transform: translateY( 0px ); }
-	30%  { transform: translateY( -6px ); }
-	56%  { transform: translateY( 4px ); }
-	76%  { transform: translateY( -2px ); }
-	90%  { transform: translateY( 0.5px ); }
-	100% { transform: translateY( 0px ); }
+	0%   { transform: translateY( 0.0px ); }
+	5%   { transform: translateY( -0.5px ); }
+	10%  { transform: translateY( -1.2px ); }
+	15%  { transform: translateY( -1.5px ); }
+	20%  { transform: translateY( -1.0px ); }
+	25%  { transform: translateY( -0.0px ); }
+	30%  { transform: translateY( 1.2px ); }
+	35%  { transform: translateY( 1.9px ); }
+	40%  { transform: translateY( 1.9px ); }
+	45%  { transform: translateY( 1.2px ); }
+	50%  { transform: translateY( 0.0px ); }
+	55%  { transform: translateY( -1.1px ); }
+	60%  { transform: translateY( -1.7px ); }
+	65%  { transform: translateY( -1.7px ); }
+	70%  { transform: translateY( -1.8px ); }
+	75%  { transform: translateY( -0.0px ); }
+	80%  { transform: translateY( 1.5px ); }
+	85%  { transform: translateY( 2.2px ); }
+	90%  { transform: translateY( 2.0px ); }
+	95%  { transform: translateY( 1.1px ); }
+	100% { transform: translateY( 0.0px ); }
 }

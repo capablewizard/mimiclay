@@ -9,7 +9,7 @@ namespace Mimiclay;
 /// topic ids, synced inside <see cref="CharadesSettings"/> and couriered as-is. Two id shapes:
 /// a built-in topic's id is its display name normalised ("Animals" → "animals"; see <see cref="IdFor"/>),
 /// a community list's id is its workshop file id with the <see cref="WorkshopPrefix"/> ("ws:3123456789").
-/// The empty selection means "every built-in topic" — the default, and what the Everything chip means.
+/// The empty selection means "every built-in topic" — the default, shown as every Standard chip lit.
 /// </summary>
 public static class CharadesTopics
 {
@@ -297,13 +297,67 @@ public static class CharadesWords
 		return prev[t.Length];
 	}
 
+	/// <summary>Anything in brackets is a SCULPTOR HINT — "Steve (Minecraft)": the answer is "Steve", and
+	/// "Minecraft" is shown to the mimic alone, never masked, matched or revealed. Brackets can sit anywhere in
+	/// the line, and several are joined into one hint. Lists, submissions and the offer all carry the full line;
+	/// the host splits it when the word is locked in, the HUD when it shows the mimic their brief. A line that is
+	/// nothing but brackets is just a phrase (they're then ordinary punctuation, which <see cref="Normalize"/>
+	/// drops).</summary>
+	public static (string Answer, string Hint) Split( string phrase )
+	{
+		var p = (phrase ?? "").Trim();
+		if ( !p.Contains( '(' ) )
+			return (p, "");
+
+		var answer = new System.Text.StringBuilder( p.Length );
+		var hints = new List<string>();
+		var depth = 0;
+		var start = 0;
+		for ( var i = 0; i < p.Length; i++ )
+		{
+			var c = p[i];
+			if ( c == '(' )
+			{
+				if ( depth++ == 0 )
+					start = i + 1;
+			}
+			else if ( c == ')' && depth > 0 )
+			{
+				if ( --depth == 0 )
+				{
+					var hint = p[start..i].Trim();
+					if ( hint.Length > 0 )
+						hints.Add( hint );
+				}
+			}
+			else if ( depth == 0 )
+			{
+				answer.Append( c );
+			}
+		}
+
+		// Unclosed bracket: what's after it is still the phrase, not a hint.
+		if ( depth > 0 )
+			answer.Append( ' ' ).Append( p[(start - 1)..] );
+
+		var a = string.Join( ' ', answer.ToString().Split( ' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries ) );
+		return a.Length == 0 || hints.Count == 0 ? (p, "") : (a, string.Join( ", ", hints ));
+	}
+
+	/// <summary>The guessable part of a phrase — the line without its bracketed sculptor hint.</summary>
+	public static string Answer( string phrase ) => Split( phrase ).Answer;
+
+	/// <summary>The bracketed sculptor hint of a phrase, or "" when it has none.</summary>
+	public static string Hint( string phrase ) => Split( phrase ).Hint;
+
 	/// <summary>Longest a player-written (or community-list) phrase may be. Long enough for a scene
 	/// ("mario sunbathing on the beach"), short enough to fit the reveal strip and a chat line.</summary>
 	public const int MaxPhraseLength = 60;
 
 	/// <summary>Clean a player-typed or community-list phrase for play: trimmed, inner whitespace folded,
 	/// capped at <see cref="MaxPhraseLength"/>. Null when nothing guessable survives (fewer than two letters or
-	/// digits once normalised) — the caller tells the player to try again.</summary>
+	/// digits in the answer once normalised — a sculptor hint doesn't count) — the caller tells the player to
+	/// try again.</summary>
 	public static string SanitizePhrase( string text )
 	{
 		if ( string.IsNullOrWhiteSpace( text ) )
@@ -313,11 +367,12 @@ public static class CharadesWords
 		if ( folded.Length > MaxPhraseLength )
 			folded = folded[..MaxPhraseLength].TrimEnd();
 
-		return Normalize( folded ).Count( char.IsLetterOrDigit ) >= 2 ? folded : null;
+		return Normalize( Answer( folded ) ).Count( char.IsLetterOrDigit ) >= 2 ? folded : null;
 	}
 
-	/// <summary>A community list's file format is as plain as it gets: one phrase per line. Blank lines and
-	/// lines starting with '#' are skipped, each line is sanitised, duplicates (by normalised form) dropped.</summary>
+	/// <summary>A community list's file format is as plain as it gets: one phrase per line, an optional sculptor
+	/// hint in brackets at the end ("Rust (Video Game)" — see <see cref="Split"/>). Blank lines and lines
+	/// starting with '#' are skipped, each line is sanitised, duplicates (by normalised form) dropped.</summary>
 	public static List<string> ParseLines( string text )
 	{
 		var phrases = new List<string>();

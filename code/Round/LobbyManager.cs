@@ -27,7 +27,7 @@ namespace Mimiclay;
 [Title( "Lobby Manager" )]
 [Category( "Mimiclay" )]
 [Icon( "groups" )]
-public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
+public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Component.INetworkListener
 {
 	/// <summary>The live lobby manager (null in map scenes / the menu, and on a client until the host's spawn
 	/// replicates). The lobby UI + LobbyController's input forwarding read this.</summary>
@@ -166,6 +166,7 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		// EVERY machine (before the host gate): reconcile the pawns we actually HAVE against the pawns the
 		// roster says exist — the heal for the engine's mid-load create/destroy drops (see the method).
 		ReconcilePawnPresence();
+		WatchRoster();
 
 		if ( !IsHostAuthority )
 			return;
@@ -184,6 +185,33 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		// Fire the launch once the countdown elapses.
 		if ( Launching && LaunchEndsAt <= 0f )
 			Launch();
+	}
+
+	// ── Roster re-sync (see NetStateResync) ──────────────────────────────────────────────────────────────────
+	// The engine drops reliable NetDictionary deltas at a machine that is mid-scene-load and never resends them,
+	// so a slow loader arrives in the lobby missing roster ROWS — and the pawn-presence heal above reads the
+	// roster, so it can't heal a pawn whose row it never got. The host re-sends this manager's full state the
+	// moment a connection finishes loading; clients also ask whenever their roster has fewer rows than there are
+	// connections (every connection has a lobby row).
+	void Component.INetworkListener.OnActive( Connection channel ) => NetStateResync.OnPlayerActive( this, channel );
+
+	[Rpc.Host]
+	void RequestStateResync()
+		=> NetStateResync.Refresh( this, $"{Rpc.Caller?.DisplayName ?? "a client"} reports an incomplete roster" );
+
+	readonly NetStateResync.RowWatch _rosterWatch = new();
+
+	void WatchRoster()
+	{
+		if ( !Networking.IsActive || IsHostAuthority || Connection.Local is not { } me )
+			return;
+
+		var complete = Players.ContainsKey( me.Id ) && Players.Values.Count( p => !p.Bot ) >= Connection.All.Count();
+		if ( _rosterWatch.Tick( complete ) )
+		{
+			Log.Info( $"LobbyManager: roster incomplete here ({Players.Count} rows, {Connection.All.Count()} connections, own row {(Players.ContainsKey( me.Id ) ? "present" : "MISSING")}) — asking the host to re-send." );
+			RequestStateResync();
+		}
 	}
 
 	// Host-only. Auto-spawn a hunter pawn for each connection so nobody sits in an empty lobby; forget gone
@@ -523,13 +551,6 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost
 		var builtIn = CharadesWords.BuiltInTopics().Select( t => t.Id ).ToHashSet();
 		s.Topics = ids.SetEquals( builtIn ) ? CharadesTopics.Everything : CharadesTopics.Join( ids );
 		CharadesCfg = s;
-	}
-
-	/// <summary>Every Standard topic on — the "Everything" chip.</summary>
-	public void SetCharadesAllTopics()
-	{
-		if ( !IsHostAuthority ) return;
-		var s = CharadesCfg; s.Topics = CharadesTopics.Everything; CharadesCfg = s;
 	}
 
 	public void SetCharadesTopicChoices( bool on )

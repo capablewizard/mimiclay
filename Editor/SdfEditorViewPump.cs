@@ -17,6 +17,7 @@ public static class SdfEditorViewPump
 	public static void Tick()
 	{
 		var viewport = SceneViewWidget.Current?.LastSelectedViewportWidget;
-		Mimiclay.SdfRaymarchRenderer.EditorViewPos = viewport?.State.CameraPosition;
+		// a settling MapBannerCamera capture wins, so props are shot at the LOD the banner camera sees
+		Mimiclay.SdfRaymarchRenderer.EditorViewPos = Mimiclay.MapBannerCamera.CaptureViewPos ?? viewport?.State.CameraPosition;
 	}
 }

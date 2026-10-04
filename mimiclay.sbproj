@@ -43,6 +43,10 @@
       ],
       "DistinctAssemblyReferences": []
     },
-    "SystemScene": "scenes/system.scene"
+    "SystemScene": "scenes/system.scene",
+    "RecommendedMinPlayers": 3,
+    "RecommendedMaxPlayers": 16,
+    "Coop": true,
+    "Versus": true
   }
 }

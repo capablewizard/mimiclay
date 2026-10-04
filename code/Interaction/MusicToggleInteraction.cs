@@ -37,18 +37,23 @@ public sealed class MusicToggleInteraction : Component, IInteractable
 	void IInteractable.Interact( in InteractContext ctx, string optionId )
 	{
 		var music = Target;
-		if ( optionId == ToggleOption && music.IsValid() )
-			ApplyToggle( !music.Playing );
+		if ( optionId != ToggleOption || !music.IsValid() )
+			return;
+
+		// Switching on starts a new random track: roll it here, once, and ship it with the toggle.
+		var on = !music.Playing;
+		var (seed, at) = on ? SyncedMusic.RollStart() : (music.Seed, music.StartedAt);
+		ApplyToggle( on, seed, at );
 	}
 
 	/// <summary>Anyone → everyone: switch the music and click, in one message, so the click and the change land
 	/// together on every machine. No host arbitration — racing toggles just end on whichever landed last.</summary>
 	[Rpc.Broadcast]
-	void ApplyToggle( bool on )
+	void ApplyToggle( bool on, int seed, double startedAt )
 	{
 		var music = Target;
 		if ( music.IsValid() )
-			music.Playing = on;
+			music.ApplyPlaying( on, seed, startedAt );
 
 		if ( ToggleSound is not null )
 			Sound.Play( ToggleSound, WorldPosition );

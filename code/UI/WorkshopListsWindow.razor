@@ -12,8 +12,8 @@
 
 	  • Browse — Top Rated / Newest / Trending / Mine. Add pulls a list in and ticks it for this lobby. Mine is
 	             where your own lists can be edited or deleted.
-	  • Make   — a title and one phrase per line, then Steam's publish overlay. Edit reuses it, prefilled, and
-	             updates the same workshop item.
+	  • Make   — a title and one phrase per line (a bracket at the end is a sculptor-only hint: "Rust (Video
+	             Game)"), then Steam's publish overlay. Edit reuses it, prefilled, and updates the same workshop item.
 
 	Ticking goes through LobbyManager's host-checked setters, like the rest of the dialog.
 *@
@@ -336,9 +336,9 @@
 
 	string MakeHint => PhraseCount switch
 	{
-		0 => "One phrase per line — \"duck\", \"mario sunbathing on the beach\"…",
-		1 => "1 phrase",
-		var n => $"{n} phrases",
+		0 => "One phrase per line. Context in brackets is shown to the sculptor only - e.g. Rust (Video Game)",
+		1 => "1 phrase · brackets are a hint only the sculptor sees",
+		var n => $"{n} phrases · brackets are a hint only the sculptor sees",
 	};
 
 	void Publish()

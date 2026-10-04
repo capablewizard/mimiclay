@@ -150,6 +150,7 @@ public sealed class RoundManagerSpawner : Component
 		// uses — a client's own scene copy never applies.
 		var claims = go.Components.Create<PropClaims>();
 		claims.HoverRange = card.IsValid() ? card.CreativeHoverRange : MapModeCard.DefaultCreativeHoverRange;
+		go.Components.Create<LobbyReturn>(); // the shared "Returning to Lobby" countdown — creative's pause-menu exit
 		go.NetworkSpawn();
 	}
 
@@ -189,6 +190,7 @@ public sealed class RoundManagerSpawner : Component
 		var claims = go.Components.Create<PropClaims>();
 		claims.HoverRange = card.IsValid() ? card.CreativeHoverRange : MapModeCard.DefaultCreativeHoverRange;
 
+		go.Components.Create<LobbyReturn>(); // the shared "Returning to Lobby" countdown (podium → lobby, pause-menu exit)
 		go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]
 	}
 
@@ -236,6 +238,7 @@ public sealed class RoundManagerSpawner : Component
 			}
 		}
 
+		go.Components.Create<LobbyReturn>(); // the shared "Returning to Lobby" countdown (consolidation → lobby, pause-menu exit)
 		go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]
 	}
 }

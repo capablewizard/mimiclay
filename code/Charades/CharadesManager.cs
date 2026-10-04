@@ -48,7 +48,7 @@ namespace Mimiclay;
 [Title( "Charades Manager" )]
 [Category( "Mimiclay" )]
 [Icon( "theater_comedy" )]
-public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
+public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Component.INetworkListener
 {
 	/// <summary>The active manager in this scene (null elsewhere). The HUD and the spawner read this.</summary>
 	public static CharadesManager Current { get; private set; }
@@ -79,6 +79,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	/// <summary>The word, revealed to everyone — set only for <see cref="CharadesPhase.TurnReveal"/>.</summary>
 	[Sync] public string RevealedWord { get; set; } = "";
 
+	/// <summary>The sculptor hint that went with <see cref="RevealedWord"/> ("" when the phrase had none) — shown
+	/// under the answer at the reveal, now that it can't give anything away.</summary>
+	[Sync] public string RevealedHint { get; set; } = "";
+
 	/// <summary>The rules, resolved by the host in OnStart (lobby courier / card override) and synced.</summary>
 	[Sync] public CharadesSettings Settings { get; set; } = CharadesSettings.Default;
 
@@ -87,6 +91,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	[Sync] public bool AwaitingPlayers { get; set; }
 	[Sync] public int LoadedPlayers { get; set; }
 	[Sync] public int ExpectedPlayers { get; set; }
+
+	/// <summary>Host-computed: every connection has finished loading the scene (or someone has been stuck
+	/// loading for so long we stop waiting). Gates every pawn publish — see <see cref="MayPublishPawns"/>.</summary>
+	[Sync] public bool AllPlayersLoaded { get; set; }
 
 	// ── Config copied on by RoundManagerSpawner before the NetworkSpawn (host-only fields) ────────────────
 	/// <summary>Test bots to seat (the map card's count; a lobby launch's courier count overrides in OnStart).</summary>
@@ -100,6 +108,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 	// ── Host-only bookkeeping ─────────────────────────────────────────────────────────────────────────────
 	string _currentWord;                                  // the secret — lives on the host and the mimic only
+	string _currentHint = "";                             // its bracketed sculptor hint ("" = none)
 	List<string> _offeredThisTurn = new();                // what the mimic was offered (validates ChooseWord)
 	readonly List<Guid> _turnQueue = new();               // who still has to take the stage this round (seat order)
 	readonly HashSet<string> _usedWords = new();          // no repeats until the pool runs dry
@@ -121,6 +130,20 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	Transform? _hunterSpawnAt;                            // the next hunter spawns here (clear of a prop we let go)
 	CharadesPhase _observedPhase = (CharadesPhase)(-1);
 
+	// ── Network heal state (see "Pawn-presence heal" + NetStateResync) ────────────────────────────────────
+	RealTimeSince _someoneLoadingFor;                                    // host: how long a connection has been inactive
+	bool _republishPending;                                              // a machine asked us to republish our pawn
+	RealTimeUntil _republishCooldown;                                    // collapse request storms into one respawn
+	RealTimeUntil _botRepublishCooldown;
+	RealTimeUntil _nextPresenceScan;
+	readonly Dictionary<Guid, RealTimeSince> _missingFor = new();       // rosterId → how long its pawn's been absent here
+	readonly Dictionary<Guid, RealTimeUntil> _requestBackoff = new();   // rosterId → wait before re-asking
+	readonly Dictionary<Guid, RealTimeSince> _staleFor = new();         // pawn id → how long the roster has disowned it
+	readonly Dictionary<Guid, Guid> _pawnIdScratch = new();
+	readonly HashSet<Guid> _presentScratch = new();
+	readonly Dictionary<Guid, List<SdfBrush>> _botRedress = new();      // host: disguise to put back on a republished bot
+	readonly NetStateResync.RowWatch _rosterWatch = new();              // client: "my roster copy is incomplete"
+
 	/// <summary>The words offered to THIS machine's player for the current Choosing (empty on everyone else —
 	/// they arrive by targeted RPC). The HUD draws them as buttons.</summary>
 	public List<string> OfferedWords { get; } = new();
@@ -132,6 +155,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	/// <summary>The word THIS machine's player just guessed correctly (null until they do). Set by targeted RPC on
 	/// their correct guess so the HUD can type it into the word box; cleared when the sculpt ends.</summary>
 	public string SolvedWord { get; private set; }
+
+	/// <summary>The sculptor hint behind <see cref="SolvedWord"/> ("" when there was none) — shown under the
+	/// answer once it has typed itself out.</summary>
+	public string SolvedHint { get; private set; } = "";
 
 	/// <summary>Players-write rounds: the phrase THIS machine's player handed in this round (null until they do).
 	/// Echoed back by targeted RPC so the HUD can show it on the word card; cleared when Writing ends.</summary>
@@ -260,19 +287,60 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		EnsureOwnPawn();
 		KeepMimicOnStage();
 		TickBubbles();
+		ReconcilePawnPresence();
+		WatchRoster();
 
 		if ( !IsHostAuthority )
 			return;
 
 		ReconcileConnections();
 		EnsureBotPawns();
+		StampPawnIds();
+		TickPublishGate();
+
+		// Returning to the lobby: the game is frozen — the bots stop guessing/chattering and the phase machine
+		// stands still. (The roster/pawn upkeep above keeps running so leavers and heals stay correct.)
+		if ( LobbyReturn.Active )
+			return;
+
 		TickBots();
 		TickHostPhase();
+	}
+
+	// ── Network listener (host): a connection finished loading the scene ──────────────────────────────────
+	// Everything reliable the host sent this machine while it was mid-load — roster row adds included — was
+	// dropped by the engine; re-send the whole manager now that it can receive. See NetStateResync.
+	void Component.INetworkListener.OnActive( Connection channel ) => NetStateResync.OnPlayerActive( this, channel );
+
+	/// <summary>Client → host: my copy of the roster is incomplete — re-send the manager's state.</summary>
+	[Rpc.Host]
+	void RequestStateResync()
+		=> NetStateResync.Refresh( this, $"{Rpc.Caller?.DisplayName ?? "a client"} reports an incomplete roster" );
+
+	// Every machine: in charades every connection has a roster row (ReconcileConnections seats joiners at once),
+	// so a client whose roster has fewer non-bot rows than there are connections — or no row of its OWN — is
+	// provably missing dropped adds. Ask for a re-send after a grace, with backoff.
+	void WatchRoster()
+	{
+		if ( !Networking.IsActive || IsHostAuthority || Connection.Local is not { } me )
+			return;
+
+		var complete = Players.ContainsKey( me.Id ) && Players.Values.Count( p => !p.Bot ) >= Connection.All.Count();
+		if ( _rosterWatch.Tick( complete ) )
+		{
+			Log.Info( $"CharadesManager: roster incomplete here ({Players.Count} rows, {Connection.All.Count()} connections, own row {(Players.ContainsKey( me.Id ) ? "present" : "MISSING")}) — asking the host to re-send." );
+			RequestStateResync();
+		}
 	}
 
 	// ── Host: phase ticking ───────────────────────────────────────────────────────────────────────────────
 	void TickHostPhase()
 	{
+		// Returning to the lobby (the podium ran out, or the host ended it from the pause menu): the game is
+		// FROZEN for the countdown — no turns, no transitions, no drought check. LobbyReturn changes the scene.
+		if ( LobbyReturn.Active )
+			return;
+
 		// The mimic vanished mid-turn (left the session) → cut the turn short and move on.
 		if ( Phase is CharadesPhase.Choosing or CharadesPhase.Sculpting
 			&& MimicId != Guid.Empty && !Players.ContainsKey( MimicId ) )
@@ -457,7 +525,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			Players[rosterId] = p;
 		}
 
-		Shush( rosterId, $"✏️ Got it: “{phrase}” — type again to change it." );
+		// Echo the answer and, when they bracketed one, the hint the sculptor will get alongside it.
+		var (answer, hint) = CharadesWords.Split( phrase );
+		Shush( rosterId, hint.Length > 0
+			? $"✏️ Got it: “{answer}” (sculptor hint: {hint}) — type again to change it."
+			: $"✏️ Got it: “{phrase}” — type again to change it." );
 
 		// And privately back to their HUD, which shows it on the word card while everyone writes.
 		var conn = Connection.All.FirstOrDefault( c => c.Id == rosterId );
@@ -527,8 +599,8 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			case CharadesPhase.Waiting:
 				MimicId = Guid.Empty;
 				WordHint = "";
-				RevealedWord = "";
-				_currentWord = null;
+				RevealedWord = ""; RevealedHint = "";
+				_currentWord = null; _currentHint = "";
 				PhaseEndsAt = 0f;
 				break;
 
@@ -536,8 +608,8 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 				MimicId = Guid.Empty;
 				AuthorId = Guid.Empty;
 				WordHint = "";
-				RevealedWord = "";
-				_currentWord = null;
+				RevealedWord = ""; RevealedHint = "";
+				_currentWord = null; _currentHint = "";
 				PhaseEndsAt = Settings.StartCountdownSeconds;
 				break;
 
@@ -545,8 +617,8 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 				MimicId = Guid.Empty;
 				AuthorId = Guid.Empty;
 				WordHint = "";
-				RevealedWord = "";
-				_currentWord = null;
+				RevealedWord = ""; RevealedHint = "";
+				_currentWord = null; _currentHint = "";
 				OpenWriting();
 				PhaseEndsAt = Settings.WriteSeconds;
 				break;
@@ -571,6 +643,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 			case CharadesPhase.TurnReveal:
 				RevealedWord = _currentWord ?? "";
+				RevealedHint = _currentHint;
 				PhaseEndsAt = Settings.RevealSeconds;
 				break;
 
@@ -578,7 +651,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 				MimicId = Guid.Empty;
 				AuthorId = Guid.Empty;
 				WordHint = "";
-				RevealedWord = "";
+				RevealedWord = ""; RevealedHint = "";
 				PhaseEndsAt = Settings.PodiumSeconds;
 				break;
 		}
@@ -590,8 +663,8 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	void BeginTurn()
 	{
 		WordHint = "";
-		RevealedWord = "";
-		_currentWord = null;
+		RevealedWord = ""; RevealedHint = "";
+		_currentWord = null; _currentHint = "";
 		_correctThisTurn = 0;
 
 		// Clear the per-turn guess places.
@@ -674,29 +747,36 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		if ( Phase != CharadesPhase.Choosing || _offeredThisTurn.Count == 0 )
 			return;
 
-		// A bot mimic's word was locked in by PrepareBotMimicTurn.
-		if ( _currentWord is null )
-			_currentWord = _offeredThisTurn[Math.Clamp( index, 0, _offeredThisTurn.Count - 1 )];
+		// The offered line, sculptor hint included ("Steve (Minecraft)") — what the mimic is told and what the
+		// pool remembers as used. The secret the guessers chase is its answer alone. A bot mimic's word was
+		// locked in by PrepareBotMimicTurn.
+		var phrase = _currentWord;
+		if ( phrase is null )
+		{
+			phrase = _offeredThisTurn[Math.Clamp( index, 0, _offeredThisTurn.Count - 1 )];
+			(_currentWord, _currentHint) = CharadesWords.Split( phrase );
+		}
 
-		_usedWords.Add( _currentWord );
+		_usedWords.Add( phrase );
 
 		// The masked shape for the guessers — only when the host turned hints on: when off it's never
 		// written, so nothing about the word's length ever reaches a client (the HUD hides an empty strip).
 		WordHint = Settings.WordLengthHints ? CharadesWords.Mask( _currentWord ) : "";
 
-		// Tell the mimic their final word — they need it even when the pick was the timeout's, and this is
-		// the one line that makes the auto-pick path identical to the chosen one. (Bots don't need telling.)
+		// Tell the mimic their final phrase (hint and all) — they need it even when the pick was the timeout's,
+		// and this is the one line that makes the auto-pick path identical to the chosen one. (Bots don't need
+		// telling.)
 		if ( !MimicIsBot )
 		{
 			var conn = Connection.All.FirstOrDefault( c => c.Id == MimicId );
 			if ( conn is not null && Networking.IsActive )
 			{
 				using ( Rpc.FilterInclude( conn ) )
-					TellWord( MimicId, _currentWord );
+					TellWord( MimicId, phrase );
 			}
 			else
 			{
-				TellWord( MimicId, _currentWord );
+				TellWord( MimicId, phrase );
 			}
 		}
 
@@ -718,7 +798,8 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		LocalWord = null;
 	}
 
-	/// <summary>Host→mimic: the word your turn is sculpting (covers the auto-pick timeout too).</summary>
+	/// <summary>Host→mimic: the phrase your turn is sculpting, sculptor hint included (covers the auto-pick
+	/// timeout too).</summary>
 	[Rpc.Broadcast]
 	void TellWord( Guid mimic, string word )
 	{
@@ -732,12 +813,13 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	/// <summary>Host→guesser: you got it — here's the word, for your HUD to type into the word box. Same
 	/// targeted pattern as <see cref="TellWord"/> (the recipient guard is the load-bearing part).</summary>
 	[Rpc.Broadcast]
-	void TellSolved( Guid guesser, string word )
+	void TellSolved( Guid guesser, string word, string hint )
 	{
 		if ( Connection.Local?.Id != guesser )
 			return;
 
 		SolvedWord = word;
+		SolvedHint = hint ?? "";
 	}
 
 	/// <summary>Mimic→host: I pick offered word <paramref name="index"/>. The HUD's word buttons call this.</summary>
@@ -784,6 +866,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	// ScoreCorrectGuess, but their chatter never rides the engine chat — see BotSay).
 	void JudgeChat( ChatMessageEvent e )
 	{
+		// Returning to the lobby: the game is frozen, so nothing scores or gets swallowed — every line is
+		// plain chat (the word was revealed at the last TurnReveal anyway; the podium has no secret).
+		if ( LobbyReturn.Active )
+			return;
+
 		var rosterId = e.Sender.Id;
 		if ( !Players.TryGetValue( rosterId, out var guesser ) )
 		{
@@ -877,11 +964,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			if ( conn is not null && Networking.IsActive )
 			{
 				using ( Rpc.FilterInclude( conn ) )
-					TellSolved( rosterId, _currentWord );
+					TellSolved( rosterId, _currentWord, _currentHint );
 			}
 			else
 			{
-				TellSolved( rosterId, _currentWord );
+				TellSolved( rosterId, _currentWord, _currentHint );
 			}
 		}
 	}
@@ -1030,7 +1117,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 		// A guesser's solved word is only theirs for the rest of the sculpt (the reveal shows everyone anyway).
 		if ( to != CharadesPhase.Sculpting )
+		{
 			SolvedWord = null;
+			SolvedHint = "";
+		}
 
 		// Your hand-in shows only while everyone's writing (it becomes someone else's secret after).
 		if ( to != CharadesPhase.Writing )
@@ -1141,50 +1231,315 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 		}
 
 		if ( _ownPawn.IsValid() && _ownPawnIsProp == wantProp )
+		{
+			// Right kind already. A machine that never received our pawn's create asked us to republish
+			// (see ReconcilePawnPresence) — respawn-in-place under a fresh network identity.
+			if ( _republishPending )
+			{
+				_republishPending = false;
+				RepublishOwnPawn();
+				return;
+			}
+
+			// Spawned while the publish gate held (someone was still loading) → go on the wire as-is.
+			if ( MayPublishPawns )
+				PublishOwnPawn();
 			return;
+		}
 
 		RetireOwnPawn(); // wrong kind (or none) — the swap destroys the old body outright
 
-		var spawner = RoundManagerSpawner.Current;
-		var prefab = spawner.IsValid() ? (wantProp ? spawner.PropPrefab : spawner.HunterPrefab) : null;
-		if ( !prefab.IsValid() )
-			return;
-
+		Transform spot;
 		if ( wantProp )
 		{
-			// The mimic's turn: a fresh default prop on the stage. No dress — the prefab's default blob IS
-			// the blank canvas, so the enabled clone's first build is already the right shape.
 			var stage = CharadesStage.FindIn( Scene );
-			var at = stage.IsValid() ? stage.MimicTransform : SpotFor( info.SpawnIndex );
-			_ownPawn = prefab.Clone( new CloneConfig( at, startEnabled: true, name: $"Charades Mimic {me.DisplayName}" ) );
+			spot = stage.IsValid() ? stage.MimicTransform : SpotFor( info.SpawnIndex );
 		}
 		else
 		{
-			// Guessing (or between turns): the usual hunter. Clone DISABLED, dress the saved face, then
-			// enable — the ordering that stops the prefab-default face flash everywhere else.
-			var at = _hunterSpawnAt ?? SpotFor( info.SpawnIndex );
-			_ownPawn = prefab.Clone( new CloneConfig( at, startEnabled: false, name: $"Charades Pawn {me.DisplayName}" ) );
-			if ( _ownPawn.IsValid() )
-			{
-				HunterController.WearSavedHead( _ownPawn );
-				_ownPawn.Enabled = true;
-			}
+			spot = _hunterSpawnAt ?? SpotFor( info.SpawnIndex );
 		}
 
+		SpawnOwnPawn( wantProp, spot );
+	}
+
+	// Clone our pawn of the given kind at `at`, dress it, enable it and (gate permitting) publish it. `disguise`
+	// carries a mimic prop's sculpted shape onto the fresh clone — the republish path; a normal mimic spawn is
+	// the prefab's default blob, which IS the blank canvas. Dressed pawns clone DISABLED, dress, then enable: an
+	// enabled clone has the DEFAULT shape's build in flight before any post-clone dress, and that build landing
+	// first is the prefab-default flash (and what the spawn snapshot would ship).
+	void SpawnOwnPawn( bool wantProp, Transform at, List<SdfBrush> disguise = null )
+	{
+		var me = Connection.Local;
+		var spawner = RoundManagerSpawner.Current;
+		var prefab = spawner.IsValid() ? (wantProp ? spawner.PropPrefab : spawner.HunterPrefab) : null;
+		if ( me is null || !prefab.IsValid() )
+			return;
+
+		var dress = !wantProp || disguise is { Count: > 0 };
+		var name = wantProp ? $"Charades Mimic {me.DisplayName}" : $"Charades Pawn {me.DisplayName}";
+		_ownPawn = prefab.Clone( new CloneConfig( at, startEnabled: !dress, name: name ) );
 		if ( !_ownPawn.IsValid() )
 			return;
+
+		if ( dress )
+		{
+			if ( wantProp )
+				HiderController.WearDisguise( _ownPawn, disguise );
+			else
+				HunterController.WearSavedHead( _ownPawn );
+			_ownPawn.Enabled = true;
+		}
 
 		_ownPawnIsProp = wantProp;
 		_hunterSpawnAt = null; // one-shot: only the spawn right after letting go of a prop
 
-		if ( Networking.IsActive )
+		if ( MayPublishPawns )
+			PublishOwnPawn();
+	}
+
+	/// <summary>Gate on putting ANY pawn on the wire: hold until every connection has finished loading the
+	/// scene. The engine DROPS object create/destroy messages that arrive while a machine is mid-scene-load,
+	/// and the sender marks them delivered — so a pawn published into that window never exists on the loading
+	/// machine. Holding the publish closes the window in the common case (a mid-game joiner re-closes it for
+	/// NEW spawns while they load); <see cref="ReconcilePawnPresence"/> heals whatever still slips through. The
+	/// pawn exists and plays locally meanwhile — the mimic's canvas just reaches the guessers a beat later.</summary>
+	bool MayPublishPawns => !Networking.IsActive || AllPlayersLoaded;
+
+	// Host-only. Someone stuck loading forever must not hold everyone's spawns hostage: the gate opens on its
+	// own after a generous wait, same spirit as LoadGate's timeout.
+	const float PublishGateTimeout = 20f;
+
+	void TickPublishGate()
+	{
+		if ( !Networking.IsActive )
 		{
-			_ownPawn.NetworkSpawn( new NetworkSpawnOptions
-			{
-				Owner = Connection.Local,
-				OrphanedMode = NetworkOrphaned.Destroy,
-			} );
+			AllPlayersLoaded = true;
+			return;
 		}
+
+		var everyoneActive = Connection.All.All( c => c.IsActive );
+		if ( everyoneActive )
+			_someoneLoadingFor = 0f;
+
+		AllPlayersLoaded = everyoneActive || _someoneLoadingFor > PublishGateTimeout;
+	}
+
+	// Put our local pawn on the network, owned by us. Orphaned → Destroy so a disconnect cleanly removes it for
+	// everyone. No-op offline, for a borrowed prop (the host networked it), or if it's already on the wire.
+	void PublishOwnPawn()
+	{
+		if ( !Networking.IsActive || _ownPawnBorrowed || !_ownPawn.IsValid() || _ownPawn.Network.Active )
+			return;
+
+		_ownPawn.NetworkSpawn( new NetworkSpawnOptions
+		{
+			Owner = Connection.Local,
+			OrphanedMode = NetworkOrphaned.Destroy,
+		} );
+	}
+
+	// A machine told us it has no copy of our pawn. The engine sends an object's create exactly once per
+	// connection and drops it if it lands mid-scene-load, so the ONLY way to reach that machine again is a
+	// fresh network identity: respawn-in-place, carrying the sculpt. Machines that had us see a one-frame swap;
+	// the machine that didn't finally gets a body. Rate-limited so a storm of requests collapses into one. The
+	// mimic mid-sculpt re-enters the editor on the fresh canvas (undo history is lost — better than a turn
+	// nobody can see).
+	void RepublishOwnPawn()
+	{
+		if ( _republishCooldown > 0f || !_ownPawn.IsValid() || _ownPawnBorrowed )
+			return;
+		_republishCooldown = 5f;
+
+		var at = _ownPawn.WorldTransform;
+		var wasProp = _ownPawnIsProp;
+		var hider = OwnHider();
+		var editing = hider.IsValid() && hider.EditMode;
+		var disguise = wasProp && hider.IsValid() && hider.DisguiseSculpture.IsValid()
+			? hider.DisguiseSculpture.Brushes?.Select( b => b.Copy() ).ToList()
+			: null;
+
+		Log.Info( $"CharadesManager: republishing our {(wasProp ? "mimic prop" : "pawn")} (a machine was missing it)." );
+
+		if ( editing )
+			hider.ExitEditing();
+
+		RetireOwnPawn();
+		SpawnOwnPawn( wasProp, at, disguise );
+		_reenterEditing = editing && Phase == CharadesPhase.Sculpting && LocalIsMimic;
+	}
+
+	bool _reenterEditing; // after a mimic republish: resume sculpting once the fresh canvas has resolved
+
+	// ── Pawn-presence heal (the charades port of RoundManager's) ─────────────────────────────────────────
+	// The HOST (which misses nothing — every message routes through it) stamps each row's live pawn object id
+	// into the roster; every CLIENT compares that against the pawns it actually holds — asking owners to
+	// republish what's missing, and dropping local copies the roster says were superseded.
+
+	// Host-only. Written only on change, so a stable game networks nothing.
+	void StampPawnIds()
+	{
+		_pawnIdScratch.Clear();
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+			MapPawn( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>() )
+			MapPawn( h?.GameObject );
+
+		foreach ( var key in Players.Keys.ToList() )
+		{
+			var row = Players[key];
+			var pawnId = _pawnIdScratch.GetValueOrDefault( key );
+			if ( row.PawnId == pawnId )
+				continue;
+
+			row.PawnId = pawnId;
+			Players[key] = row;
+		}
+
+		void MapPawn( GameObject go )
+		{
+			if ( !go.IsValid() || !go.Network.Active )
+				return;
+
+			// Released map props belong to nobody (their release dropped ownership) — rightly ignored.
+			var id = RoundManager.RosterIdOf( go );
+			if ( id is not null )
+				_pawnIdScratch[id.Value] = go.Id;
+		}
+	}
+
+	// Clients only (the host's scene IS the truth the roster is stamped from).
+	void ReconcilePawnPresence()
+	{
+		// After a mimic republish (host or client — the host owns a pawn too): back into the editor once the
+		// fresh prop has resolved its canvas.
+		if ( _reenterEditing && OwnHider() is { } own && own.DisguiseSculpture.IsValid() )
+		{
+			_reenterEditing = false;
+			own.EnterEditing();
+		}
+
+		if ( !Networking.IsActive || IsHostAuthority )
+			return;
+
+		if ( _nextPresenceScan > 0f )
+			return;
+		_nextPresenceScan = 0.5f;
+
+		var me = Connection.Local?.Id;
+
+		_presentScratch.Clear();
+		foreach ( var h in Scene.GetAllComponents<HunterController>() )
+			Collect( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>() )
+			Collect( h?.GameObject );
+
+		// MISSING: the roster names a pawn object we don't hold. Grace first — the roster delta can outrun the
+		// create by a beat — then ask the owner to republish, with a per-row backoff.
+		foreach ( var id in Players.Keys.ToList() )
+		{
+			var row = Players[id];
+
+			if ( row.PawnId == Guid.Empty || id == me || _presentScratch.Contains( row.PawnId ) )
+			{
+				_missingFor.Remove( id );
+				continue;
+			}
+
+			if ( !_missingFor.ContainsKey( id ) )
+			{
+				_missingFor[id] = 0f;
+				continue;
+			}
+
+			if ( _missingFor[id] < 3f )
+				continue;
+
+			if ( _requestBackoff.TryGetValue( id, out var wait ) && wait > 0f )
+				continue;
+
+			_requestBackoff[id] = 8f;
+			Log.Info( $"CharadesManager: missing {row.Name}'s pawn (dropped while loading?) — requesting a republish." );
+			RequestPawnRepublish( id );
+		}
+
+		// GHOSTS: a networked pawn whose row now names a DIFFERENT object — the host explicitly saying "that one
+		// is gone" (its destroy dropped while we loaded). Needs its own grace: a fresh pawn's create can land
+		// before the roster re-stamps its id. Never our own body, never a rowless pawn (a released map prop has
+		// no row and is legitimately there).
+		foreach ( var h in Scene.GetAllComponents<HunterController>().ToList() )
+			Sweep( h?.GameObject );
+		foreach ( var h in Scene.GetAllComponents<HiderController>().ToList() )
+			Sweep( h?.GameObject );
+
+		void Collect( GameObject go )
+		{
+			if ( go.IsValid() && go.Network.Active )
+				_presentScratch.Add( go.Id );
+		}
+
+		void Sweep( GameObject go )
+		{
+			if ( !go.IsValid() || !go.Network.Active )
+				return;
+
+			var owner = RoundManager.RosterIdOf( go );
+			if ( owner is null || owner == me || !Players.TryGetValue( owner.Value, out var row ) )
+				return;
+
+			if ( row.PawnId != Guid.Empty && row.PawnId != go.Id )
+			{
+				if ( !_staleFor.ContainsKey( go.Id ) )
+				{
+					_staleFor[go.Id] = 0f;
+				}
+				else if ( _staleFor[go.Id] > 3f )
+				{
+					_staleFor.Remove( go.Id );
+					Log.Info( $"CharadesManager: dropping a stale copy of {row.Name}'s pawn (superseded by a republish)." );
+					go.Destroy();
+				}
+			}
+			else
+			{
+				_staleFor.Remove( go.Id );
+			}
+		}
+	}
+
+	/// <summary>Any machine → everyone: "I have no copy of this player's pawn — republish it." The OWNER
+	/// respawns-in-place under a fresh network identity; the HOST does the same for a bot's body. Broadcast
+	/// because machine→machine needs a shared networked object to ride — this manager is it.</summary>
+	[Rpc.Broadcast]
+	void RequestPawnRepublish( Guid rosterId )
+	{
+		if ( Connection.Local is { } local && local.Id == rosterId )
+			_republishPending = true; // handled in EnsureOwnPawn
+
+		if ( IsHostAuthority && Players.TryGetValue( rosterId, out var row ) && row.Bot )
+			RepublishBotPawn( rosterId, row );
+	}
+
+	// Host-only: destroy the bot's body and let EnsureBotPawns mint a fresh one next frame, dressed back in
+	// its sculpt (a mimic bot's scripted strokes keep building on it).
+	void RepublishBotPawn( Guid id, CharadesPlayer row )
+	{
+		if ( _botRepublishCooldown > 0f )
+			return;
+
+		var pawn = _botPawns.GetValueOrDefault( id );
+		if ( !pawn.IsValid() || !pawn.Network.Active )
+			return;
+
+		_botRepublishCooldown = 5f;
+
+		var hider = pawn.Components.Get<HiderController>();
+		if ( hider.IsValid() && hider.DisguiseSculpture.IsValid() && hider.DisguiseSculpture.Brushes is { Count: > 0 } brushes )
+			_botRedress[id] = brushes.Select( b => b.Copy() ).ToList();
+
+		Log.Info( $"CharadesManager: republishing bot pawn '{row.Name}' (a machine was missing it)." );
+		pawn.Destroy();
+		_botPawns.Remove( id );
 	}
 
 	void RetireOwnPawn()
@@ -1405,6 +1760,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 			{
 				if ( _botLooksPending.Contains( id ) )
 					TryDressBot( id );
+
+				// Spawned while the publish gate was closed → put it on the wire now that everyone has loaded.
+				if ( Networking.IsActive && MayPublishPawns && !pawn.Network.Active )
+					pawn.NetworkSpawn();
 				continue;
 			}
 
@@ -1425,7 +1784,11 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 			RoundBots.Prepare( body, id ); // stamp + take the controls away, before it goes on the wire
 
-			if ( Networking.IsActive )
+			// A republished bot gets its sculpt back (see RepublishBotPawn) — before the first bake, like a player.
+			if ( _botRedress.Remove( id, out var redress ) && redress is { Count: > 0 } )
+				HiderController.WearDisguise( body, redress );
+
+			if ( Networking.IsActive && MayPublishPawns )
 				body.NetworkSpawn();
 
 			_botPawns[id] = body;
@@ -1495,7 +1858,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	{
 		var pool = CharadesWords.PoolFor( PoolTopics );
 		var norm = CharadesWords.Normalize( _currentWord ?? "" );
-		var decoys = pool.Where( w => CharadesWords.Normalize( w ) != norm ).ToList();
+		var decoys = pool.Select( CharadesWords.Answer ).Where( w => CharadesWords.Normalize( w ) != norm ).ToList();
 		return decoys.Count > 0 ? decoys[Random.Shared.Next( decoys.Count )] : "hmm…";
 	}
 
@@ -1526,7 +1889,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 
 		if ( _botMimic.Brushes is null )
 		{
-			_currentWord = _offeredThisTurn[0];
+			_currentWord = CharadesWords.Answer( _offeredThisTurn[0] );
 			_botMimic.Brushes = RandomScribble();
 		}
 	}
@@ -1579,24 +1942,17 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost
 	}
 
 	// ── Back to the lobby (host) ──────────────────────────────────────────────────────────────────────────
-	// Same shape as RoundManager.ReturnToLobby: the spawner's SceneFile REFERENCE is the reliable path, and a
-	// failed resolve pushes the phase timer back so this retries in a few seconds instead of once per frame.
+	// Same shape as RoundManager.ReturnToLobby: arm the shared "Returning to Lobby" countdown (LobbyReturn,
+	// riding this manager's GameObject) — it freezes the game for five seconds, then changes scene for everyone.
+	// No instance to arm (a misconfigured debug scene) pushes the phase timer back so this retries in a few
+	// seconds instead of once per frame.
 	void ReturnToLobby()
 	{
-		if ( Networking.IsActive && !Networking.IsHost )
+		if ( LobbyReturn.Begin( "game over" ) )
 			return;
 
-		var options = new SceneLoadOptions();
-		var lobby = RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.LobbyScene : null;
-		var resolved = lobby is not null ? options.SetScene( lobby ) : options.SetScene( LobbyController.LobbyScene );
-		if ( !resolved )
-		{
-			Log.Warning( "CharadesManager: couldn't resolve the lobby scene — retrying in 5s." );
-			PhaseEndsAt = 5f;
-			return;
-		}
-
-		Game.ChangeScene( options );
+		Log.Warning( "CharadesManager: no LobbyReturn to arm — is this manager spawner-made? Retrying in 5s." );
+		PhaseEndsAt = 5f;
 	}
 
 	// ── Roster upkeep (host) ──────────────────────────────────────────────────────────────────────────────

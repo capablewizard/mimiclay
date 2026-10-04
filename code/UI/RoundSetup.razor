@@ -43,9 +43,9 @@
 						@* The face (art + frame + shade) and the name spring sideways on a pick; the arrows sit still on top, so
 						   rapid clicking never has its target slide out from under the cursor. *@
 						<div class="banner-face @GameBumpClass"><div class="art-shade full"></div></div>
-						<div class="banner-arrow" @onclick=@(() => CycleGame( -1 ))><div class="mi">chevron_left</div></div>
+						<div class="banner-arrow" @onmousedown=@Press( () => CycleGame( -1 ) )><div class="mi">chevron_left</div></div>
 						<div class="banner-name @GameBumpClass">@Game.Label</div>
-						<div class="banner-arrow" @onclick=@(() => CycleGame( 1 ))><div class="mi">chevron_right</div></div>
+						<div class="banner-arrow" @onmousedown=@Press( () => CycleGame( 1 ) )><div class="mi">chevron_right</div></div>
 					</div>
 
 					@* Scroll fades: shown only while there is more to see in that direction (see UpdateScrollFades). *@
@@ -99,25 +99,25 @@
 						<div class="option-row">
 							<div class="option-name">Hunters</div>
 							<div class="stepper compact">
-								<div class="step-btn" @onclick=@(() => AddHunters( -1 ))>remove</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddHunters( -1 ) )>remove</div>
 								<div class="step-value @Nudge.Class( nameof( AddHunters ) )">@((int)S.HunterCount)</div>
-								<div class="step-btn" @onclick=@(() => AddHunters( 1 ))>add</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddHunters( 1 ) )>add</div>
 							</div>
 						</div>
 						<div class="option-row">
 							<div class="option-name">Hide time</div>
 							<div class="stepper compact">
-								<div class="step-btn" @onclick=@(() => AddHide( -15f ))>remove</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddHide( -15f ) )>remove</div>
 								<div class="step-value @Nudge.Class( nameof( AddHide ) )">@Secs( S.HideSeconds )</div>
-								<div class="step-btn" @onclick=@(() => AddHide( 15f ))>add</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddHide( 15f ) )>add</div>
 							</div>
 						</div>
 						<div class="option-row">
 							<div class="option-name">Hunt time</div>
 							<div class="stepper compact">
-								<div class="step-btn" @onclick=@(() => AddHunt( -15f ))>remove</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddHunt( -15f ) )>remove</div>
 								<div class="step-value @Nudge.Class( nameof( AddHunt ) )">@Secs( S.HuntSeconds )</div>
-								<div class="step-btn" @onclick=@(() => AddHunt( 15f ))>add</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddHunt( 15f ) )>add</div>
 							</div>
 						</div>
 					}
@@ -126,17 +126,17 @@
 						<div class="option-row">
 							<div class="option-name">Rounds</div>
 							<div class="stepper compact">
-								<div class="step-btn" @onclick=@(() => AddCharadesRounds( -1 ))>remove</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddCharadesRounds( -1 ) )>remove</div>
 								<div class="step-value @Nudge.Class( nameof( AddCharadesRounds ) )">@Ch.Rounds</div>
-								<div class="step-btn" @onclick=@(() => AddCharadesRounds( 1 ))>add</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddCharadesRounds( 1 ) )>add</div>
 							</div>
 						</div>
 						<div class="option-row">
 							<div class="option-name">Sculpt time</div>
 							<div class="stepper compact">
-								<div class="step-btn" @onclick=@(() => AddCharadesSculpt( -15f ))>remove</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddCharadesSculpt( -15f ) )>remove</div>
 								<div class="step-value @Nudge.Class( nameof( AddCharadesSculpt ) )">@Secs( Ch.SculptSeconds )</div>
-								<div class="step-btn" @onclick=@(() => AddCharadesSculpt( 15f ))>add</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddCharadesSculpt( 15f ) )>add</div>
 							</div>
 						</div>
 						@if ( Ch.Source == PhraseSource.Players )
@@ -144,9 +144,9 @@
 							<div class="option-row">
 								<div class="option-name">Write time</div>
 								<div class="stepper compact">
-									<div class="step-btn" @onclick=@(() => AddCharadesWrite( -15f ))>remove</div>
+									<div class="step-btn" @onmousedown=@Press( () => AddCharadesWrite( -15f ) )>remove</div>
 									<div class="step-value @Nudge.Class( nameof( AddCharadesWrite ) )">@Secs( Ch.WriteSeconds )</div>
-									<div class="step-btn" @onclick=@(() => AddCharadesWrite( 15f ))>add</div>
+									<div class="step-btn" @onmousedown=@Press( () => AddCharadesWrite( 15f ) )>add</div>
 								</div>
 							</div>
 						}
@@ -155,8 +155,8 @@
 							<div class="option-row">
 								<div class="option-name">Topic choices</div>
 								<div class="seg compact">
-									<div class="pill @(Ch.TopicChoices ? $"on {Nudge.Class( nameof( SetCharadesChoices ) )}" : "")" @onclick=@(() => SetCharadesChoices( true ))>Yes</div>
-									<div class="pill @(!Ch.TopicChoices ? $"on {Nudge.Class( nameof( SetCharadesChoices ) )}" : "")" @onclick=@(() => SetCharadesChoices( false ))>No</div>
+									<div class="pill @(Ch.TopicChoices ? $"on {Nudge.Class( nameof( SetCharadesChoices ) )}" : "")" @onmousedown=@Press( () => SetCharadesChoices( true ) )>Yes</div>
+									<div class="pill @(!Ch.TopicChoices ? $"on {Nudge.Class( nameof( SetCharadesChoices ) )}" : "")" @onmousedown=@Press( () => SetCharadesChoices( false ) )>No</div>
 								</div>
 							</div>
 						}
@@ -165,8 +165,8 @@
 						<div class="option-row">
 							<div class="option-name">Length hints</div>
 							<div class="seg compact">
-								<div class="pill @(Ch.WordLengthHints ? $"on {Nudge.Class( nameof( SetCharadesHints ) )}" : "")" @onclick=@(() => SetCharadesHints( true ))>Yes</div>
-								<div class="pill @(!Ch.WordLengthHints ? $"on {Nudge.Class( nameof( SetCharadesHints ) )}" : "")" @onclick=@(() => SetCharadesHints( false ))>No</div>
+								<div class="pill @(Ch.WordLengthHints ? $"on {Nudge.Class( nameof( SetCharadesHints ) )}" : "")" @onmousedown=@Press( () => SetCharadesHints( true ) )>Yes</div>
+								<div class="pill @(!Ch.WordLengthHints ? $"on {Nudge.Class( nameof( SetCharadesHints ) )}" : "")" @onmousedown=@Press( () => SetCharadesHints( false ) )>No</div>
 							</div>
 						</div>
 					}
@@ -175,8 +175,8 @@
 						<div class="option-row">
 							<div class="option-name">Spawn props</div>
 							<div class="seg compact">
-								<div class="pill @(C.SpawnProps ? $"on {Nudge.Class( nameof( SetSpawnProps ) )}" : "")" @onclick=@(() => SetSpawnProps( true ))>Yes</div>
-								<div class="pill @(!C.SpawnProps ? $"on {Nudge.Class( nameof( SetSpawnProps ) )}" : "")" @onclick=@(() => SetSpawnProps( false ))>No</div>
+								<div class="pill @(C.SpawnProps ? $"on {Nudge.Class( nameof( SetSpawnProps ) )}" : "")" @onmousedown=@Press( () => SetSpawnProps( true ) )>Yes</div>
+								<div class="pill @(!C.SpawnProps ? $"on {Nudge.Class( nameof( SetSpawnProps ) )}" : "")" @onmousedown=@Press( () => SetSpawnProps( false ) )>No</div>
 							</div>
 						</div>
 					}
@@ -193,36 +193,34 @@
 								<div class="option-row">
 									<div class="option-name">Taunt timer</div>
 									<div class="stepper compact">
-										<div class="step-btn" @onclick=@(() => AddTaunt( -5f ))>remove</div>
+										<div class="step-btn" @onmousedown=@Press( () => AddTaunt( -5f ) )>remove</div>
 										<div class="step-value @Nudge.Class( nameof( AddTaunt ) )">@SecsOrNone( S.TauntSeconds )</div>
-										<div class="step-btn" @onclick=@(() => AddTaunt( 5f ))>add</div>
+										<div class="step-btn" @onmousedown=@Press( () => AddTaunt( 5f ) )>add</div>
 									</div>
 								</div>
 								<div class="option-row">
 									<div class="option-name">Silhouette hints</div>
 									<div class="stepper compact">
-										<div class="step-btn" @onclick=@(() => AddHint( -15f ))>remove</div>
+										<div class="step-btn" @onmousedown=@Press( () => AddHint( -15f ) )>remove</div>
 										<div class="step-value @Nudge.Class( nameof( AddHint ) )">@SecsOrNone( S.HintSeconds )</div>
-										<div class="step-btn" @onclick=@(() => AddHint( 15f ))>add</div>
+										<div class="step-btn" @onmousedown=@Press( () => AddHint( 15f ) )>add</div>
 									</div>
 								</div>
 								<div class="option-row">
 									<div class="option-name">Reveal time</div>
 									<div class="stepper compact">
-										<div class="step-btn" @onclick=@(() => AddReveal( -5f ))>remove</div>
+										<div class="step-btn" @onmousedown=@Press( () => AddReveal( -5f ) )>remove</div>
 										<div class="step-value @Nudge.Class( nameof( AddReveal ) )">@Secs( S.RevealSeconds )</div>
-										<div class="step-btn" @onclick=@(() => AddReveal( 5f ))>add</div>
+										<div class="step-btn" @onmousedown=@Press( () => AddReveal( 5f ) )>add</div>
 									</div>
 								</div>
 							}
 							else if ( G == GameModeKind.Charades )
 							{
-								@* Standard: the built-in topics. Chips toggle; Everything lights them all. The last one
-								   only goes off while a Community list is ticked (something must be left to draw from). *@
+								@* Standard: the built-in topics. Chips toggle (all lit by default). The last one only
+								   goes off while a Community list is ticked (something must be left to draw from). *@
 								<div class="option-name chips-label">Standard</div>
 								<div class="pill-grid">
-									<div class="pill all @(IsEverything ? "on" : "")"
-										 @onclick=@(() => LobbyManager.Current?.SetCharadesAllTopics())>Everything</div>
 									@foreach ( var topic in CharadesWords.BuiltInTopics() )
 									{
 										var t = topic;
@@ -295,7 +293,7 @@
 								if ( IsPicked( m.ResourcePath ) )
 									continue;
 								var map = m;
-								<div class="map-card small" @onclick=@(() => PickMap( map.ResourcePath ))>
+								<div class="map-card small" @onmousedown=@Press( () => PickMap( map.ResourcePath ) )>
 									@if ( map.Preview is not null )
 									{
 										<CoverImage class="map-img" Texture=@map.Preview />
@@ -306,7 +304,7 @@
 							}
 							@if ( !IsPicked( MapCatalog.RandomIdent ) )
 							{
-								<div class="map-card small surprise" @onclick=@(() => PickMap( MapCatalog.RandomIdent ))>
+								<div class="map-card small surprise" @onmousedown=@Press( () => PickMap( MapCatalog.RandomIdent ) )>
 									<div class="surprise-art"><div class="spark a"></div><div class="q">?</div><div class="spark b"></div></div>
 									<div class="map-name dark">Surprise me</div>
 								</div>
@@ -360,6 +358,12 @@
 	readonly PickNudge Nudge = new();
 	string GameBumpClass => Nudge.Class( "game" );
 	string MapBumpClass => Nudge.Class( "map", "bump" );
+
+	// Pick controls (banner arrows, stepper ±, Yes/No pills) fire on PRESS, not release: `onclick` waits for mouse-up,
+	// so the spring started a whole click-length after the finger went down and read as input lag. Left button only,
+	// to keep onclick's semantics. Trade-off: no abort-by-dragging-off, which these small repeatable controls don't need.
+	static Action<PanelEvent> Press( Action act ) => e => { if ( e is MousePanelEvent m && m.MouseButton == MouseButtons.Left ) act(); };
+
 
 	// The picked map: the lobby's own setting, read straight through (the host's setters write the synced struct
 	// immediately, so the cards update on click). A separate local copy used to drift from it — switching games
@@ -587,8 +591,7 @@
 	void SetCharadesSource( PhraseSource source ) => LobbyManager.Current?.SetCharadesSource( source );
 	void AddCharadesWrite( float d ) => Nudge.Change( nameof( AddCharadesWrite ), MathF.Sign( d ), () => Ch.WriteSeconds, () => LobbyManager.Current?.SetCharadesWriteSeconds( Ch.WriteSeconds + d ) );
 
-	// Built-in topic chips: the empty selection means every one is lit (that's the Everything chip).
-	bool IsEverything => CharadesTopics.Parse( Ch.Topics ).Count == 0;
+	// Built-in topic chips: the empty selection means every one is lit.
 	bool TopicOn( string id )
 	{
 		var ids = CharadesTopics.Parse( Ch.Topics );

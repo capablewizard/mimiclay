@@ -41,7 +41,7 @@ namespace Mimiclay;
 [Title( "Round Manager" )]
 [Category( "Mimiclay" )]
 [Icon( "sports_esports" )]
-public sealed class RoundManager : Component, IRoundContext
+public sealed class RoundManager : Component, IRoundContext, Component.INetworkListener
 {
 	/// <summary>The active round manager in this scene (null in the lobby/menu). UI + the hunter's shot read this.</summary>
 	public static RoundManager Current { get; private set; }
@@ -54,10 +54,12 @@ public sealed class RoundManager : Component, IRoundContext
 	/// round is over (<see cref="RoundPhase.Consolidation"/> — shots there are harmless fun; the hit report is
 	/// still phase-gated host-side). Read by <see cref="HunterController"/> before each shot. During Hide and
 	/// Reveal the whole shot is suppressed — not just the hit report (<see cref="ReportPropHit"/> already gates
-	/// that) — because the cosmetic pellet carve permanently craters clay that props have no way to heal.</summary>
-	public static bool HuntingAllowed => !Current.IsValid()
+	/// that) — because the cosmetic pellet carve permanently craters clay that props have no way to heal.
+	/// Never while the return-to-lobby countdown runs: the game is frozen, nothing changes any more.</summary>
+	public static bool HuntingAllowed => !LobbyReturn.Active
+		&& (!Current.IsValid()
 		|| Current.Phase == RoundPhase.Hunt
-		|| Current.Phase == RoundPhase.Consolidation;
+		|| Current.Phase == RoundPhase.Consolidation);
 
 	/// <summary>Lobby-data key carrying the chosen hunter connection ids from the lobby into the map scene
 	/// (comma-separated guids). Written by <see cref="LobbyController"/>, read in <see cref="AssignRoles"/>.</summary>
@@ -274,6 +276,7 @@ public sealed class RoundManager : Component, IRoundContext
 		// EVERY machine: reconcile the pawns we actually HAVE against the pawns the roster says exist —
 		// the heal for the engine's mid-load create/destroy drops. See the method for the whole story.
 		ReconcilePawnPresence();
+		WatchRoster();
 
 		if ( !IsHostAuthority )
 			return;
@@ -285,13 +288,60 @@ public sealed class RoundManager : Component, IRoundContext
 			ReconcileConnections();
 		EnsureBotPawns();
 		StampPawnIds();
-		AllPlayersLoaded = Connection.All.All( c => c.IsActive );
+		TickPublishGate();
 		TickHostPhase();
+	}
+
+	// Host-only. The publish gate (MayPublishPawns): closed while any connection is still loading — but someone
+	// stuck loading forever must not hold everyone's spawns hostage, so it opens on its own after a generous wait.
+	const float PublishGateTimeout = 20f;
+	RealTimeSince _someoneLoadingFor;
+
+	void TickPublishGate()
+	{
+		var everyoneActive = Connection.All.All( c => c.IsActive );
+		if ( everyoneActive )
+			_someoneLoadingFor = 0f;
+
+		AllPlayersLoaded = everyoneActive || _someoneLoadingFor > PublishGateTimeout;
+	}
+
+	// ── Roster re-sync (see NetStateResync) ──────────────────────────────────────────────────────────────────
+	// The engine drops reliable NetDictionary deltas at a machine that is mid-scene-load and never resends them,
+	// so a slow loader can be missing roster ROWS (its own included — and with no row it can never spawn). The
+	// host re-sends this manager's full state the moment a connection finishes loading; clients also ask when
+	// their own row is missing once roles have been dealt. Capped: a late joiner legitimately has no row.
+	void Component.INetworkListener.OnActive( Connection channel ) => NetStateResync.OnPlayerActive( this, channel );
+
+	[Rpc.Host]
+	void RequestStateResync()
+		=> NetStateResync.Refresh( this, $"{Rpc.Caller?.DisplayName ?? "a client"} reports an incomplete roster" );
+
+	readonly NetStateResync.RowWatch _rosterWatch = new();
+
+	void WatchRoster()
+	{
+		if ( !Networking.IsActive || IsHostAuthority || Connection.Local is not { } me )
+			return;
+
+		// Rows only exist once the load gate has dealt roles; a joiner after that point never gets one.
+		var expectRow = Phase != RoundPhase.Lobby && !AwaitingPlayers;
+		var complete = !expectRow || Players.ContainsKey( me.Id );
+		if ( _rosterWatch.Tick( complete, maxAttempts: 3 ) )
+		{
+			Log.Info( $"RoundManager: no roster row of our own here ({Players.Count} rows) — asking the host to re-send." );
+			RequestStateResync();
+		}
 	}
 
 	// ── Host: phase ticking + transitions ────────────────────────────────────────────────────────────────────
 	void TickHostPhase()
 	{
+		// Returning to the lobby (the round ran out, or the host ended it from the pause menu): the game is
+		// FROZEN for the countdown — no transitions, no scoring, nothing. LobbyReturn changes the scene itself.
+		if ( LobbyReturn.Active )
+			return;
+
 		switch ( Phase )
 		{
 			case RoundPhase.Starting:
@@ -322,6 +372,22 @@ public sealed class RoundManager : Component, IRoundContext
 				if ( PhaseEndsAt <= 0f ) ReturnToLobby();
 				break;
 		}
+	}
+
+	// ── Loop back to the lobby ───────────────────────────────────────────────────────────────────────────────
+	// Host-only. After consolidation, arm the shared "Returning to Lobby" countdown (LobbyReturn, riding this
+	// manager's GameObject); it freezes the game for five seconds and then changes scene so the group can
+	// reconfigure + play again. TODO: carry the round's results (cumulative scores, who won) back to the lobby
+	// via lobby data so the lobby can show a running scoreboard.
+	void ReturnToLobby()
+	{
+		if ( LobbyReturn.Begin( "round over" ) )
+			return;
+
+		// No LobbyReturn in this scene (it only exists on a spawner-made manager): retry in a few seconds rather
+		// than once per frame — the spawner creates it, so this is only ever a misconfigured debug scene.
+		Log.Warning( "RoundManager: no LobbyReturn to arm — is this manager spawner-made? Retrying in 5s." );
+		PhaseEndsAt = 5f;
 	}
 
 	// Host-only: set the new phase's duration, then flip the synced Phase. Phase is set LAST so a client never sees the
@@ -1200,7 +1266,8 @@ public sealed class RoundManager : Component, IRoundContext
 	[Rpc.Host]
 	public void ReportPropHit( GameObject propPawn )
 	{
-		if ( Phase != RoundPhase.Hunt || !propPawn.IsValid() )
+		// Not while returning to the lobby: the game is frozen, a shot in flight changes nothing.
+		if ( Phase != RoundPhase.Hunt || LobbyReturn.Active || !propPawn.IsValid() )
 			return;
 
 		var hunter = Rpc.Caller;
@@ -1388,30 +1455,4 @@ public sealed class RoundManager : Component, IRoundContext
 
 	// Next free per-role spawn index = how many rows already hold that role.
 	int NextSpawnIndex( PlayerRole role ) => Players.Values.Count( p => p.Role == role );
-
-	// ── Loop back to the lobby ───────────────────────────────────────────────────────────────────────────────
-	// Host-only. After consolidation, change scene back to the lobby so the group can reconfigure + play again.
-	void ReturnToLobby()
-	{
-		if ( !Networking.IsHost )
-			return;
-
-		// TODO: carry the round's results (cumulative scores, who won) back to the lobby via lobby data so the
-		// lobby can show a running scoreboard. For the block-out we just return.
-		// The spawner's SceneFile REFERENCE is the reliable path; the string lookup is only a fallback for a map
-		// whose spawner hasn't wired LobbyScene (ResourceLibrary-by-path has returned null mid-session before).
-		var options = new SceneLoadOptions();
-		var lobby = RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.LobbyScene : null;
-		var resolved = lobby is not null ? options.SetScene( lobby ) : options.SetScene( LobbyController.LobbyScene );
-		if ( !resolved )
-		{
-			// Push the phase timer back so TickHostPhase retries in a few seconds instead of every frame —
-			// a failed resolve otherwise re-runs this (and its engine warning) once per frame, forever.
-			Log.Warning( $"RoundManager: couldn't resolve the lobby scene — retrying in 5s. Wire LobbyScene on the map's RoundManagerSpawner." );
-			PhaseEndsAt = 5f;
-			return;
-		}
-
-		Game.ChangeScene( options );
-	}
 }
