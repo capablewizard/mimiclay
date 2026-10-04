@@ -40,9 +40,8 @@ public static class Headwear
 	/// <summary>What this roster id wears right now.</summary>
 	public static Kind Of( Guid connection )
 	{
-		// The Empty guard is on the crown only: HostId reads Empty when there's no host to find, and that mustn't
-		// crown an empty id. Empty IS a real roster id, though: RoundBots.IdFor( 0 ) builds the all-zero guid, so
-		// it's "Bot 1".
+		// HostId reads Empty when there's no host to find, and that mustn't crown an empty id. (No roster row is
+		// Empty — RoundBots.IdFor is 1-based — so the guard can't cost a bot its hat.)
 		if ( connection != Guid.Empty && connection == HostId ) return Kind.Crown;
 		return SlotOf( connection ) is not null ? Kind.PartyHat : Kind.None;
 	}
