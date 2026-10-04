@@ -74,7 +74,7 @@ public sealed class PropClaims : Component, IInteractable
 	/// spawns the service (RoundManagerSpawner for creative maps, LobbyController for the lobby), BEFORE the
 	/// NetworkSpawn so the snapshot ships it to every client's hover.</summary>
 	[Property, Range( 64f, 4096f )]
-	public float HoverRange { get; set; } = 300f;
+	public float HoverRange { get; set; } = 100f;
 
 	/// <summary>The reach the host validates a claim against, in origin-to-origin terms. Slack over
 	/// <see cref="HoverRange"/> on two counts: the client measured to a SURFACE, and the origin of a large prop

@@ -215,7 +215,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "PropHoverRange": 300,
+          "PropHoverRange": 100,
           "PropPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/prop.prefab"

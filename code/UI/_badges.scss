@@ -99,6 +99,37 @@
 		-1.4px -1.4px 0px $paper-edge;
 }
 
+// --- Badge image -----------------------------------------------------------------
+// A custom emoji drawn as a PNG, for when no Unicode one fits. It stands in for .badge-glyph, so it's sized to
+// match the glyph's 35px (smaller icons override the size). Art lives in Assets/UI/Emoji/ — only loose files
+// under UI/ ship — drawn at 160px in the flat Windows 11 "Microsoft" emoji style so it sits beside the system ones.
+//
+// The outline can't be .badge-glyph's text-shadow ring (an image isn't text), so it's the same eight offsets as
+// a drop-shadow filter, which shadows the rendered alpha whatever drew it. ONE drop-shadow() holding the whole
+// comma list: each drop-shadow() call in a filter REPLACES the list, so eight separate calls would keep only the
+// last. NOT filter: border-wrap() — it's rounder and a single draw, but the engine's ui_borderwrap shader skips
+// the sRGB→linear conversion, so $paper-edge (#2c2418) came out as a washed-out #736956. A filter renders the
+// panel through its own layer texture, so keep it on this leaf element, not on the badge box.
+.badge-img
+{
+	width: 35px;
+	height: 35px;
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: center;
+	filter: drop-shadow(
+		2px 0px 0px $paper-edge,
+		-2px 0px 0px $paper-edge,
+		0px 2px 0px $paper-edge,
+		0px -2px 0px $paper-edge,
+		1.4px 1.4px 0px $paper-edge,
+		-1.4px 1.4px 0px $paper-edge,
+		1.4px -1.4px 0px $paper-edge,
+		-1.4px -1.4px 0px $paper-edge );
+}
+
+.party-hat { background-image: url( "/ui/emoji/party_hat.png" ); }
+
 // Badge going up: springs out from nothing, overshoots, settles. Four steps rather than an easing curve —
 // a decaying overshoot is what reads as "spring", and spelling out the poses doesn't depend on s&box
 // supporting any particular easing function.

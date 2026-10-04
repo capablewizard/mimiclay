@@ -14,10 +14,11 @@ namespace Mimiclay;
 /// </summary>
 public static class RoundBots
 {
-	/// <summary>The roster id for bot seat <paramref name="index"/>: the seat number in the last field of an
+	/// <summary>The roster id for bot seat <paramref name="index"/>: the 1-based seat number in the last field of an
 	/// otherwise-zero guid. Deterministic (a bot keeps its identity across a re-assign, and across the lobby →
-	/// map scene change), sorts in seat order, and can't collide with a real connection's guid.</summary>
-	public static Guid IdFor( int index ) => new( $"00000000-0000-0000-0000-{index:D12}" );
+	/// map scene change), sorts in seat order, and can't collide with a real connection's guid. 1-based so seat 0
+	/// is never <see cref="Guid.Empty"/>, which everything else reads as "nobody" (an unset mimic, no author).</summary>
+	public static Guid IdFor( int index ) => new( $"00000000-0000-0000-0000-{index + 1:D12}" );
 
 	/// <summary>Display name for bot seat <paramref name="index"/> — 1-based, so the first bot reads "Bot 1".</summary>
 	public static string NameFor( int index ) => $"Bot {index + 1}";

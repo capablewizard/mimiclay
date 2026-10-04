@@ -63,7 +63,7 @@ public sealed class LobbyController : Component
 	/// how close a hunter must be for clay to outline and offer the prompt, measured eye-to-surface; it
 	/// authors <see cref="PropClaims.HoverRange"/> the way RoundManagerSpawner's CreativeHoverRange does for
 	/// creative maps.</summary>
-	[Property, Group( "Prop Editing" ), Range( 64f, 4096f )] public float PropHoverRange { get; set; } = 300f;
+	[Property, Group( "Prop Editing" ), Range( 64f, 4096f )] public float PropHoverRange { get; set; } = 100f;
 
 	// ── Test bots ─────────────────────────────────────────────────────────────────────────────────────────
 	// Fake players so a solo editor session can see a full lobby: roster pips, names, a hunter count worth

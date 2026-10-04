@@ -64,7 +64,7 @@ public readonly record struct InteractChoice( IInteractable Provider, InteractOp
 public static class Interactions
 {
 	/// <summary>Reach where no claim service authors one (<see cref="PropClaims.HoverRange"/> wins when live).</summary>
-	public const float DefaultRange = 300f;
+	public const float DefaultRange = 100f;
 
 	static readonly List<IInteractable> _sources = new();
 

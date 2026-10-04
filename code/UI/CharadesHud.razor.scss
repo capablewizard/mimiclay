@@ -264,6 +264,31 @@
 			.corner-badge { right: -4px; bottom: -4px; }
 			.badge-glyph { font-size: 28px; }
 
+			// Headwear (who wears what: Headwear.cs) — RoundHud's lobby crown and party hat (see its .crown-badge /
+			// .hat-badge for the why), scaled to these 76px heads: × 76/96. The crown is .icon-body's last child, so
+			// it draws over the head; the hat its first, so it draws behind it.
+			.crown-badge {
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: -19px;
+				align-items: center;
+				justify-content: center;
+				transform: rotate( -8deg );
+			}
+
+			.hat-badge {
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: -6px;
+				align-items: center;
+				justify-content: center;
+				transform: rotate( -8deg );
+
+				.party-hat { width: 35px; height: 35px; transform: translate( -21px, -4px ) rotate( -30deg ); }
+			}
+
 			// 🔊 talking on voice chat: the one free corner, TOP-right — the round HUD's speak-badge spot (same
 			// offsets, same -12° .speak-tilt from the roster kit). Turn badge bottom-right, "+X" top-left.
 			.corner-badge.speak {

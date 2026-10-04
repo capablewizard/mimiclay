@@ -46,7 +46,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "PropHoverRange": 300,
+          "PropHoverRange": 100,
           "PropPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/prop.prefab"
@@ -556,7 +556,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "f7502b2e-c0f2-4a1c-97b5-390e5aabacd5",
+            "Id": "107f4a73-fa41-4801-86c8-30fbe2a1e29c",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -613,7 +613,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "f7502b2e-c0f2-4a1c-97b5-390e5aabacd5",
+            "Id": "107f4a73-fa41-4801-86c8-30fbe2a1e29c",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1565,7 +1565,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "60236476-5aee-48da-abd6-d4a895d3f587",
+                "Id": "a0621a3f-e93e-4166-8fe5-9f016c7d9c7b",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1611,7 +1611,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "9a6201eb-4268-42a1-821f-3ddffb13d09e",
+                "Id": "368f626c-0f22-4052-8962-facb96f2a348",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1639,7 +1639,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "9a6201eb-4268-42a1-821f-3ddffb13d09e",
+                "Id": "368f626c-0f22-4052-8962-facb96f2a348",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1686,7 +1686,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "8b949d49-f5cf-4ed1-bcfb-22b0c1f7e37f",
+                "Id": "0fd025c3-bb7c-4596-9896-00dd0901f85d",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1730,7 +1730,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "e18bbe65-01d6-4b64-9018-31090ecbde17",
+                "Id": "daf71f72-7cd2-479f-86e9-c1a589bee9ab",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2042,7 +2042,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "1b8763b0-7bf8-4081-9bd0-9c302d76479d",
+                "Id": "01e0ffd9-a267-4d9b-81fa-8d31bd1bb7a2",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2086,7 +2086,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "3df887c7-2caf-4c9e-97d4-92c12b4e2b34",
+                "Id": "eaae9f3b-603e-4961-812f-587fa76606f8",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2130,7 +2130,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "246a9fa5-bee6-4708-9699-781f1f6731f6",
+                "Id": "42c6351d-2fcb-4ce8-994d-e711a1d4919f",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2176,7 +2176,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "3337ee17-06db-464c-bc36-aee4275667d9",
+                "Id": "81604934-aa4c-4d15-8ada-f2561976d69b",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2204,7 +2204,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "3337ee17-06db-464c-bc36-aee4275667d9",
+                "Id": "81604934-aa4c-4d15-8ada-f2561976d69b",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3314,7 +3314,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "661f6664-5134-4852-b9c8-1dce52552e0c",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3342,7 +3342,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "661f6664-5134-4852-b9c8-1dce52552e0c",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3391,7 +3391,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "661f6664-5134-4852-b9c8-1dce52552e0c",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3419,7 +3419,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "661f6664-5134-4852-b9c8-1dce52552e0c",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -4532,14 +4532,6 @@
               "Type": "Component",
               "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
             },
-            "Property": "ReceiveDecals",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
             "Property": "SdfShadowRadii",
             "Value": 10
           },
@@ -5346,7 +5338,7 @@
           },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 13:33:32",
+          "LastImport": "63 object(s), 67661 tris — 14:40:40",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -10903,14 +10895,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10952,14 +10936,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11017,14 +10993,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11082,14 +11050,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11147,14 +11107,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11212,14 +11164,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11352,7 +11296,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11369,7 +11313,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11526,14 +11470,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-424.970551"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11583,14 +11519,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11640,14 +11568,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11689,14 +11609,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-465.638519"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11738,14 +11650,6 @@
             },
             "Property": "Position",
             "Value": "-250.648331,-584.849365,-371.277924"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11787,30 +11691,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-465.34613"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11868,14 +11748,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11924,7 +11796,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -11933,14 +11805,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11998,14 +11862,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12063,14 +11919,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12112,30 +11960,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-504.864471"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12185,14 +12009,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.707106829,0.707106709"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12242,14 +12058,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.707106829,0.707106709"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12299,14 +12107,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -15104,14 +14904,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -15169,14 +14961,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -15226,14 +15010,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -15283,14 +15059,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -15645,14 +15413,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -16005,6 +15765,14 @@
               "Type": "Component",
               "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
+            "Property": "__enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           },
@@ -16047,14 +15815,6 @@
             },
             "Property": "MinQualityRadii",
             "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           },
           {
             "Target": {
@@ -16168,14 +15928,6 @@
             },
             "Property": "MinQualityRadii",
             "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           },
           {
             "Target": {
@@ -17024,14 +16776,6 @@
               "Type": "Component",
               "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
             },
-            "Property": "ReceiveDecals",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
             "Property": "SdfShadowRadii",
             "Value": 0.3106796
           },
@@ -17696,14 +17440,6 @@
             },
             "Property": "AdaptiveQuality",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -17770,14 +17506,6 @@
             },
             "Property": "AdaptiveQuality",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -17828,14 +17556,6 @@
             },
             "Property": "FieldResolution",
             "Value": 256
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6625adfb-86e2-4bac-8d28-54381d2f524c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -18243,14 +17963,6 @@
                 "BoundingRadius": 2.7031977
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2923add1-725a-4f3f-95d6-239b3ad19cb3"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -18659,14 +18371,6 @@
                 "BoundingRadius": 22.752634
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "236b344a-3664-4091-be79-94f64dd145df"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19123,14 +18827,6 @@
                 "BoundingRadius": 22.18174
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1722d7a6-f515-47fa-8cef-4efa147f0ce5"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19488,14 +19184,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "650b2719-d4f4-4d80-ba94-59dd81331a97"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19553,14 +19241,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d75a7d42-caa8-4bd7-b3aa-ebd91c607709"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19594,22 +19274,6 @@
             },
             "Property": "Position",
             "Value": "153.794373,-1134.85608,-365.04541"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "e7601da9-8ae1-4549-855f-b2b5034d6707"
-            },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "208e5f1e-dc36-4d2a-adda-aaab62430af8"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19659,14 +19323,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19724,14 +19380,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19781,14 +19429,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f13ba4e2-bffb-484f-9691-8b83745e116a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20134,24 +19774,8 @@
               "Type": "Component",
               "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f13ba4e2-bffb-484f-9691-8b83745e116a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20202,14 +19826,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20275,14 +19891,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f209ad5e-7447-4eca-ab11-f31736c30c88"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20340,14 +19948,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20381,14 +19981,6 @@
             },
             "Property": "Position",
             "Value": "-179.329224,-1250.5437,-383.452118"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a191ebf5-bf3e-43aa-947e-6fc6469caf74"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20447,14 +20039,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cc42d129-3e63-4238-9cbe-38cd581ddccd"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20504,14 +20088,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f209ad5e-7447-4eca-ab11-f31736c30c88"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20561,14 +20137,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20656,14 +20224,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.964345634,-0.264646053"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1d957c60-f050-4e85-89cc-572156f637cc"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20714,14 +20274,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a21f5351-8c21-4334-b94d-783bffca524c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -21484,14 +21036,6 @@
                 "BoundingRadius": 4.1074
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0faf42a5-650a-4701-a4fd-507cd8222af7"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -21566,7 +21110,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "ac108b6b-ad8c-44c8-b17e-7c1f15017fe8",
+            "Id": "3b9b0376-88f4-4902-b612-dac0c852cce0",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -21630,14 +21174,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6a71afea-4d24-45c7-b96e-237af6fa8697"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -21695,14 +21231,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "74827999-5c7c-45b4-8a0d-748a8977f733"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []

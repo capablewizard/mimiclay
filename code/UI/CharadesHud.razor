@@ -162,6 +162,7 @@
 						var p = row.Player;
 						var icon = _icons.Of( Scene, p.Connection, facesOnly: true );
 						var medal = MedalFor( row.Rank );
+						var wear = Headwear.Of( p.Connection );
 						@if ( i > 0 )
 						{
 							<div class="divider"></div>
@@ -169,6 +170,11 @@
 						<div class="board-row @(row.Rank == 1 ? "selected" : "")" style="z-index: @(RowZ( i ))">
 							<div class="player-icon">
 								<div class="icon-body">
+									@* Party hat behind the head, crown over it — RoundHud's headwear (see Headwear). *@
+									@if ( wear == Headwear.Kind.PartyHat )
+									{
+										<div class="hat-badge"><div class="badge-img party-hat" style="filter-hue-rotate: @(Headwear.HatHue( p.Connection ).ToString( "0" ))deg"></div></div>
+									}
 									@if ( icon.HasPicture )
 									{
 										<SdfIcon Key=@p.Connection Source=@icon.Sculpture Brushes=@icon.Fallback Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@IconOutline Supersample=@RoundHud.IconSupersample class="icon-render" />
@@ -184,6 +190,10 @@
 									<div class="corner-badge speak @(_speakers.Contains( p.Connection ) ? "on" : "")">
 										<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
 									</div>
+									@if ( wear == Headwear.Kind.Crown )
+									{
+										<div class="crown-badge"><div class="badge-glyph">👑</div></div>
+									}
 								</div>
 							</div>
 							<div class="rank">@(row.Rank).</div>
@@ -219,6 +229,7 @@
 					var p = row.Player;
 					var icon = _icons.Of( Scene, p.Connection, facesOnly: true );
 					var badge = BadgeFor( p );
+					var wear = Headwear.Of( p.Connection );
 					@if ( i > 0 )
 					{
 						<div class="divider"></div>
@@ -228,6 +239,12 @@
 						   badge) jitters — two elements because both animations drive `transform`. *@
 						<div class="player-icon @(IsCelebrating( p.Connection ) ? "celebrate" : "")">
 							<div class="icon-body">
+								@* Party hat behind the head (first child), crown over it (last) — see Headwear. Inside
+								   .icon-body so both ride the celebration jitter with the head. *@
+								@if ( wear == Headwear.Kind.PartyHat )
+								{
+									<div class="hat-badge"><div class="badge-img party-hat" style="filter-hue-rotate: @(Headwear.HatHue( p.Connection ).ToString( "0" ))deg"></div></div>
+								}
 								@if ( icon.HasPicture )
 								{
 									<SdfIcon Key=@p.Connection Source=@icon.Sculpture Brushes=@icon.Fallback Pose=@icon.Pose Frozen=@icon.Editing OutlineWidth=@IconOutline Supersample=@RoundHud.IconSupersample class="icon-render" />
@@ -247,6 +264,10 @@
 								<div class="corner-badge speak @(_speakers.Contains( p.Connection ) ? "on" : "")">
 									<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
 								</div>
+								@if ( wear == Headwear.Kind.Crown )
+								{
+									<div class="crown-badge"><div class="badge-glyph">👑</div></div>
+								}
 							</div>
 							@* +points, on the head's top-left corner (the roster's nominate-hand spot) when they score — the
 							   corner-badge lifecycle (always mounted, sprung in by .on, the glyph jittering once it lands), so it
@@ -694,5 +715,5 @@
 				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedPlace, p.Submitted ) ),
 				Manager.Players.Count,
 				// Heads: a pawn spawning / its sculpt arriving / a body swap (see RosterIcons.Signal).
-				HashCode.Combine( RosterIcons.Signal( Scene ), _icons.CachedCount, RoundHud.IconSupersample, CelebratingSignal ) );
+				HashCode.Combine( RosterIcons.Signal( Scene ), _icons.CachedCount, RoundHud.IconSupersample, CelebratingSignal, Headwear.Signal ) );
 }

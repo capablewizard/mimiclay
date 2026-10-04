@@ -214,7 +214,10 @@ $clock-col-width: 150px;
 		// ── Roster icons, shared by both layouts ────────────────────────────────────────────────────────────
 		// Icon plus its name. The margin lives here rather than on .pip so the name is inside the spacing and
 		// can't crowd the neighbouring cell.
+		// position: relative anchors the party hat (.hat-badge), which lives here as a sibling of the .pip so it
+		// can draw BEHIND the portrait. The .pip is the cell's first box, so the hat's offsets read as pip-relative.
 		.pip-cell {
+			position: relative;
 			flex-direction: column;
 			align-items: center;
 			margin: 3px;
@@ -293,6 +296,44 @@ $clock-col-width: 150px;
 
 			// The resting tilt (.speak-tilt) is the shared roster kit's (_badges.scss) — the charades board wears it too.
 		}
+
+		// The host's 👑 crown (who wears what: Headwear.cs) — top-centre, pulled down so its band overlaps the top of
+		// the portrait and it reads as WORN on the head rather than floating above it. The .pip's last child, so it
+		// draws over the portrait. Static (no spring/jitter: being host isn't an event). Full-width box + centred
+		// glyph so it centres at either pip size; the small tilt lives on the box, which owns no other transform.
+		// The per-cell animation-duration rule is inert here (no animation name).
+		.crown-badge {
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: -24px;
+			align-items: center;
+			justify-content: center;
+			transform: rotate( -8deg );
+		}
+
+		.hud-columns .crown-badge { top: -17px; }
+
+		// Party hat — the way 🥳 wears it: bigger than a corner badge, perched on the head's upper-left and leaning
+		// out ~38° (the box's -8° plus the image's -30°), brim far enough out that its brown band shows. A child of
+		// .pip-cell placed BEFORE the .pip, so it draws behind the portrait. Lower than the crown's top: the crown's
+		// offsets were tuned for a TEXT glyph, which sits low in its line box (ascent/descent pad the line, and the
+		// emoji rests on the baseline), while an image fills its box edge to edge. The transform is free on the
+		// image (.badge-img runs no animation). In-round values = the lobby's × $pip-size / $pip-size-lobby (2/3).
+		.hat-badge {
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: -8px;
+			align-items: center;
+			justify-content: center;
+			transform: rotate( -8deg );
+		}
+
+		.hud-columns .hat-badge { top: -6px; }
+
+		.hat-badge .party-hat { width: 44px; height: 44px; transform: translate( -27px, -5px ) rotate( -30deg ); }
+		.hud-columns .hat-badge .party-hat { width: 29px; height: 29px; transform: translate( -18px, -3px ) rotate( -30deg ); }
 
 		// .badge-glyph (the ink-outlined emoji) comes from the shared roster kit (_badges.scss); the in-round
 		// rosters run the smaller $pip-size, so their glyphs scale down with them.

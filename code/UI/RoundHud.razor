@@ -82,6 +82,7 @@
 				@foreach ( var player in LobbyRoster )
 				{
 					var icon = IconOf( player.Connection );
+					var wear = Headwear.Of( player.Connection );
 
 					@* One .pip either way, with the portrait/glyph as its content — so the nomination badge below
 					   is written once rather than duplicated into both branches.
@@ -90,6 +91,13 @@
 					   everyone's pip live — the icon holds still and re-renders ONCE when they exit. Pose is a
 					   prop's edit-exit camera angle (null for faces, which keep the rig's portrait pose). *@
 					<div class="pip-cell">
+						@* Party hat (see Headwear for who wears one). A sibling BEFORE the .pip, not a child of it:
+						   earlier siblings draw first, so the hat sits behind the portrait, brim tucked behind the
+						   head, worn. Inside .pip it could never get behind the generic pip's own red background. *@
+						@if ( wear == Headwear.Kind.PartyHat )
+						{
+							<div class="hat-badge"><div class="badge-img party-hat" style="filter-hue-rotate: @(Headwear.HatHue( player.Connection ).ToString( "0" ))deg"></div></div>
+						}
 						<div class="pip hunter-pip @(icon.HasPicture ? "" : "generic")">
 							@if ( icon.HasPicture )
 							{
@@ -126,6 +134,13 @@
 							<div class="speak-badge @(SpeakingOf( player.Connection ) ? "speaking" : "")">
 								<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
 							</div>
+
+							@* The host's crown — top-centre so it lands on the portrait's head, drawn OVER it (last
+							   child) so its band reads as worn. The crown wins over a hat (see Headwear). *@
+							@if ( wear == Headwear.Kind.Crown )
+							{
+								<div class="crown-badge"><div class="badge-glyph">👑</div></div>
+							}
 						</div>
 						<div class="pip-name">@player.Name</div>
 					</div>
@@ -271,10 +286,16 @@
 						@foreach ( var hunter in ShownHunters )
 						{
 							var icon = IconOf( hunter.Connection );
+							var wear = Headwear.Of( hunter.Connection );
 
 							@* One .pip either way (like the lobby's), so the paint badge is written once and
 							   survives the portrait/generic branch flipping. *@
 							<div class="pip-cell">
+								@* Behind the portrait, same as the lobby's hat. *@
+								@if ( wear == Headwear.Kind.PartyHat )
+								{
+									<div class="hat-badge"><div class="badge-img party-hat" style="filter-hue-rotate: @(Headwear.HatHue( hunter.Connection ).ToString( "0" ))deg"></div></div>
+								}
 								<div class="pip hunter-pip @(icon.HasPicture ? "" : "generic")">
 									@if ( icon.HasPicture )
 									{
@@ -296,6 +317,11 @@
 									<div class="speak-badge @(SpeakingOf( hunter.Connection ) ? "speaking" : "")">
 										<div class="speak-tilt"><div class="badge-glyph">🔊</div></div>
 									</div>
+
+									@if ( wear == Headwear.Kind.Crown )
+									{
+										<div class="crown-badge"><div class="badge-glyph">👑</div></div>
+									}
 								</div>
 								<div class="pip-name">@hunter.Name</div>
 							</div>
@@ -891,5 +917,5 @@
 			// Lobby roster: nothing else in the hash moves when someone joins or leaves the lobby, so without
 			// this the row would sit stale until the next unrelated rebuild. EditSignal is what re-renders on
 			// enter/exit edit mode — the paint badge, the icon freeze and the portrait pose all ride it.
-			HashCode.Combine( ShowRoster, LobbyPlayerCount, LobbyNominatedCount, IconSupersample, EditSignal, LocalSpeaking ) );
+			HashCode.Combine( ShowRoster, LobbyPlayerCount, LobbyNominatedCount, IconSupersample, EditSignal, LocalSpeaking, Headwear.Signal ) );
 }

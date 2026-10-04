@@ -93,6 +93,12 @@ public sealed class HunterController : Component
 	[Property, Group( "Weapon" ), Range( 0.5f, 2f ), ShowIf( nameof( TintDecalToBody ), true )]
 	public float DecalTintBrightness { get; set; } = 1.5f;
 
+	/// <summary>How far past a CLAY hit the central pellet keeps going looking for non-clay to splat — a prop
+	/// standing against a wall leaves the splat on the wall behind it, as though the shot sprayed through.
+	/// Measured from the clay hit point, so it has to cover the prop's own thickness too. 0 = clay hits never
+	/// leave a decal.</summary>
+	[Property, Group( "Weapon" ), Range( 0f, 256f )] public float DecalPassDepth { get; set; } = 32f;
+
 	/// <summary>Recoil: degrees the shooter's own view kicks up per shot. Render-only (a CameraEffectSystem
 	/// punch composed into the view, never the camera transform) — the actual aim never moves, so holding
 	/// the crosshair on a prop through the kick still hits. 0 = no kick.</summary>
@@ -2437,8 +2443,24 @@ public sealed class HunterController : Component
 		// machine plays its own prefab-authored ShootSound and clones its own effect prefabs, so no asset
 		// reference crosses the wire. Still ahead of the carve broadcasts below, so the bang always lands
 		// before its craters.
+		// Where the central pellet's splat goes. A world hit splats where it landed; a clay hit gets the crater
+		// instead, but carries on DecalPassDepth to splat whatever non-clay is behind it. Resolved here because
+		// receivers never ran the trace — a zero normal ships "no splat".
+		var decalPos = tracerEnds[0];
+		var decalNormal = Vector3.Zero;
+		if ( (hitMask & 1) != 0 )
+		{
+			if ( (clayMask & 1) == 0 )
+				decalNormal = normals[0];
+			else if ( TraceDecalBehind( traces[0], dir ) is { Hit: true } behind )
+			{
+				decalPos = behind.EndPosition;
+				decalNormal = behind.Normal;
+			}
+		}
+
 		// The central pellet's splat pick, rolled here like everything else so every machine draws the same one.
-		BroadcastShotEffects( tracerEnds, normals, hitMask, clayMask, Game.Random.Int( 0, 1023 ) );
+		BroadcastShotEffects( tracerEnds, normals, hitMask, clayMask, decalPos, decalNormal, Game.Random.Int( 0, 1023 ) );
 
 		// Recoil for the shooter. Owner-side only — proxies feel this shot through the epicenter shake in
 		// the RPC instead.
@@ -2849,14 +2871,61 @@ public sealed class HunterController : Component
 		return false;
 	}
 
+	// The pass-through for a clay hit: continue the shot from where it struck, each clay object it meets added
+	// to the ignore list, until it reaches something that ISN'T clay within DecalPassDepth of the first hit.
+	// Every clay hit is skipped, not just the first — a prop's capsule, its disguise and a decoy beside it
+	// can all stack along one ray. Capped so a pathological pile can't loop forever; running out is no splat.
+	SceneTraceResult? TraceDecalBehind( SceneTraceResult hit, Vector3 dir )
+	{
+		if ( DecalPassDepth <= 0f )
+			return null;
+
+		var end = hit.EndPosition + dir * DecalPassDepth;
+		var trace = ShotTrace( hit.StartPosition, end )
+			.WithoutTags( "trigger", "water", CharadesStageFence.WallTag );
+
+		var go = hit.GameObject;
+		for ( int i = 0; i < 4 && go.IsValid(); i++ )
+		{
+			trace = trace.IgnoreGameObjectHierarchy( ClayIgnoreRoot( go ) );
+
+			var tr = trace.Run();
+			if ( !tr.Hit )
+				return null;
+
+			if ( !IsClaySurface( tr.GameObject ) )
+				return tr;
+
+			go = tr.GameObject;
+		}
+
+		return null;
+	}
+
+	// What to ignore so the pass-through clears a whole clay object: the pawn root when the hit sits under a
+	// pawn (its capsule, disguise and face all go together), otherwise the hit object itself.
+	static GameObject ClayIgnoreRoot( GameObject go )
+	{
+		for ( var g = go; g.IsValid(); g = g.Parent )
+			if ( g.Components.Get<HiderController>().IsValid() || g.Components.Get<HunterController>().IsValid() )
+				return g;
+
+		return go;
+	}
+
 	// One impact clone per pellet that actually landed, at the hit point, turned so its FORWARD points back
 	// out along the surface normal — a cone emitter then sprays away from the surface instead of into it.
 	// Local and cosmetic, like the muzzle flash and the tracer: the RPC brought the positions, each machine
 	// clones its own prefab. Runs on every machine including the shooter's.
-	void SpawnImpacts( Vector3[] ends, Vector3[] normals, int hitMask, int clayMask, int splatPick )
+	void SpawnImpacts( Vector3[] ends, Vector3[] normals, int hitMask, int clayMask, Vector3 decalPos, Vector3 decalNormal, int splatPick )
 	{
 		if ( ends is not { Length: > 0 } || normals is null || normals.Length < ends.Length )
 			return;
+
+		// Central pellet only — one splat per shot; the scatter would carpet the wall. Resolved by the shooter
+		// (Shoot): the hit itself for a world hit, the surface behind for a clay one, zero normal for none.
+		if ( decalNormal.LengthSquared > 0.001f )
+			SpawnDecal( decalPos, decalNormal.Normal, splatPick );
 
 		for ( int i = 0; i < ends.Length; i++ )
 		{
@@ -2869,13 +2938,10 @@ public sealed class HunterController : Component
 			// fall back to straight up, which is never worse than a NaN rotation.
 			var n = normals[i].LengthSquared > 0.001f ? normals[i].Normal : Vector3.Up;
 
-			// Central pellet only — one splat (and one wet hit) per shot; the scatter would carpet the wall.
-			// Full radius, so it plays at the same volume as the central pellet's crater splat on clay.
+			// The central pellet's wet hit on a world surface — clay already gets one from its crater. Full
+			// radius, so it plays at the same volume as the central pellet's crater splat on clay.
 			if ( i == 0 && !clay )
-			{
-				SpawnDecal( ends[i], n, splatPick );
 				PlaySplat( ends[i], CarveRadius );
-			}
 
 			var prefab = clay ? ClayImpactPrefab : WorldImpactPrefab;
 			if ( prefab is null )
@@ -2972,7 +3038,7 @@ public sealed class HunterController : Component
 	// out for themselves — they never ran the trace — and it's the same "ship concrete rolled values, never a
 	// seed" deal as the carve formation. The effect PREFABS stay local, like the muzzle flash.
 	[Rpc.Broadcast]
-	void BroadcastShotEffects( Vector3[] tracerEnds, Vector3[] normals, int hitMask, int clayMask, int splatPick )
+	void BroadcastShotEffects( Vector3[] tracerEnds, Vector3[] normals, int hitMask, int clayMask, Vector3 decalPos, Vector3 decalNormal, int splatPick )
 	{
 		// A concealed hunter's shot leaves no trace on OUR machine — no bang, no muzzle flash, no screen shake.
 		// Hunting is already blocked during Hide so this shouldn't fire today, but a silent invisible shooter is
@@ -2991,7 +3057,7 @@ public sealed class HunterController : Component
 		// Impacts before the ShootSound early-out below — a hunter with no shot sound assigned still gets
 		// dust off the walls. Inside the Concealed gate above for the obvious reason: puffs erupting out of
 		// nowhere would give a concealed shooter away just as loudly as the bang would.
-		SpawnImpacts( tracerEnds, normals, hitMask, clayMask, splatPick );
+		SpawnImpacts( tracerEnds, normals, hitMask, clayMask, decalPos, decalNormal, splatPick );
 
 		// Everyone NEAR the shot feels it, falling off with distance from the shooter — a prop hiding by a
 		// hunter gets rattled. The shooter is excluded (IsProxy): they get the recoil punch in Shoot instead,

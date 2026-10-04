@@ -116,6 +116,7 @@
         "ClayImpactPrefab": "prefabs/clay_impact.prefab",
         "ConvergeFade": 100,
         "ConvergeMinAhead": 60,
+        "DecalPassDepth": 32,
         "DecalTintBrightness": 1.5,
         "DuckBulge": 0.75,
         "DuckChestFollow": 0.75,

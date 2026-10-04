@@ -21,7 +21,7 @@ namespace Mimiclay;
 public sealed class MapModeCard : Component
 {
 	/// <summary>What <see cref="CreativeHoverRange"/> is when a scene has no card.</summary>
-	public const float DefaultCreativeHoverRange = 300f;
+	public const float DefaultCreativeHoverRange = 100f;
 
 	/// <summary>Creative only: how close a hunter must be for clay to outline and offer "E to Edit" — measured
 	/// from the eye to the surface the crosshair lands on. Widen it for open maps where props sit far apart; see
