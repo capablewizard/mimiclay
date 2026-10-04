@@ -20,22 +20,13 @@ public static class CharadesTopics
 	/// is ticked. It's an id no list has, so it matches nothing on its own.</summary>
 	public const string NoStandard = "none";
 
-	/// <summary>Everything a Topics game draws from: the Standard selection (empty = every built-in, expanded
-	/// here so it survives being joined with community ids) plus the ticked Community lists.</summary>
+	/// <summary>Everything a Topics game draws from. Standard and Community don't mix: a ticked Community list
+	/// plays alone (older saved settings may still carry a Standard selection alongside it — ignored), otherwise
+	/// the Standard selection.</summary>
 	public static string Combined( string standard, string community )
 	{
 		var communityIds = Parse( community );
-		if ( communityIds.Count == 0 )
-			return standard ?? Everything;
-
-		var ids = Parse( standard );
-		if ( ids.Count == 0 )
-			foreach ( var t in CharadesWords.BuiltInTopics() )
-				ids.Add( t.Id );
-
-		ids.Remove( NoStandard );
-		ids.UnionWith( communityIds );
-		return Join( ids );
+		return communityIds.Count > 0 ? Join( communityIds ) : standard ?? Everything;
 	}
 
 	/// <summary>Prefix marking a community (Steam Workshop) list's id in a selection.</summary>

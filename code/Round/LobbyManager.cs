@@ -521,31 +521,33 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 	}
 
 	/// <summary>Toggle one Standard (built-in) topic. The empty selection means every built-in, so toggling OFF
-	/// from there first materialises the full set. The last Standard topic can only go off while a Community list
-	/// is ticked (the selection becomes <see cref="CharadesTopics.NoStandard"/>) — a game needs SOMETHING to draw
-	/// from, and "none selected" reading as Everything would make the click look broken.</summary>
+	/// from there first materialises the full set. The last Standard topic can't go off — a game needs SOMETHING
+	/// to draw from, and "none selected" reading as Everything would make the click look broken.
+	/// Standard and Community don't mix: clicking a Standard topic while a Community list is ticked drops the
+	/// list and lights just that topic.</summary>
 	public void ToggleCharadesTopic( string topicId )
 	{
 		if ( !IsHostAuthority || string.IsNullOrWhiteSpace( topicId ) || CharadesTopics.TryWorkshopId( topicId, out _ ) ) return;
 		var s = CharadesCfg;
 
+		if ( CharadesTopics.Parse( s.WorkshopLists ).Count > 0 || s.Topics == CharadesTopics.NoStandard )
+		{
+			s.WorkshopLists = CharadesTopics.Everything;
+			s.Topics = topicId;
+			CharadesCfg = s;
+			return;
+		}
+
 		var ids = CharadesTopics.Parse( s.Topics );
 		ids.RemoveWhere( id => CharadesTopics.TryWorkshopId( id, out _ ) ); // community lists live in WorkshopLists
-		var wasNone = ids.Remove( CharadesTopics.NoStandard );
-		if ( ids.Count == 0 && !wasNone )
+		if ( ids.Count == 0 )
 			foreach ( var t in CharadesWords.BuiltInTopics() )
 				ids.Add( t.Id );
 
 		if ( !ids.Remove( topicId ) )
 			ids.Add( topicId );
 		else if ( ids.Count == 0 )
-		{
-			if ( CharadesTopics.Parse( s.WorkshopLists ).Count == 0 )
-				return; // nothing would be left to draw from
-			s.Topics = CharadesTopics.NoStandard;
-			CharadesCfg = s;
-			return;
-		}
+			return; // nothing would be left to draw from
 
 		// Every built-in lit = the canonical Everything.
 		var builtIn = CharadesWords.BuiltInTopics().Select( t => t.Id ).ToHashSet();
@@ -559,14 +561,20 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 		var s = CharadesCfg; s.TopicChoices = on; CharadesCfg = s;
 	}
 
-	/// <summary>Tick/untick a Community list ("ws:&lt;fileId&gt;"); it's drawn from alongside the Standard topics.</summary>
+	/// <summary>Tick/untick a Community list ("ws:&lt;fileId&gt;"). Only one plays at a time and it plays alone:
+	/// ticking one replaces any other list and clears the Standard topics; unticking it brings them all back.</summary>
 	public void ToggleCharadesWorkshopList( string listId )
 	{
 		if ( !IsHostAuthority || !CharadesTopics.TryWorkshopId( listId, out _ ) ) return;
 		var s = CharadesCfg;
 		var ids = CharadesTopics.Parse( s.WorkshopLists );
-		if ( !ids.Remove( listId ) )
-			ids.Add( listId );
+		if ( ids.Contains( listId ) )
+			ids.Clear();
+		else
+		{
+			ids = new HashSet<string>( StringComparer.Ordinal ) { listId };
+			s.Topics = CharadesTopics.NoStandard;
+		}
 		SetWorkshopLists( ref s, ids );
 		CharadesCfg = s;
 	}

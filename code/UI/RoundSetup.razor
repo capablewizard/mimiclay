@@ -217,8 +217,8 @@
 							}
 							else if ( G == GameModeKind.Charades )
 							{
-								@* Standard: the built-in topics. Chips toggle (all lit by default). The last one only
-								   goes off while a Community list is ticked (something must be left to draw from). *@
+								@* Standard: the built-in topics. Chips toggle (all lit by default); the last one can't
+								   go off (something must be left to draw from). Clicking one drops a ticked Community list. *@
 								<div class="option-name chips-label">Standard</div>
 								<div class="pill-grid">
 									@foreach ( var topic in CharadesWords.BuiltInTopics() )
@@ -229,8 +229,8 @@
 									}
 								</div>
 
-								@* Community: lists added from the Workshop (or made here). Ticked ones play alongside
-								   the Standard topics. *@
+								@* Community: lists added from the Workshop (or made here). One at a time, and it plays
+								   alone — ticking one clears the Standard topics. *@
 								<div class="option-name chips-label">Community</div>
 								<div class="pill-grid">
 									@foreach ( var list in CharadesWorkshop.Added )
@@ -591,9 +591,11 @@
 	void SetCharadesSource( PhraseSource source ) => LobbyManager.Current?.SetCharadesSource( source );
 	void AddCharadesWrite( float d ) => Nudge.Change( nameof( AddCharadesWrite ), MathF.Sign( d ), () => Ch.WriteSeconds, () => LobbyManager.Current?.SetCharadesWriteSeconds( Ch.WriteSeconds + d ) );
 
-	// Built-in topic chips: the empty selection means every one is lit.
+	// Built-in topic chips: the empty selection means every one is lit. A ticked Community list plays alone, so
+	// none are lit then.
 	bool TopicOn( string id )
 	{
+		if ( CharadesTopics.Parse( Ch.WorkshopLists ).Count > 0 ) return false;
 		var ids = CharadesTopics.Parse( Ch.Topics );
 		return ids.Count == 0 || ids.Contains( id ); // NoStandard matches no topic id, so nothing lights
 	}
