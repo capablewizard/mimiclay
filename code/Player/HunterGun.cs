@@ -359,6 +359,14 @@ public sealed class HunterGun : Component
 		if ( _viewSdf.IsValid() )
 			_viewSdf.OverdrawOptimization = false;
 
+		// No hunter splats on the hunter's own gun. Per-object, because both clones come from gun.prefab, whose
+		// world material (plasticine.vmat) is shared with every prop that SHOULD take splats; the view clone's
+		// ViewMaterial already opts out, this also covers it when that's left null.
+		if ( _worldSdf.IsValid() )
+			_worldSdf.ReceiveDecals = false;
+		if ( _viewSdf.IsValid() )
+			_viewSdf.ReceiveDecals = false;
+
 		_source = LoadSourceBrushes();
 
 		_worldMuzzle = FindMuzzle( _world );

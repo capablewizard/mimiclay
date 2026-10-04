@@ -98,6 +98,7 @@ PS
 	#include "common/pixel.hlsl"
 	#include "common/utils/triplanar.hlsl"
 	#include "common/classes/Depth.hlsl" // scene depth (prepass) — drives the world-cavity curvature
+	#include "clay_shading.hlsl"         // ClayShade: the engine's Shade with per-material/per-object decal opt-out
 
 	RenderState( CullMode, DEFAULT );
 
@@ -384,7 +385,7 @@ PS
 		m.Roughness = max( saturate( roughness * g_flRoughness * vMR.y + g_flCurveRoughBoost * curvRidge ), 0.08 );
 		m.Metalness = saturate( vMR.x + g_flMetalness );
 
-		float4 c = ShadingModelStandard::Shade( i, m );
+		float4 c = ClayShade( i, m );
 		// Stop NaN/fireflies before the DoF gather smears them into bright bokeh discs.
 		c.rgb = c.rgb == c.rgb ? c.rgb : 0.0; // NaN != NaN
 		c.rgb = min( c.rgb, 64.0 );           // firefly clamp — tune to your exposure

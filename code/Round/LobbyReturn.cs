@@ -44,8 +44,9 @@ public sealed class LobbyReturn : Component
 	[Sync] public TimeUntil ReturnAt { get; set; }
 
 	/// <summary>True on every machine while the return countdown runs — the game is frozen and the HUD shows
-	/// the readout. Safe to read anywhere (false with no instance).</summary>
-	public static bool Active => Current.IsValid() && Current.Returning;
+	/// the readout. Safe to read anywhere (false with no instance). Deliberately hides Component.Active — callers
+	/// always mean this, and the component never needs its own.</summary>
+	public static new bool Active => Current.IsValid() && Current.Returning;
 
 	/// <summary>Seconds left on the readout (0 when not <see cref="Active"/>).</summary>
 	public static float Remaining => Active ? MathF.Max( 0f, Current.ReturnAt ) : 0f;

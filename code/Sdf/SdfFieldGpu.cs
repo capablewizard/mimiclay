@@ -597,7 +597,7 @@ public static class SdfBrushPacker
 		return written;
 	}
 
-	static float SrgbToLinear( float c )
+	internal static float SrgbToLinear( float c )
 		=> c <= 0.04045f ? c / 12.92f : MathF.Pow( (c + 0.055f) / 1.055f, 2.4f );
 
 	// World/transformed AABB enclosing the brush, its mirror copies and its blend bulge — the per-brush cull bound.

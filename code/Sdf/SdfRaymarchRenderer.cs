@@ -506,6 +506,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// on the analytic brush path that march re-runs the brush loop per step.</summary>
 	[Property, Group( "Transmission" )] public bool Transmission { get; set; }
 
+	/// <summary>Let engine decals (the hunter's world splats) paint this surface. Per-OBJECT switch for a renderer
+	/// on a shared material; the material's own "Receive Decals" (off on the hunter and viewmodel vmats) must
+	/// also allow it. Drives both the raymarch and the meshed LODs — see clay_shading.hlsl.</summary>
+	[Property] public bool ReceiveDecals { get; set; } = true;
+
 	/// <summary>Draw the raymarch bounding box (green; red when the game camera is inside it).</summary>
 	[Property, Group( "Overdraw" )] public bool DebugBounds { get; set; }
 
@@ -1271,6 +1276,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		var meshSo = MeshRenderer?.SceneObject;
 		if ( meshSo.IsValid() )
 			meshSo.Attributes.Set( "BoilSeed", BoilSeed );
+
+		// Same deal for the decal opt-out, so a splat doesn't appear on an object as it swaps to its meshed LOD.
+		_so.Attributes.Set( "SdfNoDecals", ReceiveDecals ? 0 : 1 );
+		if ( meshSo.IsValid() )
+			meshSo.Attributes.Set( "SdfNoDecals", ReceiveDecals ? 0 : 1 );
 
 		// Transmission look (tint, strength, thickness) lives on the material; this just gates the combo.
 		_so.Attributes.SetCombo( "D_TRANSMISSION", Transmission ? 1 : 0 );

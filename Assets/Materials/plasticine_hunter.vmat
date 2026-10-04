@@ -14,6 +14,7 @@ Layer0
 	g_bFogEnabled "1"
 
 	//---- Surface ----
+	g_bReceiveDecals "0"
 	g_flDarkSatBoost "1.200"
 	g_flMetalness "0.000"
 	g_flNormalStrength "0.850"

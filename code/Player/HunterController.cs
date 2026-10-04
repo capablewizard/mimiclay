@@ -86,6 +86,13 @@ public sealed class HunterController : Component
 	/// the prefab's authored ColorTint RGB; its alpha is kept. Off = the prefab's tint as authored.</summary>
 	[Property, Group( "Weapon" )] public bool TintDecalToBody { get; set; } = true;
 
+	/// <summary>Brightness multiplier on the body tint. The splat colour textures average ~210 sRGB (0.64
+	/// linear) against the plasticine base colour's ~235 (0.83), and the clay also gets curvature lift and
+	/// transmission the decal never sees — 1.3 cancels the texture gap alone, 1.5 matches the lit clay by eye.
+	/// Decal tints are HDR, so &gt; 1 is fine.</summary>
+	[Property, Group( "Weapon" ), Range( 0.5f, 2f ), ShowIf( nameof( TintDecalToBody ), true )]
+	public float DecalTintBrightness { get; set; } = 1.5f;
+
 	/// <summary>Recoil: degrees the shooter's own view kicks up per shot. Render-only (a CameraEffectSystem
 	/// punch composed into the view, never the camera transform) — the actual aim never moves, so holding
 	/// the crosshair on a prop through the kick still hits. 0 = no kick.</summary>
@@ -2916,9 +2923,13 @@ public sealed class HunterController : Component
 			if ( d.Decals is { Count: > 1 } list )
 				d.Decals = [list[pick % list.Count]];
 
-			// A flat tint, keeping the authored alpha (evaluated at birth) as the splat's opacity.
+			// A flat tint, keeping the authored alpha (evaluated at birth) as the splat's opacity. Linearised the
+			// same way the field bake does brush colours (SdfBrushPacker): the engine decal shader multiplies
+			// ColorTint into LINEAR albedo raw, so the sRGB brush colour passed straight through read pastel.
 			if ( bodyTint is Color tint )
-				d.ColorTint = tint.WithAlpha( d.ColorTint.Evaluate( 0f, 0f ).a );
+				d.ColorTint = new Color( SdfBrushPacker.SrgbToLinear( tint.r ) * DecalTintBrightness,
+					SdfBrushPacker.SrgbToLinear( tint.g ) * DecalTintBrightness,
+					SdfBrushPacker.SrgbToLinear( tint.b ) * DecalTintBrightness, d.ColorTint.Evaluate( 0f, 0f ).a );
 		}
 
 		if ( !decal.Components.Get<TemporaryEffect>().IsValid() )

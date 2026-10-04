@@ -116,6 +116,7 @@
         "ClayImpactPrefab": "prefabs/clay_impact.prefab",
         "ConvergeFade": 100,
         "ConvergeMinAhead": 60,
+        "DecalTintBrightness": 1.5,
         "DuckBulge": 0.75,
         "DuckChestFollow": 0.75,
         "DuckSpringDamping": 0.4,
@@ -184,6 +185,7 @@
         "ThirdPersonDistance": 120,
         "ThirdPersonRise": 0.675,
         "ThirdPersonShoulder": 30,
+        "TintDecalToBody": true,
         "VisualPivot": null,
         "WorldDecalPrefab": "materials/decals/claysplatdecal.prefab",
         "WorldImpactPrefab": null

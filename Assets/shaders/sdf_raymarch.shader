@@ -143,6 +143,7 @@ PS
 	// each world-space sample into that frame once (SdfDistWs below), so there is no world-space
 	// evaluator copy to keep in sync any more.
 	#include "sdf_eval.hlsl"
+	#include "clay_shading.hlsl" // ClayShade: the engine's Shade with per-material/per-object decal opt-out
 
 	float3    g_vBoundsMin    < Attribute( "BoundsMin" ); >;
 	float3    g_vBoundsMax    < Attribute( "BoundsMax" ); >;
@@ -1299,7 +1300,7 @@ PS
 		ApplyTransmission( m, p, baseN, normalize( g_vCameraPositionWs - p ) );
 	#endif
 
-		o.vColor = ShadingModelStandard::Shade( i, m );
+		o.vColor = ClayShade( i, m );
 		o.flDepth = flSurfaceDepth;
 		return o;
 	}
