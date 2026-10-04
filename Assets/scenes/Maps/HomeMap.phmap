@@ -1,7 +1,7 @@
 {
   "Title": "Home",
   "Description": "Slip between the rooms of a quiet house.",
-  "Preview": "scenes/maps/home_thumb.vtex",
+  "Preview": "ui/banners/maps/home_banner.png",
   "Scene": "scenes/maps/home.scene",
   "Hidden": false,
   "DefaultPick": true,

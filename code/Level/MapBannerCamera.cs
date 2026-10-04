@@ -7,8 +7,10 @@ namespace Mimiclay;
 /// <summary>
 /// An editor-only camera for shooting a map's banner (the lobby map card's <see cref="MapResource.Preview"/>)
 /// straight from the level. Drop it in a map, frame it like any camera (select it for the live preview), press
-/// "Capture Banner": it renders a PNG next to the .scene and points every <see cref="MapResource"/> for that scene
-/// at it.
+/// "Capture Banner": it renders a PNG into <see cref="BannerFolder"/> (UI/Banners/Maps/&lt;scene&gt;_banner.png) and
+/// points every <see cref="MapResource"/> for that scene at it. The folder matters: a png is a loose file, and the
+/// publisher only ships loose files under the project's "Resources" globs (UI/*) — a banner anywhere else is
+/// missing from the built game.
 ///
 /// The look is BORROWED, not authored: the main camera prefab's post-process components are copied onto a hidden,
 /// unsaved child, so the banner always matches what players see (see [[main-camera-prefab]]) and re-capturing after
@@ -22,8 +24,12 @@ namespace Mimiclay;
 public sealed class MapBannerCamera : Component, Component.ExecuteInEditor
 {
 	/// <summary>The map card's image aspect. Wider than every card (2.0–2.25:1) on purpose: the cards fit the
-	/// image to their HEIGHT and crop the sides, so a wider shot covers them all. Matches home_thumb (1024×424).</summary>
+	/// image to their HEIGHT and crop the sides, so a wider shot covers them all. Matches home_banner (1024×424).</summary>
 	public const float MapCardAspect = 2.4f;
+
+	/// <summary>Mount-relative folder every map banner is written to (lowercase, no leading slash). Under UI/ so the
+	/// publisher's "Resources": "UI/*" glob ships it; the game's key art sits beside it in UI/Banners/Games.</summary>
+	public const string BannerFolder = "ui/banners/maps";
 
 	/// <summary>The narrowest card the banner is cropped into (the setup screen's featured card, ~1.98:1). Anything
 	/// outside this, centred, can be cut off — the editor's banner preview draws it as the safe frame.</summary>

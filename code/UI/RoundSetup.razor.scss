@@ -109,7 +109,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 	}
 
 	// ── Game banner ──────────────────────────────────────────────────────────────────────────────────────────
-	// TEMPORARY: the game's key art (Assets/mimiclaythumb_KeyArt.png) behind every game's banner, fitted to the
+	// TEMPORARY: the game's key art (Assets/UI/Banners/Games/keyart.png) behind every game's banner, fitted to the
 	// banner's width and cropped top/bottom (the engine's "cover" fits to width, which is right for this wide strip).
 	// A dark .art-shade.full over the art keeps the embossed cream name readable; the name sits in a fixed slot so
 	// the arrows never move.
@@ -130,7 +130,7 @@ $card-h: 770px;   // tall enough that every section shows without folding (chara
 			top: 0; left: 0; right: 0; bottom: 0;
 			border-radius: $radius-md;
 			background-color: $craft-orange-hi;   // shows while the art loads
-			background-image: url( "/mimiclaythumb_KeyArt.png" );
+			background-image: url( "/ui/banners/games/keyart.png" );
 			background-size: cover;
 			background-position: center;
 			background-repeat: no-repeat;

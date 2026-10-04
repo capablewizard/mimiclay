@@ -1,7 +1,7 @@
 {
   "Title": "Kitchen",
   "Description": "Build and play around the kitchen.",
-  "Preview": "scenes/kitchenlobby_banner.png",
+  "Preview": "ui/banners/maps/kitchen_creative_banner.png",
   "Scene": "scenes/maps/kitchen_creative.scene",
   "Hidden": false,
   "ForPropHunt": false,

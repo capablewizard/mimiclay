@@ -8,8 +8,9 @@ using Sandbox;
 namespace Editor;
 
 /// <summary>
-/// The editor half of <see cref="MapBannerCamera"/>: renders the banner, writes <c>&lt;scene&gt;_banner.png</c> next to
-/// the .scene, and assigns it to the scene's map assets (the png directly — see Finish for why not a .vtex).
+/// The editor half of <see cref="MapBannerCamera"/>: renders the banner, writes <c>&lt;scene&gt;_banner.png</c> into
+/// <see cref="MapBannerCamera.BannerFolder"/> (Assets/UI/Banners/Maps — the one loose-file folder the publisher
+/// ships), and assigns it to the scene's map assets (the png directly — see Finish for why not a .vtex).
 ///
 /// Capture is deferred a few editor frames. The engine's PostProcessSystem only builds an editor camera's effect
 /// layers while that camera is SELECTED (and only at the end of a scene tick), and the freshly copied effects plus
@@ -103,7 +104,7 @@ public static class MapBannerCapture
 		var sceneAsset = string.IsNullOrEmpty( scenePath ) ? null : AssetSystem.FindByPath( scenePath );
 		if ( sceneAsset is null )
 		{
-			Log.Warning( "[MapBanner] Save the scene first — the banner is written next to the .scene file." );
+			Log.Warning( "[MapBanner] Save the scene first — the banner is named after the .scene file." );
 			return;
 		}
 
@@ -138,14 +139,17 @@ public static class MapBannerCapture
 				bitmap = small;
 			}
 
+			// Banners live under Assets/UI/Banners/Maps, NOT next to the .scene. A png is a loose file (nothing
+			// compiles it), and the publisher only ships loose files matching the project's "Resources" globs —
+			// "UI/*" here. Anything written under scenes/ shows up in the editor and is silently missing from the
+			// built game.
 			var stem = Path.GetFileNameWithoutExtension( sceneAsset.AbsolutePath ).ToLowerInvariant() + "_banner";
-			var absDir = Path.GetDirectoryName( sceneAsset.AbsolutePath );
-			var relDir = Path.GetDirectoryName( scenePath )?.Replace( '\\', '/' ) ?? "";
-			var pngRel = $"{relDir}/{stem}.png";
-			var pngAbs = Path.Combine( absDir, stem + ".png" );
+			var pngRel = $"{MapBannerCamera.BannerFolder}/{stem}.png";
+			var pngAbs = Path.Combine( AssetsRootOf( sceneAsset, scenePath ), MapBannerCamera.BannerFolder.Replace( '/', Path.DirectorySeparatorChar ), stem + ".png" );
+			Directory.CreateDirectory( Path.GetDirectoryName( pngAbs ) );
 
-			// The map references the .png itself, NOT a .vtex: a vtex built from a "Sequences" source (the only shape
-			// we have, home_thumb's) pads the image into a power-of-two sheet — 1536x640 inside 2048x1024 — so the
+			// The map references the .png itself, NOT a .vtex: a vtex built from a "Sequences" source (the shape the
+			// old home_thumb.vtex had) pads the image into a power-of-two sheet — 1536x640 inside 2048x1024 — so the
 			// card drew the padding and the shot looked zoomed/offset. A png loads at its real size.
 			File.WriteAllBytes( pngAbs, bitmap.ToPng() );
 			var pngAsset = AssetSystem.RegisterFile( pngAbs ) ?? AssetSystem.FindByPath( pngRel );
@@ -167,6 +171,20 @@ public static class MapBannerCapture
 		{
 			bitmap?.Dispose();
 		}
+	}
+
+	/// <summary>
+	/// The Assets folder the scene lives in: the asset's absolute path minus its mount-relative path, so a scene in a
+	/// library project writes its banner into THAT project's UI/Banners rather than the current one's.
+	/// </summary>
+	static string AssetsRootOf( Asset sceneAsset, string scenePath )
+	{
+		var abs = sceneAsset.AbsolutePath.Replace( '\\', '/' );
+		var rel = scenePath.Replace( '\\', '/' ).TrimStart( '/' );
+		if ( abs.EndsWith( rel, StringComparison.OrdinalIgnoreCase ) )
+			return abs[..^rel.Length].TrimEnd( '/' );
+
+		return Path.GetDirectoryName( sceneAsset.AbsolutePath ); // shouldn't happen; keeps the capture from failing
 	}
 
 	static int AssignToMaps( string scenePath, string imagePath )

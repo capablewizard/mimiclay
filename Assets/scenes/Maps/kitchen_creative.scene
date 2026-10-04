@@ -21036,7 +21036,7 @@
           "Flags": 0,
           "Aspect": 2.4,
           "AssignToMap": true,
-          "LastCapture": "scenes/kitchenlobby_banner.png (1536x640) 11:56:39",
+          "LastCapture": "ui/banners/maps/kitchen_creative_banner.png (1536x640) 11:56:39",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,

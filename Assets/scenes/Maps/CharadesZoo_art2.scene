@@ -3110,14 +3110,6 @@
               "Type": "Component",
               "IdValue": "37f096b2-0c02-4ec1-a755-50d1a6219b11"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "37f096b2-0c02-4ec1-a755-50d1a6219b11"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -4071,14 +4063,6 @@
               "Type": "Component",
               "IdValue": "8a21db99-55c4-4bd0-8692-a70e9735746f"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8a21db99-55c4-4bd0-8692-a70e9735746f"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -4245,14 +4229,6 @@
               "Type": "Component",
               "IdValue": "b6735d6b-1cef-48e1-9969-39daa28e6768"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b6735d6b-1cef-48e1-9969-39daa28e6768"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -4359,14 +4335,6 @@
               "Type": "Component",
               "IdValue": "2dfac941-3800-4221-a872-e2a4a8c2709b"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2dfac941-3800-4221-a872-e2a4a8c2709b"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -4410,14 +4378,6 @@
             },
             "Property": "Rotation",
             "Value": "4.91176788E-09,6.46646792E-10,0.130526215,0.991444767"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5b0159b5-ba37-4156-90ba-c5fd5dc17172"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -5320,14 +5280,6 @@
               "Type": "Component",
               "IdValue": "9bbba260-d47d-41f7-a992-2e75190597cf"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9bbba260-d47d-41f7-a992-2e75190597cf"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -5385,14 +5337,6 @@
               "Type": "Component",
               "IdValue": "8a21db99-55c4-4bd0-8692-a70e9735746f"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8a21db99-55c4-4bd0-8692-a70e9735746f"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -5436,14 +5380,6 @@
             },
             "Property": "Position",
             "Value": "203.86174,-387.303406,-19.8117924"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b6735d6b-1cef-48e1-9969-39daa28e6768"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -5656,14 +5592,6 @@
             },
             "Property": "Rotation",
             "Value": "-5.59304025E-09,0,1.67791203E-08,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "35f005bb-570a-4a5d-8504-df8cae080e25"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -5944,14 +5872,6 @@
               "Type": "Component",
               "IdValue": "5b05ca19-545b-4b23-9003-8cfbeb51e922"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5b05ca19-545b-4b23-9003-8cfbeb51e922"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -6022,14 +5942,6 @@
                       "Type": "Component",
                       "IdValue": "35ed15be-a04d-41e2-8d33-f1536c8d1a28"
                     },
-                    "Property": "__enabled",
-                    "Value": true
-                  },
-                  {
-                    "Target": {
-                      "Type": "Component",
-                      "IdValue": "35ed15be-a04d-41e2-8d33-f1536c8d1a28"
-                    },
                     "Property": "Model",
                     "Value": "sbox_procedural_model.vmdl"
                   }
@@ -6089,14 +6001,6 @@
                     },
                     "Property": "Rotation",
                     "Value": "0.0432684124,0.114259325,0.928184807,0.351490676"
-                  },
-                  {
-                    "Target": {
-                      "Type": "Component",
-                      "IdValue": "05de9c73-a096-4ede-ae02-166376d964bb"
-                    },
-                    "Property": "__enabled",
-                    "Value": true
                   },
                   {
                     "Target": {
@@ -6188,22 +6092,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.612728357,0.790293455"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6294,14 +6182,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0338ac64-5865-466f-a074-ddb43ec74b30"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -6413,24 +6293,8 @@
               "Type": "Component",
               "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6478,24 +6342,8 @@
               "Type": "Component",
               "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "db5b2982-095d-4f31-b383-f326620d3d79"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6650,14 +6498,6 @@
             },
             "Property": "Rotation",
             "Value": "0.00938873272,-0.621056795,-0.783510864,0.0176250078"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "67836350-fc36-4285-a4b9-f8176add1a51"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -7304,24 +7144,8 @@
               "Type": "Component",
               "IdValue": "ea1c0a8f-6aa1-42e3-b081-a47ad8aab28d"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ea1c0a8f-6aa1-42e3-b081-a47ad8aab28d"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ea1c0a8f-6aa1-42e3-b081-a47ad8aab28d"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -8820,14 +8644,6 @@
             },
             "Property": "Position",
             "Value": "-45.9908943,-430.885742,102.247017"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b78f9096-29a4-456d-8ee1-2ee4ebe2a6e1"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -8869,14 +8685,6 @@
             },
             "Property": "Position",
             "Value": "-116.98391,-430.885742,102.247017"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b78f9096-29a4-456d-8ee1-2ee4ebe2a6e1"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -8918,14 +8726,6 @@
             },
             "Property": "Position",
             "Value": "-190.436661,-430.885742,102.247017"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b78f9096-29a4-456d-8ee1-2ee4ebe2a6e1"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -8975,6 +8775,22 @@
             },
             "Property": "Rotation",
             "Value": "9.19910037E-10,5.51687052E-09,0.986381471,-0.164474055"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "2d5619ae-ac59-4aa9-91ca-0d4b284c36ed"
+            },
+            "Property": "Enabled",
+            "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "cd8ae99a-4e05-4992-acdc-4772a9144067"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {

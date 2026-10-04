@@ -1,7 +1,7 @@
 {
   "Title": "Charades Zoo 2",
   "Description": "Gather round the stage and guess the sculpt.",
-  "Preview": "scenes/maps/charadeszoo_art2_banner.png",
+  "Preview": "ui/banners/maps/charadeszoo_art2_banner.png",
   "Scene": {
     "Id": "1b3db5b2-6a56-483b-8b28-f33134237126",
     "Path": "scenes/maps/charadeszoo_art2.scene"
