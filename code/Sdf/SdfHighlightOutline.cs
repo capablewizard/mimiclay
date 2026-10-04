@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Sandbox.Rendering;
 
 namespace Mimiclay;
@@ -121,7 +120,18 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	Material _material;
 	readonly List<SdfRaymarchRenderer> _targets = new();
 	readonly List<SdfRaymarchRenderer> _readyScratch = new(); // reused per sync (pinged once per member per frame)
+	readonly List<SdfRaymarchRenderer> _foundScratch = new(); // reused per ScanTargets
 	int _lastBuildHash;
+
+	// Scan scheduling (see ScanTargets): a hierarchy walk per frame per outline was the dominant
+	// cost once every touched prop in the level carried one. Rescans now run on a cadence, plus
+	// immediately after any outline toggles (the generation counter — nested WarningOnly outlines
+	// re-draw ownership lines) or when a held target visibly stops qualifying.
+	const float ScanInterval = 0.25f;
+	static int s_generation;            // bumped by every outline's OnEnabled/OnDisabled
+	int _seenGeneration = -1;
+	RealTimeUntil _nextScan;
+	bool _scanDirty;
 	BBox _worldBounds;
 	bool _warnedOverflow;
 
@@ -134,7 +144,10 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	protected override void OnEnabled()
 	{
 		_lastBuildHash = 0;
+		s_generation++; // ancestors must cede our subtree; we claim it right now
 		ScanTargets();
+		// Children may still be enabling after us (prefab spawn order), so look again next frame.
+		_scanDirty = true;
 	}
 
 	protected override void OnDisabled()
@@ -145,6 +158,7 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 				r.Highlight = null;
 		}
 		_targets.Clear();
+		s_generation++; // the ancestor (if any) re-absorbs the renderers we just released
 		Release();
 	}
 
@@ -191,20 +205,49 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 		_cmdCamera = null;
 	}
 
-	// Re-resolve the group each frame (renderers can be added/removed under us at runtime — the
-	// engine component re-queries its targets per frame too) and keep their back-references
-	// current: each member pings SyncFromRenderer from ITS OnUpdate.
+	// Should the group be re-resolved this frame? Cheap: no hierarchy walk, just the (≤MaxTargets)
+	// members we already hold. Fires when another outline toggled anywhere (generation), when a held
+	// member stopped qualifying (destroyed, disabled, opted out, or claimed by a nearer outline), and
+	// otherwise on the ScanInterval cadence — which is what picks up renderers ADDED under us
+	// (attachments, head swaps); a frame or two of lag there is invisible.
+	bool NeedsScan()
+	{
+		if ( _scanDirty || _seenGeneration != s_generation || _nextScan <= 0f )
+			return true;
+
+		foreach ( var r in _targets )
+		{
+			if ( !r.IsValid() || !r.Enabled || r.ExcludeFromHighlight || r.Highlight != this )
+				return true;
+		}
+
+		return false;
+	}
+
+	// Re-resolve the group (renderers can be added/removed under us at runtime — the engine
+	// component re-queries its targets per frame; we do it on demand, see NeedsScan) and keep their
+	// back-references current: each member pings SyncFromRenderer from ITS OnUpdate.
 	void ScanTargets()
 	{
+		_scanDirty = false;
+		_seenGeneration = s_generation;
+		_nextScan = ScanInterval;
+
 		// A renderer belongs to its NEAREST enabled outline: each renderer holds exactly one Highlight
 		// back-reference, so without this rule a nested outline (the hunter's head-only SculptBounds
 		// warning, sitting under the pawn-root hunt glow) and its ancestor would overwrite each other's
 		// claim every frame. The ancestor simply cedes that subtree — at the Hunt both outlines show with
 		// matching authored looks, so the glow still reads as one silhouette.
-		var found = Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants )
-			.Where( r => !r.ExcludeFromHighlight
-				&& r.Components.Get<SdfHighlightOutline>( FindMode.Enabled | FindMode.InSelf | FindMode.InAncestors ) == this )
-			.ToList();
+		var found = _foundScratch;
+		found.Clear();
+		foreach ( var r in Components.GetAll<SdfRaymarchRenderer>( FindMode.EnabledInSelfAndDescendants ) )
+		{
+			if ( r.ExcludeFromHighlight )
+				continue;
+			if ( r.Components.Get<SdfHighlightOutline>( FindMode.Enabled | FindMode.InSelf | FindMode.InAncestors ) != this )
+				continue;
+			found.Add( r );
+		}
 
 		foreach ( var old in _targets )
 		{
@@ -237,7 +280,8 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	// nothing is left to drive a sync.
 	protected override void OnUpdate()
 	{
-		ScanTargets();
+		if ( NeedsScan() )
+			ScanTargets();
 
 		bool anyLive = false;
 		foreach ( var r in _targets )
