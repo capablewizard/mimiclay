@@ -83,14 +83,14 @@ public sealed class RuntimeBrushGizmo
 		_style = style;
 		_masterAlpha = alpha;
 		_camPos = _cam.WorldPosition;
-		_ray = _cam.ScreenPixelToRay( Mouse.Position );
+		_ray = _cam.ScreenPixelToRay( EditPointer.Position );
 		_wpp = WorldPerPixel( _cam );
 		_screenScale = style.ReferenceHeight > 1f ? Screen.Height / style.ReferenceHeight : 1f;
 		ScreenBasis( out _, out _sRight, out _sUp );
 
 		// Still draws, but won't hover/grab when the cursor is over the UI, the orbit camera owns the mouse, or the
 		// pause menu is open.
-		_interactive = allowInteract && !Input.Down( "Walk" ) && !AltNav.Dragging && !PauseMenu.IsOpen;
+		_interactive = allowInteract && !AltNav.NavModifierHeld && !AltNav.Dragging && !PauseMenu.IsOpen;
 		// A drag born from the HUD's add-point panel (insert-and-place) never sees Attack1 — the UI swallows
 		// the whole click gesture — so _uiDrag stands in for the held button until the panel's mouseup ends it.
 		_pressed = _interactive && Input.Pressed( "Attack1" );
@@ -746,8 +746,12 @@ public sealed class RuntimeBrushGizmo
 	// held snaps to the shared angle grid, same as the E-rotate scrub and the rings: the motion
 	// accumulates on the RAW orientation and only the applied value quantizes (absolutely — a brush at 8°
 	// lands on the grid, never 8°+step).
-	Vector2 _trackPx;   // last frame's cursor position during a trackball drag (the drag is delta-driven)
 	Rotation _trackRaw; // continuous unsnapped orientation, sculpture-local — Shift applies its snapped form
+
+	/// <summary>True while the one handle driven by raw mouse MOTION (the trackball) is being dragged — every
+	/// other handle follows the pick ray. A first-person host pauses mouse-look for this one, or the view and
+	/// the brush would both spin on the same motion.</summary>
+	public bool IsDeltaDragging => _active == "trackball";
 	const float TrackballDegPerPx = 0.4f; // matches BrushScrub's DegPerPx — one free-rotate feel
 
 	bool Trackball( Transform tx, SdfBrush brush, Vector3 c, float radius )
@@ -761,14 +765,15 @@ public sealed class RuntimeBrushGizmo
 		if ( _pressed && _hover == name )
 		{
 			_active = name;
-			_trackPx = Mouse.Position;
 			_trackRaw = brush.Rotation;
 		}
 
 		if ( _active == name && _down )
 		{
-			var d = Mouse.Position - _trackPx;
-			_trackPx = Mouse.Position;
+			// Mouse.Delta rather than a cursor-position difference: identical with a free cursor, and the
+			// only form that exists in a first-person session (the cursor is locked — see EditPointer),
+			// where the host pawn pauses mouse-look for the hold (IsDeltaDragging).
+			var d = Mouse.Delta;
 			if ( d.LengthSquared < 0.0001f )
 				return false;
 

@@ -16,6 +16,11 @@ public enum InteractSlot
 
 	/// <summary>RMB ("Attack2") — reserved for picking props up. Nothing offers it yet.</summary>
 	Pickup,
+
+	/// <summary>LMB ("Attack1") — sculpt the hovered clay in place, first person (the edit lease; see
+	/// <see cref="PropClaims"/>). The trigger's own press: when a provider offers this slot and it fires, the
+	/// hunter swallows the shot.</summary>
+	Sculpt,
 }
 
 /// <summary>One thing the player can do to what's under the crosshair. <see cref="Id"/> is handed back to the
@@ -82,15 +87,22 @@ public static class Interactions
 	{
 		InteractSlot.Secondary => "SecondaryUse",
 		InteractSlot.Pickup => "Attack2",
+		InteractSlot.Sculpt => "Attack1",
 		_ => "Use",
 	};
 
-	/// <summary>What's painted on the key the slot is bound to — follows rebinding.</summary>
+	/// <summary>What's painted on the key the slot is bound to — follows rebinding. The mouse-button slots
+	/// read as LMB/RMB rather than the engine's origin names.</summary>
 	public static string KeyLabel( InteractSlot slot )
 	{
+		if ( slot == InteractSlot.Sculpt )
+			return "LMB";
+		if ( slot == InteractSlot.Pickup )
+			return "RMB";
+
 		var key = Input.GetButtonOrigin( ActionFor( slot ) );
 		if ( string.IsNullOrEmpty( key ) )
-			return slot switch { InteractSlot.Secondary => "F", InteractSlot.Pickup => "RMB", _ => "E" };
+			return slot switch { InteractSlot.Secondary => "F", _ => "E" };
 		return key.ToUpperInvariant();
 	}
 

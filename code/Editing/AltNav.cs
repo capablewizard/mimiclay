@@ -219,6 +219,30 @@ public static class AltNav
 		_travel = 0f;
 	}
 
+	/// <summary>The FIRST-PERSON frame: a locked-pointer session (see <see cref="EditPointer.Locked"/>) has no
+	/// camera gesture to arbitrate — mouse-look owns the mouse and the crosshair is the pointer — so the
+	/// click-vs-drag window collapses to the press edge, Garry's-Mod style: LMB PRESS is the click (select /
+	/// stamp), RMB PRESS is the step-back tap. Nothing drags, nothing is held, no cursor is painted (it's
+	/// hidden). The session owning the screen calls this once per frame instead of <see cref="Tick"/> (its
+	/// orbit camera is off, so nobody else ticks) — every reader (selection, stamp placement, the HUD) is
+	/// unchanged.</summary>
+	/// <summary>Alt as the FORCE-NAVIGATE modifier (alt+drag always moves the camera, so every edit interaction
+	/// stands down under it). Only meaningful with a free-cursor camera: in a locked-pointer first-person
+	/// session (<see cref="EditPointer.Locked"/>) alt is the HUD-CURSOR key instead — the view freezes and the
+	/// real cursor drives the gizmo and picks — so there it must never block them. Every edit-layer alt gate
+	/// reads this, not the raw key.</summary>
+	public static bool NavModifierHeld => Input.Down( "Walk" ) && !EditPointer.Locked;
+
+	public static void TickLocked()
+	{
+		Reset();
+		if ( PauseMenu.IsOpen )
+			return;
+
+		LmbTapped = Input.Pressed( "Attack1" );
+		RmbTapped = Input.Pressed( "Attack2" );
+	}
+
 	/// <summary>Clear the state (a consumer torn down mid-drag), so the HUD doesn't keep drawing a stale dot /
 	/// holding a capture.</summary>
 	public static void Reset()

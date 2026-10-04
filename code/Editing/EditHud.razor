@@ -84,7 +84,40 @@
 		@* Hidden while a guided tutorial step runs — the tutorial card teaches one thing at a time, and the
 		   full key list underneath it would drown that. Back the moment guidance ends (free-play included). *@
 		<div class="hint-strip @(TutorialDirector.HintStripHidden ? "hidden" : "")">
-			@if ( Session.Tool == SculptTool.Sculpt && Session.ActiveShape == SdfShape.Spline )
+			@if ( Session.FirstPerson )
+			{
+				@* First-person (in-place) sculpting: the crosshair is the pointer and the body keeps walking, so
+				   the WASD-row scrubs are gone — R/E and the LMB grab are the whole transform scheme, and the
+				   HUD is reached by holding alt for the cursor. *@
+				@if ( Session.Tool == SculptTool.Sculpt )
+				{
+					<div class="hint"><span class="key">LMB</span><span>@(Session.ActiveShape == SdfShape.Spline ? (Session.ChainWillLoop ? "close loop" : "add point") : Session.StampOperation == SdfOperation.Subtract ? "carve" : Session.StampOperation == SdfOperation.Cutout ? "cutout" : Session.StampOperation == SdfOperation.Colour ? "paint" : "stamp")</span></div>
+					<div class="hint"><span class="key">RMB</span><span>@(Session.ActiveShape == SdfShape.Spline ? "finish" : "done")</span></div>
+				}
+				else
+				{
+					<div class="hint"><span class="key">LMB</span><span>@(Session.SelectedBrush is not null ? "select / grab / gizmo" : "select")</span></div>
+					<div class="hint"><span class="key">LMB away</span><span>done</span></div>
+					<div class="hint"><span class="key">Ctrl+LMB</span><span>multi-select</span></div>
+					@if ( Session.SelectedBrush is not null )
+					{
+						<div class="hint"><span class="key">RMB</span><span>deselect</span></div>
+						<div class="hint"><span class="key">Del</span><span>delete</span></div>
+					}
+				}
+				@if ( Session.ActiveBrush is not null )
+				{
+					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
+					<div class="hint"><span class="key">R</span><span>scale</span></div>
+					<div class="hint"><span class="key">E</span><span>rotate</span></div>
+					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
+				}
+				<div class="hint"><span class="key">1-7</span><span>@(Session.Tool == SculptTool.Sculpt || Session.SelectedBrush is not null ? "shape" : "add shape")</span></div>
+				<div class="hint"><span class="key">Alt</span><span>cursor (still view)</span></div>
+				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
+				<div class="hint"><span class="key">Q</span><span>done</span></div>
+			}
+			else if ( Session.Tool == SculptTool.Sculpt && Session.ActiveShape == SdfShape.Spline )
 			{
 				@* Chain placement has its own verbs: click points along the curve, right-click/Enter ends it. *@
 				<div class="hint"><span class="key">LMB</span><span>@(Session.ChainWillLoop ? "close loop" : "add point")</span></div>
@@ -644,7 +677,7 @@
 
 	@* Drawn dot cursor at the frozen drag anchor (the real cursor is hidden by the mouse-capture during an
 	   alt-nav drag or a hold param scrub). *@
-	@if ( ((AltNav.Dragging || (Session?.IsScrubbing ?? false)) && Session is not null && Session.IsEditing) || _captureHandover )
+	@if ( !EditPointer.Locked && (((AltNav.Dragging || (Session?.IsScrubbing ?? false)) && Session is not null && Session.IsEditing) || _captureHandover) )
 	{
 		<div class="alt-cursor" style=@AltCursorStyle()></div>
 	}
@@ -1209,7 +1242,10 @@
 		// This hands them clean relative-mode Mouse.Delta and hides the real cursor (we draw the dot) WITHOUT
 		// switching to game mouse-state — so the UI still gets the button release and won't stay stuck
 		// "mouse-down" (which would start a phantom layer drag the moment you hover a row after orbiting).
-		bool wantCapture = (AltNav.Dragging || (Session?.IsScrubbing ?? false)) && (Session?.IsEditing ?? false);
+		// Never in a first-person session: the game already holds the mouse hidden + relative for mouse-look,
+		// and the crosshair stands where the drawn dot would (see EditPointer.Locked).
+		bool wantCapture = (AltNav.Dragging || (Session?.IsScrubbing ?? false)) && (Session?.IsEditing ?? false)
+			&& !EditPointer.Locked;
 		bool hasCapture = Panel?.HasMouseCapture ?? false;
 
 		// Never drop a running capture while a mouse button is still physically held. Leaving relative mode

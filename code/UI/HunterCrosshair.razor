@@ -35,7 +35,16 @@
 					   (UpdateToastPose poses FloatPanel's children), the card inside springs when its key fires. *@
 					<div class="toast-slot">
 						<div class="paper-card possess-toast @(Fired( card ) ? "fired" : "")">
-							<span class="key">@card.Key</span>
+							@* Mouse slots draw the input-icon art (the tutorial card's mouse glyphs) instead of a
+							   "LMB" chip; keyboard slots keep the key-cap chip. *@
+							@if ( MouseIcon( card.Slot ) is { } icon )
+							{
+								<span class="key mouse" style=@($"background-image: url( /{icon} );")></span>
+							}
+							else
+							{
+								<span class="key">@card.Key</span>
+							}
 							<span>@card.Label</span>
 						</div>
 					</div>
@@ -81,6 +90,15 @@
 	// The cards to draw (key glyph + label), snapshotted off the hunter's hover each frame so the render
 	// reads stable data; _cardsHash is their content for BuildHash.
 	readonly record struct Card( string Key, string Label, InteractSlot Slot );
+
+	// Input-icon art for the mouse-button slots (under Assets/UI — only "UI/*" loose files ship); null = a
+	// keyboard slot, drawn as the key-cap chip.
+	static string MouseIcon( InteractSlot slot ) => slot switch
+	{
+		InteractSlot.Sculpt => "UI/inputicons/mouse_left.png",
+		InteractSlot.Pickup => "UI/inputicons/mouse_right.png",
+		_ => null,
+	};
 	readonly List<Card> _cards = new();
 	int _cardsHash;
 

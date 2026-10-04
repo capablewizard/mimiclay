@@ -18,6 +18,12 @@ public interface IPropClaimHost
 	/// the host at the claim itself. Creative never closes; the lobby closes during the launch countdown.</summary>
 	bool ClaimsAllowed { get; }
 
+	/// <summary>May a hunter SCULPT a released prop in place (the first-person edit lease — see
+	/// <see cref="PropClaims.RequestLease"/>) without possessing it? Creative's collaborative building says
+	/// yes; the lobby and charades keep the one-body-per-player possession flow only. Default off, so a host
+	/// opts in explicitly.</summary>
+	bool LeasesAllowed => false;
+
 	/// <summary>The prop-pawn prefab a claimed SCENE prop converts into (read live off scene furniture — a
 	/// NetworkSpawn'd manager's [Property] refs only exist on the host).</summary>
 	GameObject PropPrefab { get; }
@@ -90,9 +96,14 @@ public sealed class PropClaims : Component, IInteractable
 	/// answer correctly too). The host re-checks at the claim itself; this just keeps the UI honest.</summary>
 	public bool ClaimsOpen => Host?.ClaimsAllowed ?? false;
 
+	/// <summary>May props be sculpted in place right now (claims open AND the host mode allows leases)? The
+	/// hunter's roaming scan reads this every frame.</summary>
+	public bool LeasesOpen => ClaimsOpen && (Host?.LeasesAllowed ?? false);
+
 	// ── The "Edit" interaction (PropClaims is a registered Interactions source) ────────────────────────────
 
 	const string EditOption = "claims.edit";
+	const string SculptOption = "claims.sculpt";
 
 	/// <summary>Set the instant THIS machine asks to possess something, cleared by the next possession (or by
 	/// timing out). Charades reads it so its pawn-kind poll doesn't respawn a hunter in the gap between the host
@@ -106,12 +117,32 @@ public sealed class PropClaims : Component, IInteractable
 	void IInteractable.GetInteractions( in InteractContext ctx, List<InteractOption> options )
 	{
 		if ( ClaimsOpen && IsClaimable( ctx.Sculpture ) )
+		{
 			options.Add( new InteractOption( EditOption, "Edit", InteractSlot.Primary ) );
+
+			// LMB: sculpt it in place, first person, without becoming it (the edit lease — see RequestLease).
+			// Opens with nothing selected; shapes are picked inside the session. Clicking away exits.
+			if ( Host?.LeasesAllowed ?? false )
+				options.Add( new InteractOption( SculptOption, "Sculpt", InteractSlot.Sculpt ) );
+		}
 	}
 
 	void IInteractable.Interact( in InteractContext ctx, string optionId )
 	{
-		if ( optionId != EditOption || !ctx.Sculpture.IsValid() )
+		if ( !ctx.Sculpture.IsValid() )
+			return;
+
+		if ( optionId == SculptOption )
+		{
+			// Same root rule as the claim below: the pawn root for a pawn prop (the Disguise child is a
+			// per-machine object whose id doesn't resolve on the host), the sculpture's own object for scene
+			// clay. The hunter owns the rest of the flow — it opens the session once the lease lands.
+			var leaseHider = ctx.Sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+			ctx.Hunter?.RequestSculptLease( leaseHider.IsValid() ? leaseHider.GameObject : ctx.Sculpture.GameObject );
+			return;
+		}
+
+		if ( optionId != EditOption )
 			return;
 
 		// Carry the view into the prop, same as a lobby swap: yaw+pitch stashed owner-side here, consumed by
@@ -147,7 +178,7 @@ public sealed class PropClaims : Component, IInteractable
 
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
-			return IsReleased( hider ); // a pawn's body: only once released into the world
+			return IsReleased( hider ) && !IsLeased( hider ); // a pawn's body: only once released into the world — and not while someone is sculpting it in place
 
 		return IsScenery( sculpture ); // scene-placed clay — claimable by conversion
 	}
@@ -187,6 +218,174 @@ public sealed class PropClaims : Component, IInteractable
 	/// anywhere — false wherever no claim service runs.</summary>
 	public static bool IsPossessed( HiderController hider )
 		=> hider.IsValid() && Current.IsValid() && Current.PossessedProps.ContainsKey( hider.GameObject.Id );
+
+	// ── Edit leases (sculpt a released prop in place, first person, without possessing it) ─────────────────
+	// A lease is the THIRD state a pawn prop can be in beside "someone's body" and "released scenery": still
+	// released (dormant everywhere, claimable by nobody for the duration), but OWNED by the sculptor's connection
+	// so their machine's SdfNetworkSync publishes the shape exactly as a possessing owner's would — no second wire
+	// format. The holder stays a hunter (their own pawn is untouched) and walks around the prop while editing.
+	// One holder per prop; the holder's machine opens a first-person SculptEditSession once the ownership lands
+	// (see HunterController.UpdateLease). Ended by the holder (Q / any exit), or by the host sweep when the
+	// holder leaves, dies, or stops being a hunter (a swap mid-lease).
+
+	/// <summary>The live leases: pawn GameObject id → the holder's connection id. [Sync] on this host-owned
+	/// service for the same reason as <see cref="ReleasedProps"/> — the pawn's own ownership is exactly what
+	/// changes under a lease, so a flag on it would be written across that edge.</summary>
+	[Sync] public NetDictionary<Guid, Guid> Leases { get; private set; } = new();
+
+	/// <summary>Is this pawn prop being sculpted in place by someone (any machine's answer)?</summary>
+	public static bool IsLeased( HiderController hider )
+		=> hider.IsValid() && Current.IsValid() && Current.Leases.ContainsKey( hider.GameObject.Id );
+
+	/// <summary>Is this pawn (root or any child of it) a leased prop? The roster resolver asks this: a leased
+	/// prop is owned by its sculptor's connection but is NOBODY's body.</summary>
+	public static bool IsLeasedPawn( GameObject pawn )
+		=> IsLeased( pawn.IsValid() ? pawn.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) : null );
+
+	/// <summary>Is this pawn prop leased to connection <paramref name="connectionId"/>?</summary>
+	public static bool IsLeasedBy( HiderController hider, Guid? connectionId )
+		=> connectionId is { } id && hider.IsValid() && Current.IsValid()
+		&& Current.Leases.TryGetValue( hider.GameObject.Id, out var holder ) && holder == id;
+
+	/// <summary>Caller asks to sculpt the clay under their crosshair in place — the F press. Arbitrated here
+	/// like <see cref="RequestPossess"/>: a released pawn prop is leased as-is (the <see cref="Leases"/> add is
+	/// the idempotency guard — one holder); scene clay is CONVERTED first (the same clone-and-dress as a
+	/// claim) and lands straight into released-and-leased, so it persists as scenery when the sculptor is
+	/// done. Same validation as a claim: a hunter, in reach, not spamming, mode allows it.</summary>
+	[Rpc.Host]
+	public void RequestLease( GameObject target ) => LeaseFor( Rpc.Caller ?? Connection.Local, target );
+
+	internal void LeaseFor( Connection c, GameObject target )
+	{
+		var host = Host;
+		if ( c is null || !target.IsValid() || host is null || !host.ClaimsAllowed || !host.LeasesAllowed )
+			return;
+
+		var pawn = host.ClaimantPawn( c );
+		if ( !pawn.IsValid() || !pawn.Components.Get<HunterController>().IsValid() )
+			return;
+
+		if ( _possessGate.TryGetValue( c.Id, out var gate ) && gate > 0f )
+			return;
+		_possessGate[c.Id] = PossessCooldown;
+
+		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange )
+			return;
+
+		// One lease per player: a second F elsewhere ends the first (the holder's session tears down when
+		// its lease vanishes — see HunterController.UpdateLease).
+		foreach ( var (id, holder) in Leases.ToList() )
+		{
+			if ( holder == c.Id )
+				ForceEndLease( id );
+		}
+
+		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		if ( hider.IsValid() )
+		{
+			if ( !ReleasedProps.ContainsKey( hider.GameObject.Id ) || Leases.ContainsKey( hider.GameObject.Id ) )
+				return; // someone's body, or already being sculpted
+
+			GrantLease( c, hider );
+			return;
+		}
+
+		var sculpture = target.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndAncestors );
+		if ( !IsClaimable( sculpture ) || !_claimedScene.Add( sculpture.GameObject.Id ) )
+			return;
+
+		var converted = ConvertSceneProp( sculpture, c, scenery: true );
+		if ( !converted.IsValid() )
+		{
+			_claimedScene.Remove( sculpture.GameObject.Id );
+			return;
+		}
+
+		// Converted clay is scenery from the first frame — the sculptor never wears it (BornScenery rode the
+		// spawn snapshot, so their copy knows before these rows land). ReleaseControl on the host copy
+		// (dormant) and the released registry, then the lease on top. The clone spawned owned by the holder.
+		var prop = converted.Components.Get<HiderController>();
+		prop.ReleaseControl();
+		ReleasedProps[prop.GameObject.Id] = true;
+		GrantLease( c, prop );
+	}
+
+	// Host-only: record the lease and hand the whole network tree to the holder (see NetworkTree — a root-only
+	// assign would leave the Disguise's authority with whoever wore it last).
+	void GrantLease( Connection c, HiderController prop )
+	{
+		Leases[prop.GameObject.Id] = c.Id;
+		PlaySwapPop( PopSpot( prop.GameObject ) ); // the same pop a possession makes — "someone's on this prop now"
+		if ( Networking.IsActive && prop.GameObject.Network.Active )
+		{
+			foreach ( var net in NetworkTree( prop.GameObject ) )
+				net.Network.AssignOwnership( c );
+		}
+	}
+
+	/// <summary>Caller is done sculpting <paramref name="target"/> in place — their session exited. Only the
+	/// holder may end their own lease; the host sweep (<see cref="SweepLeases"/>) covers a holder who can't ask.</summary>
+	[Rpc.Host]
+	public void EndLease( GameObject target )
+	{
+		var c = Rpc.Caller ?? Connection.Local;
+		var hider = target.IsValid() ? target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) : null;
+		if ( c is null || !hider.IsValid() || !IsLeasedBy( hider, c.Id ) )
+			return;
+
+		// The pop on the way out too, like popping out of a possessed prop. Only here, on the holder's own
+		// exit — the sweep's forced ends ride events that already pop (the R swap) or shouldn't (a leaver).
+		PlaySwapPop( PopSpot( hider.GameObject ) );
+		ForceEndLease( hider.GameObject.Id );
+	}
+
+	// Host-only: drop a lease by pawn id — registry out, ownership back to nobody (the prop is released scenery
+	// again, host-simulated). The holder's copy becomes a proxy, which is what tears their session down.
+	void ForceEndLease( Guid pawnId )
+	{
+		if ( !Leases.Remove( pawnId ) )
+			return;
+
+		var pawn = Scene.Directory.FindByGuid( pawnId );
+		if ( !pawn.IsValid() )
+			return;
+
+		// The host copy is about to read !IsProxy again (unowned) — make sure it's dormant + muted scenery, the
+		// same teardown a release runs (a converted lease pawn was never released through Release itself;
+		// for a pawn released earlier this is an idempotent no-op).
+		pawn.Components.Get<HiderController>()?.ReleaseControl();
+
+		if ( Networking.IsActive && pawn.Network.Active )
+		{
+			foreach ( var net in NetworkTree( pawn ) )
+				net.Network.DropOwnership();
+		}
+	}
+
+	// Host-only, per frame: a lease must be held by a connected player whose current pawn is a hunter (a
+	// swap to a prop, a leave, a mode-driven respawn all end it) on a pawn that still exists. The holder's
+	// own EndLease covers the normal exit; this is the net under everything that can't ask.
+	void SweepLeases()
+	{
+		if ( Leases.Count == 0 )
+			return;
+
+		foreach ( var (pawnId, holder) in Leases.ToList() )
+		{
+			var conn = Connection.All.FirstOrDefault( c => c.Id == holder );
+			var claimant = conn is not null ? Host?.ClaimantPawn( conn ) : null;
+			bool holderIsHunter = claimant.IsValid() && claimant.Components.Get<HunterController>().IsValid();
+			if ( !holderIsHunter || !Scene.Directory.FindByGuid( pawnId ).IsValid() )
+				ForceEndLease( pawnId );
+		}
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( Networking.IsActive && !Networking.IsHost )
+			return;
+		SweepLeases();
+	}
 
 	// Host-only: pawns minted by ConvertSceneProp, by pawn GameObject id. The lobby reads this to tell borrowed
 	// map furniture (release it back into the world on a role swap) from a player's own practice body (destroy
@@ -359,7 +558,7 @@ public sealed class PropClaims : Component, IInteractable
 	// the shape's feet; any tilt/scale the scene object carried moves onto the disguise child — the shape must
 	// never move on its own), then remove the original everywhere. Spawned owned by the claimant with ClearOwner
 	// orphan mode, so the prop outlives a leaver and can be released back into the world.
-	GameObject ConvertSceneProp( SdfSculpture sculpture, Connection owner )
+	GameObject ConvertSceneProp( SdfSculpture sculpture, Connection owner, bool scenery = false )
 	{
 		var prefab = Host?.PropPrefab;
 		if ( !prefab.IsValid() )
@@ -391,7 +590,10 @@ public sealed class PropClaims : Component, IInteractable
 			sourceRoot = sourceRoot.Parent;
 		var hider = pawn.Components.Get<HiderController>( includeDisabled: true );
 		if ( hider.IsValid() )
+		{
 			hider.DisguiseSource = sourceRoot.IsValid() ? sourceRoot.PrefabInstanceSource : null;
+			hider.BornScenery = scenery; // pre-spawn, so it ships in the snapshot — see HiderController.BornScenery
+		}
 
 		var disguise = pawn.Children.FirstOrDefault( ch => ch.Name == "Disguise" );
 		if ( disguise.IsValid() )

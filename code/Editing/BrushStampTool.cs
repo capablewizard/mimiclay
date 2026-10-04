@@ -37,6 +37,10 @@ public sealed class BrushStampTool
 	/// not yet updated).</summary>
 	public SdfBrush Stamp => _stamp;
 
+	/// <summary>Driving a first-person session (see <see cref="SculptEditSession.FirstPerson"/>): the hold-key scrubs
+	/// on the ghost shrink to R scale / E rotate, because the rest of the row is the player's movement keys.</summary>
+	public bool LockedKeys { get; set; }
+
 	SdfBrush _stamp;
 
 	// Carried appearance: each new ghost copies the last committed stamp (material, blend, rounding, size,
@@ -377,7 +381,7 @@ public sealed class BrushStampTool
 		// itself is the commit), so the end signal is ignored. The ghost is already in the brush list, so
 		// BlendInert locks its blend scrub exactly when it would land as the first additive brush.
 		changed |= BrushScrub.Update( _stamp, tx, cam, interactive, out _,
-			blendLocked: Sdf.BlendInert( target.Brushes, _stamp ) );
+			blendLocked: Sdf.BlendInert( target.Brushes, _stamp ), lockedKeys: LockedKeys );
 
 		// The scale scrub drives Size, but a spline's thickness lives in its point radii — mirror it onto
 		// the preview point live, so the sphere under the cursor visibly resizes as you drag.
@@ -520,7 +524,7 @@ public sealed class BrushStampTool
 
 	bool UpdatePlacement( SdfSculpture target, CameraComponent cam, Transform tx )
 	{
-		var ray = cam.ScreenPixelToRay( Mouse.Position );
+		var ray = cam.ScreenPixelToRay( EditPointer.Position );
 
 		// Cursor ray + camera forward into sculpture-local space (assumes unit scale, like every pick here).
 		var invRot = tx.Rotation.Inverse;
@@ -757,7 +761,7 @@ public static class BrushScrub
 	/// screen-space move — the edit session turns it on; the stamp leaves it off (its ghost already rides
 	/// the cursor, so a move scrub there would just be a worse version of placement).</summary>
 	public static bool Update( SdfBrush b, Transform sculptTx, CameraComponent cam, bool allow, out bool ended,
-		bool blendLocked = false, bool allowMove = false )
+		bool blendLocked = false, bool allowMove = false, bool lockedKeys = false )
 	{
 		ended = false;
 
@@ -775,6 +779,12 @@ public static class BrushScrub
 		bool moveKey = allowMove && !typing && Input.Keyboard.Down( "w" );
 		bool scale = !typing && Input.Keyboard.Down( "r" );
 		bool rot = !typing && Input.Keyboard.Down( "e" );
+
+		// First-person session (lockedKeys): the player is still WALKING — W/A/S/D/F/G are movement and action keys
+		// there, so only the two keys the body doesn't use may scrub: R scale and E rotate (the Garry's-Mod pair).
+		// Blend/round/wildcard/gap live on the HUD sliders (hold alt for the cursor); W move is the LMB grab.
+		if ( lockedKeys )
+			blendKey = roundKey = wildKey = gapKey = moveKey = false;
 		bool blendP = blendKey && !_blendWas, roundP = roundKey && !_roundWas, wildP = wildKey && !_wildWas,
 			gapP = gapKey && !_gapWas, moveP = moveKey && !_moveWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
 		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _gapWas = gapKey; _moveWas = moveKey; _scaleWas = scale; _rotWas = rot;
@@ -1025,7 +1035,7 @@ public static class BrushScrub
 	static void Begin( ScrubKind kind, SdfBrush b )
 	{
 		Active = kind;
-		Anchor = Mouse.Position;
+		Anchor = EditPointer.Position;
 		_rawRot = b.Rotation; // rotate scrub: continuous motion accumulates from the brush's current orientation
 		_wildAccum = 0f;
 		_movePos0 = b.Position;

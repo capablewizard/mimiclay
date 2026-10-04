@@ -59,6 +59,53 @@ internal static class PossessionDebug
 		lm.SwapRoleFor( client, 0f );
 	}
 
+	/// <summary>Sculpt the claimable clay nearest the LOCAL hunter in place (the first-person edit lease — the
+	/// same as aiming at it and pressing F). Works solo on a creative map; a non-creative mode refuses leases.</summary>
+	[ConCmd( "mimi_dbg_lease" )]
+	static void Lease()
+	{
+		var claims = PropClaims.Current;
+		var me = Connection.Local?.Id;
+		var hunter = Game.ActiveScene.GetAllComponents<HunterController>()
+			.FirstOrDefault( h => !h.IsProxy && !h.Bot && RoundManager.RosterIdOf( h.GameObject ) == me );
+		if ( !claims.IsValid() || !hunter.IsValid() )
+		{
+			Log.Warning( "mimi_dbg_lease: needs a claim service and a local hunter pawn." );
+			return;
+		}
+
+		var target = Game.ActiveScene.GetAllComponents<SdfSculpture>()
+			.Where( PropClaims.IsClaimable )
+			.OrderBy( s => s.WorldPosition.Distance( hunter.WorldPosition ) )
+			.FirstOrDefault();
+		if ( !target.IsValid() )
+		{
+			Log.Warning( "mimi_dbg_lease: nothing claimable." );
+			return;
+		}
+
+		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		var root = hider.IsValid() ? hider.GameObject : target.GameObject;
+		Log.Info( $"mimi_dbg_lease: sculpting '{root.Name}' in place ({target.WorldPosition.Distance( hunter.WorldPosition ):0}u away)" );
+		hunter.RequestSculptLease( root );
+	}
+
+	/// <summary>Leave whatever sculpt session this machine is in (forced, no dialog) — the lease's exit path
+	/// without a Q press, for editor-driven tests.</summary>
+	[ConCmd( "mimi_dbg_unlease" )]
+	static void Unlease()
+	{
+		var session = SculptEditSession.Current;
+		if ( !session.IsValid() || !session.IsEditing )
+		{
+			Log.Warning( "mimi_dbg_unlease: no edit session is running." );
+			return;
+		}
+
+		Log.Info( $"mimi_dbg_unlease: closing the session on '{session.Target?.GameObject.Name}' (first person: {session.FirstPerson})" );
+		session.SetActive( false );
+	}
+
 	/// <summary>Dump every released / possessed prop pawn: where it is, how it moves, who drives it.</summary>
 	[ConCmd( "mimi_dbg_props" )]
 	static void Props()
@@ -73,7 +120,7 @@ internal static class PossessionDebug
 			var body = hider.Components.Get<Rigidbody>();
 			var disguise = hider.DisguiseSculpture;
 			var colliders = hider.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ).ToList();
-			Log.Info( $"[prop] {hider.GameObject.Name} released={released} possessed={possessed} pos={hider.WorldPosition} " +
+			Log.Info( $"[prop] {hider.GameObject.Name} released={released} possessed={possessed} leased={PropClaims.IsLeased( hider )} bornScenery={hider.BornScenery} pos={hider.WorldPosition} " +
 				$"vel={(body.IsValid() ? body.Velocity : default)} motion={(body.IsValid() && body.MotionEnabled)} sleeping={(body.IsValid() && body.Sleeping)} " +
 				$"proxy={hider.IsProxy} owner={hider.GameObject.Network.Owner?.DisplayName ?? "none"} " +
 				$"brushes={disguise?.Brushes?.Count ?? -1} colliders={colliders.Count}({colliders.Count( c => c.Enabled )} on) " +
