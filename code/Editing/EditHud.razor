@@ -655,6 +655,48 @@
 {
 	static SculptEditSession Session => SculptEditSession.Current;
 
+	/// <summary>The one live EditHud. The system scene (merged into every map with WantsSystemScene) places one,
+	/// and some map scenes ALSO placed their own — two identical HUDs then stacked exactly on top of each other,
+	/// double-handling hover/click state and drawing every panel twice. Same guard as RoundHud / PauseMenu: first
+	/// instance wins, later copies destroy themselves in OnAwake.</summary>
+	public static EditHud Current { get; private set; }
+
+	protected override void OnAwake()
+	{
+		base.OnAwake();
+
+		if ( Current.IsValid() && Current != this )
+		{
+			Log.Warning( $"EditHud: a second instance appeared on '{GameObject.Name}' — destroying it. " +
+				"A scene is placing its own EditHud alongside the system scene's; remove the scene's copy." );
+			DestroySurplus();
+			return;
+		}
+
+		Current = this;
+	}
+
+	// Take the host object with us when it exists only to carry this HUD (a ScreenPanel and us, nothing else) —
+	// otherwise a dead root panel would be left behind.
+	void DestroySurplus()
+	{
+		var hostIsOurs = !GameObject.Children.Any()
+			&& GameObject.Components.GetAll( FindMode.EverythingInSelf ).All( c => c == this || c is ScreenPanel );
+
+		if ( hostIsOurs )
+			GameObject.Destroy();
+		else
+			Destroy();
+	}
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+
+		if ( Current == this )
+			Current = null;
+	}
+
 	// The brush the panels edit: the SELECTED brush in edit mode, the STAMP GHOST in add mode (palette /
 	// sliders / symmetry pre-style the next stamp). Identical to SelectedBrush when the edit tool is up.
 	SdfBrush Brush => Session?.ActiveBrush;

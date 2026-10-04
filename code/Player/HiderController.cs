@@ -249,6 +249,17 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	float _prevFacingYaw;
 	bool _turnSeeded; // false until the first step / after a freeze, so resuming doesn't snap from a stale yaw
 
+	// Released scenery goes to SLEEP once it has settled (see OnFixedUpdate's dormant branch): consecutive fixed
+	// steps it has read grounded and at rest. Every released prop otherwise keeps running the full character step
+	// forever on the host — gravity, ground-snap and one sphere-trace per footprint probe (up to 10×10 per Add
+	// brush) — and jumping in and out of a dozen props left a dozen such bodies ticking, which is what dragged the
+	// frame down. Asleep, the body costs nothing until something wakes it (a claim, or a contact from a live body).
+	int _settleTicks;
+	bool _sleptAsScenery; // we put the body to sleep — so a later proxy flip (handed to a claimant) wakes it
+	const int SleepAfterTicks = 10;    // ~0.2s at rest before sleeping — long enough to be sure it's not mid-bounce
+	const float SleepSpeed = 2f;       // u/s, linear
+	const float SleepSpin = 0.05f;     // rad/s, angular
+
 	internal bool EditMode => _session?.IsEditing ?? false;
 
 	// Edit mode AND the Starting-countdown freeze (RoundManager.ControlsLocked) both stop locomotion input, but the
@@ -306,6 +317,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	{
 		_dormant = true;
 
+		// A possession the host granted but this copy hasn't consumed yet (BeginPossession → next OnUpdate) is
+		// void: the prop has just been let go of again. Without this the latch fired AFTER the release — on the
+		// host an unowned pawn reads !IsProxy — and ResumeControl un-dormanted a released prop, which then ran
+		// on host input beside the player's real body (the "I control two props" bug).
+		_possessionPending = false;
+
 		// Scenery holds no microphone. This runs on the HOST, where the about-to-be-unowned pawn will read
 		// !IsProxy — without the mute, the engine Voice on every released prop opens the host's mic (see
 		// PlayerVoice.Muted). Machine-local on purpose: the ex-owner's copy becomes a proxy (never records)
@@ -361,6 +378,18 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	{
 		_dormant = false;
 		_jumpQueued = false;
+		_settleTicks = 0;
+		_sleptAsScenery = false;
+
+		// The claim this machine asked for has landed (we're driving the prop) — the swap keys may read E again
+		// (PawnSwapKeys.LeavePressed stands down while a claim is pending, so the press that took us in can't
+		// also take us out).
+		PropClaims.ClearLocalClaimPending();
+
+		// Scenery sleeps once settled (see OnFixedUpdate) — somebody's about to drive it, so wake the body first.
+		// Velocity writes alone can't be relied on to wake a sleeping body, and a sleeping one ignores our step.
+		if ( Body.IsValid() && Body.Sleeping )
+			Body.Sleeping = false;
 
 		// Somebody's driving again — give the voice back (a no-op on a claimant whose copy was never muted;
 		// the mute only ever landed on the machine that ran the release).
@@ -770,7 +799,17 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// a synced proxy is moved, not simulated, and our velocity writes are no-ops on it anyway). Skip our
 		// character physics entirely so we don't run ground-probe traces for a body we're not simulating.
 		if ( IsProxy )
+		{
+			// Scenery the HOST put to sleep that's just been handed to a claimant: this copy is now driven from
+			// the network, so make sure the body isn't still asleep under the engine's transform moves.
+			if ( _sleptAsScenery )
+			{
+				_sleptAsScenery = false;
+				if ( Body.IsValid() && Body.Sleeping )
+					Body.Sleeping = false;
+			}
 			return;
+		}
 
 		// Fell out of the world (blockout floor holes, physics tunnelling): put the body back at its spawn
 		// spot, upright and at rest — keeping its current heading so the player's camera relation survives.
@@ -802,10 +841,25 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			return;
 		}
 
-		// No locomotion input when editing (control suspended) OR when released into the level (dormant): the body
-		// stays LIVE — gravity, collision and ground-snap still run, so an editing prop re-settles onto its shape as
-		// soon as a commit rebuilds collision, and a released prop keeps resting where it was left.
-		if ( !ControlActive || _dormant )
+		// Released into the level (dormant): settle, then SLEEP. The body stays live only until it has come to
+		// rest on the ground — gravity and ground-snap still bring a just-released prop down onto its feet — and
+		// then it's put to sleep: no character step, no ground probes, no velocity writes, nothing per tick but
+		// the fall check above. A sleeping body still blocks, holds props up and is hit by traces; the engine
+		// wakes it when a live body touches it, which lands back here to re-settle and re-sleep. A claim wakes it
+		// explicitly (ResumeControl). Bots are dormant too and sleep the same way — they never move anyway.
+		if ( _dormant )
+		{
+			if ( Body.Sleeping )
+				return;
+
+			UpdateMovement( controlled: false );
+			SleepWhenSettled();
+			return;
+		}
+
+		// No locomotion input when editing (control suspended): the body stays LIVE — gravity, collision and
+		// ground-snap still run, so an editing prop re-settles onto its shape as soon as a commit rebuilds collision.
+		if ( !ControlActive )
 		{
 			UpdateMovement( controlled: false );
 			return;
@@ -921,6 +975,27 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		float contactSpin = Body.AngularVelocity.z - _lastSetYawRate; // spin the solver introduced on its own
 		_lastSetYawRate = mouseRate + contactSpin * SnagCompliance;
 		Body.AngularVelocity = Body.AngularVelocity.WithZ( _lastSetYawRate );
+	}
+
+	// Dormant only, right after a character step: count consecutive steps at rest on the ground, and once there
+	// have been enough, zero the body and put it to sleep (see _settleTicks). Grounded is required so a prop
+	// still falling — or hung on a ledge where the probes miss — keeps simulating exactly as before; the
+	// velocity read is the one UpdateMovement just wrote, so "at rest" means the step itself asked for rest
+	// (flat ground: the stop-dead rule; slopes: the rest gap has removed the contact and the drift is gone).
+	void SleepWhenSettled()
+	{
+		bool settled = IsGrounded
+			&& Body.Velocity.Length < SleepSpeed
+			&& Body.AngularVelocity.Length < SleepSpin;
+		_settleTicks = settled ? _settleTicks + 1 : 0;
+		if ( _settleTicks < SleepAfterTicks )
+			return;
+
+		_settleTicks = 0;
+		_sleptAsScenery = true;
+		Body.Velocity = Vector3.Zero;
+		Body.AngularVelocity = Vector3.Zero;
+		Body.Sleeping = true;
 	}
 
 	// Ground test: sphere-probe straight down from EACH footprint point (see GroundProbePoints), so a body made of

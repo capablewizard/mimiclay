@@ -110,10 +110,7 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
-          "SkyMaterial": {
-            "Id": "ee79b336-e58d-423b-ab21-8c99b5dcfdbb",
-            "Path": "materials/skybox/skybox_overcast_01.vmat"
-          },
+          "SkyMaterial": "materials/skybox/skybox_overcast_01.vmat",
           "Tint": "1,1,1,1"
         },
         {
@@ -166,10 +163,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Sky": {
-            "Id": "ee79b336-e58d-423b-ab21-8c99b5dcfdbb",
-            "Path": "materials/skybox/skybox_overcast_01.vmat"
-          },
+          "Sky": "materials/skybox/skybox_overcast_01.vmat",
           "StartDistance": 87.52665,
           "Tint": "1,1,1,1"
         }
@@ -203,10 +197,7 @@
           "MaterialGroup": null,
           "MaterialOverride": "materials/plasticine_floor.vmat",
           "Materials": null,
-          "Model": {
-            "Id": "00000000-0000-0000-306d-2b8df8010000",
-            "Path": "models/dev/plane.vmdl"
-          },
+          "Model": "models/dev/plane.vmdl",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -272,7 +263,6 @@
           "__guid": "10997264-700e-4905-9732-3840de25b26b",
           "__enabled": true,
           "Flags": 0,
-          "LobbyScene": "scenes/lobby.scene",
           "CaughtPuffPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/caught_puff.prefab"
@@ -281,6 +271,10 @@
           "HunterPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/hunter.prefab"
+          },
+          "LobbyScene": {
+            "Id": "205332a0-9001-40f5-9c3e-731f21ba6453",
+            "Path": "scenes/lobby.scene"
           },
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -293,56 +287,6 @@
             "_type": "gameobject",
             "prefab": "prefabs/prop.prefab"
           }
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "d735525c-cc47-4939-9890-624c2c037fd8",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "RoundHUD",
-      "Position": "-234.857635,-175.343979,63.9465485",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.RoundHud",
-          "__guid": "ed03e8d6-0c2c-4e0b-ae3b-d7fa612afec9",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.ScreenPanel",
-          "__guid": "27f012d0-5e13-4e4a-b1bb-e99a67de558f",
-          "__enabled": true,
-          "Flags": 0,
-          "AutoScreenScale": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Opacity": 1,
-          "Scale": 1,
-          "ScaleStrategy": "ConsistentHeight",
-          "TargetCamera": null,
-          "Timing": "AfterPostProcess",
-          "ZIndex": 100
         }
       ],
       "Children": []
@@ -375,82 +319,6 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "8b28ec4c-422a-4b0a-80ee-321a9cc3c2a6",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "EditHud",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.ScreenPanel",
-          "__guid": "6a776b47-96e6-4e64-9b4b-165f8d36f30d",
-          "__enabled": true,
-          "Flags": 0,
-          "AutoScreenScale": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Opacity": 1,
-          "Scale": 1,
-          "ScaleStrategy": "ConsistentHeight",
-          "TargetCamera": null,
-          "Timing": "AfterPostProcess",
-          "ZIndex": 90
-        },
-        {
-          "__type": "Mimiclay.EditHud",
-          "__guid": "fbdc6bfa-9d92-49c5-a68a-db59a3274e62",
-          "__enabled": true,
-          "Flags": 0,
-          "AddPointCursor": "cursor-add",
-          "BlendCurve": 2.5,
-          "DistanceFromGizmo": 0,
-          "EditTransparency": 0,
-          "FadeTime": 0.12,
-          "HoverScale": 1.25,
-          "MetalAngle": 135,
-          "MetalDarken": 0.85,
-          "MetalSaturate": 0.4,
-          "MetalSheen": 0.3,
-          "MetalThreshold": 0.5,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OutlineDarken": 0.5,
-          "OutlineOpacity": 0.5609756,
-          "OutlineSaturate": 0.3,
-          "OutlineThickness": 2.5,
-          "ShowBounds": false,
-          "ShowLayers": true,
-          "ShowPalette": true,
-          "ShowSliders": true,
-          "ShowTools": true,
-          "SliderDropFromGizmo": 0,
-          "SliderStackHeight": 100,
-          "SliderWidth": 400,
-          "SwatchRoundness": 14,
-          "SwatchSize": 35,
-          "SwatchSpacing": 5
         }
       ],
       "Children": []
@@ -555,16 +423,16 @@
               "Type": "GameObject",
               "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
             },
-            "Property": "Name",
-            "Value": "Camera"
+            "Property": "Flags",
+            "Value": 2048
           },
           {
             "Target": {
               "Type": "GameObject",
               "IdValue": "b1422753-36f9-4396-841c-dd770c338dfc"
             },
-            "Property": "Flags",
-            "Value": 2048
+            "Property": "Name",
+            "Value": "Camera"
           },
           {
             "Target": {

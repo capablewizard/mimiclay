@@ -1601,7 +1601,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Com
 		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
 			return;
 
-		PropClaims.ClearLocalClaimPending();
+		// LocalClaimPending is deliberately NOT cleared here — HiderController.ResumeControl clears it once the
+		// prop is actually ours to drive. Clearing it now let PawnSwapKeys.LeavePressed read the claiming E press
+		// again later this same frame on a listen host and pop us straight back out. The kind-poll's gate on it
+		// only matters while _ownPawn is invalid, and it's set right below.
 		if ( !pawn.IsValid() )
 			return;
 

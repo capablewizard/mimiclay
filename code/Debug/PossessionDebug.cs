@@ -74,7 +74,7 @@ internal static class PossessionDebug
 			var disguise = hider.DisguiseSculpture;
 			var colliders = hider.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ).ToList();
 			Log.Info( $"[prop] {hider.GameObject.Name} released={released} possessed={possessed} pos={hider.WorldPosition} " +
-				$"vel={(body.IsValid() ? body.Velocity : default)} motion={(body.IsValid() && body.MotionEnabled)} " +
+				$"vel={(body.IsValid() ? body.Velocity : default)} motion={(body.IsValid() && body.MotionEnabled)} sleeping={(body.IsValid() && body.Sleeping)} " +
 				$"proxy={hider.IsProxy} owner={hider.GameObject.Network.Owner?.DisplayName ?? "none"} " +
 				$"brushes={disguise?.Brushes?.Count ?? -1} colliders={colliders.Count}({colliders.Count( c => c.Enabled )} on) " +
 				$"tags=[{string.Join( ",", (disguise.IsValid() ? disguise.GameObject.Tags : hider.GameObject.Tags).TryGetAll() )}]" );

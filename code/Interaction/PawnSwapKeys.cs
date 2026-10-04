@@ -41,9 +41,15 @@ public static class PawnSwapKeys
 	/// <summary>R this frame: swap hunter ⇄ prop (or pop out of a possessed prop).</summary>
 	public static bool SwapPressed => !Blocked && Input.Pressed( SwapAction );
 
-	/// <summary>E this frame while <paramref name="own"/> is a possessed prop: pop out as a hunter.</summary>
+	/// <summary>E this frame while <paramref name="own"/> is a possessed prop: pop out as a hunter. Stands down
+	/// while a local claim is in flight (<see cref="PropClaims.LocalClaimPending"/>): on a listen host the claim
+	/// RPC runs synchronously, so the SAME E press that just possessed the prop would otherwise be read again
+	/// here later in the frame — the mode's handler already sees the prop as ours and possessed — and pop us
+	/// straight back out. That release then raced the prop's still-pending resume (see
+	/// <c>HiderController.ReleaseControl</c>), leaving a released, unowned prop the host kept driving.</summary>
 	public static bool LeavePressed( HiderController own )
-		=> own.IsValid() && PropClaims.IsPossessed( own ) && !Blocked && Input.Pressed( LeaveAction );
+		=> own.IsValid() && PropClaims.IsPossessed( own ) && !Blocked && !PropClaims.LocalClaimPending
+		&& Input.Pressed( LeaveAction );
 
 	// A swap parked on the edit session's revert confirmation — run once the player answers it.
 	static Action _afterExit;

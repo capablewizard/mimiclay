@@ -126,6 +126,8 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 		if ( ForwardSpeed > 0f )
 			vel += WorldRotation.Forward * ForwardSpeed;
 
+		// A released prop sleeping on the pad (see HiderController.SleepWhenSettled) ignores a bare velocity write.
+		body.Sleeping = false;
 		body.Velocity = vel;
 
 		BroadcastBoing();
