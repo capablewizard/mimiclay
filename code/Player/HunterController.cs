@@ -81,6 +81,11 @@ public sealed class HunterController : Component
 	/// LifeTime is what retires it — a TemporaryEffect is added if the prefab has none.</summary>
 	[Property, Group( "Weapon" )] public PrefabFile WorldDecalPrefab { get; set; }
 
+	/// <summary>Tint the <see cref="WorldDecalPrefab"/> splat with the shooter's body colour (the Body
+	/// sculpture's first Add brush — the clay of the body and hands), so the splat reads as THEIR clay. Replaces
+	/// the prefab's authored ColorTint RGB; its alpha is kept. Off = the prefab's tint as authored.</summary>
+	[Property, Group( "Weapon" )] public bool TintDecalToBody { get; set; } = true;
+
 	/// <summary>Recoil: degrees the shooter's own view kicks up per shot. Render-only (a CameraEffectSystem
 	/// punch composed into the view, never the camera transform) — the actual aim never moves, so holding
 	/// the crosshair on a prop through the kick still hits. 0 = no kick.</summary>
@@ -2904,12 +2909,35 @@ public sealed class HunterController : Component
 		decal.WorldRotation = Rotation.LookAt( -normal );
 		decal.Flags |= GameObjectFlags.NotSaved;
 
+		Color? bodyTint = TintDecalToBody ? BodyColor() : null;
+
 		foreach ( var d in decal.Components.GetAll<Decal>( FindMode.EverythingInSelfAndDescendants ) )
+		{
 			if ( d.Decals is { Count: > 1 } list )
 				d.Decals = [list[pick % list.Count]];
 
+			// A flat tint, keeping the authored alpha (evaluated at birth) as the splat's opacity.
+			if ( bodyTint is Color tint )
+				d.ColorTint = tint.WithAlpha( d.ColorTint.Evaluate( 0f, 0f ).a );
+		}
+
 		if ( !decal.Components.Get<TemporaryEffect>().IsValid() )
 			decal.Components.Create<TemporaryEffect>().DestroyAfterSeconds = 0f;
+	}
+
+	// This hunter's clay colour: the Body sculpture's first Add brush (Subtract/Cutout/Colour brushes paint
+	// carves and details, not the base clay). Read live off the brushes — the body's brushes are deformed in
+	// place every frame (UpdateBodyDeform) but their colours are never touched. Null if there's no body.
+	Color? BodyColor()
+	{
+		if ( !_bodySculpt.IsValid() )
+			return null;
+
+		foreach ( var brush in _bodySculpt.Brushes )
+			if ( brush is { Operation: SdfOperation.Add } )
+				return brush.Color;
+
+		return null;
 	}
 
 	// The prefab's own TemporaryEffect retires it once the burst finishes; this is only the backstop for one

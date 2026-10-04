@@ -124,7 +124,33 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost, 
 				if ( PropClaims.IsScenery( sculpture ) )
 					sculpture.GameObject.Destroy();
 			}
+
+			// The sweep just took the radio with it — put the music back, map-wide.
+			if ( IsHostAuthority )
+				SpawnGlobalMusic();
 		}
+	}
+
+	// Host only. The run (seed + start time) is rolled BEFORE the object enables and spawns, so OnEnabled sees it
+	// already set and never broadcasts; the spawn snapshot carries it to every client, late joiners included.
+	static void SpawnGlobalMusic()
+	{
+		var prefab = RoundManagerSpawner.Current?.GlobalMusicPrefab;
+		if ( !prefab.IsValid() )
+		{
+			Log.Warning( "CreativeManager: no global music prefab on the spawner — this map will be silent." );
+			return;
+		}
+
+		var go = prefab.Clone( new CloneConfig( global::Transform.Zero, startEnabled: false, name: "Global Music" ) );
+		foreach ( var music in go.Components.GetAll<SyncedMusic>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			var (seed, at) = SyncedMusic.RollStart();
+			music.ApplyPlaying( music.Playing, seed, at );
+		}
+
+		go.Enabled = true;
+		go.NetworkSpawn();
 	}
 
 	protected override void OnUpdate()

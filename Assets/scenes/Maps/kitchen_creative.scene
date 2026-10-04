@@ -2,298 +2,6 @@
   "__guid": "8a55caa1-b568-460d-85e8-0c9e8c446f5b",
   "GameObjects": [
     {
-      "__guid": "a1e94861-764b-4e38-b37e-e95ee9a47282",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "LobbyController",
-      "Position": "110.889534,-1164.77466,-361.464691",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.LobbyController",
-          "__guid": "71b38165-657b-46a1-ac52-ca916a855fd0",
-          "__enabled": true,
-          "Flags": 0,
-          "BotCount": 0,
-          "BotNominations": 0,
-          "BotRandomLooks": false,
-          "BotsFollowIntoRound": true,
-          "DefaultConsolidationSeconds": 12,
-          "DefaultHideSeconds": 90,
-          "DefaultHintSeconds": 60,
-          "DefaultHunterCount": 1,
-          "DefaultHuntSeconds": 220,
-          "DefaultRevealSeconds": 30,
-          "DefaultRoundMode": "Infection",
-          "DefaultStartCountdownSeconds": 5,
-          "DefaultTauntSeconds": 30,
-          "HunterPrefab": {
-            "_type": "gameobject",
-            "prefab": "prefabs/hunter.prefab"
-          },
-          "LaunchCountdownSeconds": 5,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "PropHoverRange": 300,
-          "PropPrefab": {
-            "_type": "gameobject",
-            "prefab": "prefabs/prop.prefab"
-          },
-          "SpawnPoint": null,
-          "SpawnPoints": [
-            null,
-            null,
-            null,
-            null,
-            {
-              "_type": "gameobject",
-              "go": "efffb73e-b40b-4415-ae7c-99c78e8b5ddc"
-            },
-            {
-              "_type": "gameobject",
-              "go": "5fc35ac0-0929-43ff-a034-5a040c55b373"
-            },
-            {
-              "_type": "gameobject",
-              "go": "349c40b4-1e94-4779-a532-cb9d9a6c52c7"
-            },
-            {
-              "_type": "gameobject",
-              "go": "67cf0e15-0e0b-4e32-ab05-8ea41ad70286"
-            },
-            null
-          ]
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "fc46a55c-588c-45f9-a4f7-6e916bc5943c",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "RoundHUD",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.RoundHud",
-          "__guid": "ae33a6bb-8a58-4811-96d6-2b4aab867e73",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.ScreenPanel",
-          "__guid": "d7efc125-fa85-4e7a-ae09-9ad1c3446ae0",
-          "__enabled": true,
-          "Flags": 0,
-          "AutoScreenScale": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Opacity": 1,
-          "Scale": 1,
-          "ScaleStrategy": "ConsistentHeight",
-          "TargetCamera": null,
-          "Timing": "AfterPostProcess",
-          "ZIndex": 100
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "9960d8d4-daa7-4731-9bfb-d66e1cf0c14d",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "GizmoController",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Mimiclay.GizmoSettings",
-          "__guid": "16cb21b3-75b6-47d0-8cdf-24b3fca5976c",
-          "__enabled": true,
-          "Flags": 0,
-          "DotRadius": 10.406712,
-          "DragOpacity": 0.2,
-          "FadeTime": 0.12,
-          "GizmoDepthBias": 10,
-          "GizmoScale": 1,
-          "HitboxPadding": 3,
-          "HotScale": 1.3,
-          "LineCapScale": 0.835443,
-          "MoveWidth": 6,
-          "OccludeRingBackHalf": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OutlineWidth": 0.7,
-          "PlaneOffsetFrac": 1.0566658,
-          "PlaneRounding": 0.44725737,
-          "PlaneScale": 0.12,
-          "ReferenceHeight": 1080,
-          "RingSegments": 64,
-          "RingWidth": 3,
-          "RotationRadius": 130,
-          "ScaleDotOffset": 28,
-          "ScreenMoveRounding": 0.35,
-          "ScreenMoveScale": 0.07924457,
-          "ScreenRingScale": 1.2,
-          "ShowPlaneSquares": true,
-          "ShowRotation": true,
-          "ShowScale": true,
-          "ShowScreenMove": true,
-          "ShowScreenRotation": true,
-          "ShowSliders": true,
-          "ShowTranslation": true,
-          "ShowUniformScale": true,
-          "SliderBlendMax": 15,
-          "SliderBuffer": 8,
-          "SliderOffset": 255,
-          "SliderRoundingMin": 0,
-          "SliderSpacing": 36.36675,
-          "SliderThickness": 6,
-          "SplineLineColor": "0.85,0.85,0.9,1",
-          "SplineLineHitScale": 0.45,
-          "SplineLineHoverOpacity": 0.5,
-          "SplineLineOpacity": 0.3,
-          "SplineLineWidth": 4,
-          "SplineMidDotRadius": 2.5,
-          "SplineMidDots": 0,
-          "SplinePointRadius": 16,
-          "SplineRadiusColor": "1,0.8,0.25,1",
-          "SplineRadiusDotScale": 0.7,
-          "Thickness": 2.2660944,
-          "TranslationMax": 204.98135,
-          "TranslationMin": 61.940144,
-          "TranslationOffset": 0,
-          "UniformScaleOffset": 150,
-          "UniformScaleRadius": 12,
-          "UniformScaleSensitivity": 150
-        }
-      ],
-      "Children": []
-    },
-    {
-      "__guid": "c6e033d3-4d28-4979-b6a7-d517cdec7c3a",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "EditHUD",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.ScreenPanel",
-          "__guid": "99c324dc-f5cb-48f9-a09e-9b1d279b605f",
-          "__enabled": true,
-          "Flags": 0,
-          "AutoScreenScale": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Opacity": 1,
-          "Scale": 1,
-          "ScaleStrategy": "ConsistentHeight",
-          "TargetCamera": null,
-          "Timing": "AfterPostProcess",
-          "ZIndex": 100
-        },
-        {
-          "__type": "Mimiclay.EditHud",
-          "__guid": "e1851a98-7494-4c17-a408-e869e628883c",
-          "__enabled": true,
-          "Flags": 0,
-          "AddPointCursor": "cursor-add",
-          "BlendCurve": 2.5,
-          "DistanceFromGizmo": 0,
-          "EditTransparency": 0,
-          "FadeTime": 0.12,
-          "HoverScale": 1.25,
-          "MetalAngle": 135,
-          "MetalDarken": 0.85,
-          "MetalSaturate": 0.4,
-          "MetalSheen": 0.3,
-          "MetalThreshold": 0.5,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OutlineDarken": 0.5,
-          "OutlineOpacity": 0.5609756,
-          "OutlineSaturate": 0.3,
-          "OutlineThickness": 2.5,
-          "PickerGap": 18,
-          "PickerSize": 190,
-          "ShowBounds": false,
-          "ShowLayers": true,
-          "ShowPalette": true,
-          "ShowPicker": true,
-          "ShowSliders": true,
-          "ShowTools": true,
-          "SliderDropFromGizmo": 0,
-          "SliderStackHeight": 100,
-          "SliderWidth": 400,
-          "SwatchRoundness": 14,
-          "SwatchSize": 35,
-          "SwatchSpacing": 5,
-          "UseShapeBounds": true
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "82c0cdbc-3332-4253-946f-c6a26880270a",
       "__version": 2,
       "Flags": 0,
@@ -4770,7 +4478,7 @@
               "__guid": "50f32bf9-ca7d-487a-94d4-5b97d2d54532",
               "__enabled": true,
               "Flags": 0,
-              "HunterStart": false,
+              "HunterStart": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -4802,7 +4510,7 @@
               "__guid": "04519205-655b-4b17-9455-9660eaf3179f",
               "__enabled": true,
               "Flags": 0,
-              "HunterStart": false,
+              "HunterStart": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -4834,7 +4542,7 @@
               "__guid": "2d29ed37-59d1-400a-8f20-8ed412d4cb48",
               "__enabled": true,
               "Flags": 0,
-              "HunterStart": false,
+              "HunterStart": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -4866,7 +4574,7 @@
               "__guid": "87be6b63-d00c-4ddb-ab55-3ba8e19943a2",
               "__enabled": true,
               "Flags": 0,
-              "HunterStart": false,
+              "HunterStart": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -4898,7 +4606,7 @@
               "__guid": "ac4002f8-2d56-406b-8e6b-a0f23838255a",
               "__enabled": true,
               "Flags": 0,
-              "HunterStart": false,
+              "HunterStart": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -4930,7 +4638,7 @@
               "__guid": "06454faf-7cda-4abb-b9ca-c39770af8591",
               "__enabled": true,
               "Flags": 0,
-              "HunterStart": false,
+              "HunterStart": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -4962,7 +4670,7 @@
               "__guid": "beb6420c-00d5-4e6a-91ee-3881fc83500a",
               "__enabled": true,
               "Flags": 0,
-              "HunterStart": false,
+              "HunterStart": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -5338,7 +5046,7 @@
           },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 02:19:53",
+          "LastImport": "63 object(s), 67661 tris — 11:59:36",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -11518,22 +11226,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11583,22 +11275,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11779,6 +11455,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1242.81396,-427.365051"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11820,6 +11512,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1277.56177,-427.365051"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11861,6 +11569,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1101.1239,-483.758209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11902,6 +11626,22 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1129.97668,-483.758209"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12088,14 +11828,6 @@
               "Type": "Component",
               "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
             },
-            "Property": "__enabled",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -12194,7 +11926,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12211,7 +11943,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12422,7 +12154,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12439,7 +12171,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12878,7 +12610,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12895,7 +12627,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13106,7 +12838,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13123,7 +12855,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13334,7 +13066,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13351,7 +13083,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13562,7 +13294,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13579,7 +13311,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -14018,7 +13750,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14035,7 +13767,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -14246,7 +13978,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14263,7 +13995,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -14474,7 +14206,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14491,7 +14223,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -14702,7 +14434,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14719,7 +14451,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -17407,6 +17139,14 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
             },
             "Property": "AdaptiveQuality",
@@ -17461,6 +17201,14 @@
             },
             "Property": "Rotation",
             "Value": "-3.36300582E-06,7.0720911E-05,0.0237452015,0.99971807"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -19137,6 +18885,14 @@
               "Type": "Component",
               "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19270,14 +19026,6 @@
             },
             "Property": "Rotation",
             "Value": "-3.36300582E-06,7.0720911E-05,0.0237452015,0.99971807"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
-            },
-            "Property": "__enabled",
-            "Value": false
           },
           {
             "Target": {
@@ -19901,14 +19649,6 @@
               "Type": "Component",
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -19992,6 +19732,14 @@
               "Type": "Component",
               "IdValue": "a347f32f-d129-4f28-a743-ecfe966bbffa"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a347f32f-d129-4f28-a743-ecfe966bbffa"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -20035,14 +19783,6 @@
             },
             "Property": "Rotation",
             "Value": "-8.47489048E-08,-3.70449182E-15,-4.37113847E-08,-1"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -20229,14 +19969,6 @@
             },
             "Property": "Rotation",
             "Value": "-5.39024434E-08,2.54409223E-08,0.904332876,0.426827788"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "bd8a5941-5cb1-4f72-ab2a-880cb3e2048c"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -21170,6 +20902,14 @@
               "Type": "Component",
               "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -21213,6 +20953,14 @@
             },
             "Property": "Position",
             "Value": "-181.684311,-1262.29712,-378.952789"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -21302,13 +21050,74 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "d1da9771-0a84-4574-8e8e-9be56ed5eafc",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Map Mode Card",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Mimiclay.MapModeCard",
+          "__guid": "cdefd994-31cd-43a3-b349-ffb536fca3c9",
+          "__enabled": true,
+          "Flags": 0,
+          "BotCount": 0,
+          "BotHunterPawns": true,
+          "BotRandomDisguises": true,
+          "CharadesChooseSeconds": 10,
+          "CharadesRevealSeconds": 10,
+          "CharadesRounds": 2,
+          "CharadesSculptSeconds": 150,
+          "CharadesSoloDebug": false,
+          "CharadesSource": "Topics",
+          "CharadesStartCountdownSeconds": 10,
+          "CharadesTopicChoices": true,
+          "CharadesTopicIds": "",
+          "CharadesWordLengthHints": false,
+          "CharadesWriteSeconds": 45,
+          "ConsolidationSeconds": 12,
+          "CreativeHoverRange": 300,
+          "DebugSoloHide": false,
+          "DirectPlayGame": "Creative",
+          "DisableSceneCameras": true,
+          "HideSeconds": 90,
+          "HintSeconds": 60,
+          "HunterCount": 1,
+          "HuntSeconds": 210,
+          "Mode": "Infection",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OverrideCharadesRules": false,
+          "OverrideRules": false,
+          "PlayAs": "Auto",
+          "RevealSeconds": 30,
+          "StartCountdownSeconds": 5,
+          "TauntSeconds": 35
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
     "NetworkInterpolation": true,
     "PhysicsMode": "Physics3D",
     "TimeScale": 1,
-    "WantsSystemScene": false,
+    "WantsSystemScene": true,
     "Metadata": {},
     "NavMesh": {
       "Enabled": false,

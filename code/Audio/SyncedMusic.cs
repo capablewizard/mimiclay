@@ -45,6 +45,23 @@ public sealed class SyncedMusic : Component
 	/// Loose on purpose: a client's clock estimate jitters by a few ms, and a seek is an audible skip.</summary>
 	[Property] public float DriftTolerance { get; set; } = 0.25f;
 
+	/// <summary>Heard everywhere at full volume (background music) instead of from this object's position:
+	/// no distance falloff, occlusion, reverb or air absorption, whatever the sound event says.</summary>
+	[Property, Group( "Playback" )] public bool Global { get; set; }
+
+	/// <summary>Mixer to play through instead of the sound event's own. The radio's event routes to the "radio"
+	/// mixer (its RadioFilterProcessor is the tinny filter); background music picks "Music" here to play the same
+	/// event clean. Empty = the event's mixer.</summary>
+	[Property, Group( "Playback" )] public Sandbox.Audio.MixerHandle MixerOverride { get; set; }
+
+	/// <summary>Seconds after this component enables before the music may start (on top of the load settle).
+	/// The shared clock still decides the song position, so a delay never breaks sync.</summary>
+	[Property, Group( "Playback" )] public float StartDelay { get; set; }
+
+	/// <summary>Seconds to fade up from silence the first time this instance starts its music. 0 = straight in.
+	/// Not reapplied on track changes or when a copy adopts an already-playing handle.</summary>
+	[Property, Group( "Playback" )] public float FadeIn { get; set; }
+
 	/// <summary>Switched on? Off fades the handle out but keeps the channel; back on starts a new run (fresh
 	/// <see cref="Seed"/>: a new random track from the top). Changed on every machine at once by
 	/// <see cref="SetPlaying"/>; late joiners get it from the live snapshot (scene objects ship the host's state,
@@ -107,6 +124,11 @@ public sealed class SyncedMusic : Component
 
 	TimeUntil _nextDriftCheck;
 	int _calmFrames;
+	TimeSince _sinceEnabled;
+	RealTimeSince? _fadingSince; // null until this instance first starts a handle
+
+	// The fade-in multiplier on Volume: 0→1 over FadeIn from this instance's first start.
+	float FadeScale => FadeIn <= 0f || _fadingSince is not { } t ? 1f : Math.Clamp( t / FadeIn, 0f, 1f );
 
 	protected override void OnEnabled()
 	{
@@ -128,12 +150,14 @@ public sealed class SyncedMusic : Component
 		if ( _channels.TryGetValue( key, out var e ) && e.Handle.IsValid() && e.Handle.IsPlaying )
 		{
 			e.Holder = this; // adopt — the previous holder (if still alive) stops driving it
+			_fadingSince = null; // already audible: no fade
 			return;
 		}
 
 		// Claim the channel but DON'T start yet — OnUpdate starts it once the scene has settled (see CalmFrames).
 		_channels[key] = new Entry { Holder = this };
 		_calmFrames = 0;
+		_sinceEnabled = 0;
 	}
 
 	protected override void OnDisabled()
@@ -177,8 +201,9 @@ public sealed class SyncedMusic : Component
 			// after was a ~2s stall: the scene clock jumped 2s while the mixer — fed from the main thread —
 			// barely advanced, so the first drift check found 1.35s of error and seeked forward. That jump was
 			// the hiccup heard on load. A run of normal frames means the clock and the mixer move together.
-			if ( _calmFrames >= CalmFrames )
+			if ( _calmFrames >= CalmFrames && _sinceEnabled >= StartDelay )
 			{
+				_fadingSince ??= 0f;
 				e.Handle = StartHandle( out e.File );
 				e.Seed = Seed;
 				e.StartedAt = StartedAt;
@@ -187,7 +212,7 @@ public sealed class SyncedMusic : Component
 		}
 
 		e.Handle.Position = WorldPosition;
-		e.Handle.Volume = Volume;
+		e.Handle.Volume = Volume * FadeScale;
 
 		if ( _nextDriftCheck <= 0f )
 		{
@@ -359,15 +384,23 @@ public sealed class SyncedMusic : Component
 		// PlayFile, not Play( SoundEvent ): that rolls its own per-machine random file. So copy the event's
 		// settings across by hand (mirrors the engine's Sound.Play). Pitch stays 1 — a random pitch would drift.
 		var ev = SoundEvent;
-		var h = Sound.PlayFile( file, Volume );
+		var h = Sound.PlayFile( file, Volume * FadeScale );
 		if ( !h.IsValid() )
 			return null;
 
 		h.Position = WorldPosition;
 		h.Distance = ev.Distance;
 		h.Falloff = ev.Falloff;
-		h.TargetMixer = ev.DefaultMixer.Get();
-		if ( ev.UI )
+		h.TargetMixer = string.IsNullOrEmpty( MixerOverride.Name ) ? ev.DefaultMixer.Get() : MixerOverride.Get();
+		if ( Global )
+		{
+			h.ListenLocal = true;
+			h.DistanceAttenuation = false;
+			h.AirAbsorption = false;
+			h.OcclusionEnabled = false;
+			h.ReverbEnabled = false;
+		}
+		else if ( ev.UI )
 		{
 			h.ListenLocal = true;
 			h.DistanceAttenuation = false;

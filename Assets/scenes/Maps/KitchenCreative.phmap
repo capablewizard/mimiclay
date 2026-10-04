@@ -1,0 +1,13 @@
+{
+  "Title": "Kitchen",
+  "Description": "Build and play around the kitchen.",
+  "Preview": "scenes/kitchenlobby_banner.png",
+  "Scene": "scenes/maps/kitchen_creative.scene",
+  "Hidden": false,
+  "ForPropHunt": false,
+  "ForCreative": true,
+  "ForCharades": false,
+  "DefaultPick": false,
+  "__references": [],
+  "__version": 0
+}

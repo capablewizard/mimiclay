@@ -4,6 +4,7 @@
   "Preview": null,
   "Scene": "scenes/maps/bedroom.scene",
   "Hidden": false,
+  "ForCreative": false,
   "__references": [],
   "__version": 0
 }

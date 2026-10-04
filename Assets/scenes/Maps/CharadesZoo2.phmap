@@ -8,7 +8,7 @@
   },
   "Hidden": false,
   "ForPropHunt": false,
-  "ForCreative": false,
+  "ForCreative": true,
   "ForCharades": true,
   "DefaultPick": true,
   "__references": [],

@@ -17,6 +17,11 @@ namespace Mimiclay;
 ///
 /// Walls are generated in OnStart (play only) as NotSaved children, so the prefab/scene never accumulates
 /// them and the ring re-tunes from these properties alone.
+///
+/// CHARADES-MAP REUSE: creative plays on the same maps, and there the stage is just scenery — the ring stands
+/// down (walls disabled) whenever a <see cref="CreativeManager"/> is live. Polled, not decided once at start:
+/// the host's spawner creates the manager a few ticks in and clients only get it over the wire, so it may not
+/// exist yet when this component starts.
 /// </summary>
 [Title( "Charades Stage Fence" )]
 [Category( "Mimiclay" )]
@@ -51,6 +56,10 @@ public sealed class CharadesStageFence : Component
 	/// the walls: the prop, the camera booms and the brush clamp all look through it.</summary>
 	[Property] public bool Ceiling { get; set; } = true;
 
+	// Every runtime wall/lid object, so the creative stand-down can switch them as one.
+	readonly List<GameObject> _built = new();
+	bool _wallsOn = true;
+
 	protected override void OnStart()
 	{
 		if ( Scene.IsEditor )
@@ -67,6 +76,27 @@ public sealed class CharadesStageFence : Component
 			LidLayout( out var lidPos, out var lidSize );
 			BuildBox( "Fence Lid", lidPos, Rotation.Identity, lidSize );
 		}
+
+		ApplyWallsOn();
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( _built.Count > 0 )
+			ApplyWallsOn();
+	}
+
+	// Creative = no fence; every other game keeps it.
+	void ApplyWallsOn()
+	{
+		var want = !CreativeManager.Current.IsValid();
+		if ( want == _wallsOn )
+			return;
+
+		_wallsOn = want;
+		foreach ( var go in _built )
+			if ( go.IsValid() )
+				go.Enabled = want;
 	}
 
 	void BuildBox( string name, Vector3 localPos, Rotation localRot, Vector3 size )
@@ -77,6 +107,7 @@ public sealed class CharadesStageFence : Component
 		go.Tags.Add( WallTag );
 		go.LocalPosition = localPos;
 		go.LocalRotation = localRot;
+		_built.Add( go );
 
 		var box = go.Components.Create<BoxCollider>();
 		box.Center = Vector3.Zero;

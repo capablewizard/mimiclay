@@ -241,6 +241,10 @@
             "prefab": "prefabs/caught_puff.prefab"
           },
           "FindReward": 50,
+          "GlobalMusicPrefab": {
+            "_type": "gameobject",
+            "prefab": "prefabs/global_music.prefab"
+          },
           "HunterPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/hunter.prefab"

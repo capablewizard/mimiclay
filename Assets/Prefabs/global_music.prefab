@@ -1,0 +1,57 @@
+{
+  "RootObject": {
+    "__guid": "ebbfb6a2-18f4-47da-b36f-754b25016d2f",
+    "__version": 2,
+    "Flags": 0,
+    "Name": "global_music",
+    "Position": "0,0,0",
+    "Rotation": "0,0,0,1",
+    "Scale": "1,1,1",
+    "Tags": "",
+    "Enabled": true,
+    "NetworkMode": 2,
+    "NetworkFlags": 0,
+    "NetworkOrphaned": 0,
+    "NetworkTransmit": true,
+    "OwnerTransfer": 1,
+    "Components": [
+      {
+        "__type": "Mimiclay.SyncedMusic",
+        "__guid": "3a7a74ba-2135-4f6e-bbbb-6e085f94a30a",
+        "__enabled": true,
+        "Flags": 0,
+        "Channel": "global_music",
+        "DriftTolerance": 0.25,
+        "FadeIn": 4,
+        "Global": true,
+        "MixerOverride": {
+          "Name": "Music",
+          "Id": "00000000-0000-0000-0000-000000000000"
+        },
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Playing": true,
+        "Seed": 0,
+        "SoundEvent": {
+          "Id": "a155c966-dbf6-41c7-8426-48809f5da895",
+          "Path": "sounds/music/ambient_music.sound"
+        },
+        "StartDelay": 1.5,
+        "StartedAt": 0,
+        "Volume": 0.2
+      }
+    ],
+    "Children": []
+  },
+  "ShowInMenu": false,
+  "MenuPath": null,
+  "MenuIcon": null,
+  "DontBreakAsTemplate": false,
+  "ResourceVersion": 2,
+  "__references": [],
+  "__version": 2
+}

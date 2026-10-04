@@ -38,6 +38,11 @@ public sealed class RoundManagerSpawner : Component
 	/// "substitution" poof). Cloned locally on every machine by <see cref="RoundManager.PlayCaughtPuff"/>.</summary>
 	[Property, Group( "Prefabs" )] public GameObject CaughtPuffPrefab { get; set; }
 
+	/// <summary>Map-wide background music (a global <see cref="SyncedMusic"/>), network-spawned by the host when a
+	/// creative session starts with Spawn Props off — that sweep deletes the map's radio along with the rest of
+	/// its clay, which would otherwise leave the map silent.</summary>
+	[Property, Group( "Prefabs" )] public GameObject GlobalMusicPrefab { get; set; }
+
 	/// <summary>The lobby scene the round returns to after consolidation. A real SceneFile REFERENCE, not a
 	/// runtime path string: `SceneFile.Load("scenes/lobby.scene")` (a ResourceLibrary lookup by path) has proven
 	/// unreliable mid-session — it resolved fine from the menu scene, then returned null from inside a map in the
