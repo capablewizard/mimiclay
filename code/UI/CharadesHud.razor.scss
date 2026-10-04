@@ -142,6 +142,33 @@
 		justify-content: center;
 		gap: 22px;
 
+		// The whole button wobbles like a hovered .btn-action (action-jitter, _button.scss) the entire time the
+		// pick is up, so it grabs the eye. Phase offset per button in whole pose steps (0.25s = one of the six
+		// poses at $wobble-duration) so the three don't snap in unison but stay on the clay's 4/sec beat.
+		// NEGATIVE delays: the engine starts the loop that far in at once (Styles.Animation: playLength =
+		// elapsed - delay), so all three restart together the moment the hover below lets go. A positive delay
+		// re-waits on every restart and they'd stagger back in left to right.
+		.pick-wobble {
+			transform-origin: center;
+			animation: action-jitter $wobble-duration linear 0s infinite;
+
+			&:nth-child( 2 ) { animation-delay: -0.5s; }
+			&:nth-child( 3 ) { animation-delay: -1.0s; }
+		}
+
+		// Hovering any pick stills them ALL: :hover propagates up to ancestors, and .pick-stack has no pointer-events
+		// of its own, so it's only :hover via a button. The hovered one then does the lobby Start's hover as-is
+		// (.btn-jitter: the box grows and holds still, its letters jitter).
+		// With the jitter off the wrapper's `transform` is free, so the options NOT under the cursor shrink back a
+		// touch to push the hovered one forward (it keeps scale 1 here; its .btn-jitter grows itself inside).
+		&:hover .pick-wobble {
+			animation: none;
+			transform: scale( 0.88 );
+			transition: transform 0.12s ease-out; // .btn-jitter's own hover timing
+
+			&:hover { transform: scale( 1 ); }
+		}
+
 		.pick-btn {
 			gap: 16px;
 			padding: 12px 34px 12px 16px; // the chip side sits tighter than the label's

@@ -124,14 +124,19 @@
 					@foreach ( var (word, i) in Manager.OfferedWords.Select( ( w, i ) => (w, i) ) )
 					{
 						var (answer, hint) = CharadesWords.Split( word );
-						<div class="btn-jitter pick-btn" onclick=@( () => Manager.ChooseWord( i ) )>
-							<div class="key-chip">@(i + 1)</div>
-							<div class="pick-text">
-								<WobbleText Text=@answer />
-								@if ( hint != "" )
-								{
-									<div class="pick-hint">(@hint)</div>
-								}
+						@* .pick-wobble jitters the whole button to call the eye until any pick is hovered; the button
+						   inside keeps the lobby Start's hover (grow, letters jitter) — two elements because both
+						   animate `transform`. *@
+						<div class="pick-wobble">
+							<div class="btn-jitter pick-btn" onclick=@( () => Manager.ChooseWord( i ) )>
+								<div class="key-chip">@(i + 1)</div>
+								<div class="pick-text">
+									<WobbleText Text=@answer />
+									@if ( hint != "" )
+									{
+										<div class="pick-hint">(@hint)</div>
+									}
+								</div>
 							</div>
 						</div>
 					}

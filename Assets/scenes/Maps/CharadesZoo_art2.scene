@@ -4135,6 +4135,14 @@
               "Type": "Component",
               "IdValue": "8a21db99-55c4-4bd0-8692-a70e9735746f"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8a21db99-55c4-4bd0-8692-a70e9735746f"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           },
@@ -9415,22 +9423,6 @@
             },
             "Property": "Rotation",
             "Value": "9.19910037E-10,5.51687052E-09,0.986381471,-0.164474055"
-          },
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "2d5619ae-ac59-4aa9-91ca-0d4b284c36ed"
-            },
-            "Property": "Enabled",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cd8ae99a-4e05-4992-acdc-4772a9144067"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
