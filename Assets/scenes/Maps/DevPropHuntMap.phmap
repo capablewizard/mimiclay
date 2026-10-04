@@ -1,0 +1,16 @@
+{
+  "Title": "Dev Prop Hunt",
+  "Description": "A small two-room testbed for prop hunt.",
+  "Preview": "ui/banners/maps/devprophunt_banner.png",
+  "Scene": {
+    "Id": "371e1015-2914-409a-92c0-7337b3366b11",
+    "Path": "scenes/maps/devprophunt.scene"
+  },
+  "Hidden": false,
+  "ForPropHunt": true,
+  "ForCreative": false,
+  "ForCharades": false,
+  "DefaultPick": false,
+  "__references": [],
+  "__version": 0
+}

@@ -47,6 +47,11 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 	/// <summary>Build a static ModelCollider per piece from the render geometry.</summary>
 	[Property] public bool BuildCollision { get; set; } = true;
 
+	/// <summary>Only rebuild children that already exist here — FBX objects without a matching child
+	/// are skipped, and nothing is ever deleted. Lets a scene pull a hand-picked subset of a shared
+	/// FBX (copy the pieces you want in, delete the rest) without every reimport re-adding them.</summary>
+	[Property] public bool KeepOnlyExistingPieces { get; set; }
+
 	/// <summary>Poll the file and reimport automatically when it changes.</summary>
 	[Property, Group( "Auto Reimport" )] public bool AutoReimport { get; set; } = true;
 
@@ -246,6 +251,10 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 
 			if ( !existing.TryGetValue( piece.Name, out var go ) || !go.IsValid() )
 			{
+				if ( KeepOnlyExistingPieces )
+					continue;
+
+
 				go = new GameObject( true, piece.Name );
 				go.Parent = GameObject;
 				go.Components.Create<FbxImportedPiece>().SourceName = piece.Name;
@@ -274,6 +283,9 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 		}
 
 		// remove children whose FBX object no longer exists
+		if ( KeepOnlyExistingPieces )
+			return;
+
 		foreach ( var (name, go) in existing )
 		{
 			if ( !kept.Contains( name ) && go.IsValid() )

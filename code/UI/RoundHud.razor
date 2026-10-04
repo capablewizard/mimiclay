@@ -716,10 +716,12 @@
 	// launch countdown sets HasTimer and the timer takes back over. A real lobby only: creative reports the Lobby
 	// phase too (for the roster layout), but "Press G to set up game" would be a lie there — there's no setup HUD
 	// in a map scene. Hidden while the tutorial runs: it sits where the tutorial card teaches, and "go set up a
-	// game" is exactly the wrong invitation mid-lesson.
+	// game" is exactly the wrong invitation mid-lesson. A host alone in the lobby gets no prompt either —
+	// there's nobody to set a game up FOR yet; it appears once a second player (or test bot) is seated.
 	bool ShowLobbyStatus => Phase == RoundPhase.Lobby && LobbyManager.Current.IsValid()
 		&& !(RoundContext.Active?.HasTimer ?? false)
-		&& !TutorialDirector.IsRunning;
+		&& !TutorialDirector.IsRunning
+		&& (!LocalIsHost || LobbyPlayerCount > 1);
 
 	// True for the host (and for the non-networked editor session, which is effectively the host).
 	bool LocalIsHost => !Networking.IsActive || Networking.IsHost;
