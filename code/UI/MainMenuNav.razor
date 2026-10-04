@@ -6,7 +6,7 @@
 @inherits NavigationHost
 
 @*
-	The menu's navigator. The routed pages (HomePage, HostPage, SessionsPage, OptionsPage) render into the
+	The menu's navigator. The routed pages (HomePage, CustomisePage, LibraryPage, OptionsPage) render into the
 	navigator-canvas slot; the dark "fired clay" backdrop sits behind them all. Mirrors MiniMotors' MainMenuPanel.
 
 	A single persistent footer button lives here (rather than one per page): "Back" on any sub-page (GoBack /
@@ -24,22 +24,6 @@
 		<div class="footer-button" @onclick=@OnFooter>
 			<WobbleText Text=@(IsHome ? "Quit" : "Back") />
 		</div>
-
-		@* Page-specific footer actions on the server browser: Refresh, then a Join button (same style as the Host
-		   "Start Game") once a session is selected. *@
-		@if ( IsSessions )
-		{
-			<div class="footer-button" @onclick=@OnRefresh>
-				<WobbleText Text="Refresh" />
-			</div>
-
-			@if ( SessionsPage.Current?.HasSelection ?? false )
-			{
-				<div class="btn btn-action footer-join" @onclick=@OnJoin>
-					<span>Join Game</span>
-				</div>
-			}
-		}
 	</div>
 	}
 
@@ -67,9 +51,6 @@
 
 	// The landing page is the root route; there's nowhere to go "back" to, so the footer offers Quit instead.
 	bool IsHome => string.IsNullOrEmpty( CurrentUrl ) || CurrentUrl == "/";
-
-	// The server browser gets an extra footer action (Refresh), driven through the page's static instance.
-	bool IsSessions => CurrentUrl == "/sessions";
 
 	// The customiser replaces the footer Back with one under the EditHud's shape list (see MenuCustomise).
 	bool IsCustomise => CurrentUrl == "/customise";
@@ -115,12 +96,6 @@
 			Navigate( "/" );
 	}
 
-	// Footer Refresh (server browser only) — re-query through the live page instance.
-	void OnRefresh() => SessionsPage.Current?.Refresh();
-
-	// Footer Join (server browser only) — connect to the selected session through the live page instance.
-	void OnJoin() => SessionsPage.Current?.JoinSelected();
-
 	// Route-transition watcher: the customise model swap keys off ARRIVING AT / LEAVING the /customise route,
 	// not the page's lifecycle — the NavigationHost keeps left pages alive (just tagged .hidden), so a page's
 	// OnDeleted never fires on navigate-away and can't tear the model down. Watching CurrentUrl here catches
@@ -145,17 +120,11 @@
 		// NOT wired to Quit on the landing page, so you can't accidentally close the game by tapping Escape.
 		if ( !IsHome && !EscapeNavBlocked && Input.EscapePressed )
 			GoBackOrHome();
-
-		// Auto-clear a surfaced error once it's lived its lifetime — the page's .menu-error fades it out across
-		// this window, then this removes it (so it doesn't reappear stale on a later visit).
-		if ( !string.IsNullOrEmpty( MenuNetworking.LastError ) && MenuNetworking.ErrorAge > MenuNetworking.ErrorLifetime )
-			MenuNetworking.ClearError();
 	}
 
-	// Re-render when the route changes (footer swaps Back/Quit + shows the server-browser actions) and when the
-	// Sessions selection changes (so the Join button appears/disappears).
+	// Re-render when the route changes (footer swaps Back/Quit).
 	protected override int BuildHash()
-		=> System.HashCode.Combine( base.BuildHash(), CurrentUrl, IsSessions && (SessionsPage.Current?.HasSelection ?? false), AltNav.Held );
+		=> System.HashCode.Combine( base.BuildHash(), CurrentUrl, AltNav.Held );
 
 	public override void OnDeleted()
 	{

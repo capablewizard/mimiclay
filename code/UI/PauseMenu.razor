@@ -34,7 +34,7 @@
 				{
 					<div class="menu-button" @onclick=@ReturnToLobby><WobbleText Text="Return to Lobby" /></div>
 				}
-				<div class="menu-button" @onclick=@ExitToMenu><WobbleText Text="Main Menu" /></div>
+				<div class="menu-button" @onclick=@LeaveGame><WobbleText Text="Leave Game" /></div>
 				<div class="menu-button" @onclick=@Quit><WobbleText Text="Quit" /></div>
 			}
 		</div>
@@ -46,7 +46,7 @@
 	bool _open;
 
 	// Which destructive action is waiting on the host's "you'll strand everyone" confirmation.
-	enum ConfirmKind { None, Menu, Quit }
+	enum ConfirmKind { None, Leave, Quit }
 	ConfirmKind _confirm;
 
 	/// <summary>True while the pause overlay is up. The game's systems read this to go inert and hand the cursor to
@@ -158,18 +158,18 @@
 		Game.ChangeScene( options );
 	}
 
-	// Leave the session and return to our front-end menu scene.
-	void ExitToMenu()
+	// Leave the session and land in your OWN lobby (finding another game is the engine's multiplayer tab's job).
+	void LeaveGame()
 	{
 		if ( LeaveStrandsOthers )
 		{
-			_confirm = ConfirmKind.Menu;
+			_confirm = ConfirmKind.Leave;
 			StateHasChanged();
 			return;
 		}
 
 		SetOpen( false );
-		MenuNetworking.ExitToMenu();
+		MenuNetworking.LeaveSession();
 	}
 
 	// Leave the game entirely (back to the s&box main menu).
@@ -192,7 +192,7 @@
 		if ( kind == ConfirmKind.Quit )
 			Game.Close();
 		else
-			MenuNetworking.ExitToMenu();
+			MenuNetworking.LeaveSession();
 	}
 
 	void CancelConfirm()
@@ -201,7 +201,7 @@
 		StateHasChanged();
 	}
 
-	// If we're torn down while open (ExitToMenu / scene change), clear the statics so nothing sticks "paused".
+	// If we're torn down while open (LeaveGame / scene change), clear the statics so nothing sticks "paused".
 	// Guarded on being the live instance: a surplus copy tearing itself down in OnAwake must not unpause the game.
 	protected override void OnDestroy()
 	{

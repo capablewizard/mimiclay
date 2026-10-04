@@ -1,0 +1,31 @@
+@import "/UI/_menu.scss";
+
+// The launch splash (LobbySplash.razor): the landing wordmark, bottom centre of the screen, fading in then out.
+// The frame is the shared .menu-page (for the title + shadow rules it scopes), with its inset zeroed, centred
+// across and sat on the bottom edge; the heading row is the home page's .hero-heading recipe (spark fans either side). Layout only — the
+// title size, clay shadows and spark fans all come from the shared kit.
+.lobby-splash
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	pointer-events: none;  // decoration — the lobby stays clickable underneath
+	width: 100%;
+	height: 100%;
+	padding: 0 0 48px 0;   // no side inset (centred across); twice $panel-inset off the bottom edge
+	justify-content: flex-end;
+	align-items: center;
+
+	// Mounted invisible; .in fades it up quickly, .fading takes it away slowly (the code's FadeSeconds).
+	opacity: 0;
+	transition: opacity 0.6s ease-out;
+	&.in { opacity: 1; }
+	&.fading { opacity: 0; transition: opacity 1.2s ease-in; }
+
+	.hero-heading
+	{
+		flex-direction: row;
+		align-items: center;
+		flex-shrink: 0;
+	}
+}

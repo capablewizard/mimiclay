@@ -215,7 +215,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "PropHoverRange": 100,
+          "PropHoverRange": 300,
           "PropPrefab": {
             "_type": "gameobject",
             "prefab": "prefabs/prop.prefab"
@@ -1578,14 +1578,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": [
@@ -2253,14 +2245,6 @@
               "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
             },
             "Property": "Displace",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
-            },
-            "Property": "ReceiveDecals",
             "Value": true
           }
         ],
@@ -3100,14 +3084,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "70cfa371-937d-470c-91f7-e17f2dd0263e"
             },
             "Property": "Activation",
@@ -3247,14 +3223,6 @@
             },
             "Property": "Position",
             "Value": "-74.7709961,7.76642609,28.4749985"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "208e5f1e-dc36-4d2a-adda-aaab62430af8"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []

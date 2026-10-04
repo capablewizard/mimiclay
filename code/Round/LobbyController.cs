@@ -139,6 +139,9 @@ public sealed class LobbyController : Component
 		// and would hand a mere client the host's setup panel).
 		if ( Networking.IsActive && Networking.IsHost )
 			EnsureSetupHud();
+
+		// The launch wordmark, once per run — the first lobby after launching, never the lobby after a game.
+		LobbySplash.TrySpawn( Scene );
 	}
 
 	protected override void OnUpdate()

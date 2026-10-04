@@ -1,0 +1,90 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	The launch splash: the landing menu's wordmark (MIMICLAY between its two spark fans), bottom centre of the screen,
+	fading in as you arrive and out again a few seconds later. Shown ONCE per game run — the first lobby you land in
+	after launching — never when the lobby comes back round after a game (and never if a game scene was your first
+	stop, e.g. you joined a session mid-round). Non-interactive: it sits over the lobby HUD but passes clicks through.
+*@
+
+<root class="lobby-splash menu-page @(_in ? "in" : "") @(_fading ? "fading" : "")">
+	<div class="hero-heading">
+		<div class="sparks large left"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+		<WobbleText Text="Mimiclay" class="menu-title hero auto" />
+		<div class="sparks large right"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+	</div>
+</root>
+
+@code
+{
+	/// <summary>Seconds the wordmark holds at full strength before it starts fading (after the fade-in).</summary>
+	const float HoldSeconds = 3.5f;
+
+	/// <summary>Fade-out length. Must match <c>.lobby-splash.fading</c>'s transition in the scss.</summary>
+	const float FadeSeconds = 1.2f;
+
+	/// <summary>True once this run has shown the splash — or gone somewhere that forfeits it (a game scene). A
+	/// static, so it survives every in-session scene change; <see cref="SessionResetSystem"/> clears it when play
+	/// ends, so an editor Stop→Play shows it again like a fresh launch.</summary>
+	public static bool ShownThisRun { get; private set; }
+
+	/// <summary>Spawn the splash in <paramref name="scene"/> if this run hasn't had it yet. Called by the lobby
+	/// scene's bootstrap (<see cref="LobbyController"/>) on every machine — a joining client whose first scene is
+	/// the lobby gets it too.</summary>
+	public static void TrySpawn( Scene scene )
+	{
+		if ( ShownThisRun || scene is null || scene.IsEditor )
+			return;
+
+		ShownThisRun = true;
+
+		var go = new GameObject( true, "Lobby Splash" );
+		go.Flags |= GameObjectFlags.NotSaved | GameObjectFlags.NotNetworked; // runtime only, ours only
+		// Over the lobby HUD (100) and the host's setup panel (500), under the pause menu (1000). It never takes
+		// input (pointer-events: none), so the order only decides what draws on top.
+		var screen = go.Components.Create<ScreenPanel>();
+		screen.ZIndex = 600;
+		go.Components.Create<LobbySplash>();
+	}
+
+	/// <summary>A game scene started: the splash is forfeited for this run (the next lobby is "after a game").</summary>
+	public static void NoteGameSceneEntered() => ShownThisRun = true;
+
+	/// <summary>Play ended — the next lobby load is a fresh launch again.</summary>
+	public static void ResetRun() => ShownThisRun = false;
+
+	RealTimeSince _since;
+	bool _in;
+	bool _fading;
+
+	protected override void OnStart()
+	{
+		_since = 0;
+	}
+
+	protected override void OnUpdate()
+	{
+		// One frame at opacity 0 first, so the fade-in transition has somewhere to start from.
+		if ( !_in )
+		{
+			_in = true;
+			StateHasChanged();
+			return;
+		}
+
+		if ( !_fading && _since > HoldSeconds )
+		{
+			_fading = true;
+			StateHasChanged();
+		}
+
+		if ( _since > HoldSeconds + FadeSeconds + 0.25f )
+			GameObject.Destroy();
+	}
+
+	protected override int BuildHash() => HashCode.Combine( _in, _fading );
+}

@@ -127,7 +127,7 @@ public sealed class ClientStatusReporter : GameObjectSystem
 		ClientStatusBoard.Store( caller.Id, new ClientStatus( (ClientStage)stage, scene, phase, pendingProps, hasPawn, settled, manager, RealTime.Now ) );
 	}
 
-	/// <summary>Host → one client: leave the way a player does (pause menu → Main Menu). Call inside
+	/// <summary>Host → one client: leave the way a player does (pause menu → Leave Game). Call inside
 	/// <c>Rpc.FilterInclude( connection )</c> so only that client runs it.</summary>
 	[Rpc.Broadcast]
 	public static void RequestLeave()
@@ -135,8 +135,8 @@ public sealed class ClientStatusReporter : GameObjectSystem
 		if ( Networking.IsHost )
 			return;
 
-		Log.Info( "ClientStatusReporter: the host asked this client to leave — exiting to the menu." );
-		MenuNetworking.ExitToMenu();
+		Log.Info( "ClientStatusReporter: the host asked this client to leave — leaving to its own lobby." );
+		MenuNetworking.LeaveSession();
 	}
 }
 

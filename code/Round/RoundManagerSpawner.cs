@@ -54,7 +54,15 @@ public sealed class RoundManagerSpawner : Component
 	[Property, Group( "Scoring" )] public int FindReward { get; set; } = 50;
 	[Property, Group( "Scoring" )] public float PropPointsPerSecond { get; set; } = 1f;
 
-	protected override void OnEnabled() => Current = this;
+	protected override void OnEnabled()
+	{
+		Current = this;
+
+		// A game scene is up: the launch splash is forfeited for this run (the lobby after this is "after a game").
+		if ( !Scene.IsEditor )
+			LobbySplash.NoteGameSceneEntered();
+	}
+
 	protected override void OnDisabled()
 	{
 		if ( Current == this ) Current = null;

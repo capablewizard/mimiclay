@@ -30,6 +30,22 @@
 		align-items: center;
 	}
 
+	// Top left: the Community list's title, the phase heading's look. Never width-capped: the title is a row of
+	// letter panels, and a cap squashes each one (and the sparks) rather than wrapping. Long titles step the
+	// font down instead (.long / .longer, by character count in the razor) to stay clear of the clock column.
+	.theme-heading {
+		position: absolute;
+		top: $panel-inset;
+		left: $panel-inset;
+		flex-direction: row;
+		align-items: center;
+
+		.sparks, .letter, .space { flex-shrink: 0; }
+
+		&.long .clay-title { font-size: 32px; }
+		&.longer .clay-title { font-size: 26px; }
+	}
+
 	// Same optical pull-up as RoundHud's clock: header digits carry an empty band above the numerals, which would
 	// otherwise leave a gap under the title.
 	.timer { margin-top: -14px; }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Sandbox.Network;
 
 namespace Mimiclay;
@@ -85,6 +86,10 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Com
 
 	/// <summary>The rules, resolved by the host in OnStart (lobby courier / card override) and synced.</summary>
 	[Sync] public CharadesSettings Settings { get; set; } = CharadesSettings.Default;
+
+	/// <summary>The ticked Community list's title in a Topics game ("" otherwise) — the HUD's top-left theme
+	/// heading. Host-resolved and synced: guests needn't have the list installed.</summary>
+	[Sync] public string ThemeTitle { get; set; } = "";
 
 	/// <summary>True while the first game on this map waits for every machine to finish loading (see
 	/// <see cref="LoadGate"/>); Waiting holds until it clears. Counts are for the HUD.</summary>
@@ -229,6 +234,21 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Com
 			Current = null;
 	}
 
+	// Host: fetch any selected Community list this machine lacks, then publish its title for the HUD.
+	async Task ResolveCommunityLists()
+	{
+		var selection = PoolTopics;
+		await CharadesWorkshop.EnsureSelected( selection );
+		if ( !this.IsValid() )
+			return;
+
+		var titles = CharadesTopics.Parse( selection )
+			.Select( id => CharadesTopics.TryWorkshopId( id, out var fid ) && CharadesWorkshop.TryGet( fid, out var list ) ? list.Title : null )
+			.Where( t => !string.IsNullOrWhiteSpace( t ) )
+			.OrderBy( t => t, StringComparer.OrdinalIgnoreCase );
+		ThemeTitle = string.Join( " + ", titles );
+	}
+
 	protected override void OnStart()
 	{
 		if ( !IsHostAuthority )
@@ -242,7 +262,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Com
 
 		// Community lists in the selection are normally cached from the lobby; fetch any that aren't before
 		// the first draw needs them (fire-and-forget — PoolFor falls back to the built-ins meanwhile).
-		_ = CharadesWorkshop.EnsureSelected( PoolTopics );
+		_ = ResolveCommunityLists();
 
 		// A lobby that seated bots hands its count over (same courier as prop hunt); no key = direct play,
 		// the card's count stands.

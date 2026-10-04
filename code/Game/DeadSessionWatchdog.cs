@@ -5,7 +5,7 @@ namespace Mimiclay;
 
 /// <summary>
 /// Detects a dead session in a gameplay scene — the host quit, crashed, or the connection dropped — and returns
-/// the local player to the front-end menu with an explanation, instead of leaving them standing in a frozen round
+/// the local player to their own lobby with an explanation, instead of leaving them standing in a frozen round
 /// forever (no phase driver, no way out but discovering the pause menu).
 ///
 /// "Dead" = this process was deliberately in a session (<see cref="MenuNetworking.EverInSession"/>) but
@@ -16,7 +16,7 @@ namespace Mimiclay;
 /// generous window is safe.
 ///
 /// A GameObjectSystem, like <see cref="PauseMenuSystem"/>: exists in every scene with no wiring, skips the
-/// front-end menu scene (nothing to watch there — and EverInSession is false once we've landed anyway).
+/// front-end menu scene (editor-only now; nothing to watch there).
 /// </summary>
 public sealed class DeadSessionWatchdog : GameObjectSystem
 {
@@ -59,8 +59,8 @@ public sealed class DeadSessionWatchdog : GameObjectSystem
 		if ( _sinceDead < GraceSeconds )
 			return;
 
-		Log.Warning( $"DeadSessionWatchdog: no session for {GraceSeconds:0}s — the host is gone. Returning to the menu." );
+		Log.Warning( $"DeadSessionWatchdog: no session for {GraceSeconds:0}s — the host is gone. Leaving to your own lobby." );
 		MenuNetworking.NotifyDisconnected( "Lost connection to the host." );
-		MenuNetworking.ExitToMenu(); // clears EverInSession, so this fires once
+		MenuNetworking.LeaveSession(); // clears EverInSession, so this fires once
 	}
 }

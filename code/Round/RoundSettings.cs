@@ -88,6 +88,10 @@ public struct RoundSettings
 		public const string Map = "r.map";
 	}
 
+	/// <summary>The map ident the lobby launched this session into (the RESOLVED pick written by <see cref="WriteToLobby"/>),
+	/// or empty outside a lobby launch. For readers that only want the map, not the whole settings struct.</summary>
+	public static string LaunchedMapIdent => Networking.GetData( Keys.Map );
+
 	/// <summary>Host-only: flatten these settings into session data so they survive the scene change into the map.
 	/// Call right before <see cref="Game.ChangeScene"/>. The resolved map ident (Random already rolled into a real
 	/// map) should be passed in so every client agrees on the same scene.</summary>

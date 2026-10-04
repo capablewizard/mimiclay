@@ -17,6 +17,7 @@
 	  • bottom centre — the mimic's three word buttons during Choosing (keyed 1/2/3), or the guessers'
 	    "press Enter" hint during the sculpt. Guessing itself lives in the ENGINE chat overlay — the
 	    familiar Enter box — with CharadesManager censoring correct guesses host-side (IChatEvent).
+	  • top-left — the Community list's title, when one is being played (CharadesManager.ThemeTitle).
 	  • right edge — the scoreboard with the target score, always up (it IS the game's tension).
 
 	Everything BUT the top-centre column hides while the local player sculpt-edits — the edit HUD owns the
@@ -93,6 +94,17 @@
 
 	@if ( Manager is not null && !Editing )
 	{
+		@* Top left — the Community list being played, in the phase title's clay look ("Sculpt it!"). Standard games
+		   have no single theme, so nothing shows. *@
+		@if ( !string.IsNullOrEmpty( Manager.ThemeTitle ) )
+		{
+			<div class="theme-heading @(Manager.ThemeTitle.Length > 20 ? "longer" : Manager.ThemeTitle.Length > 12 ? "long" : "")">
+				<div class="sparks small left"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+				<WobbleText Text=@Manager.ThemeTitle class="clay-title auto" @key=@Manager.ThemeTitle />
+				<div class="sparks small right"><div class="spark s1"><div class="spark-body"></div></div><div class="spark s2"><div class="spark-body"></div></div><div class="spark s3"><div class="spark-body"></div></div></div>
+			</div>
+		}
+
 		@* Writing (players-write rounds): everyone types a phrase for someone else — through the chat, which the
 		   host swallows and answers privately. Charades' usual pieces carry it: "WRITE!" over the clock, YOUR
 		   hand-in on the word card once sent (WordStrip), the ✏️ badges on the board for who's in, and this —
@@ -709,7 +721,7 @@
 			: HashCode.Combine(
 				SpeakersSignal(),
 				HashCode.Combine( Manager.Phase, TimerText, Manager.MimicId, Manager.WordHint, Manager.RevealedWord, LobbyReturn.Signal ),
-				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing, PhaseCaption ),
+				HashCode.Combine( Manager.OfferedWords.Count, Manager.LocalWord, Editing, PhaseCaption, Manager.ThemeTitle ),
 				HashCode.Combine( Manager.Round, Manager.AuthorId, Manager.Settings.Rounds, WordStrip, StripHint, LocalSolved ), // the solved answer types out, then flips after a pause — both time-driven
 				// Scores/guess places/hand-ins move without anything above noticing.
 				Manager.Scoreboard.Aggregate( 17, ( h, p ) => HashCode.Combine( h, p.Connection, p.Score, p.GuessedPlace, p.Submitted ) ),

@@ -1,245 +1,76 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Sandbox.Network;
 
 namespace Mimiclay;
 
 /// <summary>
-/// The menu's one door to s&amp;box networking. Every front-end action that touches lobbies/sessions goes through
-/// here — hosting, quick play, listing public lobbies for the server browser, joining one, and the host's scene
-/// change into gameplay — so the Razor pages stay declarative and there's a single place to evolve as the real
-/// game mode lands.
+/// Session intent + the one way OUT of a session. Hosting, finding and joining games is the engine's job now:
+/// the s&amp;box game page collects server name, privacy and slot count before launch (they arrive through
+/// <c>LaunchArguments</c>, which <c>Networking.CreateLobby</c> applies over whatever config we pass), the
+/// escape menu's multiplayer tab lists and joins sessions, and Steam invites / Join Game connect straight in.
+/// The game boots into the lobby scene (the .sbproj StartupScene), where <see cref="LobbyController"/> self-hosts.
 ///
-/// Host settings (mode, max players, privacy, name) are written into the lobby's networked key/value data on
-/// create, so the server browser can show what each session is running and a future RoundManager can read which
-/// mode to start. The data keys are the contract; keep them in sync with <see cref="Keys"/>.
+/// What remains here: the "we've deliberately been in a session" flag the scene bootstraps read, and
+/// <see cref="LeaveSession"/>, which drops the current session and lands the player back in their OWN lobby.
+/// The lobby data keys stay the browser-facing contract; keep them in sync with <see cref="Keys"/>.
 /// </summary>
 public static class MenuNetworking
 {
-	/// <summary>Lobby data keys (the menu's networked contract). Short strings — Steam lobby data is limited.</summary>
+	/// <summary>Lobby data keys (the networked contract). Short strings — Steam lobby data is limited.</summary>
 	public static class Keys
 	{
 		public const string Mode = "mode";       // GameModeKind name
-		public const string Name = "name";       // host-chosen session name
 	}
-
-	/// <summary>Default cap offered in the Host screen, bounded by what the package allows.</summary>
-	public const int DefaultMaxPlayers = 8;
-	public const int MinMaxPlayers = 2;
-	public const int MaxMaxPlayers = 16;
-
-	/// <summary>True while a connect/host/query is in flight, so the UI can show a spinner and gate buttons.</summary>
-	public static bool Busy { get; private set; }
 
 	/// <summary>True once this process has deliberately been in a session (hosted or joined). Gameplay-scene
 	/// bootstraps (<see cref="RoundManagerSpawner"/>, <see cref="LobbyController"/>) read this to tell a genuine
 	/// direct Play (never in a session — safe to self-host) from a client that's briefly !IsActive while following
 	/// the host's scene change (must NOT self-host — that would fork it into a private parallel session it can
-	/// never leave except via the menu). Intent, not timing: the old grace-window approach forked any client whose
-	/// reconnect outlasted the window. Reset by <see cref="NoteSessionEnded"/> — <see cref="ExitToMenu"/>'s
+	/// never leave except by leaving the game). Intent, not timing: the old grace-window approach forked any client
+	/// whose reconnect outlasted the window. Reset by <see cref="NoteSessionEnded"/> — <see cref="LeaveSession"/>'s
 	/// deliberate leave, and <see cref="SessionResetSystem"/> when play itself stops.</summary>
 	public static bool EverInSession { get; private set; }
 
 	/// <summary>Record that this process deliberately entered a session — see <see cref="EverInSession"/>. Called
-	/// on host/join here, and by the scene bootstraps when they legitimately self-host a direct Play.</summary>
+	/// by the scene bootstraps when they legitimately self-host.</summary>
 	public static void NoteSessionStarted() => EverInSession = true;
 
-	/// <summary>Forget the session intent — the session is over, so a later direct Play is safe to self-host
-	/// again. Called by <see cref="ExitToMenu"/> and by <see cref="SessionResetSystem"/> at play teardown.</summary>
+	/// <summary>Forget the session intent — the session is over, so a later lobby load is safe to self-host
+	/// again. Called by <see cref="LeaveSession"/> and by <see cref="SessionResetSystem"/> at play teardown.</summary>
 	public static void NoteSessionEnded() => EverInSession = false;
 
-	/// <summary>Last user-facing error from a failed action (e.g. "No games found"), or null. The UI surfaces it.</summary>
+	/// <summary>Last user-facing session-loss message (e.g. "Lost connection to the host."), or null. Set by
+	/// <see cref="NotifyDisconnected"/> right before the leave, so the lobby we land in can explain why.</summary>
 	public static string LastError { get; private set; }
 
-	/// <summary>How long an error stays before it's auto-cleared. The UI fades it out across this window, then
-	/// it's removed (so it doesn't linger invisibly or reappear stale on a later visit). See MainMenuNav.Tick.</summary>
-	public const float ErrorLifetime = 4.2f;
-
-	/// <summary>Seconds since <see cref="LastError"/> was last set — drives the auto-clear.</summary>
+	/// <summary>Seconds since <see cref="LastError"/> was set.</summary>
 	public static float ErrorAge => _errorSince;
 	static RealTimeSince _errorSince;
 
-	/// <summary>Bumped each time an error is (re)set, so the UI can re-key the message and replay its fade even
-	/// when the same text comes back.</summary>
-	public static int ErrorStamp { get; private set; }
+	/// <summary>Clear the current error.</summary>
+	public static void ClearError() => LastError = null;
 
-	// Set a user-facing error and (re)start its lifetime/fade.
-	static void SetError( string message )
+	/// <summary>Surface a session-loss message. <see cref="DeadSessionWatchdog"/> calls this right before
+	/// <see cref="LeaveSession"/>, so the player lands in their lobby with an explanation, not a silent kick.</summary>
+	public static void NotifyDisconnected( string message )
 	{
 		LastError = message;
 		_errorSince = 0;
-		ErrorStamp++;
+		Log.Warning( $"MenuNetworking: {message}" );
 	}
 
-	/// <summary>Clear the current error immediately (the UI's fade timer calls this once it expires).</summary>
-	public static void ClearError() => LastError = null;
-
-	/// <summary>Surface a session-loss message on the menu. <see cref="DeadSessionWatchdog"/> calls this right
-	/// before <see cref="ExitToMenu"/>, so the player lands on the menu with an explanation, not a silent kick.</summary>
-	public static void NotifyDisconnected( string message ) => SetError( message );
-
-	/// <summary>Default session name when the host leaves it blank. The mode is no longer known at host time —
-	/// it's chosen in the lobby — so the default can't be mode-flavoured any more.</summary>
-	public const string DefaultSessionName = "Mimiclay Game";
-
-	/// <summary>Host a new session, then (as host) load the LOBBY — the universal hub where the game mode is
-	/// chosen and configured (see <see cref="LobbyManager"/>). The menu no longer picks a mode; it only creates
-	/// the session. The lobby stamps <see cref="Keys.Mode"/> live as the host changes selection, so the server
-	/// browser always shows what a session is actually set up to play.</summary>
-	public static void Host( int maxPlayers, LobbyPrivacy privacy, string sessionName )
-	{
-		if ( Busy )
-			return;
-
-		LastError = null;
-
-		// Already in a session (e.g. relaunched from an in-game "back to menu" that didn't disconnect)? Leave first.
-		if ( Networking.IsActive )
-			Networking.Disconnect();
-
-		var config = new LobbyConfig
-		{
-			MaxPlayers = Math.Clamp( maxPlayers, MinMaxPlayers, MaxMaxPlayers ),
-			Privacy = privacy,
-			Hidden = privacy != LobbyPrivacy.Public,
-			Name = string.IsNullOrWhiteSpace( sessionName ) ? DefaultSessionName : sessionName.Trim(),
-		};
-
-		Networking.CreateLobby( config );
-		NoteSessionStarted();
-
-		// Seed the browser-facing data. CreateLobby makes us host synchronously, so SetData is safe right after.
-		// Mode starts at the lobby's default; LobbyManager re-stamps it whenever the host changes selection.
-		Networking.SetData( Keys.Mode, GameModeKind.PropHunt.ToString() );
-		Networking.SetData( Keys.Name, config.Name );
-
-		LoadLobbyScene();
-	}
-
-	/// <summary>Quick Play: find the best public lobby for this game and join it. Falls back to an error the UI shows
-	/// (the caller can then offer "Host instead"). Async because querying + connecting hits Steam.</summary>
-	public static async Task QuickPlay()
-	{
-		if ( Busy )
-			return;
-
-		Busy = true;
-		LastError = null;
-		try
-		{
-			if ( Networking.IsActive )
-				Networking.Disconnect();
-
-			// JoinBestLobby queries public lobbies for our game ident and connects to the fullest joinable one.
-			var joined = await Networking.JoinBestLobby( Game.Ident );
-			if ( joined )
-				NoteSessionStarted();
-			else
-				SetError( "No open games found. Try hosting one!" );
-		}
-		catch ( Exception e )
-		{
-			SetError( "Couldn't reach matchmaking." );
-			Log.Warning( $"QuickPlay failed: {e.Message}" );
-		}
-		finally
-		{
-			Busy = false;
-		}
-	}
-
-	/// <summary>Fetch the public lobbies for this game for the server browser. Returns an empty list on failure
-	/// (with <see cref="LastError"/> set) rather than throwing, so the UI can just bind to the result.</summary>
-	public static async Task<List<LobbyInformation>> QueryGames( CancellationToken ct = default )
-	{
-		LastError = null;
-		try
-		{
-			var lobbies = await Networking.QueryLobbies( Game.Ident, ct );
-			// Hide full / explicitly-hidden sessions from the browser; show the rest newest-fullest first.
-			return lobbies
-				.Where( l => !l.IsHidden && !l.IsFull )
-				.OrderByDescending( l => l.Members )
-				.ToList();
-		}
-		catch ( OperationCanceledException )
-		{
-			return new List<LobbyInformation>();
-		}
-		catch ( Exception e )
-		{
-			SetError( "Couldn't load the server list." );
-			Log.Warning( $"QueryGames failed: {e.Message}" );
-			return new List<LobbyInformation>();
-		}
-	}
-
-	/// <summary>Join a specific lobby from the server browser.</summary>
-	public static async Task Join( LobbyInformation lobby )
-	{
-		if ( Busy )
-			return;
-
-		Busy = true;
-		LastError = null;
-		try
-		{
-			if ( Networking.IsActive )
-				Networking.Disconnect();
-
-			var ok = await Networking.TryConnectSteamId( lobby.LobbyId );
-			if ( ok )
-				NoteSessionStarted();
-			else
-				SetError( "Couldn't join that game." );
-		}
-		catch ( Exception e )
-		{
-			SetError( "Couldn't join that game." );
-			Log.Warning( $"Join failed: {e.Message}" );
-		}
-		finally
-		{
-			Busy = false;
-		}
-	}
-
-	/// <summary>Read the mode a queried lobby is running (for the browser row). Falls back to PropHunt.</summary>
-	public static GameModeKind ModeOf( LobbyInformation lobby )
-		=> Enum.TryParse<GameModeKind>( lobby.Get( Keys.Mode ), out var m ) ? m : GameModeKind.PropHunt;
-
-	/// <summary>Leave the current session and return to the front-end menu scene. The reverse of the host/join
-	/// handoff: drop the lobby, then load menu.scene locally (no networked ChangeScene — this client is leaving).
-	/// Used by the in-game pause menu's "Main Menu".</summary>
-	public static void ExitToMenu()
+	/// <summary>Leave the current session and land in your OWN lobby: drop the lobby, then load the lobby scene
+	/// locally (no networked ChangeScene — this client is leaving). <see cref="LobbyController"/> sees no session
+	/// and no session intent, and self-hosts a fresh one — with the engine's pre-launch choices (name, privacy,
+	/// slots) still applied, since LaunchArguments live for the whole game run. Used by the pause menu's "Leave
+	/// Game", the dead-session watchdog, and the host's "please leave" request.</summary>
+	public static void LeaveSession()
 	{
 		if ( Networking.IsActive )
 			Networking.Disconnect();
 
-		// A deliberate leave: a later direct Play (or fresh menu flow) starts from a clean slate.
+		// A deliberate leave: the lobby we load next starts from a clean slate and may self-host.
 		NoteSessionEnded();
-
-		var options = new SceneLoadOptions();
-		if ( !options.SetScene( MenuScene ) )
-		{
-			Log.Warning( $"MenuNetworking: couldn't resolve the menu scene '{MenuScene}'." );
-			return;
-		}
-
-		// Same call the host handoff uses; with no active lobby (we just disconnected) it loads locally.
-		Game.ChangeScene( options );
-	}
-
-	/// <summary>The front-end menu scene (the .sbproj StartupScene), loaded when leaving a session.</summary>
-	const string MenuScene = "scenes/menu.scene";
-
-	// Host-only scene change into the lobby hub. Mirrors MiniMotors' LobbyFlow.Launch; the lobby launches the
-	// actual gameplay scene later (LobbyManager.Launch), once the host has picked + configured a game.
-	static void LoadLobbyScene()
-	{
-		if ( !Networking.IsHost )
-			return;
 
 		var options = new SceneLoadOptions();
 		if ( !options.SetScene( LobbyController.LobbyScene ) )
@@ -248,14 +79,14 @@ public static class MenuNetworking
 			return;
 		}
 
-		// ChangeScene loads the scene on the host and broadcasts the load to every client.
+		// With no active lobby (we just disconnected) ChangeScene loads locally.
 		Game.ChangeScene( options );
 	}
 }
 
 /// <summary>
 /// Clears <see cref="MenuNetworking.EverInSession"/> when the play session itself ends. Statics survive the
-/// editor's Stop→Play (and hotloads) — only <see cref="MenuNetworking.ExitToMenu"/> or an editor restart cleared
+/// editor's Stop→Play (and hotloads) — only <see cref="MenuNetworking.LeaveSession"/> or an editor restart cleared
 /// the flag before — so a direct Play after ANY earlier session in the same editor run found EverInSession still
 /// true, refused to self-host, and the lobby came up dead (no session, no setup HUD, G did nothing).
 ///
@@ -273,6 +104,7 @@ public sealed class SessionResetSystem : GameObjectSystem
 		if ( Game.IsClosing )
 		{
 			MenuNetworking.NoteSessionEnded();
+			LobbySplash.ResetRun(); // the next lobby load is a fresh launch again
 			SculptBounds.ResetBypass(); // the dev size-limit bypass never outlives the play session
 			TutorialNpc.SweepPlayEnd(); // restore the tutorial character's shape + drop runtime outlines, however teardown fell out
 			SculptSceneLibrary.NotePlayEnded(); // next play session autosaves into its OWN folder

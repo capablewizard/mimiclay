@@ -1322,14 +1322,6 @@
               "Type": "Component",
               "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
             },
-            "Property": "ReceiveDecals",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
-            },
             "Property": "SdfShadowRadii",
             "Value": 10
           }
