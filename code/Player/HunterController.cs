@@ -836,13 +836,10 @@ public sealed class HunterController : Component
 		// prompts under it.
 		if ( !_altOrbiting && !_leaseCursorFree && _aimDir.LengthSquared > 0.5f )
 		{
-			// The gun's ray, cut to arm's reach (PropClaims.HoverRange where a claim service authors it):
-			// shortening the ray rather than range-testing its hit keeps occlusion for free — whatever is first
-			// along it still blocks — and means a prop only lights up once you're actually close enough for
-			// the host to grant it.
-			var claims = PropClaims.Current;
-			var reach = claims.IsValid() ? claims.HoverRange : Interactions.DefaultRange;
-			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, reach ) );
+			// The gun's ray, cut to arm's reach (Interactions.Reach — one value in every scene): shortening the
+			// ray rather than range-testing its hit keeps occlusion for free — whatever is first along it still
+			// blocks — and means a prop only lights up once you're actually close enough for the host to grant it.
+			var tr = TraceShot( eye, _aimDir, MathF.Min( Range, Interactions.Reach ) );
 			if ( tr.Hit && tr.GameObject.IsValid() )
 			{
 				var probe = new InteractContext

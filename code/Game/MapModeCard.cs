@@ -9,8 +9,8 @@ namespace Mimiclay;
 /// Precedence: a real lobby launch always wins. The mode key the lobby stamps into session data decides which
 /// game runs, and the rules ride in as session data too — this card's game choice and rule override are only
 /// consulted when the map is direct-played from the editor (no lobby). That makes a card left enabled in a
-/// shipping map inert in real play; only <see cref="CreativeHoverRange"/> and <see cref="DisableSceneCameras"/>
-/// (genuine per-map config, not debug) apply unconditionally.
+/// shipping map inert in real play; only <see cref="DisableSceneCameras"/> (genuine per-map config, not debug)
+/// applies unconditionally. (Hover reach is NOT per map any more — see <see cref="Interactions.Reach"/>.)
 ///
 /// To run the throwaway <see cref="DebugGameMode"/> harness instead, don't use this card — place (or enable) a
 /// DebugGameMode object in the scene; the spawner sees it and steps aside entirely.
@@ -20,15 +20,6 @@ namespace Mimiclay;
 [Icon( "tune" )]
 public sealed class MapModeCard : Component
 {
-	/// <summary>What <see cref="CreativeHoverRange"/> is when a scene has no card.</summary>
-	public const float DefaultCreativeHoverRange = 100f;
-
-	/// <summary>Creative only: how close a hunter must be for clay to outline and offer "E to Edit" — measured
-	/// from the eye to the surface the crosshair lands on. Widen it for open maps where props sit far apart; see
-	/// <see cref="PropClaims.HoverRange"/>, which this authors. Applies in real play too (per-map tuning, not
-	/// debug).</summary>
-	[Property, Group( "Creative" ), Range( 64f, 4096f )] public float CreativeHoverRange { get; set; } = DefaultCreativeHoverRange;
-
 	/// <summary>Turn off any camera authored into the map scene when the game starts — including a full
 	/// <see cref="MainCamera"/>+post-processing rig kept there for lighting work in the editor. The system
 	/// scene's camera (the one holding <see cref="MainCamera.Current"/>) is the only rig left live, so the

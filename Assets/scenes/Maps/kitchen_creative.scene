@@ -20300,7 +20300,6 @@
           "CharadesWordLengthHints": false,
           "CharadesWriteSeconds": 45,
           "ConsolidationSeconds": 12,
-          "CreativeHoverRange": 100,
           "DebugSoloHide": false,
           "DirectPlayGame": "Creative",
           "DisableSceneCameras": true,

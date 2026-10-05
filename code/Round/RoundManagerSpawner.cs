@@ -158,11 +158,9 @@ public sealed class RoundManagerSpawner : Component
 		var go = new GameObject( true, "Creative Manager" );
 		go.Components.Create<CreativeManager>(); // pawn prefabs are read live off this spawner, like RoundManager's
 		// The claim service rides the same GameObject — one NetworkSpawn ships both, and its [Sync]
-		// registry + RPCs need the networked object. Reach set BEFORE the spawn: the snapshot ships
-		// this component's live JSON, so the host's authored value is the reach every client's hover
-		// uses — a client's own scene copy never applies.
-		var claims = go.Components.Create<PropClaims>();
-		claims.HoverRange = card.IsValid() ? card.CreativeHoverRange : MapModeCard.DefaultCreativeHoverRange;
+		// registry + RPCs need the networked object. (Reach is Interactions.Reach, the same on every
+		// machine — nothing to author before the spawn any more.)
+		go.Components.Create<PropClaims>();
 		go.Components.Create<LobbyReturn>(); // the shared "Returning to Lobby" countdown — creative's pause-menu exit
 		go.NetworkSpawn();
 	}
@@ -199,9 +197,8 @@ public sealed class RoundManagerSpawner : Component
 		}
 
 		// Guessers can possess the map's clay any time (CharadesManager is the IPropClaimHost) — the claim
-		// service rides the manager's GameObject exactly as in creative, reach set before the spawn.
-		var claims = go.Components.Create<PropClaims>();
-		claims.HoverRange = card.IsValid() ? card.CreativeHoverRange : MapModeCard.DefaultCreativeHoverRange;
+		// service rides the manager's GameObject exactly as in creative.
+		go.Components.Create<PropClaims>();
 
 		go.Components.Create<LobbyReturn>(); // the shared "Returning to Lobby" countdown (podium → lobby, pause-menu exit)
 		go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]

@@ -73,14 +73,10 @@ public sealed class PropClaims : Component, IInteractable
 	/// every other singleton here — NOT Active, which would shadow Component.Active (the enabled state).</summary>
 	public static PropClaims Current { get; private set; }
 
-	/// <summary>How far a hunter can reach to hover (and so claim) clay, measured from the eye to the point the
-	/// crosshair ray lands on — NOT to the prop's origin, so a big prop is reachable by its near face. The gun's
-	/// own ray is map-length (4096u); without this bound every distant prop across the room outlines and offers
-	/// "E to Edit", which reads as noise and lets you claim things you can't see properly. Authored by whoever
-	/// spawns the service (RoundManagerSpawner for creative maps, LobbyController for the lobby), BEFORE the
-	/// NetworkSpawn so the snapshot ships it to every client's hover.</summary>
-	[Property, Range( 64f, 4096f )]
-	public float HoverRange { get; set; } = 100f;
+	/// <summary>How far a hunter can reach to hover (and so claim) clay: <see cref="Interactions.Reach"/>, the one
+	/// global value. It used to be authored per scene by whoever spawned the service and shipped in the spawn
+	/// snapshot; a constant needs neither, and every machine agrees by construction.</summary>
+	public static float HoverRange => Interactions.Reach;
 
 	/// <summary>The reach the host validates a claim against, in origin-to-origin terms. Slack over
 	/// <see cref="HoverRange"/> on two counts: the client measured to a SURFACE, and the origin of a large prop
