@@ -264,7 +264,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "58c8923a-1cf2-4a26-9e86-ae7a0d621a4f",
+            "Id": "14501153-5fbe-4b2f-8a59-27ca5863ea3b",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -321,7 +321,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "58c8923a-1cf2-4a26-9e86-ae7a0d621a4f",
+            "Id": "14501153-5fbe-4b2f-8a59-27ca5863ea3b",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1273,7 +1273,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "d7788d5d-5601-4c04-8bc9-4567f2236e2b",
+                "Id": "aa09ad37-6838-4019-9187-cb97a76fc78b",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1319,7 +1319,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "326012c1-2dec-467a-bdf3-898b41664448",
+                "Id": "37897da6-a20e-479b-90b8-d345508072ef",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1347,7 +1347,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "326012c1-2dec-467a-bdf3-898b41664448",
+                "Id": "37897da6-a20e-479b-90b8-d345508072ef",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1394,7 +1394,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "a9e073a3-ba6d-4178-8f86-d17c1cf14b7f",
+                "Id": "6a3124d1-815c-417e-9610-67ffcec2af86",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1438,7 +1438,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "4b11af62-3984-41d1-8a51-30f13a86a708",
+                "Id": "598a58d3-bb8e-46e1-90c6-7be37a94cd19",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1750,7 +1750,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "afcc93f3-0ddd-4b95-926e-c14b2e2e49be",
+                "Id": "52d25a03-c78f-40ae-992a-0b046260534a",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1794,7 +1794,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "0be5722b-b4ff-4cd0-88d1-1d773b397bc7",
+                "Id": "b1dadf72-9314-41db-8db9-16026df369b3",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1838,7 +1838,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "62e59f8d-9045-4ae6-926a-2ff8857fc339",
+                "Id": "811166cd-b2df-4c80-96fe-b916723ecda3",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1884,7 +1884,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f7c50e77-f41b-485c-b98d-2703ca70829c",
+                "Id": "cc4a3dae-59b5-4e12-b496-87ff887ba6cf",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1912,7 +1912,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f7c50e77-f41b-485c-b98d-2703ca70829c",
+                "Id": "cc4a3dae-59b5-4e12-b496-87ff887ba6cf",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3022,7 +3022,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
+                "Id": "00c203a0-8579-4b71-9269-7933567f5ff9",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3050,7 +3050,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
+                "Id": "00c203a0-8579-4b71-9269-7933567f5ff9",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3099,7 +3099,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
+                "Id": "00c203a0-8579-4b71-9269-7933567f5ff9",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3127,7 +3127,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
+                "Id": "00c203a0-8579-4b71-9269-7933567f5ff9",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -4249,7 +4249,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "63 object(s), 67661 tris — 08:14:57",
+          "LastImport": "63 object(s), 67661 tris — 11:09:15",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -10568,22 +10568,6 @@
             },
             "Property": "Position",
             "Value": "-250.648331,-584.849365,-371.277924"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11074,7 +11058,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11091,7 +11075,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11304,7 +11288,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11321,7 +11305,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11534,7 +11518,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11551,7 +11535,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11764,7 +11748,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11781,7 +11765,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11994,7 +11978,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12011,7 +11995,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12224,7 +12208,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12241,7 +12225,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12454,7 +12438,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12471,7 +12455,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12684,7 +12668,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12701,7 +12685,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -12914,7 +12898,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12931,7 +12915,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -13374,7 +13358,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13391,7 +13375,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -18779,14 +18763,6 @@
               "Type": "Component",
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -18838,14 +18814,6 @@
             },
             "Property": "Rotation",
             "Value": "2.98023206E-08,2.09211084E-08,1,-4.37113883E-08"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
-            },
-            "Property": "__enabled",
-            "Value": true
           },
           {
             "Target": {
@@ -20093,7 +20061,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "adc50643-5749-44f8-be75-900d96f24263",
+            "Id": "ff83ec4e-82bc-4798-a696-7218f3dc3834",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
