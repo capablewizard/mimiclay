@@ -116,15 +116,18 @@ public sealed class PropClaims : Component, IInteractable
 
 	void IInteractable.GetInteractions( in InteractContext ctx, List<InteractOption> options )
 	{
-		if ( ClaimsOpen && IsClaimable( ctx.Sculpture ) )
-		{
+		if ( !ClaimsOpen )
+			return;
+
+		// E: possess — only clay nobody is sculpting right now.
+		if ( IsClaimable( ctx.Sculpture ) )
 			options.Add( new InteractOption( EditOption, "Edit", InteractSlot.Primary ) );
 
-			// LMB: sculpt it in place, first person, without becoming it (the edit lease — see RequestLease).
-			// Opens with nothing selected; shapes are picked inside the session. Clicking away exits.
-			if ( Host?.LeasesAllowed ?? false )
-				options.Add( new InteractOption( SculptOption, "Sculpt", InteractSlot.Sculpt ) );
-		}
+		// LMB: sculpt it in place, first person, without becoming it — alongside whoever is already on it
+		// (see RequestEdit). Opens with nothing selected; shapes are picked inside the session. Clicking
+		// away exits.
+		if ( (Host?.LeasesAllowed ?? false) && IsSculptable( ctx.Sculpture ) )
+			options.Add( new InteractOption( SculptOption, "Sculpt", InteractSlot.Sculpt ) );
 	}
 
 	void IInteractable.Interact( in InteractContext ctx, string optionId )
@@ -138,7 +141,7 @@ public sealed class PropClaims : Component, IInteractable
 			// per-machine object whose id doesn't resolve on the host), the sculpture's own object for scene
 			// clay. The hunter owns the rest of the flow — it opens the session once the lease lands.
 			var leaseHider = ctx.Sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-			ctx.Hunter?.RequestSculptLease( leaseHider.IsValid() ? leaseHider.GameObject : ctx.Sculpture.GameObject );
+			ctx.Hunter?.RequestSculptEdit( leaseHider.IsValid() ? leaseHider.GameObject : ctx.Sculpture.GameObject );
 			return;
 		}
 
@@ -162,7 +165,14 @@ public sealed class PropClaims : Component, IInteractable
 	/// A pawn prop only once its player let it go (<see cref="IsReleased"/>); a hunter's face never;
 	/// everything else with brushes — scene decoys, prop-builder balls, blockset pieces — always
 	/// (claiming one CONVERTS it into a prop pawn, see <see cref="RequestPossess"/>).</summary>
-	public static bool IsClaimable( SdfSculpture sculpture )
+	public static bool IsClaimable( SdfSculpture sculpture ) => IsTakeable( sculpture, joinEdited: false );
+
+	/// <summary>What an in-place SCULPT can open: the same clay a claim can take, PLUS a prop other people are
+	/// already sculpting — joining them is the point of shared editing. (Possession stays refused there: you
+	/// can't wear a prop while others are reshaping it.)</summary>
+	public static bool IsSculptable( SdfSculpture sculpture ) => IsTakeable( sculpture, joinEdited: true );
+
+	static bool IsTakeable( SdfSculpture sculpture, bool joinEdited )
 	{
 		if ( !sculpture.IsValid() || sculpture.Brushes is not { Count: > 0 } )
 			return false;
@@ -178,7 +188,7 @@ public sealed class PropClaims : Component, IInteractable
 
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
-			return IsReleased( hider ) && !IsLeased( hider ); // a pawn's body: only once released into the world — and not while someone is sculpting it in place
+			return IsReleased( hider ) && (joinEdited || !IsBeingEdited( hider )); // a pawn's body: only once released into the world — and, for a claim, not while people are sculpting it in place
 
 		return IsScenery( sculpture ); // scene-placed clay — claimable by conversion
 	}
@@ -219,43 +229,60 @@ public sealed class PropClaims : Component, IInteractable
 	public static bool IsPossessed( HiderController hider )
 		=> hider.IsValid() && Current.IsValid() && Current.PossessedProps.ContainsKey( hider.GameObject.Id );
 
-	// ── Edit leases (sculpt a released prop in place, first person, without possessing it) ─────────────────
-	// A lease is the THIRD state a pawn prop can be in beside "someone's body" and "released scenery": still
-	// released (dormant everywhere, claimable by nobody for the duration), but OWNED by the sculptor's connection
-	// so their machine's SdfNetworkSync publishes the shape exactly as a possessing owner's would — no second wire
-	// format. The holder stays a hunter (their own pawn is untouched) and walks around the prop while editing.
-	// One holder per prop; the holder's machine opens a first-person SculptEditSession once the ownership lands
-	// (see HunterController.UpdateLease). Ended by the holder (Q / any exit), or by the host sweep when the
-	// holder leaves, dies, or stops being a hunter (a swap mid-lease).
+	// ── Shared editing (sculpt a released prop in place, first person, several players at once) ────────────
+	// A released prop is HOST-owned scenery, and stays that way while it's sculpted: nobody takes it over.
+	// Each EDITOR runs a first-person SculptEditSession on their own machine against the host's shape and
+	// sends every change as a brush OP — named by brush id (SdfBrush.Id), never by index — to the host
+	// (SubmitBrushes / StreamBrushes). The host applies it to its copy, and the pawn's SdfNetworkSync then
+	// publishes the result to everyone exactly as it always has (the host is the owner of an unowned object).
+	// Concurrency is settled with PER-BRUSH LOCKS: selecting a brush asks the host for its lock, only the
+	// holder's ops may touch it, and a receiver keeps its OWN locked brushes' local state when a snapshot
+	// lands (see SculptEditSession.MergeIncoming). Registries live here, [Sync] on the host-owned service,
+	// for the same reason ReleasedProps does.
 
-	/// <summary>The live leases: pawn GameObject id → the holder's connection id. [Sync] on this host-owned
-	/// service for the same reason as <see cref="ReleasedProps"/> — the pawn's own ownership is exactly what
-	/// changes under a lease, so a flag on it would be written across that edge.</summary>
-	[Sync] public NetDictionary<Guid, Guid> Leases { get; private set; } = new();
+	/// <summary>Who is editing what: connection id → pawn GameObject id. One prop per player at a time.</summary>
+	[Sync] public NetDictionary<Guid, Guid> Editing { get; private set; } = new();
 
-	/// <summary>Is this pawn prop being sculpted in place by someone (any machine's answer)?</summary>
-	public static bool IsLeased( HiderController hider )
-		=> hider.IsValid() && Current.IsValid() && Current.Leases.ContainsKey( hider.GameObject.Id );
+	/// <summary>Brush locks: brush id → the connection holding it. Brush ids are globally unique (Guids), so
+	/// no prop key is needed.</summary>
+	[Sync] public NetDictionary<Guid, Guid> BrushLocks { get; private set; } = new();
 
-	/// <summary>Is this pawn (root or any child of it) a leased prop? The roster resolver asks this: a leased
-	/// prop is owned by its sculptor's connection but is NOBODY's body.</summary>
-	public static bool IsLeasedPawn( GameObject pawn )
-		=> IsLeased( pawn.IsValid() ? pawn.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) : null );
+	/// <summary>Is anyone sculpting this prop in place (any machine's answer)?</summary>
+	public static bool IsBeingEdited( HiderController hider )
+	{
+		if ( !hider.IsValid() || !Current.IsValid() )
+			return false;
+		var id = hider.GameObject.Id;
+		foreach ( var (_, pawn) in Current.Editing )
+		{
+			if ( pawn == id )
+				return true;
+		}
+		return false;
+	}
 
-	/// <summary>Is this pawn prop leased to connection <paramref name="connectionId"/>?</summary>
-	public static bool IsLeasedBy( HiderController hider, Guid? connectionId )
+	/// <summary>Is connection <paramref name="connectionId"/> one of this prop's editors?</summary>
+	public static bool IsEditedBy( HiderController hider, Guid? connectionId )
 		=> connectionId is { } id && hider.IsValid() && Current.IsValid()
-		&& Current.Leases.TryGetValue( hider.GameObject.Id, out var holder ) && holder == id;
+		&& Current.Editing.TryGetValue( id, out var pawn ) && pawn == hider.GameObject.Id;
 
-	/// <summary>Caller asks to sculpt the clay under their crosshair in place — the F press. Arbitrated here
-	/// like <see cref="RequestPossess"/>: a released pawn prop is leased as-is (the <see cref="Leases"/> add is
-	/// the idempotency guard — one holder); scene clay is CONVERTED first (the same clone-and-dress as a
-	/// claim) and lands straight into released-and-leased, so it persists as scenery when the sculptor is
-	/// done. Same validation as a claim: a hunter, in reach, not spamming, mode allows it.</summary>
+	/// <summary>Who holds this brush's lock, or null when it's free.</summary>
+	public static Guid? BrushLockHolder( Guid brushId )
+		=> Current.IsValid() && Current.BrushLocks.TryGetValue( brushId, out var holder ) ? holder : null;
+
+	/// <summary>Is this brush locked by someone OTHER than this machine's player?</summary>
+	public static bool BrushLockedByOther( Guid brushId )
+		=> BrushLockHolder( brushId ) is { } h && h != Connection.Local?.Id;
+
+	/// <summary>Caller starts sculpting the clay under their crosshair in place — the LMB Sculpt card.
+	/// Arbitrated like <see cref="RequestPossess"/>: a released pawn prop is joined as-is; scene clay is
+	/// CONVERTED first (the same clone-and-dress as a claim, but host-owned) and lands straight into released
+	/// scenery, so it persists when the sculptors are done. Same validation as a claim: a hunter, in reach,
+	/// not spamming, mode allows it. A player already editing another prop leaves that one first.</summary>
 	[Rpc.Host]
-	public void RequestLease( GameObject target ) => LeaseFor( Rpc.Caller ?? Connection.Local, target );
+	public void RequestEdit( GameObject target ) => EditFor( Rpc.Caller ?? Connection.Local, target );
 
-	internal void LeaseFor( Connection c, GameObject target )
+	internal void EditFor( Connection c, GameObject target, bool ignoreReach = false )
 	{
 		var host = Host;
 		if ( c is null || !target.IsValid() || host is null || !host.ClaimsAllowed || !host.LeasesAllowed )
@@ -269,24 +296,18 @@ public sealed class PropClaims : Component, IInteractable
 			return;
 		_possessGate[c.Id] = PossessCooldown;
 
-		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange )
+		if ( !ignoreReach && pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange )
 			return;
-
-		// One lease per player: a second F elsewhere ends the first (the holder's session tears down when
-		// its lease vanishes — see HunterController.UpdateLease).
-		foreach ( var (id, holder) in Leases.ToList() )
-		{
-			if ( holder == c.Id )
-				ForceEndLease( id );
-		}
 
 		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 		{
-			if ( !ReleasedProps.ContainsKey( hider.GameObject.Id ) || Leases.ContainsKey( hider.GameObject.Id ) )
-				return; // someone's body, or already being sculpted
+			if ( !ReleasedProps.ContainsKey( hider.GameObject.Id ) )
+				return; // someone's body
 
-			GrantLease( c, hider );
+			EndEditFor( c );
+			Editing[c.Id] = hider.GameObject.Id;
+			PlaySwapPop( PopSpot( hider.GameObject ) ); // the same pop a possession makes — "someone's on this prop now"
 			return;
 		}
 
@@ -294,89 +315,248 @@ public sealed class PropClaims : Component, IInteractable
 		if ( !IsClaimable( sculpture ) || !_claimedScene.Add( sculpture.GameObject.Id ) )
 			return;
 
-		var converted = ConvertSceneProp( sculpture, c, scenery: true );
+		// Host-owned from birth (owner null) and scenery from the first frame — nobody wears it (BornScenery
+		// rides the spawn snapshot, so every copy knows before the registry rows land).
+		var converted = ConvertSceneProp( sculpture, null, scenery: true );
 		if ( !converted.IsValid() )
 		{
 			_claimedScene.Remove( sculpture.GameObject.Id );
 			return;
 		}
 
-		// Converted clay is scenery from the first frame — the sculptor never wears it (BornScenery rode the
-		// spawn snapshot, so their copy knows before these rows land). ReleaseControl on the host copy
-		// (dormant) and the released registry, then the lease on top. The clone spawned owned by the holder.
 		var prop = converted.Components.Get<HiderController>();
 		prop.ReleaseControl();
 		ReleasedProps[prop.GameObject.Id] = true;
-		GrantLease( c, prop );
+		EndEditFor( c );
+		Editing[c.Id] = prop.GameObject.Id;
+		PlaySwapPop( PopSpot( prop.GameObject ) );
 	}
 
-	// Host-only: record the lease and hand the whole network tree to the holder (see NetworkTree — a root-only
-	// assign would leave the Disguise's authority with whoever wore it last).
-	void GrantLease( Connection c, HiderController prop )
+	/// <summary>Caller is done sculpting — their session exited. Their locks go with it.</summary>
+	[Rpc.Host]
+	public void EndEdit() => EndEditFor( Rpc.Caller ?? Connection.Local, pop: true );
+
+	// Host-only: drop a connection's editing row and every lock it held. The pop plays on the holder's own
+	// exit only — the sweep's forced ends ride events that already pop (the R swap) or shouldn't (a leaver).
+	internal void EndEditFor( Connection c, bool pop = false )
 	{
-		Leases[prop.GameObject.Id] = c.Id;
-		PlaySwapPop( PopSpot( prop.GameObject ) ); // the same pop a possession makes — "someone's on this prop now"
-		if ( Networking.IsActive && prop.GameObject.Network.Active )
+		if ( c is null || !Editing.TryGetValue( c.Id, out var pawnId ) )
+			return;
+
+		Editing.Remove( c.Id );
+		ReleaseLocksOf( c.Id );
+		if ( pop )
+			PlaySwapPop( PopSpot( Scene.Directory.FindByGuid( pawnId ) ) );
+	}
+
+	void ReleaseLocksOf( Guid connectionId )
+	{
+		foreach ( var (brushId, holder) in BrushLocks.ToList() )
 		{
-			foreach ( var net in NetworkTree( prop.GameObject ) )
-				net.Network.AssignOwnership( c );
+			if ( holder == connectionId )
+				BrushLocks.Remove( brushId );
 		}
 	}
 
-	/// <summary>Caller is done sculpting <paramref name="target"/> in place — their session exited. Only the
-	/// holder may end their own lease; the host sweep (<see cref="SweepLeases"/>) covers a holder who can't ask.</summary>
+	/// <summary>Caller selected these brushes (csv of ids): take their locks. Granted per brush when it is
+	/// free or already theirs; a brush someone else holds stays theirs — the caller's session reads the
+	/// registry and drops it from the selection (see SculptEditSession.EnforceBrushLocks).</summary>
 	[Rpc.Host]
-	public void EndLease( GameObject target )
+	public void LockBrushes( string ids )
 	{
 		var c = Rpc.Caller ?? Connection.Local;
-		var hider = target.IsValid() ? target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) : null;
-		if ( c is null || !hider.IsValid() || !IsLeasedBy( hider, c.Id ) )
+		if ( c is null || !Editing.ContainsKey( c.Id ) )
 			return;
 
-		// The pop on the way out too, like popping out of a possessed prop. Only here, on the holder's own
-		// exit — the sweep's forced ends ride events that already pop (the R swap) or shouldn't (a leaver).
-		PlaySwapPop( PopSpot( hider.GameObject ) );
-		ForceEndLease( hider.GameObject.Id );
-	}
-
-	// Host-only: drop a lease by pawn id — registry out, ownership back to nobody (the prop is released scenery
-	// again, host-simulated). The holder's copy becomes a proxy, which is what tears their session down.
-	void ForceEndLease( Guid pawnId )
-	{
-		if ( !Leases.Remove( pawnId ) )
-			return;
-
-		var pawn = Scene.Directory.FindByGuid( pawnId );
-		if ( !pawn.IsValid() )
-			return;
-
-		// The host copy is about to read !IsProxy again (unowned) — make sure it's dormant + muted scenery, the
-		// same teardown a release runs (a converted lease pawn was never released through Release itself;
-		// for a pawn released earlier this is an idempotent no-op).
-		pawn.Components.Get<HiderController>()?.ReleaseControl();
-
-		if ( Networking.IsActive && pawn.Network.Active )
+		foreach ( var id in ParseIds( ids ) )
 		{
-			foreach ( var net in NetworkTree( pawn ) )
-				net.Network.DropOwnership();
+			if ( !BrushLocks.TryGetValue( id, out var holder ) || holder == c.Id )
+				BrushLocks[id] = c.Id;
 		}
 	}
 
-	// Host-only, per frame: a lease must be held by a connected player whose current pawn is a hunter (a
-	// swap to a prop, a leave, a mode-driven respawn all end it) on a pawn that still exists. The holder's
-	// own EndLease covers the normal exit; this is the net under everything that can't ask.
-	void SweepLeases()
+	/// <summary>Caller deselected these brushes: release the locks it holds on them.</summary>
+	[Rpc.Host]
+	public void UnlockBrushes( string ids )
 	{
-		if ( Leases.Count == 0 )
+		var c = Rpc.Caller ?? Connection.Local;
+		if ( c is null )
 			return;
 
-		foreach ( var (pawnId, holder) in Leases.ToList() )
+		foreach ( var id in ParseIds( ids ) )
 		{
-			var conn = Connection.All.FirstOrDefault( c => c.Id == holder );
+			if ( BrushLocks.TryGetValue( id, out var holder ) && holder == c.Id )
+				BrushLocks.Remove( id );
+		}
+	}
+
+	static IEnumerable<Guid> ParseIds( string csv )
+	{
+		if ( string.IsNullOrEmpty( csv ) )
+			yield break;
+		foreach ( var part in csv.Split( ',', StringSplitOptions.RemoveEmptyEntries ) )
+		{
+			if ( Guid.TryParse( part, out var id ) )
+				yield return id;
+		}
+	}
+
+	/// <summary>An editor's COMMIT: <paramref name="changed"/> is a packed brush list (new or updated brushes,
+	/// matched by id), <paramref name="removed"/> a csv of brush ids to drop, <paramref name="order"/> a csv of
+	/// every authored brush id in the editor's order (empty = unchanged). Applied to the host's copy of
+	/// <paramref name="root"/>'s clay and committed, so the pawn's sync publishes it. Reliable.</summary>
+	[Rpc.Host]
+	public void SubmitBrushes( GameObject root, string changed, string removed, string order )
+		=> ApplyOps( Rpc.Caller ?? Connection.Local, root, changed, removed, order, commit: true );
+
+	/// <summary>An editor's LIVE frame mid-gesture: changed brushes only, previewed (shadow proxy + the sync's
+	/// own 20 Hz stream), never committed. Unreliable — only the latest matters.</summary>
+	[Rpc.Host( NetFlags.UnreliableNoDelay )]
+	public void StreamBrushes( GameObject root, string changed )
+		=> ApplyOps( Rpc.Caller ?? Connection.Local, root, changed, null, null, commit: false );
+
+	// Host-only: the one place remote edits enter a shared sculpt. Every brush an op touches must be free or
+	// held by the caller; the result must pass the brush cap and the bounds gate as a whole, or the op is
+	// dropped (the editor's own copy diverges until the next snapshot corrects it — the same stance the
+	// receive-side bounds gate has always taken). The HOST's own editor never reaches here: its session has
+	// already applied the change to this very copy and the commit funnel publishes it.
+	void ApplyOps( Connection c, GameObject root, string changedPacked, string removedCsv, string orderCsv, bool commit )
+	{
+		if ( c is null || c.Id == Connection.Local?.Id || !root.IsValid() )
+			return;
+
+		var hider = root.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		if ( !IsEditedBy( hider, c.Id ) )
+			return;
+
+		var sculpture = hider.DisguiseSculpture;
+		if ( !sculpture.IsValid() || sculpture.Brushes is not { } current )
+			return;
+
+		var changed = SdfSculpture.DeserializeBrushes( SdfNetworkSync.Unpack( changedPacked ) );
+		var work = new List<SdfBrush>( current );
+		bool any = false;
+
+		if ( changed is not null )
+		{
+			foreach ( var nb in changed )
+			{
+				if ( nb is null || nb.Damage )
+					continue;
+				if ( BrushLocks.TryGetValue( nb.Id, out var holder ) && holder != c.Id )
+					continue; // someone else's brush
+
+				int idx = work.FindIndex( b => b.Id == nb.Id );
+				if ( idx >= 0 )
+					work[idx] = nb;
+				else
+					work.Insert( AuthoredCount( work ), nb ); // new: just below the damage tail (order lands below)
+				any = true;
+			}
+		}
+
+		foreach ( var id in ParseIds( removedCsv ) )
+		{
+			if ( BrushLocks.TryGetValue( id, out var holder ) && holder != c.Id )
+				continue;
+			int idx = work.FindIndex( b => b.Id == id );
+			if ( idx >= 0 && !work[idx].Damage )
+			{
+				work.RemoveAt( idx );
+				any = true;
+			}
+		}
+
+		// Reorder the authored prefix to the editor's order — only when it names exactly the authored set
+		// (a stale order from before someone else's add/remove is ignored; the next commit carries a fresh one).
+		var order = ParseIds( orderCsv ).ToList();
+		int authored = AuthoredCount( work );
+		if ( order.Count == authored && authored > 0 )
+		{
+			var byId = new Dictionary<Guid, SdfBrush>( authored );
+			for ( int i = 0; i < authored; i++ )
+				byId[work[i].Id] = work[i];
+			if ( order.All( byId.ContainsKey ) && order.Distinct().Count() == authored )
+			{
+				bool differs = false;
+				for ( int i = 0; i < authored && !differs; i++ )
+					differs = work[i].Id != order[i];
+				if ( differs )
+				{
+					for ( int i = 0; i < authored; i++ )
+						work[i] = byId[order[i]];
+					any = true;
+				}
+			}
+		}
+
+		if ( !any || work.Count > SdfBrushPacker.MaxBrushes )
+			return;
+
+		var bounds = sculpture.GameObject.Components.Get<SculptBounds>();
+		if ( bounds.IsValid() && !bounds.ValidateIncoming( work, withVolume: commit ) )
+			return;
+
+		// The host may be editing this very sculpt itself: its session must read this as a shape LANDING (not
+		// its own edit — SdfNetworkSync.Applying), and re-seat its selection by id once the list is swapped.
+		var local = SculptEditSession.SharedSessionOn( sculpture );
+		local?.CaptureSelectionIds();
+		SdfNetworkSync.Applying = true;
+		try
+		{
+			sculpture.Brushes = work;
+			local?.AfterExternalApply();
+			if ( commit )
+				sculpture.Rebuild();
+			else
+				sculpture.RebuildShadowProxy();
+		}
+		finally
+		{
+			SdfNetworkSync.Applying = false;
+		}
+	}
+
+	/// <summary>Debug seam: apply <paramref name="changedPacked"/> as if <paramref name="c"/> had sent it (see
+	/// PossessionDebug's <c>mimi_dbg_remoteop</c>). Host-only.</summary>
+	internal void DebugApplyOps( Connection c, GameObject root, string changedPacked, bool commit )
+		=> ApplyOps( c, root, changedPacked, null, null, commit );
+
+	/// <summary>Brushes before the damage tail of an arbitrary list (the static twin of
+	/// <see cref="SdfSculpture.AuthoredBrushCount"/>).</summary>
+	internal static int AuthoredCount( List<SdfBrush> list )
+	{
+		int n = list.Count;
+		while ( n > 0 && list[n - 1].Damage )
+			n--;
+		return n;
+	}
+
+	// Host-only, per frame: an editing row must belong to a connected player whose current pawn is a hunter
+	// (a swap to a prop, a leave, a mode-driven respawn all end it) on a pawn that still exists; a lock must
+	// belong to an editor. The holder's own EndEdit covers the normal exit; this is the net under everything
+	// that can't ask.
+	void SweepEditors()
+	{
+		if ( Editing.Count == 0 && BrushLocks.Count == 0 )
+			return;
+
+		foreach ( var (holder, pawnId) in Editing.ToList() )
+		{
+			var conn = Connection.All.FirstOrDefault( x => x.Id == holder );
 			var claimant = conn is not null ? Host?.ClaimantPawn( conn ) : null;
 			bool holderIsHunter = claimant.IsValid() && claimant.Components.Get<HunterController>().IsValid();
 			if ( !holderIsHunter || !Scene.Directory.FindByGuid( pawnId ).IsValid() )
-				ForceEndLease( pawnId );
+			{
+				Editing.Remove( holder );
+				ReleaseLocksOf( holder );
+			}
+		}
+
+		foreach ( var (brushId, holder) in BrushLocks.ToList() )
+		{
+			if ( !Editing.ContainsKey( holder ) )
+				BrushLocks.Remove( brushId );
 		}
 	}
 
@@ -384,7 +564,7 @@ public sealed class PropClaims : Component, IInteractable
 	{
 		if ( Networking.IsActive && !Networking.IsHost )
 			return;
-		SweepLeases();
+		SweepEditors();
 	}
 
 	// Host-only: pawns minted by ConvertSceneProp, by pawn GameObject id. The lobby reads this to tell borrowed
@@ -573,7 +753,7 @@ public sealed class PropClaims : Component, IInteractable
 			: sceneT.Position;
 		var rootT = new Transform( feet, Rotation.FromYaw( sceneT.Rotation.Yaw() ) );
 
-		var pawn = prefab.Clone( new CloneConfig( rootT, startEnabled: false, name: $"Claimed Prop {owner.DisplayName}" ) );
+		var pawn = prefab.Clone( new CloneConfig( rootT, startEnabled: false, name: owner is not null ? $"Claimed Prop {owner.DisplayName}" : "Shared Prop" ) );
 		if ( !pawn.IsValid() )
 			return null;
 

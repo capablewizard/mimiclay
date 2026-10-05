@@ -84,7 +84,7 @@
 		@* Hidden while a guided tutorial step runs — the tutorial card teaches one thing at a time, and the
 		   full key list underneath it would drown that. Back the moment guidance ends (free-play included). *@
 		<div class="hint-strip @(TutorialDirector.HintStripHidden ? "hidden" : "")">
-			@if ( Session.FirstPerson )
+			@if ( Session.BodyKeys )
 			{
 				@* First-person (in-place) sculpting: the crosshair is the pointer and the body keeps walking, so
 				   the WASD-row scrubs are gone — R/E and the LMB grab are the whole transform scheme, and the
@@ -110,10 +110,10 @@
 					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
 					<div class="hint"><span class="key">R</span><span>scale</span></div>
 					<div class="hint"><span class="key">E</span><span>rotate</span></div>
-					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
+					<div class="hint"><span class="key">Shift</span><span>snap (standing)</span></div>
 				}
 				<div class="hint"><span class="key">1-7</span><span>@(Session.Tool == SculptTool.Sculpt || Session.SelectedBrush is not null ? "shape" : "add shape")</span></div>
-				<div class="hint"><span class="key">Alt</span><span>cursor (still view)</span></div>
+				<div class="hint"><span class="key">Alt</span><span>cursor + all keys</span></div>
 				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
 				<div class="hint"><span class="key">Q</span><span>done</span></div>
 			}

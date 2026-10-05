@@ -52,6 +52,14 @@ public enum SdfOperation
 /// </summary>
 public class SdfBrush
 {
+	/// <summary>Stable identity, independent of the brush's slot in the list. Minted when a brush is CREATED
+	/// (constructor / <see cref="Fresh"/>), kept by <see cref="Copy"/> (a snapshot is the same brush) and
+	/// carried in every serialisation — saves, prefabs and the wire — so every machine knows a brush by the
+	/// same id however the list around it is reordered, added to or trimmed. This is what lets several
+	/// players edit one sculpt at once: an edit, a lock or an undo names the brush, never "index 7". Not part
+	/// of the content hash (identity isn't shape).</summary>
+	[Property, Hide] public Guid Id { get; set; } = Guid.NewGuid();
+
 	[Property] public SdfShape Shape { get; set; } = SdfShape.Sphere;
 	[Property] public SdfOperation Operation { get; set; } = SdfOperation.Add;
 
@@ -280,10 +288,12 @@ public class SdfBrush
 	internal float ShrinkAge;
 	internal (Vector3 Size, float Blend, float Rounding)? ShrinkState;
 
-	/// <summary>A standalone copy (every field is a value type). Used to snapshot brushes before meshing
-	/// on a worker thread, so a main-thread edit can't race the build.</summary>
+	/// <summary>A standalone copy (every field is a value type) of the SAME brush — it keeps the <see cref="Id"/>.
+	/// Used to snapshot brushes before meshing on a worker thread, so a main-thread edit can't race the
+	/// build, and for undo/dress/remember copies. For a NEW brush modelled on this one use <see cref="Fresh"/>.</summary>
 	public SdfBrush Copy() => new()
 	{
+		Id = Id,
 		Shape = Shape,
 		CrossSection = CrossSection,
 		Text = Text,
@@ -313,6 +323,15 @@ public class SdfBrush
 		SplineClosed = SplineClosed,
 		SplinePerPointRadius = SplinePerPointRadius,
 	};
+
+	/// <summary>A NEW brush with this one's every property — a duplicate, the next stamp from its template —
+	/// under a fresh <see cref="Id"/>. The only way two brushes alike should ever come to exist.</summary>
+	public SdfBrush Fresh()
+	{
+		var b = Copy();
+		b.Id = Guid.NewGuid();
+		return b;
+	}
 
 	/// <summary>Mix every shape-defining property of this brush into a running FNV-1a hash — THE one canonical
 	/// change-hash for a brush. <see cref="SdfSculpture.ContentHash"/> (mesh/bake caching, persisted into

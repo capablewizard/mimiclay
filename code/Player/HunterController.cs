@@ -694,14 +694,16 @@ public sealed class HunterController : Component
 			UpdateAltOrbit( play && !LeaseEditing ); // alt is the HUD-cursor key while sculpting in place
 
 			_controller.UseLookControls = play && !_altOrbiting && !LeaseLookPaused;
-			_controller.UseInputControls = play && !locked;
+			// Alt in a sculpt session (cursor free, view frozen) hands the keyboard to the editor: no walking
+			// off while you scrub a slider with S or add a shape with Space.
+			_controller.UseInputControls = play && !locked && !_leaseCursorFree;
 
 			// UseInputControls=false stops the controller READING input, but the last WishVelocity stays latched
 			// and the walk move-mode keeps applying it — so a key held when you entered edit/freeze would coast the
 			// hunter away. Clear the wish + any HORIZONTAL momentum every such frame so the body holds still — but keep
 			// the vertical component so gravity still settles a freshly-spawned pawn onto the floor (zeroing all of it
 			// every frame wipes the fall velocity, leaving it to drift down in slow motion).
-			if ( EditMode || locked )
+			if ( EditMode || locked || _leaseCursorFree )
 			{
 				_controller.WishVelocity = Vector3.Zero;
 				if ( _controller.Body.IsValid() )
@@ -744,6 +746,20 @@ public sealed class HunterController : Component
 			// parallel the instant you grabbed alt. Holding the last values leaves it exactly where it was.
 			if ( !_altOrbiting )
 				ResolveAim( eye );
+
+			// The in-place session's frame, HERE — after the camera has moved and the aim is resolved — so
+			// its picks, ghost and gizmo always trace from THIS frame's view (see SculptEditSession.ExternallyTicked).
+			if ( _leaseSession.IsValid() )
+			{
+				bool wasLeaseEditing = LeaseEditing;
+				_leaseSession.TickNow();
+
+				// The tick may have EXITED the session on this very click (click-away): the lease's teardown
+				// runs next frame, so start the trigger hold now — otherwise the shot check below sees "not
+				// editing" and fires off the click that closed the session.
+				if ( wasLeaseEditing && !LeaseEditing )
+					_sinceLeaseEnd = 0f;
+			}
 
 			// Whatever's under the crosshair that offers interactions (see Interactions): hover outlines it and
 			// raises the toast row ("E Edit", "LMB Sculpt", "F Turn off"…), the slot keys run them. Runs on
@@ -2216,7 +2232,7 @@ public sealed class HunterController : Component
 
 	/// <summary>The "Sculpt" interaction landed on <paramref name="target"/> (a pawn root or scene clay):
 	/// ask the host for the lease and wait for it (see <see cref="UpdateLease"/>).</summary>
-	internal void RequestSculptLease( GameObject target )
+	internal void RequestSculptEdit( GameObject target )
 	{
 		var claims = PropClaims.Current;
 		if ( !claims.IsValid() || !target.IsValid() )
@@ -2230,7 +2246,7 @@ public sealed class HunterController : Component
 		// grant instead (see UpdateLease — the lease registry is what names the converted pawn).
 		_leasePendingProp = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		_leasePendingSince = 0f;
-		claims.RequestLease( target );
+		claims.RequestEdit( target );
 	}
 
 	// Owner-only, per frame.
@@ -2244,19 +2260,13 @@ public sealed class HunterController : Component
 		if ( !LeaseEditing && _leasePendingSince < 3f && PropClaims.Current is { } claims )
 		{
 			var prop = _leasePendingProp;
-			if ( !prop.IsValid() )
+			if ( !prop.IsValid() && me is { } myId && claims.Editing.TryGetValue( myId, out var pawnId ) )
 			{
-				foreach ( var (pawnId, holder) in claims.Leases )
-				{
-					if ( holder != me )
-						continue;
-					var pawn = Scene.Directory.FindByGuid( pawnId );
-					prop = pawn.IsValid() ? pawn.Components.Get<HiderController>() : null;
-					break;
-				}
+				var pawn = Scene.Directory.FindByGuid( pawnId );
+				prop = pawn.IsValid() ? pawn.Components.Get<HiderController>() : null;
 			}
 
-			if ( prop.IsValid() && PropClaims.IsLeasedBy( prop, me ) && !prop.IsProxy && prop.DisguiseSculpture.IsValid() )
+			if ( prop.IsValid() && PropClaims.IsEditedBy( prop, me ) && prop.DisguiseSculpture.IsValid() )
 			{
 				_leasePendingProp = null;
 				_leasePendingSince = float.MaxValue;
@@ -2280,8 +2290,7 @@ public sealed class HunterController : Component
 		// forced exit; the exit funnel reverts an invalid shape on its way out.
 		if ( _leaseSession.IsEditing )
 		{
-			bool lost = !_leaseProp.IsValid() || !PropClaims.IsLeasedBy( _leaseProp, me )
-				|| (Networking.IsActive && _leaseProp.IsProxy)
+			bool lost = !_leaseProp.IsValid() || !PropClaims.IsEditedBy( _leaseProp, me )
 				|| RoundManager.ControlsLocked || LobbyReturn.Active;
 			if ( lost )
 				_leaseSession.SetActive( false );
@@ -2318,7 +2327,9 @@ public sealed class HunterController : Component
 		_leaseSession = Components.Create<SculptEditSession>();
 		_leaseSession.Target = prop.DisguiseSculpture;
 		_leaseSession.FirstPerson = true;
+		_leaseSession.Shared = true; // the prop is host-owned: edits go to the host as brush ops, others may edit too
 		_leaseSession.EditDepthOfField = false;
+		_leaseSession.ExternallyTicked = true; // we tick it right after driving the camera — see OnUpdate
 		_leaseSession.SetActive( true );
 	}
 
@@ -2338,8 +2349,8 @@ public sealed class HunterController : Component
 
 		var prop = _leaseProp;
 		_leaseProp = null;
-		if ( prop.IsValid() && PropClaims.Current is { } claims && PropClaims.IsLeasedBy( prop, Connection.Local?.Id ) )
-			claims.EndLease( prop.GameObject );
+		if ( prop.IsValid() && PropClaims.Current is { } claims && PropClaims.IsEditedBy( prop, Connection.Local?.Id ) )
+			claims.EndEdit();
 	}
 
 	protected override void OnDestroy()

@@ -77,6 +77,12 @@ public sealed class SdfNetworkSync : Component
 
 	SdfSculpture _bound; // the Target we've currently subscribed to (lazy (re)bind in OnUpdate)
 
+	/// <summary>True while an incoming shape is being applied to a local sculpture (its Rebuild /
+	/// RebuildShadowProxy fire Committed / Previewed). A SHARED edit session on the same sculpture publishes
+	/// its own edits off those same events, so it reads this to tell "the host's shape just landed" from "I
+	/// just changed something" — otherwise every snapshot would be echoed straight back as an op.</summary>
+	public static bool Applying { get; internal set; } // PropClaims.ApplyOps raises it too — a remote op landing on the host's copy
+
 	SdfRaymarchRenderer _raymarcher; // proxy: resolved lazily to gate field baking during remote drags
 
 	// ── Sculpt-bounds validity gate ───────────────────────────────────────────────────────────────────────
@@ -311,9 +317,7 @@ public sealed class SdfNetworkSync : Component
 		}
 
 		_appliedSeq = seq;
-		SetInterpolationTarget( target );
-		Target.RebuildShadowProxy();
-		SetLiveDragField( true );
+		Adopt( target, full: false );
 	}
 
 	// [Change] callback for the durable snapshot, fired on every machine the synced value lands on. Only proxies
@@ -357,20 +361,51 @@ public sealed class SdfNetworkSync : Component
 		}
 
 		_appliedSeq = seq;
+		Adopt( brushes, full );
+	}
 
-		if ( full )
+	// Land an incoming shape on the local Target. A machine with a SHARED edit session on this very
+	// sculpture (see SculptEditSession.Shared) doesn't just take the list: the session merges it by brush id
+	// — its own locked / in-flight brushes keep their LOCAL instances and state, everything else comes from
+	// the host — then re-seats its selection and gizmo on the merged list. No interpolation there either
+	// (the lists are re-keyed by id, and this machine is itself an author; its own field stays crisp).
+	void Adopt( List<SdfBrush> incoming, bool full )
+	{
+		var shared = SculptEditSession.SharedSessionOn( Target );
+		if ( shared is not null )
+			incoming = shared.MergeIncoming( incoming );
+
+		Applying = true;
+		try
 		{
-			StopInterpolation();
-			CarryShrinkState( Target.Brushes, brushes );
-			Target.Brushes = brushes;
-			SetLiveDragField( false ); // settled shape → one full-resolution dispatch, back to the crisp field
-			Target.Rebuild();
+			if ( full || shared is not null )
+			{
+				StopInterpolation();
+				CarryShrinkState( Target.Brushes, incoming );
+				Target.Brushes = incoming;
+				shared?.AfterExternalApply();
+
+				if ( full )
+				{
+					if ( shared is null )
+						SetLiveDragField( false ); // settled shape → one full-resolution dispatch, back to the crisp field
+					Target.Rebuild();
+				}
+				else
+				{
+					Target.RebuildShadowProxy();
+				}
+			}
+			else
+			{
+				SetInterpolationTarget( incoming );
+				Target.RebuildShadowProxy();
+				SetLiveDragField( true );
+			}
 		}
-		else
+		finally
 		{
-			SetInterpolationTarget( brushes );
-			Target.RebuildShadowProxy();
-			SetLiveDragField( true );
+			Applying = false;
 		}
 	}
 

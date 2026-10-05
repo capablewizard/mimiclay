@@ -264,7 +264,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "f7502b2e-c0f2-4a1c-97b5-390e5aabacd5",
+            "Id": "58c8923a-1cf2-4a26-9e86-ae7a0d621a4f",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -321,7 +321,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "f7502b2e-c0f2-4a1c-97b5-390e5aabacd5",
+            "Id": "58c8923a-1cf2-4a26-9e86-ae7a0d621a4f",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1273,7 +1273,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "60236476-5aee-48da-abd6-d4a895d3f587",
+                "Id": "d7788d5d-5601-4c04-8bc9-4567f2236e2b",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1319,7 +1319,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "9a6201eb-4268-42a1-821f-3ddffb13d09e",
+                "Id": "326012c1-2dec-467a-bdf3-898b41664448",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1347,7 +1347,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "9a6201eb-4268-42a1-821f-3ddffb13d09e",
+                "Id": "326012c1-2dec-467a-bdf3-898b41664448",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1394,7 +1394,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "8b949d49-f5cf-4ed1-bcfb-22b0c1f7e37f",
+                "Id": "a9e073a3-ba6d-4178-8f86-d17c1cf14b7f",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1438,7 +1438,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "e18bbe65-01d6-4b64-9018-31090ecbde17",
+                "Id": "4b11af62-3984-41d1-8a51-30f13a86a708",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1750,7 +1750,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "1b8763b0-7bf8-4081-9bd0-9c302d76479d",
+                "Id": "afcc93f3-0ddd-4b95-926e-c14b2e2e49be",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1794,7 +1794,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "3df887c7-2caf-4c9e-97d4-92c12b4e2b34",
+                "Id": "0be5722b-b4ff-4cd0-88d1-1d773b397bc7",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1838,7 +1838,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "246a9fa5-bee6-4708-9699-781f1f6731f6",
+                "Id": "62e59f8d-9045-4ae6-926a-2ff8857fc339",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1884,7 +1884,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "3337ee17-06db-464c-bc36-aee4275667d9",
+                "Id": "f7c50e77-f41b-485c-b98d-2703ca70829c",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1912,7 +1912,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "3337ee17-06db-464c-bc36-aee4275667d9",
+                "Id": "f7c50e77-f41b-485c-b98d-2703ca70829c",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3022,7 +3022,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3050,7 +3050,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3099,7 +3099,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3127,7 +3127,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "b2fa3a65-ec4d-41ec-94de-460f72107433",
+                "Id": "f0ea55ca-7a10-4296-871e-1b22a279bbdc",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3466,812 +3466,6 @@
           "Children": []
         }
       ]
-    },
-    {
-      "__guid": "9332366c-1c9a-4ae3-be62-dcaf326fc509",
-      "__version": 2,
-      "__Prefab": {
-        "Id": "2d76c68a-fb76-40b5-b830-44ca7b8bfb7b",
-        "Path": "prefabs/saved/fullorange.prefab"
-      },
-      "__PrefabInstancePatch": {
-        "AddedObjects": [
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "ee8cb9cb-0d99-4c90-80c7-0d7433a1445c"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "cff861ac-8232-444a-81d2-42b115299d9f"
-            },
-            "PreviousElement": {
-              "Type": "Component",
-              "IdValue": "70cfa371-937d-470c-91f7-e17f2dd0263e"
-            },
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.TutorialNpc",
-              "__guid": "ee8cb9cb-0d99-4c90-80c7-0d7433a1445c",
-              "__enabled": true,
-              "Flags": 0,
-              "EntryPitch": 10,
-              "FramingMargin": 1.5,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Sculpture": null
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "f32d31ee-3bc2-42d3-9566-a1f7aa52c78a"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "cff861ac-8232-444a-81d2-42b115299d9f"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "f32d31ee-3bc2-42d3-9566-a1f7aa52c78a",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "SpeechBubbleAnchor",
-              "Position": "16.33634,-7.62939453E-06,9.99676132",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "883f017c-2e2f-4d59-8a3a-f82697b0921e"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "f32d31ee-3bc2-42d3-9566-a1f7aa52c78a"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SpeechBubble",
-              "__guid": "883f017c-2e2f-4d59-8a3a-f82697b0921e",
-              "__enabled": true,
-              "Flags": 0,
-              "MaxDistance": 200,
-              "OffsetRight": 10,
-              "OffsetUp": 6,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "SpaceTicks": 2,
-              "Text": "I can show you how to sculpt",
-              "TypeSpeed": 18,
-              "TypeVolume": 0.4,
-              "TypeVolumeJitter": 0.5
-            }
-          }
-        ],
-        "RemovedObjects": [],
-        "PropertyOverrides": [
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "cff861ac-8232-444a-81d2-42b115299d9f"
-            },
-            "Property": "Position",
-            "Value": "64.7841492,-674.560547,-498.698425"
-          },
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "cff861ac-8232-444a-81d2-42b115299d9f"
-            },
-            "Property": "Rotation",
-            "Value": "0,0,-0.562716126,0.826650202"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f38dcccb-6d8a-4918-b3c6-e43f0309c682"
-            },
-            "Property": "Brushes",
-            "Value": [
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-1.93065763,6.7502737,13.8507881",
-                "Rotation": "0.0394344814,0.00220657326,0.0558244325,0.997659206",
-                "Size": "14.4786758,16.0604324,14.4786758",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 9.231856,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.9,0.42,0.12,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 18.368397
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-0.959994435,-9.44516754,13.8491192",
-                "Rotation": "2.32830644E-10,0,0.0558680259,0.998438239",
-                "Size": "10.5249901,10.5249901,10.7073936",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 15,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.9,0.42,0.12,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 14.457394
-              },
-              {
-                "Shape": "Box",
-                "Operation": "Subtract",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-21.4025135,-1.31426096,14.4240265",
-                "Rotation": "-3.7252903E-09,-0.707106829,0,0.707106829",
-                "Size": "12,21.5886993,4.17239571",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 5.493479,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.9,0.42,0.12,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 26.422935
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "11.3560305,9.73502827,18.4065094",
-                "Rotation": "-0.0045415177,-0.106201179,0.122949593,0.986703634",
-                "Size": "2.25624371,5.08355713,5.08355713",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0.15787041,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "1,1,1,1",
-                "Metallic": 0,
-                "Roughness": 1,
-                "MirrorX": false,
-                "MirrorY": true,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": true,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 5.123025
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "13.744524,8.05467033,18.5346012",
-                "Rotation": "-0.00771973189,-0.152284771,0.104617059,0.982753873",
-                "Size": "1,1.43548465,1.43181586",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.14492,0.14492,0.15349,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 1.4354846
-              },
-              {
-                "Shape": "Box",
-                "Operation": "Subtract",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "-7.11045837,-1.31427634,-3.25770497",
-                "Rotation": "0,0,0,1",
-                "Size": "12,17.2449608,4.17239571",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2.700001,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.9,0.42,0.12,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 22.09456
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "11.2455807,9.70226574,18.5134163",
-                "Rotation": "-0.976697445,-0.121531457,-0.176897883,-7.4505806E-09",
-                "Size": "4.14312553,6.74951267,6.14983177",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0.544853,
-                "SlicePlaneN": -0.089705944,
-                "LocalCentre": "0,0,-3.35075402",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.9,0.42,0.12,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": true,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": true,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 6.7495127
-              },
-              {
-                "Shape": "Text",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "u",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "14.1369686,0.746826172,10.5604267",
-                "Rotation": "-0.607159972,0.0060878098,0.794139922,-0.0257378817",
-                "Size": "18.4260807,9.21304035,0.906834006",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0.5775003,
-                "SlicePlaneN": -0.15500057,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.96,0.53,0.15,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 5.4169397
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "12.5733347,-12.1579199,18.4645519",
-                "Rotation": "0.0357963368,-0.167814076,-0.208690733,0.962811172",
-                "Size": "1,1.7288177,1.67181551",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.14492,0.14492,0.15349,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 1.7288177
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "14.1098995,10.193367,19.2733574",
-                "Rotation": "-0.00771974027,-0.152284771,0.104617119,0.982753992",
-                "Size": "1,1,1",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.97,0.97,0.97,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 1
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "13.4424734,-10.6959515,19.6175823",
-                "Rotation": "-0.00771974027,-0.152284771,0.104617119,0.982753992",
-                "Size": "1,1,1",
-                "Points": null,
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.97,0.97,0.97,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 1
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "12.5733347,-12.1579199,18.4645519",
-                "Rotation": "0.0357963368,-0.167814076,-0.208690733,0.962811172",
-                "Size": "1,1.7288177,1.67181551",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.14492,0.14492,0.15349,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 1.7288177
-              },
-              {
-                "Shape": "Cylinder",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "17.6633911,2.922997,7.56852865",
-                "Rotation": "-0.11081931,0.890350163,0.174089342,0.405830204",
-                "Size": "1,1.94525611,3.78386784",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0,
-                "Gap": 0,
-                "Rounding": 1,
-                "Color": "0.92,0.68,0.4,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 3.9137776
-              },
-              {
-                "Shape": "Spline",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "11.2581558,16.1965256,-7.6424408",
-                "Rotation": "0,0,0,1",
-                "Size": "2.32000399,2.32000399,2.32000399",
-                "Points": [
-                  "-1.99217415,2.15755939,28.6302719,1.26134121",
-                  "-1.74976909,1.31082118,31.8143997,1.71311975",
-                  "-2.33021927,-0.885993004,34.6760559,2.32000399"
-                ],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": true,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 0.41999996,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.45,0.26,0.17,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 2.425004
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "0,0,-11.5528917",
-                "Rotation": "0,0,0,1",
-                "Size": "11.163764,11.163764,11.163764",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.9,0.42,0.12,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 11.663764
-              },
-              {
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "Enabled": true,
-                "Position": "0,0,-27.6243401",
-                "Rotation": "0,0,0,1",
-                "Size": "18.2659588,18.2659588,18.2659588",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 9.862535,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.9,0.42,0.12,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 20.731592
-              }
-            ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "504b3663-98cb-4d3c-84d2-d7787e386222"
-            },
-            "Property": "__enabled",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "504b3663-98cb-4d3c-84d2-d7787e386222"
-            },
-            "Property": "Model",
-            "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "CullRadii",
-            "Value": 220
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "FullQualityRadii",
-            "Value": 6
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 90
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 140
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 10
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70cfa371-937d-470c-91f7-e17f2dd0263e"
-            },
-            "Property": "Activation",
-            "Value": "Always"
-          }
-        ],
-        "MovedObjects": []
-      },
-      "__PrefabIdToInstanceId": {
-        "cff861ac-8232-444a-81d2-42b115299d9f": "9332366c-1c9a-4ae3-be62-dcaf326fc509",
-        "f38dcccb-6d8a-4918-b3c6-e43f0309c682": "67dd3110-541b-4041-81e1-085a545c61c6",
-        "504b3663-98cb-4d3c-84d2-d7787e386222": "6efb7519-926e-4503-850e-67d5673fd86d",
-        "f1d17cfd-fb65-4a90-a028-f9c5d0011eff": "bdd1b1d2-6f58-43ef-9cd6-5fb1b92df743",
-        "c9a70ddd-494e-4f09-afb0-8629c1b40da2": "97a99d01-5575-4c8b-8282-dfcb1971c1ea",
-        "92e18a89-c589-49d3-bdda-917eec3e5e35": "c8ecd6bc-16fc-48ea-abe5-d525eba035f2",
-        "92791f7a-874b-4543-ad05-185363569a22": "e6abbc1d-19dd-4302-ad5d-40a92ca37798",
-        "70cfa371-937d-470c-91f7-e17f2dd0263e": "b0437fff-86ba-4b67-aebc-20b9c6dab15a"
-      }
     },
     {
       "__guid": "0373f329-6208-44b4-96bd-227908c116b3",
@@ -5054,7 +4248,8 @@
           },
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
-          "LastImport": "63 object(s), 67661 tris — 13:33:31",
+          "KeepOnlyExistingPieces": false,
+          "LastImport": "63 object(s), 67661 tris — 08:14:57",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -10420,6 +9615,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "421f0d58-11ba-4b86-9532-f4fb09a069ba",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -10456,6 +9652,7 @@
                 "BoundingRadius": 32.435925
               },
               {
+                "Id": "61197e8f-3796-4b99-8fea-66bd5d00f273",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -10495,6 +9692,7 @@
                 "BoundingRadius": 6.5
               },
               {
+                "Id": "9d91c839-767c-42c7-9f2b-ee4f4bca004d",
                 "Shape": "Sphere",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -10531,6 +9729,7 @@
                 "BoundingRadius": 26.729395
               },
               {
+                "Id": "01d39dfd-51e0-4c02-bc4d-357658e88424",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -10567,6 +9766,7 @@
                 "BoundingRadius": 48.652905
               },
               {
+                "Id": "2dc9a3ed-3353-45b5-8746-195aaa27d1b7",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -10611,14 +9811,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10660,14 +9852,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10725,14 +9909,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10790,14 +9966,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10855,14 +10023,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10920,14 +10080,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -10968,6 +10120,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "644e246f-f35c-44cb-8024-983bcb4098b0",
               "Shape": "Cone",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -11004,6 +10157,7 @@
               "BoundingRadius": 9.802811
             },
             {
+              "Id": "1d79866d-25ff-43d3-8d38-061ffca57dd3",
               "Shape": "Sphere",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -11234,14 +10388,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-424.970551"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11291,14 +10437,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11348,14 +10486,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11397,14 +10527,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-465.638519"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11462,14 +10584,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11511,14 +10625,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-465.34613"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11560,30 +10666,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1242.81396,-427.365051"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11625,30 +10707,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1277.56177,-427.365051"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11690,30 +10748,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1101.1239,-483.758209"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11755,30 +10789,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1129.97668,-483.758209"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11820,14 +10830,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-504.864471"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11877,14 +10879,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.707106829,0.707106709"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11934,14 +10928,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.707106829,0.707106709"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -11991,14 +10977,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -12039,6 +11017,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "71bc6797-abe5-4c06-b073-29e0d73aad3c",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12095,7 +11074,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12112,7 +11091,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -12268,6 +11247,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "cbf3560c-2744-4346-bf8e-c4bf01f7aa31",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12324,7 +11304,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12341,7 +11321,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -12497,6 +11477,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "70acfd95-2a0d-45b8-8a7d-be8edfc5d9b1",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12726,6 +11707,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "8c4045b5-9390-44b6-9aa3-8badeeb415e9",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12782,7 +11764,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -12799,7 +11781,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -12955,6 +11937,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "a74fee7d-a994-4bdf-bda9-5ee7093453b8",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13011,7 +11994,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13028,7 +12011,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13184,6 +12167,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "2934886b-0333-4626-9cc5-d2ed7ac7e3d4",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13240,7 +12224,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13257,7 +12241,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13413,6 +12397,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "93df88be-5399-4200-8951-8a5e46cbddb6",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13469,7 +12454,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13486,7 +12471,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -13642,6 +12627,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "561b2e68-252c-44e0-965e-888c345051ad",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13871,6 +12857,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "87e8f7e7-aae4-4313-923a-a79ae140283e",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13927,7 +12914,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -13944,7 +12931,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -14100,6 +13087,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "f6a4b437-1bce-4fc7-aacf-9508a3183cde",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -14329,6 +13317,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "e2ed7b0a-5d84-45e5-86f0-27f5e6c93eeb",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -14385,7 +13374,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14402,7 +13391,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -14558,6 +13547,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "eba4b3ca-b066-4a2a-8f4a-1b1d45dced6f",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -14796,14 +13786,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -14861,14 +13843,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -14918,14 +13892,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -14975,14 +13941,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -15033,6 +13991,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "4afb7276-e41d-4aa0-a1a6-18201f6816f1",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15069,6 +14028,7 @@
                 "BoundingRadius": 40.720684
               },
               {
+                "Id": "03379f2c-b1ce-446f-b568-c8282211b4b5",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -15105,6 +14065,7 @@
                 "BoundingRadius": 29.550665
               },
               {
+                "Id": "c43b6b3a-ebcc-4d10-8ce2-80a422a74ca0",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15141,6 +14102,7 @@
                 "BoundingRadius": 28.590185
               },
               {
+                "Id": "fb4f5584-8132-4c2e-976c-64e3e67d4000",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15177,6 +14139,7 @@
                 "BoundingRadius": 27.692757
               },
               {
+                "Id": "b2a958fb-1522-405f-a0d5-270e6b6d7aba",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15213,6 +14176,7 @@
                 "BoundingRadius": 26.26554
               },
               {
+                "Id": "0ae92f2f-f284-4022-9f76-7443ca25c8a8",
                 "Shape": "Box",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15249,6 +14213,7 @@
                 "BoundingRadius": 24.676466
               },
               {
+                "Id": "0328d131-49a0-4167-94ca-dc4b139a31fe",
                 "Shape": "Text",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15285,6 +14250,7 @@
                 "BoundingRadius": 19.323284
               },
               {
+                "Id": "3d604e51-c2ab-4462-ac47-44e4aee9a2e9",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15337,14 +14303,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -15395,6 +14353,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "374a5c25-bba2-42b2-b7c0-adac9067fca7",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15431,6 +14390,7 @@
                 "BoundingRadius": 30.737177
               },
               {
+                "Id": "1161f1e1-5174-4151-8f0f-57c155bf5e46",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -15467,6 +14427,7 @@
                 "BoundingRadius": 23.72919
               },
               {
+                "Id": "0607efd7-8b1b-420f-a184-f730d5add870",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15503,6 +14464,7 @@
                 "BoundingRadius": 22.88601
               },
               {
+                "Id": "37b2590e-2850-4e5c-93ba-ad5ee4cd9153",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15539,6 +14501,7 @@
                 "BoundingRadius": 22.144346
               },
               {
+                "Id": "2a8c2b77-625e-4345-86b9-17054c4093bf",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15575,6 +14538,7 @@
                 "BoundingRadius": 21.285591
               },
               {
+                "Id": "8c0cf7ee-7bfc-446c-a948-06ac4af0c24b",
                 "Shape": "Box",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15611,6 +14575,7 @@
                 "BoundingRadius": 18.552807
               },
               {
+                "Id": "b3e8f025-1ec0-44e2-ae02-030e1eec55f0",
                 "Shape": "Text",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15647,6 +14612,7 @@
                 "BoundingRadius": 15.328206
               },
               {
+                "Id": "d7161eb8-4ed8-44aa-aec8-76ebf7244d53",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15747,14 +14713,6 @@
             },
             "Property": "MinQualityRadii",
             "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           },
           {
             "Target": {
@@ -15874,14 +14832,6 @@
               "Type": "Component",
               "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
             },
-            "Property": "ReceiveDecals",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
             "Property": "SdfShadowRadii",
             "Value": 10
           }
@@ -15926,6 +14876,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "403cb8f8-8e0a-454e-af00-15f29b785bfc",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15962,6 +14913,7 @@
                 "BoundingRadius": 47.03982
               },
               {
+                "Id": "f3e43ab1-01fb-4aa0-a551-a32a24afdb60",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -15998,6 +14950,7 @@
                 "BoundingRadius": 44.253036
               },
               {
+                "Id": "6d930a5d-ae46-4301-add2-06a5483f7ce5",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -16034,6 +14987,7 @@
                 "BoundingRadius": 32.506046
               },
               {
+                "Id": "4eececc6-6112-4060-b542-2887ae5c9b4e",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -16070,6 +15024,7 @@
                 "BoundingRadius": 31.927303
               },
               {
+                "Id": "93b511e7-aeaa-4b38-8207-22f188c81a4c",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -16106,6 +15061,7 @@
                 "BoundingRadius": 8.404473
               },
               {
+                "Id": "5eba8665-59db-43cf-8b21-df73a9775cfd",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -16142,6 +15098,7 @@
                 "BoundingRadius": 10.938865
               },
               {
+                "Id": "21ab5eb5-72e0-432b-a45f-f5ba4a42693f",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16178,6 +15135,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "31bc3390-33a4-46ce-abc9-cb3e9956dfc3",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16214,6 +15172,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "8728eeb6-e92e-4d0d-aafe-c6ac7d4a88f5",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16250,6 +15209,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "45a07870-0d7b-4795-9d5f-c2a48df56d2f",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16286,6 +15246,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "b32aa8cc-d58b-4440-af2b-2d5bc61e3b42",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16322,6 +15283,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "28ffe3d6-eba4-4f3c-a2ee-1733b5a78be4",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16358,6 +15320,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "15f4025e-09c0-46a0-a4eb-8ad7fa55bd36",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16394,6 +15357,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "3e544095-60b4-4bfb-93f4-aebc863e7874",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16430,6 +15394,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "05a8de91-63dd-4fc8-99d2-55807d5eabf5",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16466,6 +15431,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "8c76e137-26d0-4aff-82ce-064cc920169b",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16502,6 +15468,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "4716b3e5-b10f-453d-8570-1009985f0dad",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16538,6 +15505,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "2759de3e-06f0-4d35-a437-dbb9b23373f7",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16574,6 +15542,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "c2a2e3d9-feb4-4341-a4d8-b5dd2c7b9771",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16610,6 +15579,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "2fe094ea-6a1a-4fc4-96fc-e59d4b44cdb8",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16646,6 +15616,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "3478463b-e32b-4394-860c-4eaa0697e741",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16682,6 +15653,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "98b7bc03-2fb0-4211-9cdd-493f60a39f99",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16718,14 +15690,6 @@
                 "BoundingRadius": 5.605928
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           },
           {
             "Target": {
@@ -17396,14 +16360,6 @@
             },
             "Property": "AdaptiveQuality",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -17470,14 +16426,6 @@
             },
             "Property": "AdaptiveQuality",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -17528,14 +16476,6 @@
             },
             "Property": "FieldResolution",
             "Value": 256
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6625adfb-86e2-4bac-8d28-54381d2f524c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -17578,6 +16518,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "7bbc6951-a09a-4dc7-9074-b3ebef926c4f",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17614,6 +16555,7 @@
                 "BoundingRadius": 30.14873
               },
               {
+                "Id": "3866a593-312e-4bfe-90ff-9d010006da5c",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17650,6 +16592,7 @@
                 "BoundingRadius": 26.57558
               },
               {
+                "Id": "b27754de-f998-48e4-864f-b733600af419",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17686,6 +16629,7 @@
                 "BoundingRadius": 40.383232
               },
               {
+                "Id": "de1f77d9-1d59-4b8d-afb4-06eed1ff7f4c",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17727,6 +16671,7 @@
                 "BoundingRadius": 4.4544125
               },
               {
+                "Id": "a5bae1d3-91fe-4baa-94ca-15c89a5f66eb",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17763,6 +16708,7 @@
                 "BoundingRadius": 33.022697
               },
               {
+                "Id": "6e38f18b-fac9-4783-b865-1f052d16c481",
                 "Shape": "Extruded",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17799,6 +16745,7 @@
                 "BoundingRadius": 23.5592
               },
               {
+                "Id": "a26c1480-cc58-4872-836d-795de426c3fd",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17835,6 +16782,7 @@
                 "BoundingRadius": 44.153976
               },
               {
+                "Id": "3e1d31b9-426e-469a-bee3-4668a5219090",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17871,6 +16819,7 @@
                 "BoundingRadius": 28.63514
               },
               {
+                "Id": "8720a902-895c-49d3-95bc-dd7847b80731",
                 "Shape": "Extruded",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17907,6 +16856,7 @@
                 "BoundingRadius": 23.2142
               },
               {
+                "Id": "f10f1b06-d17c-42ae-a56c-38dea8967803",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17943,14 +16893,6 @@
                 "BoundingRadius": 2.7031977
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2923add1-725a-4f3f-95d6-239b3ad19cb3"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -17994,6 +16936,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "22268e32-c8ae-4058-89dc-e44a7f8026cf",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18035,6 +16978,7 @@
                 "BoundingRadius": 4.269412
               },
               {
+                "Id": "0d86d49a-d8d7-4644-8057-8f7e3ec1b279",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18071,6 +17015,7 @@
                 "BoundingRadius": 8.556417
               },
               {
+                "Id": "f49a6ddd-03a2-483b-a4e9-8ec71c97f74f",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18107,6 +17052,7 @@
                 "BoundingRadius": 16.065987
               },
               {
+                "Id": "5071591c-9e45-4c4e-9bae-bb1b544018af",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18143,6 +17089,7 @@
                 "BoundingRadius": 19.195326
               },
               {
+                "Id": "731b378c-0d89-46c7-b450-4c247dbd9059",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18179,6 +17126,7 @@
                 "BoundingRadius": 29.961851
               },
               {
+                "Id": "37ac8e6b-7524-48bc-8319-06e78f7e209a",
                 "Shape": "Extruded",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18215,6 +17163,7 @@
                 "BoundingRadius": 23.5592
               },
               {
+                "Id": "0e0002a9-82e6-440a-be6e-d855c4b95414",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18251,6 +17200,7 @@
                 "BoundingRadius": 39.812897
               },
               {
+                "Id": "34215c29-0be4-4240-8e86-5c935f034074",
                 "Shape": "Extruded",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18287,6 +17237,7 @@
                 "BoundingRadius": 17.780321
               },
               {
+                "Id": "d9099266-ad18-4b9c-b55f-eb723b294e6a",
                 "Shape": "Cone",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18323,6 +17274,7 @@
                 "BoundingRadius": 28.586206
               },
               {
+                "Id": "74690051-e30d-477d-80aa-c76966e1674e",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18359,14 +17311,6 @@
                 "BoundingRadius": 22.752634
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "236b344a-3664-4091-be79-94f64dd145df"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -18418,6 +17362,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "9a65d980-3d5a-4203-bddc-9b47bf223f06",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18454,6 +17399,7 @@
                 "BoundingRadius": 27.805975
               },
               {
+                "Id": "7fb757a2-ca94-400d-91e5-1e1537f304c9",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18490,6 +17436,7 @@
                 "BoundingRadius": 24.892406
               },
               {
+                "Id": "bb168ebb-6315-4e39-8693-007ca64998d3",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18526,6 +17473,7 @@
                 "BoundingRadius": 13.429608
               },
               {
+                "Id": "d67959da-98a7-4928-9222-81fe641b4c14",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18562,6 +17510,7 @@
                 "BoundingRadius": 38.35352
               },
               {
+                "Id": "0561f75a-2047-48c0-af22-56adbe26ff8f",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18598,6 +17547,7 @@
                 "BoundingRadius": 14.760869
               },
               {
+                "Id": "4178e34c-4f9c-4d9e-a46f-f100dd238f73",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18634,6 +17584,7 @@
                 "BoundingRadius": 6.8273907
               },
               {
+                "Id": "337a7610-94a2-4c04-a0e8-140406138b5e",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18670,6 +17621,7 @@
                 "BoundingRadius": 19.295387
               },
               {
+                "Id": "0a313271-95e4-486a-83c0-94d368e4565c",
                 "Shape": "Sphere",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18706,6 +17658,7 @@
                 "BoundingRadius": 8.245297
               },
               {
+                "Id": "6d1b9ed9-f85a-4032-a58f-ec95cc9ed463",
                 "Shape": "Cone",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18742,6 +17695,7 @@
                 "BoundingRadius": 19.071562
               },
               {
+                "Id": "62f38ffa-c5f6-4524-b125-18aa91420b8a",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18787,6 +17741,7 @@
                 "BoundingRadius": 12.625
               },
               {
+                "Id": "4c5abd38-efad-467f-aa47-1fb7b21d79d3",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -18823,14 +17778,6 @@
                 "BoundingRadius": 22.18174
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1722d7a6-f515-47fa-8cef-4efa147f0ce5"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19020,6 +17967,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "12197b83-7405-4dd3-84e1-8b0b06648e8a",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19056,6 +18004,7 @@
                 "BoundingRadius": 13.724603
               },
               {
+                "Id": "d718b22e-3078-4f30-812a-f2d7783ef34a",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19092,6 +18041,7 @@
                 "BoundingRadius": 8.267401
               },
               {
+                "Id": "3fbae6c6-3fa7-47a9-9b58-a287c3e8a9c0",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19128,6 +18078,7 @@
                 "BoundingRadius": 4.9211183
               },
               {
+                "Id": "2e4b7fa9-fb7c-49bf-b3b2-cd7ffbb4b4c7",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19188,14 +18139,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "650b2719-d4f4-4d80-ba94-59dd81331a97"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19253,14 +18196,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d75a7d42-caa8-4bd7-b3aa-ebd91c607709"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19294,14 +18229,6 @@
             },
             "Property": "Position",
             "Value": "153.794373,-1134.85608,-365.04541"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "208e5f1e-dc36-4d2a-adda-aaab62430af8"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19351,14 +18278,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19416,14 +18335,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19465,14 +18376,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f13ba4e2-bffb-484f-9691-8b83745e116a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19524,6 +18427,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "d44c6801-a229-4502-a995-ea9852d026c8",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19560,6 +18464,7 @@
                 "BoundingRadius": 33.028183
               },
               {
+                "Id": "22f03bcd-d11e-4ae3-b05c-609433bfed22",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19596,6 +18501,7 @@
                 "BoundingRadius": 16.10148
               },
               {
+                "Id": "b0f002bb-57be-4b62-b11a-83e0ce776464",
                 "Shape": "Cone",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -19632,6 +18538,7 @@
                 "BoundingRadius": 17.68039
               },
               {
+                "Id": "4d6beecc-a37e-4787-b117-41d7f1085335",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19668,6 +18575,7 @@
                 "BoundingRadius": 11.619232
               },
               {
+                "Id": "0d100f9f-2534-47ee-9d4f-d2749d2d7658",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19704,6 +18612,7 @@
                 "BoundingRadius": 15.129364
               },
               {
+                "Id": "3ed21857-0bba-48ef-83fa-77d8eb56ac7a",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19740,6 +18649,7 @@
                 "BoundingRadius": 5.7873297
               },
               {
+                "Id": "ee5f9316-714f-4ec9-8889-1082e6380273",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -19776,6 +18686,7 @@
                 "BoundingRadius": 15.370957
               },
               {
+                "Id": "eb2b8f8f-dd49-4b6e-a0e8-10135364be55",
                 "Shape": "Cylinder",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -19820,14 +18731,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f13ba4e2-bffb-484f-9691-8b83745e116a"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -19876,16 +18779,16 @@
               "Type": "Component",
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
-            "Property": "Model",
-            "Value": "sbox_procedural_model.vmdl"
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
+              "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
-            "Property": "ReceiveDecals",
-            "Value": true
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
           }
         ],
         "MovedObjects": []
@@ -19951,14 +18854,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f209ad5e-7447-4eca-ab11-f31736c30c88"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20016,14 +18911,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20057,14 +18944,6 @@
             },
             "Property": "Position",
             "Value": "-179.329224,-1250.5437,-383.452118"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a191ebf5-bf3e-43aa-947e-6fc6469caf74"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20123,14 +19002,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cc42d129-3e63-4238-9cbe-38cd581ddccd"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20180,14 +19051,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f209ad5e-7447-4eca-ab11-f31736c30c88"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20237,14 +19100,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20332,14 +19187,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,-0.964345634,-0.264646053"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1d957c60-f050-4e85-89cc-572156f637cc"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20390,14 +19237,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a21f5351-8c21-4334-b94d-783bffca524c"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -20440,6 +19279,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "66b7c784-6061-4f27-812e-293ea399ff69",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20476,6 +19316,7 @@
                 "BoundingRadius": 36.28689
               },
               {
+                "Id": "f54ea8ea-4840-4f1d-bfd9-498282919374",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20512,6 +19353,7 @@
                 "BoundingRadius": 35.801434
               },
               {
+                "Id": "f3dbfe43-c469-4539-85bb-f782ecbe62f8",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20548,6 +19390,7 @@
                 "BoundingRadius": 44.986504
               },
               {
+                "Id": "f4c5a4a8-a4ca-4491-b902-69a6f995b6d9",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20584,6 +19427,7 @@
                 "BoundingRadius": 40.77571
               },
               {
+                "Id": "a922775f-d121-4a2d-9ce4-1cc558eac049",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20620,6 +19464,7 @@
                 "BoundingRadius": 34.913055
               },
               {
+                "Id": "54fec8f3-81b4-40fd-a504-236bedf61650",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20656,6 +19501,7 @@
                 "BoundingRadius": 31.384806
               },
               {
+                "Id": "c6501ee6-d5cf-47bf-ab38-ad4c02e90657",
                 "Shape": "Box",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -20692,6 +19538,7 @@
                 "BoundingRadius": 27.4825
               },
               {
+                "Id": "978c6e41-29ab-418c-b92b-c44b7896abbc",
                 "Shape": "Box",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -20728,6 +19575,7 @@
                 "BoundingRadius": 8.336413
               },
               {
+                "Id": "2d7b7f90-df26-4202-b02d-2cc902cd7dfd",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20764,6 +19612,7 @@
                 "BoundingRadius": 30.797226
               },
               {
+                "Id": "abe58efd-588e-4eae-91b7-5cbc2593e5cb",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20800,6 +19649,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "bc09b559-da5d-432c-9f49-5ea999ceab4f",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20836,6 +19686,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "3fa152d6-9fbc-4898-8c8e-2b83ef39ff17",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20872,6 +19723,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "39161296-e119-4645-b2fc-a6e8405c7003",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20908,6 +19760,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "d8883d89-f3fb-429f-bc6a-4258a32d6d1a",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20944,6 +19797,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "dd91c620-cf86-4b13-97d0-cc3f1395fccd",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20980,6 +19834,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "553ba41c-d7d6-483c-bd55-28fff66ac3f2",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -21016,6 +19871,7 @@
                 "BoundingRadius": 2.7007859
               },
               {
+                "Id": "01980b84-ce25-4fde-bcb5-f9ccd319096a",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -21052,6 +19908,7 @@
                 "BoundingRadius": 5.873259
               },
               {
+                "Id": "7c5f48bc-9967-426b-bd1f-1b3aa6b6bc73",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -21088,6 +19945,7 @@
                 "BoundingRadius": 4.1241226
               },
               {
+                "Id": "b85202df-84c2-4dad-9e28-204268e2017d",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -21124,6 +19982,7 @@
                 "BoundingRadius": 22.814684
               },
               {
+                "Id": "9089d1d3-375b-4874-92bc-573a1bcf072f",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -21160,14 +20019,6 @@
                 "BoundingRadius": 4.1074
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0faf42a5-650a-4701-a4fd-507cd8222af7"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -21242,7 +20093,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "ac108b6b-ad8c-44c8-b17e-7c1f15017fe8",
+            "Id": "adc50643-5749-44f8-be75-900d96f24263",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -21306,14 +20157,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6a71afea-4d24-45c7-b96e-237af6fa8697"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -21371,14 +20214,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "74827999-5c7c-45b4-8a0d-748a8977f733"
-            },
-            "Property": "ReceiveDecals",
-            "Value": true
           }
         ],
         "MovedObjects": []

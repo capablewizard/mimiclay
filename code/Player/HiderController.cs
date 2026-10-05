@@ -307,13 +307,12 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	// the camera, so a freshly-spawned pawn can take over while this one stays as scenery.
 	bool _dormant;
 
-	/// <summary>Someone is sculpting this released prop IN PLACE (<see cref="PropClaims.Leases"/>): the sculptor's
-	/// connection OWNS it for the duration — that's how their edits publish through the pawn's SdfNetworkSync —
-	/// but it stays scenery. So on the sculptor's machine this copy reads !IsProxy without being dormant (it was a
-	/// proxy a moment ago; _dormant is machine-local), and every "I am this prop" path below must stand down the
-	/// same way dormancy does: no input, no camera, no voice, the settle-only physics. Registry-driven, so the
-	/// answer is the same on every machine.</summary>
-	bool Leased => PropClaims.IsLeased( this );
+	/// <summary>People are sculpting this released prop IN PLACE (<see cref="PropClaims.Editing"/>). It stays
+	/// host-owned scenery throughout — the editors send brush ops to the host, whose copy is the one that
+	/// changes — so this only matters on the HOST: a body being reshaped must stay awake to re-settle on each
+	/// commit's new collider, where plain scenery sleeps. Registry-driven, so the answer is the same on every
+	/// machine.</summary>
+	bool BeingEdited => PropClaims.IsBeingEdited( this );
 
 	/// <summary>Host-set BEFORE the NetworkSpawn (so it rides the spawn snapshot, never an ownership edge):
 	/// this pawn was minted as SCENERY — scene clay converted for an in-place sculpt lease (see
@@ -325,12 +324,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	bool _woken; // ResumeControl ran on this machine — BornScenery no longer gates
 
 	// Is this body SCENERY on this machine — driven by nobody here, whatever ownership says? The single gate
-	// for the control path (OnUpdate/OnFixedUpdate). Four reasons, each covering a window the others can't:
-	// _dormant (this machine released it), the released registry (any machine, once the row lands), a live
-	// lease (the sculptor's machine, which OWNS it without driving it), and born-scenery (a converted lease
-	// pawn's first frames, before either row lands). Without the registry terms a lease's ownership landing a
-	// frame before its row would run the owner path — input, camera and all — for that frame.
-	bool Scenery => _dormant || Leased || PropClaims.IsReleased( this ) || (BornScenery && !_woken);
+	// for the control path (OnUpdate/OnFixedUpdate). Three reasons, each covering a window the others can't:
+	// _dormant (this machine released it), the released registry (any machine, once the row lands), and
+	// born-scenery (a converted shared prop's first frames on the host, before the row lands). Ownership alone
+	// must never mean "I drive this".
+	bool Scenery => _dormant || PropClaims.IsReleased( this ) || (BornScenery && !_woken);
 
 	/// <summary>Hand this prop off, HOST-SIDE: mark it dormant so the host keeps simulating it as scenery (gravity +
 	/// ground-snap still settle it) without driving it with host input/camera, and finish any host-side sculpt.
@@ -598,16 +596,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		}
 
 		// Released into the level: no input, no camera — just let OnFixedUpdate keep the physics settling.
-		// A LEASED prop (someone sculpting it in place) is scenery on its sculptor's machine too — see Scenery.
 		if ( Scenery )
 		{
-			// The lease handed this copy to the sculptor's connection, so the engine Voice on it would open THEIR
-			// mic through the prop beside their real pawn's (the same hole ReleaseControl plugs on the host).
-			// Asserted per frame: the ownership lands after the registry row does. The lease ends with a
-			// DropOwnership (this copy goes proxy — never records), so nothing needs un-muting here.
-			if ( Leased && !IsProxy && !_dormant && Components.Get<PlayerVoice>() is { } leaseVoice && !leaseVoice.Muted )
-				leaseVoice.Muted = true;
-
 			// BOT props are dormant by construction (RoundBots.Prepare releases the controls), but they're still
 			// roster members the hunt is played against — so they whistle like any surviving prop. Without this
 			// a solo playtest's hunt was SILENT, which read as "taunts are broken". Host-side only (bot pawns
@@ -883,12 +873,11 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// explicitly (ResumeControl). Bots are dormant too and sleep the same way — they never move anyway.
 		if ( Scenery )
 		{
-			// Being sculpted in place (see Leased): this machine simulates it now — the sculptor's, which
-			// held a proxy copy until the lease's ownership landed, or the host's for its own lease. Kept LIVE
-			// like an editing prop (no scenery sleep): every commit rebuilds the collider and the body must
-			// re-settle onto the new shape, and a sleeping body wouldn't. Woken explicitly first — the host may
-			// have slept it as scenery, and a proxy copy is never simulated so it can arrive asleep.
-			if ( Leased )
+			// Being sculpted in place (see BeingEdited) — the host simulates it, and keeps it LIVE like an
+			// editing prop (no scenery sleep): every commit rebuilds the collider and the body must re-settle
+			// onto the new shape, and a sleeping body wouldn't. Woken explicitly first — it was asleep as
+			// scenery a moment ago.
+			if ( BeingEdited )
 			{
 				if ( Body.Sleeping )
 					Body.Sleeping = false;

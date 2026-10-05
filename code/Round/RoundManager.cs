@@ -1076,11 +1076,6 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		if ( bot.IsValid() )
 			return bot.RosterId;
 
-		// A prop being sculpted in place (PropClaims.Leases) is OWNED by its sculptor's connection — that's how
-		// their edits publish — but it is nobody's body: the sculptor's roster pawn is still their hunter.
-		if ( PropClaims.IsLeasedPawn( pawn ) )
-			return null;
-
 		var owner = pawn.Network.Owner?.Id;
 		if ( owner is not null )
 			return owner;

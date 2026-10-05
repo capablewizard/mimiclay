@@ -33,7 +33,7 @@ public enum GrabCursor
 [Title( "Sculpt Edit Session" )]
 [Category( "Mimiclay" )]
 [Icon( "construction" )]
-public sealed class SculptEditSession : Component
+public sealed partial class SculptEditSession : Component
 {
 	/// <summary>The sculpture being edited.</summary>
 	[Property] public SdfSculpture Target { get; set; }
@@ -157,8 +157,12 @@ public sealed class SculptEditSession : Component
 	/// move handles and spline point drags all snap to the origin-centred <see cref="GridStep"/> position
 	/// grid, and every rotate control (E-scrub, rotation rings, trackball) snaps to the
 	/// <see cref="SnapDeg"/> angle grid.</summary>
+	/// <para>In a first-person session Shift is ALSO the body's sprint key, so while a movement key is held
+	/// it means "run", not "snap" — a sprinting carry that snapped to the grid every frame read as violent
+	/// jitter. Stand still (or hold alt for cursor mode) and Shift snaps as everywhere else.</para>
 	public static bool SnapHeld =>
-		Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "shift" );
+		Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "shift" )
+		&& !(EditPointer.Locked && !EditPointer.CursorFree && Input.AnalogMove.LengthSquared > 0.0001f);
 
 	/// <summary>The angle grid (degrees) every rotate control snaps to while Shift is held — half-steps
 	/// between the 45s: 0 / 22.5 / 45 / 67.5 / 90…</summary>
@@ -910,6 +914,8 @@ public sealed class SculptEditSession : Component
 		{
 			Current = this;
 			EditPointer.Locked = FirstPerson; // the crosshair is the pointer for a first-person session
+			if ( Shared )
+				BeginShared(); // publish our edits as brush ops + take locks as we select (see the Shared partial)
 			SetTool( StartTool ); // edit mode always OPENS on its starting tool (gizmo, normally) — never
 			                      // wherever a previous session happened to leave off (e.g. mid-placement)
 			EnsureHud(); // the edit system brings its own HUD — no scene setup needed (and works in any game mode)
@@ -942,6 +948,7 @@ public sealed class SculptEditSession : Component
 			// only when the shape it finds is the entry under the cursor. Dedup makes this a no-op — redo tail
 			// preserved — when nothing actually changed on the way out.
 			_undo.Record( Target, _preSel, CaptureSelection() );
+			EndShared(); // after the exit commit above, so that last change still publishes
 			_worldClamp.Dispose(); // scratch physics body + watch state die with the session
 			_gizmo.Hide();
 			HideGhosts();
@@ -972,6 +979,7 @@ public sealed class SculptEditSession : Component
 			CommitChanged(); // NotifyChanged guards Target.IsValid, so this is safe mid-teardown (saves the slot too)
 		UnhookPersistSlot();
 		_undo.Clear(); // teardown proper (unlike leaving edit mode) drops the history with the component
+		EndShared();
 		_worldClamp.Dispose();
 		_gizmo.Hide();
 		HideGhosts();
@@ -1571,7 +1579,7 @@ public sealed class SculptEditSession : Component
 
 		int insert = src[^1] + 1; // just above the topmost selected — still below the damage tail
 		for ( int k = 0; k < src.Count; k++ )
-			b.Insert( insert + k, b[src[k]].Copy() );
+			b.Insert( insert + k, b[src[k]].Fresh() );
 
 		// The copies become the selection (their block), the last one the primary — the single-brush case
 		// lands exactly where it always did (copy right above, selected).
@@ -1809,6 +1817,14 @@ public sealed class SculptEditSession : Component
 		if ( state is null || !Target.IsValid() )
 			return;
 
+		// A shared sculpt is other people's work too: restore only the brushes THIS session touched (by id),
+		// never the whole list — see the Shared partial.
+		if ( Shared )
+		{
+			ApplyUndoStateShared( state );
+			return;
+		}
+
 		var live = Target.Brushes;
 		int liveAuthored = Target.AuthoredBrushCount;
 
@@ -2045,7 +2061,40 @@ public sealed class SculptEditSession : Component
 		go.Components.Create<EditHud>();
 	}
 
+	/// <summary>The keyboard belongs to the BODY this frame: a first-person session with the crosshair as
+	/// pointer — W/A/S/D/Shift/Space are walking, strafing, sprinting and jumping, so the editor's A op toggle,
+	/// S/D/F/G scrubs, W move and Space add stand down (R and E stay). Holding alt flips it back: the view is
+	/// frozen, the host pawn stops moving, and every classic hotkey works as in an orbit session.</summary>
+	public bool BodyKeys => FirstPerson && !EditPointer.CursorFree;
+
+	/// <summary>A host drives this session's frame itself (<see cref="TickNow"/>) instead of the engine's
+	/// OnUpdate. The first-person host pawn does: every pick here traces from the camera, and component
+	/// update order is unordered — on frames where this session ran BEFORE the pawn moved the camera, the
+	/// ghost/hover/gizmo were placed from last frame's view, which reads as a one-frame stutter while looking
+	/// around. The pawn ticks the session right after it drives the camera, so the frame is always current.</summary>
+	public bool ExternallyTicked { get; set; }
+
+	/// <summary>Run this frame's edit update now — the host's call when <see cref="ExternallyTicked"/>.</summary>
+	public void TickNow()
+	{
+		Tick();
+
+		// Push-sync the target's raymarcher (the same rule HunterController.ComposePawn follows for the pawn's
+		// own clay): it photographs the brushes + world transform in ITS OWN OnUpdate, unordered against this
+		// tick, so a brush carried/dragged this frame could render from last frame's position whenever the
+		// renderer happened to update first — a one-frame trail that reads as jitter while walking. Refresh is
+		// hash-guarded: an unchanged shape costs a hash compare.
+		if ( IsEditing && FirstPerson && Raymarcher is { } rm && rm.IsValid() && rm.Active )
+			rm.Refresh();
+	}
+
 	protected override void OnUpdate()
+	{
+		if ( !ExternallyTicked )
+			Tick();
+	}
+
+	void Tick()
 	{
 		// Sample the selection modifiers here (component context — Input reads reliably) for the HUD's
 		// layer-row clicks, which run inside UI event dispatch where it doesn't.
@@ -2061,7 +2110,7 @@ public sealed class SculptEditSession : Component
 		// (press-edge clicks — see AltNav.TickLocked), and the stamp tool's scrubs shrink to R/E with ours.
 		if ( FirstPerson )
 			AltNav.TickLocked();
-		_stampTool.LockedKeys = FirstPerson;
+		_stampTool.LockedKeys = BodyKeys;
 
 		UpdateDofFocus(); // keep focus just behind the object as the camera orbits / blur is tuned
 
@@ -2081,7 +2130,7 @@ public sealed class SculptEditSession : Component
 		// Tutorial-gated with the op chip's section (EditHudGate) — the keyboard can never do what the
 		// hidden/locked chip can't; same rule for every gated key below.
 		// (First person: A is strafe and Space is jump — both keys stay the body's; the HUD has the controls.)
-		bool opKey = keysLive && !FirstPerson && EditHudGate.Interactive( HudSection.Sliders ) && Input.Keyboard.Down( "a" );
+		bool opKey = keysLive && !BodyKeys && EditHudGate.Interactive( HudSection.Sliders ) && Input.Keyboard.Down( "a" );
 		if ( opKey && !_opKeyWas )
 		{
 			if ( Tool == SculptTool.Sculpt )
@@ -2096,7 +2145,7 @@ public sealed class SculptEditSession : Component
 		// owns Space instead (it finishes the chain, like Enter) — toggling the tool here would silently
 		// drop the half-built chain. Held off during a drag or scrub so the tool can't switch out from
 		// under a live gesture. Manual edge detection like the keys below.
-		bool addKey = keysLive && !FirstPerson && EditHudGate.Interactive( HudSection.AddChip ) && Input.Keyboard.Down( "space" )
+		bool addKey = keysLive && !BodyKeys && EditHudGate.Interactive( HudSection.AddChip ) && Input.Keyboard.Down( "space" )
 			&& !IsScrubbing && !_gizmo.IsDragging
 			&& !(Tool == SculptTool.Sculpt && ActiveShape == SdfShape.Spline);
 		if ( addKey && !_addKeyWas )
@@ -2162,6 +2211,8 @@ public sealed class SculptEditSession : Component
 
 		// Keep the selection valid; -1 (nothing selected) is allowed and is the default — never force one.
 		PruneSelection();
+		if ( Shared )
+			UpdateSharedLocks(); // take/release brush locks with the selection; drop what someone else holds
 
 		var tx = Target.WorldTransform;
 
@@ -2195,6 +2246,12 @@ public sealed class SculptEditSession : Component
 		if ( multi )
 			SnapshotMultiProxy(); // before the gizmo AND the scrubs — ApplyMultiDelta diffs against this
 
+		// First person: the held-LMB carry (the W move's stand-in — see UpdateFirstPersonGrab). BEFORE the
+		// gizmo draws, so its mesh is built around where the shape IS this frame — drawn after, it trailed
+		// the carried shape by a frame, which read as the gizmo jittering behind it.
+		if ( FirstPerson )
+			changed |= UpdateFirstPersonGrab( tx, multi ? _multiProxy : SelectedBrush );
+
 		if ( ShowGizmo && _gizmoBrush is not null && (gizmoTarget > 0f || _gizmoAlpha > 0.01f) )
 		{
 			// First person too: every handle follows the pick ray, which there is the aim — drag an arrow by
@@ -2215,16 +2272,15 @@ public sealed class SculptEditSession : Component
 		// both modes share one muscle memory (W move is edit-only — the stamp ghost already rides the
 		// cursor). Continuous changes preview; the key release runs the full commit.
 		// Gated on IsDragging, NOT IsBusy: merely HOVERING a gizmo handle (which covers most of the shape)
-		// must not eat the scrub keys — only an actual handle drag owns the mouse.
+		// must not eat the scrub keys — only an actual handle drag owns the mouse. First person excepts
+		// the centre screen-move drag: there the move rides the aim (not the mouse), so E/R can take the
+		// mouse mid-drag — look pauses, the shape holds, and it turns/scales where you're carrying it.
+		bool gizmoOwnsMouse = _gizmo.IsDragging && !(BodyKeys && _gizmo.IsScreenMoveDragging);
 		changed |= BrushScrub.Update( multi ? _multiProxy : SelectedBrush, tx, Scene.Camera,
-			allow: !overUi && !AltNav.NavModifierHeld && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsDragging,
+			allow: !overUi && !AltNav.NavModifierHeld && !AltNav.Dragging && !PauseMenu.IsOpen && !gizmoOwnsMouse,
 			out bool scrubEnded,
 			blendLocked: !multi && Sdf.BlendInert( Target.Brushes, SelectedBrush ),
-			allowMove: true, lockedKeys: FirstPerson );
-
-		// First person: the held-LMB carry (the W move's stand-in — see UpdateFirstPersonGrab).
-		if ( FirstPerson )
-			changed |= UpdateFirstPersonGrab( tx, multi ? _multiProxy : SelectedBrush );
+			allowMove: true, lockedKeys: BodyKeys );
 
 		// Multi-selection: the gizmo/scrubs moved the PROXY — fan its delta out to every selected brush
 		// before anything previews, commits or streams this frame's state.
@@ -2303,6 +2359,8 @@ public sealed class SculptEditSession : Component
 		int hover = (!overUi && !AltNav.NavModifierHeld && !AltNav.Dragging && !PauseMenu.IsOpen && !_gizmo.IsBusy && !IsScrubbing
 			&& EditHudGate.Interactive( HudSection.WorldSelect ))
 			? PickBrush( tx ) : -1;
+		if ( Shared && hover >= 0 && PropClaims.BrushLockedByOther( brushes[hover].Id ) )
+			hover = -1; // another editor holds it — not ours to hover or take
 		_worldHover = hover; // scene pick only — recorded BEFORE the layer-row fallback (see the field)
 
 		// Fall back to the brush the HUD's layer list is hovering, so mousing a row highlights its shape.

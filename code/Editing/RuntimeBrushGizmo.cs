@@ -48,6 +48,8 @@ public sealed class RuntimeBrushGizmo
 	string _active;
 	float _grabT, _grabHalf, _grabAngle, _accumAngle, _grabTwist;
 	Vector3 _grabWorldPos, _grabWorldRotAxis, _grabPoint, _grabSize;
+	float _grabCamDist;      // screen-move, first person: carry distance along the aim ray
+	Vector3 _grabCamOffset;  // …and the shape's world offset from that ray point at the grab
 	Rotation _grabWorldRot;
 
 	// Render resources (reused frame to frame).
@@ -67,6 +69,11 @@ public sealed class RuntimeBrushGizmo
 
 	/// <summary>True while a handle is actively being dragged.</summary>
 	public bool IsDragging => _active is not null;
+
+	/// <summary>The drag in progress is the centre screen-move square — the one handle a hold-key scrub may
+	/// run on top of in first person (the move follows the aim, the scrub takes the mouse while look is
+	/// paused, so "carry it there and turn it" is one gesture).</summary>
+	public bool IsScreenMoveDragging => _active == "screenMove";
 
 	/// <summary>True while the cursor is over a GRABBABLE handle (move/scale/rotate/trackball, spline
 	/// point/radius dots) with no drag running. The spline LINE is excluded — that hover is the add-point
@@ -117,28 +124,66 @@ public sealed class RuntimeBrushGizmo
 		if ( brush.Shape == SdfShape.Spline )
 			return SplineUpdate( tx, brush, scene ) | merged;
 
-		var center = tx.PointToWorld( brush.Position );
-		var rot = tx.Rotation * brush.Rotation;
-		float gs = style.GizmoScale;
-		float ringR = W( center, style.RotationRadius * gs );
-		float tIn = W( center, (style.TranslationMin + style.TranslationOffset) * gs );
-		float tOut = W( center, (style.TranslationMax + style.TranslationOffset) * gs );
-		float dotReach = W( center, (style.TranslationMax + style.TranslationOffset + style.ScaleDotOffset) * gs );
-		float dotR = W( center, style.DotRadius * gs );
-
-		var axes = new Vector3[3];
-		for ( int i = 0; i < 3; i++ )
-			axes[i] = (rot * LocalAxis[i]).Normal;
-
 		// PASS 1 — nearest hovered handle (skipped while the camera owns the mouse).
 		_hover = null;
 		_hoverDepth = float.MaxValue;
 		_hoverPriority = int.MinValue;
 		if ( _interactive )
-			ResolveHover( center, axes, ringR, tIn, tOut, dotReach, dotR );
+		{
+			Frame( tx, brush, out var c0, out _, out var axes0, out var ringR0, out var tIn0, out var tOut0, out var dotReach0, out var dotR0 );
+			ResolveHover( c0, axes0, ringR0, tIn0, tOut0, dotReach0, dotR0 );
+		}
 
-		// PASS 2 — emit geometry + run the active drag. The trackball disc goes FIRST: the overlay shader
-		// has no depth test, so mesh order is draw order — everything else paints over it.
+		// PASS 2 — emit geometry + run the active drag.
+		bool changed = EmitAndDrag( tx, brush );
+
+		// A drag MOVED the brush this frame: the geometry above was built around where the shape WAS when
+		// the pass began (each handle draws, then drags). Redraw around where it IS now, with every input
+		// edge off so nothing acts twice — otherwise the gizmo renders one frame behind the shape it sits
+		// on, which under a first-person walk (the shape carried by the camera every frame) reads as the
+		// gizmo lagging and shaking behind it.
+		if ( changed )
+		{
+			var (p, d, p2) = (_pressed, _down, _pressed2);
+			_pressed = false;
+			_down = false;
+			_pressed2 = false;
+			EmitAndDrag( tx, brush );
+			_pressed = p;
+			_down = d;
+			_pressed2 = p2;
+		}
+
+		UploadMesh( scene, DrawHash( brush ) );
+		return changed;
+	}
+
+	// This frame's gizmo frame for a solid brush: centre, orientation, axes and every screen-scaled reach.
+	void Frame( Transform tx, SdfBrush brush, out Vector3 center, out Rotation rot, out Vector3[] axes,
+		out float ringR, out float tIn, out float tOut, out float dotReach, out float dotR )
+	{
+		center = tx.PointToWorld( brush.Position );
+		rot = tx.Rotation * brush.Rotation;
+		float gs = _style.GizmoScale;
+		ringR = W( center, _style.RotationRadius * gs );
+		tIn = W( center, (_style.TranslationMin + _style.TranslationOffset) * gs );
+		tOut = W( center, (_style.TranslationMax + _style.TranslationOffset) * gs );
+		dotReach = W( center, (_style.TranslationMax + _style.TranslationOffset + _style.ScaleDotOffset) * gs );
+		dotR = W( center, _style.DotRadius * gs );
+
+		axes = new Vector3[3];
+		for ( int i = 0; i < 3; i++ )
+			axes[i] = (rot * LocalAxis[i]).Normal;
+	}
+
+	// Emit every handle's geometry and run whichever one is being dragged. The trackball disc goes FIRST:
+	// the overlay shader has no depth test, so mesh order is draw order — everything else paints over it.
+	// Returns true when a drag changed the brush.
+	bool EmitAndDrag( Transform tx, SdfBrush brush )
+	{
+		Frame( tx, brush, out var center, out _, out var axes, out var ringR, out var tIn, out var tOut, out var dotReach, out var dotR );
+		float gs = _style.GizmoScale;
+
 		BeginMesh();
 		bool changed = false;
 
@@ -156,7 +201,6 @@ public sealed class RuntimeBrushGizmo
 		if ( _style.ShowScreenMove ) changed |= ScreenMove( tx, brush, center, tOut );
 		if ( _style.ShowUniformScale ) changed |= UniformScale( brush, center, gs );
 
-		UploadMesh( scene, DrawHash( brush ) );
 		return changed;
 	}
 
@@ -877,13 +921,35 @@ public sealed class RuntimeBrushGizmo
 			_active = name;
 			_grabPoint = hit0;
 			_grabWorldPos = c;
+			// For the first-person carry below: how far along the aim ray the shape sits, and where it sits
+			// relative to that point — both constant for the drag.
+			_grabCamDist = MathF.Max( 4f, Vector3.Dot( c - _ray.Position, _ray.Forward ) );
+			_grabCamOffset = c - (_ray.Position + _ray.Forward * _grabCamDist);
 		}
 
-		if ( _active == name && _down && new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
+		if ( _active == name && _down )
 		{
+			Vector3 world;
+			if ( EditPointer.Locked && !EditPointer.CursorFree )
+			{
+				// First person: the depth is CAMERA-relative, not a world plane — the shape rides the aim ray
+				// at the distance it was grabbed at, so walking, strafing and looking all carry it along
+				// (the same feel as the LMB carry and the stamp). A world plane would leave it behind as you
+				// walk toward it.
+				world = _ray.Position + _ray.Forward * _grabCamDist + _grabCamOffset;
+			}
+			else if ( new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
+			{
+				world = _grabWorldPos + (hit - _grabPoint);
+			}
+			else
+			{
+				return false;
+			}
+
 			// Screen-move is a free move (camera-parallel plane, like stamp steering), so Shift snaps the
 			// ABSOLUTE sculpture-local position onto the shared grid — exactly what the stamp does.
-			var pos = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
+			var pos = tx.PointToLocal( world );
 			if ( SculptEditSession.SnapHeld )
 				pos = SculptEditSession.SnapPosition( pos );
 			brush.Position = pos;

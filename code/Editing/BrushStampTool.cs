@@ -52,6 +52,11 @@ public sealed class BrushStampTool
 	// intersects the ray with the camera-parallel plane through this point; the scroll wheel pushes/pulls
 	// the point along the view ray (or the held constraint axis).
 	Vector3 _anchor;
+
+	// First-person carry (locked pointer): how far along the aim ray the ghost rides, and whether that
+	// distance has been seeded from the anchor since the carry began. See UpdatePlacement.
+	float _carryDist;
+	bool _carrySeeded;
 	bool _seeded;
 
 	// Camera-motion / gesture-end cursor resync. RULE: moving the camera must NEVER move the stamp, and no
@@ -368,13 +373,27 @@ public sealed class BrushStampTool
 
 		// Any camera motion (alt orbit/pan, wheel zoom, follow-rig settle) suspends steering — the stamp
 		// must stay locked in place while the view moves, then the cursor re-syncs onto it (see fields).
-		bool camMoved = _camSeen &&
+		// Not with a locked pointer (first person, crosshair = pointer): there the camera moves EVERY frame
+		// you look or walk, and that motion IS the steering — the ghost must follow the aim ray, not freeze in
+		// the world and wait for a cursor resync that has no cursor to warp. (Alt frees the cursor and holds
+		// the view still, so the free-cursor path below behaves there as it always did.)
+		bool locked = EditPointer.Locked && !EditPointer.CursorFree;
+		bool camMoved = !locked && _camSeen &&
 			((cam.WorldPosition - _lastCamPos).LengthSquared > 1e-4f
 			|| (cam.WorldRotation.Forward - _lastCamRot.Forward).LengthSquared > 1e-8f
 			|| (cam.WorldRotation.Up - _lastCamRot.Up).LengthSquared > 1e-8f);
 		_lastCamPos = cam.WorldPosition;
 		_lastCamRot = cam.WorldRotation;
 		_camSeen = true;
+		if ( locked )
+		{
+			// No OS cursor to resync — any armed warp from a scrub that just ended is moot.
+			_resyncCursor = false;
+			_resyncArmed = false;
+			_warpPending = null;
+			_camLockBroken = false;
+			_camLockPx = null;
+		}
 
 		// Hold param scrubs (S blend / D round / F wildcard / E rotate / R scale) — placement freezes while one runs
 		// so the mouse motion drives the parameter, not the position. Ghost scrubs never commit (the stamp
@@ -586,23 +605,45 @@ public sealed class BrushStampTool
 			// pebble nudges finely and a boulder actually travels. The steered position recomputes from
 			// the moved anchor below, staying under the cursor by construction.
 			float wheel = Input.MouseWheel.y;
-			if ( wheel != 0f )
+			float camDist = (tx.PointToWorld( _stamp.Position ) - cam.WorldPosition).Length;
+
+			if ( EditPointer.Locked && !EditPointer.CursorFree )
 			{
-				float camDist = (tx.PointToWorld( _stamp.Position ) - cam.WorldPosition).Length;
-				_anchor += d * wheel * AcceleratedDepthStepFor( _stamp, camDist );
+				// First person: the ghost is CARRIED — held at a fixed distance along the aim ray, like a
+				// physgun prop — so walking, strafing and looking all move it with you; the wheel sets how far
+				// out it rides. Seeded from wherever the ghost sat when the carry began, so switching in from
+				// the free-cursor path (alt released) doesn't jump it. (Local units — unit scale, like every
+				// pick here.)
+				if ( !_carrySeeded )
+				{
+					_carryDist = MathF.Max( 8f, Vector3.Dot( _anchor - o, d ) );
+					_carrySeeded = true;
+				}
+				if ( wheel != 0f )
+					_carryDist = MathF.Max( 8f, _carryDist + wheel * AcceleratedDepthStepFor( _stamp, camDist ) );
+
+				pos = o + d * _carryDist;
+				_anchor = pos; // keep the world anchor current, so dropping back to the cursor path starts here
 			}
+			else
+			{
+				_carrySeeded = false; // the next carry re-seeds from the anchor
 
-			// Steer by intersecting the cursor ray with the camera-parallel plane through the anchor.
-			// The depth lives on the WORLD-space anchor, not at a camera distance — so zooming or
-			// orbiting the camera never drags the ghost along; only steering moves it.
-			float denom = Vector3.Dot( d, fwd );
-			float t = denom > 1e-4f ? Vector3.Dot( _anchor - o, fwd ) / denom : -1f;
-			pos = t >= 8f ? o + d * t : _anchor; // degenerate / camera zoomed past the plane: hold position
+				if ( wheel != 0f )
+					_anchor += d * wheel * AcceleratedDepthStepFor( _stamp, camDist );
 
-			// Depth MEMORY keeps the raw steered value: the anchor may sit behind geometry, but only as a
-			// remembered depth — the PRESENTED position below is always capped to the near side, so the
-			// stored depth comes back the moment the view ray clears the obstacle.
-			_anchor = pos;
+				// Steer by intersecting the cursor ray with the camera-parallel plane through the anchor.
+				// The depth lives on the WORLD-space anchor, not at a camera distance — so zooming or
+				// orbiting the camera never drags the ghost along; only steering moves it.
+				float denom = Vector3.Dot( d, fwd );
+				float t = denom > 1e-4f ? Vector3.Dot( _anchor - o, fwd ) / denom : -1f;
+				pos = t >= 8f ? o + d * t : _anchor; // degenerate / camera zoomed past the plane: hold position
+
+				// Depth MEMORY keeps the raw steered value: the anchor may sit behind geometry, but only as a
+				// remembered depth — the PRESENTED position below is always capped to the near side, so the
+				// stored depth comes back the moment the view ray clears the obstacle.
+				_anchor = pos;
+			}
 
 			// The PRESENTED position must never sit BEHIND world geometry the view passes through
 			// (scrolled past the floor, or a stale anchor from an earlier ghost): sweep a sphere of the
@@ -646,7 +687,7 @@ public sealed class BrushStampTool
 	SdfBrush NewStamp()
 	{
 		// Copy the last committed stamp so consecutive stamps match; first ghost of a session gets defaults.
-		var b = _template is not null ? _template.Copy() : new SdfBrush
+		var b = _template is not null ? _template.Fresh() : new SdfBrush
 		{
 			Size = SpawnSize( Shape ),
 			Blend = 2f, // a third of SdfBrush's own default — stamps want a much tighter seam

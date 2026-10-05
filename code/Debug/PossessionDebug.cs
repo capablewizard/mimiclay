@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Mimiclay;
@@ -75,7 +76,7 @@ internal static class PossessionDebug
 		}
 
 		var target = Game.ActiveScene.GetAllComponents<SdfSculpture>()
-			.Where( PropClaims.IsClaimable )
+			.Where( PropClaims.IsSculptable )
 			.OrderBy( s => s.WorldPosition.Distance( hunter.WorldPosition ) )
 			.FirstOrDefault();
 		if ( !target.IsValid() )
@@ -87,7 +88,68 @@ internal static class PossessionDebug
 		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		var root = hider.IsValid() ? hider.GameObject : target.GameObject;
 		Log.Info( $"mimi_dbg_lease: sculpting '{root.Name}' in place ({target.WorldPosition.Distance( hunter.WorldPosition ):0}u away)" );
-		hunter.RequestSculptLease( root );
+		hunter.RequestSculptEdit( root );
+	}
+
+	/// <summary>Host test of the shared-edit op path without a second keyboard: as the FIRST CLIENT, join the
+	/// nearest editable prop (the one the host is editing, if any) and apply one op — the first authored brush
+	/// nudged +8 on z — exactly as if that client's session had committed it. Exercises the editing registry,
+	/// the lock check, the bounds gate, the host apply and the publish to every machine.</summary>
+	[ConCmd( "mimi_dbg_remoteop" )]
+	static void RemoteOp()
+	{
+		var claims = PropClaims.Current;
+		var client = FirstClient;
+		if ( !claims.IsValid() || client is null )
+		{
+			Log.Warning( "mimi_dbg_remoteop: needs a claim service and a connected client." );
+			return;
+		}
+
+		// The prop: whatever the host is editing, else the nearest claimable pawn prop to the client's hunter.
+		HiderController prop = null;
+		if ( SculptEditSession.Current is { IsEditing: true, Shared: true } s && s.Target.IsValid() )
+			prop = s.Target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		if ( !prop.IsValid() )
+		{
+			var hunter = Game.ActiveScene.GetAllComponents<HunterController>()
+				.FirstOrDefault( h => h.Network.Owner?.Id == client.Id );
+			prop = Game.ActiveScene.GetAllComponents<HiderController>()
+				.Where( h => PropClaims.IsReleased( h ) )
+				.OrderBy( h => hunter.IsValid() ? h.WorldPosition.Distance( hunter.WorldPosition ) : 0f )
+				.FirstOrDefault();
+		}
+		if ( !prop.IsValid() || prop.DisguiseSculpture is not { } sculpt || sculpt.Brushes is not { Count: > 0 } brushes )
+		{
+			Log.Warning( "mimi_dbg_remoteop: no released prop to edit." );
+			return;
+		}
+
+		claims.EditFor( client, prop.GameObject, ignoreReach: true ); // a test op from across the room is fine
+		if ( !PropClaims.IsEditedBy( prop, client.Id ) )
+		{
+			Log.Warning( $"mimi_dbg_remoteop: {client.DisplayName} couldn't join '{prop.GameObject.Name}' (not a hunter in reach?)." );
+			return;
+		}
+
+		var nudged = brushes[0].Copy();
+		nudged.Position += Vector3.Up * 8f;
+		var packed = SdfNetworkSync.Pack( SdfSculpture.SerializeBrushes( new List<SdfBrush> { nudged } ) );
+		Log.Info( $"mimi_dbg_remoteop: {client.DisplayName} nudges brush {nudged.Id} of '{prop.GameObject.Name}' to {nudged.Position}" );
+		claims.DebugApplyOps( client, prop.GameObject, packed, commit: true );
+		Log.Info( $"mimi_dbg_remoteop: brush now at {sculpt.Brushes?.FirstOrDefault( b => b.Id == nudged.Id )?.Position} (host copy — a new list, so re-read), edited={PropClaims.IsBeingEdited( prop )} locks={claims.BrushLocks.Count}" );
+	}
+
+	/// <summary>The first client stops editing (the counterpart to <c>mimi_dbg_remoteop</c>'s join).</summary>
+	[ConCmd( "mimi_dbg_remoteend" )]
+	static void RemoteEnd()
+	{
+		var claims = PropClaims.Current;
+		var client = FirstClient;
+		if ( !claims.IsValid() || client is null )
+			return;
+		claims.EndEditFor( client, pop: true );
+		Log.Info( $"mimi_dbg_remoteend: {client.DisplayName} stopped editing (rows={claims.Editing.Count}, locks={claims.BrushLocks.Count})" );
 	}
 
 	/// <summary>Leave whatever sculpt session this machine is in (forced, no dialog) — the lease's exit path
@@ -120,7 +182,7 @@ internal static class PossessionDebug
 			var body = hider.Components.Get<Rigidbody>();
 			var disguise = hider.DisguiseSculpture;
 			var colliders = hider.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ).ToList();
-			Log.Info( $"[prop] {hider.GameObject.Name} released={released} possessed={possessed} leased={PropClaims.IsLeased( hider )} bornScenery={hider.BornScenery} pos={hider.WorldPosition} " +
+			Log.Info( $"[prop] {hider.GameObject.Name} released={released} possessed={possessed} edited={PropClaims.IsBeingEdited( hider )} bornScenery={hider.BornScenery} pos={hider.WorldPosition} " +
 				$"vel={(body.IsValid() ? body.Velocity : default)} motion={(body.IsValid() && body.MotionEnabled)} sleeping={(body.IsValid() && body.Sleeping)} " +
 				$"proxy={hider.IsProxy} owner={hider.GameObject.Network.Owner?.DisplayName ?? "none"} " +
 				$"brushes={disguise?.Brushes?.Count ?? -1} colliders={colliders.Count}({colliders.Count( c => c.Enabled )} on) " +
