@@ -873,15 +873,17 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// explicitly (ResumeControl). Bots are dormant too and sleep the same way — they never move anyway.
 		if ( Scenery )
 		{
-			// Being sculpted in place (see BeingEdited) — the host simulates it, and keeps it LIVE like an
-			// editing prop (no scenery sleep): every commit rebuilds the collider and the body must re-settle
-			// onto the new shape, and a sleeping body wouldn't. Woken explicitly first — it was asleep as
-			// scenery a moment ago.
+			// Being sculpted in place (see BeingEdited) — the host simulates it, PINNED: no gravity, no
+			// ground-snap, velocity re-zeroed every step, so it hangs exactly where the sculptors found it
+			// (a converted door knob stays on its door) for as long as anyone is on it. Motion stays enabled
+			// so the solver can still separate a genuine penetration within a tick. Normal scenery settling
+			// resumes the moment the last editor leaves.
 			if ( BeingEdited )
 			{
 				if ( Body.Sleeping )
 					Body.Sleeping = false;
-				UpdateMovement( controlled: false );
+				Body.Velocity = Vector3.Zero;
+				Body.AngularVelocity = Vector3.Zero;
 				return;
 			}
 

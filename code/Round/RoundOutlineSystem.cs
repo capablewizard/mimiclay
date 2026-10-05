@@ -105,6 +105,16 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	static readonly Color HoverColor = new( 1f, 0.65f, 0.15f );
 	const float HoverWidth = 5f;
 
+	// The prop the local player is sculpting IN PLACE (a first-person session): a steady blue so you can keep
+	// track of which prop you're on while you walk around it — the authored through-wall blue, brought into
+	// the open. Driven through the same override slots and restored the same way as the hover.
+	static readonly Color EditingColor = new( 0.3f, 0.65f, 1f );
+	const float EditingWidth = HoverWidth; // as bold as the hover — but NO inside fill (see Tint): you're judging the clay's colours
+
+	// What the local first-person session is editing right now (null = none).
+	static SdfSculpture EditingSculpture()
+		=> SculptEditSession.Current is { } s && s.IsValid() && s.IsEditing && s.FirstPerson ? s.Target : null;
+
 	// Outlines we hover-tinted, so moving off restores them exactly (null = authored look, no bookkeeping).
 	readonly List<SdfHighlightOutline> _hoverDriven = new();
 
@@ -143,11 +153,13 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	void ApplyClaims()
 	{
 		var hover = HoverSculpture();
-		PrepareHoverOutline( hover );
+		var editing = EditingSculpture();
+		PrepareHoverOutline( hover, editing );
 
 		foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
 		{
 			var hovered = false;
+			var editingIt = false;
 
 			// The tutorial character: visibility is his call (tutorial hover only, hidden while his guided
 			// session runs) and the LOOK is his own single-writer drive (see TutorialNpc) — never the claims
@@ -170,15 +182,18 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			{
 				var sculpture = outline.Components.Get<SdfSculpture>( FindMode.EverythingInSelf );
 				hovered = sculpture.IsValid() && sculpture == hover;
+				editingIt = sculpture.IsValid() && sculpture == editing;
 
 				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 				var own = hider.IsValid() && !hider.IsProxy && !PropClaims.IsReleased( hider )
 					&& !RoundManager.IsBotPawn( hider.GameObject );
-				outline.Hidden = !(hovered || own);
+				outline.Hidden = !(hovered || own || editingIt);
 			}
 
-			if ( hovered )
-				TintHover( outline );
+			if ( editingIt )
+				Tint( outline, EditingColor, EditingWidth, fill: false ); // the prop you're on outranks a hover (it's never hovered anyway)
+			else if ( hovered )
+				Tint( outline, HoverColor, HoverWidth );
 		}
 
 		ApplyClaimBoils( hover );
@@ -251,44 +266,62 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		}
 	}
 
-	void TintHover( SdfHighlightOutline outline )
+	// Not every scene prop's prefab carries an outline — only some of the saved exports do (bear yes,
+	// alarmclock no), and the prop-builder clay has none. Give a sculpture we want to drive one ON DEMAND,
+	// and destroy it again when we stop (see the restore loop) rather than leaving it: a runtime-created
+	// component on a scene object would otherwise bake into the open scene on an in-editor save. One per
+	// subtree, never a second beside an authored one — two live groups read each other's surfaces as occluders.
+	void EnsureOutline( SdfSculpture sculpture )
 	{
-		if ( _hoverDriven.Contains( outline ) )
+		if ( !sculpture.IsValid()
+			|| sculpture.Components.Get<SdfHighlightOutline>( FindMode.EverythingInSelfAndDescendants ).IsValid() )
 			return;
 
-		outline.ColorOverride = HoverColor;
-		outline.ObscuredColorOverride = HoverColor.WithAlpha( 0.35f );
-		outline.InsideColorOverride = HoverColor.WithAlpha( 0.08f );
-		outline.InsideObscuredColorOverride = HoverColor.WithAlpha( 0.08f );
-		outline.WidthOverride = HoverWidth;
-		_hoverDriven.Add( outline );
+		var made = sculpture.Components.Create<SdfHighlightOutline>();
+		made.IgnoreDepthOfField = true; // look comes from the overrides; this is the one flag they don't cover
+		_hoverSpawned.Add( made );
 	}
 
-	void PrepareHoverOutline( SdfSculpture hover )
-	{
-		// Not every scene prop's prefab carries an outline — only some of the saved exports do (bear yes,
-		// alarmclock no), and the prop-builder clay has none. Give the hovered sculpture one ON DEMAND, and
-		// destroy it again on unhover (below) rather than leaving it: a runtime-created component on a scene
-		// object would otherwise bake into the open scene on an in-editor save. One per subtree, never a
-		// second beside an authored one — two live groups read each other's surfaces as occluders.
-		if ( hover.IsValid()
-			&& !hover.Components.Get<SdfHighlightOutline>( FindMode.EverythingInSelfAndDescendants ).IsValid() )
-		{
-			var made = hover.Components.Create<SdfHighlightOutline>();
-			made.IgnoreDepthOfField = true; // look comes from the hover overrides; this is the one flag they don't cover
-			_hoverSpawned.Add( made );
-		}
+	// Charades and anything else that only tints the hover.
+	void TintHover( SdfHighlightOutline outline ) => Tint( outline, HoverColor, HoverWidth );
 
-		// Restore anything we tinted that's no longer the hover target (or died with its prop). Matched by the
-		// SCULPTURE sharing the outline's GameObject — outlines live beside their clay (the disguise child, a
-		// decoy's root) — so pawn and scene props resolve the same way. Outlines we created are destroyed
-		// instead of restored (their authored look IS nothing).
+	// Drive an outline's look through the override slots (hover orange / editing blue). Re-applied every frame
+	// it's wanted — cheap property writes — so a prop that goes from hovered to edited recolours at once.
+	// fill=false leaves the inside fully clear (alpha 0, not null — null would fall back to the authored
+	// inside tint) so the clay's own colours read true while you're painting them.
+	void Tint( SdfHighlightOutline outline, Color color, float width, bool fill = true )
+	{
+		outline.ColorOverride = color;
+		outline.ObscuredColorOverride = color.WithAlpha( 0.35f );
+		outline.InsideColorOverride = color.WithAlpha( fill ? 0.08f : 0f );
+		outline.InsideObscuredColorOverride = color.WithAlpha( fill ? 0.08f : 0f );
+		outline.WidthOverride = width;
+		if ( !_hoverDriven.Contains( outline ) )
+			_hoverDriven.Add( outline );
+	}
+
+	void PrepareHoverOutline( SdfSculpture hover ) => PrepareHoverOutline( hover, null );
+
+	// Make sure the hovered and the locally-edited sculptures have an outline to drive, and restore (or
+	// destroy) every outline we drove that is neither any more.
+	void PrepareHoverOutline( SdfSculpture hover, SdfSculpture editing )
+	{
+		EnsureOutline( editing );
+		EnsureOutline( hover );
+
+		// Restore anything we tinted that's no longer the hover target or the edited prop (or died with its
+		// prop). Matched by the SCULPTURE sharing the outline's GameObject — outlines live beside their clay
+		// (the disguise child, a decoy's root) — so pawn and scene props resolve the same way. Outlines we
+		// created are destroyed instead of restored (their authored look IS nothing).
 		for ( var i = _hoverDriven.Count - 1; i >= 0; i-- )
 		{
 			var o = _hoverDriven[i];
-			if ( o.IsValid() && hover.IsValid()
-				&& o.Components.Get<SdfSculpture>( FindMode.EverythingInSelf ) == hover )
-				continue;
+			if ( o.IsValid() )
+			{
+				var s = o.Components.Get<SdfSculpture>( FindMode.EverythingInSelf );
+				if ( s.IsValid() && (s == hover || s == editing) )
+					continue;
+			}
 
 			if ( o.IsValid() )
 			{

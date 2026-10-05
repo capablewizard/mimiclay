@@ -736,6 +736,11 @@ public sealed class HunterController : Component
 			// never re-hides it on exit, so assert it here every play frame — otherwise look can't capture the
 			// mouse after leaving edit mode. Sculpting in place, alt frees it for the HUD (see UpdateLease).
 			Mouse.Visibility = _leaseCursorFree ? MouseVisibility.Visible : MouseVisibility.Hidden;
+			if ( _leaseCursorFree && _cursorCentreFrames > 0 )
+			{
+				Mouse.Position = Screen.Size * 0.5f; // start on the crosshair (see UpdateLease)
+				_cursorCentreFrames--;
+			}
 
 			DriveCamera( eye );
 
@@ -2307,9 +2312,18 @@ public sealed class HunterController : Component
 		bool wantFree = Input.Down( "Walk" ) && !PauseMenu.IsOpen;
 		bool anyMouseDown = Input.Down( "Attack1" ) || Input.Down( "Attack2" ) || Input.Down( "CameraPan" );
 		if ( wantFree != _leaseCursorFree && !anyMouseDown )
+		{
 			_leaseCursorFree = wantFree;
+			// The cursor appears ON the crosshair — where the pointer just was — not wherever the hidden OS
+			// cursor happened to be parked. Mouse.Position writes land asynchronously, so assert for a
+			// couple of frames (see the play block).
+			if ( wantFree )
+				_cursorCentreFrames = 3;
+		}
 		EditPointer.CursorFree = _leaseCursorFree;
 	}
+
+	int _cursorCentreFrames; // frames left to park the freshly-shown cursor at the screen centre
 
 	void BeginLeaseEdit( HiderController prop )
 	{
