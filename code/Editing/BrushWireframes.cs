@@ -137,6 +137,12 @@ public sealed class BrushWireframes
 			hc.Add( b.Size );
 			hc.Add( b.Slice ); // slice moves the cut edge in the wire
 			hc.Add( b.EffectiveMirrorX ); hc.Add( b.EffectiveMirrorY ); hc.Add( b.EffectiveMirrorZ );
+			if ( b.Shape == SdfShape.Group ) // members follow the transform (hashed above) + kind/variant
+			{
+				hc.Add( b.GroupKind );
+				hc.Add( b.GroupVariant );
+				hc.Add( SdfGroups.Version );
+			}
 			if ( b.Points is { } pts )
 			{
 				hc.Add( pts.Count );
@@ -182,15 +188,35 @@ public sealed class BrushWireframes
 			}
 			_col = baseCol.WithAlpha( stateAlpha * masterAlpha );
 
-			// One copy per mirror-sign combination (identity + reflection across each enabled plane).
-			int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
-			for ( int sx = 0; sx <= nx; sx++ )
-			for ( int sy = 0; sy <= ny; sy++ )
-			for ( int sz = 0; sz <= nz; sz++ )
+			// A group wires as every member (own op colour each — a mouth shows its red void inside the lips),
+			// under the group row's selection state. Members carry the group's mirror flags themselves.
+			if ( b.Shape == SdfShape.Group )
 			{
-				_sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
-				Shape( b );
+				foreach ( var m in b.Members() )
+				{
+					if ( !m.Enabled )
+						continue;
+					_col = (IndexIn( warn, i ) ? warnColor : OpColor( m.Operation )).WithAlpha( stateAlpha * masterAlpha );
+					DrawMirrored( m );
+				}
+				continue;
 			}
+
+			DrawMirrored( b );
+		}
+	}
+
+	// One copy per mirror-sign combination (identity + reflection across each enabled plane).
+	void DrawMirrored( SdfBrush b )
+	{
+		_brush = b;
+		int nx = b.EffectiveMirrorX ? 1 : 0, ny = b.EffectiveMirrorY ? 1 : 0, nz = b.EffectiveMirrorZ ? 1 : 0;
+		for ( int sx = 0; sx <= nx; sx++ )
+		for ( int sy = 0; sy <= ny; sy++ )
+		for ( int sz = 0; sz <= nz; sz++ )
+		{
+			_sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
+			Shape( b );
 		}
 	}
 

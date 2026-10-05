@@ -440,6 +440,7 @@ public class SdfSculptureTool : EditorTool<SdfSculpture>
 			h.Add( (int)b.Shape );
 			h.Add( (int)b.CrossSection ); // extruded profile swap re-meshes
 			h.Add( b.Text ); h.Add( b.Font ); // text brushes re-bake their glyph field
+			h.Add( b.GroupKind ); h.Add( b.GroupVariant ); h.Add( SdfGroups.Version ); // group brushes re-expand
 			h.Add( (int)b.Operation );
 			h.Add( b.Position );
 			h.Add( b.Size );

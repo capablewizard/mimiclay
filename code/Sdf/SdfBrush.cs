@@ -16,6 +16,10 @@ public enum SdfShape
 	/// <summary>Extruded text: the brush's <see cref="SdfBrush.Text"/> string rendered to a baked 2D distance
 	/// field (see <see cref="SdfTextData"/>) and swept along local Z like the other extruded profiles.</summary>
 	Text,
+	/// <summary>A prefab-backed set of brushes placed as ONE brush (a mouth, a hat — see <see cref="SdfGroups"/>).
+	/// Position/Rotation/Size transform the whole set; <see cref="SdfBrush.GroupKind"/> names the prefab set.
+	/// Never reaches the shaders: every geometry consumer expands it to its <see cref="SdfBrush.Members"/>.</summary>
+	Group,
 }
 
 /// <summary>The 2D profile an <see cref="SdfShape.Extruded"/> brush sweeps along its local Z. Triangle keeps the
@@ -84,6 +88,48 @@ public class SdfBrush
 	/// by their embedded family name, same as UI styles — e.g. "Super Joyful" (the theme's display font,
 	/// the default), "Winky Sans", "Super Cartoon", or the engine's "Inter".</summary>
 	[Property, Group( "Text" )] public string Font { get; set; } = "Super Joyful";
+
+	/// <summary>For a <see cref="SdfShape.Group"/> brush: the <see cref="SdfGroupKind.Id"/> of the prefab set it
+	/// places (ignored by every other shape). Serialises/networks like any brush field; each machine loads the
+	/// prefabs locally and expands the members itself (<see cref="Members"/>).</summary>
+	[Property, Group( "Group" )] public string GroupKind { get; set; }
+
+	/// <summary>Authoring flag for brushes INSIDE a group prefab: this member wears the placed group's
+	/// colour/metal/rough instead of its own (a mouth's lips; the tongue and the void keep the prefab's).
+	/// Meaningless on a placed brush.</summary>
+	[Property, Group( "Group" )] public bool LinkColor { get; set; }
+
+	/// <summary>Authoring flag for brushes INSIDE a group prefab: this member's Blend is the placed group's
+	/// Blend slider (unlinked members keep the prefab's blend, scaled with the group).</summary>
+	[Property, Group( "Group" )] public bool LinkBlend { get; set; }
+
+	/// <summary>Which prefab variant a <see cref="SdfShape.Group"/> brush expands to on THIS machine right now
+	/// (<see cref="SdfGroupVariant"/>): a mouth shows its talking prefab while its player's mic is hot. Runtime
+	/// presentation state driven per machine from gameplay — a plain field so the JSON serializer skips it
+	/// (never saved, never networked, never undone); mixed into <see cref="HashInto"/> so the renderer repacks.</summary>
+	public int GroupVariant;
+
+	List<SdfBrush> _members;
+	int _membersKey;
+
+	/// <summary>The concrete brushes a <see cref="SdfShape.Group"/> brush stands for, in sculpture space — what
+	/// every geometry consumer (packer, CPU field, bounds, collision, wires) evaluates in its place. Cached per
+	/// brush and re-derived only when the group's own transform/material/variant changes
+	/// (<see cref="SdfGroups.Key"/>); the list is replaced, never mutated, so worker-thread snapshots that share
+	/// it (<see cref="Copy"/>) stay safe. Empty for every other shape and for an unknown kind.</summary>
+	public IReadOnlyList<SdfBrush> Members()
+	{
+		if ( Shape != SdfShape.Group )
+			return Array.Empty<SdfBrush>();
+
+		int key = SdfGroups.Key( this );
+		if ( _members is null || _membersKey != key )
+		{
+			_members = SdfGroups.Expand( this );
+			_membersKey = key;
+		}
+		return _members;
+	}
 
 	/// <summary>The baked distance field for <see cref="Text"/>/<see cref="Font"/> — set on the MAIN thread
 	/// by the pack/rebuild paths (via <see cref="SdfTextSdf.Get"/>) and only read elsewhere; worker-thread
@@ -182,6 +228,9 @@ public class SdfBrush
 	{
 		SdfShape.Cone => new Vector3( 0f, 0f, SlicedHalfZ ),          // frustum spans local z 0 .. 2·SlicedHalfZ
 		SdfShape.Sphere => new Vector3( 0f, 0f, SlicedHalfZ - Size.z ), // spans −Size.z .. 2·SlicedHalfZ − Size.z
+		// Group: the pivot is the prefab ORIGIN (where the author put it), the box sits at the prefab's
+		// bounds centre scaled by the group — Size is the scaled half-extents of that same box.
+		SdfShape.Group => SdfGroups.ReferenceCentre( GroupKind ) * SdfGroups.Scale( this ),
 		_ => Vector3.Zero,
 	};
 
@@ -299,6 +348,14 @@ public class SdfBrush
 		Text = Text,
 		Font = Font,
 		TextData = TextData, // immutable once baked — sharing the reference is thread-safe
+		GroupKind = GroupKind,
+		LinkColor = LinkColor,
+		LinkBlend = LinkBlend,
+		GroupVariant = GroupVariant,
+		// The expansion is immutable once built — share it, pre-built here on the calling (main) thread so a
+		// worker snapshot never has to load a prefab. Harmless no-op for every other shape.
+		_members = Shape == SdfShape.Group ? (List<SdfBrush>)Members() : null,
+		_membersKey = _membersKey,
 		Operation = Operation,
 		Enabled = Enabled,
 		Position = Position,
@@ -397,6 +454,19 @@ public class SdfBrush
 			if ( Operation == SdfOperation.Cutout && Gap > 0f )
 				Mix( F( Gap ) );
 
+			// A group IS its members: mix the kind, the per-machine variant (the renderer repacks when a mouth
+			// opens) and every expanded member's own hash — so re-authoring the group PREFAB changes the hash
+			// too (model cache, collider, icons all follow). Group-only, so no other brush's hash shifts.
+			if ( Shape == SdfShape.Group )
+			{
+				MixString( GroupKind );
+				Mix( GroupVariant );
+				var members = Members();
+				Mix( members.Count );
+				foreach ( var m in members )
+					m.HashInto( ref hh );
+			}
+
 			h = hh;
 		}
 	}
@@ -444,6 +514,9 @@ public class SdfBrush
 		Text = b.Text;
 		Font = b.Font;
 		TextData = b.TextData;
+		GroupKind = b.GroupKind;
+		LinkColor = b.LinkColor;
+		LinkBlend = b.LinkBlend;
 		Operation = b.Operation;
 		Enabled = b.Enabled;
 		Color = b.Color;
@@ -460,6 +533,18 @@ public class SdfBrush
 	/// any mirror-symmetry copies.</summary>
 	public float Distance( Vector3 p )
 	{
+		// A group's "primitive" is the nearest of its members' volumes (ops ignored — this is the picking /
+		// attribution measure; the field itself folds members in with their own ops, see Sdf.Sample). Members
+		// already carry the group's mirror flags, so no second mirror pass here.
+		if ( Shape == SdfShape.Group )
+		{
+			float gd = 1e9f;
+			foreach ( var m in Members() )
+				if ( m.Enabled )
+					gd = MathF.Min( gd, m.Distance( p ) );
+			return gd;
+		}
+
 		float d = PrimitiveDistance( p );
 
 		if ( !EffectiveMirrorX && !EffectiveMirrorY && !EffectiveMirrorZ )
@@ -1177,6 +1262,7 @@ public class SdfBrush
 			float r = Shape switch
 			{
 				SdfShape.Box => Size.Length,
+				SdfShape.Group => Size.Length + LocalCentre.Length, // box offset from the pivot (prefab origin)
 				SdfShape.Text => TextInkExtents().Length, // the ink rect, not the letterboxed quad
 				// Extruded: triangle spans Size.x/Size.y; star/hexagon are radius-Size.x discs (like the cylinder)
 				SdfShape.Extruded => CrossSection == SdfCrossSection.Triangle
@@ -1430,19 +1516,34 @@ public static class Sdf
 			if ( !b.Enabled )
 				continue; // hidden brush — skip (eye toggle)
 
-			float bd = b.Distance( p );
-			d = b.Operation switch
+			// A group folds in as its members, in prefab order, each with its own op (a mouth's void
+			// subtracts, its tongue adds) — exactly what the packer hands the shaders.
+			if ( b.Shape == SdfShape.Group )
 			{
-				SdfOperation.Add => SmoothUnion( d, bd, b.Blend ),
-				SdfOperation.Subtract => SmoothSubtract( d, bd, b.Blend ),
-				// Cutout: subtract a SHELL of the brush boundary (|bd| < Gap) — a slot where the brush
-				// surface crosses the clay, its lip rounded by Blend (Gap 0 + Blend 0 = pure recolour).
-				SdfOperation.Cutout => SmoothSubtract( d, MathF.Abs( bd ) - b.Gap, b.Blend ),
-				// Colour: paint only — the field is untouched.
-				_ => d,
-			};
+				foreach ( var m in b.Members() )
+					if ( m.Enabled )
+						SampleOne( m, p, ref d );
+				continue;
+			}
+
+			SampleOne( b, p, ref d );
 		}
 		return d;
+	}
+
+	static void SampleOne( SdfBrush b, Vector3 p, ref float d )
+	{
+		float bd = b.Distance( p );
+		d = b.Operation switch
+		{
+			SdfOperation.Add => SmoothUnion( d, bd, b.Blend ),
+			SdfOperation.Subtract => SmoothSubtract( d, bd, b.Blend ),
+			// Cutout: subtract a SHELL of the brush boundary (|bd| < Gap) — a slot where the brush
+			// surface crosses the clay, its lip rounded by Blend (Gap 0 + Blend 0 = pure recolour).
+			SdfOperation.Cutout => SmoothSubtract( d, MathF.Abs( bd ) - b.Gap, b.Blend ),
+			// Colour: paint only — the field is untouched.
+			_ => d,
+		};
 	}
 
 	/// <summary>Colour blended across smooth-union seams by the same factor as the geometry.</summary>
@@ -1472,6 +1573,22 @@ public static class Sdf
 			if ( !b.Enabled )
 				continue; // hidden brush — skip (eye toggle)
 
+			if ( b.Shape == SdfShape.Group ) // members in prefab order, each with its own op (see Sample)
+			{
+				foreach ( var m in b.Members() )
+					if ( m.Enabled )
+						SurfaceOne( m, p, ref d, ref col, ref metal, ref rough );
+				continue;
+			}
+
+			SurfaceOne( b, p, ref d, ref col, ref metal, ref rough );
+		}
+		return new SdfSurface { Color = col, Metallic = metal, Roughness = rough };
+	}
+
+	static void SurfaceOne( SdfBrush b, Vector3 p, ref float d, ref Color col, ref float metal, ref float rough )
+	{
+		{
 			float bd = b.Distance( p );
 			float k = b.Blend;
 
@@ -1483,7 +1600,7 @@ public static class Sdf
 				col = Color.Lerp( col, b.Color, hc );
 				metal = MathX.Lerp( metal, b.Metallic, hc );
 				rough = MathX.Lerp( rough, b.Roughness, hc );
-				continue;
+				return;
 			}
 
 			if ( b.Operation == SdfOperation.Cutout )
@@ -1504,7 +1621,7 @@ public static class Sdf
 				col = Color.Lerp( col, b.Color, hc );
 				metal = MathX.Lerp( metal, b.Metallic, hc );
 				rough = MathX.Lerp( rough, b.Roughness, hc );
-				continue;
+				return;
 			}
 
 			if ( b.Operation == SdfOperation.Subtract )
@@ -1523,7 +1640,7 @@ public static class Sdf
 					rough = MathX.Lerp( rough, b.Roughness, hs );
 					d = (d * (1f - hs) + (-bd) * hs) + k * hs * (1f - hs);
 				}
-				continue;
+				return;
 			}
 
 			if ( k <= 0f )
@@ -1539,7 +1656,6 @@ public static class Sdf
 				d = (bd * (1f - h) + d * h) - k * h * (1f - h);
 			}
 		}
-		return new SdfSurface { Color = col, Metallic = metal, Roughness = rough };
 	}
 
 	/// <summary>Surface normal via central-difference gradient of the field.</summary>
@@ -1562,11 +1678,31 @@ public static class Sdf
 		bool any = false;
 		Vector3 mn = default, mx = default;
 
-		foreach ( var b in brushes )
+		foreach ( var b0 in brushes )
 		{
-			if ( b == exclude || !b.Enabled || b.Operation != SdfOperation.Add )
+			if ( b0 == exclude || !b0.Enabled || b0.Operation != SdfOperation.Add )
 				continue;
 
+			// A group bounds as its ADD members (each carrying the group's mirror flags), not as its box —
+			// so a mouth's void and tongue don't inflate the head's bounds.
+			if ( b0.Shape == SdfShape.Group )
+			{
+				foreach ( var m in b0.Members() )
+					if ( m.Enabled && m.Operation == SdfOperation.Add )
+						Accumulate( m );
+				continue;
+			}
+
+			Accumulate( b0 );
+		}
+
+		if ( any )
+			bounds = new BBox( mn, mx );
+
+		return any;
+
+		void Accumulate( SdfBrush b )
+		{
 			b.LocalBounds( out var lo0, out var hi0 );
 
 			// Union the local AABB and a reflected copy across each enabled mirror plane. Reflecting an
@@ -1595,11 +1731,6 @@ public static class Sdf
 						any = true;
 					}
 		}
-
-		if ( any )
-			bounds = new BBox( mn, mx );
-
-		return any;
 	}
 
 	/// <summary>The per-brush fit primitives for camera framing (<see cref="SdfStage.Frame"/>): one
@@ -1616,11 +1747,24 @@ public static class Sdf
 		if ( brushes is null )
 			return;
 
-		foreach ( var b in brushes )
+		foreach ( var b0 in brushes )
 		{
-			if ( !b.Enabled || b.Operation != SdfOperation.Add )
+			if ( !b0.Enabled || b0.Operation != SdfOperation.Add )
 				continue;
 
+			if ( b0.Shape == SdfShape.Group ) // same member expansion as TryGetBounds
+			{
+				foreach ( var m in b0.Members() )
+					if ( m.Enabled && m.Operation == SdfOperation.Add )
+						Fit( m );
+				continue;
+			}
+
+			Fit( b0 );
+		}
+
+		void Fit( SdfBrush b )
+		{
 			b.LocalBounds( out var lo0, out var hi0 );
 
 			// A UNIFORM sphere is rotation-proof, so it can be fitted as the exact sphere it is. A non-uniform
@@ -1661,6 +1805,8 @@ public static class Sdf
 	public static bool BlendInert( List<SdfBrush> brushes, SdfBrush b )
 	{
 		if ( brushes is null || b is null || !b.Enabled || b.Operation != SdfOperation.Add )
+			return false;
+		if ( b.Shape == SdfShape.Group ) // its blend seams its own members against the rest — never inert
 			return false;
 		if ( b.EffectiveMirrorX || b.EffectiveMirrorY || b.EffectiveMirrorZ )
 			return false;

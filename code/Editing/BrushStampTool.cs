@@ -274,6 +274,12 @@ public sealed class BrushStampTool
 	/// size/rotation, keeping material/blend), so the toolbar feels instant.</summary>
 	public void SetShape( SdfShape shape )
 	{
+		if ( shape == SdfShape.Group ) // a group needs a kind — route through SetGroup (first kind by default)
+		{
+			SetGroup( GroupKind ?? SdfGroups.Kinds.FirstOrDefault()?.Id );
+			return;
+		}
+
 		bool wasSpline = Shape == SdfShape.Spline;
 		Shape = shape;
 
@@ -291,12 +297,60 @@ public sealed class BrushStampTool
 		// a fresh default. Orientation still resets, so the flat shapes (text/extruded) come up facing you.
 		var from = _stamp.Shape;
 		_stamp.Shape = shape;
+		_stamp.GroupKind = null;
 		_stamp.Size = ResizeForShape( _stamp.Size, from, shape );
 		_stamp.Rotation = SdfSculpture.SpawnRotation( shape );
 		_stamp.Rounding = Math.Clamp( _stamp.Rounding, SdfBrush.MinRounding, _stamp.MaxRounding() ); // caps differ per shape
 		_stamp.SplineClosed = false;
 		// A spline ghost carries its live points (chain + preview, rebuilt each frame); anything else has none.
 		_stamp.Points = shape == SdfShape.Spline ? new List<Vector4>() : null;
+	}
+
+	/// <summary>The group kind the stamp places while <see cref="Shape"/> is <see cref="SdfShape.Group"/>.</summary>
+	public string GroupKind { get; private set; }
+
+	/// <summary>Make the stamp a GROUP of the given kind (a mouth…). A live ghost is remoulded in place: the
+	/// prefab's own size and orientation, additive, wearing the prefab's linked material rather than the current
+	/// swatch (a mouth shouldn't arrive skin-coloured). Unknown kind = no-op.</summary>
+	public void SetGroup( string kind )
+	{
+		if ( SdfGroups.Find( kind ) is not { } k )
+			return;
+
+		bool wasSpline = Shape == SdfShape.Spline;
+		Shape = SdfShape.Group;
+		GroupKind = k.Id;
+		if ( wasSpline )
+		{
+			_chain.Clear();
+			_chainLoop = false;
+		}
+
+		if ( _stamp is null )
+			return;
+
+		bool sameKind = _stamp.Shape == SdfShape.Group && string.Equals( _stamp.GroupKind, k.Id, StringComparison.OrdinalIgnoreCase );
+		_stamp.Shape = SdfShape.Group;
+		_stamp.GroupKind = k.Id;
+		_stamp.Operation = SdfOperation.Add;
+		_stamp.Points = null;
+		_stamp.SplineClosed = false;
+		if ( !sameKind )
+			DressGroup( _stamp, k.Id );
+	}
+
+	// A fresh group brush's look: prefab size at scale 1, upright, and the prefab's linked material/blend.
+	static void DressGroup( SdfBrush b, string kind )
+	{
+		b.Size = SdfGroups.DefaultSize( kind );
+		b.Rotation = Rotation.Identity;
+		if ( SdfGroups.DefaultMaterial( kind ) is { } mat )
+		{
+			b.Color = mat.Color;
+			b.Metallic = mat.Metallic;
+			b.Roughness = mat.Roughness;
+			b.Blend = mat.Blend;
+		}
 	}
 
 	// Carry a brush's scale from one shape to another. Every solid reads Size as half-extents, so it
@@ -306,6 +360,9 @@ public sealed class BrushStampTool
 	{
 		if ( to == from )
 			return size;
+
+		if ( from == SdfShape.Group ) // a group's Size is a prefab's extents — meaningless on a primitive
+			return SpawnSize( to );
 
 		if ( to == SdfShape.Text )
 		{
@@ -362,10 +419,12 @@ public sealed class BrushStampTool
 			changed = true;
 		}
 
-		// The HUD's Add/Carve toggle drives the ghost's live operation (the carve previews in place).
-		if ( _stamp.Operation != Operation )
+		// The HUD's Add/Carve toggle drives the ghost's live operation (the carve previews in place). A group
+		// is always placed additively — its carvers live INSIDE it (a mouth's void); the toggle sits out.
+		var wantOp = _stamp.Shape == SdfShape.Group ? SdfOperation.Add : Operation;
+		if ( _stamp.Operation != wantOp )
 		{
-			_stamp.Operation = Operation;
+			_stamp.Operation = wantOp;
 			changed = true;
 		}
 
@@ -696,6 +755,20 @@ public sealed class BrushStampTool
 		// The scale carries across shapes here too: picking a new shape between stamps re-creates the ghost
 		// from the template, and losing the size there would undo the swap-keeps-scale rule above.
 		b.Shape = Shape;
+		b.GroupKind = Shape == SdfShape.Group ? GroupKind : null;
+		if ( Shape == SdfShape.Group )
+		{
+			// A group: the prefab's own size/orientation/material — unless the last stamp was this same kind,
+			// in which case the template already IS that (resized/recoloured by the user), so keep it.
+			bool sameKind = _template is { Shape: SdfShape.Group } && string.Equals( _template.GroupKind, GroupKind, StringComparison.OrdinalIgnoreCase );
+			if ( !sameKind )
+				DressGroup( b, GroupKind );
+			b.Operation = SdfOperation.Add;
+			b.SplineClosed = false;
+			b.Points = null;
+			b.Damage = false;
+			return b;
+		}
 		if ( _template is null )
 		{
 			b.Size = SpawnSize( Shape );

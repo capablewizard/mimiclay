@@ -726,6 +726,7 @@ public sealed class HunterController : Component
 		HideOwnBody();
 		UpdateHeadCollider();
 		UpdateBodyDeform();
+		UpdateMouth();
 		MatchBodyMaterialToFace();
 		UpdateFootsteps();
 		UpdateRunEffect();
@@ -1769,6 +1770,22 @@ public sealed class HunterController : Component
 	// animates healing craters. The renderer notices through its brush hash and re-dispatches the field, while
 	// Committed stays silent, so nothing republishes over the network or rebuilds a collider. Every machine runs
 	// this from its own read of the synced IsDucking, so proxies squash in step without a byte being sent.
+	/// <summary>Talking mouth: while this pawn's owner is speaking (voice), every group brush on the face
+	/// shows its TALKING prefab variant (a mouth opens); otherwise the idle one. Runs on EVERY machine from
+	/// the pawn's own PlayerVoice — <see cref="PlayerVoice.IsSpeaking"/> ticks for proxies and for our own
+	/// pawn alike — so nothing is networked and nothing is committed: the variant is a runtime field the
+	/// renderer re-hashes per frame (the same no-Rebuild rule as <see cref="UpdateBodyDeform"/>). Stands down
+	/// while a local session edits the face (the editor owns the look then; it also pins the idle variant).</summary>
+	void UpdateMouth()
+	{
+		if ( !Face.IsValid() || Face.Brushes is not { Count: > 0 } brushes )
+			return;
+
+		bool editing = _session.IsValid() && _session.IsEditing && _session.Target == Face;
+		bool talking = !editing && !Bot && Components.Get<PlayerVoice>() is { } voice && voice.IsSpeaking;
+		SdfGroups.SetVariant( brushes, talking ? SdfGroupVariant.Talking : SdfGroupVariant.Idle );
+	}
+
 	void UpdateBodyDeform()
 	{
 		if ( !_controller.IsValid() || !_bodySculpt.IsValid() )

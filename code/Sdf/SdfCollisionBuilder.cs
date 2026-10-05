@@ -120,6 +120,10 @@ public static class SdfCollisionBuilder
 		if ( brushes is null || brushes.Count == 0 )
 			return null;
 
+		// Groups collide as their members. Flattened at the entry (and identically in ComputeFootPoints) so
+		// CarvedCopy.BrushIndex lines up between the two for the same input list.
+		brushes = SdfGroups.Flatten( brushes );
+
 		_frame = framePoints;
 		try
 		{
@@ -326,6 +330,22 @@ public static class SdfCollisionBuilder
 		if ( b is null || !b.Enabled || b.Operation != SdfOperation.Add )
 			return false;
 
+		// A group sweeps as the union of its ADD members' shapes on the one body.
+		if ( b.Shape == SdfShape.Group )
+		{
+			bool anyMember = false;
+			foreach ( var m in b.Members() )
+				if ( m.Enabled && m.Operation == SdfOperation.Add )
+					anyMember |= AppendSweepShapes( m, body, inset, samples );
+			return anyMember;
+		}
+
+		return AppendSweepShapes( b, body, inset, samples );
+	}
+
+	// BuildSweepShapes for ONE plain brush, adding to whatever the body already holds (no ClearShapes).
+	static bool AppendSweepShapes( SdfBrush b, PhysicsBody body, float inset, List<Vector4> samples )
+	{
 		var pts = new List<Vector3>( 32 );
 		var sweep = new List<Vector4>( 64 );
 		if ( TooSmall( b, MinBrushExtent, pts, sweep ) )
@@ -1117,6 +1137,8 @@ public static class SdfCollisionBuilder
 		var pts = new List<Vector3>();
 		if ( brushes is null || brushes.Count == 0 )
 			return pts;
+
+		brushes = SdfGroups.Flatten( brushes ); // same expansion as Build — keeps CarvedCopy indices aligned
 
 		// Conjugation frame (identity when upright): q takes sculpture-local points INTO the down-aligned probe
 		// frame, qi brings probes back out; downLocal is where the round shapes' "bottom point" really is.

@@ -522,6 +522,7 @@
 			var isSphere = fb?.Shape == SdfShape.Sphere;
 			var isCone = fb?.Shape == SdfShape.Cone;
 			var isText = fb?.Shape == SdfShape.Text;
+			var isGroup = fb?.Shape == SdfShape.Group; // add-only, no roundness: just Blend (+ material elsewhere)
 			var xsVal = fb?.CrossSection ?? SdfCrossSection.Triangle;
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
@@ -529,9 +530,12 @@
 			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				@* Add/Carve/Cutout/Colour cycle for the active brush (ghost or selection) — same cycle the A key steps. *@
 				@{ var opNow = fb?.Operation ?? SdfOperation.Add; }
-				<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : opNow == SdfOperation.Colour ? "colour" : "")" @onclick=@ToggleActiveOperation>
-					<span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : opNow == SdfOperation.Colour ? "Colour" : "Add")</span>
-				</div>
+				@if ( !isGroup )
+				{
+					<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : opNow == SdfOperation.Colour ? "colour" : "")" @onclick=@ToggleActiveOperation>
+						<span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : opNow == SdfOperation.Colour ? "Colour" : "Add")</span>
+					</div>
+				}
 				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
@@ -558,7 +562,7 @@
 						</div>
 					</div>
 				}
-				else
+				else if ( !isGroup )
 				{
 					<ClaySlider Label="Round" Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
 						OnInput=@((float v) => SetRounding( v )) OnCommit=@CommitEdit />
@@ -629,6 +633,20 @@
 							<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
 							<span class="label">@entry.Label</span>
 						</div>
+					}
+					@* Group tiles (prefab-backed multi-brush shapes — a mouth) follow the primitives. Head sessions
+					   only for the head-only kinds; see SculptEditSession.GroupKinds / HotkeyGroup for the verb. *@
+					@if ( !EditHudGate.BasicShapesOnly )
+					{
+						foreach ( var kind in Session.GroupKinds )
+						{
+							var k = kind;
+							var groupActive = Brush?.Shape == SdfShape.Group && string.Equals( Brush.GroupKind, k.Id, StringComparison.OrdinalIgnoreCase );
+							<div class="paper-card shape-tile @(groupActive ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => Session.HotkeyGroup( k.Id ) ))>
+								<div class="shape-img" style="background-image: url( @SdfIcons.GroupImage( k.Id ) )"></div>
+								<span class="label">@k.Label</span>
+							</div>
+						}
 					}
 				</div>
 				@* (No Add/Carve chips — the A key toggles the op, and the 3D preview + red carve wireframe
@@ -1879,6 +1897,7 @@
 				hc.Add( br.Enabled );
 				hc.Add( br.Color );
 				hc.Add( br.MirrorX ); hc.Add( br.MirrorY ); hc.Add( br.MirrorZ );
+				hc.Add( br.GroupKind ); // group tile highlight / kind swap
 			}
 
 		hc.Add( _dragIndex );

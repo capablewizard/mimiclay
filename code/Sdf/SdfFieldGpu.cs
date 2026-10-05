@@ -505,6 +505,21 @@ public static class SdfBrushPacker
 			if ( !b.Enabled )
 				continue;
 
+			// A group packs as its members (each a plain brush, in prefab order) — the shaders never see the
+			// group itself. Members count toward the cap like any other brush.
+			if ( b.Shape == SdfShape.Group )
+			{
+				foreach ( var m in b.Members() )
+				{
+					if ( written >= maxBrushes )
+						break;
+					if ( !m.Enabled || (m.Shape == SdfShape.Spline && (m.Points?.Count ?? 0) == 0) )
+						continue;
+					PackOne( m );
+				}
+				continue;
+			}
+
 			// A spline with NO control points has nothing to evaluate — and the shaders' spline loop runs
 			// zero iterations, leaving an uninitialised distance that reads as "surface everywhere" (one
 			// frame of garbage field). Skip it entirely: an empty spline contributes nothing, which is what
@@ -513,6 +528,27 @@ public static class SdfBrushPacker
 			if ( b.Shape == SdfShape.Spline && (b.Points?.Count ?? 0) == 0 )
 				continue;
 
+			PackOne( b );
+		}
+
+		// Anything enabled left unpacked means the rendered shape has silently diverged from the authored one
+		// (authoring + network apply cap at MaxBrushes, so reaching this is a bug or a hand-edited asset) — say so.
+		for ( ; k < brushes.Count; k++ )
+		{
+			if ( !brushes[k].Enabled )
+				continue;
+			if ( _sinceTruncWarn > 5f )
+			{
+				_sinceTruncWarn = 0f;
+				Log.Warning( $"SdfBrushPacker: {brushes.Count} brushes exceed the {maxBrushes}-brush cap — extras are NOT rendered and the visible shape no longer matches the mesh/collision." );
+			}
+			break;
+		}
+
+		return written;
+
+		void PackOne( SdfBrush b )
+		{
 			var pos = tx.PointToWorld( b.Position );
 			var rot = tx.Rotation * b.Rotation;
 			int o = written * texelsPerBrush * 4;
@@ -579,22 +615,6 @@ public static class SdfBrushPacker
 			data[o + 27] = b.Slice; // planar slice fraction (sphere/cone), riding the AABB-max texel's free lane
 			written++;
 		}
-
-		// Anything enabled left unpacked means the rendered shape has silently diverged from the authored one
-		// (authoring + network apply cap at MaxBrushes, so reaching this is a bug or a hand-edited asset) — say so.
-		for ( ; k < brushes.Count; k++ )
-		{
-			if ( !brushes[k].Enabled )
-				continue;
-			if ( _sinceTruncWarn > 5f )
-			{
-				_sinceTruncWarn = 0f;
-				Log.Warning( $"SdfBrushPacker: {brushes.Count} brushes exceed the {maxBrushes}-brush cap — extras are NOT rendered and the visible shape no longer matches the mesh/collision." );
-			}
-			break;
-		}
-
-		return written;
 	}
 
 	internal static float SrgbToLinear( float c )

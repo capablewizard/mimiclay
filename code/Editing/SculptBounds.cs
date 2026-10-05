@@ -445,6 +445,15 @@ public sealed class SculptBounds : Component
 	// blend pad for the first additive brush, whose blend folds against empty space and bulges nothing.
 	void CollectSupportPoints( SdfBrush b, List<Vector4> dst, bool blendInert )
 	{
+		// A group's support is its ADD members' (each already carrying the group's mirror flags).
+		if ( b.Shape == SdfShape.Group )
+		{
+			foreach ( var m in b.Members() )
+				if ( m.Enabled && m.Operation == SdfOperation.Add )
+					CollectSupportPoints( m, dst, blendInert: false );
+			return;
+		}
+
 		float pad = blendInert ? 0f : b.Blend * 0.25f; // smooth-union bulge ≈ k/4 — same as SdfBrush.AabbExtents
 		Span<Vector3> signs = stackalloc Vector3[8];
 		int ns = MirrorSigns( b, signs );

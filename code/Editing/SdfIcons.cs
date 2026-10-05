@@ -16,8 +16,16 @@ public static class SdfIcons
 		SdfShape.Extruded => "details",         // filled triangle
 		SdfShape.Spline => "polyline",          // multi-point path
 		SdfShape.Text => "text_fields",         // "T" glyph
+		SdfShape.Group => "sentiment_satisfied", // a prefab set (mouths are the first); kinds can override via SdfGroupKind.Glyph
 		_ => "category",
 	};
+
+	/// <summary>Glyph for a specific group KIND (falls back to the generic group glyph).</summary>
+	public static string Group( string kind ) => SdfGroups.Find( kind )?.Glyph ?? Shape( SdfShape.Group );
+
+	/// <summary>Large tile image for a group kind. One generic "lips" tile for now — a per-kind image can slot
+	/// in here when a second kind arrives.</summary>
+	public static string GroupImage( string kind ) => "/ui/shapeicons/shape_group_large.png";
 
 	/// <summary>Glyph for an extruded brush's 2D profile (the cross-section picker chips under the sliders).</summary>
 	public static string CrossSection( SdfCrossSection xs ) => xs switch
@@ -38,6 +46,7 @@ public static class SdfIcons
 		SdfShape.Extruded => "/ui/shapeicons/shape_prism_large.png",
 		SdfShape.Text => "/ui/shapeicons/shape_text_large.png",
 		SdfShape.Spline => "/ui/shapeicons/shape_spline_large.png",
+		SdfShape.Group => "/ui/shapeicons/shape_group_large.png",
 		_ => "/ui/shapeicons/shape_sphere_large.png",
 	};
 
@@ -54,6 +63,7 @@ public static class SdfIcons
 		SdfShape.Extruded => "/ui/shapeicons/icon_prism_small.png",
 		SdfShape.Text => "/ui/shapeicons/icon_text_small.png",
 		SdfShape.Spline => "/ui/shapeicons/icon_spline_small.png",
+		SdfShape.Group => "/ui/shapeicons/icon_group_small.png",
 		_ => "/ui/shapeicons/icon_sphere_small.png",
 	};
 

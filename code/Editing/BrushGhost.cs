@@ -45,6 +45,8 @@ public sealed class BrushGhost
 		hash = HashCode.Combine( hash, (int)brush.CrossSection, brush.Slice ); // profile swap / slice drag rebuilds the ghost
 		hash = HashCode.Combine( hash, brush.Text, brush.Font );
 		hash = HashCode.Combine( hash, brush.TextData is not null ); // ink-rect ghost: rebuild when the bake lands
+		if ( brush.Shape == SdfShape.Group )
+			hash = HashCode.Combine( hash, brush.GroupKind, brush.GroupVariant, SdfGroups.Version );
 		if ( brush.Points is { } pts ) // spline: rebuild when the swept curve changes
 		{
 			hash = HashCode.Combine( hash, pts.Count, brush.Curvature, brush.SplineClosed );
@@ -72,9 +74,24 @@ public sealed class BrushGhost
 		_indices.Clear();
 		_bbMin = new Vector3( float.MaxValue );
 		_bbMax = new Vector3( float.MinValue );
-
-		_brush = brush;
 		_sculptTx = sculptTx;
+
+		// A group ghosts as the union of its members (carvers included — the hover should outline the whole
+		// thing, void and all). Each member carries the group's mirror flags.
+		if ( brush.Shape == SdfShape.Group )
+		{
+			foreach ( var m in brush.Members() )
+				if ( m.Enabled )
+					BuildOne( m, col );
+			return;
+		}
+
+		BuildOne( brush, col );
+	}
+
+	void BuildOne( SdfBrush brush, Color col )
+	{
+		_brush = brush;
 		_spline = brush.Shape == SdfShape.Spline;
 
 		var s = brush.Size * Pad;

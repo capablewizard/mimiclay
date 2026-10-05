@@ -343,6 +343,55 @@ public sealed partial class SculptEditSession : Component
 	/// <summary>Set the active stamp shape (HUD toolbar / number keys). The live ghost remoulds in place.</summary>
 	public void SetShape( SdfShape shape ) => _stampTool.SetShape( shape );
 
+	/// <summary>Make the stamp a group of this kind (a mouth…). See <see cref="BrushStampTool.SetGroup"/>.</summary>
+	public void SetGroup( string kind ) => _stampTool.SetGroup( kind );
+
+	/// <summary>The group kind a held group stamp places (null when the stamp is a primitive).</summary>
+	public string StampGroupKind => _stampTool.Shape == SdfShape.Group ? _stampTool.GroupKind : null;
+
+	/// <summary>The player's HEAD editor (hunter face / menu customiser) as opposed to a prop, gun or disguise
+	/// session — the one place head-only shapes (mouths) are offered. Keyed off the persist slot, the same
+	/// tell CreativeManager uses.</summary>
+	public bool IsHeadSession => PersistSlot == SculptLibrary.HeadSlot;
+
+	/// <summary>The group kinds this session's shape dock offers.</summary>
+	public IEnumerable<SdfGroupKind> GroupKinds => SdfGroups.KindsFor( IsHeadSession );
+
+	/// <summary>Group-tile verb (dock click / Slot8). Groups aren't convertible — they're a different kind
+	/// of thing from a primitive — so: stamp held → re-mould it into this group; a GROUP selected → swap its
+	/// kind in place (mouth style A → B, keeping the transform); anything else selected → drop the selection
+	/// and pick up a stamp of this group.</summary>
+	public void HotkeyGroup( string kind )
+	{
+		if ( SdfGroups.Find( kind ) is null )
+			return;
+
+		if ( Tool == SculptTool.Sculpt )
+		{
+			SetGroup( kind );
+			return;
+		}
+
+		if ( SelectedBrush is { Shape: SdfShape.Group } )
+		{
+			bool changed = false;
+			foreach ( var sel in SelectedBrushes )
+			{
+				if ( sel.Shape != SdfShape.Group || string.Equals( sel.GroupKind, kind, StringComparison.OrdinalIgnoreCase ) )
+					continue;
+				sel.GroupKind = kind;
+				sel.Size = SdfGroups.DefaultSize( kind );
+				changed = true;
+			}
+			if ( changed )
+				NotifyChanged();
+			return;
+		}
+
+		SetTool( SculptTool.Sculpt );
+		SetGroup( kind );
+	}
+
 	// Strip the pending ghost from the brush list. If one was actually removed the surface still shows it,
 	// so run the full commit (NotifyChanged's ghost guard passes — StampBrush is null once cancelled).
 	void CancelStamp()
@@ -921,6 +970,9 @@ public sealed partial class SculptEditSession : Component
 			EnsureHud(); // the edit system brings its own HUD — no scene setup needed (and works in any game mode)
 			ApplyEditDof();
 			HookPersistSlot(); // save the slot on every commit while editing (see HookPersistSlot for why)
+			SdfGroups.SetVariant( Target?.Brushes, SdfGroupVariant.Idle ); // edit the idle look (a talking mouth
+			                                                               // mid-edit would also fail the undo
+			                                                               // hash match below and drop history)
 			_undo.Activate( Target, CaptureSelection() ); // resume the history from the last edit session when
 			                                              // the shape is untouched since (undo survives leaving
 			                                              // edit mode to look around); re-baseline if it changed
@@ -1030,6 +1082,10 @@ public sealed partial class SculptEditSession : Component
 	bool ConvertBrushShape( SdfBrush b, SdfShape shape )
 	{
 		if ( b is null || b.Shape == shape )
+			return false;
+		// A group is a different KIND of thing (a prefab set), not a primitive variant — no conversion either
+		// way. Picking a primitive tile with a group selected does nothing; see HotkeyGroup for the reverse.
+		if ( b.Shape == SdfShape.Group || shape == SdfShape.Group )
 			return false;
 
 		// Keep the shape's world-space VOLUME CENTRE fixed across the swap. LocalCentre is each shape's
@@ -1432,6 +1488,9 @@ public sealed partial class SculptEditSession : Component
 		{
 			var op = NextOperation( b.Operation );
 			var group = new List<SdfBrush>( SelectedBrushes );
+			group.RemoveAll( static s => s.Shape == SdfShape.Group ); // groups are add-only (carvers live inside them)
+			if ( group.Count == 0 )
+				return;
 			if ( op != SdfOperation.Add && RefuseIfLosingSolids( group ) )
 				return;
 
@@ -1440,6 +1499,9 @@ public sealed partial class SculptEditSession : Component
 			NotifyChanged();
 			return;
 		}
+
+		if ( b.Shape == SdfShape.Group ) // add-only — the op cycle doesn't apply
+			return;
 
 		if ( RefuseIfLastSolid( b ) )
 			return;
@@ -2167,6 +2229,8 @@ public sealed partial class SculptEditSession : Component
 				if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
 				if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
 				if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
+				// Group tiles follow the primitives in the dock; 8 = the first group this session offers.
+				if ( Input.Pressed( "Slot8" ) && GroupKinds.FirstOrDefault() is { } gk ) HotkeyGroup( gk.Id );
 			}
 		}
 
@@ -2211,6 +2275,10 @@ public sealed partial class SculptEditSession : Component
 
 		// Keep the selection valid; -1 (nothing selected) is allowed and is the default — never force one.
 		PruneSelection();
+		// The editor always shows (and commits/persists against) the idle look of every group — the mouth
+		// driver on the pawn stands down while a local session owns the sculpt, this is the belt to its braces.
+		if ( IsEditing )
+			SdfGroups.SetVariant( Target?.Brushes, SdfGroupVariant.Idle );
 		if ( Shared )
 			UpdateSharedLocks(); // take/release brush locks with the selection; drop what someone else holds
 
