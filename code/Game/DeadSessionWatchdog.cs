@@ -42,7 +42,8 @@ public sealed class DeadSessionWatchdog : GameObjectSystem
 			return;
 		}
 
-		var dead = MenuNetworking.EverInSession && !Networking.IsActive;
+		// A console join drops our hosted session before connecting — session-less on purpose, not dead.
+		var dead = MenuNetworking.EverInSession && !Networking.IsActive && !JoinGameCommand.InProgress;
 		if ( !dead )
 		{
 			_wasDead = false;
