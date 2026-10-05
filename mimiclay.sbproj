@@ -23,7 +23,7 @@
     "PerMapRanking": false,
     "LeaderboardType": "None",
     "CsProjName": "",
-    "StartupScene": "scenes/menu.scene",
+    "StartupScene": "scenes/kitchenlobby.scene",
     "LaunchMode": "Normal",
     "Compiler": {
       "RootNamespace": "Sandbox",
@@ -47,6 +47,13 @@
     "RecommendedMinPlayers": 3,
     "RecommendedMaxPlayers": 16,
     "Coop": true,
-    "Versus": true
+    "Versus": true,
+    "MapSettings": {
+      "UseCreateGameModal": false,
+      "NeedsMap": false,
+      "ShowChangeMap": false,
+      "DefaultMap": null,
+      "MapTarget": null
+    }
   }
 }

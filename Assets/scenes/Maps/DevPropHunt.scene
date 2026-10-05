@@ -1194,6 +1194,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "988c6c5f-cdb5-4c89-8a25-72958251cff4",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1230,6 +1231,7 @@
                 "BoundingRadius": 36.28689
               },
               {
+                "Id": "9541c77b-0b42-4e8c-bc35-4abceb211ea1",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1266,6 +1268,7 @@
                 "BoundingRadius": 35.801434
               },
               {
+                "Id": "9f4f68e0-099f-40c3-826c-14986fe6eadf",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1302,6 +1305,7 @@
                 "BoundingRadius": 44.986504
               },
               {
+                "Id": "8cf43281-5d9b-46ff-b653-30cacee9e71f",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1338,6 +1342,7 @@
                 "BoundingRadius": 40.77571
               },
               {
+                "Id": "79b7c631-9813-4cfb-9afc-238d5935fde5",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1374,6 +1379,7 @@
                 "BoundingRadius": 34.913055
               },
               {
+                "Id": "a4503ae0-ab92-4aae-9fc7-7271d6e1d791",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1410,6 +1416,7 @@
                 "BoundingRadius": 31.384806
               },
               {
+                "Id": "03ad5f04-51ed-4a83-936b-c79380ded129",
                 "Shape": "Box",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -1446,6 +1453,7 @@
                 "BoundingRadius": 27.4825
               },
               {
+                "Id": "bd68d71f-6a76-460b-a571-f42a79e6060a",
                 "Shape": "Box",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -1482,6 +1490,7 @@
                 "BoundingRadius": 8.336413
               },
               {
+                "Id": "df9015c3-a40b-4d2a-9792-b7af6fcb0d00",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1518,6 +1527,7 @@
                 "BoundingRadius": 30.797226
               },
               {
+                "Id": "f4712589-3743-4aeb-9a32-258f853dcf9e",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1554,6 +1564,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "d1d88f62-6496-4c59-94b2-d6e74409fbc7",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1590,6 +1601,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "7f7712f6-de1e-4a74-9a7c-a53fb7016ce5",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1626,6 +1638,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "71ef23e5-f381-49d8-8b1e-aefc2c8b777e",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1662,6 +1675,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "7eefe6e8-26ee-42b7-9200-508d40cf6008",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1698,6 +1712,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "9b25cbef-6a1c-4706-9473-5318f1c699d4",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -1734,6 +1749,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "43ce6b00-1c34-4329-8ee9-cbb6952b99ac",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1770,6 +1786,7 @@
                 "BoundingRadius": 2.7007859
               },
               {
+                "Id": "6262933c-c36d-4067-ad7c-9b164f463f1a",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1806,6 +1823,7 @@
                 "BoundingRadius": 5.873259
               },
               {
+                "Id": "a77d7f07-7f2a-4ae4-8213-f3ef511d7827",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1842,6 +1860,7 @@
                 "BoundingRadius": 4.1241226
               },
               {
+                "Id": "3bac8e62-39ec-414a-b728-d0470aa0e811",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1878,6 +1897,7 @@
                 "BoundingRadius": 22.814684
               },
               {
+                "Id": "a15ebf1c-1017-4192-8e00-23fb7d564759",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -1988,7 +2008,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "60927933-04b1-42af-8a8e-dc53a5256c8b",
+            "Id": "be2d8380-9dd9-4314-ade4-d6570c6c0736",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -2195,7 +2215,10 @@
             "Maxs": "505.799988,326,247.5"
           },
           "Contrast": 1,
-          "DistanceTexture": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_wing_distance_a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c.vtex",
+          "DistanceTexture": {
+            "Id": "7c985288-08c0-4364-93b3-783f5b19ee9c",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_wing_distance_a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c.vtex"
+          },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": {
             "Id": "0ff2c28c-af93-42aa-b657-fb523c27d9f8",
@@ -2209,7 +2232,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "ProbeDensity": 8,
-          "RelocationTexture": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_wing_relocation_a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c.vtex",
+          "RelocationTexture": {
+            "Id": "84ad2c6f-5b56-4606-9e81-3eaf983c5b6f",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_wing_relocation_a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c.vtex"
+          },
           "RenderExcludeTags": ""
         },
         {
@@ -2325,7 +2351,10 @@
           "__enabled": true,
           "Flags": 0,
           "AutoReimport": true,
-          "BakedGeometry": "models/fbxbaked/prefabs_kitchen_kitchen.fbxbake",
+          "BakedGeometry": {
+            "Id": "22f7259c-b35e-49b4-993d-221e1cebbff6",
+            "Path": "models/fbxbaked/prefabs_kitchen_kitchen.fbxbake"
+          },
           "BuildCollision": true,
           "CheckInterval": 0.5,
           "DefaultMaterial": {
@@ -2335,7 +2364,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": true,
-          "LastImport": "63 object(s), 67661 tris — 23:14:48",
+          "LastImport": "63 object(s), 67661 tris — 14:29:27",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
