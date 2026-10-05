@@ -78,9 +78,18 @@ public sealed class MainCamera : Component
 	// session asserts per frame) the baseline backs off; when they stop for a beat, the Authored* baseline
 	// re-asserts and the live DoF eases back to the gameplay look. That makes exit automatic (no
 	// save/restore handshake with drivers) and keeps the baseline live-editable in the inspector.
+	// The grace is BOTH wall time and frames: a time-only grace lapses across a single long frame (a click
+	// that commits an edit → rebuild/bake hitch of >0.1s), so the camera's next update — unordered against the
+	// driver's — saw a "stale" claim, re-asserted the authored focus, and the hitch-sized dt lerped most of
+	// the way there in one step: a visible focus pop on clicks. A driver asserting per frame never misses
+	// two of OUR updates, whatever the frame time.
 	const float DofClaimGrace = 0.1f;
+	const int DofClaimGraceFrames = 2;
 	float _lastDofClaim = float.MinValue;
-	void ClaimDof() => _lastDofClaim = Time.Now;
+	int _dofFrame;
+	int _lastDofClaimFrame = int.MinValue / 2;
+	void ClaimDof() { _lastDofClaim = Time.Now; _lastDofClaimFrame = _dofFrame; }
+	bool DofClaimed => Time.Now - _lastDofClaim <= DofClaimGrace || _dofFrame - _lastDofClaimFrame <= DofClaimGraceFrames;
 
 	// Target FOV, same scheme as the DoF targets: whoever drives the camera this frame declares it (per
 	// frame, from GameSettings) and the live camera eases toward it here. Seeded from the authored camera
@@ -296,7 +305,8 @@ public sealed class MainCamera : Component
 
 		// Nothing has claimed the DoF recently → rest on the authored baseline. Re-reading it every frame
 		// is what makes the gameplay DoF live-editable in the inspector.
-		if ( Time.Now - _lastDofClaim > DofClaimGrace )
+		_dofFrame++;
+		if ( !DofClaimed )
 		{
 			_targetBlurSize = AuthoredBlurSize;
 			_targetFocalDistance = AuthoredFocalDistance;
