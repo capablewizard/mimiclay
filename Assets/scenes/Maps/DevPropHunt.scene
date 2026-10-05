@@ -2008,7 +2008,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "be2d8380-9dd9-4314-ade4-d6570c6c0736",
+            "Id": "3555bcc3-e446-4986-b359-dee93ced4884",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -2134,7 +2134,7 @@
           },
           "Contrast": 1,
           "DistanceTexture": {
-            "Id": "783341be-c69c-4088-80a9-342dd7a46b86",
+            "Id": "22a1f43b-4f90-4c4a-a622-6544593cd027",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_distance_fff47440-764c-4073-a40f-1b42b199b681.vtex"
           },
           "InsideGeometry": "Relocate",
@@ -2148,7 +2148,7 @@
           "OnComponentUpdate": null,
           "ProbeDensity": 8,
           "RelocationTexture": {
-            "Id": "3f8838ee-fa91-46ef-939b-ef5382960a11",
+            "Id": "6ad2b3ec-880e-4f5c-8c52-f744dd73e843",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_relocation_fff47440-764c-4073-a40f-1b42b199b681.vtex"
           },
           "RenderExcludeTags": ""
@@ -2162,7 +2162,7 @@
           "AmbientColor": "0.91628,0.78331,0.69467,1",
           "AmbientLift": 0,
           "BaseIrradiance": {
-            "Id": "850f990a-9f0a-48e5-a75d-82c80b1bacd1",
+            "Id": "4c862c8b-1650-464f-8cf5-8182ff1a5989",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_irradiance_fff47440-764c-4073-a40f-1b42b199b681.vtex"
           },
           "BounceSaturation": 0,
@@ -2364,7 +2364,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": true,
-          "LastImport": "63 object(s), 67661 tris — 14:29:27",
+          "LastImport": "63 object(s), 67661 tris — 20:59:15",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",

@@ -486,6 +486,11 @@ public sealed class HunterController : Component
 			? Face.GameObject.Components.Get<SdfCollider>( includeDisabled: true )
 			: null;
 
+		// ...and the body that collider's shapes must live on. Asserted per frame too (UpdateHeadCollider), this
+		// is just the earliest moment: before anything below can move the head and bind the collider to the
+		// pawn's body instead.
+		EnsureHeadBody();
+
 		// The torso sculpture the duck squashes — see UpdateBodyDeform. Resolved after EnsureVisualPivot so
 		// _bodyObject is populated.
 		_bodySculpt = _bodyObject.IsValid() ? _bodyObject.Components.Get<SdfSculpture>() : null;
@@ -919,6 +924,11 @@ public sealed class HunterController : Component
 	// The head's bullet-hit collider — enabled on proxies only, see UpdateHeadCollider.
 	SdfCollider _headCollider;
 
+	// The head's OWN kinematic physics body, so its hit collider is a shape on a body that merely MOVES with
+	// the head rather than a shape on the PAWN's body that has to be rebuilt whenever the head moves — see
+	// EnsureHeadBody for the per-frame rebuild this killed.
+	Rigidbody _headBody;
+
 	// The branches concealment switches off wholesale — see UpdateConcealment.
 	GameObject _collidersObject;
 	GameObject _armObject;
@@ -1137,8 +1147,12 @@ public sealed class HunterController : Component
 		// it (see AirTuckOffset). Zero on the ground, where _standZ alone is the answer. The jump follow-through
 		// deliberately does NOT live here — it's applied per-brush so the chest and belly can take different
 		// amounts of it and stretch apart (see UpdateBodyDeform).
-		VisualPivot.WorldPosition = eye.WithZ( _standZ - AirTuckOffset );
-		VisualPivot.WorldRotation = Rotation.FromYaw( visualAim.yaw );
+		//
+		// ONE transform write, not position then rotation: every write walks the whole subtree's transform
+		// callbacks (renderers, the head's physics body), so two writes is twice the traffic for the same pose.
+		VisualPivot.WorldTransform = VisualPivot.WorldTransform
+			.WithPosition( eye.WithZ( _standZ - AirTuckOffset ) )
+			.WithRotation( Rotation.FromYaw( visualAim.yaw ) );
 	}
 
 	// Build the pivot and move the head + body under it. Runs on every machine (each spawns its own pawn), and
@@ -1234,8 +1248,17 @@ public sealed class HunterController : Component
 			// Parked at the NECK, not the eye: the head sculpture's origin is its neck pivot (brushes authored
 			// +NeckDrop above it), so dropping the object here keeps the head visual where it always was while
 			// pitch swings it around the neck. World-space drop, not eye-relative — the neck is the fixed point.
-			Eyes.WorldPosition = eye + Vector3.Up * (HeadOnlyDip - NeckDrop) + headBob;
-			Eyes.WorldRotation = visualAim.ToRotation();
+			// One write for the same reason as PlaceVisualPivot.
+			Eyes.WorldTransform = Eyes.WorldTransform
+				.WithPosition( eye + Vector3.Up * (HeadOnlyDip - NeckDrop) + headBob )
+				.WithRotation( visualAim.ToRotation() );
+
+			// Park the head's physics body on the head NOW, rather than leaving it to the engine. The engine does
+			// follow (the owner's body teleports on the transform write; a proxy's is velocity-moved onto its
+			// transform before each physics step), but a direct write is a no-op when already there and makes
+			// the hit collider's placement this frame's, not the last physics step's.
+			if ( _headBody.IsValid() && _headBody.PhysicsBody.IsValid() )
+				_headBody.PhysicsBody.Transform = Eyes.WorldTransform;
 		}
 
 		// Gun display, from the SAME smoothed eye (and after DriveCamera, so the viewmodel can never lag the
@@ -1933,8 +1956,9 @@ public sealed class HunterController : Component
 	//
 	// We don't need it on our own pawn. Shots at this hunter are registered on the SHOOTER's machine against
 	// THEIR proxy copy of us (see the visualAim note in ComposePawn), our own shot trace ignores our own
-	// hierarchy, and so does the camera boom. Proxies keep it and are unaffected: a proxy's rigidbody doesn't
-	// simulate, it's driven straight from the networked transform, so shapes moving on it perturb nothing.
+	// hierarchy, and so does the camera boom. Proxies keep it — and that is where the second half of this
+	// story lives, see EnsureHeadBody: a shape on an ancestor Rigidbody isn't just perturbing on a simulating
+	// body, it's REBUILT every time anything between it and that body moves.
 	//
 	// Asserted live every frame on EVERY machine rather than once at start, for two reasons: ownership resolves
 	// after OnStart, and a spawn snapshot ships the owner's live component state — so a proxy can arrive with
@@ -1946,6 +1970,42 @@ public sealed class HunterController : Component
 
 		if ( _headCollider.Enabled != !Owned )
 			_headCollider.Enabled = !Owned;
+
+		EnsureHeadBody();
+	}
+
+	// The head's hit collider gets its OWN physics body — a kinematic Rigidbody on the Head object (authored in
+	// hunter.prefab; this is the backstop for any pawn prefab without it, and for the mid-play prefab refresh
+	// that strips runtime components, see HiderController's heal).
+	//
+	// Why: a Collider binds its shapes to the nearest ancestor Rigidbody, and the engine REBUILDS those shapes
+	// outright whenever any object between the collider and that Rigidbody moves (Collider.TransformChanged →
+	// UpdateShape: destroy every hull, re-add them, recompute the body's mass). With the pawn root's Rigidbody
+	// as that ancestor, every head placement in ComposePawn — position AND rotation, of the pivot AND the head —
+	// was a full rebuild of the face's hull mesh on the pawn body. Per moving remote hunter, per frame. That was
+	// the playtest's "fine until anyone moves" frame drop: HunterController.OnUpdate spending its whole budget
+	// in ConfigureShapes/BuildMass under the proxies' head placement.
+	//
+	// With a Rigidbody ON the head object, the collider's Rigidbody is its own GameObject's, the rebuild branch
+	// never fires, and moving the head just moves a body: the owner's teleports on the transform write, a proxy's
+	// is velocity-moved onto its transform before each physics step (Rigidbody.PrePhysicsStep for a networked
+	// proxy), and ComposePawn parks it explicitly on top of both. Motion off and no gravity: it is never
+	// simulated, it only ever carries the trigger shape bullets look for. Nothing else cares that the pawn has a
+	// second body — the shot traces resolve by GameObject, which is still the Head, and the head's collision rule
+	// (headcollider: Ignore) keeps it from touching anything either way.
+	void EnsureHeadBody()
+	{
+		if ( _headBody.IsValid() )
+			return;
+
+		var head = Eyes.IsValid() ? Eyes : Face.IsValid() ? Face.GameObject : null;
+		if ( !head.IsValid() )
+			return;
+
+		_headBody = head.Components.GetOrCreate<Rigidbody>();
+		_headBody.MotionEnabled = false;
+		_headBody.Gravity = false;
+		_headBody.RigidbodyFlags |= RigidbodyFlags.DisableCollisionSounds;
 	}
 
 	// First person: hide our OWN body so we don't see it but it still casts a shadow, while proxies (other
@@ -3033,8 +3093,10 @@ public sealed class HunterController : Component
 			ShrinkDuration = shrinkDuration,
 		} );
 
-		// Full rebuild: mesh LODs, field redispatch, and Committed — which re-solidifies the collider
-		// (the carve-aware path keeps hollows passable) and, on a synced disguise's owner, republishes.
+		// Full rebuild: mesh LODs (a cache hit — the mesh excludes damage), field redispatch, and Committed —
+		// which, on a synced disguise's owner, republishes. The collider ignores the damage tail (SdfCollider
+		// builds from the authored prefix and skips on an unchanged hash), so a crater is purely cosmetic:
+		// no physics rebuild here, none per heal step, and the shape under the shot stays exactly as solid.
 		sculpt.Rebuild();
 	}
 

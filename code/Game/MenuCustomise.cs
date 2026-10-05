@@ -297,7 +297,10 @@ public sealed class MenuCustomise : Component
 		Strip( clone.Components.Get<Sandbox.Movement.MoveModeWalk>( true ) );
 		Strip( clone.Components.Get<HunterController>( true ) );
 		Strip( clone.Components.Get<HunterGun>( true ) );
-		Strip( clone.Components.Get<Rigidbody>( true ) );
+		// Every body, not just the root's: the Head carries its own kinematic one for its hit collider (see
+		// HunterController.EnsureHeadBody), and the menu wants no physics bodies at all.
+		foreach ( var body in clone.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ).ToArray() )
+			Strip( body );
 		Strip( clone.Components.Get<SdfNetworkSync>( true ) );
 		Strip( clone.Components.Get<SdfHighlightOutline>( true ) ); // root only — the Head keeps its WarningOnly one
 

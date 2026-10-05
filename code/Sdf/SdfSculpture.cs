@@ -416,8 +416,9 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 	// close; the mesh's remaining jobs — the distant LOD band and the legacy shadow caster — don't need
 	// pellet holes. Excluding them keeps the mesh content hash stable across carve and heal, so a shot
 	// (and the heal's final Rebuild) resolves as a model-cache hit instead of a full LOD rebuild with its
-	// mid-fight GPU readback stall. The collider is unaffected: SdfCollider reads the sculpture's own
-	// brush list, so craters still carve physics. Returns the list itself when there's no damage.
+	// mid-fight GPU readback stall. SdfCollider does the same with its own authored-prefix hash, so a crater
+	// never rebuilds physics either (unless CarveCollision opts it in). Returns the list itself when there's
+	// no damage.
 	static List<SdfBrush> MeshBrushes( List<SdfBrush> brushes )
 	{
 		if ( brushes is null || !brushes.Exists( static b => b.Damage ) )

@@ -555,7 +555,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "8302664c-1053-4adc-8390-bda7312c7bb9",
+            "Id": "0c3f352b-3585-4afc-8fb1-84ff67afa5f6",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -612,7 +612,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "8302664c-1053-4adc-8390-bda7312c7bb9",
+            "Id": "0c3f352b-3585-4afc-8fb1-84ff67afa5f6",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1564,7 +1564,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "089aa5cd-5cc6-4c0f-ac22-fe73d72a0522",
+                "Id": "2bae4a6e-5de1-46a8-b655-9f3aaa59fabf",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1610,7 +1610,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "7e6e6481-f8b3-4e5d-9f1e-80b3148e8606",
+                "Id": "52e211cf-cbf3-41be-ab2c-ad902d90c132",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1638,7 +1638,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "7e6e6481-f8b3-4e5d-9f1e-80b3148e8606",
+                "Id": "52e211cf-cbf3-41be-ab2c-ad902d90c132",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1685,7 +1685,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "594c5159-a680-4ea1-905a-c5bcd5831c55",
+                "Id": "11ec61e7-2d61-40a7-ac54-0d5217510d44",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1729,7 +1729,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "cef36803-dd62-41e8-ae7f-6aedb5928b27",
+                "Id": "3c496985-11dd-41a1-aaef-f33f05f88f74",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2041,7 +2041,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "e3fe62ce-6035-47d3-9340-9112653c98ea",
+                "Id": "ad269e23-7480-47c2-b226-a3d66b974e2a",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2085,7 +2085,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "915eb0b9-3f60-4626-9f55-17987d12d5a5",
+                "Id": "73c121ac-9624-4d89-a490-02644c6fc8af",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2129,7 +2129,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "9d3b7295-86ca-48e0-8121-d49e0321b7f8",
+                "Id": "6791e371-f635-409a-9ec7-58c9ada211bd",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2175,7 +2175,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "30860d7f-07b0-4298-a501-d41994db256c",
+                "Id": "1022e6f4-db30-4511-823f-0b9f47e3b895",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2203,7 +2203,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "30860d7f-07b0-4298-a501-d41994db256c",
+                "Id": "1022e6f4-db30-4511-823f-0b9f47e3b895",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3313,7 +3313,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "86cc53ed-6880-4666-b038-325fe953c36e",
+                "Id": "f754cc04-3277-4087-9eca-abeaeca9d337",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3341,7 +3341,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "86cc53ed-6880-4666-b038-325fe953c36e",
+                "Id": "f754cc04-3277-4087-9eca-abeaeca9d337",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3390,7 +3390,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "86cc53ed-6880-4666-b038-325fe953c36e",
+                "Id": "f754cc04-3277-4087-9eca-abeaeca9d337",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3418,7 +3418,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "86cc53ed-6880-4666-b038-325fe953c36e",
+                "Id": "f754cc04-3277-4087-9eca-abeaeca9d337",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3889,6 +3889,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "8e081b52-f21b-4ba2-89d2-0e86069425c0",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -3925,6 +3926,7 @@
                 "BoundingRadius": 18.368397
               },
               {
+                "Id": "096883b8-d632-46f0-8cfc-1d61cdbdf5a4",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -3961,6 +3963,7 @@
                 "BoundingRadius": 14.457394
               },
               {
+                "Id": "adbea617-c9d3-4099-b3fa-71a585b427f8",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -3997,6 +4000,7 @@
                 "BoundingRadius": 26.422935
               },
               {
+                "Id": "f333e573-f0b1-4f63-a181-037da8f9d35d",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4033,6 +4037,7 @@
                 "BoundingRadius": 5.123025
               },
               {
+                "Id": "7d63164b-2e67-4cc7-9a7e-bac2341229ef",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4069,6 +4074,7 @@
                 "BoundingRadius": 1.4354846
               },
               {
+                "Id": "347b827b-be35-4de9-adcf-689e52b597c2",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -4105,6 +4111,7 @@
                 "BoundingRadius": 22.09456
               },
               {
+                "Id": "cd5ec1e0-c541-4ace-bacb-d5b2a2fb8c62",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4141,6 +4148,7 @@
                 "BoundingRadius": 6.7495127
               },
               {
+                "Id": "6df2d529-e789-4ed4-9635-5b159c138735",
                 "Shape": "Text",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4177,6 +4185,7 @@
                 "BoundingRadius": 5.4169397
               },
               {
+                "Id": "eb5e4887-e584-4623-9045-e0a3ff799a84",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4213,6 +4222,7 @@
                 "BoundingRadius": 1.7288177
               },
               {
+                "Id": "26353e4b-577d-4139-af08-148f89c76aee",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4249,6 +4259,7 @@
                 "BoundingRadius": 1
               },
               {
+                "Id": "343118d7-caf5-4e03-ad0a-f7f7bdd9bcdf",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4285,6 +4296,7 @@
                 "BoundingRadius": 1
               },
               {
+                "Id": "7c83931f-6ce4-48f3-9cab-58d75474a1e6",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4321,6 +4333,7 @@
                 "BoundingRadius": 1.7288177
               },
               {
+                "Id": "f545f83b-4705-4988-a7df-0a4158e31c81",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4357,6 +4370,7 @@
                 "BoundingRadius": 3.9137776
               },
               {
+                "Id": "47e4944b-d891-453e-90d3-1f6cc6fc2bc5",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4397,6 +4411,7 @@
                 "BoundingRadius": 2.425004
               },
               {
+                "Id": "b5c6a998-7870-4d1d-9476-720d594afe74",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -4433,6 +4448,7 @@
                 "BoundingRadius": 11.663764
               },
               {
+                "Id": "5bfdd0b0-80af-4449-8db0-a5caa9fa9866",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -5338,7 +5354,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "63 object(s), 67661 tris — 23:19:19",
+          "LastImport": "63 object(s), 67661 tris — 20:59:17",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -10704,6 +10720,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "97f530a6-26df-48d7-a0cd-dcb47cc3c8a2",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -10740,6 +10757,7 @@
                 "BoundingRadius": 32.435925
               },
               {
+                "Id": "80809ac3-be4a-4812-840d-e78dcd82d76b",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -10779,6 +10797,7 @@
                 "BoundingRadius": 6.5
               },
               {
+                "Id": "30731614-323e-4dbd-b20e-27b59a36a6b1",
                 "Shape": "Sphere",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -10815,6 +10834,7 @@
                 "BoundingRadius": 26.729395
               },
               {
+                "Id": "108bca73-8608-4efd-8466-155c728f57ff",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -10851,6 +10871,7 @@
                 "BoundingRadius": 48.652905
               },
               {
+                "Id": "47db7008-30eb-4f9a-a46e-c9b9c135279a",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -11204,6 +11225,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "e497d201-5d66-4c4c-adbb-90b42da5e865",
               "Shape": "Cone",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -11240,6 +11262,7 @@
               "BoundingRadius": 9.802811
             },
             {
+              "Id": "3b687cbe-2bd4-4d31-9fd5-74207d9e446a",
               "Shape": "Sphere",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12147,6 +12170,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "4ad13123-8b4c-4fd6-b64f-b228d74390aa",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12376,6 +12400,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "840f839f-de4a-4b2e-9954-7ed8f042a2ba",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12605,6 +12630,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "4aeaf1ba-e217-4925-8e67-cb72b8a1e743",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -12834,6 +12860,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "70765760-6311-4586-bd7c-768f5a124c75",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13063,6 +13090,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "5d3656aa-06ec-49e2-a0cd-d3da78a47252",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13292,6 +13320,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "a21c7628-e9c9-4f83-a5f9-45761b58e39e",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13521,6 +13550,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "7600ab5b-fcbd-4303-a923-065bed82cf25",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13750,6 +13780,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "a54425c9-33bb-4703-aa18-78bc5a74294d",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -13979,6 +14010,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "c38738ac-9642-494b-a337-87da1fffbbb1",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -14208,6 +14240,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "89cc90d7-eafc-41b3-b816-c69b1d4d1405",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -14437,6 +14470,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "e124c599-790b-4419-87a8-65d8fe90e124",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -14666,6 +14700,7 @@
           "BakedMesh": null,
           "Brushes": [
             {
+              "Id": "93ee0a3d-9f47-4b01-bff1-cbda5c0a5808",
               "Shape": "Text",
               "Operation": "Add",
               "CrossSection": "Triangle",
@@ -15109,6 +15144,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "3bd51d68-e227-4089-bbc0-d6fa0826cdce",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15145,6 +15181,7 @@
                 "BoundingRadius": 40.720684
               },
               {
+                "Id": "5aa79ea4-5562-4a17-93e0-c2c43320d432",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -15181,6 +15218,7 @@
                 "BoundingRadius": 29.550665
               },
               {
+                "Id": "8ba08f43-6d8e-4994-b0b7-4019e0da77d8",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15217,6 +15255,7 @@
                 "BoundingRadius": 28.590185
               },
               {
+                "Id": "3da4babb-577d-4873-a185-4a18c7823f8e",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15253,6 +15292,7 @@
                 "BoundingRadius": 27.692757
               },
               {
+                "Id": "fa09965f-30db-4cf8-8e3f-5ceadb08a801",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15289,6 +15329,7 @@
                 "BoundingRadius": 26.26554
               },
               {
+                "Id": "4ad0b93b-8466-4446-b0cd-69caa93687e4",
                 "Shape": "Box",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15325,6 +15366,7 @@
                 "BoundingRadius": 24.676466
               },
               {
+                "Id": "7206cb6c-8a78-4c8e-9029-cce92fedd32a",
                 "Shape": "Text",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15361,6 +15403,7 @@
                 "BoundingRadius": 19.323284
               },
               {
+                "Id": "b94dfe6c-a418-4e0f-ae92-c7e43c32307d",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15463,6 +15506,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "fd848898-f180-4369-8dc4-7bcff15217cc",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15499,6 +15543,7 @@
                 "BoundingRadius": 30.737177
               },
               {
+                "Id": "3dfde709-16a4-400e-8383-0151a5fac4f4",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -15535,6 +15580,7 @@
                 "BoundingRadius": 23.72919
               },
               {
+                "Id": "8bbdcc11-5915-4208-9ea8-a13a335a985c",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15571,6 +15617,7 @@
                 "BoundingRadius": 22.88601
               },
               {
+                "Id": "7adc66f0-5353-42c2-8fca-c1e1dab19d53",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15607,6 +15654,7 @@
                 "BoundingRadius": 22.144346
               },
               {
+                "Id": "719b7759-033c-4b77-9fc2-2d2347a3a140",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15643,6 +15691,7 @@
                 "BoundingRadius": 21.285591
               },
               {
+                "Id": "1113951a-7ad9-4b74-8557-d1043be1b6d4",
                 "Shape": "Box",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15679,6 +15728,7 @@
                 "BoundingRadius": 18.552807
               },
               {
+                "Id": "f2682f51-2bab-46e3-b71e-835215f449c9",
                 "Shape": "Text",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -15715,6 +15765,7 @@
                 "BoundingRadius": 15.328206
               },
               {
+                "Id": "1d7b5fad-0d08-4d87-a444-e34aabec2206",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -15970,6 +16021,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "9bf85243-48a2-4b61-8d05-305196871b85",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -16006,6 +16058,7 @@
                 "BoundingRadius": 47.03982
               },
               {
+                "Id": "af7d7acd-035b-42ba-9f7e-cf85fe542e44",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -16042,6 +16095,7 @@
                 "BoundingRadius": 44.253036
               },
               {
+                "Id": "349a9a55-2a39-48e1-995f-77fb5ad46c39",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -16078,6 +16132,7 @@
                 "BoundingRadius": 32.506046
               },
               {
+                "Id": "7645ea7d-f508-4801-ab81-802e1b78255d",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -16114,6 +16169,7 @@
                 "BoundingRadius": 31.927303
               },
               {
+                "Id": "5f350631-650e-4bab-8f4a-95ce97b4869d",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -16150,6 +16206,7 @@
                 "BoundingRadius": 8.404473
               },
               {
+                "Id": "b4abf5dd-8a20-4a7a-abfd-425c1d6fe3e0",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -16186,6 +16243,7 @@
                 "BoundingRadius": 10.938865
               },
               {
+                "Id": "df3c33f1-14db-4a5e-ba4e-f69356a06a13",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16222,6 +16280,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "aa417453-b8f0-4a63-b12a-c14e5be2fc73",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16258,6 +16317,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "06a79e6f-45b0-43f1-89d3-b42811e614bb",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16294,6 +16354,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "1ceb5e88-0d67-4b2c-b72c-3dc2d6b38c46",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16330,6 +16391,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "0e2204bf-c499-4d98-b5b4-213baa28cb5a",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16366,6 +16428,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "fdd507ba-1a08-4329-8a5d-bca53dcf5741",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16402,6 +16465,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "b249a06e-f153-4b66-88cb-343581bcf3bb",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16438,6 +16502,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "5e43219b-e474-4b2c-9db3-82506789b7f3",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16474,6 +16539,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "7089c9ab-878c-4e0d-bafc-2266114b8302",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16510,6 +16576,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "18c79045-0f8b-4345-91a5-7e2490fa50b8",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16546,6 +16613,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "4fda5854-bcf4-4570-ad3d-9e10530e9165",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16582,6 +16650,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "ddd02661-8d97-47ef-89d4-68af282ee2e9",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16618,6 +16687,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "d818a329-9766-4a89-93f1-25e00ec27563",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16654,6 +16724,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "5132369e-f230-4341-ac22-4cae032c34fa",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16690,6 +16761,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "11ff54ff-bb2c-4ab1-9375-40d7ddba9880",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -16726,6 +16798,7 @@
                 "BoundingRadius": 5.605928
               },
               {
+                "Id": "c3b25b9e-ef32-438c-b787-59a7add2ea41",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -17590,6 +17663,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "6df540ed-69cb-489a-9e1c-3b254de527dc",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17626,6 +17700,7 @@
                 "BoundingRadius": 30.14873
               },
               {
+                "Id": "d7976a57-bd43-490f-8449-a299eddddb06",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17662,6 +17737,7 @@
                 "BoundingRadius": 26.57558
               },
               {
+                "Id": "7a0ff483-810e-40ae-9bd9-c47891308384",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17698,6 +17774,7 @@
                 "BoundingRadius": 40.383232
               },
               {
+                "Id": "e36734ad-02ad-43a8-87a9-ede15fa3e50f",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17739,6 +17816,7 @@
                 "BoundingRadius": 4.4544125
               },
               {
+                "Id": "a01b5300-bb9a-4835-9262-252efb2ab67f",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17775,6 +17853,7 @@
                 "BoundingRadius": 33.022697
               },
               {
+                "Id": "82ad2442-ecc6-4db1-abc4-30d1570897df",
                 "Shape": "Extruded",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17811,6 +17890,7 @@
                 "BoundingRadius": 23.5592
               },
               {
+                "Id": "f68bb427-6cd7-4d0c-829e-4cd924ff60fa",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17847,6 +17927,7 @@
                 "BoundingRadius": 44.153976
               },
               {
+                "Id": "1fbd1d8e-6279-426e-b57f-52d40177b342",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17883,6 +17964,7 @@
                 "BoundingRadius": 28.63514
               },
               {
+                "Id": "2ddd74ed-960e-4d9f-8ab4-0d64b66d8552",
                 "Shape": "Extruded",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -17919,6 +18001,7 @@
                 "BoundingRadius": 23.2142
               },
               {
+                "Id": "aa07168e-7835-40af-b382-8ddf54b2717e",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -17998,6 +18081,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "41a77458-ac23-4ba7-b8f5-2d74224c910a",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18039,6 +18123,7 @@
                 "BoundingRadius": 4.269412
               },
               {
+                "Id": "76a450c0-7495-42fa-9d98-302a797ae20e",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18075,6 +18160,7 @@
                 "BoundingRadius": 8.556417
               },
               {
+                "Id": "0b3dd249-a9da-437b-b452-aa17f7d006fb",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18111,6 +18197,7 @@
                 "BoundingRadius": 16.065987
               },
               {
+                "Id": "bb52e654-41b7-44f9-88a8-e2ed2d32ec87",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18147,6 +18234,7 @@
                 "BoundingRadius": 19.195326
               },
               {
+                "Id": "48f5f2ba-9116-44bc-974c-65b3d522bfff",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18183,6 +18271,7 @@
                 "BoundingRadius": 29.961851
               },
               {
+                "Id": "d4575062-b114-421a-8af3-7f098878633c",
                 "Shape": "Extruded",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18219,6 +18308,7 @@
                 "BoundingRadius": 23.5592
               },
               {
+                "Id": "d4e1b942-e7ce-4f4c-ab53-f5460cc67eb1",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18255,6 +18345,7 @@
                 "BoundingRadius": 39.812897
               },
               {
+                "Id": "db78e10c-5d75-4374-adc5-4694399bc241",
                 "Shape": "Extruded",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18291,6 +18382,7 @@
                 "BoundingRadius": 17.780321
               },
               {
+                "Id": "54a0df99-c0cf-4c88-ab0a-74b3df9ca469",
                 "Shape": "Cone",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18327,6 +18419,7 @@
                 "BoundingRadius": 28.586206
               },
               {
+                "Id": "b4167e02-b3f3-4489-8121-97be81617556",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18414,6 +18507,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "a60d31ee-d917-4a26-a2ac-9e4fcdadc15e",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18450,6 +18544,7 @@
                 "BoundingRadius": 27.805975
               },
               {
+                "Id": "0bc09c2f-7023-4b2a-8589-e07ae16998cc",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18486,6 +18581,7 @@
                 "BoundingRadius": 24.892406
               },
               {
+                "Id": "0f6ddce9-8d3f-45cd-af53-5352b25fcc4a",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18522,6 +18618,7 @@
                 "BoundingRadius": 13.429608
               },
               {
+                "Id": "0d081da5-fab0-4b36-9ff8-a9cbcba09e5b",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18558,6 +18655,7 @@
                 "BoundingRadius": 38.35352
               },
               {
+                "Id": "e462c66b-26f6-43dc-9c66-b1d0e03eaa6b",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18594,6 +18692,7 @@
                 "BoundingRadius": 14.760869
               },
               {
+                "Id": "98864934-c483-47dc-9c03-09ba14c7390f",
                 "Shape": "Sphere",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18630,6 +18729,7 @@
                 "BoundingRadius": 6.8273907
               },
               {
+                "Id": "8855c900-5895-41a5-8021-10e4f5204586",
                 "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18666,6 +18766,7 @@
                 "BoundingRadius": 19.295387
               },
               {
+                "Id": "db99276c-8b73-4ae6-8f83-411b7e540e5d",
                 "Shape": "Sphere",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18702,6 +18803,7 @@
                 "BoundingRadius": 8.245297
               },
               {
+                "Id": "6fbab3d2-cb90-42c3-8b66-dabcc33779e6",
                 "Shape": "Cone",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -18738,6 +18840,7 @@
                 "BoundingRadius": 19.071562
               },
               {
+                "Id": "b28024da-a810-4172-bd97-d6c3ae2e0754",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -18783,6 +18886,7 @@
                 "BoundingRadius": 12.625
               },
               {
+                "Id": "81a8fe97-bf2e-44a7-a7b6-060405a80de3",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -19008,6 +19112,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "78df5d47-2e53-4bd7-be84-ade518f23361",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19044,6 +19149,7 @@
                 "BoundingRadius": 13.724603
               },
               {
+                "Id": "9e89e822-54b7-4e4e-bbfe-e7cbc526729d",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19080,6 +19186,7 @@
                 "BoundingRadius": 8.267401
               },
               {
+                "Id": "a836138c-a462-477e-ab7b-58d45d28ab0f",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19116,6 +19223,7 @@
                 "BoundingRadius": 4.9211183
               },
               {
+                "Id": "6be68ad5-b020-4ac0-a546-fe8633b13f0f",
                 "Shape": "Spline",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19480,6 +19588,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "25790234-915c-4687-a406-e15067a3a2f3",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19516,6 +19625,7 @@
                 "BoundingRadius": 33.028183
               },
               {
+                "Id": "da9b430a-2f28-4096-9ee5-73052e323223",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19552,6 +19662,7 @@
                 "BoundingRadius": 16.10148
               },
               {
+                "Id": "d022dc4b-5be7-4ab7-9d37-21e3ed6cc908",
                 "Shape": "Cone",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -19588,6 +19699,7 @@
                 "BoundingRadius": 17.68039
               },
               {
+                "Id": "a0d9a086-8bc8-406d-b7a8-93e12441b5fa",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19624,6 +19736,7 @@
                 "BoundingRadius": 11.619232
               },
               {
+                "Id": "4eb5c565-220d-4cdf-b7dd-c682e8d6fc7f",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19660,6 +19773,7 @@
                 "BoundingRadius": 15.129364
               },
               {
+                "Id": "4ad86bc9-31f0-47a3-80cd-77021f6e7798",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -19696,6 +19810,7 @@
                 "BoundingRadius": 5.7873297
               },
               {
+                "Id": "44b23527-5b98-4d6e-a31c-8e77610bd74e",
                 "Shape": "Cylinder",
                 "Operation": "Cutout",
                 "CrossSection": "Triangle",
@@ -19732,6 +19847,7 @@
                 "BoundingRadius": 15.370957
               },
               {
+                "Id": "6e92bb2b-3f55-4f14-9b14-7122e88377d3",
                 "Shape": "Cylinder",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -20324,6 +20440,7 @@
             "Property": "Brushes",
             "Value": [
               {
+                "Id": "d69cf64b-159f-4818-8259-7e146030487b",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20360,6 +20477,7 @@
                 "BoundingRadius": 36.28689
               },
               {
+                "Id": "338606be-4d90-4345-937a-61925b3e0d8d",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20396,6 +20514,7 @@
                 "BoundingRadius": 35.801434
               },
               {
+                "Id": "f6372c21-7720-4238-89fa-cb6d37aa5a51",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20432,6 +20551,7 @@
                 "BoundingRadius": 44.986504
               },
               {
+                "Id": "7723ed9c-bd17-45dc-8d88-4a69881cd7c5",
                 "Shape": "Box",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20468,6 +20588,7 @@
                 "BoundingRadius": 40.77571
               },
               {
+                "Id": "983c365f-70ad-416a-878a-e356042d42e1",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20504,6 +20625,7 @@
                 "BoundingRadius": 34.913055
               },
               {
+                "Id": "9297cbb7-8212-4c3c-a0d7-5b2838647c05",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20540,6 +20662,7 @@
                 "BoundingRadius": 31.384806
               },
               {
+                "Id": "8fcc7512-ea4b-4258-9502-f386a34058e7",
                 "Shape": "Box",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -20576,6 +20699,7 @@
                 "BoundingRadius": 27.4825
               },
               {
+                "Id": "649fe050-25f2-4ef2-8dbe-900e5331cf9a",
                 "Shape": "Box",
                 "Operation": "Colour",
                 "CrossSection": "Triangle",
@@ -20612,6 +20736,7 @@
                 "BoundingRadius": 8.336413
               },
               {
+                "Id": "cf78b204-6f0e-47ef-8561-2b9d361365d8",
                 "Shape": "Box",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20648,6 +20773,7 @@
                 "BoundingRadius": 30.797226
               },
               {
+                "Id": "a1476a53-ed90-4b0b-b2df-1a9530bc5de8",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20684,6 +20810,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "d12e6dff-42c8-46bc-87e4-ca5f78e8fa32",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20720,6 +20847,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "26c38398-7bab-4f21-9dac-1b2354878a8c",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20756,6 +20884,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "1811cddd-fb22-41f7-a369-e8063c79696c",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20792,6 +20921,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "654a9763-2b3d-44b0-a136-bbe2bbd7e84f",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20828,6 +20958,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "11f00497-b050-4c34-bf65-ca24bc72e4b5",
                 "Shape": "Text",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
@@ -20864,6 +20995,7 @@
                 "BoundingRadius": 28.551985
               },
               {
+                "Id": "5a29bf03-d090-49ef-9aef-d725eaaec861",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20900,6 +21032,7 @@
                 "BoundingRadius": 2.7007859
               },
               {
+                "Id": "79e5a26c-6d66-42a9-ac64-a51152eb72d3",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20936,6 +21069,7 @@
                 "BoundingRadius": 5.873259
               },
               {
+                "Id": "6b6e9a2d-af37-47fd-9221-e5d3a2c955d7",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -20972,6 +21106,7 @@
                 "BoundingRadius": 4.1241226
               },
               {
+                "Id": "2c366f94-8a5d-445d-8209-266c5e972c6a",
                 "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -21008,6 +21143,7 @@
                 "BoundingRadius": 22.814684
               },
               {
+                "Id": "d83c30f6-1cff-4070-b152-36112e1b4d48",
                 "Shape": "Cone",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
@@ -21118,7 +21254,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "60927933-04b1-42af-8a8e-dc53a5256c8b",
+            "Id": "3555bcc3-e446-4986-b359-dee93ced4884",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,

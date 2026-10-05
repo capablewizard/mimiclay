@@ -10,6 +10,8 @@ namespace Mimiclay;
 /// this owns collision. It reads the sibling sculpture's brushes, builds a cheap convex collider (carve-aware:
 /// heavily subtracted brushes become hollowed voxel boxes, so an open bin really is open — see
 /// <see cref="SdfCollisionBuilder"/>), and drives a sibling <see cref="ModelCollider"/> with the result.
+/// Shot craters are NOT part of that shape: the build reads the authored brushes only, so cosmetic damage
+/// never changes physics and never costs a rebuild (<see cref="CarveCollision"/> is the future opt-in).
 ///
 /// Rebuilds itself whenever the shape is COMMITTED — it subscribes to <see cref="SdfSculpture.Committed"/>
 /// (gizmo release / discrete edits / a networked disguise swap), never mid-drag — so gameplay code never has
@@ -32,6 +34,26 @@ public sealed class SdfCollider : Component
 	/// The hunter head's mode — its collider exists purely for bullet hit detection. Default off: disguises,
 	/// decoys and world props stay exactly as solid as they look.</summary>
 	[Property] public bool BuildAsTrigger { get; set; }
+
+	/// <summary>Let shot craters (<see cref="SdfBrush.Damage"/> brushes) carve the COLLIDER too. Off everywhere
+	/// today: shots are cosmetic, the collider is built from the authored brushes alone, and a crater landing or
+	/// healing never rebuilds physics (see <see cref="Rebuild"/>). The switch exists so a mode can one day make
+	/// shots physically open a prop up — the carve-aware builder already knows how.</summary>
+	[Property] public bool CarveCollision { get; set; }
+
+	// The brushes the collider is built from: the authored prefix, or everything when craters are opted in.
+	// The damage tail is contiguous at the END (SdfSculpture.AuthoredBrushCount), so this is a cheap range copy.
+	List<SdfBrush> BuildBrushes( List<SdfBrush> all )
+	{
+		if ( all is null || CarveCollision )
+			return all;
+
+		int authored = _sculpture.IsValid() ? _sculpture.AuthoredBrushCount : all.Count;
+		return authored == all.Count ? all : all.GetRange( 0, authored );
+	}
+
+	// Key of the build the standing collider came from (authored-brush hash + probe frame) — see Rebuild's skip.
+	int? _builtKey;
 
 	/// <summary>Tag stamped onto every SDF-collider GameObject (runtime only — this component never runs in
 	/// the editor, so it's never saved into assets). Lets traces treat clay props differently from world
@@ -106,6 +128,7 @@ public sealed class SdfCollider : Component
 		if ( collider.IsValid() )
 			collider.Enabled = false;
 		_builtModel = null; // the next enable's build is a first build again — never a freeze candidate
+		_builtKey = null;   // ...and never a skip candidate
 		_footPoints.Clear();
 		_framePoints.Clear();
 	}
@@ -120,7 +143,32 @@ public sealed class SdfCollider : Component
 		// after the component is created).
 		_sculpture ??= GameObject.Components.Get<SdfSculpture>();
 		_bounds ??= GameObject.Components.Get<SculptBounds>();
-		var brushes = _sculpture.IsValid() ? _sculpture.Brushes : null;
+		var all = _sculpture.IsValid() ? _sculpture.Brushes : null;
+
+		// Shot craters are COSMETIC: the collider is built from the AUTHORED brushes only (the prefix before the
+		// damage tail — see SdfSculpture.AuthoredBrushCount), unless CarveCollision opts the crater subtracts in.
+		// The authored prefix is hashed so a commit that only touched the damage tail — a pellet landing, every
+		// heal step, the heal's final rebuild — is a no-op here: the standing collider IS the collider for this
+		// shape. That matters more than it sounds: with craters in the brush list, each of those commits ran the
+		// carve-aware builder (BuildCarved: a 14³ field grid per bitten copy, each sample evaluating the whole
+		// brush list), which on a many-brush head was a visible stall on EVERY machine per shot (the carve is
+		// broadcast), and the voxel boxes it swapped in multiplied the hull count the body then carried.
+		//
+		// The skip only trusts a standing collider THIS component built (model identity, same test the freeze
+		// uses) — a prefab-deserialized placeholder or a disabled/absent collider always builds. Keyed on the
+		// authored hash plus the foot-probe frame (world-down expressed locally, quantised), since the probes
+		// below depend on the build-time tilt: identical brushes under a new tilt must still rebuild the probes.
+		var standing = GameObject.Components.Get<ModelCollider>();
+		var brushes = BuildBrushes( all );
+		var downLocal = WorldRotation.Inverse * Vector3.Down;
+		int key = HashCode.Combine(
+			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
+			(int)MathF.Round( downLocal.x * 100f ), (int)MathF.Round( downLocal.y * 100f ), (int)MathF.Round( downLocal.z * 100f ),
+			BuildAsTrigger );
+
+		if ( key == _builtKey && _builtModel is not null
+			&& standing.IsValid() && standing.Enabled && ReferenceEquals( standing.Model, _builtModel ) )
+			return;
 
 		// NEVER build physics for an INVALID shape. An invalid shape is deliberately never published (see
 		// SdfNetworkSync's bounds gate), so proxies keep rendering the last valid one — but the collider is a
@@ -136,7 +184,6 @@ public sealed class SdfCollider : Component
 		// together. Only ever skips when a collider is already standing: the very first build must go through
 		// whatever the sculpture starts as, or a shape that spawns invalid (or a decoy this machine's config
 		// judges invalid) would be left with no collision at all.
-		var standing = GameObject.Components.Get<ModelCollider>();
 		bool mayFreeze = !IsProxy && standing.IsValid() && CanFreezeOn( standing );
 		if ( mayFreeze && _bounds.IsValid() && !_bounds.EvaluateNow() )
 			return;
@@ -163,6 +210,7 @@ public sealed class SdfCollider : Component
 		collider.IsTrigger = BuildAsTrigger;
 		collider.Enabled = model is not null;
 		_builtModel = model;
+		_builtKey = key;
 
 		// Footprint snapshot for ground probes — computed AFTER the collider is fully set up, and guarded, so a
 		// problem here can NEVER stop the sculpture from being solid (the collider build must not depend on it).
@@ -175,7 +223,6 @@ public sealed class SdfCollider : Component
 		// noise in a live rotation must not perturb the standing behaviour).
 		try
 		{
-			var downLocal = WorldRotation.Inverse * Vector3.Down;
 			Rotation? probeFrame = null;
 			if ( downLocal.z > -0.9999f )
 				probeFrame = downLocal.z > 0.9999f

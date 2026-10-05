@@ -1240,9 +1240,14 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 			_ownPawn.WorldRotation = at.Rotation;
 		}
 
-		var body = _ownPawn.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndDescendants );
-		if ( body.IsValid() )
+		// ALL of them, not the first found: a hunter pawn carries a second (kinematic) body on its head — see
+		// HunterController.EnsureHeadBody — and a single descendant lookup could hand back that one instead of
+		// the root body that actually moves. Zeroing the head's is harmless.
+		foreach ( var body in _ownPawn.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
 		{
+			if ( !body.IsValid() )
+				continue;
+
 			body.Velocity = 0f;
 			body.AngularVelocity = 0f;
 		}
