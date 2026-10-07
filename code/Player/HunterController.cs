@@ -1782,9 +1782,43 @@ public sealed class HunterController : Component
 			return;
 
 		bool editing = _session.IsValid() && _session.IsEditing && _session.Target == Face;
-		bool talking = !editing && !Bot && Components.Get<PlayerVoice>() is { } voice && voice.IsSpeaking;
-		SdfGroups.SetVariant( brushes, talking ? SdfGroupVariant.Talking : SdfGroupVariant.Idle );
+		int variant = SdfGroupVariant.Idle;
+		var voice = Components.Get<PlayerVoice>();
+		if ( !editing && !Bot && voice.IsValid() && voice.IsSpeaking )
+		{
+			// Lip-sync: the engine's viseme weights pick the shape (the group asset maps each viseme to a
+			// prefab; unmapped ones fall back to the talking prefab). No weights at all = the plain open mouth.
+			var v = voice.CurrentViseme();
+			variant = v is null ? SdfGroupVariant.Talking
+				: v == SdfViseme.Silence ? SdfGroupVariant.Idle
+				: SdfGroupVariant.ForViseme( v.Value );
+		}
+		if ( SdfGroups.DebugVariant >= 0 && !editing )
+			variant = SdfGroups.DebugVariant; // mimi_dbg_mouth: eyeball a shape without anyone talking
+		SdfGroups.SetVariant( brushes, variant );
+
+		if ( PlayerVoice.DebugVisemes && voice.IsValid() && voice.LastPlayed < 1.5f && _sinceMouthLog > 0.2f )
+		{
+			_sinceMouthLog = 0f;
+			if ( !voice.IsSpeaking ) voice.CurrentViseme(); // refresh the debug line while quiet
+			var group = brushes.FirstOrDefault( b => b.Shape == SdfShape.Group );
+			var kind = group is null ? null : SdfGroups.Find( group.GroupKind );
+			string mouth = group is null ? "NO MOUTH GROUP ON THIS FACE"
+				: kind is null ? $"group kind '{group.GroupKind}' NOT FOUND (placed before the .bgroup asset? re-add the mouth)"
+				: $"variant {VariantName( variant )} → {kind.PrefabFor( variant )?.ResourcePath ?? "(no prefab)"}";
+			string who = Network.Owner?.DisplayName ?? GameObject.Name;
+			Log.Info( $"[visemes] {who}{(Owned ? " (you)" : "")}: {voice.LastVisemeDebug} | {mouth}{(editing ? " | EDITING (idle pinned)" : "")}" );
+		}
 	}
+
+	RealTimeSince _sinceMouthLog;
+
+	static string VariantName( int v ) => v switch
+	{
+		SdfGroupVariant.Idle => "Idle",
+		SdfGroupVariant.Talking => "Talking",
+		_ => ((SdfViseme)(v - SdfGroupVariant.VisemeBase)).ToString(),
+	};
 
 	void UpdateBodyDeform()
 	{

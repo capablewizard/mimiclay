@@ -77,8 +77,153 @@ public sealed class PlayerVoice : Voice
 	public PlayerVoice()
 	{
 		Mode = ActivateMode.PushToTalk; // open-mic users still get open mic — their voip_mode preference wins
-		LipSync = false;                // pawns are SDF sculpts, there's no SkinnedModelRenderer to morph
+		LipSync = true;                 // the engine's OVR analysis fills Visemes per decoded frame (no renderer needed
+		                                // since the user's engine change); the SDF mouth reads them via CurrentViseme
 		WorldspacePlayback = true;
 		Distance = 4000f;               // moderate reach so proximity matters at room scale (engine default is map-wide)
+	}
+
+	// ── lip-sync gate workaround ────────────────────────────────────────────────────────────────────────
+	// The current engine only runs the OVR viseme analysis when the voice has a SkinnedModelRenderer
+	// (`sound.LipSync.Enabled = LipSync && Renderer.IsValid()`, set when the first voice packet arrives).
+	// Our heads are SDF sculpts, so give it a dummy: a DISABLED, model-less renderer on a local-only child.
+	// Disabled = no scene object (an enabled null-model renderer draws the dev box) but still IsValid, and
+	// the engine's morph pass bails on a null model, so nothing is ever drawn or animated. Created on every
+	// machine for its own copy of the pawn (proxies need the analysis too) — never saved or networked.
+	// Harmless once Facepunch/sbox-public f5e05ee ships (reading Visemes then enables the analysis itself);
+	// delete this block after that build lands.
+	protected override void OnStart()
+	{
+		base.OnStart();
+		EnsureLipSyncGate();
+	}
+
+	void EnsureLipSyncGate()
+	{
+		if ( Renderer.IsValid() )
+			return;
+
+		var go = new GameObject( false, "LipSyncGate" );
+		go.Flags |= GameObjectFlags.NotSaved | GameObjectFlags.Hidden;
+		go.NetworkMode = NetworkMode.Never;
+		go.SetParent( GameObject, false );
+		var r = go.Components.Create<SkinnedModelRenderer>( startEnabled: false );
+		go.Enabled = true; // the object is live; the renderer component itself stays disabled
+		Renderer = r;
+	}
+
+	// ── viseme picking (the sculpted mouth's lip-sync) ─────────────────────────────────────────────────────
+
+	/// <summary>Shortest time a chosen mouth shape stays up. The analysis runs per audio frame and flips
+	/// between near-equal shapes; clay mouths read better holding a pose than fluttering.</summary>
+	public const float VisemeHold = 0.07f;
+
+	/// <summary>A new shape has to beat the current one's live weight by this much to take over (hysteresis).</summary>
+	public const float VisemeSwitchMargin = 0.12f;
+
+	/// <summary>Below this weight no shape is confident enough — the mouth shows the plain talking look.</summary>
+	public const float VisemeFloor = 0.12f;
+
+	SdfViseme _viseme = SdfViseme.Silence;
+	RealTimeSince _sinceSwitch;
+	RealTimeSince _sinceWeights = 999f;
+
+	/// <summary>The mouth shape this player's voice is making right now, chosen from the engine's 15 viseme
+	/// weights with a hold time and a switch margin so it doesn't flutter. Works on every machine (the weights
+	/// come from local playback, our own pawn included). Returns NULL when the engine isn't producing weights
+	/// — lip-sync off or unsupported — so the caller can fall back to a plain open/closed toggle; returns
+	/// <see cref="SdfViseme.Silence"/> when nothing is confident enough or the player isn't speaking.
+	/// Call once per frame (it advances the hysteresis state).</summary>
+	public SdfViseme? CurrentViseme()
+	{
+		var r = CurrentVisemeCore( out string why );
+		LastVisemeDebug = why;
+		return r;
+	}
+
+	/// <summary>Why the last <see cref="CurrentViseme"/> call answered what it did (mimi_dbg_visemes).</summary>
+	public string LastVisemeDebug { get; private set; }
+
+	SdfViseme? CurrentVisemeCore( out string why )
+	{
+		var w = Visemes;
+		int n = w?.Count ?? 0;
+		string gate = $"lipsync={LipSync} renderer={(Renderer.IsValid() ? "ok" : "none")} weights={n} amp={Amplitude:0.000} laugh={LaughterScore:0.00} loopback={Loopback} proxy={IsProxy}";
+
+		if ( !IsSpeaking )
+		{
+			_viseme = SdfViseme.Silence;
+			why = $"quiet (lastPlayed {LastPlayed.Relative:0.00}s) {gate}";
+			return _sinceWeights < 1f ? SdfViseme.Silence : null;
+		}
+
+		if ( w is null || n < 15 )
+		{
+			why = $"SPEAKING but no viseme weights → plain talking shape. {gate}";
+			return null;
+		}
+
+		// Best non-silence shape this frame.
+		int best = 0;
+		float bestW = 0f;
+		float sum = 0f;
+		for ( int i = 1; i < 15; i++ )
+		{
+			sum += w[i];
+			if ( w[i] > bestW ) { bestW = w[i]; best = i; }
+		}
+
+		// top three for the log
+		var order = new List<int>(); for ( int i = 0; i < 15; i++ ) order.Add( i );
+		order.Sort( ( a, b ) => w[b].CompareTo( w[a] ) );
+		string top = string.Join( " ", order.GetRange( 0, 3 ).ConvertAll( i => $"{(SdfViseme)i}={w[i]:0.00}" ) );
+
+		if ( sum > 0.001f )
+			_sinceWeights = 0f;
+		else if ( _sinceWeights > 0.5f )
+		{
+			why = $"SPEAKING but all weights are 0 for {_sinceWeights.Relative:0.0}s → plain talking shape. {gate}";
+			return null; // speaking, but the analysis is giving us nothing — not wired up on this build
+		}
+
+		var cur = _viseme;
+		float curW = cur == SdfViseme.Silence ? 0f : w[(int)cur];
+		var want = bestW < VisemeFloor ? SdfViseme.Silence : (SdfViseme)best;
+
+		if ( want != cur && _sinceSwitch >= VisemeHold )
+		{
+			// Take over on a clear win, or when the current shape has faded under the floor.
+			if ( want == SdfViseme.Silence || cur == SdfViseme.Silence || bestW > curW + VisemeSwitchMargin || curW < VisemeFloor )
+			{
+				_viseme = want;
+				_sinceSwitch = 0f;
+			}
+		}
+
+		why = $"speaking: top [{top}] sum={sum:0.00} want={want} → picked {_viseme}";
+		return _viseme;
+	}
+
+	// ── debug ──────────────────────────────────────────────────────────────────────────────────────────
+	/// <summary>Toggled by <c>mimi_dbg_visemes</c>: the mouth driver logs what each pawn's voice reports.</summary>
+	public static bool DebugVisemes { get; private set; }
+
+	/// <summary>Diagnostic: hear your OWN voice (Voice.Loopback) so the engine mixes it instead of skipping it —
+	/// if viseme weights only appear with this on, the analysis is starved of our own muted stream.</summary>
+	[ConCmd( "mimi_dbg_voice_loopback" )]
+	static void DebugLoopbackCmd()
+	{
+		var scene = Game.ActiveScene;
+		bool on = false;
+		foreach ( var v in scene.GetAllComponents<PlayerVoice>() )
+			if ( !v.IsProxy ) { v.Loopback = !v.Loopback; on = v.Loopback; }
+		Log.Info( $"mimi_dbg_voice_loopback: own voice playback {(on ? "ON (you'll hear yourself)" : "off")}" );
+	}
+
+	[ConCmd( "mimi_dbg_visemes" )]
+	static void DebugVisemesCmd()
+	{
+		DebugVisemes = !DebugVisemes;
+		Log.Info( $"mimi_dbg_visemes: {(DebugVisemes ? "ON — logs ~5x/s per pawn while it has voice" : "off")}" );
 	}
 }

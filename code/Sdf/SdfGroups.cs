@@ -5,72 +5,104 @@ using System.Linq;
 namespace Mimiclay;
 
 /// <summary>A reusable multi-brush shape the editor treats as ONE brush: a mouth, a hat, a pre-fabricated
-/// prop part. Authored as an ordinary SdfSculpture prefab (its brushes in prefab-local space, the pivot at the
-/// prefab origin); placed as a single <see cref="SdfShape.Group"/> brush whose Position/Rotation/Size move,
-/// turn and scale the whole set. One or more VARIANTS — alternative prefabs swapped per machine at render
-/// time (variant 1 = "talking" for a mouth); a kind with one prefab shows it for every variant.</summary>
-public sealed class SdfGroupKind
+/// prop part. An ASSET (<c>.bgroup</c> — make several from the editor's Asset Browser, New → Brush Group),
+/// authored as ordinary SdfSculpture prefabs (brushes in prefab-local space, the pivot at the prefab origin)
+/// and placed as a single <see cref="SdfShape.Group"/> brush whose Position/Rotation/Size move, turn and
+/// scale the whole set. Members flagged <see cref="SdfBrush.LinkColor"/>/<see cref="SdfBrush.LinkBlend"/> in
+/// the prefab wear the placed brush's material/blend; the rest keep the prefab's.
+/// <para>VARIANTS — alternative prefabs swapped per machine at render time, never saved or networked:
+/// <see cref="Idle"/> is the resting look and the SCALE REFERENCE (a placed brush's Size is its bare
+/// half-extents times the group's scale, so swapping variants never rescales); <see cref="Talking"/> shows
+/// while the player's mic is hot; <see cref="Visemes"/> are the per-mouth-shape prefabs a lip-sync driver
+/// picks from (missing ones fall back to Talking, then Idle).</para></summary>
+[AssetType( Name = "Brush Group", Extension = "bgroup", Category = "Mimiclay" )]
+[Icon( "sentiment_satisfied" )]
+public sealed class SdfGroupKind : GameResource
 {
-	/// <summary>Stable id carried by every placed brush (<see cref="SdfBrush.GroupKind"/>) — saves, prefabs
-	/// and the wire all name the kind by this string, so never rename one that has shipped.</summary>
-	public string Id { get; init; }
+	/// <summary>Stable id carried by every placed brush (<see cref="SdfBrush.GroupKind"/>): the asset's path.
+	/// Saves, prefabs and the wire all name the kind by it, so moving/renaming a shipped asset orphans brushes.</summary>
+	public string Id => ResourcePath;
 
-	/// <summary>Shape-dock label.</summary>
-	public string Label { get; init; }
+	/// <summary>Shape-dock tile label.</summary>
+	[Property] public string Label { get; set; } = "Group";
 
-	/// <summary>Prefab paths per variant (assets-root relative). Index 0 is the idle look and the SCALE
-	/// REFERENCE — a placed brush's Size is this prefab's bare half-extents times the group's scale, so
-	/// swapping to another variant never rescales the brush.</summary>
-	public string[] Prefabs { get; init; }
+	/// <summary>Dock order among groups (lowest first; the first group is also the Slot8 hotkey).</summary>
+	[Property] public int Order { get; set; }
 
 	/// <summary>Only offered by HEAD sessions (the player's face editor), never for props.</summary>
-	public bool HeadOnly { get; init; }
+	[Property] public bool HeadOnly { get; set; } = true;
 
 	/// <summary>Material Icons glyph for the layer row / dock fallback.</summary>
-	public string Glyph { get; init; } = "category";
+	[Property] public string Glyph { get; set; } = "sentiment_satisfied";
+
+	/// <summary>Resting look + scale reference. Required — a group with no idle prefab places nothing.</summary>
+	[Property, Group( "Shapes" )] public PrefabFile Idle { get; set; }
+
+	/// <summary>Shown while the player speaks (the simple open/closed swap). Falls back to Idle.</summary>
+	[Property, Group( "Shapes" )] public PrefabFile Talking { get; set; }
+
+	/// <summary>Lip-sync shapes, one per OVR viseme the driver can land on. Unlisted visemes use Talking.</summary>
+	[Property, Group( "Shapes" )] public List<VisemeShape> Visemes { get; set; } = new();
+
+	public struct VisemeShape
+	{
+		public SdfViseme Viseme { get; set; }
+		public PrefabFile Prefab { get; set; }
+	}
+
+	/// <summary>The prefab a variant index resolves to, with the fallbacks above. Null = nothing to show.</summary>
+	public PrefabFile PrefabFor( int variant )
+	{
+		if ( variant == SdfGroupVariant.Idle )
+			return Idle;
+		if ( variant == SdfGroupVariant.Talking )
+			return Talking ?? Idle;
+
+		var viseme = (SdfViseme)(variant - SdfGroupVariant.VisemeBase);
+		if ( Visemes is { } list )
+			foreach ( var v in list )
+				if ( v.Viseme == viseme && v.Prefab is not null )
+					return v.Prefab;
+		return Talking ?? Idle;
+	}
 }
 
-/// <summary>Which variant of a group's prefab set a machine shows right now. Runtime-only — chosen per
-/// machine from gameplay state (voice), never saved or networked.</summary>
+/// <summary>The engine's 15 lip-sync mouth shapes, in OVRLipSync order (matches <c>Sandbox.Visemes</c> and
+/// the index of each weight in <c>Voice.Visemes</c>).</summary>
+public enum SdfViseme
+{
+	Silence, PP, FF, TH, DD, KK, CH, SS, NN, RR, AA, E, I, O, U,
+}
+
+/// <summary>Which look of a group's prefab set a machine shows right now. Runtime-only — chosen per machine
+/// from gameplay state (voice), never saved or networked.</summary>
 public static class SdfGroupVariant
 {
 	public const int Idle = 0;
 	public const int Talking = 1;
+	/// <summary>Viseme variants: <c>VisemeBase + (int)SdfViseme</c>.</summary>
+	public const int VisemeBase = 2;
+	public static int ForViseme( SdfViseme v ) => VisemeBase + (int)v;
 }
 
-/// <summary>Registry of <see cref="SdfGroupKind"/>s plus the expansion that turns a placed group brush into
+/// <summary>Lookup of <see cref="SdfGroupKind"/> assets plus the expansion that turns a placed group brush into
 /// the concrete member brushes every geometry consumer evaluates (<see cref="SdfBrush.Members"/>).</summary>
 public static class SdfGroups
 {
-	public const string Mouth = "mouth";
-
-	static readonly List<SdfGroupKind> _kinds = new()
-	{
-		new SdfGroupKind
-		{
-			Id = Mouth,
-			Label = "Mouth",
-			Prefabs = new[] { "prefabs/playerheads/mouth_smile.prefab", "prefabs/playerheads/mouth_open.prefab" },
-			HeadOnly = true,
-			Glyph = "sentiment_satisfied",
-		},
-	};
-
-	public static IReadOnlyList<SdfGroupKind> Kinds => _kinds;
+	/// <summary>Every Brush Group asset in the project, dock order.</summary>
+	public static IEnumerable<SdfGroupKind> Kinds =>
+		ResourceLibrary.GetAll<SdfGroupKind>().Where( k => k.Idle is not null ).OrderBy( k => k.Order ).ThenBy( k => k.ResourcePath );
 
 	public static SdfGroupKind Find( string id )
 	{
 		if ( string.IsNullOrEmpty( id ) )
 			return null;
-		foreach ( var k in _kinds )
-			if ( string.Equals( k.Id, id, StringComparison.OrdinalIgnoreCase ) )
-				return k;
-		return null;
+		return ResourceLibrary.TryGet<SdfGroupKind>( id, out var k ) ? k : null;
 	}
 
 	/// <summary>Kinds a session may offer: head sessions get everything, others only the non-head kinds.</summary>
 	public static IEnumerable<SdfGroupKind> KindsFor( bool headSession )
-		=> headSession ? _kinds : _kinds.Where( k => !k.HeadOnly );
+		=> headSession ? Kinds : Kinds.Where( k => !k.HeadOnly );
 
 	// ── templates ────────────────────────────────────────────────────────────────────────────────────
 
@@ -78,7 +110,7 @@ public static class SdfGroups
 	{
 		public List<SdfBrush> Brushes = new();
 		public Vector3 Centre;   // bare (no blend) bounds centre of the ADD members, prefab-local
-		public Vector3 Extents;  // bare half-extents, floored so a flat prefab still scales sanely
+		public Vector3 Extents = new( 1f ); // bare half-extents, floored so a flat prefab still scales sanely
 	}
 
 	static readonly Dictionary<(string Kind, int Variant), Template> _templates = new();
@@ -88,39 +120,37 @@ public static class SdfGroups
 	public static int Version { get; private set; } = 1;
 
 	/// <summary>Forget every loaded prefab (next access reloads). For the editor / a console command after
-	/// re-authoring a group prefab; harmless at runtime.</summary>
+	/// re-authoring a group prefab or asset; harmless at runtime.</summary>
 	public static void Reload()
 	{
 		_templates.Clear();
 		Version++;
 	}
 
-	static readonly Template Empty = new() { Extents = new Vector3( 1f ) }; // unknown kind: no members, unit scale (never divide by 0)
+	static readonly Template Empty = new(); // unknown kind: no members, unit scale (never divide by 0)
 
 	static Template Load( string kindId, int variant )
 	{
 		var kind = Find( kindId );
-		if ( kind is null || kind.Prefabs is not { Length: > 0 } )
+		if ( kind is null || kind.Idle is null )
 			return Empty;
 
-		// Missing variants fall back to idle (a hat has no "talking" look); the cache key is the REQUESTED
-		// variant so the fallback is a cheap dictionary hit next time too.
-		int v = Math.Clamp( variant, 0, kind.Prefabs.Length - 1 );
 		var key = (kind.Id, variant);
 		if ( _templates.TryGetValue( key, out var t ) )
 			return t;
 
 		t = new Template();
-		var brushes = LoadPrefabBrushes( kind.Prefabs[v] );
+		var prefab = kind.PrefabFor( variant );
+		var brushes = prefab is null ? null : LoadPrefabBrushes( prefab );
 		if ( brushes is not null )
 			t.Brushes = brushes;
 
-		// Scale reference comes from the IDLE prefab whatever variant this is (see SdfGroupKind.Prefabs).
-		var reference = v == 0 ? t : Load( kindId, 0 );
-		if ( v == 0 )
+		// Scale reference comes from the IDLE prefab whatever variant this is (see SdfGroupKind).
+		if ( variant == SdfGroupVariant.Idle )
 			MeasureBare( t );
 		else
 		{
+			var reference = Load( kindId, SdfGroupVariant.Idle );
 			t.Centre = reference.Centre;
 			t.Extents = reference.Extents;
 		}
@@ -129,15 +159,14 @@ public static class SdfGroups
 		return t;
 	}
 
-	static List<SdfBrush> LoadPrefabBrushes( string path )
+	static List<SdfBrush> LoadPrefabBrushes( PrefabFile file )
 	{
 		try
 		{
-			var file = ResourceLibrary.Get<PrefabFile>( path );
-			var sculpt = file is null ? null : SceneUtility.GetPrefabScene( file )?.GetAllComponents<SdfSculpture>().FirstOrDefault();
+			var sculpt = SceneUtility.GetPrefabScene( file )?.GetAllComponents<SdfSculpture>().FirstOrDefault();
 			if ( sculpt?.Brushes is not { Count: > 0 } src )
 			{
-				Log.Warning( $"SdfGroups: group prefab \"{path}\" has no SdfSculpture brushes." );
+				Log.Warning( $"SdfGroups: group prefab \"{file.ResourcePath}\" has no SdfSculpture brushes." );
 				return null;
 			}
 
@@ -156,7 +185,7 @@ public static class SdfGroups
 		}
 		catch ( Exception e )
 		{
-			Log.Warning( $"SdfGroups: failed to load group prefab \"{path}\": {e.Message}" );
+			Log.Warning( $"SdfGroups: failed to load group prefab \"{file?.ResourcePath}\": {e.Message}" );
 			return null;
 		}
 	}
@@ -190,16 +219,16 @@ public static class SdfGroups
 	// ── per-brush queries ─────────────────────────────────────────────────────────────────────────────
 
 	/// <summary>The Size a freshly placed group brush gets: the idle prefab at scale 1.</summary>
-	public static Vector3 DefaultSize( string kindId ) => Load( kindId, 0 ).Extents;
+	public static Vector3 DefaultSize( string kindId ) => Load( kindId, SdfGroupVariant.Idle ).Extents;
 
 	/// <summary>The idle prefab's bare bounds centre in prefab space — scaled by the brush, this is the
 	/// group's <see cref="SdfBrush.LocalCentre"/> (the pivot is the prefab origin, not its middle).</summary>
-	public static Vector3 ReferenceCentre( string kindId ) => Load( kindId, 0 ).Centre;
+	public static Vector3 ReferenceCentre( string kindId ) => Load( kindId, SdfGroupVariant.Idle ).Centre;
 
 	/// <summary>Per-axis scale a group brush applies to its prefab: Size over the idle prefab's half-extents.</summary>
 	public static Vector3 Scale( SdfBrush g )
 	{
-		var e = Load( g.GroupKind, 0 ).Extents;
+		var e = Load( g.GroupKind, SdfGroupVariant.Idle ).Extents;
 		return new Vector3( g.Size.x / e.x, g.Size.y / e.y, g.Size.z / e.z );
 	}
 
@@ -207,7 +236,7 @@ public static class SdfGroups
 	/// doesn't arrive wearing whatever swatch the user last painted the face with.</summary>
 	public static (Color Color, float Metallic, float Roughness, float Blend)? DefaultMaterial( string kindId )
 	{
-		foreach ( var m in Load( kindId, 0 ).Brushes )
+		foreach ( var m in Load( kindId, SdfGroupVariant.Idle ).Brushes )
 			if ( m.LinkColor || m.LinkBlend )
 				return (m.Color, m.Metallic, m.Roughness, m.Blend);
 		return null;
@@ -375,5 +404,25 @@ public static class SdfGroups
 	{
 		Reload();
 		Log.Info( "SdfGroups: templates dropped — next frame reloads every group prefab." );
+	}
+
+	/// <summary>Debug override for the mouth driver: a variant every local pawn's face shows regardless of
+	/// voice (−1 = off). Set by <c>mimi_dbg_mouth</c>.</summary>
+	public static int DebugVariant { get; private set; } = -1;
+
+	[ConCmd( "mimi_dbg_mouth" )]
+	static void DebugMouthCmd( string shape = "" )
+	{
+		if ( string.IsNullOrWhiteSpace( shape ) || shape.Equals( "off", StringComparison.OrdinalIgnoreCase ) )
+		{
+			DebugVariant = -1;
+			Log.Info( "mimi_dbg_mouth: off (voice drives the mouth). Usage: mimi_dbg_mouth idle|talking|<viseme: PP FF TH DD KK CH SS NN RR AA E I O U>" );
+			return;
+		}
+		if ( shape.Equals( "idle", StringComparison.OrdinalIgnoreCase ) ) DebugVariant = SdfGroupVariant.Idle;
+		else if ( shape.Equals( "talking", StringComparison.OrdinalIgnoreCase ) ) DebugVariant = SdfGroupVariant.Talking;
+		else if ( Enum.TryParse<SdfViseme>( shape, true, out var v ) ) DebugVariant = SdfGroupVariant.ForViseme( v );
+		else { Log.Warning( $"mimi_dbg_mouth: unknown shape \"{shape}\"." ); return; }
+		Log.Info( $"mimi_dbg_mouth: forcing variant {DebugVariant} ({shape})." );
 	}
 }

@@ -17,7 +17,8 @@ namespace Mimiclay;
 /// texture swapped into the volume. The component re-adopts whatever disk texture the volume holds (fresh bake,
 /// scene load) and re-applies automatically; disabling it restores the clean bake. One caveat: while active, the
 /// volume's IrradianceTexture property points at a runtime texture, so a scene save stores it as null — harmless,
-/// because this component holds the real reference and restores/reboosts on the next load.
+/// because this component holds the real reference and restores/reboosts on the next load. That null depends on the
+/// runtime atlas having NO name (see <see cref="CreateAtlas"/>): a named runtime texture now serializes as its name.
 /// </summary>
 [Title( "Probe Radiosity Boost" )]
 [Category( "Mimiclay/Rendering" )]
@@ -132,6 +133,11 @@ public sealed class ProbeRadiosityBoost : Component, Component.ExecuteInEditor
 
 		var current = volume.IrradianceTexture;
 		var isOurs = _output.IsValid() && current == _output;
+
+		// A pathed output is an atlas from before the unnamed-atlas fix (hotload keeps fields) — force a reapply so
+		// EnsurePingPong retires it before it can serialize into the scene again.
+		if ( isOurs && !string.IsNullOrEmpty( _output.ResourcePath ) )
+			_appliedHash = 0;
 
 		if ( !isOurs )
 		{
@@ -323,20 +329,28 @@ public sealed class ProbeRadiosityBoost : Component, Component.ExecuteInEditor
 
 	void EnsurePingPong( int w, int h, int d )
 	{
-		if ( _pingA.IsValid() && _pingA.Width == w && _pingA.Height == h && _pingA.Depth == d )
+		// The ResourcePath check retires atlases that still carry a name (hotloaded from the pre-fix code, or an engine
+		// that starts naming anonymous textures) — a pathed atlas would serialize into the scene again.
+		if ( _pingA.IsValid() && _pingA.Width == w && _pingA.Height == h && _pingA.Depth == d && string.IsNullOrEmpty( _pingA.ResourcePath ) )
 			return;
 
 		_pingA?.Dispose();
 		_pingB?.Dispose();
-		_pingA = CreateAtlas( w, h, d, "RadiosityBoostA" );
-		_pingB = CreateAtlas( w, h, d, "RadiosityBoostB" );
+		_pingA = CreateAtlas( w, h, d );
+		_pingB = CreateAtlas( w, h, d );
 		_output = null;
 	}
 
-	static Texture CreateAtlas( int w, int h, int d, string name )
+	/// <summary>
+	/// Deliberately UNNAMED. Since the Oct-2026 engine update, Texture.Create registers any named runtime texture as a
+	/// weak resource (RegisterWeakResourceId), which gives it a ResourcePath = the lowercased name. The boosted atlas
+	/// sits in the volume's IrradianceTexture property, so a named one serialized into the scene as "radiosityboostb"
+	/// and every load tried to find a file by that name (FixupResourceName: missing extension). Unnamed = null
+	/// ResourcePath = serializes as null, which is what this component relies on (see class remarks).
+	/// </summary>
+	static Texture CreateAtlas( int w, int h, int d )
 	{
 		return Texture.CreateVolume( w, h, d, ImageFormat.RGBA16161616F )
-			.WithName( name )
 			.WithUAVBinding()
 			.Finish();
 	}

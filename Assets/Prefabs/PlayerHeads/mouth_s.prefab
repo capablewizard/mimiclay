@@ -1,9 +1,9 @@
 {
   "RootObject": {
-    "__guid": "12abc281-3a3d-4bba-bf4b-999937b3384d",
+    "__guid": "57475be7-7fff-4922-8596-dcfb76c1895d",
     "__version": 2,
     "Flags": 0,
-    "Name": "mouth_smile",
+    "Name": "mouth_s",
     "Position": "0,0,0",
     "Rotation": "0,0,0,1",
     "Scale": "1,1,1",
@@ -17,14 +17,14 @@
     "Components": [
       {
         "__type": "Mimiclay.SdfSculpture",
-        "__guid": "29a3e573-e38a-4476-ab92-e16c92fc7f77",
+        "__guid": "e46f0938-52ea-414a-a5a8-a171c21992f3",
         "__enabled": true,
         "Flags": 0,
         "AutoRebuild": true,
         "BakedMesh": null,
         "Brushes": [
           {
-            "Id": "39bdef3f-6a1b-42b0-b7e6-acaa3f9455c1",
+            "Id": "5b962b79-0ac9-4219-b799-f7aa6238c232",
             "Shape": "Box",
             "Operation": "Subtract",
             "CrossSection": "Triangle",
@@ -33,9 +33,9 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.5048,0,1.4973",
+            "Position": "-0.4623,-0.0635,0.3362",
             "Rotation": "0,0,0,1",
-            "Size": "1.46,6.9016,2.9998",
+            "Size": "1.46,6.2598,2.9419",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -43,7 +43,7 @@
             "Slice": 0,
             "Blend": 0.15,
             "Gap": 0,
-            "Rounding": 2.7198,
+            "Rounding": 2.6706,
             "Color": "0.02,0.015,0.015,1",
             "Metallic": 0,
             "Roughness": 1,
@@ -56,7 +56,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "aad1bc82-86e1-4f1b-a057-febd16fa3346",
+            "Id": "cd81709f-c74b-4a63-8b49-2ccca89dda6c",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -65,7 +65,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.8644,-3.2983,2.0885",
+            "Position": "-1.0867,-3.2983,1.2999",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -88,7 +88,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "5d5fa075-4c8d-4757-8c66-7623f7c525c1",
+            "Id": "da6cc92d-a6ae-4a6e-8249-51114bb64e4e",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -97,7 +97,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.5768,-1.0994,2.0885",
+            "Position": "-0.7391,-1.0994,1.2999",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -120,7 +120,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "bb28f5d0-04a0-41ed-8273-18b25da382a5",
+            "Id": "90f98055-749d-49f0-8308-3b80f8f7a835",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -129,7 +129,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.5768,1.0994,2.0885",
+            "Position": "-0.7391,1.0994,1.2999",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -152,7 +152,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "ebd7a7f2-6165-4429-a30c-6b58d03cf8d5",
+            "Id": "0525dc23-34b5-410e-8749-b9a838204364",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -161,7 +161,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.8644,3.2983,2.0885",
+            "Position": "-1.0867,3.2983,1.2999",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -184,7 +184,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "2c3db5e7-1fa5-4daa-87d4-86b70a05853a",
+            "Id": "10620168-46a3-4642-9513-ed5944a2fa29",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -193,7 +193,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.7778,-3.2983,0.1726",
+            "Position": "-1.0646,-3.2983,-0.7629",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -216,7 +216,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "a69e0fb4-859a-4c2c-82cf-15dd06d1f249",
+            "Id": "2df265b9-53a7-40b6-80d5-4ed040bc688d",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -225,7 +225,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.4902,-1.0994,0.1726",
+            "Position": "-0.717,-1.0994,-0.7629",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -248,7 +248,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "84ea65d4-e144-431f-9dd0-dcea83672e96",
+            "Id": "ea51a984-5638-4d3b-af78-f28cc577cd17",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -257,7 +257,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.4902,1.0994,0.1726",
+            "Position": "-0.717,1.0994,-0.7629",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -280,7 +280,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "c546cedb-a22e-42ef-a608-45f3bb2996f0",
+            "Id": "6d8165f4-6fb3-4e86-b85b-1ed73c0e1918",
             "Shape": "Box",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -289,7 +289,7 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.7778,3.2983,0.1726",
+            "Position": "-1.0646,3.2983,-0.7629",
             "Rotation": "0,0,0,1",
             "Size": "0.66,0.9794,1.1791",
             "Points": null,
@@ -312,7 +312,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "e9b8df80-e1b7-4aa8-8ac3-f6492a310c87",
+            "Id": "864650fc-4915-423f-ba3e-9b7b3e689589",
             "Shape": "Sphere",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -321,9 +321,9 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-3.3242,-0.1721,0.7345",
+            "Position": "-3.2426,0,-0.0082",
             "Rotation": "0,0,0,1",
-            "Size": "3.3479,4.5435,2.4896",
+            "Size": "2.1354,2.898,1.5879",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
@@ -344,7 +344,7 @@
             "ShrinkDuration": 1.5
           },
           {
-            "Id": "89ccbf29-3f23-4989-b2c5-f5a61b1bb318",
+            "Id": "12665133-5b14-4bcb-84f2-11fde5ff4f24",
             "Shape": "Spline",
             "Operation": "Add",
             "CrossSection": "Triangle",
@@ -357,18 +357,18 @@
             "Rotation": "0,0,0,1",
             "Size": "1,1,1",
             "Points": [
-              "-1.75,-7.1016,3.5224,1.32",
-              "-1.3407,-5.4934,4.6971,1.32",
-              "-0.588,-2.8818,4.1181,1.32",
-              "-0.2519,0,3.536,1.32",
-              "-0.588,2.8818,4.1181,1.32",
-              "-1.3407,5.4934,4.6971,1.32",
-              "-1.75,7.1016,3.5224,1.32",
-              "-1.2691,6.501,0.7138,1.32",
-              "-0.4123,3.6088,-1.0749,1.32",
-              "-0.0598,0,-1.7025,1.32",
-              "-0.4123,-3.6088,-1.0749,1.32",
-              "-1.2691,-6.501,0.7138,1.32"
+              "-1.6231,-6.5233,2.1401,1.32",
+              "-1.1707,-5.099,3.4227,1.32",
+              "-0.4672,-2.6788,3.2199,1.32",
+              "-0.1663,0,2.8671,1.32",
+              "-0.4589,2.6165,3.2477,1.32",
+              "-1.1359,4.9817,3.4781,1.32",
+              "-1.5731,6.3963,2.2423,1.32",
+              "-1.2325,5.843,-0.4163,1.32",
+              "-0.4799,3.2711,-2.1616,1.32",
+              "-0.1593,0,-2.8057,1.32",
+              "-0.4921,-3.3002,-2.222,1.32",
+              "-1.2668,-5.9195,-0.5185,1.32"
             ],
             "Curvature": 1,
             "SplineClosed": true,
@@ -401,7 +401,7 @@
       },
       {
         "__type": "Sandbox.ModelRenderer",
-        "__guid": "d7f97384-ed11-4ef3-b582-050ee975452f",
+        "__guid": "1685d587-00d4-4736-ae90-2e64bc0cfb41",
         "__enabled": false,
         "Flags": 0,
         "BodyGroups": 18446744073709551615,
@@ -428,7 +428,7 @@
       },
       {
         "__type": "Mimiclay.SdfRaymarchRenderer",
-        "__guid": "9ec4d326-2571-4fe2-8ba2-34313a09b2f4",
+        "__guid": "27653571-8814-427e-b1dc-7ce96304e079",
         "__enabled": true,
         "Flags": 0,
         "AdaptiveQuality": false,
@@ -475,7 +475,7 @@
       },
       {
         "__type": "Mimiclay.SdfCollider",
-        "__guid": "3a3a2bb4-ea7e-48b7-ada3-3c803f851ff0",
+        "__guid": "914a5554-5652-494d-856a-779b4e7d4e07",
         "__enabled": true,
         "Flags": 0,
         "BuildAsTrigger": false,
@@ -489,7 +489,7 @@
       },
       {
         "__type": "Mimiclay.SculptBounds",
-        "__guid": "05eaacac-0809-4069-9a17-072723d22f1d",
+        "__guid": "989c54fd-4f9f-48b8-bacb-e4eeee9e1aa4",
         "__enabled": true,
         "Flags": 0,
         "Anchor": "FollowShape",
@@ -513,7 +513,7 @@
       },
       {
         "__type": "Mimiclay.DamageProfile",
-        "__guid": "8599617d-3b59-4803-8748-bd77907d58ac",
+        "__guid": "714cf0bf-50cb-40dd-b1d0-c094e9e6e00b",
         "__enabled": true,
         "Flags": 0,
         "HealDelay": "0.25,3",
@@ -528,7 +528,7 @@
       },
       {
         "__type": "Mimiclay.ClayBoil",
-        "__guid": "331d2d7d-09b6-4fa4-8d87-5c32a3efefa6",
+        "__guid": "eef2f1ca-6fea-42c0-8c66-ca3cc3a88e31",
         "__enabled": true,
         "Flags": 0,
         "Activation": "Never",
