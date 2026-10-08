@@ -39,9 +39,9 @@ public sealed class GizmoSettings : Component
 	/// to scale the whole shape up, down/left to scale it down.</summary>
 	[Property, Group( "Features" )] public bool ShowUniformScale { get; set; } = true;
 
-	/// <summary>Show the two horizontal 3D sliders below the gizmo (blend + rounding). Used only by the
-	/// editor gizmo (BrushTransformGizmo); the in-game runtime gizmo replaces them with the 2D HUD
-	/// ClaySliders and ignores this flag.</summary>
+	/// <summary>Show the two horizontal 3D sliders below the gizmo (blend + rounding). LEGACY: only the removed
+	/// editor brush gizmo drew these (the editor now edits brush OBJECTS with the native gizmo); the in-game
+	/// runtime gizmo uses the 2D HUD ClaySliders and ignores this flag.</summary>
 	[Property, Group( "Features" )] public bool ShowSliders { get; set; } = true;
 
 	/// <summary>Show the corner plane-move squares (drag to slide the brush in a single plane).</summary>
@@ -139,9 +139,9 @@ public sealed class GizmoSettings : Component
 	[Property, Group( "Uniform Scale" )] public float UniformScaleSensitivity { get; set; } = 150f;
 
 	// --- Sliders (screen sizes) ---
-	// NOTE: only the editor gizmo (BrushTransformGizmo) still draws these 3D sliders. The in-game runtime
-	// gizmo edits blend/rounding via the 2D ClaySliders in the HUD instead, so these settings are
-	// editor-only — kept here because GizmoSettings is shared by both gizmos.
+	// NOTE: LEGACY — the editor brush gizmo that drew these 3D sliders is gone (brush objects + native gizmo now).
+	// The in-game runtime gizmo edits blend/rounding via the 2D ClaySliders in the HUD, so nothing reads these
+	// any more; kept so saved GizmoSettings components still deserialize.
 
 	/// <summary>On-screen distance below the gizmo centre to the first (blend) slider.</summary>
 	[Property, Group( "Sliders" )] public float SliderOffset { get; set; } = 180f;

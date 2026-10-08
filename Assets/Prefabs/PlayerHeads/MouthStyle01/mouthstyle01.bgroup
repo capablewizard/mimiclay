@@ -1,0 +1,27 @@
+{
+  "Label": "Mouth 01",
+  "Order": 1,
+  "HeadOnly": true,
+  "Glyph": "sentiment_satisfied",
+  "Idle": "prefabs/playerheads/mouthstyle01/mouth_closed.prefab",
+  "Talking": "prefabs/playerheads/mouthstyle01/mouth_a_i.prefab",
+  "Visemes": [
+    { "Viseme": "Silence", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_closed.prefab" },
+    { "Viseme": "PP", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_m_b_p.prefab" },
+    { "Viseme": "FF", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_f_v.prefab" },
+    { "Viseme": "TH", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_th_l.prefab" },
+    { "Viseme": "DD", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_c_d_e_g_k_n_r_s.prefab" },
+    { "Viseme": "KK", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_c_d_e_g_k_n_r_s.prefab" },
+    { "Viseme": "CH", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_c_d_e_g_k_n_r_s.prefab" },
+    { "Viseme": "SS", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_c_d_e_g_k_n_r_s.prefab" },
+    { "Viseme": "NN", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_th_l.prefab" },
+    { "Viseme": "RR", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_c_d_e_g_k_n_r_s.prefab" },
+    { "Viseme": "AA", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_a_i.prefab" },
+    { "Viseme": "E", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_c_d_e_g_k_n_r_s.prefab" },
+    { "Viseme": "I", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_a_i.prefab" },
+    { "Viseme": "O", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_ou_agh.prefab" },
+    { "Viseme": "U", "Prefab": "prefabs/playerheads/mouthstyle01/mouth_o_u_w_q.prefab" }
+  ],
+  "__references": [],
+  "__version": 0
+}

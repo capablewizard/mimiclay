@@ -853,8 +853,17 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// ApplyVisibility: MeshMode defaults to DepthProxy with SdfShadows on). Without an
 		// explicit hitbox there was nothing under the cursor to click at all. Registered unconditionally
 		// (before the DistanceSwitching early-out below) so clicking still works even with that feature off.
-		if ( _curRadius > 0.01f )
-			Gizmo.Hitbox.BBox( new BBox( _curLocalMins, _curLocalMaxs ) );
+		// …and never in OBJECT form: there the brush objects are the click targets, and a root box registered here
+		// (full distance, near face) out-scores their capped wire scores whenever the camera is close to the box.
+		bool brushObjects = GameObject.Components.Get<SdfSculpture>()?.BrushObjects == true;
+		if ( _curRadius > 0.01f && !brushObjects )
+		{
+			// Not from INSIDE the box: the engine's box trace then reports a hit at distance zero, which out-scores
+			// every other click target in the view (brush wires, even the transform gizmo) while the camera is in here.
+			var hitBox = new BBox( _curLocalMins, _curLocalMaxs );
+			if ( !hitBox.Contains( Gizmo.Transform.PointToLocal( Gizmo.CurrentRay.Position ) ) )
+				Gizmo.Hitbox.BBox( hitBox );
+		}
 
 		if ( _released || !Scene.IsEditor )
 			return;

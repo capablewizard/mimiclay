@@ -1448,8 +1448,18 @@ public static class Sdf
 	/// it (empty space has no surface to trace), and a cutout's volume entry sits in front of the clay it
 	/// recolours, so clicking the recoloured piece selects the cutout. The nearest volume wins.
 	/// </summary>
-	public static int PickBrush( List<SdfBrush> brushes, Vector3 o, Vector3 d )
+	/// <param name="preferSurface">True = whatever owns the VISIBLE surface under the ray wins outright; a carver's
+	/// volume is only picked where there is no surface behind it at all (the editor's brush objects, where a
+	/// subtract floating in front must not steal every click meant for the clay behind it). False = the in-game
+	/// rule: the nearest volume wins, carve volumes included.</param>
+	public static int PickBrush( List<SdfBrush> brushes, Vector3 o, Vector3 d, bool preferSurface = false )
+		=> PickBrush( brushes, o, d, preferSurface, out _ );
+
+	/// <param name="surfaceDistance">Distance along the ray to the combined visible surface, or MaxValue when the ray
+	/// misses the clay entirely (the editor scores click targets against it).</param>
+	public static int PickBrush( List<SdfBrush> brushes, Vector3 o, Vector3 d, bool preferSurface, out float surfaceDistance )
 	{
+		surfaceDistance = float.MaxValue;
 		if ( brushes is null || brushes.Count == 0 )
 			return -1;
 
@@ -1459,6 +1469,7 @@ public static class Sdf
 		if ( RayMarch( p => Sample( brushes, p ), o, d, out float ts ) )
 		{
 			tSurface = ts;
+			surfaceDistance = ts;
 			var hp = o + d * ts;
 			float bestDist = float.MaxValue;
 			for ( int i = 0; i < brushes.Count; i++ )
@@ -1487,8 +1498,11 @@ public static class Sdf
 			}
 		}
 
-		// A carve/cutout volume in front of the visible surface (or when there's no surface) wins.
-		return (subBrush >= 0 && tSub < tSurface) ? subBrush : surfaceBrush;
+		// A carve/cutout volume in front of the visible surface (or when there's no surface) wins — unless the
+		// caller prefers the surface, in which case the volume only fills in where nothing was hit.
+		if ( subBrush >= 0 && (surfaceBrush < 0 || (!preferSurface && tSub < tSurface)) )
+			return subBrush;
+		return surfaceBrush;
 	}
 
 	// Sphere-trace a signed-distance function along a ray; true + entry distance if it enters the surface.

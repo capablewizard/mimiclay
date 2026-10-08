@@ -12,11 +12,12 @@ namespace Mimiclay;
 [Title( "SDF Sculpture" )]
 [Category( "SDF" )]
 [Icon( "blur_on" )]
-public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Component.IHasBounds
+public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor, Component.IHasBounds
 {
 	// Seed a default sphere as the initial value so a freshly added component always
 	// shows something and has a brush to click — edit-mode doesn't run OnStart/OnUpdate.
-	[Property]
+	// Hidden in object form: there the list is a gathered snapshot and the brush objects are what you edit.
+	[Property, HideIf( nameof( BrushObjects ), true )]
 	public List<SdfBrush> Brushes { get; set; } = new()
 	{
 		new SdfBrush { Shape = SdfShape.Sphere, Size = 24f },
@@ -140,6 +141,14 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 		Rebuild();
 	}
 
+	// Inspector edits (resolution, flip, a legacy list row) rebuild without any tool in the loop. Deserialize
+	// also calls this, but before the component is active, so the load path still rebuilds exactly once.
+	protected override void OnValidate()
+	{
+		if ( Scene is { IsEditor: true } && Active && AutoRebuild )
+			Rebuild();
+	}
+
 	// A sculpture with no SdfRaymarchRenderer sibling relies entirely on its ModelRenderer for both pixels
 	// AND editor click-selection, which normally works fine — but WITH a raymarch renderer present, that
 	// ModelRenderer is deliberately disabled by default (see SdfRaymarchRenderer.ApplyMeshMode), leaving
@@ -147,7 +156,24 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 	// regardless of which renderer sibling is actually doing the drawing.
 	protected override void DrawGizmos()
 	{
-		if ( Brushes is { Count: > 0 } && Sdf.TryGetBounds( Brushes, out var bounds ) )
+		if ( Brushes is not { Count: > 0 } || !Sdf.TryGetBounds( Brushes, out var bounds ) )
+			return;
+
+		// In object form the brush objects carry their own hitboxes and a click should land on THEM; push this
+		// loose bounds box back (bias > 1 = farther) so it only catches clicks that hit no brush.
+		// Object form: the brush objects are the click targets (wires, then the surface owner's volume) and the
+		// root is picked from the hierarchy. No root hitbox at all — a bounds box registered here, even pushed
+		// back, still beats the capped wire scores when the camera is close to the box.
+		if ( BrushObjects )
+		{
+			UpdateEditorHover( bounds );
+			return;
+		}
+
+		// List form: a loose bounds hitbox so the sculpture is clickable with its mesh renderer off. Never from
+		// INSIDE the bounds: the engine's box trace then reports a hit at distance zero, which out-scores every
+		// other click target in the view for as long as the camera sits inside this sculpture's box.
+		if ( !bounds.Contains( Gizmo.Transform.PointToLocal( Gizmo.CurrentRay.Position ) ) )
 			Gizmo.Hitbox.BBox( bounds );
 	}
 
@@ -530,16 +556,9 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 		// sideways from where earlier brushes were moved to).
 		var pos = insert > 0 ? new Vector3( 0f, 0f, Brushes[insert - 1].Position.z + 16f ) : Vector3.Zero;
 
-		// Text sizing: the quad is locked to the glyph slot's 2:1 aspect (a uniform slot→world mapping —
-		// anything else stretches the glyphs) and much shallower than the solid shapes (plaque-like).
-		var size = shape switch
-		{
-			SdfShape.Sphere => new Vector3( 16f ),
-			SdfShape.Text => new Vector3( 24f, 12f, 4f ),
-			_ => new Vector3( 12f ),
-		};
+		var size = SpawnSize( shape );
 
-		Brushes.Insert( insert, new SdfBrush
+		var brush = new SdfBrush
 		{
 			Shape = shape,
 			Operation = operation,
@@ -549,8 +568,16 @@ public sealed class SdfSculpture : Component, Component.ExecuteInEditor, Compone
 			// A spline starts as a short 3-point tube centred on the stack position; each point is then
 			// dragged/sized by its own dots. (xyz = sculpture-local position, w = radius.)
 			Points = shape == SdfShape.Spline ? DefaultSplinePoints( pos ) : null,
-		} );
+		};
 
+		// Object form: the new brush is a child object; the editor tick gathers and rebuilds from it.
+		if ( BrushObjects )
+		{
+			CreateBrushObject( brush, GameObject );
+			return true;
+		}
+
+		Brushes.Insert( insert, brush );
 		Rebuild();
 		return true;
 	}

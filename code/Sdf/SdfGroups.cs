@@ -164,7 +164,7 @@ public static class SdfGroups
 		try
 		{
 			var sculpt = SceneUtility.GetPrefabScene( file )?.GetAllComponents<SdfSculpture>().FirstOrDefault();
-			if ( sculpt?.Brushes is not { Count: > 0 } src )
+			if ( sculpt?.EffectiveBrushes() is not { Count: > 0 } src )
 			{
 				Log.Warning( $"SdfGroups: group prefab \"{file.ResourcePath}\" has no SdfSculpture brushes." );
 				return null;
@@ -178,7 +178,8 @@ public static class SdfGroups
 				var c = b.Copy();
 				c.Damage = false;
 				c.Shrinks = false;
-				c.MirrorX = c.MirrorY = c.MirrorZ = false; // symmetry comes from the PLACED brush, not the prefab
+				// Member symmetry is KEPT: Expand bakes it into reflected copies in prefab space (the placed brush's own
+				// symmetry is applied on top). Clearing it here is what used to drop a mouth's mirrored teeth.
 				list.Add( c );
 			}
 			return list;
@@ -201,6 +202,11 @@ public static class SdfGroups
 			b.LocalBounds( out var lo, out var hi, includeBlend: false );
 			if ( !any ) { mn = lo; mx = hi; any = true; }
 			else { mn = Vector3.Min( mn, lo ); mx = Vector3.Max( mx, hi ); }
+
+			// LocalBounds ignores symmetry; a member mirrored inside the prefab (see Expand) spans its reflection too.
+			if ( b.EffectiveMirrorX ) { mn.x = MathF.Min( mn.x, -hi.x ); mx.x = MathF.Max( mx.x, -lo.x ); }
+			if ( b.EffectiveMirrorY ) { mn.y = MathF.Min( mn.y, -hi.y ); mx.y = MathF.Max( mx.y, -lo.y ); }
+			if ( b.EffectiveMirrorZ ) { mn.z = MathF.Min( mn.z, -hi.z ); mx.z = MathF.Max( mx.z, -lo.z ); }
 		}
 
 		if ( !any )
@@ -314,49 +320,66 @@ public static class SdfGroups
 		for ( int i = 0; i < t.Brushes.Count; i++ )
 		{
 			var m = t.Brushes[i];
-			var e = m.Copy();
-			e.Id = MemberId( g.Id, i );
-			e.GroupKind = null;
-			e.GroupVariant = 0;
-			e.LinkColor = false;
-			e.LinkBlend = false;
 
-			e.Position = pos + rot * (m.Position * scale);
-			e.Rotation = rot * m.Rotation;
-			e.Size = m.Size * LocalScale( m.Rotation, scale );
-
-			if ( m.Points is { } pts )
+			// A member's OWN symmetry (a tooth mirrored inside the mouth prefab) reflects about the PREFAB origin.
+			// That can't ride along as a flag — flags mirror about the host sculpture's origin — so it is baked
+			// here into explicit reflected copies in prefab space, before the group transform. The placed
+			// brush's symmetry is then stamped on every copy as before, so a mirrored mouth still mirrors whole.
+			int cx = m.EffectiveMirrorX ? 1 : 0, cy = m.EffectiveMirrorY ? 1 : 0, cz = m.EffectiveMirrorZ ? 1 : 0;
+			for ( int sx = 0; sx <= cx; sx++ )
+			for ( int sy = 0; sy <= cy; sy++ )
+			for ( int sz = 0; sz <= cz; sz++ )
 			{
-				var np = new List<Vector4>( pts.Count );
-				foreach ( var p in pts )
+				var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
+				bool reflected = sx + sy + sz > 0;
+				var localPos = m.Position * sign;
+				var localRot = reflected ? SdfBrushGizmos.MirrorRotation( m.Rotation, sign ) : m.Rotation;
+
+				var e = m.Copy();
+				e.Id = MemberId( g.Id, i * 8 + sx + sy * 2 + sz * 4 );
+				e.GroupKind = null;
+				e.GroupVariant = 0;
+				e.LinkColor = false;
+				e.LinkBlend = false;
+
+				e.Position = pos + rot * (localPos * scale);
+				e.Rotation = rot * localRot;
+				e.Size = m.Size * LocalScale( localRot, scale );
+
+				if ( m.Points is { } pts )
 				{
-					var q = pos + rot * (new Vector3( p.x, p.y, p.z ) * scale);
-					np.Add( new Vector4( q.x, q.y, q.z, MathF.Max( p.w * mean, 0.05f ) ) );
+					var np = new List<Vector4>( pts.Count );
+					foreach ( var p in pts )
+					{
+						var q = pos + rot * (new Vector3( p.x, p.y, p.z ) * sign * scale);
+						np.Add( new Vector4( q.x, q.y, q.z, MathF.Max( p.w * mean, 0.05f ) ) );
+					}
+					e.Points = np;
 				}
-				e.Points = np;
+
+				e.Blend = m.LinkBlend ? g.Blend : m.Blend * mean;
+				e.Gap = m.Gap * mean;
+				e.Rounding = Math.Clamp( m.Rounding * mean, SdfBrush.MinRounding, e.MaxRounding() );
+
+				if ( m.LinkColor )
+				{
+					e.Color = g.Color;
+					e.Metallic = g.Metallic;
+					e.Roughness = g.Roughness;
+				}
+
+				// Symmetry is the PLACED brush's — judged at the group's own position (its deadzone), then
+				// stamped onto every member so a mouth mirrors as a whole.
+				e.MirrorX = mx;
+				e.MirrorY = my;
+				e.MirrorZ = mz;
+
+				result.Add( e );
 			}
-
-			e.Blend = m.LinkBlend ? g.Blend : m.Blend * mean;
-			e.Gap = m.Gap * mean;
-			e.Rounding = Math.Clamp( m.Rounding * mean, SdfBrush.MinRounding, e.MaxRounding() );
-
-			if ( m.LinkColor )
-			{
-				e.Color = g.Color;
-				e.Metallic = g.Metallic;
-				e.Roughness = g.Roughness;
-			}
-
-			// Symmetry is the PLACED brush's — judged at the group's own position (its deadzone), then
-			// stamped onto every member so a mouth mirrors as a whole.
-			e.MirrorX = mx;
-			e.MirrorY = my;
-			e.MirrorZ = mz;
-
-			result.Add( e );
 		}
 		return result;
 	}
+
 
 	// How much a member's local axes stretch under the group's (prefab-space, per-axis) scale: exact for
 	// an unrotated member, the per-axis length of the scaled axis for a rotated one.
@@ -404,6 +427,23 @@ public static class SdfGroups
 	{
 		Reload();
 		Log.Info( "SdfGroups: templates dropped — next frame reloads every group prefab." );
+	}
+
+	/// <summary>Log what a group kind expands to at a variant (default Idle): the template's brushes and the members
+	/// a unit-scale placed brush would produce, mirror copies included. <c>mimi_groups_dump &lt;kind path&gt; [variant]</c>.</summary>
+	[ConCmd( "mimi_groups_dump" )]
+	static void DumpCmd( string kindId, int variant = 0 )
+	{
+		var t = Load( kindId, variant );
+		Log.Info( $"SdfGroups: kind '{kindId}' variant {variant}: {t.Brushes.Count} template brush(es), centre {t.Centre}, extents {t.Extents}" );
+		foreach ( var b in t.Brushes )
+			Log.Info( $"  template {b.Shape} {b.Operation} enabled={b.Enabled} pos={b.Position} size={b.Size} mirror={(b.MirrorX ? "X" : "")}{(b.MirrorY ? "Y" : "")}{(b.MirrorZ ? "Z" : "")} effective={(b.EffectiveMirrorX ? "X" : "")}{(b.EffectiveMirrorY ? "Y" : "")}{(b.EffectiveMirrorZ ? "Z" : "")}" );
+
+		var g = new SdfBrush { Shape = SdfShape.Group, GroupKind = kindId, GroupVariant = variant, Size = t.Extents };
+		var members = Expand( g );
+		Log.Info( $"  expands to {members.Count} member(s):" );
+		foreach ( var m in members )
+			Log.Info( $"  member {m.Shape} {m.Operation} enabled={m.Enabled} pos={m.Position} size={m.Size}" );
 	}
 
 	/// <summary>Debug override for the mouth driver: a variant every local pawn's face shows regardless of
