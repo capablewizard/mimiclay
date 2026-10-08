@@ -89,9 +89,28 @@ public static class SdfGroupVariant
 /// the concrete member brushes every geometry consumer evaluates (<see cref="SdfBrush.Members"/>).</summary>
 public static class SdfGroups
 {
-	/// <summary>Every Brush Group asset in the project, dock order.</summary>
-	public static IEnumerable<SdfGroupKind> Kinds =>
-		ResourceLibrary.GetAll<SdfGroupKind>().Where( k => k.Idle is not null ).OrderBy( k => k.Order ).ThenBy( k => k.ResourcePath );
+	/// <summary>Master switch for brush groups — the mouths and their lip-sync visemes. OFF (the default) hides every
+	/// group kind from the shape dock, so nobody can place one, and expands placed group brushes to NOTHING, so a
+	/// head that already carries a mouth shows none. Replicated from the host so a session agrees. Shelved
+	/// 2026-10-08 pending a rethink of how the visemes look; flip <c>mimi_mouths 1</c> to work on it.</summary>
+	[ConVar( "mimi_mouths", Flags = ConVarFlags.Replicated, Help = "Enable mouth brush groups and lip-sync visemes (0/1)." )]
+	public static bool Enabled
+	{
+		get => _enabled;
+		set
+		{
+			if ( _enabled == value )
+				return;
+			_enabled = value;
+			Version++; // every cached expansion is keyed on Version — placed groups re-expand (to members or to nothing)
+		}
+	}
+	static bool _enabled;
+
+	/// <summary>Every Brush Group asset in the project, dock order — none at all while <see cref="Enabled"/> is off.</summary>
+	public static IEnumerable<SdfGroupKind> Kinds => Enabled
+		? ResourceLibrary.GetAll<SdfGroupKind>().Where( k => k.Idle is not null ).OrderBy( k => k.Order ).ThenBy( k => k.ResourcePath )
+		: Enumerable.Empty<SdfGroupKind>();
 
 	public static SdfGroupKind Find( string id )
 	{
@@ -304,6 +323,9 @@ public static class SdfGroups
 	/// <see cref="SdfBrush.Members"/> when its cache key changes — never directly.</summary>
 	internal static List<SdfBrush> Expand( SdfBrush g )
 	{
+		if ( !Enabled )
+			return new List<SdfBrush>(); // feature off: a placed mouth is invisible everywhere until it is on again
+
 		var t = Load( g.GroupKind, g.GroupVariant );
 		var result = new List<SdfBrush>( t.Brushes.Count );
 		if ( t.Brushes.Count == 0 )
