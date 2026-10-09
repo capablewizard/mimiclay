@@ -39,6 +39,11 @@ public static class NetStateResync
 		if ( !Networking.IsActive || !Networking.IsHost || c is null || c == Connection.Local )
 			return;
 
+		// Logged before any bail-out below: the live question (2026-10-05 playtest) is whether this engine callback
+		// fires at all for a client finishing a host-driven scene change — a refresh that never happens leaves
+		// dropped roster/pawn-id deltas unhealed, and nothing else would say so.
+		Log.Info( $"NetStateResync: {c.DisplayName} is active on {manager?.GameObject?.Name ?? "?"} (networked: {manager.IsValid() && manager.GameObject.Network.Active})." );
+
 		// Never rate-limited: several clients finishing a load within a second of each other is the NORMAL
 		// case (a scene change), and the last one in is exactly the machine that missed the most.
 		Refresh( manager, $"{c.DisplayName} finished loading", force: true );

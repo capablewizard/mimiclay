@@ -295,7 +295,9 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 	// Host-only. The publish gate (MayPublishPawns): closed while any connection is still loading — but someone
 	// stuck loading forever must not hold everyone's spawns hostage, so it opens on its own after a generous wait.
 	const float PublishGateTimeout = 20f;
-	RealTimeSince _someoneLoadingFor;
+	// Seeded at construction: a default RealTimeSince counts from time 0 (= seconds since the engine started), so
+	// an unseeded field read as "timed out" on the very first tick and the gate never held (2026-10-05 playtest).
+	RealTimeSince _someoneLoadingFor = 0f;
 
 	void TickPublishGate()
 	{

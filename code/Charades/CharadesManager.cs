@@ -136,7 +136,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Com
 	CharadesPhase _observedPhase = (CharadesPhase)(-1);
 
 	// ── Network heal state (see "Pawn-presence heal" + NetStateResync) ────────────────────────────────────
-	RealTimeSince _someoneLoadingFor;                                    // host: how long a connection has been inactive
+	RealTimeSince _someoneLoadingFor = 0f;                                    // host: how long a connection has been inactive (seeded: a default reads as since-engine-start → gate never held)
 	bool _republishPending;                                              // a machine asked us to republish our pawn
 	RealTimeUntil _republishCooldown;                                    // collapse request storms into one respawn
 	RealTimeUntil _botRepublishCooldown;
@@ -345,10 +345,22 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Com
 		if ( !Networking.IsActive || IsHostAuthority || Connection.Local is not { } me )
 			return;
 
-		var complete = Players.ContainsKey( me.Id ) && Players.Values.Count( p => !p.Bot ) >= Connection.All.Count();
-		if ( _rosterWatch.Tick( complete ) )
+		var rowsComplete = Players.ContainsKey( me.Id ) && Players.Values.Count( p => !p.Bot ) >= Connection.All.Count();
+
+		// Pawn-id stamps are container deltas too, so the same mid-load window that drops a row add drops the
+		// stamp — and a row whose PawnId reads empty here is invisible to ReconcilePawnPresence (it can't ask for a
+		// pawn it doesn't know should exist). Once the publish gate is open every machine publishes its pawn
+		// within a frame and the host stamps it the next, so an empty stamp past the watch's grace is a dropped
+		// delta, not a pawn that hasn't spawned yet. Gated on AllPlayersLoaded so a legitimately held pawn (gate
+		// closed for a joiner) never counts.
+		var stampsComplete = !AllPlayersLoaded || Players.Values.All( p => p.PawnId != Guid.Empty );
+
+		if ( _rosterWatch.Tick( rowsComplete && stampsComplete ) )
 		{
-			Log.Info( $"CharadesManager: roster incomplete here ({Players.Count} rows, {Connection.All.Count()} connections, own row {(Players.ContainsKey( me.Id ) ? "present" : "MISSING")}) — asking the host to re-send." );
+			var why = !rowsComplete
+				? $"{Players.Count} rows, {Connection.All.Count()} connections, own row {(Players.ContainsKey( me.Id ) ? "present" : "MISSING")}"
+				: $"{Players.Values.Count( p => p.PawnId == Guid.Empty )} row(s) with no pawn id stamped";
+			Log.Info( $"CharadesManager: roster incomplete here ({why}) — asking the host to re-send." );
 			RequestStateResync();
 		}
 	}

@@ -541,6 +541,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	Vector3 _curMins, _curMaxs;       // world AABB (shader march bracket + frustum bounds)
 	Vector3 _curLocalMins, _curLocalMaxs; // local AABB (the oriented proxy box, for debug draw)
 	Vector3 _curProxyMins, _curProxyMaxs; // padded local proxy bounds actually built (highlight proxy rebuilds from these)
+	Vector3 _localCenter;  // local AABB centre the world centre is placed from (Refresh's placement pass)
+	float _localRadius;    // rotation-invariant bounding radius about it
+	int _placementHash;    // transform the scene object was last placed at
 	Vector3 _curCenter;
 	float _curRadius;
 	int _curCount;
@@ -1109,67 +1112,69 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			_lastShapeHash = shapeHash;
 		}
 
-		int hash = HashCode.Combine( shapeHash, tx.Position, tx.Rotation, Material, TightBounds, EffectiveUseFieldCache );
-		if ( hash != _lastHash || !_so.IsValid() || _forceRepack )
+		// SHAPE pass — only when the shape (or material / proxy mode) changes: re-pack the brush textures and
+		// build a LOCAL-space proxy mesh. Placement is deliberately NOT in this key. The proxy rides the scene
+		// object's own transform (the placement pass below), so moving the object creates no Mesh, no Model
+		// and uploads no texture. It used to: with the transform in the key, every renderer on a moving pawn
+		// re-packed its brushes and built a fresh Mesh + Model EVERY FRAME (the box verts were world-space),
+		// and that churn — ~18KB of pack buffers plus the Mesh/Model/texture-update objects, times every
+		// renderer on every moving pawn — is where the 7–12ms stalls in the 2026-10-09 pawn-placement profile
+		// landed: on trivially small work (packing two brushes), i.e. GC and GPU-resource creation paying for
+		// the allocations. The brushes were already packed in local space; only the proxy wasn't.
+		int shapeKey = HashCode.Combine( shapeHash, Material, TightBounds, EffectiveUseFieldCache );
+		if ( shapeKey != _lastHash || !_so.IsValid() || _forceRepack )
 		{
 			// Bounds computed in the object's LOCAL frame, so the proxy can be ORIENTED to the object
 			// instead of a world-axis-aligned cube (a rotated/flat prop's world AABB is hugely bloated).
+			long rt0 = PawnPerfProbe.Enabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0; // diagnostics only
 			if ( !TryLocalBounds( brushes, out var lmins, out var lmaxs ) )
 				return;
 
 			_forceRepack = false;
-			_lastHash = hash;
+			_lastHash = shapeKey;
 			_curCount = PackBrushes( brushes );
+			long rt1 = rt0 != 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 
-			// World centre/radius (LOD + sphere proxy) from the local AABB centre.
-			_curCenter = tx.PointToWorld( (lmins + lmaxs) * 0.5f );
-			_curRadius = WorldBoundingRadius( brushes, tx, _curCenter );
+			// Local centre/radius (LOD + sphere proxy) from the local AABB centre. The radius is rotation
+			// invariant, so the placement pass only has to move the centre.
+			_localCenter = (lmins + lmaxs) * 0.5f;
+			_localRadius = LocalBoundingRadius( brushes, _localCenter );
 
-			// Default proxy = a box ORIENTED to the object (local AABB transformed to world), so a
-			// rotated/flat prop gets a tight box rather than a giant world-axis cube. TightBounds =
-			// a bounding sphere instead (round props). Either way the shader marches against a world
-			// AABB that contains the proxy, so its bracket stays valid.
+			// Default proxy = a box ORIENTED to the object (the local AABB, placed by the scene object's
+			// transform), so a rotated/flat prop gets a tight box rather than a giant world-axis cube.
+			// TightBounds = a bounding sphere instead (round props). Either way the shader marches against a
+			// world AABB that contains the proxy, so its bracket stays valid.
 			// The PROXY + march bracket must ENCLOSE the field's DEFINED region. The live field pads its
-				// grid beyond the tight bounds for incremental headroom, so surface out in that padding (a blend
-				// bulge, or the brush near the edge) gets sliced flat by the proxy silhouette — those are the
-				// angle-dependent cut-offs. Settled mode never hits this (its field spans exactly the tight
-				// bounds and clamps at the edge). So when a live field is active, grow the proxy to cover it.
-				var pmins = lmins;
-				var pmaxs = lmaxs;
-				bool liveBounds = EffectiveUseFieldCache; // the GPU field is padded by BlendPad, so grow the proxy to enclose it
-				if ( liveBounds )
+			// grid beyond the tight bounds for incremental headroom, so surface out in that padding (a blend
+			// bulge, or the brush near the edge) gets sliced flat by the proxy silhouette — those are the
+			// angle-dependent cut-offs. Settled mode never hits this (its field spans exactly the tight
+			// bounds and clamps at the edge). So when a live field is active, grow the proxy to cover it.
+			var pmins = lmins;
+			var pmaxs = lmaxs;
+			bool liveBounds = EffectiveUseFieldCache; // the GPU field is padded by BlendPad, so grow the proxy to enclose it
+			if ( liveBounds )
+			{
+				pmins -= SdfFieldGpu.BlendPad;
+				pmaxs += SdfFieldGpu.BlendPad;
+				for ( int i = 0; i < 8; i++ ) // grow the LOD/sphere radius to reach the padded corners too
 				{
-					pmins -= SdfFieldGpu.BlendPad;
-					pmaxs += SdfFieldGpu.BlendPad;
-					for ( int i = 0; i < 8; i++ ) // grow the LOD/sphere radius to reach the padded corners too
-					{
-						var corner = new Vector3( (i & 1) != 0 ? pmaxs.x : pmins.x,
-							(i & 2) != 0 ? pmaxs.y : pmins.y, (i & 4) != 0 ? pmaxs.z : pmins.z );
-						_curRadius = MathF.Max( _curRadius, (tx.PointToWorld( corner ) - _curCenter).Length );
-					}
+					var corner = new Vector3( (i & 1) != 0 ? pmaxs.x : pmins.x,
+						(i & 2) != 0 ? pmaxs.y : pmins.y, (i & 4) != 0 ? pmaxs.z : pmins.z );
+					_localRadius = MathF.Max( _localRadius, (corner - _localCenter).Length );
 				}
-
-				_curProxyMins = pmins;
-				_curProxyMaxs = pmaxs;
-
-				Mesh proxy;
-			BBox worldBb;
-			if ( TightBounds )
-			{
-				proxy = BuildSphere( _curCenter, _curRadius, ActiveMaterial );
-				worldBb = new BBox( _curCenter - _curRadius, _curCenter + _curRadius );
-			}
-			else
-			{
-				proxy = BuildOrientedBox( pmins, pmaxs, tx, ActiveMaterial, out worldBb );
 			}
 
-			_curMins = worldBb.Mins;
-			_curMaxs = worldBb.Maxs;
+			_curProxyMins = pmins;
+			_curProxyMaxs = pmaxs;
 			_curLocalMins = lmins;
 			_curLocalMaxs = lmaxs;
 
+			var proxy = TightBounds
+				? BuildSphere( _localCenter, _localRadius, ActiveMaterial )
+				: BuildLocalBox( pmins, pmaxs, ActiveMaterial );
+
 			var model = new ModelBuilder().AddMesh( proxy ).Create();
+			long rt2 = rt0 != 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 
 			// Reuse the scene object (swap its model) rather than delete + recreate it.
 			if ( _so.IsValid() )
@@ -1191,6 +1196,53 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				_so.Flags.CastShadows = MarchedShadowsNow;
 			}
 
+			_placementHash = 0; // a new proxy always needs placing
+
+			if ( rt0 != 0 )
+			{
+				long rt3 = System.Diagnostics.Stopwatch.GetTimestamp();
+				double ms = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+				PawnPerfProbe.SetRefreshDetail( $"pack={(rt1 - rt0) * ms:0.00} model={(rt2 - rt1) * ms:0.00} swap={(rt3 - rt2) * ms:0.00} brushes={_curCount}" );
+			}
+		}
+
+		// PLACEMENT pass — whenever the transform changes: move the scene object and recompute the world
+		// bounds/centre the shader and the LOD read. Pure arithmetic; no GPU resources touched. The shader
+		// gets the same world-space vertices it always did — ProcessVertex applies the object transform to the
+		// local box — and folds samples through ModelOrigin/ModelRotation exactly as before.
+		int placementHash = HashCode.Combine( tx.Position, tx.Rotation, tx.Scale );
+		if ( placementHash != _placementHash )
+		{
+			_placementHash = placementHash;
+			_so.Transform = tx;
+
+			_curCenter = tx.PointToWorld( _localCenter );
+			float scale = MathF.Max( tx.Scale.x, MathF.Max( tx.Scale.y, tx.Scale.z ) );
+			_curRadius = _localRadius * scale;
+
+			BBox worldBb;
+			if ( TightBounds )
+			{
+				worldBb = new BBox( _curCenter - _curRadius, _curCenter + _curRadius );
+			}
+			else
+			{
+				var wmin = new Vector3( float.MaxValue );
+				var wmax = new Vector3( float.MinValue );
+				for ( int i = 0; i < 8; i++ )
+				{
+					var corner = tx.PointToWorld( new Vector3(
+						(i & 1) != 0 ? _curProxyMaxs.x : _curProxyMins.x,
+						(i & 2) != 0 ? _curProxyMaxs.y : _curProxyMins.y,
+						(i & 4) != 0 ? _curProxyMaxs.z : _curProxyMins.z ) );
+					wmin = Vector3.Min( wmin, corner );
+					wmax = Vector3.Max( wmax, corner );
+				}
+				worldBb = new BBox( wmin, wmax );
+			}
+
+			_curMins = worldBb.Mins;
+			_curMaxs = worldBb.Maxs;
 			_so.Bounds = worldBb;
 		}
 
@@ -1414,10 +1466,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// (eye toggle off) are skipped so they vanish in the raymarch path too; order is preserved among the rest.
 	// The layout lives in SdfBrushPacker — ONE definition shared with the GPU field baker, so the two packs
 	// can't drift apart (a divergence here once shipped the extruded profile id to the field but not the march).
+	// Pack buffers are kept across packs — the packer clears them itself, and allocating ~18KB per pack was a
+	// steady source of GC pressure (see the shape-pass note in Refresh).
+	float[] _packData, _packSpline;
+
 	int PackBrushes( List<SdfBrush> brushes )
 	{
-		var data = new float[MaxBrushes * TexelsPerBrush * 4];
-		var spline = new float[MaxSplinePoints * 4]; // shared control-point pool (xyz local pos, w radius)
+		var data = _packData ??= new float[MaxBrushes * TexelsPerBrush * 4];
+		var spline = _packSpline ??= new float[MaxSplinePoints * 4]; // shared control-point pool (xyz local pos, w radius)
 
 		// LOCAL-space pack (Transform.Zero) — the exact same data the GPU field baker consumes. The march
 		// shader folds each world sample into the prop's local frame (ModelOrigin/ModelRotation) instead of
@@ -1447,7 +1503,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	// Bounding-sphere radius about `center` (world). Derived from the (mirror-correct, spline-correct) local
 	// AABB so every shape is covered: the distance to its farthest corner in world space, plus the AABB pad.
-	static float WorldBoundingRadius( List<SdfBrush> brushes, Transform tx, Vector3 center )
+	// Bounding radius about a LOCAL centre — rotation-invariant, so placement only ever moves the centre
+	// (scale is applied in Refresh's placement pass).
+	static float LocalBoundingRadius( List<SdfBrush> brushes, Vector3 localCenter )
 	{
 		if ( !Sdf.TryGetBounds( brushes, out var bb ) )
 			return 2f;
@@ -1459,7 +1517,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				(i & 1) != 0 ? bb.Maxs.x : bb.Mins.x,
 				(i & 2) != 0 ? bb.Maxs.y : bb.Mins.y,
 				(i & 4) != 0 ? bb.Maxs.z : bb.Mins.z );
-			r = MathF.Max( r, (tx.PointToWorld( corner ) - center).Length );
+			r = MathF.Max( r, (corner - localCenter).Length );
 		}
 		return r + 2f; // match TryLocalBounds' pad
 	}
@@ -1506,26 +1564,26 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// A box whose 8 corners come from the LOCAL AABB transformed to world — i.e. oriented to the
 	// object. Also returns the world-space AABB enclosing it (for the shader march bracket + engine
 	// frustum bounds, both of which are axis-aligned).
-	static Mesh BuildOrientedBox( Vector3 lmins, Vector3 lmaxs, Transform tx, Material material, out BBox worldBounds )
+	// The proxy box in the object's LOCAL frame — the scene object's transform places it (see Refresh's
+	// placement pass), so this is built once per shape change, never per move.
+	static Mesh BuildLocalBox( Vector3 lmins, Vector3 lmaxs, Material material )
 	{
 		var c = new Vector3[8];
-		var wmin = new Vector3( float.MaxValue );
-		var wmax = new Vector3( float.MinValue );
-
 		for ( int i = 0; i < 8; i++ )
 		{
-			var local = new Vector3(
+			c[i] = new Vector3(
 				(i & 1) != 0 ? lmaxs.x : lmins.x,
 				(i & 2) != 0 ? lmaxs.y : lmins.y,
 				(i & 4) != 0 ? lmaxs.z : lmins.z );
-
-			c[i] = tx.PointToWorld( local );
-			wmin = Vector3.Min( wmin, c[i] );
-			wmax = Vector3.Max( wmax, c[i] );
 		}
 
-		worldBounds = new BBox( wmin, wmax );
+		return BoxMesh( c, new BBox( lmins, lmaxs ), material );
+	}
 
+	// Eight corners (bit0 = +X, bit1 = +Y, bit2 = +Z) → a closed box mesh. Normals/UVs are unused filler:
+	// the shader reconstructs everything from the march.
+	static Mesh BoxMesh( Vector3[] c, BBox bounds, Material material )
+	{
 		int[] faces =
 		{
 			0,1,3, 0,3,2,  4,6,7, 4,7,5,  // -Z, +Z
@@ -1540,7 +1598,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		var mesh = new Mesh( material );
 		mesh.CreateVertexBuffer( 8, verts );
 		mesh.CreateIndexBuffer( faces.Length, faces );
-		mesh.Bounds = worldBounds;
+		mesh.Bounds = bounds;
 		return mesh;
 	}
 
@@ -1634,7 +1692,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// [Property].</summary>
 	public bool ExcludeFromHighlight { get; set; }
 
-	/// <summary>Changes whenever the proxy geometry is rebuilt (brushes / transform / bounds mode).</summary>
+	/// <summary>Changes whenever the proxy geometry is rebuilt (brushes / material / bounds mode — NOT
+	/// placement: the proxy rides the scene object's transform, see Refresh).</summary>
 	internal int ProxyVersion => _lastHash;
 
 	/// <summary>Has a shape to show but its baked field hasn't landed yet (first bake in flight) — counted as a
@@ -1654,12 +1713,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	internal Vector3 ProxyLocalMins => _curProxyMins;
 	internal Vector3 ProxyLocalMaxs => _curProxyMaxs;
 
-	/// <summary>Build the highlight group's single proxy box: lmins/lmaxs in tx-local space,
-	/// oriented by tx (one CONVEX box for the whole group — overlapping per-member proxies would
-	/// double-blend the translucent outline).</summary>
-	internal static Model BuildHighlightProxyBox( Vector3 lmins, Vector3 lmaxs, Transform tx, Material mat, out BBox worldBb )
+	/// <summary>Build the highlight group's single proxy box in the GROUP's local space — the highlight places
+	/// it by its scene object's transform (one CONVEX box for the whole group — overlapping per-member proxies
+	/// would double-blend the translucent outline).</summary>
+	internal static Model BuildHighlightProxyBox( Vector3 lmins, Vector3 lmaxs, Material mat )
 	{
-		var mesh = BuildOrientedBox( lmins, lmaxs, tx, mat, out worldBb );
+		var mesh = BuildLocalBox( lmins, lmaxs, mat );
 		return new ModelBuilder().AddMesh( mesh ).Create();
 	}
 

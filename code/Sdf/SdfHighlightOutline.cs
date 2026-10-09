@@ -133,6 +133,7 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 	RealTimeUntil _nextScan;
 	bool _scanDirty;
 	BBox _worldBounds;
+	Vector3 _builtMins, _builtMaxs; // the group-local box the current model was built from (with slack)
 	bool _warnedOverflow;
 
 	// IgnoreDepthOfField path: the proxy is drawn through a camera command list in the engine
@@ -329,10 +330,14 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 
 		_material ??= Material.FromShader( "shaders/sdf_highlight.shader" );
 
-		// (Re)build the single group proxy whenever any member rebuilt its own (brush edit, move…)
-		// or the membership changed. One box for the whole group: union each member's padded local
-		// proxy corners, folded into OUR local frame so the box stays oriented to the pawn instead
-		// of bloating into a world-axis cube when it rotates.
+		// One box for the whole group: union each member's padded local proxy corners, folded into OUR local
+		// frame so the box stays oriented to the pawn instead of bloating into a world-axis cube when it
+		// rotates. The box is built in that LOCAL frame and placed by the scene object's transform every
+		// frame (same scheme as SdfRaymarchRenderer.Refresh's placement pass), so moving the group — or a
+		// member moving within it, the head pitching on a hunter — costs arithmetic, never a Mesh + Model.
+		// The model is rebuilt only when the membership/shape hash changes or the live union box no longer
+		// fits inside the built one (or has shrunk well below it): the built box is a conservative hull, and
+		// the march clips to the exact field inside it, so a slightly loose box costs nothing visible.
 		var h = new HashCode();
 		h.Add( ready.Count );
 		foreach ( var r in ready )
@@ -342,31 +347,42 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 		}
 		int hash = h.ToHashCode();
 
-		if ( !_so.IsValid() || _lastBuildHash != hash )
+		var myTx = WorldTransform;
+		var lmins = new Vector3( float.MaxValue );
+		var lmaxs = new Vector3( float.MinValue );
+
+		foreach ( var r in ready )
 		{
-			var myTx = WorldTransform;
-			var lmins = new Vector3( float.MaxValue );
-			var lmaxs = new Vector3( float.MinValue );
-
-			foreach ( var r in ready )
+			var rtx = r.WorldTransform;
+			var rmins = r.ProxyLocalMins;
+			var rmaxs = r.ProxyLocalMaxs;
+			for ( int c = 0; c < 8; c++ )
 			{
-				var rtx = r.WorldTransform;
-				var rmins = r.ProxyLocalMins;
-				var rmaxs = r.ProxyLocalMaxs;
-				for ( int c = 0; c < 8; c++ )
-				{
-					var corner = new Vector3(
-						(c & 1) != 0 ? rmaxs.x : rmins.x,
-						(c & 2) != 0 ? rmaxs.y : rmins.y,
-						(c & 4) != 0 ? rmaxs.z : rmins.z );
+				var corner = new Vector3(
+					(c & 1) != 0 ? rmaxs.x : rmins.x,
+					(c & 2) != 0 ? rmaxs.y : rmins.y,
+					(c & 4) != 0 ? rmaxs.z : rmins.z );
 
-					var local = myTx.PointToLocal( rtx.PointToWorld( corner ) );
-					lmins = Vector3.Min( lmins, local );
-					lmaxs = Vector3.Max( lmaxs, local );
-				}
+				var local = myTx.PointToLocal( rtx.PointToWorld( corner ) );
+				lmins = Vector3.Min( lmins, local );
+				lmaxs = Vector3.Max( lmaxs, local );
 			}
+		}
 
-			var model = SdfRaymarchRenderer.BuildHighlightProxyBox( lmins, lmaxs, myTx, _material, out _worldBounds );
+		bool fits = lmins.x >= _builtMins.x && lmins.y >= _builtMins.y && lmins.z >= _builtMins.z
+			&& lmaxs.x <= _builtMaxs.x && lmaxs.y <= _builtMaxs.y && lmaxs.z <= _builtMaxs.z;
+		var builtSize = _builtMaxs - _builtMins;
+		var liveSize = lmaxs - lmins;
+		bool shrunk = liveSize.x < builtSize.x * 0.6f || liveSize.y < builtSize.y * 0.6f || liveSize.z < builtSize.z * 0.6f;
+
+		if ( !_so.IsValid() || _lastBuildHash != hash || !fits || shrunk )
+		{
+			// Grow a little so ordinary head/arm motion stays inside the built box frame to frame.
+			const float slack = 4f;
+			_builtMins = lmins - slack;
+			_builtMaxs = lmaxs + slack;
+
+			var model = SdfRaymarchRenderer.BuildHighlightProxyBox( _builtMins, _builtMaxs, _material );
 
 			if ( _so.IsValid() )
 			{
@@ -379,9 +395,26 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 				_so.Flags.CastShadows = false;
 			}
 
-			_so.Bounds = _worldBounds;
 			_lastBuildHash = hash;
 		}
+
+		// Placement: the local box rides our transform; the world AABB is what the shader brackets on.
+		_so.Transform = myTx;
+		{
+			var wmin = new Vector3( float.MaxValue );
+			var wmax = new Vector3( float.MinValue );
+			for ( int c = 0; c < 8; c++ )
+			{
+				var corner = myTx.PointToWorld( new Vector3(
+					(c & 1) != 0 ? _builtMaxs.x : _builtMins.x,
+					(c & 2) != 0 ? _builtMaxs.y : _builtMins.y,
+					(c & 4) != 0 ? _builtMaxs.z : _builtMins.z ) );
+				wmin = Vector3.Min( wmin, corner );
+				wmax = Vector3.Max( wmax, corner );
+			}
+			_worldBounds = new BBox( wmin, wmax );
+		}
+		_so.Bounds = _worldBounds;
 
 		// Shared march state: the union bracket + the most demanding member's budget.
 		int maxSteps = 0;

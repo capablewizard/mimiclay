@@ -703,6 +703,18 @@ public sealed class HunterController : Component
 			// off while you scrub a slider with S or add a shape with Space.
 			_controller.UseInputControls = play && !locked && !_leaseCursorFree;
 
+			// Diagnostics: wander mode drives the aim and the walk itself (PawnPerfProbe) so hunters move
+			// with nobody at the keyboard. Replaces input entirely while on.
+			if ( PawnPerfProbe.Wander && play && !locked )
+			{
+				_controller.UseInputControls = false;
+				_controller.UseLookControls = false;
+				var a = _controller.EyeAngles;
+				a.yaw += Time.Delta * PawnPerfProbe.WanderYawSpeed;
+				_controller.EyeAngles = a;
+				_controller.WishVelocity = Rotation.FromYaw( a.yaw ) * Vector3.Forward * PawnPerfProbe.WanderSpeed;
+			}
+
 			// UseInputControls=false stops the controller READING input, but the last WishVelocity stays latched
 			// and the walk move-mode keeps applying it — so a key held when you entered edit/freeze would coast the
 			// hunter away. Clear the wish + any HORIZONTAL momentum every such frame so the body holds still — but keep
@@ -1215,6 +1227,9 @@ public sealed class HunterController : Component
 	// transform is networked, so remote hunters' heads and guns track their aim too).
 	void ComposePawn( Vector3 eye )
 	{
+		long t0 = PawnPerfProbe.Enabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0; // diagnostics only
+		long tPivot = 0, tEyes = 0, tGun = 0; // diagnostics: section stamps for the spike breakdown
+
 		// The angles the pawn's VISUALS point along this frame. In first person — and on every proxy — that IS the
 		// eye angles; in third person it's the eased, near-faded convergence, so your own gun and head track what
 		// you're aiming at rather than running parallel to it, offset by the boom's shoulder/rise. Roll-free via
@@ -1232,6 +1247,7 @@ public sealed class HunterController : Component
 		// The pivot the head and body hang off — placed BEFORE them, since they ride it. The body needs nothing
 		// more than this: its facing and height both come from the pivot.
 		PlaceVisualPivot( eye, visualAim );
+		if ( t0 != 0 ) tPivot = System.Diagnostics.Stopwatch.GetTimestamp();
 
 		// Park the head at the eye, aimed where we're looking. MUST be placed from the same smoothed eye as the
 		// camera: positioning it from the controller's cached EyePosition (stamped raw during fixed update) made
@@ -1261,6 +1277,7 @@ public sealed class HunterController : Component
 			if ( _headBody.IsValid() && _headBody.PhysicsBody.IsValid() )
 				_headBody.PhysicsBody.Transform = Eyes.WorldTransform;
 		}
+		if ( t0 != 0 ) tEyes = System.Diagnostics.Stopwatch.GetTimestamp();
 
 		// Gun display, from the SAME smoothed eye (and after DriveCamera, so the viewmodel can never lag the
 		// camera by a frame). Runs on every machine — proxies swing the arm/world model from the networked eye
@@ -1282,6 +1299,7 @@ public sealed class HunterController : Component
 			_gun.Place( eye, visualAim, Owned && !EditMode && !GameSettings.HunterThirdPerson,
 				Vector3.Up * armLift + armBob );
 		}
+		if ( t0 != 0 ) tGun = System.Diagnostics.Stopwatch.GetTimestamp();
 
 		// Push the renderers' placement snapshot NOW, with every transform above final — exactly what
 		// HunterGun.Place already does for the gun clones, and for the same reason.
@@ -1303,9 +1321,21 @@ public sealed class HunterController : Component
 		{
 			foreach ( var r in _sdfRenderers )
 			{
-				if ( r.IsValid() && r.Active )
-					r.Refresh();
+				if ( !r.IsValid() || !r.Active )
+					continue;
+
+				long tr0 = t0 != 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+				r.Refresh();
+				if ( t0 != 0 )
+					PawnPerfProbe.NoteRefresh( r, System.Diagnostics.Stopwatch.GetTimestamp() - tr0 );
 			}
+		}
+
+		if ( t0 != 0 )
+		{
+			long tEnd = System.Diagnostics.Stopwatch.GetTimestamp();
+			PawnPerfProbe.Record( this, tEnd - t0 );
+			PawnPerfProbe.RecordBreakdown( this, tEnd - t0, tPivot - t0, tEyes - tPivot, tGun - tEyes, tEnd - tGun );
 		}
 	}
 
@@ -2019,11 +2049,41 @@ public sealed class HunterController : Component
 		if ( !_headCollider.IsValid() )
 			return;
 
-		if ( _headCollider.Enabled != !Owned )
-			_headCollider.Enabled = !Owned;
+		bool want = !Owned || PawnPerfProbe.ForceOwnHeadCollider; // the force is diagnostics only
+		if ( _headCollider.Enabled != want )
+			_headCollider.Enabled = want;
 
 		EnsureHeadBody();
 	}
+
+	// Diagnostics (PawnPerfProbe): A/B the head's own body against the old pawn-root binding, and report
+	// where the head's shapes currently live.
+	internal void SetHeadBodyEnabled( bool on )
+	{
+		EnsureHeadBody();
+		if ( _headBody.IsValid() && _headBody.Enabled != on )
+			_headBody.Enabled = on;
+	}
+
+	internal int HeadBodyShapeCount => _headBody.IsValid() && _headBody.Enabled && _headBody.PhysicsBody.IsValid()
+		? _headBody.PhysicsBody.Shapes.Count() : 0;
+
+	/// <summary>Diagnostics: how far the head's physics body sits from the head object (world units, and
+	/// degrees of rotation) — the body is where bullets land, the object is where the head is drawn.</summary>
+	internal (float dist, float deg) HeadBodyTrackingError
+	{
+		get
+		{
+			if ( !Eyes.IsValid() || !_headBody.IsValid() || !_headBody.PhysicsBody.IsValid() )
+				return (-1f, -1f);
+			var body = _headBody.PhysicsBody.Transform;
+			var head = Eyes.WorldTransform;
+			return (body.Position.Distance( head.Position ), Rotation.Difference( body.Rotation, head.Rotation ).Angle());
+		}
+	}
+
+	internal int RootBodyShapeCount => _controller.IsValid() && _controller.Body.IsValid() && _controller.Body.PhysicsBody.IsValid()
+		? _controller.Body.PhysicsBody.Shapes.Count() : 0;
 
 	// The head's hit collider gets its OWN physics body — a kinematic Rigidbody on the Head object (authored in
 	// hunter.prefab; this is the backstop for any pawn prefab without it, and for the mid-play prefab refresh

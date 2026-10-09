@@ -55,6 +55,9 @@ public sealed class SdfCollider : Component
 	// Key of the build the standing collider came from (authored-brush hash + probe frame) — see Rebuild's skip.
 	int? _builtKey;
 
+	/// <summary>How many collider builds have actually run on this machine (skips excluded). Diagnostics.</summary>
+	public static int BuildCount { get; private set; }
+
 	/// <summary>Tag stamped onto every SDF-collider GameObject (runtime only — this component never runs in
 	/// the editor, so it's never saved into assets). Lets traces treat clay props differently from world
 	/// geometry — the camera boom's world-only mode filters on it.</summary>
@@ -169,6 +172,8 @@ public sealed class SdfCollider : Component
 		if ( key == _builtKey && _builtModel is not null
 			&& standing.IsValid() && standing.Enabled && ReferenceEquals( standing.Model, _builtModel ) )
 			return;
+
+		BuildCount++;
 
 		// NEVER build physics for an INVALID shape. An invalid shape is deliberately never published (see
 		// SdfNetworkSync's bounds gate), so proxies keep rendering the last valid one — but the collider is a
