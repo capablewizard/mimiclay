@@ -77,9 +77,26 @@
 	// One drawn label: which pawn it belongs to (@key, so the razor diff tracks plates across frames), the name,
 	// the projected screen position as viewport fractions (resolution-independent — see PlateStyle), and whether
 	// that player's voice is currently playing (drives the speaker icon).
-	readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen, bool Speaking );
+	internal readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen, bool Speaking );
 
 	readonly List<Plate> _plates = new();
+
+	/// <summary>Diagnostics: the plates drawn this frame (see <c>mimi_dbg_plates</c>).</summary>
+	internal IReadOnlyList<Plate> Plates => _plates;
+
+	/// <summary>Diagnostics: the world point a plate for this pawn would hang from — the same anchor the
+	/// overlay projects, so a playtest dump can compare it against where the body actually renders.</summary>
+	internal static Vector3 DebugAnchorFor( GameObject pawn, float headClearance = 5f )
+	{
+		var sculpt = AnchorSculpture( pawn );
+		if ( sculpt.IsValid() && Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
+		{
+			var topLocal = bounds.Center.WithZ( bounds.Maxs.z );
+			return sculpt.WorldTransform.PointToWorld( topLocal ) + Vector3.Up * headClearance;
+		}
+
+		return pawn.WorldPosition + Vector3.Up * 80f;
+	}
 
 	// Other players' pawns gathered this frame, before plates are built — the pass that finds them is also the
 	// pass that finds OUR pawn, and TeamVisible needs our role before any plate can be judged.

@@ -170,6 +170,9 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	/// <summary>Where the player is looking, seeded on spawn. Yaw drives movement + body facing.</summary>
 	public Angles EyeAngles { get; private set; }
 
+	/// <summary>Benchmark helper: aim the prop (PerfScenario views).</summary>
+	internal void PerfSetEye( Angles a ) { EyeAngles = a with { roll = 0f }; _bodyYaw = a.yaw; }
+
 	public bool IsCrouching { get; private set; }
 
 	/// <summary>True when a downward probe found ground this fixed step (gates jumping + full ground control).</summary>
@@ -926,6 +929,10 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 
 			// WASD is in local space; orient it by yaw only so look-up doesn't slow you down.
 			wish = Rotation.FromYaw( MoveYaw ) * move * speed;
+
+			// Benchmark route driver (PerfScenario.mimi_perf_walk): a world-space wish replaces input.
+			if ( PerfScenario.DriveProp( GameObject, speed ) is Vector3 perfWish )
+				wish = perfWish;
 		}
 
 		// Leash: pressing outward at the edge is simply not asked for — the tangential part survives, so

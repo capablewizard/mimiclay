@@ -61,6 +61,36 @@ public sealed class SdfFieldGpu
 
 	public bool IsValid => Texture.IsValid();
 
+	/// <summary>Release every GPU resource this field owns. The field is unusable afterwards (<see cref="IsValid"/>
+	/// false) — owned by <see cref="SdfFieldCache"/>, which calls this when the last renderer lets go and the grace
+	/// period lapses. Nothing disposed these before: old fields lived until the GC finaliser got round to them.</summary>
+	public void Dispose()
+	{
+		Texture?.Dispose(); Texture = null;
+		Occupancy?.Dispose(); Occupancy = null;
+		Atlas?.Dispose(); Atlas = null;
+		IndirectionTex?.Dispose(); IndirectionTex = null;
+		_brushTex?.Dispose(); _brushTex = null;
+		_splineTex?.Dispose(); _splineTex = null;
+		_counter?.Dispose(); _counter = null;
+		_nx = _ny = _nz = 0;
+		_bx = _by = _bz = 0;
+		_indBx = _indBy = _indBz = 0;
+		_atlasX = _atlasY = _atlasZ = 0;
+	}
+
+	/// <summary>Resident VRAM estimate of every texture this field owns (guide/dense field, occupancy, atlas,
+	/// indirection). Diagnostics only (mimi_perf_stats).</summary>
+	public long EstimatedBytes => Bytes( Texture ) + Bytes( Occupancy ) + Bytes( Atlas ) + Bytes( IndirectionTex );
+
+	static long Bytes( Texture t )
+	{
+		if ( !t.IsValid() ) return 0;
+		long px = (long)t.Width * Math.Max( t.Height, 1 ) * Math.Max( t.Depth, 1 );
+		int bpp = t.ImageFormat switch { ImageFormat.I8 => 1, ImageFormat.R32F => 4, ImageFormat.RGBA32323232F => 16, _ => 4 };
+		return px * bpp;
+	}
+
 	Texture _brushTex, _splineTex;
 	readonly SdfTextAtlas _textAtlas = new(); // baked text distance fields (Text brushes), bound as "TextSdf"
 	ComputeShader _cs;

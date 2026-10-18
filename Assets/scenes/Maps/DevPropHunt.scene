@@ -58,49 +58,6 @@
       "Children": []
     },
     {
-      "__guid": "7b0048a5-ddb3-4714-b799-6617a6cd922b",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Sun",
-      "Position": "283.193298,-1492.71228,-411.17746",
-      "Rotation": "-0.115075134,0.364971697,0.277815908,0.881119549",
-      "Scale": "1,1,1",
-      "Tags": "light_directional,light",
-      "Enabled": false,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.DirectionalLight",
-          "__guid": "0181cb35-e6e3-40da-933f-e0ad8d3af53f",
-          "__enabled": true,
-          "Flags": 512,
-          "ContactShadows": true,
-          "Contribution": "Diffuse, Specular, Transmissive",
-          "FogMode": "Enabled",
-          "FogStrength": 1,
-          "LightColor": "0.94419,0.97767,1,1",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "ShadowBias": 0.0005,
-          "ShadowCascadeCount": 4,
-          "ShadowCascadeSplitRatio": 0.91,
-          "ShadowHardness": 0,
-          "Shadows": true,
-          "SkyColor": "0.03548,0.04247,0.04651,1",
-          "Visualizer": {}
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "c73ce1c4-5969-44fc-a9a5-adb933a1fcb8",
       "__version": 2,
       "Flags": 0,
@@ -128,11 +85,77 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
-          "SkyMaterial": "materials/skybox/skybox_dark_01.vmat",
-          "Tint": "2,2,2,1"
+          "SkyMaterial": {
+            "Id": "d7c6c4c4-338b-47d9-8a8c-8e67b5e3915f",
+            "Path": "sky/kloofendal_48d_partly_cloudy_puresky_2k.vmat"
+          },
+          "Tint": "1,1,1,1"
         }
       ],
-      "Children": []
+      "Children": [
+        {
+          "__guid": "7b0048a5-ddb3-4714-b799-6617a6cd922b",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Sun",
+          "Position": "0,0,0",
+          "Rotation": "0.118833497,0.385033667,-0.269903451,0.874516904",
+          "Scale": "1,1,1",
+          "Tags": "light_directional,light",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.DirectionalLight",
+              "__guid": "0181cb35-e6e3-40da-933f-e0ad8d3af53f",
+              "__enabled": true,
+              "Flags": 512,
+              "ContactShadows": true,
+              "Contribution": "Diffuse, Specular, Transmissive",
+              "FogMode": "Enabled",
+              "FogStrength": 1,
+              "LightColor": "0.94419,0.97767,1,1",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "ShadowBias": 0.0005,
+              "ShadowCascadeCount": 4,
+              "ShadowCascadeSplitRatio": 0.91,
+              "ShadowHardness": 0,
+              "Shadows": true,
+              "SkyColor": "0.03548,0.04247,0.04651,1",
+              "Visualizer": {}
+            },
+            {
+              "__type": "Mimiclay.SunFromSkybox",
+              "__guid": "9ca1119e-7fce-46af-b2cd-c59773fe5d63",
+              "__enabled": true,
+              "Flags": 0,
+              "AutoAlign": true,
+              "HotspotFraction": 0.5,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "PeakLuminance": 50.534813,
+              "ScannedTexture": "(generated) (cube, mip 0, 512x512)",
+              "Skybox": null,
+              "SunElevation": 47.526012,
+              "SunYaw": 145.69626
+            }
+          ],
+          "Children": []
+        }
+      ]
     },
     {
       "__guid": "af58f18a-1b12-43d1-a873-74cb3ee29edd",
@@ -295,6 +318,118 @@
       "Children": []
     },
     {
+      "__guid": "cf573681-1244-44e2-b3f7-7051ea33786c",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Floor_Blue",
+      "Position": "1068.63208,-800,19.3248291",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "65caf031-1cf2-49f3-8f93-2520a5d927ad",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "0.18821,0.42321,0.67442,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "6589477f-7b10-8d6c-8e8b-dc6f7cfe37ab"
+            },
+            "Materials": [
+              "materials/dev/reflectivity_50.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "22941c4c-7b85-45b9-a92c-76f2240683fb",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Floor_Green",
+      "Position": "176.237701,-800,19.3248291",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "world",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MeshComponent",
+          "__guid": "a2df1f7b-28ce-4bdd-b9fd-0b8437f72362",
+          "__enabled": true,
+          "Flags": 0,
+          "ColliderFlags": 0,
+          "Collision": "Mesh",
+          "Color": "0.65419,0.87907,0.20443,1",
+          "Elasticity": null,
+          "Friction": null,
+          "HideInGame": false,
+          "IsTrigger": false,
+          "Mesh": {
+            "Data": {
+              "$blob": "1e105c43-6f6e-874e-a962-f8c98f61244f"
+            },
+            "Materials": [
+              "materials/dev/reflectivity_50.vmat"
+            ]
+          },
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OnObjectTriggerEnter": null,
+          "OnObjectTriggerExit": null,
+          "OnTriggerEnter": null,
+          "OnTriggerExit": null,
+          "RenderType": "On",
+          "RollingResistance": null,
+          "SmoothingAngle": 40,
+          "Static": true,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        }
+      ],
+      "Children": []
+    },
+    {
       "__guid": "390fe2f8-19c4-4b5d-b55a-1126f18ab11c",
       "__version": 2,
       "Flags": 0,
@@ -324,7 +459,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "75f0e27c-5b37-816c-9acf-69ffadbfadfe"
+              "$blob": "fca89808-18c1-8672-9f34-a8765e655b3d"
             },
             "Materials": [
               "materials/dev/reflectivity_50.vmat"
@@ -380,7 +515,7 @@
           "IsTrigger": false,
           "Mesh": {
             "Data": {
-              "$blob": "b1e6f28a-019e-8240-9f19-8f756302d163"
+              "$blob": "1c31ad0e-bee7-8b44-942b-a8c04ff2772d"
             },
             "Materials": [
               "materials/dev/reflectivity_70.vmat"
@@ -452,7 +587,7 @@
           "OnObjectTriggerExit": null,
           "OnTriggerEnter": null,
           "OnTriggerExit": null,
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "RollingResistance": null,
           "SmoothingAngle": 40,
           "Static": true,
@@ -534,7 +669,10 @@
                 "Path": "materials/emissivelight.vmat"
               },
               "Materials": null,
-              "Model": "models/dev/sphere.vmdl",
+              "Model": {
+                "Id": "00000000-0000-0000-f09f-a6f0fe7f0000",
+                "Path": "models/dev/sphere.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -627,7 +765,10 @@
                 "Path": "materials/emissivelight.vmat"
               },
               "Materials": null,
-              "Model": "models/dev/sphere.vmdl",
+              "Model": {
+                "Id": "00000000-0000-0000-f09f-a6f0fe7f0000",
+                "Path": "models/dev/sphere.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -720,7 +861,10 @@
                 "Path": "materials/emissivelight.vmat"
               },
               "Materials": null,
-              "Model": "models/dev/sphere.vmdl",
+              "Model": {
+                "Id": "00000000-0000-0000-f09f-a6f0fe7f0000",
+                "Path": "models/dev/sphere.vmdl"
+              },
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -1188,6 +1332,14 @@
           },
           {
             "Target": {
+              "Type": "GameObject",
+              "IdValue": "f7e64cb6-fb5e-4748-845a-d6968c6a15f8"
+            },
+            "Property": "Enabled",
+            "Value": false
+          },
+          {
+            "Target": {
               "Type": "Component",
               "IdValue": "bba2bbac-ee49-4814-b9f3-d73503ffc5e7"
             },
@@ -1200,6 +1352,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "3.30508518,-1.1920929E-06,22.636385",
                 "Rotation": "0,0,0,1",
@@ -1237,6 +1392,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "3.30508518,-1.1920929E-06,19.0813293",
                 "Rotation": "0,0,0,1",
@@ -1274,6 +1432,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "0,0,1.52404785",
                 "Rotation": "0,0,0,1",
@@ -1311,6 +1472,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-14.041873,1.8119812E-05,6.28613281",
                 "Rotation": "0,0,0,1",
@@ -1348,6 +1512,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-2.75405359,3.32593918E-05,-5.8425293",
                 "Rotation": "0,0,0,1",
@@ -1385,6 +1552,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-2.75405359,3.33786011E-05,16.703064",
                 "Rotation": "0,0,0,1",
@@ -1422,6 +1592,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-8.03348541,4.38690186E-05,16.703064",
                 "Rotation": "0,0,0,1",
@@ -1459,6 +1632,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-8.03351021,14.0355177,16.703064",
                 "Rotation": "0,0,0,1",
@@ -1496,6 +1672,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-3.68930769,3.09944153E-05,24.5081482",
                 "Rotation": "0,0,0,1",
@@ -1533,6 +1712,9 @@
                 "CrossSection": "Triangle",
                 "Text": "...................",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-7.24305725,-0.0201437473,6.77246094",
                 "Rotation": "0.496836603,-0.494612694,-0.503105521,0.505367577",
@@ -1561,7 +1743,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 28.551985
+                "BoundingRadius": 35.367867
               },
               {
                 "Id": "d1d88f62-6496-4c59-94b2-d6e74409fbc7",
@@ -1570,6 +1752,9 @@
                 "CrossSection": "Triangle",
                 "Text": "...................",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-7.29599857,-0.0203790665,3.66326904",
                 "Rotation": "0.496836603,-0.494612694,-0.503105521,0.505367577",
@@ -1598,7 +1783,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 28.551985
+                "BoundingRadius": 35.367867
               },
               {
                 "Id": "7f7712f6-de1e-4a74-9a7c-a53fb7016ce5",
@@ -1607,6 +1792,9 @@
                 "CrossSection": "Triangle",
                 "Text": "...................",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-7.24305725,-0.0201437473,-10.9282837",
                 "Rotation": "0.496836603,-0.494612694,-0.503105521,0.505367577",
@@ -1635,7 +1823,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 28.551985
+                "BoundingRadius": 35.367867
               },
               {
                 "Id": "71ef23e5-f381-49d8-8b1e-aefc2c8b777e",
@@ -1644,6 +1832,9 @@
                 "CrossSection": "Triangle",
                 "Text": "...................",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-7.29599857,-0.0203790665,-14.0374756",
                 "Rotation": "0.496836603,-0.494612694,-0.503105521,0.505367577",
@@ -1672,7 +1863,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 28.551985
+                "BoundingRadius": 35.367867
               },
               {
                 "Id": "7eefe6e8-26ee-42b7-9200-508d40cf6008",
@@ -1681,6 +1872,9 @@
                 "CrossSection": "Triangle",
                 "Text": "...................",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-7.24305725,-0.0201437473,-1.55145264",
                 "Rotation": "0.496836603,-0.494612694,-0.503105521,0.505367577",
@@ -1709,7 +1903,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 28.551985
+                "BoundingRadius": 35.367867
               },
               {
                 "Id": "9b25cbef-6a1c-4706-9473-5318f1c699d4",
@@ -1718,6 +1912,9 @@
                 "CrossSection": "Triangle",
                 "Text": "...................",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-7.29599857,-0.0203790665,-4.66064453",
                 "Rotation": "0.496836603,-0.494612694,-0.503105521,0.505367577",
@@ -1746,7 +1943,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 28.551985
+                "BoundingRadius": 35.367867
               },
               {
                 "Id": "43ce6b00-1c34-4329-8ee9-cbb6952b99ac",
@@ -1755,6 +1952,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-5.84764576,-25.6445236,27.6458435",
                 "Rotation": "0,0,0,1",
@@ -1792,6 +1992,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-10.500927,-21.3242989,0.727111816",
                 "Rotation": "0,-0.707106829,2.98023224E-08,0.707106769",
@@ -1829,6 +2032,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-10.1638985,-21.3243065,-10.9661255",
                 "Rotation": "0,-0.707106829,2.98023224E-08,0.707106769",
@@ -1866,6 +2072,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-5.84764576,-25.6445236,45.6200867",
                 "Rotation": "0,0,0,1",
@@ -1903,6 +2112,9 @@
                 "CrossSection": "Triangle",
                 "Text": "clay",
                 "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
                 "Enabled": true,
                 "Position": "-5.84764576,-25.6445236,71.032959",
                 "Rotation": "5.96046448E-08,-1,1.77635684E-15,-4.37113883E-08",
@@ -1934,6 +2146,14 @@
                 "BoundingRadius": 4.1074
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
+            },
+            "Property": "__enabled",
+            "Value": true
           }
         ],
         "MovedObjects": []
@@ -2008,7 +2228,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "3555bcc3-e446-4986-b359-dee93ced4884",
+            "Id": "38aad64a-5716-49a9-b455-8a9ab7a80e43",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -2338,7 +2558,7 @@
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": true,
+      "Enabled": false,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -2364,7 +2584,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": true,
-          "LastImport": "63 object(s), 67661 tris — 20:59:15",
+          "LastImport": "63 object(s), 67661 tris — 18:57:04",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -3176,6 +3396,14 @@
             },
             "Property": "Rotation",
             "Value": "-0.0308435634,0.0308435634,0.706433773,0.706433773"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5bb504da-cf04-44a7-976a-5e7c4197f6cc"
+            },
+            "Property": "__enabled",
+            "Value": false
           }
         ],
         "MovedObjects": []
@@ -3233,7 +3461,7 @@
           "CharadesWriteSeconds": 45,
           "ConsolidationSeconds": 12,
           "DebugSoloHide": false,
-          "DirectPlayGame": "PropHunt",
+          "DirectPlayGame": "Creative",
           "DisableSceneCameras": true,
           "HideSeconds": 20,
           "HintSeconds": 30,

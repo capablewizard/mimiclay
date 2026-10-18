@@ -188,6 +188,17 @@ PS
 	// Scene-depth occlusion clamp for the FORWARD march (see RayMarchHit). Runtime toggle, same
 	// variant-budget reasoning as the two above.
 	int       g_nSdfDepthCull   < Attribute( "SdfDepthCull" ); Default( 1 ); >;
+	// FORWARD pass: 1 = take the hit from the camera depth prepass this object already marched into (one
+	// field tap to confirm the pixel's depth belongs to this prop) instead of sphere-tracing a second time.
+	// The prepass is then the ONLY march per pixel; forward pays shading taps only. Pushed by the renderer
+	// (SdfRaymarchRenderer.ReusePrepassDepth): off for the viewmodel (overlay prepass, separate stencil
+	// claim) and for stage worlds that render without the engine depth chain. Defaults OFF so an unpushed
+	// object keeps the self-contained double march.
+	int       g_nSdfReusePrepass < Attribute( "SdfReusePrepass" ); Default( 0 ); >; // 0 off, 1 warm hits + full march on miss, 2 warm hits + miss = not ours
+	// ORTHO (sun cascade) shadow views: hit epsilon floor in SHADOW-MAP TEXELS. The cascade can't store
+	// detail finer than a texel, so marching it at the camera's 0.05u epsilon is wasted steps - the far
+	// cascades (big texels) become almost free. 0 = march every cascade at full camera precision.
+	float     g_flSdfShadowTexelEps < Attribute( "SdfShadowTexelEps" ); Default( 0.5 ); >;
 	// Gradient bound of the BAKED displaced field: the bake subtracts the lumps into the volume,
 	// steepening its slope by up to this L (= worst-tick amp · freq · 4). 0 = field is a true
 	// distance field (no displacement baked). Drives the same understep + budget growth the live
@@ -887,6 +898,14 @@ PS
 	// The hit epsilon THIS view's march actually ran at (RayMarchHit fills it; the perspective
 	// shadow-view caster bias reads it back — the march's depth error is bounded by this).
 	static float s_marchEps = 0.05;
+	// FORWARD warm start (g_nSdfReusePrepass): the along-ray distance of the camera prepass depth at this
+	// pixel, or < 0 for none. RayMarchHit then marches only a few steps in a tight window around it — the
+	// prepass already found the surface there — and reports a miss if it isn't ours, so the caller can run
+	// the full march. Never trusted as the hit itself: at silhouettes the depth chain can hold a neighbour's
+	// depth (resolve / downsample edges), and taking it as our surface put bright speckles on every edge.
+	static float s_hintT = -1.0;
+	#define SDF_HINT_WINDOW 4.0   // half-width of the warm-start window, in hit epsilons
+	#define SDF_HINT_STEPS  8     // step budget inside the window
 	// Perspective SHADOW view (spot / point-light face)? Detected in RayMarchHit: only in a shadow
 	// view does the view camera (rebound to the LIGHT) differ from the high-precision offset, which
 	// stays the frame's GAME camera; in every camera-driven view (forward, prepass, overlay, editor
@@ -905,6 +924,12 @@ PS
 		// the offset is NOT the view's camera position (it stays the frame's game camera).
 		float3 ro, rd;
 		bool ortho = IsOrthoView();
+
+		// World-space footprint of ONE pixel of this view, taken before any divergent flow (quad derivatives
+		// must be uniform). In an ortho view the component perpendicular to the ray is exactly one shadow-map
+		// texel - what the texel-epsilon floor below is sized from.
+		float3 wpDx = ddx( i.vPositionWithOffsetWs );
+		float3 wpDy = ddy( i.vPositionWithOffsetWs );
 
 		// Fill the hoisted displacement statics for this pixel (and switch the noise off entirely in ortho
 		// shadow views). Must precede the march AND the shading taps that follow the hit, both of which
@@ -993,6 +1018,16 @@ PS
 		float q = ortho ? 1.0 : LodQuality( ro );
 		int   maxSteps = (int)lerp( (float)g_nMinSteps, (float)g_nMaxSteps, q );
 		float eps      = lerp( g_flFarEpsilon, g_flEpsilon, q );
+		if ( ortho && g_flSdfShadowTexelEps > 0.0 )
+		{
+			// Shadow-map texel in world units: the pixel footprint with its along-ray part removed (a face
+			// oblique to the light stretches ddx along the ray; the perpendicular part is the texel itself).
+			float3 px = wpDx - rd * dot( wpDx, rd );
+			float3 py = wpDy - rd * dot( wpDy, rd );
+			float texel = min( length( px ), length( py ) );
+			if ( texel > 1e-4 )
+				eps = max( eps, texel * g_flSdfShadowTexelEps );
+		}
 		s_marchEps = eps;
 
 		float stepScale = 1.0;
@@ -1038,6 +1073,16 @@ PS
 		}
 	#endif
 
+		if ( s_hintT >= 0.0 )
+		{
+			float w = SDF_HINT_WINDOW * eps;
+			tEnter = max( tEnter, s_hintT - w );
+			tExit  = min( tExit,  s_hintT + w );
+			if ( tExit < tEnter )
+				return false;
+			maxSteps = SDF_HINT_STEPS;
+		}
+
 		float t = tEnter;
 		float prevD = 0.0, prevStep = 0.0;
 		[loop]
@@ -1067,6 +1112,10 @@ PS
 			t += prevStep;
 			if ( t > tExit ) break;
 		}
+		// (Warm-start window: a miss here means the caller runs the full march, which shares the prepass's
+		// step phase and so lands where the prepass did. An earlier cut accepted the window's closest
+		// approach instead; which point that was depended on the step phase, so silhouette pixels changed
+		// shading from frame to frame as the camera moved — a twinkle. Never accept an off-surface point.)
 		return false;
 	}
 
@@ -1133,7 +1182,68 @@ PS
 		}
 
 		float3 p;
-		if ( !RayMarchHit( i, p ) )
+		bool reused = false;
+		s_hintT = -1.0;
+	#if ( S_MODE_DEPTH == 0 )
+		// FORWARD: reuse the camera prepass hit. The prepass already marched this object into the depth
+		// chain; the pixel's stored depth is the nearest opaque surface, so recover that point and ask the
+		// field whether it is OUR surface: inside the march bracket and within the march's own hit band
+		// (d < eps outside, the secant refine can overshoot up to ~3 eps inside). A nearer occluder (hand,
+		// wall, another prop) fails the band and is clipped - that is the occlusion the depth test would
+		// have applied after a wasted march. Own hits pass and shade at EXACTLY the prepass depth, so the
+		// prepass<->forward hit-spread sparkle (two separately compiled marches disagreeing by sub-ULPs)
+		// cannot occur on this path. Measured 2026-10-12: forward 3.4 -> ~1.5 ms on a 150-prop crowd.
+		// Perspective camera views only: ortho editor views and the viewmodel (overlay prepass) still march.
+		if ( g_nSdfReusePrepass != 0 && g_nSdfViewmodel == 0 && !IsOrthoView() )
+		{
+			// Warm start: hand RayMarchHit the stored depth as an along-ray distance and let it march a few
+			// steps around it. A hit there IS this object's surface, found by the same march as before (so
+			// the depth test and every shading tap see exactly what the legacy path would). A miss means
+			// the stored depth belongs to something else — an occluder, or a neighbouring pixel's depth
+			// leaking across a silhouette in the chain — and the pixel takes the ordinary full march below,
+			// whose depth-cull bracket returns at once when it really is occluded. The first cut took the
+			// stored point as the hit outright and discarded on mismatch; that painted bright speckles along
+			// every silhouette (2026-10-12), because the chain and this object's prepass hit disagree by a
+			// pixel at edges.
+			float3 sceneWp = Depth::GetWorldPosition( i.vPositionSs.xy );
+			bool inside = all( sceneWp >= g_vBoundsMin - 0.5 ) && all( sceneWp <= g_vBoundsMax + 0.5 );
+			if ( inside )
+			{
+				float3 rdPix = normalize( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
+				float tChain = dot( sceneWp - g_vCameraPositionWs, rdPix );
+				s_hintT = tChain;
+				reused = RayMarchHit( i, p );
+				s_hintT = -1.0;
+				// Never land BEHIND the stored depth. The warm march starts at a different phase from the prepass
+				// march, so its refined hit (or the accepted closest approach, up to 2 eps off) can sit up to a few
+				// tenths of a unit past the prepass hit — more than the camera-ward depth nudge below at the far
+				// LOD epsilon — and the forward fragment then loses its own depth test: an unshaded pixel that
+				// shows the clear colour. It twinkles with camera motion because the phase changes every frame.
+				// The stored depth IS this pixel's prepass hit whenever the warm march succeeds, so clamping to it
+				// reproduces the prepass surface exactly.
+				// A confirmed pixel shades at the PREPASS point itself (the stored depth on this pixel's ray),
+				// not at the warm march's own refined sample: the march only vouches that the stored surface
+				// is ours. Its refined point drifts by up to an epsilon with the step phase, and the phase
+				// changes every frame as the camera moves, so shading there made silhouette pixels twinkle.
+				// Also keeps the forward depth exactly at (nudged ahead of) the prepass depth, so the fragment
+				// can never lose its own depth test.
+				if ( reused )
+					p = g_vCameraPositionWs + rdPix * tChain;
+			}
+			// Mode 2: the chain's mip 0 is a plain copy of the depth buffer (DepthDownsampleLayer — min/max only
+			// starts at mip 1), so when the stored depth is not ours, our prepass did not hit this pixel, and the
+			// forward march would only repeat that miss at full cost. This is where the saving lives: the proxy
+			// box is padded well past the surface, and its miss pixels used to march the whole bracket. With an
+			// MSAA target the stored depth is a RESOLVE of several samples and may belong to a neighbour, so
+			// mode 1 keeps the full march there (mimiclay_sdf_reuse_prepass_mode).
+			if ( !reused && g_nSdfReusePrepass >= 2 )
+			{
+				clip( -1 );
+				return o;
+			}
+		}
+	#endif
+		if ( !reused && !RayMarchHit( i, p ) )
 		{
 			clip( -1 );
 			return o;

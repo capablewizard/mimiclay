@@ -395,7 +395,7 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 	// Host-only: set the new phase's duration, then flip the synced Phase. Phase is set LAST so a client never sees the
 	// new phase with the previous phase's timer. Spawning is NOT here anymore — each machine self-spawns from the
 	// roster (EnsureOwnPawn) in response to the synced Phase + its row.
-	void TransitionTo( RoundPhase next )
+	internal void TransitionTo( RoundPhase next )
 	{
 		switch ( next )
 		{
@@ -656,10 +656,27 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 	/// <summary>What THIS machine is currently playing as: the role of the pawn we actually own. Read from the
 	/// pawn rather than our roster row because the row flips FIRST — a caught prop is marked Hunter a moment
 	/// before <see cref="EnsureOwnPawn"/> respawns it — and anything asking "what am I" wants the answer that
-	/// matches the body it's looking through. <see cref="PlayerRole.Unassigned"/> when we have no pawn.</summary>
-	public static PlayerRole LocalRole => Current.IsValid() && Current._ownPawn.IsValid()
-		? Current._ownPawnRole
-		: PlayerRole.Unassigned;
+	/// matches the body it's looking through. With no pawn at all (the frames of a respawn, a deferred
+	/// republish, the dressing veil) the roster row answers instead — concealment (<see cref="PropsConcealed"/>,
+	/// <see cref="HuntersConcealed"/>) and the outline rules read this per frame, and a prop whose role fell
+	/// to Unassigned for a few frames would see every other prop blink into view. <see cref="PlayerRole.Unassigned"/>
+	/// only when we have neither a pawn nor a row (spectating the load gate, joined too late for a role).</summary>
+	public static PlayerRole LocalRole
+	{
+		get
+		{
+			if ( !Current.IsValid() )
+				return PlayerRole.Unassigned;
+
+			if ( Current._ownPawn.IsValid() )
+				return Current._ownPawnRole;
+
+			var me = Connection.Local;
+			return me is not null && Current.Players.TryGetValue( me.Id, out var info )
+				? info.Role
+				: PlayerRole.Unassigned;
+		}
+	}
 
 	/// <summary>True while OTHER players' props must be invisible and intangible TO US. Asymmetric like
 	/// <see cref="HuntersConcealed"/> — it depends on who WE are — but the mode decides who "us" is:

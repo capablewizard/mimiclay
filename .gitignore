@@ -31,3 +31,7 @@ code/Properties/*
 
 # Exported / standalone games
 Exports/
+
+# Blender bridge exchange files (written by the editor, read by Tools/blender/sbox_bridge.py)
+Tools/blender/bridge/
+__pycache__/

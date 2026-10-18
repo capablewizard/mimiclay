@@ -3357,6 +3357,14 @@
               "Type": "Component",
               "IdValue": "f1168c55-af67-4733-974d-1e987cb14c20"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f1168c55-af67-4733-974d-1e987cb14c20"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -3503,6 +3511,14 @@
               "Type": "Component",
               "IdValue": "f1168c55-af67-4733-974d-1e987cb14c20"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f1168c55-af67-4733-974d-1e987cb14c20"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -3546,6 +3562,14 @@
             },
             "Property": "Rotation",
             "Value": "-2.16840856E-09,-3.1295222E-10,0.14284347,0.9897452"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "888fb8c9-8aef-4ca0-abca-efd23546f06d"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -3603,6 +3627,14 @@
             },
             "Property": "Rotation",
             "Value": "-2.14033902E-09,-4.67849703E-10,0.213544637,0.976933181"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "888fb8c9-8aef-4ca0-abca-efd23546f06d"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -3787,6 +3819,14 @@
               "Type": "Component",
               "IdValue": "027cc170-af24-4fbb-814d-398a0d6a7c61"
             },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "027cc170-af24-4fbb-814d-398a0d6a7c61"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
           }
@@ -3830,6 +3870,14 @@
             },
             "Property": "Rotation",
             "Value": "0.0310330167,0.0357776508,0.436904579,0.898260295"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b2455068-5708-4f39-9625-0bf51f5a4e80"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -4267,6 +4315,14 @@
             },
             "Property": "Rotation",
             "Value": "0,4.95415131E-09,0.99999994,1.48624544E-08"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "fbb20828-3b26-4ddb-840e-949486f06efa"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {
@@ -6087,14 +6143,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.612728357,0.790293455"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
-            },
-            "Property": "__enabled",
-            "Value": false
           }
         ],
         "MovedObjects": []
@@ -6444,6 +6492,14 @@
             },
             "Property": "Rotation",
             "Value": "2.57849342E-06,-7.9420937E-07,-0.294373482,0.955690384"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "20000016-0000-4000-8000-000000000003"
+            },
+            "Property": "__enabled",
+            "Value": true
           },
           {
             "Target": {

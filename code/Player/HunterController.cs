@@ -714,6 +714,13 @@ public sealed class HunterController : Component
 				_controller.EyeAngles = a;
 				_controller.WishVelocity = Rotation.FromYaw( a.yaw ) * Vector3.Forward * PawnPerfProbe.WanderSpeed;
 			}
+			else if ( PerfScenario.DrivingHunter && play && !locked )
+			{
+				// Benchmark route driver (PerfScenario): same override shape as wander, but along fixed waypoints.
+				_controller.UseInputControls = false;
+				_controller.UseLookControls = false;
+				PerfScenario.DriveHunter( _controller, GameObject );
+			}
 
 			// UseInputControls=false stops the controller READING input, but the last WishVelocity stays latched
 			// and the walk move-mode keeps applying it — so a key held when you entered edit/freeze would coast the
@@ -2554,7 +2561,7 @@ public sealed class HunterController : Component
 	// switches from there. On enter, the session enables the orbit camera (seeding it from the current
 	// first-person view); we immediately reframe it onto the face so you're looking AT your head, not out of it.
 	// On leave, the session disables the orbit camera and DriveCamera resumes this same frame (see OnUpdate order).
-	void ToggleEdit()
+	internal void ToggleEdit()
 	{
 		if ( !_session.IsValid() )
 			return;
@@ -2669,6 +2676,13 @@ public sealed class HunterController : Component
 	/// start point. A plain transform write strands the edit camera: the orbit rig's free pivot is a fixed WORLD
 	/// point, so mid-edit the head would teleport out from under the view. This captures the view face-relative
 	/// first and re-applies it after the move, so the framing survives the jump exactly.</summary>
+	/// <summary>Benchmark helper: aim the controller (PerfScenario views).</summary>
+	internal void PerfSetEye( Angles a )
+	{
+		if ( _controller.IsValid() )
+			_controller.EyeAngles = a with { roll = 0f };
+	}
+
 	public void Teleport( Vector3 position, Rotation rotation )
 	{
 		// Weapon edit anchors on the gun instead — its clone is parented to the pawn, so it rides the move,

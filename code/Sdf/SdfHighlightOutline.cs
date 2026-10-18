@@ -468,8 +468,13 @@ public sealed class SdfHighlightOutline : Component, Component.ExecuteInEditor
 			_so.RenderingEnabled = false;
 			AttachCommands( cam );
 			_commands.Reset();
-			// Identity transform: the proxy mesh is built with world-space vertices.
-			_commands.DrawModel( _so.Model, global::Transform.Zero, _so.Attributes );
+			// The proxy box is built in the GROUP's local frame and placed by the scene object's transform
+			// (see the placement note above), so the command list must draw it at that same transform. It
+			// used to be Transform.Zero from the days the box was built with world-space vertices — after the
+			// 2026-10-09 local-space change that drew every pawn outline at the world origin instead of on
+			// the pawn (the shader still bracketed on the right world AABB, so the glow only showed where the
+			// origin-placed box happened to overlap it: "outlines are inconsistent").
+			_commands.DrawModel( _so.Model, _so.Transform, _so.Attributes );
 		}
 		else
 		{

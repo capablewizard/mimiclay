@@ -624,7 +624,7 @@ public sealed class CharadesManager : Component, IChatEvent, IPropClaimHost, Com
 
 	// Host-only: set the phase's timer + entry effects, flipping the synced Phase LAST (a client must never
 	// see the new phase with the old phase's timer) — same discipline as RoundManager.TransitionTo.
-	void TransitionTo( CharadesPhase next )
+	internal void TransitionTo( CharadesPhase next )
 	{
 		switch ( next )
 		{

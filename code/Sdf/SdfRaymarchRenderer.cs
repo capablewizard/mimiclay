@@ -112,8 +112,34 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[ConVar( "mimiclay_sdf_sparse_field" )]
 	public static bool SparseFieldEnabled { get; set; } = true;
 
+	/// <summary>Global cap on every prop's <see cref="FieldResolution"/> (voxels along the longest axis). The shipped
+	/// prop library authors 195–256 sparse; measured 2026-10-12 (150-prop crowd, 1080p) a 128 DENSE field marches
+	/// in roughly half the time of the sparse 256 atlas (prepass 2.1 → 1.2 ms, marched cascade 3.2 → 1.5 ms) and
+	/// is visually equivalent at play distances (slightly softer only with the camera inside a prop). With the
+	/// shared field cache (SdfFieldCache) a dense 128³ R32F volume is 8 MB per UNIQUE shape, not per instance.
+	/// 0 = no cap (authored resolutions rule).</summary>
+	[ConVar( "mimiclay_sdf_field_res_cap" )]
+	public static int FieldResolutionCap { get; set; } = 128;
+
+	/// <summary>Fields at or below this resolution are stored DENSE even when the prop asks for the sparse atlas:
+	/// the sparse sampler costs ~1.8× a dense trilinear fetch per step (guide + indirection + atlas + decode), and
+	/// the memory it saves only matters at the high resolutions the cap above removes. 0 = honour SparseField.</summary>
+	[ConVar( "mimiclay_sdf_dense_max_res" )]
+	public static int DenseMaxResolution { get; set; } = 128;
+
+	/// <summary>How far (inches) the raymarch PROXY box is grown past the brushes' tight AABB. The field volume is
+	/// padded by <see cref="SdfFieldGpu.BlendPad"/> (16) for live-edit headroom, and the proxy used to grow by the
+	/// same amount — but the proxy only has to enclose the SURFACE, and every proxy pixel that misses the surface
+	/// still marches its whole bracket (both prepass and forward). A smooth-blend bulge or displacement lump reaches
+	/// a few inches past the brush AABB at most, so a smaller pad cuts the miss-pixel cost without clipping. Capped
+	/// at BlendPad (the field is undefined beyond it). 2026-10-12 measurement in the renderer doc.</summary>
+	[ConVar( "mimiclay_sdf_proxy_pad" )]
+	public static float ProxyPad { get; set; } = 8f; // library max Blend is 15 (bulge well under half of it); 16 = the old field-pad-sized proxy
+
+	static float EffectiveProxyPad => Math.Clamp( ProxyPad, 0f, SdfFieldGpu.BlendPad );
+
 	bool EffectiveUseFieldCache => UseFieldCache && FieldCacheEnabled;
-	bool EffectiveSparseField => SparseField && SparseFieldEnabled;
+	bool EffectiveSparseField => SparseField && SparseFieldEnabled && !(DenseMaxResolution > 0 && EffectiveFieldResolution <= DenseMaxResolution);
 
 	/// <summary>Runtime override (NOT authored — a [Property] would leak into network spawn snapshots): scales
 	/// <see cref="FieldResolution"/> for this prop's field bakes. Set below 1 by <see cref="SdfNetworkSync"/> on
@@ -128,7 +154,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	/// <summary>The resolution actually dispatched: <see cref="FieldResolution"/> × <see cref="FieldResolutionScale"/>,
 	/// floored at the property's own minimum so a tiny scale can't produce a degenerate volume.</summary>
-	int EffectiveFieldResolution => Math.Max( 8, (int)MathF.Round( FieldResolution * Math.Clamp( FieldResolutionScale, 0.05f, 1f ) ) );
+	int EffectiveFieldResolution
+	{
+		get
+		{
+			int res = FieldResolutionCap > 0 ? Math.Min( FieldResolution, FieldResolutionCap ) : FieldResolution;
+			return Math.Max( 8, (int)MathF.Round( res * Math.Clamp( FieldResolutionScale, 0.05f, 1f ) ) );
+		}
+	}
 
 	/// <summary>Runtime override (NOT authored), the second live-drag lever beside <see cref="FieldResolutionScale"/>:
 	/// minimum seconds between field re-dispatches while the brushes are changing every frame. 0 (the default,
@@ -304,6 +337,19 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[Property, Group( "LOD / Distance" ), Title( "Shadow Handoff (radii)" ), Range( 0f, 64f )]
 	public float SdfShadowRadii { get; set; } = 10f;
 
+	/// <summary>Global cap on every prop's <see cref="SdfShadowRadii"/>: the marched shadow hands off to the
+	/// mesh caster once the camera is beyond THIS many bounding radii (or the prop's own value, whichever is
+	/// smaller). Measured 2026-10-12 (150-prop crowd, 1080p): marched sun cascades + spot shadow were
+	/// ~6.5 of 14.5 GPU ms at the authored 10 radii; at 1-2 radii the shadow passes drop to mesh cost
+	/// (~1 ms) and the frame is visually identical (settled fields and their surface-nets mesh share a
+	/// silhouette). Boiling / live-edited props still march regardless. 0 = no cap (authored values rule).</summary>
+	[ConVar( "mimiclay_sdf_shadow_radii_cap" )]
+	public static float ShadowRadiiCap { get; set; } = 2f;
+
+	float EffectiveShadowRadii => ShadowRadiiCap > 0f
+		? (SdfShadowRadii <= 0f ? ShadowRadiiCap : MathF.Min( SdfShadowRadii, ShadowRadiiCap ))
+		: SdfShadowRadii;
+
 	/// <summary>Chain link 3 — the SDF→mesh handoff, and the same distance at which SDF quality bottoms
 	/// out (see the chain diagram: one distance does both jobs deliberately). The raymarch turns off here
 	/// and mesh LOD0 takes over. (Serialized under its historical name MinQualityRadii.)</summary>
@@ -417,7 +463,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// flags, the mesh-mode config AND ApplyVisibility, so all three flip together the frame the band
 	/// (or the boil/edit state) does.</summary>
 	bool MarchedShadowsNow => SdfShadows
-		&& ( SdfShadowRadii <= 0f || !_aboveShadowRadii || _boilActive || _sinceShapeChange < ShadowShapeHold );
+		&& ( EffectiveShadowRadii <= 0f || !_aboveShadowRadii || _boilActive || _sinceShapeChange < ShadowShapeHold );
 
 	/// <summary>Overdraw optimisation: skip the redundant back-face march (the box draws both faces)
 	/// and use conservative depth so the GPU keeps early-Z and rejects hidden fragments before
@@ -450,6 +496,31 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// behind another SDF prop's overlapping proxy) still pays its complete march per covered pixel.
 	/// Toggle off to A/B the cost.</summary>
 	[Property, Group( "Overdraw" )] public bool DepthOcclusionCull { get; set; } = true;
+
+	/// <summary>FORWARD pass: instead of sphere-tracing the field a second time, read the depth the camera
+	/// prepass already wrote for this pixel, verify that point lies on this prop's surface (one field tap),
+	/// and shade there. The prepass march is the only march; the forward pass pays shading taps only.
+	/// Measured 2026-10-12: Dynamic Opaque Forward 3.4 → ~1.5 ms on a 150-prop crowd (1080p). Also removes
+	/// the prepass↔forward hit-spread sparkle class entirely (the forward hit IS the prepass hit). Off = the
+	/// legacy double march. No effect on shadow views or the viewmodel (both still march).</summary>
+	[Property, Group( "Overdraw" )] public bool ReusePrepassDepth { get; set; } = true; // gated by the ConVar below, which ships OFF
+
+	/// <summary>Global kill switch for <see cref="ReusePrepassDepth"/>.</summary>
+	[ConVar( "mimiclay_sdf_reuse_prepass" )]
+	public static bool ReusePrepassEnabled { get; set; } = false; // OFF by default (2026-10-12): under MSAA (this project: 8x) only the warm-start mode is exact and it measured ~0 gain; mode 2 is the win, for non-MSAA targets only
+
+	/// <summary>How far the forward pass trusts the stored prepass depth. 2 (default): a warm-started march
+	/// around it finds our hit, and a miss means the pixel is not ours (exact when the depth chain is a plain
+	/// copy of the depth buffer — any non-MSAA target). 1: a miss falls back to the full march, which keeps
+	/// MSAA targets exact (their chain is a resolve of several samples) at the cost of the miss-pixel saving.</summary>
+	[ConVar( "mimiclay_sdf_reuse_prepass_mode" )]
+	public static int ReusePrepassMode { get; set; } = 1; // this project renders MSAA 8x (video settings): mode 2 is only exact without MSAA
+
+	/// <summary>SHADOW (ortho cascade) views: raise the march hit epsilon to this many shadow-map texels
+	/// (world size of one texel of the cascade being rendered). A shadow map can't resolve detail finer than
+	/// its texel, so marching a cascade at the camera's 0.05 u epsilon is wasted steps; far cascades (big
+	/// texels) get very cheap. 0 = march shadows at full camera precision (old behaviour).</summary>
+	[Property, Group( "Shadows" ), Range( 0f, 2f )] public float ShadowTexelEpsilon { get; set; } = 0.5f;
 
 	/// <summary>Render a tight bounding-SPHERE proxy instead of the AABB box, so round props march
 	/// fewer wasted pixels around their silhouette. Best for round/blobby props; an AABB box can be
@@ -694,11 +765,29 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so?.Delete();
 		_so = null;
 
-		// Drop the per-instance GPU edit field (re-created on the next edit if this renderer comes back).
+		// Let go of our reference on the shared field (re-acquired on the next Refresh if this renderer comes back).
+		SdfFieldCache.Release( _fieldGpu );
 		_fieldGpu = null;
+		_lastFieldHash = 0;
+	}
+
+	// Diagnostics: main-thread time spent in every renderer's OnUpdate since the last TakeUpdateMs (PerfScenario).
+	static long _updateTicks;
+	internal static double TakeUpdateMs()
+	{
+		double ms = _updateTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+		_updateTicks = 0;
+		return ms;
 	}
 
 	protected override void OnUpdate()
+	{
+		long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+		UpdateInner();
+		_updateTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+	}
+
+	void UpdateInner()
 	{
 		SyncChain(); // before anything reads a threshold, so the bands and the inspector never disagree
 
@@ -946,7 +1035,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// marches its own SdfFieldGpu volume. The useful facts are the resolution it's paying for, whether
 		// it's sparse, and whether it has landed yet.
 		string field = !EffectiveUseFieldCache ? "analytic (per-brush)"
-			: _fieldGpu is { IsValid: true } && _fieldReady ? $"{EffectiveFieldResolution}³{(SparseField ? " sparse" : "")}"
+			: _fieldGpu is { IsValid: true } && _fieldReady ? $"{EffectiveFieldResolution}³{(EffectiveSparseField ? " sparse" : " dense")}"
 			: "baking…";
 		sb.Append( $"\n{_curCount} brushes   field: {field}" );
 
@@ -1031,8 +1120,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			return;
 
 		float ratio = (viewPos - _curCenter).Length / _curRadius;
-		if ( SdfShadowRadii > 0f )
-			_aboveShadowRadii = Above( ratio, SdfShadowRadii, _aboveShadowRadii, LodHysteresis );
+		float shadowRadii = EffectiveShadowRadii;
+		if ( shadowRadii > 0f )
+			_aboveShadowRadii = Above( ratio, shadowRadii, _aboveShadowRadii, LodHysteresis );
 		// Overdraw opt is unsafe with the camera at/inside the proxy (the prop vanishes) — see the
 		// property doc. Gated here rather than in the shader so the fix can't drift from the bug.
 		_overdrawSafe = Above( ratio, OverdrawNearRadii, _overdrawSafe, LodHysteresis );
@@ -1121,7 +1211,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// renderer on every moving pawn — is where the 7–12ms stalls in the 2026-10-09 pawn-placement profile
 		// landed: on trivially small work (packing two brushes), i.e. GC and GPU-resource creation paying for
 		// the allocations. The brushes were already packed in local space; only the proxy wasn't.
-		int shapeKey = HashCode.Combine( shapeHash, Material, TightBounds, EffectiveUseFieldCache );
+		int shapeKey = HashCode.Combine( shapeHash, Material, TightBounds, EffectiveUseFieldCache, EffectiveProxyPad );
 		if ( shapeKey != _lastHash || !_so.IsValid() || _forceRepack )
 		{
 			// Bounds computed in the object's LOCAL frame, so the proxy can be ORIENTED to the object
@@ -1154,8 +1244,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			bool liveBounds = EffectiveUseFieldCache; // the GPU field is padded by BlendPad, so grow the proxy to enclose it
 			if ( liveBounds )
 			{
-				pmins -= SdfFieldGpu.BlendPad;
-				pmaxs += SdfFieldGpu.BlendPad;
+				pmins -= EffectiveProxyPad;
+				pmaxs += EffectiveProxyPad;
 				for ( int i = 0; i < 8; i++ ) // grow the LOD/sphere radius to reach the padded corners too
 				{
 					var corner = new Vector3( (i & 1) != 0 ? pmaxs.x : pmins.x,
@@ -1307,6 +1397,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// occlusion rides the engine depth chain via the prepass.)
 		_so.Attributes.Set( "SdfOverdrawOpt", OverdrawOptimization && _overdrawSafe ? 1 : 0 );
 		_so.Attributes.Set( "SdfDepthCull", DepthOcclusionCull ? 1 : 0 );
+		// Forward pass reuses the camera prepass depth instead of re-marching (see ReusePrepassDepth). Only in the
+		// scene's own world (the thumbnail stage renders without the engine depth chain) and never for the viewmodel
+		// (its overlay prepass is stencil-claimed, not part of the world chain the forward pass samples).
+		_so.Attributes.Set( "SdfReusePrepass", ReusePrepassDepth && ReusePrepassEnabled && TargetWorld is null && ViewLayer == SdfViewLayer.Normal ? Math.Clamp( ReusePrepassMode, 1, 2 ) : 0 );
+		_so.Attributes.Set( "SdfShadowTexelEps", ShadowTexelEpsilon );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
 		// Displacement look (amp/freq) lives on THIS component (see the DispAmp doc for why it left
@@ -1377,24 +1472,35 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_fieldReady = false;
 		if ( EffectiveUseFieldCache && _curCount > 0 && _curRadius > 0.01f )
 		{
-			_fieldGpu ??= new SdfFieldGpu();
 			// Re-dispatch when anything the build depends on changes: the brushes, the resolution (including its
 			// live-drag scale), the sparse toggle, OR the baked displacement (its look params + the boil tick).
 			// Folding the field parameters into the hash means tweaking them in the inspector updates the field
 			// live, instead of only when a brush is moved.
 			int res = EffectiveFieldResolution;
 			int fieldHash = HashCode.Combine( Hash( brushes ), res, EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
-			if ( (fieldHash != _lastFieldHash || !_fieldGpu.IsValid)
-				&& (!_fieldGpu.IsValid || _sinceFieldDispatch >= FieldRebakeInterval) )
+			bool haveField = _fieldGpu is { IsValid: true };
+			if ( (fieldHash != _lastFieldHash || !haveField)
+				&& (!haveField || _sinceFieldDispatch >= FieldRebakeInterval) )
 			{
-				if ( _fieldGpu.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, EffectiveSparseField,
+				// The field comes from the SHARED cache (SdfFieldCache): clones of one shape hold one field and
+				// bake it once; a prop editing alone re-bakes its own field in place exactly as before.
+				var field = SdfFieldCache.Acquire( fieldHash, _fieldGpu, out bool bake );
+				if ( !bake || field.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, EffectiveSparseField,
 					bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter ) )
 				{
+					_fieldGpu = field;
 					_lastFieldHash = fieldHash;
 					_sinceFieldDispatch = 0f;
 				}
+				else
+				{
+					// Bake refused (no compute shader / texture creation failed): drop the entry so nobody shares
+					// an invalid field, and fall through to the analytic march for this frame.
+					SdfFieldCache.Discard( field );
+					_fieldGpu = null;
+				}
 			}
-			if ( _fieldGpu.IsValid )
+			if ( _fieldGpu is { IsValid: true } )
 			{
 				_so.Attributes.Set( "FieldTex", _fieldGpu.Texture );
 				_so.Attributes.Set( "FieldMin", _fieldGpu.Mins );
@@ -1700,6 +1806,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// "prop still building" by <see cref="ClientStatusReporter"/>.</summary>
 	internal bool FieldPending => !_released && EffectiveUseFieldCache && _curCount > 0 && _curRadius > 0.01f && !_fieldReady;
 
+	// Diagnostics (mimi_perf_stats): read-only views of per-frame state.
+	internal long FieldVramBytes => _fieldGpu?.EstimatedBytes ?? 0;
+	internal bool DebugFieldReady => _fieldReady;
+	internal bool DebugMarchedShadows => MarchedShadowsNow;
+	internal int DebugSwitchState => _switchState;
+
 	/// <summary>Whether the highlight can include this renderer this frame: a live proxy and a valid baked field.</summary>
 	internal bool HighlightReady => !_released && _so.IsValid() && _fieldReady && _fieldGpu is { IsValid: true };
 
@@ -1712,6 +1824,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// transform) into its single group proxy box.</summary>
 	internal Vector3 ProxyLocalMins => _curProxyMins;
 	internal Vector3 ProxyLocalMaxs => _curProxyMaxs;
+
+	/// <summary>Diagnostics (mimi_dbg_plates): where the surface is ACTUALLY being drawn this frame — the
+	/// placed scene object's world transform and AABB, and whether the scene object is live at all. Lets a
+	/// playtest compare "where the nameplate thinks the body is" against "where the body renders".</summary>
+	internal bool DrawnSceneObjectLive => _so.IsValid() && _so.RenderingEnabled;
+	internal Transform DrawnTransform => _so.IsValid() ? _so.Transform : global::Transform.Zero;
+	internal BBox DrawnBounds => new( _curMins, _curMaxs );
+	internal Vector3 DrawnCenter => _curCenter;
 
 	/// <summary>Build the highlight group's single proxy box in the GROUP's local space — the highlight places
 	/// it by its scene object's transform (one CONVEX box for the whole group — overlapping per-member proxies

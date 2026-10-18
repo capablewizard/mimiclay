@@ -481,7 +481,13 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			// check still excludes the owner's own pawn beneath that — while the first-person body self-hides
 			// (RenderHidden, which the highlight follows), the gun/hands don't — and covers machines with no
 			// pawn at all (LocalRole Unassigned), where a host-owned bot hunter isn't a proxy yet must glow.
-			return phase >= RoundPhase.Hunt
+			//
+			// A prop ALWAYS sees the hunters' glow — every phase of the round, not just from the Hunt. The
+			// prep phases need no gate of their own here: a concealed hunter (HuntersConcealed switches its
+			// whole visual branch off on prop machines) has no live renderers for the outline to march, so
+			// it draws nothing, and the glow comes on by itself the instant the hunter is shown. Only the
+			// Lobby phase stays dark (no round is running yet; nobody is a hunter to anyone).
+			return phase != RoundPhase.Lobby
 				&& RoundManager.LocalRole != PlayerRole.Hunter
 				&& (hunter.IsProxy || RoundManager.IsBotPawn( hunter.GameObject ));
 		}
@@ -491,9 +497,23 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 		// a proxy on the host, which would otherwise hand that machine a through-wall glow on every bot — the
 		// exact tell this whole system exists to deny. (The owner-only rule already keeps the invalid-sculpt
 		// warning visible to its owner — no extra case needed here.)
+		//
+		// TEAMS adds the team: a prop always sees its fellow props' glow (players and bots alike — they're a
+		// side, and the glow is how you keep track of your side through the walls), the same way it always
+		// sees the hunters'. Hunters still get nothing before the Reveal — that is the hiding. INFECTION
+		// stays owner-only: there, every other prop is a future hunter and must never be given away.
 		var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
-			return (!hider.IsProxy && !RoundManager.IsBotPawn( hider.GameObject )) || phase == RoundPhase.Reveal;
+		{
+			bool other = hider.IsProxy || RoundManager.IsBotPawn( hider.GameObject );
+			if ( !other || phase == RoundPhase.Reveal )
+				return true;
+
+			return RoundManager.Current.IsValid()
+				&& RoundManager.Current.Settings.Mode == RoundMode.Teams
+				&& RoundManager.LocalRole == PlayerRole.Prop
+				&& !PropClaims.IsReleased( hider );
+		}
 
 		// No pawn above it: a scene decoy.
 		return false;

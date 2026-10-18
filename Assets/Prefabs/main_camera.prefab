@@ -84,7 +84,7 @@
         "OnComponentUpdate": null,
         "Strength": 2,
         "Threshold": 1.6,
-        "Tint": "1,0.61302,0.40465,1"
+        "Tint": "1,0.89953,0.77674,1"
       },
       {
         "__type": "Sandbox.Tonemapping",
