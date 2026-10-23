@@ -692,8 +692,9 @@ PS
 	// --- Transmission / subsurface (D_TRANSMISSION). The whole reason this is cheap: meshes need a
 	// baked thickness map because they don't know their own interior — we have the actual field, so we
 	// read thickness straight out of it. Forward pass only (the depth prepass returns before shading,
-	// and these sample shadow maps which the prepass shouldn't). ---
-#if ( D_TRANSMISSION && S_MODE_DEPTH == 0 )
+	// and these sample shadow maps which the prepass shouldn't). Baked-field only for now: the
+	// analytic lit variant hangs the 2026-10-23 shader compiler — see the field AO/curvature note. ---
+#if ( D_TRANSMISSION && D_FIELD_TEX && S_MODE_DEPTH == 0 )
 	// Inward tap: how far the solid extends straight below the surface (along -N). One field sample,
 	// direction-agnostic, nearly free. Clamped to the probe depth — a single tap can't see past it.
 	float SdfThicknessTap( float3 p, float3 N )
@@ -1384,6 +1385,12 @@ PS
 		m.Roughness = max( saturate( roughness * g_flRoughness * surf.rough ), 0.08 );
 		m.Metalness = saturate( surf.metal + g_flMetalness );
 
+		// Field AO + curvature are baked-field only (D_FIELD_TEX). On the analytic path the 2026-10-23
+		// engine's shader compiler never finishes the lit variant while either one is present (it hangs —
+		// 25+ min on one combo; without both it compiles in ~18 s). Not a code-size issue: looping the taps
+		// down to one evaluator call site still hangs. Restore once the compiler is fixed. Analytic props
+		// (no baked field bound) lose field AO, curvature shading and transmission meanwhile.
+	#if ( D_FIELD_TEX )
 		// Viewmodel: self-AO computed from the field. The engine min()s material AO with screen AO —
 		// now that the prepass writes real depth, screen AO contributes real world occlusion too, and
 		// this field term carries the crevice detail the depth buffer's outer shell can't show.
@@ -1403,8 +1410,9 @@ PS
 			// so ridges and flats are untouched.
 			m.Albedo = BoostSat( m.Albedo, lerp( 1.0, g_flCurveSatBoost, cavity ) );
 		}
+	#endif
 
-	#if ( D_TRANSMISSION && S_MODE_DEPTH == 0 )
+	#if ( D_TRANSMISSION && D_FIELD_TEX && S_MODE_DEPTH == 0 )
 		// Back-scatter using SDF-derived thickness. Runs once here, after the hit — the march above
 		// is untouched. viewDir points from the surface toward the camera (toward -scatterDir = glow).
 		ApplyTransmission( m, p, baseN, normalize( g_vCameraPositionWs - p ) );

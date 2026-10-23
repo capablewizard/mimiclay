@@ -20,7 +20,7 @@ namespace Mimiclay;
 ///   mimi_perf_role hunter|prop                 swap the local player's pawn (creative only)
 ///   mimi_perf_stats                            field VRAM, ready/pending counts, caster split, mesh builds
 ///   mimi_perf_set [Property] [value]        set any SdfRaymarchRenderer property on every perf prop (bisecting)
-///   mimi_perf_field [res]                      set FieldResolution on every perf prop (forces a re-bake)
+///   mimi_perf_field [res]                      pin Authored FieldResolution on every perf prop; 0 = World density
 ///   mimi_perf_sample [seconds] [label]         frame-time + CPU-system sample (prints [perf-sample] lines)
 /// </summary>
 public sealed class PerfScenarioSystem : GameObjectSystem
@@ -227,8 +227,14 @@ public static class PerfScenario
 		var scene = Game.ActiveScene;
 		if ( scene is null ) return;
 		int n = 0;
-		foreach ( var r in PerfRenderers( scene ) ) { r.FieldResolution = res; n++; }
-		Log.Info( $"[perf] FieldResolution={res} on {n} renderers" );
+		// 0 = back to the World density tier; anything else pins the legacy authored resolution.
+		foreach ( var r in PerfRenderers( scene ) )
+		{
+			r.FieldDensity = res > 0 ? SdfFieldDensity.Authored : SdfFieldDensity.World;
+			if ( res > 0 ) r.FieldResolution = res;
+			n++;
+		}
+		Log.Info( $"[perf] {(res > 0 ? $"FieldResolution={res} (Authored)" : "FieldDensity=World")} on {n} renderers" );
 	}
 
 	// ── Stats ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -251,9 +257,12 @@ public static class PerfScenario
 			if ( r.DebugFieldReady ) ready++; else if ( r.FieldPending ) pending++;
 			if ( r.DebugMarchedShadows ) marched++;
 			if ( r.DrawnSceneObjectLive ) soOn++;
-			if ( r.SparseField ) sparse++;
+			if ( r.DebugFieldSparse ) sparse++;
 			states[Math.Clamp( r.DebugSwitchState, 0, 4 )]++;
-			resHist[r.FieldResolution] = resHist.GetValueOrDefault( r.FieldResolution ) + 1;
+			// Longest surface-grid axis actually built, bucketed to 16s (the density tiers make this continuous).
+			var dims = r.DebugFieldDims;
+			int longest = (int)MathF.Max( dims.x, MathF.Max( dims.y, dims.z ) ) / 16 * 16;
+			resHist[longest] = resHist.GetValueOrDefault( longest ) + 1;
 			var mr = r.GameObject.Components.Get<ModelRenderer>( true );
 			if ( mr.IsValid() && mr.Enabled ) meshOn++;
 		}
@@ -264,6 +273,7 @@ public static class PerfScenario
 		Log.Info( $"[perf-stats] fieldVRAM(sum over renderers, shared fields counted per owner) total={bytes / 1048576.0:0.0}MB perf={perfBytes / 1048576.0:0.0}MB avg/prop={(all.Count > 0 ? bytes / 1048576.0 / all.Count : 0):0.00}MB res={string.Join( ",", resHist.OrderBy( k => k.Key ).Select( k => $"{k.Key}x{k.Value}" ) )} meshBuildsInFlight={SdfSculpture.BuildsInFlight} colliderBuilds={SdfCollider.BuildCount}" );
 		Log.Info( $"[perf-stats] {SdfFieldCache.DebugLine()}" );
 		Log.Info( $"[perf-stats] convars: field_cache={SdfRaymarchRenderer.FieldCacheEnabled} sparse={SdfRaymarchRenderer.SparseFieldEnabled} atlas8={SdfFieldGpu.Atlas8BitEnabled} screen={Screen.Size}" );
+		Log.Info( $"[perf-stats] density: voxel={SdfRaymarchRenderer.WorldVoxelSize} detail={SdfRaymarchRenderer.DetailVoxelSize} res=[{SdfRaymarchRenderer.DensityMinResolution},{SdfRaymarchRenderer.FieldResolutionCap}] detailMax={SdfRaymarchRenderer.DetailMaxResolution} denseMax={SdfRaymarchRenderer.DenseMaxResolution} tiers={string.Join( ",", all.GroupBy( r => r.DebugFieldTier ).Select( g => $"{g.Key}x{g.Count()}" ) )}" );
 	}
 
 	// ── Load test: synchronous spawn cost + time/hitches until every field and mesh has landed ──────────────

@@ -56,16 +56,6 @@ public sealed class HunterGun : Component
 	/// smaller than the "real" gun. Live-tweakable like <see cref="WorldGunScale"/>.</summary>
 	[Property, Range( 0.1f, 1f ), Group( "Scale" )] public float ViewGunScale { get; set; } = 0.5f;
 
-	/// <summary>Field-cache resolution for the world model (voxels along the padded longest axis — overrides
-	/// what the gun prefab authored). Matters because scaling the gun down does NOT shrink the field's fixed
-	/// 16-unit BlendPad, so a small gun keeps fewer of these voxels for itself; raise this to claw detail back.
-	/// Live-tweakable (the renderer re-bakes on change).</summary>
-	[Property, Range( 8, 512 ), Group( "Scale" )] public int WorldFieldResolution { get; set; } = 256;
-
-	/// <summary>Field-cache resolution for the viewmodel — it sits inches from the camera, so it earns the top
-	/// end. 512 needs the sparse field (forced on when exceeded; dense caps at 256).</summary>
-	[Property, Range( 8, 512 ), Group( "Scale" )] public int ViewFieldResolution { get; set; } = 512;
-
 	/// <summary>The arm's pivot — the world gun rotates around THIS point with the aim. Its position is driven
 	/// every frame (eye + yaw · <see cref="ShoulderOffset"/>, then the full aim rotation), so where it sits in
 	/// the prefab is cosmetic; wire it so the <see cref="Hand"/> under it is authorable. Auto-resolved by child
@@ -489,10 +479,9 @@ public sealed class HunterGun : Component
 		if ( _worldSdf.IsValid() )
 		{
 			_worldSdf.RenderHidden = firstPerson || HideAll;
-			// While weapon-editing, the world model IS the edit surface — give it the viewmodel's resolution
-			// (the camera gets just as close). The change is folded into the field hash, so entering/leaving
-			// edit mode costs one re-bake each way and nothing per frame.
-			ApplyFieldResolution( _worldSdf, _editingWorld ? ViewFieldResolution : WorldFieldResolution );
+			// Both gun models use the Detail voxel size (the camera gets right up against them). Set every frame
+			// so it survives a re-clone; the renderer only re-bakes when the resolved grid actually changes.
+			_worldSdf.FieldDensity = SdfFieldDensity.Detail;
 		}
 
 		// Repin the muzzle points to the live scales (per frame, so the scale sliders stay live): the brush
@@ -510,7 +499,7 @@ public sealed class HunterGun : Component
 			{
 				if ( _viewSdf.IsValid() )
 				{
-					ApplyFieldResolution( _viewSdf, ViewFieldResolution );
+					_viewSdf.FieldDensity = SdfFieldDensity.Detail;
 					_viewSdf.ViewLayer = ViewLayerMode;
 					_viewSdf.ViewmodelFovScale = FovScale();
 
@@ -863,16 +852,6 @@ public sealed class HunterGun : Component
 		float refTan = MathF.Tan( Math.Clamp( ViewOffsetFov, 5f, 170f ).DegreeToRadian() * 0.5f );
 		float vmTan = MathF.Tan( Math.Clamp( ViewmodelFov, 5f, 170f ).DegreeToRadian() * 0.5f );
 		return vmTan > 0.001f ? refTan / vmTan : 1f;
-	}
-
-	// Assert a field resolution on a clone's renderer. Safe to call every frame: the renderer folds
-	// FieldResolution into its field hash and only re-bakes when the value actually changes. Above 256 the
-	// dense field would silently clamp (a full 512³ volume is ~537 MB), so the sparse path is forced on.
-	static void ApplyFieldResolution( SdfRaymarchRenderer sdf, int resolution )
-	{
-		sdf.FieldResolution = resolution;
-		if ( resolution > 256 )
-			sdf.SparseField = true;
 	}
 
 	// Hold the sun's contact shadows off while the first-person gun is on screen (see DisableSunContactShadows),

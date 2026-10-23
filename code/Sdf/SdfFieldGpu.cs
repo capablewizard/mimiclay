@@ -140,9 +140,13 @@ public sealed class SdfFieldGpu
 	/// (SdfDistBaked), so the march samples the lumps in its one trilinear fetch instead of paying the
 	/// noise per step. The caller re-dispatches when the boil tick rolls (it folds the tick into its field
 	/// hash), so a boiling prop costs a few bakes a second rather than per-step noise every frame.
-	/// boilTick &lt; 0 = boil off; jitter/ampJitter mirror <see cref="ClayBoil"/>'s dials.</summary>
+	/// boilTick &lt; 0 = boil off; jitter/ampJitter mirror <see cref="ClayBoil"/>'s dials.
+	///
+	/// cellSize &gt; 0 = use exactly this LOCAL voxel size (the renderer's density tiers) and derive the voxel count
+	/// from the bounds; the count is still clamped to the dense/sparse limits, coarsening the cell if it hits them.</summary>
 	public bool Evaluate( List<SdfBrush> brushes, Vector3 localMin, Vector3 localMax, int resolution, bool buildSparse,
-		float dispAmp = 0f, float dispFreq = 0.25f, float boilTick = -1f, float boilJitter = 0f, float boilAmpJitter = 0f )
+		float dispAmp = 0f, float dispFreq = 0.25f, float boilTick = -1f, float boilJitter = 0f, float boilAmpJitter = 0f,
+		float cellSize = 0f )
 	{
 		if ( brushes is null || brushes.Count == 0 )
 			return false;
@@ -158,7 +162,8 @@ public sealed class SdfFieldGpu
 
 		// Sparse stores only the surface shell, so it can go to 512; the dense path stays capped at 256 because a full
 		// 512³ R32F volume is ~537 MB (the whole reason the sparse path exists).
-		resolution = Math.Clamp( resolution, 8, buildSparse ? 512 : 256 );
+		int maxRes = buildSparse ? 512 : 256;
+		resolution = Math.Clamp( resolution, 8, maxRes );
 
 		// Pad the bounds so blend bulges stay inside, then size a grid that keeps voxels ~cubic.
 		var mn = localMin - BlendPad;
@@ -170,16 +175,29 @@ public sealed class SdfFieldGpu
 
 		// Surface grid (high res): sizes the brick grid + atlas. Its inclusive far corner sets Maxs, which the guide
 		// shares so both sample the same [Mins,Maxs] bounds.
-		float surfCell = maxAxis / resolution;
+		float surfCell;
+		if ( cellSize > 0f )
+		{
+			// Fixed voxel size: already bounds-independent, so a drag adds voxels rather than rescaling and the
+			// hold band below has nothing to do. Only a count past the hard limit coarsens it.
+			resolution = Math.Clamp( (int)MathF.Ceiling( maxAxis / cellSize ), 8, maxRes );
+			surfCell = MathF.Max( cellSize, maxAxis / resolution );
+			_heldCell = 0f;
+			_heldCellRes = 0;
+		}
+		else
+		{
+			surfCell = maxAxis / resolution;
 
-		// HOLD the previous cell size while the bounds wobble within a band. Dragging one brush stretches the
-		// union bounds continuously, and a cell that tracks them rescales the whole field every frame — thin
-		// features (text strokes especially) visibly fatten/thin while a brush merely MOVES. Held until the
-		// finer cell would overrun the voxel budget by >10% per axis, or leave >20% of it unused.
-		if ( resolution == _heldCellRes && _heldCell > 0f && surfCell < _heldCell * 1.1f && surfCell > _heldCell * 0.8f )
-			surfCell = _heldCell;
-		_heldCell = surfCell;
-		_heldCellRes = resolution;
+			// HOLD the previous cell size while the bounds wobble within a band. Dragging one brush stretches the
+			// union bounds continuously, and a cell that tracks them rescales the whole field every frame — thin
+			// features (text strokes especially) visibly fatten/thin while a brush merely MOVES. Held until the
+			// finer cell would overrun the voxel budget by >10% per axis, or leave >20% of it unused.
+			if ( resolution == _heldCellRes && _heldCell > 0f && surfCell < _heldCell * 1.1f && surfCell > _heldCell * 0.8f )
+				surfCell = _heldCell;
+			_heldCell = surfCell;
+			_heldCellRes = resolution;
+		}
 
 		// Snap the grid origin down to a cell multiple, so static brushes resample at identical phases while a
 		// drag slides the bounds min around inside one cell (costs at most one voxel per axis).

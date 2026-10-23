@@ -10,6 +10,18 @@ public enum SdfViewLayer
 	OverlayFlag,
 }
 
+/// <summary>How a prop's distance-field grid is sized (see <see cref="SdfRaymarchRenderer.FieldDensity"/>).</summary>
+public enum SdfFieldDensity
+{
+	/// <summary>Fixed world voxel size (mimiclay_sdf_voxel_size), count clamped to [res_min, res_cap]. Default.</summary>
+	World,
+	/// <summary>Finer fixed world voxel size (mimiclay_sdf_voxel_size_detail), count up to detail_res_max —
+	/// hunter heads, weapons, and anything the local player is sculpting.</summary>
+	Detail,
+	/// <summary>Legacy: FieldResolution voxels along the longest padded axis, SparseField as authored.</summary>
+	Authored,
+}
+
 /// <summary>How the sibling meshed ModelRenderer is used while raymarching. The raymarch writes
 /// the depth+normals prepass itself (depth sorting, hardware occlusion, and AO) and — with
 /// <see cref="SdfRaymarchRenderer.SdfShadows"/> on — casts its own shadows too, so the mesh's only
@@ -87,7 +99,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// <summary>Voxels along the prop's longest axis in the GPU-evaluated field. Higher = sharper silhouette but
 	/// memory grows with the CUBE (R32F: 64³≈1MB, 128³≈8MB, 256³≈67MB), and each edit re-dispatches every voxel.
 	/// 64 is a good middle for organic clay props; 128–256 for crisp detail. (Past ~256 dense gets prohibitive —
-	/// that's sparse-brick territory.)</summary>
+	/// that's sparse-brick territory.) Only used when <see cref="FieldDensity"/> is Authored — the density tiers
+	/// size the grid from a world voxel size instead.</summary>
 	[Property, Group( "Distance Field" ), Range( 8, 512 )] public int FieldResolution { get; set; } = 64;
 
 	/// <summary>Shading smoothness dial for the cached path: the surface-normal central difference spans this
@@ -117,7 +130,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// in roughly half the time of the sparse 256 atlas (prepass 2.1 → 1.2 ms, marched cascade 3.2 → 1.5 ms) and
 	/// is visually equivalent at play distances (slightly softer only with the camera inside a prop). With the
 	/// shared field cache (SdfFieldCache) a dense 128³ R32F volume is 8 MB per UNIQUE shape, not per instance.
-	/// 0 = no cap (authored resolutions rule).</summary>
+	/// Also the voxel-count ceiling for <see cref="SdfFieldDensity.World"/> props (very large props hit it and get
+	/// a coarser voxel than mimiclay_sdf_voxel_size). 0 = no cap (authored resolutions rule; World up to 512).</summary>
 	[ConVar( "mimiclay_sdf_field_res_cap" )]
 	public static int FieldResolutionCap { get; set; } = 128;
 
@@ -126,6 +140,38 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// the memory it saves only matters at the high resolutions the cap above removes. 0 = honour SparseField.</summary>
 	[ConVar( "mimiclay_sdf_dense_max_res" )]
 	public static int DenseMaxResolution { get; set; } = 128;
+
+	/// <summary>How this prop's field grid is sized. <see cref="SdfFieldDensity.World"/> (the default) and
+	/// <see cref="SdfFieldDensity.Detail"/> aim at a fixed WORLD voxel size, so every prop gets about the same
+	/// density whatever its size: a doorknob no longer spends a full 128³ budget on itself. (The grid spans the
+	/// bounds plus <see cref="SdfFieldGpu.BlendPad"/> on every side, so "voxels along the longest axis" used to
+	/// make small props the densest and, being mostly pad and so near-cubic, often the biggest fields too.)
+	/// The voxel count is clamped to a per-tier [min, max], and the result picks dense or sparse on its own
+	/// (see <see cref="DenseMaxResolution"/>). <see cref="SdfFieldDensity.Authored"/> is the old behaviour:
+	/// <see cref="FieldResolution"/> voxels along the longest axis, <see cref="SparseField"/> as authored.
+	/// A prop the LOCAL player is sculpting is always treated as Detail while the session is editing it.</summary>
+	[Property, Group( "Distance Field" )] public SdfFieldDensity FieldDensity { get; set; } = SdfFieldDensity.World;
+
+	/// <summary>Target world voxel size (inches) for <see cref="SdfFieldDensity.World"/> props. 0.5 puts a
+	/// chair-sized prop (~50×50×68 padded) at the old 128 cap; smaller props get proportionally fewer voxels.</summary>
+	[ConVar( "mimiclay_sdf_voxel_size" )]
+	public static float WorldVoxelSize { get; set; } = 0.5f;
+
+	/// <summary>Target world voxel size (inches) for <see cref="SdfFieldDensity.Detail"/>: the hunter's head and
+	/// weapon, and whatever the local player is sculpting — things the camera gets right up against.</summary>
+	[ConVar( "mimiclay_sdf_voxel_size_detail" )]
+	public static float DetailVoxelSize { get; set; } = 0.2f;
+
+	/// <summary>Floor on the voxel count along the longest padded axis for the density tiers, so a coarse voxel
+	/// size can never starve a prop. (With the 16" pad every grid spans ≥ 32", so at the default 0.5 this
+	/// floor never binds — it's the guard for someone raising the voxel size.)</summary>
+	[ConVar( "mimiclay_sdf_field_res_min" )]
+	public static int DensityMinResolution { get; set; } = 32;
+
+	/// <summary>Ceiling on the voxel count for <see cref="SdfFieldDensity.Detail"/> (World props use
+	/// <see cref="FieldResolutionCap"/>). Above <see cref="DenseMaxResolution"/> the field goes sparse.</summary>
+	[ConVar( "mimiclay_sdf_detail_res_max" )]
+	public static int DetailMaxResolution { get; set; } = 256;
 
 	/// <summary>How far (inches) the raymarch PROXY box is grown past the brushes' tight AABB. The field volume is
 	/// padded by <see cref="SdfFieldGpu.BlendPad"/> (16) for live-edit headroom, and the proxy used to grow by the
@@ -139,7 +185,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	static float EffectiveProxyPad => Math.Clamp( ProxyPad, 0f, SdfFieldGpu.BlendPad );
 
 	bool EffectiveUseFieldCache => UseFieldCache && FieldCacheEnabled;
-	bool EffectiveSparseField => SparseField && SparseFieldEnabled && !(DenseMaxResolution > 0 && EffectiveFieldResolution <= DenseMaxResolution);
+	// The field grid resolved for this frame by ResolveFieldGrid (called at the bake site, before the hash):
+	// the voxel count dispatched, the exact local voxel size when the density tier drives it (0 = derive it
+	// from the count + bounds, with SdfFieldGpu's hold band), and dense vs sparse.
+	int _fieldRes = 64;
+	float _fieldCell;
+	bool _fieldSparse;
+	SdfFieldDensity _fieldTier;
+
+	bool EffectiveSparseField => _fieldSparse;
 
 	/// <summary>Runtime override (NOT authored — a [Property] would leak into network spawn snapshots): scales
 	/// <see cref="FieldResolution"/> for this prop's field bakes. Set below 1 by <see cref="SdfNetworkSync"/> on
@@ -152,15 +206,58 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// to O(brush count) per pixel.</summary>
 	public float FieldResolutionScale { get; set; } = 1f;
 
-	/// <summary>The resolution actually dispatched: <see cref="FieldResolution"/> × <see cref="FieldResolutionScale"/>,
-	/// floored at the property's own minimum so a tiny scale can't produce a degenerate volume.</summary>
-	int EffectiveFieldResolution
+	/// <summary>The tier actually used this frame: <see cref="FieldDensity"/>, promoted to Detail while the LOCAL
+	/// edit session is editing this sculpture (entering/leaving edit = one re-bake each way, via the hash).</summary>
+	SdfFieldDensity ResolveFieldTier()
 	{
-		get
+		if ( FieldDensity == SdfFieldDensity.World
+			&& SculptEditSession.Current is { IsEditing: true } s && s.Target.IsValid() && s.Target.GameObject == GameObject )
+			return SdfFieldDensity.Detail;
+		return FieldDensity;
+	}
+
+	/// <summary>Resolve the voxel count, exact voxel size and dense/sparse choice for this frame's field (see
+	/// <see cref="FieldDensity"/>). <see cref="FieldResolutionScale"/> (remote live-drag) coarsens all of them;
+	/// the count is floored at 8 so a tiny scale can't produce a degenerate volume.</summary>
+	void ResolveFieldGrid()
+	{
+		float scale = Math.Clamp( FieldResolutionScale, 0.05f, 1f );
+		_fieldTier = ResolveFieldTier();
+
+		if ( _fieldTier == SdfFieldDensity.Authored )
 		{
 			int res = FieldResolutionCap > 0 ? Math.Min( FieldResolution, FieldResolutionCap ) : FieldResolution;
-			return Math.Max( 8, (int)MathF.Round( res * Math.Clamp( FieldResolutionScale, 0.05f, 1f ) ) );
+			_fieldRes = Math.Max( 8, (int)MathF.Round( res * scale ) );
+			_fieldCell = 0f;
+			_fieldSparse = SparseField && SparseFieldEnabled && !(DenseMaxResolution > 0 && _fieldRes <= DenseMaxResolution);
+			return;
 		}
+
+		bool detail = _fieldTier == SdfFieldDensity.Detail;
+		float voxel = MathF.Max( detail ? DetailVoxelSize : WorldVoxelSize, 0.01f );
+		int maxRes = detail ? DetailMaxResolution : FieldResolutionCap;
+		if ( maxRes <= 0 ) maxRes = 512;
+		int minRes = Math.Clamp( DensityMinResolution, 8, maxRes );
+
+		// The field is built in the object's LOCAL frame over the padded bounds (SdfFieldGpu.Evaluate), so the
+		// world voxel target becomes a local one through the object's scale.
+		var ws = WorldScale;
+		float objScale = MathF.Max( MathF.Max( MathF.Abs( ws.x ), MathF.Abs( ws.y ) ), MathF.Max( MathF.Abs( ws.z ), 0.001f ) );
+		var span = (_curLocalMaxs - _curLocalMins) + 2f * SdfFieldGpu.BlendPad;
+		float maxAxis = MathF.Max( span.x, MathF.Max( span.y, span.z ) );
+		float cell = voxel / objScale;
+
+		int want = (int)MathF.Ceiling( maxAxis / cell );
+		int resClamped = Math.Clamp( want, minRes, maxRes );
+		// Inside the clamps the voxel size is EXACT and bounds-independent (a drag that grows the bounds adds
+		// voxels instead of rescaling the whole field). Clamped, the count rules and the size follows the bounds.
+		_fieldCell = resClamped == want ? cell / scale : 0f;
+		_fieldRes = Math.Max( 8, (int)MathF.Round( resClamped * scale ) );
+
+		// Dense up to DenseMaxResolution (the sparse sampler is ~1.8× a dense fetch per step), sparse above it —
+		// and always sparse past 256, where the dense volume clamps.
+		int denseMax = DenseMaxResolution > 0 ? Math.Min( DenseMaxResolution, 256 ) : 256;
+		_fieldSparse = SparseFieldEnabled && _fieldRes > denseMax;
 	}
 
 	/// <summary>Runtime override (NOT authored), the second live-drag lever beside <see cref="FieldResolutionScale"/>:
@@ -543,8 +640,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[Property, Group( "Displacement" ), Range( 0f, 1.5f )] public float DispAmp { get; set; } = 0.8f;
 
 	/// <summary>Lump density, cells per inch (wavelength = 1/this). Same ownership story as
-	/// <see cref="DispAmp"/>. Keep the wavelength at least ~2–3 field VOXELS (voxel ≈ padded prop
-	/// span / FieldResolution) or the bake can't resolve the lumps — they fade or alias, and do so
+	/// <see cref="DispAmp"/>. Keep the wavelength at least ~2–3 field VOXELS (mimiclay_sdf_voxel_size
+	/// for World props, 0.5" by default — coarser only on props big enough to hit the cap) or the bake can't resolve the lumps — they fade or alias, and do so
 	/// differently on differently-sized props. The stock 0.073 (~14" lumps) is safe everywhere.</summary>
 	[Property, Group( "Displacement" ), Range( 0.01f, 1f )] public float DispFreq { get; set; } = 0.073f;
 
@@ -1035,7 +1132,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// marches its own SdfFieldGpu volume. The useful facts are the resolution it's paying for, whether
 		// it's sparse, and whether it has landed yet.
 		string field = !EffectiveUseFieldCache ? "analytic (per-brush)"
-			: _fieldGpu is { IsValid: true } && _fieldReady ? $"{EffectiveFieldResolution}³{(EffectiveSparseField ? " sparse" : " dense")}"
+			: _fieldGpu is { IsValid: true } && _fieldReady ? $"{_fieldGpu.SurfaceDims.x:0}×{_fieldGpu.SurfaceDims.y:0}×{_fieldGpu.SurfaceDims.z:0}{(EffectiveSparseField ? " sparse" : " dense")} {_fieldTier}"
 			: "baking…";
 		sb.Append( $"\n{_curCount} brushes   field: {field}" );
 
@@ -1476,8 +1573,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			// live-drag scale), the sparse toggle, OR the baked displacement (its look params + the boil tick).
 			// Folding the field parameters into the hash means tweaking them in the inspector updates the field
 			// live, instead of only when a brush is moved.
-			int res = EffectiveFieldResolution;
-			int fieldHash = HashCode.Combine( Hash( brushes ), res, EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
+			ResolveFieldGrid();
+			int res = _fieldRes;
+			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
 			bool haveField = _fieldGpu is { IsValid: true };
 			if ( (fieldHash != _lastFieldHash || !haveField)
 				&& (!haveField || _sinceFieldDispatch >= FieldRebakeInterval) )
@@ -1486,7 +1584,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				// bake it once; a prop editing alone re-bakes its own field in place exactly as before.
 				var field = SdfFieldCache.Acquire( fieldHash, _fieldGpu, out bool bake );
 				if ( !bake || field.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, EffectiveSparseField,
-					bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter ) )
+					bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter, _fieldCell ) )
 				{
 					_fieldGpu = field;
 					_lastFieldHash = fieldHash;
@@ -1808,6 +1906,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	// Diagnostics (mimi_perf_stats): read-only views of per-frame state.
 	internal long FieldVramBytes => _fieldGpu?.EstimatedBytes ?? 0;
+	internal Vector3 DebugFieldDims => _fieldGpu is { IsValid: true } ? _fieldGpu.SurfaceDims : default;
+	internal SdfFieldDensity DebugFieldTier => _fieldTier;
+	internal bool DebugFieldSparse => _fieldSparse;
 	internal bool DebugFieldReady => _fieldReady;
 	internal bool DebugMarchedShadows => MarchedShadowsNow;
 	internal int DebugSwitchState => _switchState;
