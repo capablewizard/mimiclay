@@ -92,6 +92,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// edges at the cost of memory + bake time. Off = the exact per-brush march.</summary>
 	[Property, Group( "Distance Field" )] public bool UseFieldCache { get; set; } = true;
 
+	/// <summary>Hide every SDF prop — raymarched surface AND sibling mesh. The control frame for the
+	/// SDF benchmark (Editor/SdfBench.cs): GPU time with props minus GPU time without them.</summary>
+	[ConVar( "mimiclay_sdf_hide_all" )]
+	public static bool HideAll { get; set; }
+
 	/// <summary>Global diagnostic kill switch for the field-cache compute path.</summary>
 	[ConVar( "mimiclay_sdf_field_cache" )]
 	public static bool FieldCacheEnabled { get; set; } = true;
@@ -792,6 +797,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		int width = MaxBrushes * TexelsPerBrush;
 		if ( _dataTex is null || _dataTex.Width != width )
 		{
+			_dataTex?.Dispose();
 			_dataTex = Texture.Create( width, 1 )
 				.WithFormat( ImageFormat.RGBA32323232F )
 				.WithDynamicUsage()
@@ -802,6 +808,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 		if ( _splineTex is null || _splineTex.Width != MaxSplinePoints )
 		{
+			_splineTex?.Dispose();
 			_splineTex = Texture.Create( MaxSplinePoints, 1 )
 				.WithFormat( ImageFormat.RGBA32323232F )
 				.WithDynamicUsage()
@@ -813,8 +820,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	protected override void OnDisabled()
 	{
-		_so?.Delete();
-		_so = null;
+		ReleaseSceneObject();
 
 		// Hand the sibling mesh back as a normal visible renderer when the raymarch renderer is
 		// disabled but the object lives on (e.g. the user unchecks this component). We CAN'T tell
@@ -834,7 +840,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		try { await Task.Yield(); }
 		catch { return; }
 
-		if ( _destroyed || !go.IsValid() || !go.Active || !mesh.IsValid() )
+		if ( _destroyed || Enabled || !go.IsValid() || !go.Active || !mesh.IsValid() )
 			return;
 
 		mesh.Enabled = true;
@@ -859,13 +865,19 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	internal void ReleaseSceneObject()
 	{
 		_released = true;
+		_so?.Attributes.Clear();
 		_so?.Delete();
 		_so = null;
+		_dataTex?.Dispose(); _dataTex = null;
+		_splineTex?.Dispose(); _splineTex = null;
+		_textAtlas.Dispose();
+		_forceRepack = true;
 
 		// Let go of our reference on the shared field (re-acquired on the next Refresh if this renderer comes back).
 		SdfFieldCache.Release( _fieldGpu );
 		_fieldGpu = null;
 		_lastFieldHash = 0;
+		_fieldReady = false;
 	}
 
 	// Diagnostics: main-thread time spent in every renderer's OnUpdate since the last TakeUpdateMs (PerfScenario).
@@ -929,6 +941,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	{
 		if ( !_so.IsValid() )
 			return;
+
+		// Benchmark control: nothing SDF draws or casts, in any band. Level-driven like the rest, so
+		// clearing the flag restores every renderer on the next frame.
+		if ( HideAll )
+		{
+			_so.RenderingEnabled = false;
+			if ( MeshRenderer.IsValid() ) MeshRenderer.Enabled = false;
+			return;
+		}
 
 		// Band state from the distance switch's hysteresis flags; static mode (DistanceSwitching off) counts
 		// as permanently inside the SDF band.
@@ -1271,9 +1292,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		var sculpt = GameObject.Components.Get<SdfSculpture>();
 		var brushes = sculpt?.Brushes;
 		if ( brushes is not { Count: > 0 } )
+		{
+			ReleaseSceneObject();
+			_released = false; // an empty sculpture can acquire brushes again while still enabled
 			return;
-
-		EnsureResources();
+		}
 
 		// A SceneObject belongs to the world it was constructed in, so a TargetWorld swap can't be patched onto
 		// the live one — drop it and let the block below rebuild it in the new world.
@@ -1309,14 +1332,22 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// landed: on trivially small work (packing two brushes), i.e. GC and GPU-resource creation paying for
 		// the allocations. The brushes were already packed in local space; only the proxy wasn't.
 		int shapeKey = HashCode.Combine( shapeHash, Material, TightBounds, EffectiveUseFieldCache, EffectiveProxyPad );
-		if ( shapeKey != _lastHash || !_so.IsValid() || _forceRepack )
+		bool inputsMissing = !_dataTex.IsValid() || _dataTex.Width != MaxBrushes * TexelsPerBrush
+			|| !_splineTex.IsValid() || _splineTex.Width != MaxSplinePoints;
+		if ( shapeKey != _lastHash || !_so.IsValid() || _forceRepack || inputsMissing )
 		{
 			// Bounds computed in the object's LOCAL frame, so the proxy can be ORIENTED to the object
 			// instead of a world-axis-aligned cube (a rotated/flat prop's world AABB is hugely bloated).
 			long rt0 = PawnPerfProbe.Enabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0; // diagnostics only
 			if ( !TryLocalBounds( brushes, out var lmins, out var lmaxs ) )
+			{
+				ReleaseSceneObject();
+				_released = false;
 				return;
+			}
 
+			// Validate bounds before allocating, so an all-disabled/empty-spline list doesn't churn textures.
+			EnsureResources();
 			_forceRepack = false;
 			_lastHash = shapeKey;
 			_curCount = PackBrushes( brushes );
@@ -1619,6 +1650,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 					_so.Attributes.Set( "AtlasDims", _fieldGpu.AtlasDims );
 					_so.Attributes.Set( "AtlasEncode", _fieldGpu.AtlasEncodeBand ); // 8-bit tile decode band (0 = raw R32F)
 				}
+				else
+				{
+					// Clear the strong handles retained from a previous sparse bake.
+					_so.Attributes.Set( "Atlas", (Texture)null );
+					_so.Attributes.Set( "IndirectionTex", (Texture)null );
+				}
 				_so.Attributes.Set( "SdfSparse", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 
 				_fieldReady = true;
@@ -1906,6 +1943,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	// Diagnostics (mimi_perf_stats): read-only views of per-frame state.
 	internal long FieldVramBytes => _fieldGpu?.EstimatedBytes ?? 0;
+	internal SdfFieldGpu DebugField => _fieldGpu;
+	internal long TextAtlasBytes => _textAtlas.EstimatedBytes;
+	internal long LocalResourceBytes => SdfGpuMemory.TextureBytes( _dataTex ) + SdfGpuMemory.TextureBytes( _splineTex ) + TextAtlasBytes;
 	internal Vector3 DebugFieldDims => _fieldGpu is { IsValid: true } ? _fieldGpu.SurfaceDims : default;
 	internal SdfFieldDensity DebugFieldTier => _fieldTier;
 	internal bool DebugFieldSparse => _fieldSparse;
@@ -1990,6 +2030,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			a.Set( $"BrickDims{slot}", _fieldGpu.BrickDims );
 			a.Set( $"AtlasDims{slot}", _fieldGpu.AtlasDims );
 			a.Set( $"AtlasEncode{slot}", _fieldGpu.AtlasEncodeBand ); // 8-bit tile decode band (0 = raw R32F)
+		}
+		else
+		{
+			a.Set( $"Atlas{slot}", (Texture)null );
+			a.Set( $"IndirectionTex{slot}", (Texture)null );
 		}
 		a.Set( $"SdfSparse{slot}", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 	}

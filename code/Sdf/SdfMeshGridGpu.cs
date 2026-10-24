@@ -77,7 +77,9 @@ public static class SdfMeshGridGpu
 	static readonly Texture[] Grids = new Texture[MaxSlots];
 	static readonly int[] GridX = new int[MaxSlots], GridY = new int[MaxSlots];
 	static Texture _brushTex, _splineTex;
-	static readonly SdfTextAtlas TextAtlas = new();
+	// Shared by every mesh build, so it stays allocated once text has been seen — releasing it per text-free
+	// build would just reallocate 1 MiB on the next text prop.
+	static readonly SdfTextAtlas TextAtlas = new() { KeepAllocated = true };
 	static float[] _data, _spline;
 	static bool _failed; // a hard failure (no shader / no texture) — stop retrying every mesh
 

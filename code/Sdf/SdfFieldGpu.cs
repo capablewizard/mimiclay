@@ -66,30 +66,37 @@ public sealed class SdfFieldGpu
 	/// period lapses. Nothing disposed these before: old fields lived until the GC finaliser got round to them.</summary>
 	public void Dispose()
 	{
+		// RenderAttributes owns strong texture handles independently of the Texture wrappers.
+		_cs?.Attributes.Clear();
+		ReleaseSparseResources();
 		Texture?.Dispose(); Texture = null;
+		_brushTex?.Dispose(); _brushTex = null;
+		_splineTex?.Dispose(); _splineTex = null;
+		_textAtlas.Dispose();
+		_nx = _ny = _nz = 0;
+	}
+
+	void ReleaseSparseResources()
+	{
+		_classifyCs?.Attributes.Clear();
+		_allocCs?.Attributes.Clear();
+		_fillCs?.Attributes.Clear();
 		Occupancy?.Dispose(); Occupancy = null;
 		Atlas?.Dispose(); Atlas = null;
 		IndirectionTex?.Dispose(); IndirectionTex = null;
-		_brushTex?.Dispose(); _brushTex = null;
-		_splineTex?.Dispose(); _splineTex = null;
 		_counter?.Dispose(); _counter = null;
-		_nx = _ny = _nz = 0;
 		_bx = _by = _bz = 0;
 		_indBx = _indBy = _indBz = 0;
 		_atlasX = _atlasY = _atlasZ = 0;
+		AtlasEncodeBand = 0f;
 	}
 
-	/// <summary>Resident VRAM estimate of every texture this field owns (guide/dense field, occupancy, atlas,
-	/// indirection). Diagnostics only (mimi_perf_stats).</summary>
-	public long EstimatedBytes => Bytes( Texture ) + Bytes( Occupancy ) + Bytes( Atlas ) + Bytes( IndirectionTex );
-
-	static long Bytes( Texture t )
-	{
-		if ( !t.IsValid() ) return 0;
-		long px = (long)t.Width * Math.Max( t.Height, 1 ) * Math.Max( t.Depth, 1 );
-		int bpp = t.ImageFormat switch { ImageFormat.I8 => 1, ImageFormat.R32F => 4, ImageFormat.RGBA32323232F => 16, _ => 4 };
-		return px * bpp;
-	}
+	/// <summary>Owned GPU payload, including persistent bake inputs. Excludes driver overhead and staging.</summary>
+	public long EstimatedBytes => FieldTextureBytes + InputTextureBytes + TextAtlasBytes + (_counter is null ? 0 : 4);
+	public long FieldTextureBytes => SdfGpuMemory.TextureBytes( Texture ) + SdfGpuMemory.TextureBytes( Occupancy )
+		+ SdfGpuMemory.TextureBytes( Atlas ) + SdfGpuMemory.TextureBytes( IndirectionTex );
+	public long InputTextureBytes => SdfGpuMemory.TextureBytes( _brushTex ) + SdfGpuMemory.TextureBytes( _splineTex );
+	public long TextAtlasBytes => _textAtlas.EstimatedBytes;
 
 	Texture _brushTex, _splineTex;
 	readonly SdfTextAtlas _textAtlas = new(); // baked text distance fields (Text brushes), bound as "TextSdf"
@@ -258,6 +265,8 @@ public sealed class SdfFieldGpu
 		// sparse — otherwise every edit pays to build an atlas the dense path never samples. Run at the SURFACE res.
 		if ( buildSparse )
 			ClassifyBricks( snx, sny, snz, surfCell );
+		else
+			ReleaseSparseResources();
 		return true;
 	}
 
@@ -270,6 +279,7 @@ public sealed class SdfFieldGpu
 
 		if ( !Occupancy.IsValid() || _bx != bx || _by != by || _bz != bz )
 		{
+			Occupancy?.Dispose();
 			Occupancy = Texture.CreateVolume( bx, by, bz, ImageFormat.R32F )
 				.WithUAVBinding().WithName( "sdf_brick_occupancy" ).Finish();
 			if ( !Occupancy.IsValid() )
@@ -321,6 +331,7 @@ public sealed class SdfFieldGpu
 		_counter ??= new GpuBuffer( 1, 4, GpuBuffer.UsageFlags.Structured, "sdf_brick_counter" );
 		if ( !IndirectionTex.IsValid() || _indBx != _bx || _indBy != _by || _indBz != _bz )
 		{
+			IndirectionTex?.Dispose();
 			// 2D (NOT a volume): a second user volume texture bound to the material PS aliases the dense field
 			// (engine limit). A 2D texture uses the separate slot pool the brush-data texture already reads from.
 			// Layout: x = brick.x, y = brick.y + brickDims.y*brick.z. Width=bx, height=by*bz.
@@ -335,6 +346,7 @@ public sealed class SdfFieldGpu
 		// refuses it (format+UAV support varies), fall back to R32F and leave AtlasEncodeBand at 0 = raw floats.
 		if ( !Atlas.IsValid() || _atlasZ != az || _atlas8Bit != Atlas8BitEnabled )
 		{
+			Atlas?.Dispose();
 			Atlas = Atlas8BitEnabled
 				? Texture.CreateVolume( ax, ay, az, ImageFormat.I8 ).WithUAVBinding().WithName( "sdf_atlas" ).Finish()
 				: null;
@@ -478,6 +490,7 @@ public sealed class SdfFieldGpu
 		if ( Texture.IsValid() && _nx == nx && _ny == ny && _nz == nz )
 			return true;
 
+		Texture?.Dispose();
 		Texture = Texture.CreateVolume( nx, ny, nz, ImageFormat.R32F )
 			.WithUAVBinding()
 			.WithName( "sdf_field_gpu" )
@@ -493,9 +506,15 @@ public sealed class SdfFieldGpu
 	void EnsureBrushTextures()
 	{
 		if ( _brushTex is null || _brushTex.Width != MaxBrushes * TexelsPerBrush )
+		{
+			_brushTex?.Dispose();
 			_brushTex = Texture.Create( MaxBrushes * TexelsPerBrush, 1 ).WithFormat( ImageFormat.RGBA32323232F ).WithDynamicUsage().Finish();
+		}
 		if ( _splineTex is null || _splineTex.Width != MaxSplinePoints )
+		{
+			_splineTex?.Dispose();
 			_splineTex = Texture.Create( MaxSplinePoints, 1 ).WithFormat( ImageFormat.RGBA32323232F ).WithDynamicUsage().Finish();
+		}
 		_data ??= new float[MaxBrushes * TexelsPerBrush * 4];
 		_spline ??= new float[MaxSplinePoints * 4];
 	}
@@ -593,6 +612,7 @@ public static class SdfBrushPacker
 			break;
 		}
 
+		textAtlas?.FinishPacking( textSlot );
 		return written;
 
 		void PackOne( SdfBrush b )
