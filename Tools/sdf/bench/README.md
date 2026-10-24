@@ -9,7 +9,7 @@ Code: `Editor/SdfBench.cs` (runner and comparison), `code/Debug/SdfBenchProbe.cs
 Every timed sample is paired with a **control** sample: same camera and lights, with every SDF prop hidden
 (`mimiclay_sdf_hide_all`). The SDF cost is:
 
-> **sdf ms** = mean GPU time per frame with the props − mean GPU time without them
+> **sdf ms** = median GPU time per frame with the props − median GPU time without them
 
 This removes the editor, sky, floor and lights from the result, so a 0.3 ms shader win shows up as 0.3 ms.
 GPU time is the engine's graphics-queue busy time for each frame. It is read from the GPU profiler's raw per-frame
@@ -17,7 +17,7 @@ timestamps, not its smoothed display values. The same per-pass data gives the br
 (prepass / forward / shadows / other), also as with-props minus control. `other` can be slightly negative: with
 the props hidden, the background behind them draws instead.
 
-The on/control pairs are repeated (3× by default), and each result is the median of those repeats. Means, not medians, are used within a sample: some passes (spot shadow maps) skip frames, so per-frame cost is bimodal and a median would hide them. `range` is the
+The on/control pairs are repeated (3× by default), and each result is the median of those repeats. Within a sample, per-frame **medians** are used (headline and every pass). The `slow` column is the share of frames over 1.3× the median. `range` is the
 min–max of the per-repeat sdf ms. It shows how noisy that case is.
 
 Each sample is 2 s (`"seconds"` changes it). A step that only flips a ConVar or the control's hide flag settles for
@@ -32,8 +32,17 @@ Each case also records:
   renders are compared to give the case's **image noise**. On this machine two renders of the same frame are
   bit-identical, so any image difference between runs is a real rendering change.
 
-While running, the benchmark turns off VSync and frame caps, pauses editor scene views, enables the GPU profiler and
+While running, the benchmark turns off VSync and frame caps (except the cap below), pauses editor scene views, enables the GPU profiler and
 disables the fly camera. All of these are restored afterwards. It never saves the scene.
+
+**Spot/point-light cases run capped at 60 fps.** Shadow-map passes are memory-latency-bound: dependent 3D-texture
+reads into the fields. Nsight (2026-10-24) showed that in a frame that starts after the GPU idled, the spot shadow pass
+hits L2 only ~25% of the time (the forward pass after it: 66–90%), and it costs ~4× as much (≈9 vs ≈2.4 ms for 256
+props × 4 spots). Uncapped, the editor flips between the two regimes sample to sample, which made spot results
+unrepeatable. Capped, every frame is in the cold regime, which is repeatable and is also what a player with V-sync or a
+frame cap sees. The sun case stays uncapped: its cascades went bimodal under a cap but are stable uncapped. Each case
+records its `Cap` in the run file. Outside GPU load (video playback, Steam recording) did not cause the slow regime;
+it only changed how often it appeared uncapped.
 
 ## Suites
 
@@ -118,8 +127,9 @@ two runs are more than 20 minutes apart.
    warns if a compiled `sdf_*.shader_c` is older than its `.shader` or any local `#include`. The editor doesn't
    always recompile after an `.hlsl`-only edit; touch the `.shader` if it warns.
 3. Run again: `label: "xyz"`.
-4. `sdf_bench_compare`. Each case's verdict is `FASTER`/`SLOWER` only if it moved by more than 3% **and** the two
-   repeat ranges don't overlap. Otherwise it is `same`. The image column shows how many pixels changed by more than
+4. `sdf_bench_compare`. Each case's verdict is `FASTER`/`SLOWER` only if it moved by more than max(3%, twice
+   the baseline's own repeat spread) **and** the two repeat ranges don't overlap. Capped spot cases drift about ±4%
+   between arms, so their bar is higher. Otherwise it is `same`. The image column shows how many pixels changed by more than
    2 and 10 (of 255), with the noise floor next to it. Inspect the amplified diffs in
    `runs/images/<candidate>/diff-vs-<baseline>/`.
 5. For a small or surprising result, run the baseline again (A/B/A). Effects under ~0.25 ms need longer samples

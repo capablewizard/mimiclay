@@ -48,6 +48,13 @@ public static class SdfBench
 	sealed record Case( string Name, int View, float Back, int Lights, Lod Lod, bool Dolly = false, bool Sun = false )
 	{
 		public string ControlKey => $"{View}/{Back}/{Lights}/{(Sun ? "sun" : "")}";
+
+		/// <summary>Frame cap while this case runs. Shadow-map passes are memory-latency-bound and run ~4× slower in
+		/// frames that start after the GPU idled (cold caches — Nsight, 2026-10-24: L2 hit ~25% vs ~85% warm). Uncapped,
+		/// the editor mixes the two regimes sample to sample; capped at 60 every frame is cold, which is repeatable AND
+		/// what a V-synced/capped player sees. Only LOCAL-light cases are capped: the sun's cascades went bimodal under a
+		/// cap (5.1–6.6 ms) but are stable uncapped, as are cases without shadow-casting lights.</summary>
+		public int Cap => Lights > 0 ? 60 : 0;
 	}
 
 	static Case[] ShaderSuite() => new Case[]
@@ -85,11 +92,18 @@ public static class SdfBench
 	{
 		public readonly List<float> Gpu = new(), Frame = new();
 		public readonly Dictionary<string, double> PassSum = new();
+		public readonly Dictionary<string, int> PassFrames = new(); // GPU frames in which each leaf path appeared
 		public Dictionary<string, int> Bands;
 		public double UpdateMs, CountedMiB;
 		public int UniqueFields;
-		public double GpuMean => Gpu.Count == 0 ? 0 : Gpu.Average( x => (double)x );
-		public double PassMean( string path ) => Gpu.Count == 0 ? 0 : PassSum.GetValueOrDefault( path ) / Gpu.Count;
+		public readonly Dictionary<string, List<float>> PassPerFrame = new(); // each leaf path's ms per GPU frame (0 when absent)
+		// MEDIANS, not means. Measured 2026-10-24: whenever the GPU idles between frames (a frame cap, or a CPU-bound
+		// editor frame) the first passes of the next frame — the shadow maps — run ~4× slower for IDENTICAL work
+		// (spot shadows 2.4 vs ~9 ms, bimodal per frame). Means mixed the two regimes and made the spot case
+		// unmeasurable; the median tracks the GPU work, and SlowFrames reports how much of the sample was affected.
+		public double GpuMid => Percentile( Gpu, .5 );
+		public double PassMid( string path ) => PassPerFrame.TryGetValue( path, out var l ) ? Percentile( l, .5 ) : 0;
+		public double SlowFrames { get { double m = GpuMid; return Gpu.Count == 0 ? 0 : Gpu.Count( g => g > 1.3 * m ) / (double)Gpu.Count; } }
 	}
 
 	static string _phase = "idle", _suite, _label, _output, _error;
@@ -377,6 +391,11 @@ public static class SdfBench
 		}
 
 		if ( _sun.IsValid() ) _sun.Shadows = c.Sun;
+		if ( _settings is not null && _settings.MaxFrameRate != c.Cap )
+		{
+			_settings.MaxFrameRate = c.Cap; _settings.MaxFrameRateInactive = c.Cap;
+			_settings.Apply();
+		}
 		_dev.ForceSdfShadows = !ShadowLod( c.Lod );
 		_dev.LightCount = c.Lights;
 		_dev.Shadows = true;
@@ -580,6 +599,8 @@ public static class SdfBench
 		}
 		for ( int i = 0; i < n; i++ )
 			if ( measured[i] && parents[i] >= 0 && parents[i] < n ) hasChild[parents[i]] = true;
+		var seen = new HashSet<string>();
+		var frameMs = new Dictionary<string, float>();
 		for ( int i = 0; i < n; i++ )
 		{
 			if ( !measured[i] || hasChild[i] ) continue;
@@ -589,7 +610,18 @@ public static class SdfBench
 			while ( p >= 0 && p < n && guard++ < 32 ) { path = names[p] + "/" + path; root = names[p]; p = parents[p]; }
 			if ( root == "Async compute" ) continue; // not on the graphics queue
 			s.PassSum[path] = s.PassSum.GetValueOrDefault( path ) + durations[i];
+			frameMs[path] = frameMs.GetValueOrDefault( path ) + durations[i];
+			if ( seen.Add( path ) ) s.PassFrames[path] = s.PassFrames.GetValueOrDefault( path ) + 1;
 		}
+		// Per-frame series: a path first seen now is back-filled with zeros; one missing this frame gets a zero.
+		foreach ( var (path, ms) in frameMs )
+		{
+			if ( !s.PassPerFrame.TryGetValue( path, out var list ) )
+				s.PassPerFrame[path] = list = new List<float>( Enumerable.Repeat( 0f, s.Gpu.Count - 1 ) );
+			list.Add( ms );
+		}
+		foreach ( var (path, list) in s.PassPerFrame )
+			if ( !frameMs.ContainsKey( path ) ) list.Add( 0 );
 	}
 
 	static string Bucket( string path )
@@ -640,6 +672,11 @@ public static class SdfBench
 		public double FrameP50 { get; set; }
 		public double FrameP99 { get; set; }
 		public int Hitches33 { get; set; }
+		/// <summary>Share of GPU frames over 1.3× the median — the "slow first passes after GPU idle" regime. Above ~10% the
+		/// shadow passes especially are unstable; the medians still track the work.</summary>
+		public double SlowFrames { get; set; }
+		/// <summary>Frame cap the case ran at (0 = uncapped). Capped shadow cases measure the cold-cache regime.</summary>
+		public int Cap { get; set; }
 		/// <summary>Main-thread ms per frame across every SDF renderer's OnUpdate (bands, refresh, visibility).</summary>
 		public double RendererUpdateMs { get; set; }
 		/// <summary>Counted SDF texture payload and unique fields at the end of the sample (residency).</summary>
@@ -653,6 +690,9 @@ public static class SdfBench
 		public Dictionary<string, double> Buckets { get; set; }
 		/// <summary>Leaf passes whose cost moved by ≥0.05 ms, on − control (or raw for a dolly).</summary>
 		public Dictionary<string, double> Passes { get; set; }
+		/// <summary>Share of GPU frames (with the props shown) in which each listed pass appeared — below 1 means the
+		/// pass was skipped or its timings missing on some frames, so its mean understates the per-frame cost.</summary>
+		public Dictionary<string, double> PassPresence { get; set; }
 		public Dictionary<string, int> Bands { get; set; }
 	}
 
@@ -660,29 +700,31 @@ public static class SdfBench
 	{
 		var key = new Step( c, false, 0, arm ).Key;
 		var reps = Enumerable.Range( 0, _repeats ).Select( r => (On: On[(key, r)], Ctl: c.Dolly ? null : Control[(c.ControlKey, r)]) ).ToList();
-		var sdf = c.Dolly ? null : reps.Select( r => r.On.GpuMean - r.Ctl.GpuMean ).ToList();
+		var sdf = c.Dolly ? null : reps.Select( r => r.On.GpuMid - r.Ctl.GpuMid ).ToList();
 
 		var paths = reps.SelectMany( r => r.On.PassSum.Keys.Concat( r.Ctl?.PassSum.Keys ?? Enumerable.Empty<string>() ) ).Distinct();
 		var passes = new Dictionary<string, double>();
 		foreach ( var path in paths )
 		{
-			var d = Median( reps.Select( r => r.On.PassMean( path ) - (r.Ctl?.PassMean( path ) ?? 0) ) );
+			var d = Median( reps.Select( r => r.On.PassMid( path ) - (r.Ctl?.PassMid( path ) ?? 0) ) );
 			if ( Math.Abs( d ) >= 0.05 ) passes[path] = Round( d );
 		}
 		var buckets = new[] { "prepass", "forward", "shadows", "other" }.ToDictionary( b => b, b => Round( Median( reps.Select( r =>
 			r.On.PassSum.Keys.Concat( r.Ctl?.PassSum.Keys ?? Enumerable.Empty<string>() ).Distinct().Where( p => Bucket( p ) == b )
-				.Sum( p => r.On.PassMean( p ) - (r.Ctl?.PassMean( p ) ?? 0) ) ) ) ) );
+				.Sum( p => r.On.PassMid( p ) - (r.Ctl?.PassMid( p ) ?? 0) ) ) ) ) );
 
 		var frames = reps.SelectMany( r => r.On.Frame ).ToList();
 		return new CaseResult
 		{
 			Name = key, Lod = c.Lod.ToString().ToLowerInvariant(),
 			SdfMs = sdf is null ? null : Round( Median( sdf ) ), SdfMin = sdf is null ? null : Round( sdf.Min() ), SdfMax = sdf is null ? null : Round( sdf.Max() ),
-			GpuMs = Round( Median( reps.Select( r => r.On.GpuMean ) ) ),
-			ControlMs = c.Dolly ? null : Round( Median( reps.Select( r => r.Ctl.GpuMean ) ) ),
+			GpuMs = Round( Median( reps.Select( r => r.On.GpuMid ) ) ),
+			ControlMs = c.Dolly ? null : Round( Median( reps.Select( r => r.Ctl.GpuMid ) ) ),
 			FrameP50 = Round( Median( reps.Select( r => Percentile( r.On.Frame, .5 ) ) ) ),
 			FrameP99 = Round( Median( reps.Select( r => Percentile( r.On.Frame, .99 ) ) ) ),
 			Hitches33 = frames.Count( f => f > 33.3f ),
+			SlowFrames = Round( Median( reps.Select( r => r.On.SlowFrames ) ) ),
+			Cap = c.Cap,
 			RendererUpdateMs = Round( Median( reps.Select( r => r.On.UpdateMs ) ) ),
 			CountedMiB = reps[^1].On.CountedMiB,
 			UniqueFields = reps[^1].On.UniqueFields,
@@ -690,6 +732,7 @@ public static class SdfBench
 			ImageNoise = _imageNoise.GetValueOrDefault( key ),
 			Buckets = buckets,
 			Passes = passes.OrderByDescending( p => Math.Abs( p.Value ) ).ToDictionary( p => p.Key, p => p.Value ),
+			PassPresence = passes.Keys.ToDictionary( p => p, p => Round( Median( reps.Select( r => r.On.Gpu.Count == 0 ? 0 : r.On.PassFrames.GetValueOrDefault( p ) / (double)r.On.Gpu.Count ) ) ) ),
 			Bands = reps[^1].On.Bands,
 		};
 	}
@@ -715,13 +758,13 @@ public static class SdfBench
 		sb.AppendLine( $"[sdf-bench] {run.Suite} '{run.Label}' {run.Commit}{(run.DirtyFiles > 0 ? $" (+{run.DirtyFiles} dirty)" : "")} {run.Env.GetValueOrDefault( "Resolution" )} {run.Repeats}×{run.Seconds:0.#}s{(run.Quick ? " QUICK" : "")}" );
 		foreach ( var w in run.Warnings ?? new() ) sb.AppendLine( $"  ⚠ {w}" );
 		if ( run.Set?.Count > 0 ) sb.AppendLine( $"  set: {Overrides( run.Set )}" );
-		sb.AppendLine( $"{"case",-22} {"sdf ms",7} {"range",13}  {"prepass",7} {"forward",7} {"shadows",7} {"other",6}  {"gpu",6} {"ctl",6} {"p99",6} {"cpu",5} {"MiB",6}  bands" );
+		sb.AppendLine( $"{"case",-22} {"sdf ms",7} {"range",13}  {"prepass",7} {"forward",7} {"shadows",7} {"other",6}  {"gpu",6} {"ctl",6} {"p99",6} {"cpu",5} {"MiB",6} {"slow",5}  bands" );
 		foreach ( var c in run.Cases )
 		{
 			string sdf = c.SdfMs is double v ? $"{v,7:0.00}" : $"{"—",7}";
 			string range = c.SdfMin is double lo && c.SdfMax is double hi ? $"{lo:0.00}–{hi:0.00}" : "";
 			string bands = c.Bands is null ? "" : string.Join( " ", c.Bands.Select( b => $"{b.Key}={b.Value}" ) );
-			sb.AppendLine( $"{c.Name,-22} {sdf} {range,13}  {c.Buckets["prepass"],7:0.00} {c.Buckets["forward"],7:0.00} {c.Buckets["shadows"],7:0.00} {c.Buckets["other"],6:0.00}  {c.GpuMs,6:0.00} {c.ControlMs ?? 0,6:0.00} {c.FrameP99,6:0.0} {c.RendererUpdateMs,5:0.00} {c.CountedMiB,6:0}  {bands}" );
+			sb.AppendLine( $"{c.Name,-22} {sdf} {range,13}  {c.Buckets["prepass"],7:0.00} {c.Buckets["forward"],7:0.00} {c.Buckets["shadows"],7:0.00} {c.Buckets["other"],6:0.00}  {c.GpuMs,6:0.00} {c.ControlMs ?? 0,6:0.00} {c.FrameP99,6:0.0} {c.RendererUpdateMs,5:0.00} {c.CountedMiB,6:0} {c.SlowFrames,5:P0}  {bands}" );
 		}
 		return sb.ToString();
 	}
@@ -759,7 +802,11 @@ public static class SdfBench
 			&& aLo <= bHi && bLo <= aHi;
 		// One repeat has no spread to judge noise by (A/B single runs wobble 4–8%), so it never gets a verdict.
 		bool single = cb.SdfMs is not null && (ca.SdfMin == ca.SdfMax || cb.SdfMin == cb.SdfMax);
-		string verdict = single ? "1 rep" : Math.Abs( pct ) < 3 || overlap ? "same" : d < 0 ? "FASTER" : "SLOWER";
+		// The bar scales with the baseline's own repeat spread: capped spot shadows drift ~±4% between arms, which a fixed
+		// 3% rule called SLOWER for a no-op (2026-10-24). Tight cases keep the 3% floor.
+		double spreadPct = ca.SdfMin is double lo && ca.SdfMax is double hi && va > 0.01 ? (hi - lo) / va * 100 : 0;
+		double bar = Math.Max( 3, 2 * spreadPct );
+		string verdict = single ? "1 rep" : Math.Abs( pct ) < bar || overlap ? "same" : d < 0 ? "FASTER" : "SLOWER";
 		string Bd( string k ) => $"{cb.Buckets[k] - ca.Buckets[k],8:+0.00;-0.00;0.00}";
 		if ( !string.IsNullOrEmpty( image ) && cb.ImageNoise is not null ) image += $"  (noise {cb.ImageNoise})";
 		return $"{name,-22} {va,7:0.00} {vb,7:0.00} {d,7:+0.00;-0.00;0.00} {pct,6:+0.0;-0.0;0.0}%  {verdict,-8}  {Bd( "prepass" )} {Bd( "forward" )} {Bd( "shadows" )} {Bd( "other" )}  {image}"

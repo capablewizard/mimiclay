@@ -206,9 +206,9 @@ PS
 	#define SDF_SKIP( bit ) ( ( g_nSdfDebugSkip & ( bit ) ) != 0 )
 	// Steps the last RayMarchHit took (heatmap only).
 	static int s_marchSteps = 0;
-	// ORTHO (sun cascade) shadow views: hit epsilon floor in SHADOW-MAP TEXELS. The cascade can't store
-	// detail finer than a texel, so marching it at the camera's 0.05u epsilon is wasted steps - the far
-	// cascades (big texels) become almost free. 0 = march every cascade at full camera precision.
+	// SHADOW views (sun cascades and spot/point faces): hit epsilon floor in SHADOW-MAP TEXELS. A shadow map
+	// can't store detail finer than a texel, so marching it at the camera's 0.05u epsilon is wasted steps - the
+	// far cascades (big texels) become almost free. 0 = march every shadow view at full camera precision.
 	float     g_flSdfShadowTexelEps < Attribute( "SdfShadowTexelEps" ); Default( 0.5 ); >;
 	// Gradient bound of the BAKED displaced field: the bake subtracts the lumps into the volume,
 	// steepening its slope by up to this L (= worst-tick amp · freq · 4). 0 = field is a true
@@ -1084,7 +1084,10 @@ PS
 		float q = ortho ? 1.0 : LodQuality( ro );
 		int   maxSteps = (int)lerp( (float)g_nMinSteps, (float)g_nMaxSteps, q );
 		float eps      = lerp( g_flFarEpsilon, g_flEpsilon, q );
-		if ( ortho && g_flSdfShadowTexelEps > 0.0 )
+		// Spot/point shadow faces get the same floor: their pixels are shadow-map texels too, and the perpendicular
+		// footprint formula holds for perspective rays. Measured 2026-10-24 (256 props × 4 spots, frame-capped):
+		// spot shadow pass 7.8 → 6.3 ms; 0.39% of pixels moved, all on spot shadow edges.
+		if ( ( ortho || IsShadowView() ) && g_flSdfShadowTexelEps > 0.0 )
 		{
 			// Shadow-map texel in world units: the pixel footprint with its along-ray part removed (a face
 			// oblique to the light stretches ddx along the ray; the perpendicular part is the texel itself).

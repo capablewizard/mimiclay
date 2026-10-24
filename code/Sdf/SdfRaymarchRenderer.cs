@@ -631,10 +631,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[ConVar( "mimiclay_sdf_reuse_prepass_mode" )]
 	public static int ReusePrepassMode { get; set; } = 1; // this project renders MSAA 8x (video settings): mode 2 is only exact without MSAA
 
-	/// <summary>SHADOW (ortho cascade) views: raise the march hit epsilon to this many shadow-map texels
-	/// (world size of one texel of the cascade being rendered). A shadow map can't resolve detail finer than
-	/// its texel, so marching a cascade at the camera's 0.05 u epsilon is wasted steps; far cascades (big
-	/// texels) get very cheap. 0 = march shadows at full camera precision (old behaviour).</summary>
+	/// <summary>SHADOW views (sun cascades and spot/point-light faces): raise the march hit epsilon to this many
+	/// shadow-map texels (world size of one texel of the shadow map being rendered). A shadow map can't resolve
+	/// detail finer than its texel, so marching it at the camera's 0.05 u epsilon is wasted steps; far cascades
+	/// (big texels) get very cheap, and spot shadows measured 7.8 → 6.3 ms (256 props × 4 spots).
+	/// 0 = march shadows at full camera precision (old behaviour).</summary>
 	[Property, Group( "Shadows" ), Range( 0f, 2f )] public float ShadowTexelEpsilon { get; set; } = 0.5f;
 
 	/// <summary>Render a tight bounding-SPHERE proxy instead of the AABB box, so round props march
