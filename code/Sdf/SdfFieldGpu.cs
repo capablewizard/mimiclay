@@ -553,13 +553,23 @@ public sealed class SdfFieldGpu
 		return s;
 	}
 
+	/// <summary>Store the distance field as 16-bit floats: half the field memory at the same resolution. All maths stays
+	/// float32; only the stored samples round (11-bit mantissa: ~0.002 u at 4 u from the surface, where hits and normals
+	/// are taken). Part of the renderer's field hash, so toggling rebakes and the cache never mixes formats.
+	/// Default ON (2026-10-24, 256-prop shader suite): field memory 1271 → 675 MiB, frame-capped spot shadows −35%
+	/// (the shadow pass is memory-latency-bound), images within 0.3% of pixels (silhouette hit/miss flips).
+	/// Set 0 for the float32 fallback.</summary>
+	[ConVar( "mimiclay_sdf_field_half" )]
+	public static bool FieldHalfEnabled { get; set; } = true;
+
 	bool EnsureVolume( int nx, int ny, int nz )
 	{
-		if ( Texture.IsValid() && _nx == nx && _ny == ny && _nz == nz )
+		var format = FieldHalfEnabled ? ImageFormat.R16F : ImageFormat.R32F;
+		if ( Texture.IsValid() && _nx == nx && _ny == ny && _nz == nz && Texture.ImageFormat == format )
 			return true;
 
 		Texture?.Dispose();
-		Texture = Texture.CreateVolume( nx, ny, nz, ImageFormat.R32F )
+		Texture = Texture.CreateVolume( nx, ny, nz, format )
 			.WithUAVBinding()
 			.WithName( "sdf_field_gpu" )
 			.Finish();

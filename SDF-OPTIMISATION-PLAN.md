@@ -36,8 +36,10 @@ Ordered by expected payoff. Each one is a separate change with its own A/B resul
    Surface-brick proxy boxes (draw boxes around occupied bricks, start rays near the surface) are the larger
    version of this. Prototype it on its own and keep the current renderer as the reference. `dense` and `close`
    show it.
-5. **R16F dense fields.** This halves field memory (191 → 95 MiB on the kitchen map) and may help bandwidth. Prevent
-   Inf/NaN in the empty-distance sentinel. Check normals, curvature and thin features.
+5. **R16F dense fields. DONE (2026-10-24), default on; `mimiclay_sdf_field_half 0` is the float32 fallback.**
+   256-prop suite: field memory 1271 → 675 MiB, frame-capped spot shadows −35% (the shadow pass is memory-latency
+   bound), images within 0.3% of pixels (silhouette hit/miss flips). The bake clamps to ±60000, so the 1e9 empty
+   sentinel can't become +Inf.
 
 ## LOD and residency candidates (`lod` suite)
 

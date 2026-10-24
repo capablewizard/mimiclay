@@ -1628,7 +1628,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			// live, instead of only when a brush is moved.
 			ResolveFieldGrid();
 			int res = _fieldRes;
-			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell, SdfFieldGpu.MaterialBakeEnabled, SdfFieldGpu.MaterialDivisor ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
+			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell, SdfFieldGpu.MaterialBakeEnabled, SdfFieldGpu.MaterialDivisor, SdfFieldGpu.FieldHalfEnabled ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
 			bool haveField = _fieldGpu is { IsValid: true };
 			if ( (fieldHash != _lastFieldHash || !haveField)
 				&& (!haveField || _sinceFieldDispatch >= FieldRebakeInterval) )
