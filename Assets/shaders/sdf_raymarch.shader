@@ -195,6 +195,17 @@ PS
 	// claim) and for stage worlds that render without the engine depth chain. Defaults OFF so an unpushed
 	// object keeps the self-contained double march.
 	int       g_nSdfReusePrepass < Attribute( "SdfReusePrepass" ); Default( 0 ); >; // 0 off, 1 warm hits + full march on miss, 2 warm hits + miss = not ours
+	// COST ATTRIBUTION (mimiclay_sdf_debug_skip, diagnostics only): each bit switches one stage off so the
+	// benchmark's in-run A/B can price it. Uniform per draw, so the branches cost nothing when 0. Bits:
+	//   1 material lookup (SdfShade brush walk)   2 triplanar albedo/rough/normal maps   4 curvature taps
+	//   8 transmission                            16 RESTORE normals in shadow views    32 normals in forward
+	//   64 forward step-count heatmap (hits)      128 heatmap also paints MISS pixels at the proxy face
+	//   256 heatmap of brushes fully evaluated by the material walk (green 0 → red 16+)
+	//   512 material channels view: R = metalness, G = roughness
+	int       g_nSdfDebugSkip   < Attribute( "SdfDebugSkip" ); Default( 0 ); >;
+	#define SDF_SKIP( bit ) ( ( g_nSdfDebugSkip & ( bit ) ) != 0 )
+	// Steps the last RayMarchHit took (heatmap only).
+	static int s_marchSteps = 0;
 	// ORTHO (sun cascade) shadow views: hit epsilon floor in SHADOW-MAP TEXELS. The cascade can't store
 	// detail finer than a texel, so marching it at the camera's 0.05u epsilon is wasted steps - the far
 	// cascades (big texels) become almost free. 0 = march every cascade at full camera precision.
@@ -595,9 +606,47 @@ PS
 	// the hit, so it always walks the analytic brushes (sdf_eval.hlsl's BrushDist) even on the D_FIELD_TEX
 	// path — the field has no colour. The union itself lives in sdf_eval.hlsl so the mesh-grid compute pass
 	// bakes vertex colours from the SAME code; all this adds is the world->local fold.
+	// --- Baked material (prototype, sdf_material_cs): colour/metal/rough per voxel over the field's bounds, Z slices
+	// stacked along Y in 2D textures (a second user volume would alias the field). Two bilinear fetches per texture +
+	// a lerp across slices = trilinear. Replaces the per-pixel brush walk when SdfMaterialTex is on. ---
+	Texture2D g_tMaterial      < Attribute( "MaterialTex" ); >;   // RGBA8: sqrt(colour).rgb, roughness
+	Texture2D g_tMaterialMetal < Attribute( "MaterialMetal" ); >; // RGBA8: metalness, boundary flag
+	float3    g_vMaterialDims  < Attribute( "MaterialDims" ); Default3( 2.0, 2.0, 2.0 ); >;
+	int       g_nSdfMaterialTex < Attribute( "SdfMaterialTex" ); Default( 0 ); >; // 1 = bake + boundary fallback (exact), 2 = bake everywhere
+
+	SdfSurface SdfMaterialSample( float3 lp )
+	{
+		float3 v = saturate( (lp - g_vFieldMin) / max( g_vFieldMax - g_vFieldMin, 1e-4 ) ) * (g_vMaterialDims - 1.0);
+		float z0 = floor( v.z );
+		float fz = v.z - z0;
+		float z1 = min( z0 + 1.0, g_vMaterialDims.z - 1.0 );
+		float2 inv = 1.0 / float2( g_vMaterialDims.x, g_vMaterialDims.y * g_vMaterialDims.z );
+		float2 uv0 = ( float2( v.x, v.y + z0 * g_vMaterialDims.y ) + 0.5 ) * inv;
+		float2 uv1 = ( float2( v.x, v.y + z1 * g_vMaterialDims.y ) + 0.5 ) * inv;
+		float2 mb = lerp( g_tMaterialMetal.SampleLevel( g_sField, uv0, 0 ).rg, g_tMaterialMetal.SampleLevel( g_sField, uv1, 0 ).rg, fz );
+		SdfSurface s;
+		s.metal = -1.0; // boundary: caller walks the brushes
+		if ( mb.g > 0.001 && g_nSdfMaterialTex < 2 )
+			return s;
+		float4 m = lerp( g_tMaterial.SampleLevel( g_sField, uv0, 0 ), g_tMaterial.SampleLevel( g_sField, uv1, 0 ), fz );
+		s.col = m.rgb * m.rgb; // stored sqrt-encoded
+		s.rough = m.a;
+		s.metal = mb.r;
+		return s;
+	}
+
 	SdfSurface SdfShade( float3 p )
 	{
-		return SdfSurfaceLocal( WorldToModelPos( p ) );
+		float3 lp = WorldToModelPos( p );
+		if ( g_nSdfMaterialTex != 0 )
+		{
+			// The bake is exact only where the material is constant; any flagged voxel in the trilinear footprint
+			// (a colour/paint/blend boundary nearby) falls back to the brush walk.
+			SdfSurface s = SdfMaterialSample( lp );
+			if ( s.metal >= 0.0 )
+				return s;
+		}
+		return SdfSurfaceLocal( lp );
 	}
 
 	float3 SdfNormal( float3 p )
@@ -896,6 +945,22 @@ PS
 		return saturate( (g_flLodFar - ratio) / max( g_flLodFar - g_flLodNear, 0.001 ) );
 	}
 
+	// A shadow-map view (sun cascade, spot or point-light face)? The view camera is rebound to the light there,
+	// while the high-precision offset stays the frame's GAME camera; in every camera-driven view (forward,
+	// prepass, overlay, ortho or perspective editor viewport) the two are identical. Valid before the march.
+	bool IsShadowView()
+	{
+		return length( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) > 0.5;
+	}
+
+	// Step-count heatmap colour (debug skip bits 64/128): green few → yellow 32 → red 64, magenta past 64.
+	float3 StepHeat( int steps )
+	{
+		float t = saturate( steps / 64.0 );
+		float3 c = t < 0.5 ? lerp( float3( 0, 0.6, 0 ), float3( 1, 1, 0 ), t * 2.0 ) : lerp( float3( 1, 1, 0 ), float3( 1, 0, 0 ), t * 2.0 - 1.0 );
+		return steps > 64 ? float3( 1, 0, 1 ) : c;
+	}
+
 	// The hit epsilon THIS view's march actually ran at (RayMarchHit fills it; the perspective
 	// shadow-view caster bias reads it back — the march's depth error is bounded by this).
 	static float s_marchEps = 0.05;
@@ -1086,12 +1151,14 @@ PS
 
 		float t = tEnter;
 		float prevD = 0.0, prevStep = 0.0;
+		s_marchSteps = maxSteps;
 		[loop]
 		for ( int s = 0; s < maxSteps; s++ )
 		{
 			float d = SdfDistMarchWs( ro + rd * t );
 			if ( d < eps )
 			{
+				s_marchSteps = s + 1;
 				// Refine onto the surface (d~=0), not the eps-shell: kills field-path contour banding.
 				// Secant of the last two samples (Claybook's last-step refinement): the trilinear field is
 				// piecewise linear, so intersecting that line with zero lands the hit in one step where the
@@ -1111,7 +1178,7 @@ PS
 			prevD = d;
 			prevStep = d * stepScale;
 			t += prevStep;
-			if ( t > tExit ) break;
+			if ( t > tExit ) { s_marchSteps = s + 1; break; }
 		}
 		// (Warm-start window: a miss here means the caller runs the full march, which shares the prepass's
 		// step phase and so lands where the prepass did. An earlier cut accepted the window's closest
@@ -1246,6 +1313,15 @@ PS
 	#endif
 		if ( !reused && !RayMarchHit( i, p ) )
 		{
+		#if ( S_MODE_DEPTH == 0 )
+			// Heatmap of MISSED rays at the proxy face: the steps spent finding nothing (box margins).
+			if ( SDF_SKIP( 128 ) )
+			{
+				o.vColor = float4( StepHeat( s_marchSteps ) * 0.5, 1.0 );
+				o.flDepth = i.vPositionSs.z;
+				return o;
+			}
+		#endif
 			clip( -1 );
 			return o;
 		}
@@ -1258,7 +1334,13 @@ PS
 		// depth is the shadow map. The optional caster bias pushes it a touch deeper along the light
 		// ray there — acne insurance the camera prepass must never get (its depth must stay exact,
 		// the forward pass depth-tests against it).
-		float3 n = SdfNormal( p ); // shared by both output paths below
+		// Shadow maps keep depth only, so a shadow view (sun cascade or spot/point face) skips the 6-tap
+		// normal entirely — bit-identical shadows, measured −0.78 ms on four shadowed spots over 256 props.
+		// The camera prepass (and ortho editor views) still need it for the G-buffer. Debug bit 16 restores
+		// the old always-compute behaviour for A/B checks.
+		float3 n = float3( 0, 0, 1 );
+		if ( !IsShadowView() || SDF_SKIP( 16 ) )
+			n = SdfNormal( p ); // shared by both output paths below
 		float3 pd = p;
 		if ( IsOrthoView() )
 			pd += normalize( g_vCameraDirWs ) * g_flSdfShadowBias;
@@ -1344,7 +1426,16 @@ PS
 			return o;
 		}
 
-		float3 baseN = SdfNormal( p ); // world-space gradient normal
+		if ( SDF_SKIP( 64 ) )
+		{
+			o.vColor = float4( StepHeat( s_marchSteps ), 1.0 );
+			o.flDepth = flSurfaceDepth;
+			return o;
+		}
+
+		float3 baseN = normalize( g_vCameraPositionWs - p );
+		if ( !SDF_SKIP( 32 ) )
+			baseN = SdfNormal( p ); // world-space gradient normal
 
 		// Re-base the triplanar projection into the prop's MODEL space, so the plasticine pattern is
 		// locked to the prop (moves/rotates with it) instead of the prop sliding through a fixed
@@ -1359,9 +1450,15 @@ PS
 		float3 modelP = WorldToModelPos( p ) + BoilTexOffset() + SeedTexOffset();
 		float3 modelN = normalize( WorldToModelDir( baseN ) );
 
-		float3 albedo = Tex2DTriplanar( g_tAlbedo, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).rgb;
-		float roughness = Tex2DTriplanar( g_tRoughTex, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).r;
-		float3 worldN = normalize( ModelToWorldDir( TriplanarNormal( g_tNormalTex, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend, g_flNormalStrength ) ) );
+		float3 albedo = float3( 0.5, 0.5, 0.5 );
+		float roughness = 0.5;
+		float3 worldN = baseN;
+		if ( !SDF_SKIP( 2 ) )
+		{
+			albedo = Tex2DTriplanar( g_tAlbedo, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).rgb;
+			roughness = Tex2DTriplanar( g_tRoughTex, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend ).r;
+			worldN = normalize( ModelToWorldDir( TriplanarNormal( g_tNormalTex, g_sRepeat, modelP, modelN, g_flTriTile, g_flTriBlend, g_flNormalStrength ) ) );
+		}
 
 		i.vPositionWithOffsetWs = p - g_vCameraPositionWs;
 		i.vNormalWs = worldN;
@@ -1377,7 +1474,22 @@ PS
 
 		// Blended colour + per-brush metalness/roughness at the hit point. Matches the mesh shader's
 		// semantics so the meshed LODs and the raymarch agree: global sliders stay master controls.
-		SdfSurface surf = SdfShade( p );
+		SdfSurface surf;
+		surf.col = float3( 1, 1, 1 ); surf.metal = 0.0; surf.rough = 1.0;
+		if ( !SDF_SKIP( 1 ) )
+			surf = SdfShade( p );
+		if ( SDF_SKIP( 512 ) )
+		{
+			o.vColor = float4( surf.metal, surf.rough, 0.0, 1.0 ); // material channels: R metal, G rough
+			o.flDepth = flSurfaceDepth;
+			return o;
+		}
+		if ( SDF_SKIP( 256 ) )
+		{
+			o.vColor = float4( StepHeat( s_surfaceEvals * 4 ), 1.0 );
+			o.flDepth = flSurfaceDepth;
+			return o;
+		}
 
 		Material m = Material::Init( i );
 		m.Albedo = albedo * g_vTintColor * surf.col;
@@ -1400,7 +1512,7 @@ PS
 		// Curvature → diffuse: darken crevices (seam grime), lift ridges (worn edges) — clay reads its
 		// shape through these cues even under flat light. Albedo only, so lighting/spec stay physical.
 		// Branched away entirely when both strengths are zero (saves 5 field taps).
-		if ( g_flCurveDark + g_flCurveLight > 1e-3 )
+		if ( g_flCurveDark + g_flCurveLight > 1e-3 && !SDF_SKIP( 4 ) )
 		{
 			float curv = SdfCurvature( p, max( g_flCurveRadius, 0.05 ) );
 			float cavity = g_flCurveDark * saturate( -curv );
@@ -1415,7 +1527,8 @@ PS
 	#if ( D_TRANSMISSION && D_FIELD_TEX && S_MODE_DEPTH == 0 )
 		// Back-scatter using SDF-derived thickness. Runs once here, after the hit — the march above
 		// is untouched. viewDir points from the surface toward the camera (toward -scatterDir = glow).
-		ApplyTransmission( m, p, baseN, normalize( g_vCameraPositionWs - p ) );
+		if ( !SDF_SKIP( 8 ) )
+			ApplyTransmission( m, p, baseN, normalize( g_vCameraPositionWs - p ) );
 	#endif
 
 		o.vColor = ClayShade( i, m );

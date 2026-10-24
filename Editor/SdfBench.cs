@@ -45,9 +45,9 @@ public static class SdfBench
 
 	/// <summary>One timed configuration. View is a dev-scene view (-1 dense, -2 overview, -3 close crowd, 0–255 one
 	/// prop); Back &gt; 0 instead puts the camera that far behind the gallery. A dolly flies from Back to the close crowd.</summary>
-	sealed record Case( string Name, int View, float Back, int Lights, Lod Lod, bool Dolly = false )
+	sealed record Case( string Name, int View, float Back, int Lights, Lod Lod, bool Dolly = false, bool Sun = false )
 	{
-		public string ControlKey => $"{View}/{Back}/{Lights}";
+		public string ControlKey => $"{View}/{Back}/{Lights}/{(Sun ? "sun" : "")}";
 	}
 
 	static Case[] ShaderSuite() => new Case[]
@@ -56,6 +56,7 @@ public static class SdfBench
 		new( "close", -3, 0, 0, Lod.Full ),        // pixel pressure: big props filling the screen
 		new( "complex", 63, 0, 0, Lod.Full ),      // one 42-brush prop (fruit bowl) close up: brush evaluation cost
 		new( "dense-4spots", -1, 0, 4, Lod.Full ), // + four shadowed spots, every prop a marched caster
+		new( "dense-sun", -1, 0, 0, Lod.Full, Sun: true ), // the sun casts: 4 ortho cascades, every prop a marched caster
 	};
 
 	static Case[] LodSuite()
@@ -71,11 +72,14 @@ public static class SdfBench
 
 	// ---------------------------------------------------------------- run state
 
-	/// <summary>B = the same case with the run's <c>ab</c> ConVar overrides applied, interleaved right after A.</summary>
-	sealed record Step( Case Case, bool Control, int Rep, bool B = false )
+	/// <summary>Arm 0 = the case as-is (A). Arm n ≥ 1 = the same case with the run's n-th <c>ab</c> override set
+	/// applied, interleaved right after A against the same control. One arm is named [B], several [B1], [B2]…</summary>
+	sealed record Step( Case Case, bool Control, int Rep, int Arm = 0 )
 	{
-		public string Key => Control ? Case.ControlKey : Case.Name + (B ? " [B]" : "");
+		public string Key => Control ? Case.ControlKey : Case.Name + ArmSuffix( Arm );
 	}
+
+	static string ArmSuffix( int arm ) => arm == 0 ? "" : _arms.Count == 1 ? " [B]" : $" [B{arm}]";
 
 	sealed class Sample
 	{
@@ -106,7 +110,8 @@ public static class SdfBench
 	static readonly Dictionary<(string, int), Sample> On = new(), Control = new();
 
 	// ConVar overrides: Set applies to the whole run; Ab is applied only to the interleaved B steps.
-	static Dictionary<string, string> _set = new(), _ab = new(), _abBase = new();
+	static Dictionary<string, string> _set = new(), _abBase = new();
+	static List<Dictionary<string, string>> _arms = new();
 	static readonly Dictionary<string, string> _convarRestore = new();
 
 	static double Now => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
@@ -119,6 +124,8 @@ public static class SdfBench
 	static readonly List<(SceneEditorSession Session, bool Update)> _sessions = new();
 	static (int View, float Distance, int Lights, bool Shadows, bool Force, Transform Camera, bool Fly) _oldDev;
 	static readonly Dictionary<SdfRaymarchRenderer, (bool Adaptive, bool Switching)> _oldRenderers = new();
+	static DirectionalLight _sun;
+	static bool _oldSunShadows;
 
 	// ---------------------------------------------------------------- entry points
 
@@ -145,13 +152,15 @@ public static class SdfBench
 	/// set: ConVar overrides for the whole run, "name=value,name=value". ab: ConVar overrides for an interleaved
 	/// A/B — every case is measured as-is (A) and then with these overrides (B), back to back, in the same session.</summary>
 	[Mcp.McpTool( "sdf_bench_run" )]
-	public static object Run( string suite = "shader", string label = null, int repeats = 3, float seconds = 5, string set = null, string ab = null )
+	public static object Run( string suite = "shader", string label = null, int repeats = 3, float seconds = 2, string set = null, string ab = null )
 	{
 		if ( Busy ) throw new InvalidOperationException( "A benchmark is already running (Mimiclay → SDF Bench → Stop)." );
 		_cases = suite switch { "shader" => ShaderSuite(), "lod" => LodSuite(), _ => throw new ArgumentException( "suite must be shader or lod" ) };
 		BindGpuProfiler(); // fail before touching editor state if the engine API moved
 		_set = ParseOverrides( set );
-		_ab = ParseOverrides( ab );
+		// "a=1;a=2,b=0" → two arms. Each arm is measured against the same A and control.
+		_arms = (ab ?? "").Split( ';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries )
+			.Select( ParseOverrides ).Where( o => o.Count > 0 ).ToList();
 
 		_warnings.Clear();
 		_sourceHash = SourceHash();
@@ -174,7 +183,7 @@ public static class SdfBench
 			foreach ( var c in _cases )
 			{
 				_steps.Add( new Step( c, false, rep ) );
-				if ( _ab.Count > 0 ) _steps.Add( new Step( c, false, rep, B: true ) );
+				for ( int arm = 1; arm <= _arms.Count; arm++ ) _steps.Add( new Step( c, false, rep, arm ) );
 				// One control per camera/light setup per repeat, taken right after its first case.
 				if ( !c.Dolly && measured.Add( c.ControlKey ) )
 					_steps.Add( new Step( c, true, rep ) );
@@ -216,7 +225,14 @@ public static class SdfBench
 
 	static bool Busy => _phase is "opening" or "loading" or "settle" or "sample";
 
-	static double EstimateMinutes() => _steps.Sum( s => _seconds + (s.Control ? 1.5 : 2.5) ) / 60.0;
+	static double EstimateMinutes() => _steps.Select( ( s, i ) => _seconds + SettleSeconds( i ) ).Sum() / 60.0;
+
+	/// <summary>A step that only toggles a ConVar or the control's hide flag leaves the scene as it was, so it
+	/// needs just enough time for GPU timestamps (which lag a few frames) to catch up. Moving the camera,
+	/// changing lights, the sun or the LOD policy needs shadow maps, bands and fields to settle first.</summary>
+	static bool HeavyChange( int index ) => index == 0 || !SameScene( _steps[index].Case, _steps[index - 1].Case );
+	static bool SameScene( Case a, Case b ) => a.View == b.View && a.Back == b.Back && a.Lights == b.Lights && a.Lod == b.Lod && a.Sun == b.Sun && !a.Dolly && !b.Dolly;
+	static double SettleSeconds( int index ) => HeavyChange( index ) ? 1.5 : 0.4;
 
 	// ---------------------------------------------------------------- the frame loop
 
@@ -259,10 +275,11 @@ public static class SdfBench
 		var step = _steps[_stepIndex];
 		if ( _phase == "settle" )
 		{
-			if ( !step.Control && !SdfBenchProbe.Ready( _scene ) ) _readyAt = Now;
+			bool heavy = HeavyChange( _stepIndex );
+			if ( heavy && !SdfBenchProbe.Ready( _scene ) ) _readyAt = Now;
 			if ( Now - _phaseAt > 120 ) throw new TimeoutException( $"{step.Case.Name}: fields/meshes did not settle." );
-			bool settled = step.Control || Now - _readyAt >= 1;
-			if ( settled && Now - _phaseAt >= (step.Control ? 1.5 : 2.5) )
+			bool settled = !heavy || Now - _readyAt >= 0.5;
+			if ( settled && Now - _phaseAt >= SettleSeconds( _stepIndex ) )
 			{
 				_sample = new Sample();
 				_lastGpuFrame = _gpuFrameId();
@@ -325,10 +342,12 @@ public static class SdfBench
 		_oldRenderers.Clear();
 		foreach ( var r in _scene.GetAllComponents<SdfRaymarchRenderer>() ) _oldRenderers[r] = (r.AdaptiveQuality, r.DistanceSwitching);
 		_appliedLod = null;
+		_sun = _scene.GetAllComponents<DirectionalLight>().FirstOrDefault();
+		_oldSunShadows = _sun.IsValid() && _sun.Shadows;
 
 		_convarRestore.Clear();
 		ApplyConvars( _set );
-		_abBase = _ab.Keys.ToDictionary( k => k, k => Sandbox.ConsoleSystem.GetValue( k ) );
+		_abBase = _arms.SelectMany( a => a.Keys ).Distinct().ToDictionary( k => k, k => Sandbox.ConsoleSystem.GetValue( k ) );
 
 		StartStep( 0 );
 	}
@@ -341,7 +360,11 @@ public static class SdfBench
 		var step = _steps[index];
 		var c = step.Case;
 		SdfRaymarchRenderer.HideAll = step.Control;
-		if ( _ab.Count > 0 ) ApplyConvars( step.B ? _ab : _abBase );
+		if ( _arms.Count > 0 )
+		{
+			ApplyConvars( _abBase );
+			if ( step.Arm > 0 ) ApplyConvars( _arms[step.Arm - 1] );
+		}
 
 		if ( _appliedLod != c.Lod )
 		{
@@ -353,6 +376,7 @@ public static class SdfBench
 			_appliedLod = c.Lod;
 		}
 
+		if ( _sun.IsValid() ) _sun.Shadows = c.Sun;
 		_dev.ForceSdfShadows = !ShadowLod( c.Lod );
 		_dev.LightCount = c.Lights;
 		_dev.Shadows = true;
@@ -390,15 +414,15 @@ public static class SdfBench
 		{
 			Version = Version, Suite = _suite, Label = _label, Commit = commit, DirtyFiles = dirty, Utc = DateTime.UtcNow,
 			Repeats = _repeats, Seconds = _seconds, Quick = _repeats < 3,
-			SourceHash = _sourceHash, Set = _set, Ab = _ab, Warnings = _warnings.ToList(),
+			SourceHash = _sourceHash, Set = _set, Ab = _arms.FirstOrDefault() ?? new(), Arms = _arms, Warnings = _warnings.ToList(),
 			Env = EnvSnapshot(), Memory = _memory,
-			Cases = _cases.SelectMany( c => _ab.Count > 0 ? new[] { Summarise( c, false ), Summarise( c, true ) } : new[] { Summarise( c, false ) } ).ToList()
+			Cases = _cases.SelectMany( c => Enumerable.Range( 0, _arms.Count + 1 ).Select( arm => Summarise( c, arm ) ) ).ToList()
 		};
 		Directory.CreateDirectory( RunsDir );
 		File.WriteAllText( _output, JsonSerializer.Serialize( run, JsonOptions ) );
 		Cleanup();
 		Phase( "done" );
-		Log.Info( Table( run ) + (_ab.Count > 0 ? "\n" + AbTable( run ) : "") + $"\nSaved {Path.GetRelativePath( Root, _output )}" );
+		Log.Info( Table( run ) + (_arms.Count > 0 ? "\n" + AbTable( run ) : "") + $"\nSaved {Path.GetRelativePath( Root, _output )}" );
 	}
 
 	/// <summary>Renders the case twice: the first is saved as the reference, the second only measures how much two
@@ -420,7 +444,7 @@ public static class SdfBench
 
 	static readonly Dictionary<string, string> _imageNoise = new();
 
-	static string ImageName( string key ) => Sanitise( key.Replace( " [B]", "-B" ) ) + ".png";
+	static string ImageName( string key ) => Sanitise( key.Replace( " [", "-" ).Replace( "]", "" ) ) + ".png";
 
 	static Dictionary<string, string> ParseOverrides( string text )
 	{
@@ -475,6 +499,7 @@ public static class SdfBench
 		else if ( _dev.IsValid() && _scene is not null )
 		{
 			foreach ( var (r, old) in _oldRenderers ) if ( r.IsValid() ) { r.AdaptiveQuality = old.Adaptive; r.DistanceSwitching = old.Switching; }
+			if ( _sun.IsValid() ) _sun.Shadows = _oldSunShadows;
 			_dev.View = _oldDev.View; _dev.CloseDistance = _oldDev.Distance; _dev.LightCount = _oldDev.Lights;
 			_dev.Shadows = _oldDev.Shadows; _dev.ForceSdfShadows = _oldDev.Force;
 			_dev.Apply( true );
@@ -593,6 +618,8 @@ public static class SdfBench
 		public string SourceHash { get; set; }
 		public Dictionary<string, string> Set { get; set; }
 		public Dictionary<string, string> Ab { get; set; }
+		/// <summary>Every A/B arm's overrides, in order ([B] or [B1], [B2]…). Ab repeats the first for older readers.</summary>
+		public List<Dictionary<string, string>> Arms { get; set; }
 		public List<string> Warnings { get; set; }
 		public Dictionary<string, string> Env { get; set; }
 		public object Memory { get; set; }
@@ -629,9 +656,9 @@ public static class SdfBench
 		public Dictionary<string, int> Bands { get; set; }
 	}
 
-	static CaseResult Summarise( Case c, bool b )
+	static CaseResult Summarise( Case c, int arm )
 	{
-		var key = new Step( c, false, 0, b ).Key;
+		var key = new Step( c, false, 0, arm ).Key;
 		var reps = Enumerable.Range( 0, _repeats ).Select( r => (On: On[(key, r)], Ctl: c.Dolly ? null : Control[(c.ControlKey, r)]) ).ToList();
 		var sdf = c.Dolly ? null : reps.Select( r => r.On.GpuMean - r.Ctl.GpuMean ).ToList();
 
@@ -701,17 +728,21 @@ public static class SdfBench
 
 	static string Overrides( Dictionary<string, string> o ) => string.Join( ", ", o.Select( kv => $"{kv.Key}={kv.Value}" ) );
 
-	/// <summary>In-run A/B: each case against its interleaved [B] twin, same session, same control.</summary>
+	/// <summary>In-run A/B: each case against each interleaved arm, same session, same control.</summary>
 	static string AbTable( RunFile run )
 	{
 		var sb = new StringBuilder();
-		sb.AppendLine( $"[sdf-bench] A/B within the run — B = {Overrides( run.Ab )}" );
-		sb.AppendLine( DiffHeader() );
 		var images = Path.Combine( RunsDir, "images", Path.GetFileNameWithoutExtension( _output ) );
-		foreach ( var a in run.Cases.Where( c => !c.Name.EndsWith( " [B]" ) ) )
+		for ( int arm = 1; arm <= run.Arms.Count; arm++ )
 		{
-			var b = run.Cases.First( c => c.Name == a.Name + " [B]" );
-			sb.AppendLine( DiffRow( a.Name, a, b, ImageDiff( images, a.Image, images, b.Image, Path.Combine( images, "diff-ab" ) ) ) );
+			var suffix = ArmSuffix( arm );
+			sb.AppendLine( $"[sdf-bench] A/B within the run —{suffix} = {Overrides( run.Arms[arm - 1] )}" );
+			sb.AppendLine( DiffHeader() );
+			foreach ( var a in run.Cases.Where( c => !c.Name.EndsWith( "]" ) ) )
+			{
+				var b = run.Cases.First( c => c.Name == a.Name + suffix );
+				sb.AppendLine( DiffRow( a.Name, a, b, ImageDiff( images, a.Image, images, b.Image, Path.Combine( images, "diff-ab" ) ) ) );
+			}
 		}
 		return sb.ToString();
 	}

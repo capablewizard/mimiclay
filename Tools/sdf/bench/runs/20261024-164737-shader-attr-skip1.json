@@ -1,0 +1,395 @@
+{
+  "Version": 1,
+  "Suite": "shader",
+  "Label": "attr-skip1",
+  "Commit": "d2fc59c",
+  "DirtyFiles": 4,
+  "Utc": "2026-10-24T15:53:15.1033976Z",
+  "Repeats": 3,
+  "Seconds": 5,
+  "Quick": false,
+  "SourceHash": "68FB1CBD9408A28E",
+  "Set": {},
+  "Ab": {
+    "mimiclay_sdf_debug_skip": "1"
+  },
+  "Warnings": [],
+  "Env": {
+    "Gpu": "NVIDIA GeForce RTX 4090",
+    "Resolution": "1920x1080",
+    "Msaa": "Multisample8x",
+    "Upscaler": "Off",
+    "RenderScale": "1",
+    "ShadowQuality": "High",
+    "Renderer": "native",
+    "Props": "256"
+  },
+  "Memory": {
+    "Renderers": 256,
+    "Pending": 0,
+    "Ready": 256,
+    "UniqueFields": 256,
+    "FieldMiB": 1242.5,
+    "LocalMiB": 39.5,
+    "CountedMiB": 1282,
+    "GlobalCacheMiB": 1447.5,
+    "BuildsInFlight": 0,
+    "Bands": {
+      "sdf": 256,
+      "marchedShadows": 256
+    },
+    "Fields": null
+  },
+  "Cases": [
+    {
+      "Name": "dense",
+      "Lod": "full",
+      "SdfMs": 3.317,
+      "SdfMin": 3.222,
+      "SdfMax": 3.581,
+      "GpuMs": 4.895,
+      "ControlMs": 1.357,
+      "FrameP50": 10.648,
+      "FrameP99": 15.855,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.286,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "dense.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.333,
+        "forward": 2.46,
+        "shadows": 0,
+        "other": -0.363
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.46,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1.309,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.123,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.111,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": -0.08,
+        "Graphics/RenderToSwapChain/Occlusion Cull (Late)": -0.077,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": -0.056
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dense [B]",
+      "Lod": "full",
+      "SdfMs": 3.034,
+      "SdfMin": 2.684,
+      "SdfMax": 3.189,
+      "GpuMs": 4.546,
+      "ControlMs": 1.357,
+      "FrameP50": 10.618,
+      "FrameP99": 16.015,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.282,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "dense-B.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.504,
+        "forward": 1.919,
+        "shadows": 0,
+        "other": -0.298
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1.919,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1.392,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.132,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.1,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": -0.053
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "close",
+      "Lod": "full",
+      "SdfMs": 2.846,
+      "SdfMin": 2.76,
+      "SdfMax": 3.249,
+      "GpuMs": 4.629,
+      "ControlMs": 1.38,
+      "FrameP50": 10.209,
+      "FrameP99": 16.465,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.274,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "close.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.162,
+        "forward": 2.246,
+        "shadows": 0,
+        "other": -0.327
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.247,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.683,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.648,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.081,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": -0.077,
+        "Graphics/RenderToSwapChain/Occlusion Cull (Late)": -0.054
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "close [B]",
+      "Lod": "full",
+      "SdfMs": 2.726,
+      "SdfMin": 2.13,
+      "SdfMax": 3.109,
+      "GpuMs": 4.489,
+      "ControlMs": 1.38,
+      "FrameP50": 10.396,
+      "FrameP99": 15.735,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.289,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "close-B.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.456,
+        "forward": 1.65,
+        "shadows": 0,
+        "other": -0.188
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1.651,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.896,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.68,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": -0.076,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": -0.05
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "complex",
+      "Lod": "full",
+      "SdfMs": 2.221,
+      "SdfMin": 1.554,
+      "SdfMax": 2.775,
+      "GpuMs": 3.878,
+      "ControlMs": 1.103,
+      "FrameP50": 9.691,
+      "FrameP99": 13.894,
+      "Hitches33": 2,
+      "RendererUpdateMs": 1.265,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "complex.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.519,
+        "forward": 2.051,
+        "shadows": 0,
+        "other": -0.33
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.052,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.584,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.077,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.075,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": -0.075,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": -0.066
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "complex [B]",
+      "Lod": "full",
+      "SdfMs": 1.235,
+      "SdfMin": 1.23,
+      "SdfMax": 2.089,
+      "GpuMs": 2.338,
+      "ControlMs": 1.103,
+      "FrameP50": 9.67,
+      "FrameP99": 15.109,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.253,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "complex-B.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.555,
+        "forward": 0.956,
+        "shadows": 0,
+        "other": -0.261
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.956,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.481,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.084,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": -0.071,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.064
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dense-4spots",
+      "Lod": "full",
+      "SdfMs": 12.466,
+      "SdfMin": 12.359,
+      "SdfMax": 12.723,
+      "GpuMs": 13.89,
+      "ControlMs": 1.318,
+      "FrameP50": 15.867,
+      "FrameP99": 19.514,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.277,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "dense-4spots.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.365,
+        "forward": 2.822,
+        "shadows": 8.503,
+        "other": -0.108
+      },
+      "Passes": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 8.503,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.822,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1.178,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.183,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.067
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dense-4spots [B]",
+      "Lod": "full",
+      "SdfMs": 11.909,
+      "SdfMin": 11.876,
+      "SdfMax": 12.734,
+      "GpuMs": 13.559,
+      "ControlMs": 1.318,
+      "FrameP50": 15.502,
+      "FrameP99": 19.436,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.265,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "dense-4spots-B.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.313,
+        "forward": 2.188,
+        "shadows": 8.686,
+        "other": -0.082
+      },
+      "Passes": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 8.686,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.19,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1.158,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.167,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.068
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dense-sun",
+      "Lod": "full",
+      "SdfMs": 5.669,
+      "SdfMin": 5.628,
+      "SdfMax": 6.02,
+      "GpuMs": 7.066,
+      "ControlMs": 1.154,
+      "FrameP50": 11.372,
+      "FrameP99": 17.22,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.272,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "dense-sun.png",
+      "ImageNoise": "\u003E2: 0.00%  \u003E10: 0.00%  max 1",
+      "Buckets": {
+        "prepass": 1.117,
+        "forward": 2.414,
+        "shadows": 2.402,
+        "other": -0.196
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.414,
+        "Graphics/CSM Cascade 0/DrawDepthOpaque": 1.639,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1.043,
+        "Graphics/CSM Cascade 1/DrawDepthOpaque": 0.627,
+        "Graphics/CSM Cascade 2/DrawDepthOpaque": 0.13,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.126,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.062,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": -0.054
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dense-sun [B]",
+      "Lod": "full",
+      "SdfMs": 5.015,
+      "SdfMin": 4.891,
+      "SdfMax": 5.264,
+      "GpuMs": 6.311,
+      "ControlMs": 1.154,
+      "FrameP50": 11.415,
+      "FrameP99": 15.751,
+      "Hitches33": 0,
+      "RendererUpdateMs": 1.287,
+      "CountedMiB": 1282,
+      "UniqueFields": 256,
+      "Image": "dense-sun-B.png",
+      "ImageNoise": "\u003E2: 0.00%  \u003E10: 0.00%  max 1",
+      "Buckets": {
+        "prepass": 1.121,
+        "forward": 1.776,
+        "shadows": 2.277,
+        "other": -0.158
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1.776,
+        "Graphics/CSM Cascade 0/DrawDepthOpaque": 1.53,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1.062,
+        "Graphics/CSM Cascade 1/DrawDepthOpaque": 0.626,
+        "Graphics/CSM Cascade 2/DrawDepthOpaque": 0.134,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.124,
+        "Graphics/RenderToSwapChain/Hi-Z Depth Downsample": -0.06,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": -0.055
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    }
+  ]
+}

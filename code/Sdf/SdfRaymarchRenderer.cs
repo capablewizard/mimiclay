@@ -92,6 +92,19 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// edges at the cost of memory + bake time. Off = the exact per-brush march.</summary>
 	[Property, Group( "Distance Field" )] public bool UseFieldCache { get; set; } = true;
 
+	/// <summary>Cost attribution for the SDF benchmark: a bitmask that switches individual shader stages off
+	/// (1 material lookup, 2 triplanar maps, 4 curvature, 8 transmission, 16 shadow-view normals, 32 forward
+	/// normals, 64 step-count heatmap, 128 heatmap incl. misses). Bits are documented on g_nSdfDebugSkip in
+	/// sdf_raymarch.shader. Diagnostics only — every bit changes the image.</summary>
+	[ConVar( "mimiclay_sdf_debug_skip" )]
+	public static int DebugSkip { get; set; }
+
+	/// <summary>Prototype: read the material from the field's baked material texture (SdfFieldGpu.MaterialBakeEnabled)
+	/// instead of re-walking every brush per pixel. A runtime switch, so the benchmark can A/B it without rebaking.
+	/// 0 = brush walk (normal), 1 = bake with exact fallback near colour boundaries, 2 = bake everywhere (fast, blurs boundaries).</summary>
+	[ConVar( "mimiclay_sdf_material_use" )]
+	public static int MaterialTexMode { get; set; } = 0;
+
 	/// <summary>Hide every SDF prop — raymarched surface AND sibling mesh. The control frame for the
 	/// SDF benchmark (Editor/SdfBench.cs): GPU time with props minus GPU time without them.</summary>
 	[ConVar( "mimiclay_sdf_hide_all" )]
@@ -1530,6 +1543,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// (its overlay prepass is stencil-claimed, not part of the world chain the forward pass samples).
 		_so.Attributes.Set( "SdfReusePrepass", ReusePrepassDepth && ReusePrepassEnabled && TargetWorld is null && ViewLayer == SdfViewLayer.Normal ? Math.Clamp( ReusePrepassMode, 1, 2 ) : 0 );
 		_so.Attributes.Set( "SdfShadowTexelEps", ShadowTexelEpsilon );
+		_so.Attributes.Set( "SdfDebugSkip", DebugSkip );
+		// Baked material (prototype): sample colour/metal/rough from the field's material bake instead of walking the
+		// brushes per pixel. Needs mimiclay_sdf_material_bake on (and the field rebaked) to have anything to read.
+		bool material = MaterialTexMode > 0 && _fieldGpu is not null && _fieldGpu.MaterialTex.IsValid();
+		_so.Attributes.Set( "SdfMaterialTex", material ? Math.Clamp( MaterialTexMode, 1, 2 ) : 0 );
+		_so.Attributes.Set( "MaterialTex", material ? _fieldGpu.MaterialTex : Texture.White );
+		_so.Attributes.Set( "MaterialMetal", material ? _fieldGpu.MaterialMetal : Texture.White );
+		if ( material ) _so.Attributes.Set( "MaterialDims", _fieldGpu.MaterialDims );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
 		// Displacement look (amp/freq) lives on THIS component (see the DispAmp doc for why it left
@@ -1606,7 +1627,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			// live, instead of only when a brush is moved.
 			ResolveFieldGrid();
 			int res = _fieldRes;
-			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
+			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell, SdfFieldGpu.MaterialBakeEnabled, SdfFieldGpu.MaterialDivisor ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
 			bool haveField = _fieldGpu is { IsValid: true };
 			if ( (fieldHash != _lastFieldHash || !haveField)
 				&& (!haveField || _sinceFieldDispatch >= FieldRebakeInterval) )

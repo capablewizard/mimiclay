@@ -20,6 +20,11 @@ the props hidden, the background behind them draws instead.
 The on/control pairs are repeated (3× by default), and each result is the median of those repeats. Means, not medians, are used within a sample: some passes (spot shadow maps) skip frames, so per-frame cost is bimodal and a median would hide them. `range` is the
 min–max of the per-repeat sdf ms. It shows how noisy that case is.
 
+Each sample is 2 s (`"seconds"` changes it). A step that only flips a ConVar or the control's hide flag settles for
+0.4 s; one that moves the camera or changes lights, sun or LOD policy settles for 1.5 s and waits for fields and
+meshes to finish. At ~200+ fps a 2 s sample is 400+ GPU frames. Validated 2026-10-24: a no-op A/B arm reads `same`
+in every case (±2.2%). Sub-0.25 ms effects can hide in 2 s noise — use `"seconds": 5` to confirm a small one.
+
 Each case also records:
 - **cpu**: main-thread ms per frame spent in all SDF renderers' `OnUpdate` (band logic, refresh, visibility).
 - **MiB**: counted SDF texture memory and unique fields at the end of the sample (residency).
@@ -33,7 +38,7 @@ disables the fly camera. All of these are restored afterwards. It never saves th
 ## Suites
 
 **`shader`**: the raw cost of the SDF shader. Every prop is at full quality, raymarched, and casts a marched shadow.
-About 2 minutes.
+About 1.5 minutes; each extra A/B arm adds about 1 minute.
 
 | case | what it stresses |
 | --- | --- |
@@ -43,7 +48,7 @@ About 2 minutes.
 | `dense-4spots` | `dense` + four shadowed spotlights, all 256 props as marched casters: shadow-view marching |
 
 **`lod`**: how much the LOD systems save, and what they cost. Five distances (`close`, `dense`, `overview`, `far` =
-1200u back, `distant` = 3000u back), each under five policies, with four shadowed spots. About 12 minutes.
+1200u back, `distant` = 3000u back), each under five policies, with four shadowed spots. About 5–6 minutes.
 
 | policy | meaning | read it against |
 | --- | --- | --- |
@@ -92,6 +97,13 @@ shader uniform, as `mimiclay_sdf_reuse_prepass` does). Then:
 sdf_bench_run {"suite":"shader","label":"xyz","ab":"mimiclay_sdf_my_toggle=1"}
 ```
 
+Several arms in one run, separated by `;`, share the same A and control. That is how to price several stages at
+once, for example the attribution run:
+
+```text
+sdf_bench_run {"suite":"shader","ab":"mimiclay_sdf_debug_skip=1;mimiclay_sdf_debug_skip=2;mimiclay_sdf_debug_skip=16"}
+```
+
 Every case is measured as-is (A) and then with the overrides applied (B), back to back in the same session, against
 the same control. There's no hotload or shader recompile between A and B, and no drift between runs. The run ends with
 an A/B table and an amplified diff image per case (`runs/images/<run>/diff-ab/`). This is the most precise
@@ -110,8 +122,8 @@ two runs are more than 20 minutes apart.
    repeat ranges don't overlap. Otherwise it is `same`. The image column shows how many pixels changed by more than
    2 and 10 (of 255), with the noise floor next to it. Inspect the amplified diffs in
    `runs/images/<candidate>/diff-vs-<baseline>/`.
-5. For a small or surprising result, run the baseline again (A/B/A). Tiny gains need longer repeats
-   (`"seconds": 10`).
+5. For a small or surprising result, run the baseline again (A/B/A). Effects under ~0.25 ms need longer samples
+   (`"seconds": 5`).
 
 `set` applies ConVar overrides to a whole run (`"set":"mimiclay_sdf_field_res_cap=96"`). They're recorded in the
 file and shown in comparisons. Each run also stores a `SourceHash` over every `code/Sdf` and `Assets/shaders`

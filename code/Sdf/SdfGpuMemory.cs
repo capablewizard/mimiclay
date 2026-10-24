@@ -12,6 +12,7 @@ internal static class SdfGpuMemory
 		int bytesPerPixel = texture.ImageFormat switch
 		{
 			ImageFormat.I8 => 1,
+			ImageFormat.RGBA8888 => 4,
 			ImageFormat.R16F => 2,
 			ImageFormat.R32F => 4,
 			ImageFormat.RGBA32323232F => 16,
