@@ -110,6 +110,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[ConVar( "mimiclay_sdf_hide_all" )]
 	public static bool HideAll { get; set; }
 
+	/// <summary>Flip <see cref="HideAll"/> — eyeball the frame-time impact of every SDF prop.</summary>
+	[ConCmd( "sdf_toggle" )]
+	public static void ToggleHideAll()
+	{
+		HideAll = !HideAll;
+		Log.Info( $"[sdf] renderers {(HideAll ? "OFF" : "ON")} (mimiclay_sdf_hide_all {(HideAll ? 1 : 0)})" );
+	}
+
 	/// <summary>Global diagnostic kill switch for the field-cache compute path.</summary>
 	[ConVar( "mimiclay_sdf_field_cache" )]
 	public static bool FieldCacheEnabled { get; set; } = true;
