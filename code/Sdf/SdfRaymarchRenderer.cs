@@ -631,12 +631,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[ConVar( "mimiclay_sdf_reuse_prepass_mode" )]
 	public static int ReusePrepassMode { get; set; } = 1; // this project renders MSAA 8x (video settings): mode 2 is only exact without MSAA
 
-	/// <summary>SHADOW views (sun cascades and spot/point-light faces): raise the march hit epsilon to this many
-	/// shadow-map texels (world size of one texel of the shadow map being rendered). A shadow map can't resolve
-	/// detail finer than its texel, so marching it at the camera's 0.05 u epsilon is wasted steps; far cascades
-	/// (big texels) get very cheap, and spot shadows measured 7.8 → 6.3 ms (256 props × 4 spots).
-	/// 0 = march shadows at full camera precision (old behaviour).</summary>
-	[Property, Group( "Shadows" ), Range( 0f, 2f )] public float ShadowTexelEpsilon { get; set; } = 0.5f;
+	// Shadow-view march settings (texel epsilon, step scale, step cap, near miss) are GLOBAL: see SdfShadowSettings.
 
 	/// <summary>Render a tight bounding-SPHERE proxy instead of the AABB box, so round props march
 	/// fewer wasted pixels around their silhouette. Best for round/blobby props; an AABB box can be
@@ -1543,7 +1538,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// scene's own world (the thumbnail stage renders without the engine depth chain) and never for the viewmodel
 		// (its overlay prepass is stencil-claimed, not part of the world chain the forward pass samples).
 		_so.Attributes.Set( "SdfReusePrepass", ReusePrepassDepth && ReusePrepassEnabled && TargetWorld is null && ViewLayer == SdfViewLayer.Normal ? Math.Clamp( ReusePrepassMode, 1, 2 ) : 0 );
-		_so.Attributes.Set( "SdfShadowTexelEps", ShadowTexelEpsilon );
+		_so.Attributes.Set( "SdfShadowTexelEps", SdfShadowSettings.SunTexelEpsilon );
+		_so.Attributes.Set( "SdfShadowTexelEpsLocal", SdfShadowSettings.LocalTexelEpsilon );
+		_so.Attributes.Set( "SdfShadowMaxSteps", SdfShadowSettings.MaxSteps );
+		_so.Attributes.Set( "SdfShadowStepScale", SdfShadowSettings.StepScale );
+		_so.Attributes.Set( "SdfShadowNearMiss", SdfShadowSettings.NearMiss );
 		_so.Attributes.Set( "SdfDebugSkip", DebugSkip );
 		// Baked material (prototype): sample colour/metal/rough from the field's material bake instead of walking the
 		// brushes per pixel. Needs mimiclay_sdf_material_bake on (and the field rebaked) to have anything to read.

@@ -55,6 +55,8 @@ About 1.5 minutes; each extra A/B arm adds about 1 minute.
 | `close` | big props filling the screen: pixel pressure, steps per ray |
 | `complex` | one 42-brush prop (fruit bowl) close up: brush evaluation / material cost |
 | `dense-4spots` | `dense` + four shadowed spotlights, all 256 props as marched casters: shadow-view marching |
+| `dense-sun` | `dense` + the sun casting (4 ortho cascades), uncapped |
+| `dense-4spots-far` | the four spots pushed 500 u back (radius grown to match): large shadow-map texels, like a ceiling light across a room. Catches texel-scaled shadow settings that only misbehave far from the light |
 
 **`lod`**: how much the LOD systems save, and what they cost. Five distances (`close`, `dense`, `overview`, `far` =
 1200u back, `distant` = 3000u back), each under five policies, with four shadowed spots. About 5–6 minutes.
@@ -178,6 +180,18 @@ props forced to full quality. Keep it playing while you hotload. The console com
 
 Hold right mouse to fly. A benchmark run started while this scene is playing uses it as-is, so the fields don't
 need rebuilding.
+
+## Shadow settings
+
+How SDF props march their shadows is global, in `code/Sdf/SdfShadowSettings.cs`. Each value is a ConVar, so you can
+try one live, or A/B it with several variants in one run:
+
+```text
+sdf_bench_run {"suite":"shader","ab":"mimiclay_sdf_shadow_texel_eps_local=3;mimiclay_sdf_shadow_texel_eps_sun=2"}
+```
+
+The doc comment in that file records the sweep that chose the current defaults, with shadow-pass time and visible
+pixel change for each setting. Update it when you change a default.
 
 ## Changing the workload
 

@@ -30,8 +30,11 @@ Ordered by expected payoff. Each one is a separate change with its own A/B resul
    paint and material (`SdfSurfaceLocal`). Prune it to the brushes that can affect that point: a conservative
    per-brick list, or bounds tests that keep brush order, smooth blends, cutouts and paint exact. A
    nearest-brush shortcut is not equivalent. `complex` shows it.
-3. **Marched shadow views.** Shadow cascades and spot shadows pay per-pixel overhead plus empty-space steps. Try a
-   shadow-view step budget and a coarser epsilon in ortho/shadow views. `dense-4spots` shows it.
+3. **Marched shadow views. DONE (2026-10-24).** The shadow pass is memory-latency-bound (Nsight: ~25% L2 hit in the
+   spot shadow pass after GPU idle), so fewer and smaller field reads are what count. Shipped: shadow views skip
+   normals; texel-epsilon floor on every shadow view; float16 fields; global shadow march settings in
+   `code/Sdf/SdfShadowSettings.cs` (sun epsilon 1.5 texels, spot/point 2, step scale 2, no step cap). The sweep table
+   is in that file's doc comment. Spot shadow pass ~7.8 → ~1.25 ms on `dense-4spots` across all of these.
 4. **Empty-space skipping / tighter proxies.** Rays start at the object box and march through empty space first.
    Surface-brick proxy boxes (draw boxes around occupied bricks, start rays near the surface) are the larger
    version of this. Prototype it on its own and keep the current renderer as the reference. `dense` and `close`

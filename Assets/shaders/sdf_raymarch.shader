@@ -209,7 +209,11 @@ PS
 	// SHADOW views (sun cascades and spot/point faces): hit epsilon floor in SHADOW-MAP TEXELS. A shadow map
 	// can't store detail finer than a texel, so marching it at the camera's 0.05u epsilon is wasted steps - the
 	// far cascades (big texels) become almost free. 0 = march every shadow view at full camera precision.
-	float     g_flSdfShadowTexelEps < Attribute( "SdfShadowTexelEps" ); Default( 0.5 ); >;
+	float     g_flSdfShadowTexelEps < Attribute( "SdfShadowTexelEps" ); Default( 0.5 ); >;           // sun cascades
+	float     g_flSdfShadowTexelEpsLocal < Attribute( "SdfShadowTexelEpsLocal" ); Default( 0.5 ); >; // spot/point faces
+	int       g_nSdfShadowMaxSteps    < Attribute( "SdfShadowMaxSteps" ); Default( 0 ); >;     // shadow-view step cap, 0 = none
+	float     g_flSdfShadowStepScale  < Attribute( "SdfShadowStepScale" ); Default( 1.0 ); >;  // shadow-view step length ×, ≤ full step
+	float     g_flSdfShadowNearMiss   < Attribute( "SdfShadowNearMiss" ); Default( 0.0 ); >;   // out-of-steps hit tolerance (units)
 	// Gradient bound of the BAKED displaced field: the bake subtracts the lumps into the volume,
 	// steepening its slope by up to this L (= worst-tick amp · freq · 4). 0 = field is a true
 	// distance field (no displacement baked). Drives the same understep + budget growth the live
@@ -961,8 +965,8 @@ PS
 		return steps > 64 ? float3( 1, 0, 1 ) : c;
 	}
 
-	// The hit epsilon THIS view's march actually ran at (RayMarchHit fills it; the perspective
-	// shadow-view caster bias reads it back — the march's depth error is bounded by this).
+	// The hit epsilon THIS view's march ran at BEFORE the shadow-texel floor (RayMarchHit fills it; the perspective
+	// shadow-view caster bias reads it back as march-error insurance). The floor is excluded on purpose: see RayMarchHit.
 	static float s_marchEps = 0.05;
 	// FORWARD warm start (g_nSdfReusePrepass): the along-ray distance of the camera prepass depth at this
 	// pixel, or < 0 for none. RayMarchHit then marches only a few steps in a tight window around it — the
@@ -1084,10 +1088,15 @@ PS
 		float q = ortho ? 1.0 : LodQuality( ro );
 		int   maxSteps = (int)lerp( (float)g_nMinSteps, (float)g_nMaxSteps, q );
 		float eps      = lerp( g_flFarEpsilon, g_flEpsilon, q );
-		// Spot/point shadow faces get the same floor: their pixels are shadow-map texels too, and the perpendicular
-		// footprint formula holds for perspective rays. Measured 2026-10-24 (256 props × 4 spots, frame-capped):
-		// spot shadow pass 7.8 → 6.3 ms; 0.39% of pixels moved, all on spot shadow edges.
-		if ( ( ortho || IsShadowView() ) && g_flSdfShadowTexelEps > 0.0 )
+		// Spot/point shadow faces get the same kind of floor: their pixels are shadow-map texels too, and the
+		// perpendicular footprint formula holds for perspective rays. Separate amounts for sun cascades vs local lights
+		// (SdfShadowSettings — the sun's world-size texels show epsilon as surface self-shadowing sooner).
+		// The caster bias uses the epsilon from BEFORE the shadow-texel floor. The floor only lets the march stop sooner;
+		// the secant refine still lands the hit on the surface. Biasing by 2 × the floored epsilon pushed far-spot casters
+		// under the floor (683 u spot: ~2.3 u texels → ~9 u extra push) and erased a dinner plate's shadow (2026-10-24).
+		s_marchEps = eps;
+		float texelEps = ortho ? g_flSdfShadowTexelEps : g_flSdfShadowTexelEpsLocal;
+		if ( ( ortho || IsShadowView() ) && texelEps > 0.0 )
 		{
 			// Shadow-map texel in world units: the pixel footprint with its along-ray part removed (a face
 			// oblique to the light stretches ddx along the ray; the perpendicular part is the texel itself).
@@ -1095,9 +1104,8 @@ PS
 			float3 py = wpDy - rd * dot( wpDy, rd );
 			float texel = min( length( px ), length( py ) );
 			if ( texel > 1e-4 )
-				eps = max( eps, texel * g_flSdfShadowTexelEps );
+				eps = max( eps, texel * texelEps );
 		}
-		s_marchEps = eps;
 
 		float stepScale = 1.0;
 	#if ( D_FIELD_TEX )
@@ -1142,6 +1150,18 @@ PS
 		}
 	#endif
 
+		// SHADOW-view march budget (SdfRaymarchRenderer Shadows group / mimiclay_sdf_shadow_* overrides). A shadow map
+		// stores one depth per texel, and that pass is memory-latency-bound (each step is a cache-missing field read),
+		// so it can trade precision for steps far more freely than the camera: cap the step count, and take longer
+		// steps than the displacement safety allows. 0 / 1 = unchanged.
+		bool shadowView = ortho || IsShadowView();
+		if ( shadowView )
+		{
+			if ( g_nSdfShadowMaxSteps > 0 )
+				maxSteps = min( maxSteps, g_nSdfShadowMaxSteps );
+			stepScale = min( stepScale * max( g_flSdfShadowStepScale, 1.0 ), 1.0 );
+		}
+
 		if ( s_hintT >= 0.0 )
 		{
 			float w = SDF_HINT_WINDOW * eps;
@@ -1153,7 +1173,8 @@ PS
 		}
 
 		float t = tEnter;
-		float prevD = 0.0, prevStep = 0.0;
+		float prevD = 1e9, prevStep = 0.0;
+		bool leftBounds = false;
 		s_marchSteps = maxSteps;
 		[loop]
 		for ( int s = 0; s < maxSteps; s++ )
@@ -1181,7 +1202,14 @@ PS
 			prevD = d;
 			prevStep = d * stepScale;
 			t += prevStep;
-			if ( t > tExit ) { s_marchSteps = s + 1; break; }
+			if ( t > tExit ) { s_marchSteps = s + 1; leftBounds = true; break; }
+		}
+		// Shadow views only: a ray that ran OUT OF STEPS (not out of the box) while still within NearMiss of the surface
+		// counts as a hit, so a low step cap fattens a shadow slightly instead of leaking light through grazing edges.
+		if ( shadowView && !leftBounds && g_flSdfShadowNearMiss > 0.0 && prevD < g_flSdfShadowNearMiss )
+		{
+			hitP = ro + rd * t;
+			return true;
 		}
 		// (Warm-start window: a miss here means the caller runs the full march, which shares the prepass's
 		// step phase and so lands where the prepass did. An earlier cut accepted the window's closest

@@ -45,9 +45,9 @@ public static class SdfBench
 
 	/// <summary>One timed configuration. View is a dev-scene view (-1 dense, -2 overview, -3 close crowd, 0–255 one
 	/// prop); Back &gt; 0 instead puts the camera that far behind the gallery. A dolly flies from Back to the close crowd.</summary>
-	sealed record Case( string Name, int View, float Back, int Lights, Lod Lod, bool Dolly = false, bool Sun = false )
+	sealed record Case( string Name, int View, float Back, int Lights, Lod Lod, bool Dolly = false, bool Sun = false, float SpotPushBack = 0 )
 	{
-		public string ControlKey => $"{View}/{Back}/{Lights}/{(Sun ? "sun" : "")}";
+		public string ControlKey => $"{View}/{Back}/{Lights}/{(Sun ? "sun" : "")}/{SpotPushBack}";
 
 		/// <summary>Frame cap while this case runs. Shadow-map passes are memory-latency-bound and run ~4× slower in
 		/// frames that start after the GPU idled (cold caches — Nsight, 2026-10-24: L2 hit ~25% vs ~85% warm). Uncapped,
@@ -64,6 +64,10 @@ public static class SdfBench
 		new( "complex", 63, 0, 0, Lod.Full ),      // one 42-brush prop (fruit bowl) close up: brush evaluation cost
 		new( "dense-4spots", -1, 0, 4, Lod.Full ), // + four shadowed spots, every prop a marched caster
 		new( "dense-sun", -1, 0, 0, Lod.Full, Sun: true ), // the sun casts: 4 ortho cascades, every prop a marched caster
+		// The same four spots 500 u further back (radius grown to match): big shadow-map texels, like a ceiling light
+		// across a room. Catches texel-scaled shadow settings that only misbehave far from the light (2026-10-24: a
+		// texel-scaled caster bias erased a dinner plate's shadow under a 683 u spot; the near-spot case never showed it).
+		new( "dense-4spots-far", -1, 0, 4, Lod.Full, SpotPushBack: 500 ),
 	};
 
 	static Case[] LodSuite()
@@ -139,6 +143,19 @@ public static class SdfBench
 	static (int View, float Distance, int Lights, bool Shadows, bool Force, Transform Camera, bool Fly) _oldDev;
 	static readonly Dictionary<SdfRaymarchRenderer, (bool Adaptive, bool Switching)> _oldRenderers = new();
 	static DirectionalLight _sun;
+	static readonly List<(SpotLight Light, Vector3 Position, float Radius)> _oldSpots = new();
+
+	/// <summary>Move every dev-scene spot back along its own axis by pushBack units (radius grown to match), or restore
+	/// them with 0. Larger distance = larger shadow-map texels on the props.</summary>
+	static void PlaceSpots( float pushBack )
+	{
+		foreach ( var (l, pos, radius) in _oldSpots )
+		{
+			if ( !l.IsValid() ) continue;
+			l.WorldPosition = pos - l.WorldRotation.Forward * pushBack;
+			l.Radius = radius + pushBack;
+		}
+	}
 	static bool _oldSunShadows;
 
 	// ---------------------------------------------------------------- entry points
@@ -245,7 +262,7 @@ public static class SdfBench
 	/// needs just enough time for GPU timestamps (which lag a few frames) to catch up. Moving the camera,
 	/// changing lights, the sun or the LOD policy needs shadow maps, bands and fields to settle first.</summary>
 	static bool HeavyChange( int index ) => index == 0 || !SameScene( _steps[index].Case, _steps[index - 1].Case );
-	static bool SameScene( Case a, Case b ) => a.View == b.View && a.Back == b.Back && a.Lights == b.Lights && a.Lod == b.Lod && a.Sun == b.Sun && !a.Dolly && !b.Dolly;
+	static bool SameScene( Case a, Case b ) => a.View == b.View && a.Back == b.Back && a.Lights == b.Lights && a.Lod == b.Lod && a.Sun == b.Sun && a.SpotPushBack == b.SpotPushBack && !a.Dolly && !b.Dolly;
 	static double SettleSeconds( int index ) => HeavyChange( index ) ? 1.5 : 0.4;
 
 	// ---------------------------------------------------------------- the frame loop
@@ -358,6 +375,8 @@ public static class SdfBench
 		_appliedLod = null;
 		_sun = _scene.GetAllComponents<DirectionalLight>().FirstOrDefault();
 		_oldSunShadows = _sun.IsValid() && _sun.Shadows;
+		_oldSpots.Clear();
+		foreach ( var l in _dev.Lights ) if ( l.IsValid() ) _oldSpots.Add( (l, l.WorldPosition, l.Radius) );
 
 		_convarRestore.Clear();
 		ApplyConvars( _set );
@@ -391,6 +410,7 @@ public static class SdfBench
 		}
 
 		if ( _sun.IsValid() ) _sun.Shadows = c.Sun;
+		PlaceSpots( c.SpotPushBack );
 		if ( _settings is not null && _settings.MaxFrameRate != c.Cap )
 		{
 			_settings.MaxFrameRate = c.Cap; _settings.MaxFrameRateInactive = c.Cap;
@@ -519,6 +539,7 @@ public static class SdfBench
 		{
 			foreach ( var (r, old) in _oldRenderers ) if ( r.IsValid() ) { r.AdaptiveQuality = old.Adaptive; r.DistanceSwitching = old.Switching; }
 			if ( _sun.IsValid() ) _sun.Shadows = _oldSunShadows;
+			PlaceSpots( 0 );
 			_dev.View = _oldDev.View; _dev.CloseDistance = _oldDev.Distance; _dev.LightCount = _oldDev.Lights;
 			_dev.Shadows = _oldDev.Shadows; _dev.ForceSdfShadows = _oldDev.Force;
 			_dev.Apply( true );
