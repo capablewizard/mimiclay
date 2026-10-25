@@ -748,6 +748,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	bool _destroyed; // set in OnDestroy; cancels the deferred sibling-mesh hand-back during a delete
 
+	// Static shadow cache (SdfStaticShadows): _so carries StaticObject while _staticOn, cached at these bounds.
+	bool _staticOn;
+	Vector3 _staticCenter;
+	float _staticRadius;
+	int _shadowInputsKey;              // everything a static caster's shadow depends on, as of last frame
+	RealTimeSince _sinceShadowInputs;  // time since that key last changed
+
 	// Live-edit field (Dreams "evaluator / CS of doom"): a per-instance volume re-evaluated on the GPU by a
 	// compute shader whenever the brushes change, so the march stays on D_FIELD_TEX instead of the analytic
 	// per-brush path — with no CPU eval and no upload. Remote drags re-dispatch every frame at a reduced
@@ -886,6 +893,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// with it, rather than relying on OnDisabled/OnDestroy firing during bulk teardown.</summary>
 	internal void ReleaseSceneObject()
 	{
+		DropStatic();
 		_released = true;
 		_so?.Attributes.Clear();
 		_so?.Delete();
@@ -959,7 +967,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// UpdateDistanceSwitch, ApplyRenderHidden, ApplyFieldOnlyHide, RestoreStaticState, ApplyMeshMode) whose
 	// correctness depended on their call order — and, worse, on having SEEN every transition. Keep it that
 	// way: a new visibility input belongs HERE, not in a new "runs last" or "runs on change" method.
+	// The static-shadow decision runs right after, from the state just written, on every path.
 	void ApplyVisibility()
+	{
+		ResolveVisibility();
+		UpdateStaticShadow();
+	}
+
+	void ResolveVisibility()
 	{
 		if ( !_so.IsValid() )
 			return;
@@ -1014,7 +1029,76 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// the resolved band every frame, so it also can't stick around once the debug goes off.
 		var meshSo = mesh.SceneObject;
 		if ( meshSo.IsValid() )
+		{
 			meshSo.ColorTint = DebugLod ? DebugBandTint( culled, sdf, meshLod ) : mesh.Tint;
+			// ModelRenderer copies GameObject.IsStatic onto its scene object; a static-flagged prop's mesh caster
+			// would then sit in light caches that nothing here invalidates. The mesh stays a dynamic caster.
+			if ( SdfStaticShadows.Enabled && meshSo.Flags.IsStatic )
+				meshSo.Flags.IsStatic = false;
+		}
+	}
+
+	// ---------------------------------------------------------------- static shadow cache (see SdfStaticShadows)
+
+	/// <summary>This prop's marched shadow is currently held in the static spot/point light caches.</summary>
+	public bool StaticShadowCaster => _staticOn;
+
+	// Everything the marched SHADOW reads that can change while the prop sits still: shape, field, placement, the
+	// casting state and the shadow-march knobs. Colour-only state (material, decals, transmission) is left out.
+	int ShadowInputsKey( bool casts ) => HashCode.Combine(
+		HashCode.Combine( _lastHash, _placementHash, _lastFieldHash, _fieldReady, _fieldGpu?.Texture, _curCount, casts ),
+		HashCode.Combine( RenderHidden, ViewLayer, ShadowBias, ShadowSlopeScale, MaxSteps, Epsilon ),
+		HashCode.Combine( AdaptiveQuality, MinSteps, FarEpsilon, FullQualityRadii, MinQualityRadii ),
+		HashCode.Combine( Displace, DispAmp, DispFreq, DisplaceShadows ),
+		HashCode.Combine( SdfShadowSettings.LocalTexelEpsilon, SdfShadowSettings.StepScale, SdfShadowSettings.MaxSteps, SdfShadowSettings.NearMiss ) );
+
+	// Join or leave the light caches. Runs after every visibility resolve, so a change made this frame demotes the
+	// caster before this frame renders. Joining waits for the inputs to settle and for the system's promotion window.
+	void UpdateStaticShadow()
+	{
+		bool casts = _so.IsValid() && _so.RenderingEnabled && _so.Flags.CastShadows;
+		int key = ShadowInputsKey( casts );
+		if ( key != _shadowInputsKey )
+		{
+			_shadowInputsKey = key;
+			_sinceShadowInputs = 0f;
+		}
+		// The key is tracked even while the feature is off, so props that sat still join the moment it's turned on.
+		if ( !SdfStaticShadows.Enabled && !_staticOn )
+			return;
+
+		var system = SdfStaticShadows.For( Scene );
+		bool want = SdfStaticShadows.Enabled && casts && system is not null
+			&& !_boilActive && TargetWorld is null && ViewLayer == SdfViewLayer.Normal
+			&& _sinceShadowInputs >= SdfStaticShadows.SettleSeconds;
+		if ( want == _staticOn )
+			return;
+
+		if ( !want )
+		{
+			DropStatic();
+			return;
+		}
+
+		if ( !system.PromoteWindowOpen )
+			return;
+		_staticOn = true;
+		_staticCenter = _curCenter;
+		_staticRadius = _curRadius;
+		_so.Flags.IsStatic = true;
+		system.Promoted( _staticCenter, _staticRadius );
+	}
+
+	// Leave the light caches now, and invalidate every light that cached this prop where it was. Called before _so is
+	// deleted or replaced, and whenever the caster changes.
+	void DropStatic()
+	{
+		if ( !_staticOn )
+			return;
+		_staticOn = false;
+		if ( _so.IsValid() )
+			_so.Flags.IsStatic = false;
+		SdfStaticShadows.For( Scene )?.Demoted( _staticCenter, _staticRadius );
 	}
 
 	// Flat per-band tints for DebugLod, picking up where the shader's SDF heatmap (red = quality floor →
@@ -1324,6 +1408,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// the live one — drop it and let the block below rebuild it in the new world.
 		if ( _so.IsValid() && _so.World != RenderWorld )
 		{
+			DropStatic();
 			_so.Delete();
 			_so = null;
 		}
@@ -1423,6 +1508,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			}
 			else
 			{
+				DropStatic(); // the old object went away without us (e.g. its world was deleted)
 				_so = new SceneObject( RenderWorld, model );
 				// Per-object attributes (BrushData/Bounds/Count) don't survive batching, so two
 				// SDF objects sharing the material would collapse into one draw and hide together.

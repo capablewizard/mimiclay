@@ -561,7 +561,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "e73e921b-22fe-45b7-b791-0a0ed58b2cd1",
+            "Id": "b69e651c-f486-4cfe-816f-74ec8617904a",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -618,7 +618,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "e73e921b-22fe-45b7-b791-0a0ed58b2cd1",
+            "Id": "b69e651c-f486-4cfe-816f-74ec8617904a",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1572,7 +1572,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "c1f14400-a562-48d3-bf4f-24158c9df677",
+                "Id": "081b5467-c22f-43f4-a609-f658d03e1f9f",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1618,7 +1618,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f16fa611-37f5-4b8a-a185-bda3d628cad0",
+                "Id": "0c053d13-fc6c-4352-ae84-701adb225cf0",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1646,7 +1646,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f16fa611-37f5-4b8a-a185-bda3d628cad0",
+                "Id": "0c053d13-fc6c-4352-ae84-701adb225cf0",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1693,7 +1693,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "4d6dba60-c35a-4524-89e6-14727d23a7fb",
+                "Id": "2c6e0e68-41c3-4ce3-ab6a-ab0323d38bd7",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1737,7 +1737,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "8fcbdab2-3408-4bbb-852d-0ee37e173d0d",
+                "Id": "41ab4607-96cc-4cd3-9f96-3b9280c6bad7",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2049,7 +2049,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "057d5166-bf7b-42aa-83ed-cbf9d5e449d1",
+                "Id": "e2a87c6a-80e3-4b05-b144-6ecd43f3af5e",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2093,7 +2093,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "9ebf509f-e980-43ef-bb34-c0bf306e14ad",
+                "Id": "7bab3818-904b-4abe-b262-f3da42d382e7",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2137,7 +2137,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "7a9be397-713c-48f7-8d2c-8ea8d17f17fc",
+                "Id": "e56b3826-b119-4ef8-ba99-beff4fb0d663",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2183,7 +2183,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f81b20c3-4578-4d3c-abd1-df7727664cfb",
+                "Id": "83de3ef6-6f7e-45f6-932f-5ae322ab09c4",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2211,7 +2211,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f81b20c3-4578-4d3c-abd1-df7727664cfb",
+                "Id": "83de3ef6-6f7e-45f6-932f-5ae322ab09c4",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3321,7 +3321,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3349,7 +3349,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3398,7 +3398,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3426,7 +3426,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -5395,7 +5395,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "63 object(s), 67661 tris — 12:08:13",
+          "LastImport": "63 object(s), 67661 tris — 22:01:14",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -11100,8 +11100,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11246,8 +11262,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11392,8 +11424,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11538,8 +11586,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11684,8 +11748,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11827,7 +11907,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11844,7 +11924,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11867,6 +11947,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -11894,7 +11975,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": true,
@@ -12093,6 +12173,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12231,6 +12327,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12369,6 +12481,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12499,6 +12627,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12629,6 +12773,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12912,7 +13072,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13058,7 +13218,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13350,7 +13510,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13650,7 +13810,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13797,6 +13957,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -14417,7 +14593,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14434,7 +14610,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -14457,6 +14633,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -14484,7 +14661,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -14654,7 +14830,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14671,7 +14847,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -14694,6 +14870,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -14721,7 +14898,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -14891,7 +15067,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14908,7 +15084,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -14931,6 +15107,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -14958,7 +15135,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -15128,7 +15304,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15145,7 +15321,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15168,6 +15344,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -15195,7 +15372,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -15365,7 +15541,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15382,7 +15558,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15405,6 +15581,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -15432,7 +15609,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -15602,7 +15778,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15619,7 +15795,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15642,6 +15818,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -15669,7 +15846,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -15839,7 +16015,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 2,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15856,7 +16032,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15879,6 +16055,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -15906,7 +16083,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -16076,7 +16252,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -16093,7 +16269,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -16116,6 +16292,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -16143,7 +16320,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -16313,7 +16489,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -16330,7 +16506,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -16353,6 +16529,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -16380,7 +16557,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -16550,7 +16726,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -16567,7 +16743,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -16590,6 +16766,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -16617,7 +16794,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -16787,7 +16963,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -16804,7 +16980,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -16827,6 +17003,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -16854,7 +17031,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -17024,7 +17200,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 1,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -17041,7 +17217,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -17064,6 +17240,7 @@
           "Epsilon": 0.18,
           "FarEpsilon": 1,
           "FieldCacheOnly": true,
+          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
           "FieldResolution": 195,
           "FullQualityRadii": 1,
@@ -17091,7 +17268,6 @@
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
@@ -30171,7 +30347,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "5bdd11ad-09bf-48fc-9e80-20e406216a54",
+            "Id": "daf0ee1a-48ae-47a4-a371-4701257b7e06",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,

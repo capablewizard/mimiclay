@@ -98,6 +98,12 @@ public sealed class SdfDevelopmentScene : Component
 			}
 			_lastLights = LightCount; _lastShadows = Shadows;
 		}
+		// The engine's static shadow cache needs static lights; the spots follow the ConVar so the bench can A/B it
+		// (its spot cases toggle mimiclay_sdf_static_shadows). Play only: never dirties the saved scene.
+		if ( !Scene.IsEditor )
+			foreach ( var light in Lights )
+				if ( light.IsValid() && light.GameObject.IsStatic != SdfStaticShadows.Enabled )
+					light.GameObject.IsStatic = SdfStaticShadows.Enabled;
 	}
 
 	[Button( "Dense 256 / Reset Camera" )]
