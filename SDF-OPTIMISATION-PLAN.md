@@ -182,7 +182,7 @@ the session's scratchpad. Copies of the two scripts are in the side-session note
 |---|---|---|---|---|---|---|
 | 1 | Screen-traced SDF shadows instead of shadow-map marching (Wright, SIGGRAPH 2015) | shadow passes 1.0–1.3 ms per light type | 0.5–1 ms+, grows with lights | blocked: needs engine PR (see note below) | | partly feasible |
 | 1b | Engine static shadow cache: flag SDF props `StaticObject` (+ static lights), invalidate by nudging the light on edit/boil/claim | spot/point shadow re-renders of unchanged props | most of the static props' 1.03 ms spot share | done, ConVar `mimiclay_sdf_static_shadows` ships OFF (note below) | [static-shadows](Tools/sdf/bench/runs/20261025-123737-shader-static-shadows.json) | bench win: spot shadows 1.01 → 0.04 ms (dense-4spots), 0.39 → 0.03 ms (far), images identical; in game ≈ 0 today |
-| 2 | Conservative depth via FRONT faces (`SV_DepthGreaterEqual`/`LessEqual` per depth direction), fallback shader when camera/light is inside the box | prepass + shadows on hidden layers | 0.3–1.0 ms | todo | | |
+| 2 | Conservative depth via FRONT faces (`SV_DepthGreaterEqual`/`LessEqual` per depth direction), fallback shader when camera/light is inside the box | prepass + shadows on hidden layers | 0.3–1.0 ms | tried, code reverted (note "Final pass" below; was ConVar `mimiclay_sdf_front_depth`) | [shader](Tools/sdf/bench/runs/20261025-172754-shader-overdraw-all-front-depth.json), [shader-2](Tools/sdf/bench/runs/20261025-173812-shader-overdraw-none-front-depth.json), [ship](Tools/sdf/bench/runs/20261025-171422-ship-overdraw-all-front-depth.json) | `same`: prepass −0.03…0 ms on every uncapped case, images identical; `SV_DepthLessEqual` under reversed-Z `GREATER_EQUAL` gives no measurable early rejection on the 4090 |
 | 3 | Brush data in a constant / structured buffer read at a wave-uniform index (bake: groupshared preload) | material walk 0.7–1.0 ms | 0.2–0.5 ms | tried, ships OFF: structured buffer (a cbuffer can't hold persistent per-object data, note below), ConVar `mimiclay_sdf_brush_buffer` | [brush-buffer-groupcull](Tools/sdf/bench/runs/20261025-132210-shader-brush-buffer-groupcull.json) (+ [confirm](Tools/sdf/bench/runs/20261025-133138-shader-brush-buffer-groupcull-confirm.json), [noop](Tools/sdf/bench/runs/20261025-134424-shader-brush-buffer-groupcull-noop.json)) | `same`: forward −0.03…−0.06 ms alone, images identical |
 | 3b | Order-preserving group cull: one record per 4 packed brushes (union AABB + widest per-op threshold), skip the run when its box is past the threshold | material walk iterations | 0.1–0.3 ms | tried, ships OFF: ConVar `mimiclay_sdf_group_cull` (1 = wave-uniform skip, 2 = per-lane jump) | same runs as #3 | `same` by the bench rule, but complex forward −0.11…−0.15 ms in every run; with #3 −0.13…−0.20 ms; images bit-identical (note below) |
 | 4 | Cone march shared across a wave (bounding cone of the lanes' rays, uniform steps, then per-lane) | empty-space steps, all passes | 0.2–0.6 ms | todo | | |
@@ -199,6 +199,10 @@ the session's scratchpad. Copies of the two scripts are in the side-session note
 | 15 | 4-tap tetrahedral normals in the prepass | prepass normals | 0.05–0.1 ms; look changes | todo | | |
 | 16 | Pre-tessellated splines | walk on spline props | <0.05 ms | todo | | |
 | 17 | Constant-roughness path | 3 triplanar samples | <0.05 ms | todo | | |
+| 18 | Mesh-shell proxy, phase 1: raster the prop's own inflated surface mesh instead of the padded box; camera rays start at its front faces; validity gate + box fallback | prepass ~0.7–0.9 ms, forward march 0.4–0.9 ms | 0.5–1.5 ms | tried, code reverted (note below; was ConVar `mimiclay_sdf_mesh_shell`) | [mesh-shell](Tools/sdf/bench/runs/20261025-145727-ship-mesh-shell.json), [lods](Tools/sdf/bench/runs/20261025-150818-ship-mesh-shell-lods.json), [dilated](Tools/sdf/bench/runs/20261025-151707-ship-mesh-shell-dilated.json), [near](Tools/sdf/bench/runs/20261025-152219-ship-mesh-shell-near.json), [shader](Tools/sdf/bench/runs/20261025-153924-shader-mesh-shell.json) | never `FASTER`: LOD0 shell `SLOWER` (dense +1.2–1.5 ms, forward), and drops thin features (holes); the hole-free dilated LOD2 shell is `same` (−0.15…+0.9 ms) |
+| 19 | Shading-path comparison: what the forward "lighting + output" remainder (bit 64 − bit 47) is, and any SDF-only overhead in it | forward 0.4–0.6 ms remainder | ? | measured (note "Final pass" below) | [attribution](Tools/sdf/bench/runs/20261025-160846-ship-remainder-attribution.json), strip builds [47](Tools/sdf/bench/runs/20261025-161739-ship-occupancy-strip47.json) / [8](Tools/sdf/bench/runs/20261025-162303-ship-occupancy-strip8.json) / [keep walk](Tools/sdf/bench/runs/20261025-162719-ship-occupancy-keepwalk.json) / [keep transmission](Tools/sdf/bench/runs/20261025-163128-ship-occupancy-keeptrans.json) | the remainder is engine lighting (`ClayShade`, same code as the mesh shader, 0.36–0.6 ms); SDF-only overhead = occupancy, set independently by the material walk and transmission (~0.1–0.2 ms on the march); no cheap fix |
+| 19b | Force `OverdrawOptimization` on every prop (PropGen templates author it off: 146 of 256 dev props, 380 of 660 in prefabs/scenes) | doubled box-face march | 0.3–1 ms (expected) | tried, code reverted (was ConVar `mimiclay_sdf_overdraw_all`) | same runs as #2 | `same`: one face vs both faces on all 256 props differs by ≤ 0.06 ms; images identical |
+| 20 | Cheaper transmission at the same look: wave-uniform light loop (`ClusterForEach`, no per-light shadow sample), lazy inward tap | transmission 0.22–0.38 ms | 0.1–0.2 ms | tried, code reverted (were ConVars `mimiclay_sdf_trans_fast`, `_trans_lazy_tap`) | [trans-fast](Tools/sdf/bench/runs/20261025-163657-ship-trans-fast.json), [lazy-tap](Tools/sdf/bench/runs/20261025-164536-ship-trans-lazy-tap.json) | `same`: forward +0.01 / ±0.01 ms, images identical; the tap costs ~0 and the march 0.06–0.13 ms, so no stage is worth a look change |
 | — | Single-material shortcut (`mimiclay_sdf_uniform_material`) | material walk | | DONE `55543a3` | [uniform-material](Tools/sdf/bench/runs/20261025-104220-shader-uniform-material.json) | forward −0.02…−0.12 ms, images identical (2× MSAA run) |
 
 **#10 result (2026-10-25, 8× MSAA, 4 s samples):** forward ms before / after / before-2: dense 1.96 / 1.96 / 1.97,
@@ -295,8 +299,170 @@ static cache, so it keeps mesh/LOD shadows either way. Costs to watch: each re-c
 light (~0.25 ms per spot for 256 props), the engine drops a cache whenever the spot's shadow-map resolution steps as the
 camera moves, cached lights use about twice the shadow-map memory, and no map can use baked lights.
 
+**#18 mesh-shell proxy result (2026-10-25, in-run A/B, 8× MSAA, 3 × 4 s).** Built as agreed: the shell is the
+sculpture's own surface-nets mesh, drawn by the raymarch `SceneObject` through a single-LOD Model that shares the
+LOD's Mesh (no copy of its buffers) with the raymarch material as an override. The VS pushes it out along its
+normals (`SdfShellInflate`); the PS marches FRONT faces from the fragment, keeps the box exit, and restarts from the
+box entry when the first sample is inside the clay (debug skip bit 1024 paints shell / restart / box). The gate is in
+`SdfRaymarchRenderer.UpdateMeshShell`. It needs the mesh's `ContentHash` to equal the current brushes' (any edit
+→ box the same frame; damage brushes → box), plus not boiling, camera beyond 2 radii (`_overdrawSafe`), normal view
+layer, no `TargetWorld`, not `RenderHidden`, no `FlipFaces`. Shadow views keep the box rule (back faces from the box
+entry) on the shell geometry. Box ↔ shell is a model swap only on a state change. ConVar off: the shader's box path
+renders bit-identical to before (old vs new A-arm images, 3 of 4 ship views; 2 pixels in overview).
+
+| shell variant (`ship` suite unless noted) | close | dense | overview | complex | images |
+|---|---|---|---|---|---|
+| LOD0, δ = √3 cells + 1 voxel | +0.10 | **+1.46 SLOWER** | **+2.67 SLOWER** | +0.01 | 0.4–1% >10, but thin features missing |
+| LOD1 / LOD2 meshes | +0.37 / −0.51 | +0.20 / −0.23 | +0.53 / −0.06 | +0.81 / +0.43 | **holes**: 2–12% >10 |
+| dilated LOD1 / LOD2 (1 cell + VS 1 cell + voxel) | −0.06 / −0.02 | **+0.74 SLOWER** / **+0.23 SLOWER** | **+1.44 SLOWER** / +0.92 | −0.63 / −1.10 (A arm noisy) | ≤0.32% >10, hole-free |
+| dilated LOD2, shell only within 4 / 8 radii | −0.33 / −0.97 (A noisy) | +0.62 / +0.74 | +0.06 / +0.25 | ≈0 | ≤0.09% >10 |
+| `shader` suite: LOD0 | +0.19 | **+1.20 SLOWER** (spots/sun/far +1.3…+1.8) | — | −0.04 | ≤0.4% >10 |
+| `shader` suite: dilated LOD2 | −0.15 | +0.03 (sun +0.33, far +0.50) | — | +0.06 | ≤0.1% >10 |
+
+Read the pass buckets, not the whole-case ms (several A arms were noisy): **the prepass never improved by more than
+0.05 ms on an ordinary view** (complex −0.26 once). The forward pass got slower wherever many props wear shells: LOD0
++0.8…+2.0 ms, dilated LOD2 +0.06…+0.34 ms. Shadows +0.2–0.35 ms on concave props in the sun case: shell back faces
+march from the box entry, once per layer. Shell coverage was 245–255 of 256 props (the 083 rug has no mesh and
+stays on the box; props within 2 radii stay on the box).
+
+Why it loses: **quad overshading**. A shell tight enough to save steps is many small triangles. Every triangle edge
+inside a silhouette splits 2×2 quads, so the pixels along it run the whole pixel shader (march + ~1.8 ms of post-hit
+shading) once per triangle, with helper lanes. The box has almost no interior edges. Coarser meshes cut the edges,
+but a coarse shell has to be fat, so the margin it removes is small. The heatmaps' 70–80% miss steps in the box
+margin are cheap steps: rays that leave the box in 1–6 steps.
+
+Correctness findings, kept for any later shell or proxy work:
+- **Surface-nets meshes drop thin features at every LOD.** Knife blades, table legs, a thin cloth: a feature with no
+  grid point inside it has no surface. Those pixels are never rasterised, so the restart can't catch them. The fix
+  is the dilated shell: mesh the grid at iso-level +1 cell (`SurfaceNetsMesher.Dilated`, which forces the outer
+  grid layer outside so the shell closes). Any feature then has a lattice point inside it. Close-ups (fruit bowl,
+  knife rack, side table, chair, candelabra, revolver, jug; `sdf_dev_view <i> 3`): 0 restarts, ≤0.16% of pixels >10.
+- **Deeper shell layers start inside nearer clay** (crevices, folds of the inflated shell). They restart, re-march
+  to layer one's hit and paint the restart debug red without being a hole (0.8% of shell pixels in dense). The
+  forward pass now drops a layer behind the prepass depth before the inside test (0.14% left: real first-layer
+  tightness). The prepass can't, so it pays those re-marches.
+- Edit test (jug, brush grown 10%): box in the same frame as the edit, shell back 20 ms later when the mesher's
+  build for the new shape lands. Grown 25%, the camera fell inside 2 radii, so it correctly stayed on the box.
+- The sandbox engine's `SceneObject.LodOverride` is internal, hence the single-LOD Models. The surface-nets
+  `Vertex` normal reads fine raw (`vNormalOs.xyz`).
+
+**Decision: ships OFF, code left in place.** Defaults are the hole-free variant (dilated LOD2, VS 1 cell); its meshes
+are built only while `mimiclay_sdf_mesh_shell` and `_dilated` are on at mesh-build time, so it costs nothing while
+off (their GPU memory when on was not measured). While off, the remaining cost is the per-LOD single Models
+(objects only, no buffers) and the per-frame gate (bench `cpu` +0.05–0.1 ms only while the shell is on). Before phase 2 (conservative depth on the shell) is worth trying, the forward pass needs to stop paying for the
+shell's triangles. One route: the shell draws only the depth prepass and the box draws forward + shadows, but the
+prepass gain measured here is ≤0.05 ms. That makes the whole direction low value at these views.
+
 Also landed in `55543a3`: cutout colour-edge cull fix (`sdf_eval.hlsl` `SdfSurfaceBrush`), and the shadow march
 knobs now gate on `IsShadowView()` alone so ortho editor views march like cameras (cascades verified still detected).
+
+**Final pass (2026-10-25): #19 shading-path comparison, #20 transmission, #2 conservative depth.** All in-run A/B, 8×
+MSAA, 3 × 4 s. Every candidate read `same` and was reverted; the tree is back at `f839893` for shaders and code. The
+diagnostic bits used here (1024 lighting off, 2048 lane-utilisation heatmap, 4096 transmission march off, 8192
+transmission tap off) were reverted with them; the full experiment sources are in the side-session notes folder
+(`final-pass-2026-10-25.md`). **Bench warning from this sitting:** the 60 fps-capped `ship` cases flipped between a
+fast and a slow regime *between runs* (same code: close 1.77 vs 4.0 ms, prepass 0.36 vs 0.93), and arms within one
+run moved ±0.5 ms on forward. Read only in-run differences, and prefer the uncapped `shader` cases (dense/close/complex
+held to ±0.02 ms across arms).
+
+*#19, what the remainder is.* Forward ms per arm, [attribution run](Tools/sdf/bench/runs/20261025-160846-ship-remainder-attribution.json):
+
+| forward ms | close | dense | overview | complex |
+|---|---|---|---|---|
+| A (full) | 3.19 | 2.66 | 2.31 | 2.78 |
+| bit 47 (five SDF stages off) | 1.76 | 2.03 | 1.26 | 0.82 |
+| bit 47 + 1024 (`ClayShade` off too) | 1.19 | 0.90 | 0.86 | 0.46 |
+| bit 64 (march only) | 1.12 | 0.86 | 0.83 | 0.43 |
+| all-mesh (`force_mesh`), whole forward | 0.33 | 0.59 | 1.51 | 0.20 |
+
+So the remainder (47 − 64) is **`ClayShade`, the engine lighting: 0.36–0.6 ms** (dense's 1.13 is a noisy A/B; the strip
+build below reads 0.58). The SDF glue between hit and lighting (`BoilTexOffset`, the model fold, `Material::Init`, the
+cluster re-seat) is 1071 − 64 = **0.03–0.07 ms**. Checked against `sdf_mesh.shader` by source: both call the same
+`ClayShade` (decals, direct + indirect lighting, the MSAA-aware AO gather, fog). Nothing in the SDF path makes the PS run
+per sample (no `SV_SampleIndex`, `sample` inputs or coverage output; `pixelinput.hlsl` has only a `centroid` lightmap UV),
+and the forward depth clamp keeps hidden-surface shading to the 2 u slack. **Lane utilisation is not it:** heatmap 2048
+(the wave's share of lanes reaching shading) reads ≥ 97% for 95–99% of shaded pixels in all four views (silhouettes
+mean 83%).
+
+**The SDF-only part is occupancy.** Runtime skip bits don't change the register allocation, so compile-time strip builds
+(`SDF_SKIP` forced on for chosen bits) measured it. March-only forward (bit 64) as the probe, one run per build:
+
+| build | close | dense | overview | complex |
+|---|---|---|---|---|
+| full | 1.12* | 0.86 | 0.83 | 0.43 |
+| transmission compiled out | 0.66 | 0.85 | 0.83 | 0.43 |
+| only the walk kept (2, 4, 8, 32 out) | 0.64 | 0.84 | 0.82 | 0.42 |
+| only transmission kept (1, 2, 4, 32 out) | 0.64 | 0.83 | 0.81 | 0.42 |
+| all five compiled out | **0.52** | **0.67** | **0.69** | **0.31** |
+
+\*noisy (that run's close A arm spread 4.70–5.45 ms); the three partial builds agree on 0.64.
+
+The material walk alone and transmission alone each set the same register peak; only removing both (with the three small
+stages) drops it, and then the march runs 0.12–0.19 ms faster (lighting at the stripped build's occupancy: 0.34–0.58 ms,
+close to the full build's). This is why the mesh's whole forward pass undercuts the SDF remainder: the same lighting runs
+with more warps in flight there. Turning it into a saving needs both the walk (7 RGBA32F brush texels + the whole
+`BrushDist` primitive switch live at once) and transmission's light loop under the next occupancy step, with no way to
+read register counts on this machine (no Nsight Graphics). Not pursued.
+
+*#19b, doubled box faces.* `Tools/PropGen/gen-*.ps1` write `OverdrawOptimization = $false`, so 146 of the 256 dev props
+(380 of 660 renderers in prefabs/scenes) rasterise both box faces. Forcing it on everywhere, or off everywhere, changes
+nothing measurable ([shader run](Tools/sdf/bench/runs/20261025-173812-shader-overdraw-none-front-depth.json), all
+single-faced vs all both-faced: dense 2.36 → 2.32, close 1.65 → 1.64, complex 1.01 → 1.00 ms; prepass ≤ 0.03 ms; images
+identical). Both faces do reach the shader (a camera inside the box still draws the prop with both on). Why the second
+face is free is unexplained; the measurement is what counts. Related finding: **`SV_IsFrontFace` is inverted relative to
+the box geometry here.** A debug paint of `SV_IsFrontFace` fragments at their raster depth lands behind the props (exit
+faces), so the default path, which clips "front faces", actually marches the ENTRY faces. That is why the prop vanished
+with the camera inside the box (2026-08-25) and why the `OverdrawNearRadii` gate fixes it. The comment at
+`SdfPixelOutput` ("back faces put the hit in front of the raster depth") describes the opposite of what runs.
+
+*#20, transmission.* [trans-fast](Tools/sdf/bench/runs/20261025-163657-ship-trans-fast.json) and
+[lazy-tap](Tools/sdf/bench/runs/20261025-164536-ship-trans-lazy-tap.json), sdf ms (prepass / forward):
+
+| arm | close | dense | overview | complex |
+|---|---|---|---|---|
+| no-op (`trans_fast=0`) | 3.79 (0.92 / 2.42) | 4.67 (0.94 / 3.20)* | 3.41 (0.65 / 2.43) | 2.96 (0.45 / 2.00) |
+| wave-uniform light loop (`trans_fast=1`) | 4.33 (0.92 / 2.43) | 4.61 (0.94 / 2.75) | 3.64 (0.63 / 2.48) | 2.96 (0.45 / 2.01) |
+| transmission off (bit 8) | 3.61 (0.92 / 2.20) | 3.78 (0.94 / 2.36) | 3.41 (0.66 / 2.23) | 2.73 (0.45 / 1.78) |
+| thickness march off (bit 4096) | 3.73 (0.92 / 2.36) | 4.06 (0.94 / 2.64) | 3.49 (0.64 / 2.36) | 2.90 (0.45 / 1.94) |
+| lazy inward tap, its own run | 3.82 (0.92 / 2.46) | 4.79 (1.14 / 3.29) | 3.59 (0.63 / 2.46) | 3.71 (0.45 / 2.04) |
+| inward tap off (bit 8192), same run | 4.30 (0.92 / 2.45) | 4.78 (0.94 / 3.30) | 3.59 (0.62 / 2.38) | 3.73 (0.46 / 2.03) |
+
+\*dense's no-op arm caught a slow rep; read it against A (forward 2.74). The lazy-tap run's own no-op: forward 2.47 / 3.27 / 2.46 / 2.04.
+
+Transmission costs 0.22–0.38 ms of forward. The 6-step thickness march is only 0.06–0.13 ms of it (already gated on
+back-lighting), and the inward tap ~0 (−0.08…+0.01 ms). The wave-uniform rewrite (`ClusterForEach` as in `vr_lighting`,
+light constants once per wave, no `Shadows()` in `Light::Init`) was bit-identical and `same` (forward +0.01 ms): the
+compiler already dropped the unused shadow sample. The lazy tap (taken only when a light's fill weight is non-zero)
+was exact and `same`; with the sun on, every pixel's fill needs it anyway. The rest is the light loop itself plus
+transmission's share of the register peak (#19), which no exact rewrite here reached. With no image change in any kept
+arm, the close-up look check was not needed; the earlier back-lit band fixes are untouched.
+
+*#2, front-face conservative depth.* Built as planned: a static combo `S_FRONT_DEPTH` (feature `F_FRONT_DEPTH`, excluded
+with `F_TRANSLUCENT`) with `SV_DepthLessEqual`; every view is reversed-Z (`GREATER_EQUAL` test; the engine's spot, cube
+and cascade shadow code all linearise reversed-Z), so a hit behind the entry face is a smaller value. Entry faces were
+picked by the box's outward face normal against the view ray (the box mesh got 24 face vertices with real normals; the
+old 8-vertex box measured the same), and the output clamped to the raster depth so the promise always held. The
+renderer swapped a runtime twin (`Material.CreateCopy` + `SetFeature`, keeps the `alphatest` flag) in with
+`SceneObject.SetMaterialOverride` while `_overdrawSafe` held, box proxies in the scene world only, and kept props on the
+plain path while they marched shadows with a shadowed spot/point light inside their box. Verified live by a debug paint
+inside the variant (247 of 256 props on it in the dense view).
+
+| `shader` suite, sdf ms (prepass / forward) | dense | close | complex | dense-4spots | dense-sun | dense-4spots-far |
+|---|---|---|---|---|---|---|
+| no-op arm | 2.34 (0.72 / 1.28) | 1.64 (0.44 / 1.15) | 1.00 (0.22 / 0.73) | 3.38 (0.72 / 1.70) | 3.22 (0.68 / 1.37) | 3.95 (0.75 / 2.40) |
+| front depth | 2.06 (0.70 / 1.25) | 1.64 (0.43 / 1.15) | 1.00 (0.22 / 0.73) | 3.70 (0.70 / 2.07) | 3.38 (0.68 / 1.37) | 3.71 (0.75 / 2.18) |
+
+(From [shader-2](Tools/sdf/bench/runs/20261025-173812-shader-overdraw-none-front-depth.json); the first
+[shader run](Tools/sdf/bench/runs/20261025-172754-shader-overdraw-all-front-depth.json) gave dense / close / complex
+2.32 / 1.65 / 1.01 in every arm, prepass 0.69 / 0.43 / 0.22.) The prepass, where the gain was expected, moved
+−0.03…0 ms; the spot cases' forward swings both ways in every arm, including no-ops. Images identical everywhere. So on
+this GPU, `SV_DepthLessEqual` under a `GREATER_EQUAL` test bought no early rejection (the forum report's "one direction
+doesn't early-cull"). Worth one re-check on the RTX 3060-class target before closing it for good; the variant would be
+the code above.
+
+Process notes: a hotload failed upgrading a new static `List<Vector3>` ("Destination array is too small") and left the
+renderers half-upgraded (everything above the screen's centre line stopped drawing, still reading as "faster"); two
+runs from that state were deleted. Restart play after any hotload error before benching.
 
 Dropped after research: Brixelizer (already have an I8 atlas), hardware-RT bricks (not exposed), Dreams splats,
 Harnack tracing, backface distance fields (bake too slow for boil rebakes), BC4 fields (too coarse at the surface),
