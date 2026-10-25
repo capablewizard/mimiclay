@@ -763,6 +763,28 @@ public static class SdfBrushPacker
 		}
 	}
 
+	/// <summary>True when every packed brush carries the same colour and metal+rough lane. Every material blend in
+	/// sdf_eval's walk is then lerp(a, a, h) = a, and the first Add always replaces the empty-space material outright,
+	/// so the surface material IS that value at every hit — the raymarch skips the walk (SdfUniformMat). Read off the
+	/// packed floats, not the brushes, so groups, the linearised colour and the lane quantisation match exactly.</summary>
+	public static bool TryUniformMaterial( float[] data, int count, int texelsPerBrush, out Vector4 value )
+	{
+		value = default;
+		if ( count <= 0 )
+			return false;
+
+		int stride = texelsPerBrush * 4;
+		for ( int i = 1; i < count; i++ )
+		{
+			int o = i * stride;
+			if ( data[o + 12] != data[12] || data[o + 13] != data[13] || data[o + 14] != data[14] || data[o + 17] != data[17] )
+				return false;
+		}
+
+		value = new Vector4( data[12], data[13], data[14], data[17] );
+		return true;
+	}
+
 	internal static float SrgbToLinear( float c )
 		=> c <= 0.04045f ? c / 12.92f : MathF.Pow( (c + 0.055f) / 1.055f, 2.4f );
 

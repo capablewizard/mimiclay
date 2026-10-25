@@ -617,6 +617,10 @@ PS
 	Texture2D g_tMaterialMetal < Attribute( "MaterialMetal" ); >; // RGBA8: metalness, boundary flag
 	float3    g_vMaterialDims  < Attribute( "MaterialDims" ); Default3( 2.0, 2.0, 2.0 ); >;
 	int       g_nSdfMaterialTex < Attribute( "SdfMaterialTex" ); Default( 0 ); >; // 1 = bake + boundary fallback (exact), 2 = bake everywhere
+	// Single-material prop (SdfBrushPacker.TryUniformMaterial): every packed brush has the same colour + metal/rough
+	// lane, so every blend in the walk is lerp(a, a, h) = a — the material IS that value everywhere, no walk needed.
+	int       g_nSdfUniformMat  < Attribute( "SdfUniformMat" ); Default( 0 ); >;
+	float4    g_vSdfUniformMat  < Attribute( "SdfUniformMatValue" ); Default4( 1.0, 1.0, 1.0, 0.0 ); >; // linear rgb, packed metal+rough lane
 
 	SdfSurface SdfMaterialSample( float3 lp )
 	{
@@ -641,6 +645,17 @@ PS
 
 	SdfSurface SdfShade( float3 p )
 	{
+		if ( g_nSdfUniformMat != 0 )
+		{
+			// Same lane decode as SdfSurfaceBrush, so the result matches the walk.
+			SdfSurface u;
+			float roughQ = floor( g_vSdfUniformMat.w / 1024.0 );
+			u.col = g_vSdfUniformMat.rgb;
+			u.metal = (g_vSdfUniformMat.w - roughQ * 1024.0) / 1023.0;
+			u.rough = roughQ / 1023.0;
+			return u;
+		}
+
 		float3 lp = WorldToModelPos( p );
 		if ( g_nSdfMaterialTex != 0 )
 		{
@@ -1094,9 +1109,12 @@ PS
 		// The caster bias uses the epsilon from BEFORE the shadow-texel floor. The floor only lets the march stop sooner;
 		// the secant refine still lands the hit on the surface. Biasing by 2 × the floored epsilon pushed far-spot casters
 		// under the floor (683 u spot: ~2.3 u texels → ~9 u extra push) and erased a dinner plate's shadow (2026-10-24).
+		// Gated on IsShadowView ALONE (it covers sun cascades too); ortho only picks which knob. An ortho EDITOR
+		// viewport is a camera view and must march like one.
 		s_marchEps = eps;
+		bool shadowView = IsShadowView();
 		float texelEps = ortho ? g_flSdfShadowTexelEps : g_flSdfShadowTexelEpsLocal;
-		if ( ( ortho || IsShadowView() ) && texelEps > 0.0 )
+		if ( shadowView && texelEps > 0.0 )
 		{
 			// Shadow-map texel in world units: the pixel footprint with its along-ray part removed (a face
 			// oblique to the light stretches ddx along the ray; the perpendicular part is the texel itself).
@@ -1154,7 +1172,6 @@ PS
 		// stores one depth per texel, and that pass is memory-latency-bound (each step is a cache-missing field read),
 		// so it can trade precision for steps far more freely than the camera: cap the step count, and take longer
 		// steps than the displacement safety allows. 0 / 1 = unchanged.
-		bool shadowView = ortho || IsShadowView();
 		if ( shadowView )
 		{
 			if ( g_nSdfShadowMaxSteps > 0 )
@@ -1373,7 +1390,7 @@ PS
 		if ( !IsShadowView() || SDF_SKIP( 16 ) )
 			n = SdfNormal( p ); // shared by both output paths below
 		float3 pd = p;
-		if ( IsOrthoView() )
+		if ( IsOrthoView() && IsShadowView() ) // sun cascades only — never an ortho editor viewport's depth
 			pd += normalize( g_vCameraDirWs ) * g_flSdfShadowBias;
 		// Perspective SHADOW view (spot / point light face): meshes land in this shadow map with the
 		// engine's rasterizer depth bias + slope-scale baked in (r.shadows.bias/slopescale), but

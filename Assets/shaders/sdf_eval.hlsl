@@ -526,10 +526,12 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 
 	// The same incremental AABB early-out as SdfDist: a far brush can't change the blended distance,
 	// and it can't change the colour either — the colour lerps use the same h factors. A Colour brush
-	// has no distance term: it only matters within half its feather of the boundary.
+	// has no distance term: it only matters within half its feather of the boundary. A Cutout needs BOTH
+	// bounds: its shell geometry (as SdfDist) and its recolour edge, which reaches half the AA band outside
+	// the brush regardless of Blend/Gap (Blend 0 + Gap 0 at the surface would otherwise cull its outer half).
 	float cullT = (D.w < 0.5) ? d + B.w
 		: (D.w < 1.5) ? B.w - d
-		: (D.w < 2.5) ? B.w - d + E.z
+		: (D.w < 2.5) ? max( B.w - d + E.z, 0.5 * SDF_CUTOUT_COLOR_EDGE )
 		: 0.5 * max( B.w, SDF_COLOUR_EDGE_FLOOR );
 	if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > cullT )
 		return;

@@ -105,6 +105,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[ConVar( "mimiclay_sdf_material_use" )]
 	public static int MaterialTexMode { get; set; } = 0;
 
+	/// <summary>Skip the per-pixel material walk on props whose brushes all share one colour + metal/rough
+	/// (SdfBrushPacker.TryUniformMaterial) — exact, the walk could only return that value. Off = always walk (A/B).</summary>
+	[ConVar( "mimiclay_sdf_uniform_material" )]
+	public static bool UniformMaterialEnabled { get; set; } = true;
+
 	/// <summary>Hide every SDF prop — raymarched surface AND sibling mesh. The control frame for the
 	/// SDF benchmark (Editor/SdfBench.cs): GPU time with props minus GPU time without them.</summary>
 	[ConVar( "mimiclay_sdf_hide_all" )]
@@ -1559,6 +1564,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "MaterialTex", material ? _fieldGpu.MaterialTex : Texture.White );
 		_so.Attributes.Set( "MaterialMetal", material ? _fieldGpu.MaterialMetal : Texture.White );
 		if ( material ) _so.Attributes.Set( "MaterialDims", _fieldGpu.MaterialDims );
+		_so.Attributes.Set( "SdfUniformMat", UniformMaterialEnabled && _uniformMat ? 1 : 0 );
+		_so.Attributes.Set( "SdfUniformMatValue", _uniformMatValue );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
 		// Displacement look (amp/freq) lives on THIS component (see the DispAmp doc for why it left
@@ -1739,6 +1746,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// Pack buffers are kept across packs — the packer clears them itself, and allocating ~18KB per pack was a
 	// steady source of GC pressure (see the shape-pass note in Refresh).
 	float[] _packData, _packSpline;
+	bool _uniformMat;
+	Vector4 _uniformMatValue;
 
 	int PackBrushes( List<SdfBrush> brushes )
 	{
@@ -1750,6 +1759,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// the brushes being baked to world, so both consumers share one evaluator (sdf_eval.hlsl) and the
 		// packed data is placement-invariant.
 		int written = SdfBrushPacker.Pack( brushes, global::Transform.Zero, data, spline, MaxBrushes, TexelsPerBrush, MaxSplinePoints, _textAtlas );
+		_uniformMat = SdfBrushPacker.TryUniformMaterial( data, written, TexelsPerBrush, out _uniformMatValue );
 
 		_dataTex.Update<float>( data, 0, 0, MaxBrushes * TexelsPerBrush, 1 );
 		_splineTex.Update<float>( spline, 0, 0, MaxSplinePoints, 1 );
