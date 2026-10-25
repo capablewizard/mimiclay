@@ -205,6 +205,8 @@ PS
 	//   512 material channels view: R = metalness, G = roughness
 	int       g_nSdfDebugSkip   < Attribute( "SdfDebugSkip" ); Default( 0 ); >;
 	#define SDF_SKIP( bit ) ( ( g_nSdfDebugSkip & ( bit ) ) != 0 )
+	// Silhouette AA ramp width in pixels (mimiclay_sdf_edge_aa), 0 = off. See SdfEdgeCoverage.
+	float     g_flSdfEdgeAA     < Attribute( "SdfEdgeAA" ); Default( 0.0 ); >;
 	// Steps the last RayMarchHit took (heatmap only).
 	static int s_marchSteps = 0;
 	// SHADOW views (sun cascades and spot/point faces): hit epsilon floor in SHADOW-MAP TEXELS. A shadow map
@@ -997,6 +999,12 @@ PS
 	// stays the frame's GAME camera; in every camera-driven view (forward, prepass, overlay, editor
 	// viewport) the two are identical. Drives the caster bias in MainPs' Depth output.
 	static bool s_shadowView = false;
+	// Silhouette AA (FORWARD only, mimiclay_sdf_edge_aa): the march's closest approach to the surface, kept as the
+	// angular ratio d/t (sampled distance over ray length) and the t it happened at, plus the angle one pixel spans.
+	// A miss ray that came within a pixel of the edge spends it as SV_Coverage in MainPs (SdfEdgeCoverage).
+	static float s_edgeBestR = 1e9;
+	static float s_edgeBestT = 0.0;
+	static float s_edgePixAng = 0.0;
 
 	// Sphere-trace the field along the current view ray (camera in the forward pass, light
 	// in the shadow/depth pass). Returns false on a miss, else the world-space hit point.
@@ -1042,6 +1050,21 @@ PS
 			rd = normalize( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
 			s_shadowView = length( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) > 0.5;
 		}
+
+	#if ( S_MODE_DEPTH == 0 )
+		// Pixel angle for silhouette AA: the proxy-face footprint with its along-ray part removed, over the face's
+		// distance. min() of the two axes: at a box edge one derivative straddles two faces and reads long.
+		s_edgeBestR = 1e9;
+		s_edgeBestT = 0.0;
+		s_edgePixAng = 0.0;
+		if ( !ortho )
+		{
+			float3 ex = wpDx - rd * dot( wpDx, rd );
+			float3 ey = wpDy - rd * dot( wpDy, rd );
+			float tFace = length( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
+			s_edgePixAng = min( length( ex ), length( ey ) ) / max( tFace, 1e-3 );
+		}
+	#endif
 
 		// Bracket the march: a tight bounding sphere (round props) or the bounds AABB. Runtime-branched
 		// (uniform per draw) — this was the D_TIGHT_BOUNDS combo.
@@ -1217,6 +1240,14 @@ PS
 				hitP = ro + rd * ( t + refine );
 				return true;
 			}
+		#if ( S_MODE_DEPTH == 0 )
+			// Closest approach so far, as an angle (one multiply per step; the divide only on improvement).
+			if ( d < s_edgeBestR * t )
+			{
+				s_edgeBestR = d / max( t, 1e-3 );
+				s_edgeBestT = t;
+			}
+		#endif
 			prevD = d;
 			prevStep = d * stepScale;
 			t += prevStep;
@@ -1249,13 +1280,45 @@ PS
 	// single hint is ever valid; a violated hint lets the GPU wrongly early-cull marched pixels
 	// (seen as background punching through the prop). Inter-object occlusion rides the engine depth
 	// chain via the prepass instead — no early-Z promise needed.
+#if ( S_MODE_DEPTH == 0 )
+	// Forward also writes the MSAA sample mask: all samples on a hit, a fraction on a silhouette near-miss.
+	struct SdfPixelOutput { float4 vColor : SV_Target0; float flDepth : SV_Depth; uint nCoverage : SV_Coverage; };
+
+	// Silhouette AA. MSAA alone can't anti-alias the raymarch: the rasterised proxy box covers every sample of an
+	// edge pixel and the hit/miss is decided once per pixel, so the edge is a hard per-pixel step. A MISS ray whose
+	// closest approach came within g_flSdfEdgeAA pixels of the hit shell instead shades at that closest point and
+	// covers that fraction of the samples (ramp 1 → 0 just outside the edge); the resolve blends it with the
+	// background. The prepass leaves these samples alone — our nearer depth passes the forward depth test anyway.
+	// Perspective camera views only (not the viewmodel, whose overlay prepass stencil-claims its pixels).
+	bool SdfEdgeCoverage( PixelInput i, out float3 p, out uint mask )
+	{
+		p = float3( 0, 0, 0 );
+		mask = 0;
+		if ( g_flSdfEdgeAA <= 0.0 || g_nMSAASampleCount <= 1 || s_edgePixAng <= 0.0 || s_edgeBestT <= 0.0 || g_nSdfViewmodel != 0 )
+			return false;
+		float t = s_edgeBestT;
+		float pixels = ( s_edgeBestR * t - s_marchEps ) / ( s_edgePixAng * t ); // distance outside the hit shell
+		float cov = saturate( 1.0 - pixels / g_flSdfEdgeAA );
+		uint n = (uint)( cov * g_nMSAASampleCount + 0.5 );
+		if ( n == 0 )
+			return false;
+		mask = n >= 32 ? 0xFFFFFFFF : ( 1u << n ) - 1u;
+		float3 rd = normalize( i.vPositionWithOffsetWs + ( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) );
+		p = g_vCameraPositionWs + rd * t;
+		return true;
+	}
+#else
 	struct SdfPixelOutput { float4 vColor : SV_Target0; float flDepth : SV_Depth; };
+#endif
 
 	SdfPixelOutput MainPs( PixelInput i, bool isFrontFace : SV_IsFrontFace )
 	{
 		SdfPixelOutput o;
 		o.vColor = float4( 0, 0, 0, 0 );
 		o.flDepth = 1.0;
+	#if ( S_MODE_DEPTH == 0 )
+		o.nCoverage = 0xFFFFFFFF;
+	#endif
 
 	#if ( S_TRANSLUCENT && S_MODE_DEPTH )
 		// Translucent (viewmodel) variant: never in the depth prepass or shadow views — the whole point
@@ -1370,9 +1433,12 @@ PS
 				o.flDepth = i.vPositionSs.z;
 				return o;
 			}
+			if ( !SdfEdgeCoverage( i, p, o.nCoverage ) )
 		#endif
-			clip( -1 );
-			return o;
+			{
+				clip( -1 );
+				return o;
+			}
 		}
 
 	#if ( S_MODE_DEPTH )

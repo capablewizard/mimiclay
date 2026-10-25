@@ -112,6 +112,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[ConVar( "mimiclay_sdf_uniform_material" )]
 	public static bool UniformMaterialEnabled { get; set; } = true;
 
+	/// <summary>Silhouette anti-aliasing for the raymarch. MSAA can't see the SDF's edge (the rasterised proxy box
+	/// covers every sample; the hit/miss is decided once per pixel), so the forward march tracks how close a MISS ray
+	/// came to the surface and spends that as an SV_Coverage mask: a near-miss pixel shades at its closest approach
+	/// and covers a fraction of the samples, which the MSAA resolve blends with the background. Value = ramp width in
+	/// pixels (1 = one-pixel ramp just outside the edge), 0 = off. Needs MSAA; a no-op on single-sample targets.</summary>
+	[ConVar( "mimiclay_sdf_edge_aa" )]
+	public static float EdgeAntiAlias { get; set; } = 1f;
+
 	/// <summary>Hide every SDF prop — raymarched surface AND sibling mesh. The control frame for the
 	/// SDF benchmark (Editor/SdfBench.cs): GPU time with props minus GPU time without them.</summary>
 	/// <summary>Round 2 #3 experiment A: the material walk reads the brush texels from a structured buffer (BrushBuf, a
@@ -1672,6 +1680,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "SdfShadowStepScale", SdfShadowSettings.StepScale );
 		_so.Attributes.Set( "SdfShadowNearMiss", SdfShadowSettings.NearMiss );
 		_so.Attributes.Set( "SdfDebugSkip", DebugSkip );
+		_so.Attributes.Set( "SdfEdgeAA", EdgeAntiAlias );
 		// Baked material (prototype): sample colour/metal/rough from the field's material bake instead of walking the
 		// brushes per pixel. Needs mimiclay_sdf_material_bake on (and the field rebaked) to have anything to read.
 		bool material = MaterialTexMode > 0 && _fieldGpu is not null && _fieldGpu.MaterialTex.IsValid();
