@@ -44,14 +44,4 @@ public static class SdfShadowSettings
 	/// at ~half steps (the lumps steepen the field); in a shadow map a missed lump is invisible. Measured free: 2.</summary>
 	[ConVar( "mimiclay_sdf_shadow_step_scale" )]
 	public static float StepScale { get; set; } = 2f;
-
-	/// <summary>Shadow-view step cap, 0 = the camera's budget. Off: no gain for spots, and the sun only gained with
-	/// <see cref="NearMiss"/>, which caused false hits.</summary>
-	[ConVar( "mimiclay_sdf_shadow_steps" )]
-	public static int MaxSteps { get; set; } = 0;
-
-	/// <summary>A shadow ray that runs out of steps within this many units of a surface counts as a hit (only matters
-	/// with <see cref="MaxSteps"/>). 0 = off.</summary>
-	[ConVar( "mimiclay_sdf_shadow_near_miss" )]
-	public static float NearMiss { get; set; } = 0f;
 }

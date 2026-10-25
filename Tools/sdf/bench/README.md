@@ -102,7 +102,7 @@ judge noise by, so comparisons label its cases `1 rep` instead of giving a verdi
 ## Two ways to A/B
 
 **Behind a ConVar: in-run A/B (preferred).** Put the optimisation behind a runtime toggle (a ConVar that drives a
-shader uniform, as `mimiclay_sdf_reuse_prepass` does). Then:
+shader uniform, as `mimiclay_sdf_group_cull` does). Then:
 
 ```text
 sdf_bench_run {"suite":"shader","label":"xyz","ab":"mimiclay_sdf_my_toggle=1"}

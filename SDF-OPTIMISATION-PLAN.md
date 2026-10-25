@@ -536,6 +536,19 @@ Dropped after research: Brixelizer (already have an I8 atlas), hardware-RT brick
 Harnack tracing, backface distance fields (bake too slow for boil rebakes), BC4 fields (too coarse at the surface),
 general per-pixel brush-cell lists (tried 2026-10-24, nothing in crowds).
 
+## Pre-merge trim (2026-10-25)
+
+Removed every path that was OFF by default with no measured gain: prepass depth reuse, the baked-material prototype
+(`sdf_material_cs`), the brush structured buffer, the static shadow cache (`SdfStaticShadows`), the shadow step cap /
+near-miss knobs, and debug bits 16 / 256 / 512. All of it is recoverable from commit `a1507fd`. Kept: group cull (exact,
+still default off), uniform material, register reorder, edge AA, FXAA. Verified back to back: forward registers 123.3 →
+123.4 per thread (Nsight), images identical in all 10 cases, uncapped `shader` suite same or faster in every case
+([before](Tools/sdf/bench/runs/20261025-211255-shader-trim-before.json) /
+[after](Tools/sdf/bench/runs/20261025-212040-shader-trim-after.json)), main-thread SDF update 1.62 → 1.34 ms/frame
+(no per-repack brush-buffer upload or static-shadow bookkeeping). The capped `ship` cases swung both ways between runs,
+the known regime flip ([before](Tools/sdf/bench/runs/20261025-211643-ship-trim-before.json) /
+[after](Tools/sdf/bench/runs/20261025-212406-ship-trim-after.json)).
+
 ## Rules
 
 - Keep 8× MSAA, resolution, field density and the SDF→mesh hand-off distances fixed while measuring. Lowering any

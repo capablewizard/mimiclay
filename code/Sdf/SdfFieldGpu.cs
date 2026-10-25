@@ -69,73 +69,11 @@ public sealed class SdfFieldGpu
 		// RenderAttributes owns strong texture handles independently of the Texture wrappers.
 		_cs?.Attributes.Clear();
 		ReleaseSparseResources();
-		ReleaseMaterial();
 		Texture?.Dispose(); Texture = null;
 		_brushTex?.Dispose(); _brushTex = null;
 		_splineTex?.Dispose(); _splineTex = null;
 		_textAtlas.Dispose();
 		_nx = _ny = _nz = 0;
-	}
-
-	// ---- Baked material (sdf_material_cs): colour/metal/rough per voxel so the raymarch can skip its per-pixel
-	// brush walk (SdfRaymarchRenderer.MaterialTexEnabled). Prototype, off by default.
-
-	/// <summary>Bake colour/metal/rough alongside the field. Part of the renderer's field hash, so toggling rebakes.</summary>
-	[ConVar( "mimiclay_sdf_material_bake" )]
-	public static bool MaterialBakeEnabled { get; set; } = false;
-
-	/// <summary>Material resolution = field surface resolution / this (per axis). 2 = an eighth of the voxels.</summary>
-	[ConVar( "mimiclay_sdf_material_div" )]
-	public static int MaterialDivisor { get; set; } = 2;
-
-	public Texture MaterialTex { get; private set; }
-	public Texture MaterialMetal { get; private set; }
-	public Vector3 MaterialDims { get; private set; }
-	ComputeShader _materialCs;
-
-	void BakeMaterial( int count, int snx, int sny, int snz )
-	{
-		// Samples on the inclusive corners of [Mins, Maxs]: (n-1)/div cells per axis. Slices stack along Y, so keep
-		// Y·Z under the 16384 texture-height limit by coarsening further if needed.
-		int div = Math.Max( MaterialDivisor, 1 );
-		int mx, my, mz;
-		while ( true )
-		{
-			mx = Math.Max( 2, (snx - 1) / div + 1 );
-			my = Math.Max( 2, (sny - 1) / div + 1 );
-			mz = Math.Max( 2, (snz - 1) / div + 1 );
-			if ( my * mz <= 16384 ) break;
-			div++;
-		}
-
-		if ( !MaterialTex.IsValid() || MaterialTex.Width != mx || MaterialTex.Height != my * mz )
-		{
-			ReleaseMaterial();
-			MaterialTex = Texture.Create( mx, my * mz ).WithFormat( ImageFormat.RGBA8888 ).WithUAVBinding().Finish();
-			MaterialMetal = Texture.Create( mx, my * mz ).WithFormat( ImageFormat.RGBA8888 ).WithUAVBinding().Finish();
-		}
-		MaterialDims = new Vector3( mx, my, mz );
-
-		_materialCs ??= new ComputeShader( "sdf_material_cs" );
-		_materialCs.Attributes.Set( "MaterialOut", MaterialTex );
-		_materialCs.Attributes.Set( "MetalOut", MaterialMetal );
-		_materialCs.Attributes.Set( "BrushData", _brushTex );
-		_materialCs.Attributes.Set( "SplineData", _splineTex );
-		_materialCs.Attributes.Set( "TextSdf", _textAtlas.Texture );
-		_materialCs.Attributes.Set( "BrushCount", count );
-		_materialCs.Attributes.Set( "SdfCull", 0 ); // exact walk: the boundary test needs every brush, culled or not
-		_materialCs.Attributes.Set( "FieldMin", Mins );
-		_materialCs.Attributes.Set( "FieldMax", Maxs );
-		_materialCs.Attributes.Set( "MaterialDims", MaterialDims );
-		_materialCs.Dispatch( mx, my, mz );
-	}
-
-	void ReleaseMaterial()
-	{
-		_materialCs?.Attributes.Clear();
-		MaterialTex?.Dispose(); MaterialTex = null;
-		MaterialMetal?.Dispose(); MaterialMetal = null;
-		MaterialDims = default;
 	}
 
 	void ReleaseSparseResources()
@@ -156,8 +94,7 @@ public sealed class SdfFieldGpu
 	/// <summary>Owned GPU payload, including persistent bake inputs. Excludes driver overhead and staging.</summary>
 	public long EstimatedBytes => FieldTextureBytes + InputTextureBytes + TextAtlasBytes + (_counter is null ? 0 : 4);
 	public long FieldTextureBytes => SdfGpuMemory.TextureBytes( Texture ) + SdfGpuMemory.TextureBytes( Occupancy )
-		+ SdfGpuMemory.TextureBytes( Atlas ) + SdfGpuMemory.TextureBytes( IndirectionTex )
-		+ SdfGpuMemory.TextureBytes( MaterialTex ) + SdfGpuMemory.TextureBytes( MaterialMetal );
+		+ SdfGpuMemory.TextureBytes( Atlas ) + SdfGpuMemory.TextureBytes( IndirectionTex );
 	public long InputTextureBytes => SdfGpuMemory.TextureBytes( _brushTex ) + SdfGpuMemory.TextureBytes( _splineTex );
 	public long TextAtlasBytes => _textAtlas.EstimatedBytes;
 
@@ -323,11 +260,6 @@ public sealed class SdfFieldGpu
 		_cs.Attributes.Set( "FieldDims", Dims );
 		SetDisplacement( _cs );
 		_cs.Dispatch( fnx, fny, fnz ); // thread counts (s&box divides by the shader's numthreads)
-
-		if ( MaterialBakeEnabled )
-			BakeMaterial( count, snx, sny, snz );
-		else
-			ReleaseMaterial();
 
 		// The classify→alloc→fill passes only feed the sparse atlas. Skip them entirely when the prop isn't using
 		// sparse — otherwise every edit pays to build an atlas the dense path never samples. Run at the SURFACE res.

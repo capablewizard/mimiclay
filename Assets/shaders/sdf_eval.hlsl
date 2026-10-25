@@ -23,23 +23,8 @@ int   g_nSdfCull    < Attribute( "SdfCull" ); Default( 1 ); >;  // per-brush AAB
 // packs the group records (SdfBrushPacker.PackGroups), so every other consumer leaves this at 0.
 int   g_nSdfGroupCull < Attribute( "SdfGroupCull" ); Default( 0 ); >;
 
-#ifdef SDF_BRUSH_BUFFER
-// The same packed texels as a structured buffer (SdfRaymarchRenderer's BrushBuf), read when SdfBrushBuf is set. The
-// brush index is the walk's loop counter, so every lane reads one address: a buffer load instead of a texture fetch.
-// Raymarch only — the compute shaders keep the texture.
-StructuredBuffer<float4> g_BrushBuf < Attribute( "BrushBuf" ); >;
-int   g_nSdfBrushBuf < Attribute( "SdfBrushBuf" ); Default( 0 ); >;
-#endif
-
 #define TEXELS_PER_BRUSH 7 // must match SdfRaymarchRenderer.TexelsPerBrush
-float4 LoadBrushTexel( int i )
-{
-#ifdef SDF_BRUSH_BUFFER
-	if ( g_nSdfBrushBuf != 0 )
-		return g_BrushBuf[i];
-#endif
-	return g_tBrushData.Load( int3( i, 0, 0 ) );
-}
+float4 LoadBrushTexel( int i ) { return g_tBrushData.Load( int3( i, 0, 0 ) ); }
 float4 LoadBrush( int k, int slot ) { return LoadBrushTexel( k * TEXELS_PER_BRUSH + slot ); }
 float4 LoadSplinePoint( int i )     { return g_tSplineData.Load( int3( i, 0, 0 ) ); }
 
@@ -527,12 +512,9 @@ struct SdfSurface { float3 col; float metal; float rough; };
 // Tighter than the cutout band: paint edges are in plain view and want to read crisp.
 #define SDF_COLOUR_EDGE_FLOOR 0.25
 
-// Material-walk diagnostics (sdf_raymarch debug bit 256): brushes that survived the cull and were evaluated.
-static int s_surfaceEvals = 0;
-
 // ONE brush's contribution to the material walk at local point lp: the incremental AABB cull, then the blend
-// of colour/metal/rough by the same smooth factors as the geometry. Shared by the full walk below and the
-// raymarch's per-cell brush list (sdf_raymarch SdfSurfaceCells), so both run identical per-brush maths.
+// of colour/metal/rough by the same smooth factors as the geometry. SdfSurfaceLocal below is its only call site
+// (a second inlined copy hung the editor's shader compile, 2026-10-24).
 void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 {
 	float4 A = LoadBrush( k, 0 );
@@ -555,7 +537,6 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 	if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > cullT )
 		return;
 
-	s_surfaceEvals++;
 	float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
 	float kk = B.w;
 	// Metalness + roughness ride one lane as two 10-bit integers (round(m*1023) + 1024*round(r*1023)) —
@@ -635,7 +616,6 @@ SdfSurface SdfSurfaceEmpty()
 {
 	SdfSurface s;
 	s.col = float3( 1, 1, 1 ); s.metal = 0.0; s.rough = 1.0; // empty-space material; the first brush overrides it
-	s_surfaceEvals = 0;
 	return s;
 }
 
