@@ -60,6 +60,55 @@ Baseline: [20261025-111940-shader-baseline-2026-10-25](Tools/sdf/bench/runs/2026
 (shadows 1.03), dense-sun 5.66 (shadows 1.30), dense-4spots-far 4.76. LOD-suite context: distant tiny props cost
 1.8–2.1 ms in the prepass.
 
+**Shipping-settings costs** ([lod-baseline-2026-10-25](Tools/sdf/bench/runs/20261025-130127-lod-lod-baseline-2026-10-25.json),
+`lod` policy = adaptive + shadow LOD + mesh hand-off, four spots): close 4.00 ms (prepass 1.00 / forward 2.45 / shadows
+0.45), dense 4.37 (1.00 / 2.80 / 0.46), overview 3.54 (0.67 / 2.35 / 0.46), far 1.44, distant 0.21. Only 3–9 props march
+their shadows, and the ~0.45 ms shadow cost barely changes with zero marched casters, so it's the mesh casters, not the
+SDF march. The mesh hand-off already removes the distant-prop prepass cost (distant prepass 0.03 ms). **In game the
+forward pass is ~60–65% of SDF time**, so forward items (material walk #3, shading taps, grazing steps #12) outrank the
+shadow rows (#1, #5, shadow half of #2) and #6.
+
+**Forward-pass attribution, shipping settings** ([forward-attribution](Tools/sdf/bench/runs/20261025-141557-ship-forward-attribution.json),
+new `ship` suite = the lod suite's four `lod`-policy views, 8× MSAA, in-run `mimiclay_sdf_debug_skip` arms, 3 × 3 s).
+Forward ms saved by switching each stage off (diagnostic only — every arm changes the image):
+
+| stage (bit) | close | dense | complex | overview* |
+|---|---|---|---|---|
+| forward total (A) | 2.51 | 2.63 | 2.50 | ~2.9 |
+| material walk (1) | 0.75 | 0.49 | 0.70 | 1.15 |
+| transmission (8) | 0.26 | 0.31 | 0.27 | 0.58 |
+| triplanar maps (2) | 0.14 | 0.16 | 0.15 | 0.42 |
+| forward normals (32) | 0.08 | 0.12 | 0.08 | 0.20 |
+| curvature (4) | 0.12 | 0.07 | 0.06 | ~0 |
+| all five (47) | 1.32 | 1.13 | 1.67 | 1.28 |
+| everything after the hit (64 = march only) | 1.85 | 1.78 | 2.07 | 1.87 |
+
+\*overview's single arms are noisy (they sum past the all-five arm); read close/dense/complex.
+
+Reading it: the forward MARCH is only 0.4–0.9 ms; **~70–80% of the forward pass is shading after the hit**. Of that, the
+five SDF stages are 1.1–1.7 ms, and the remaining 0.4–0.6 ms (64 minus 47) is lighting + output (engine lights,
+clustered lights/decals, envmap, `clay_shading`). The material walk is still the largest single stage (0.5–0.75 ms) —
+#3/#3b's loop savings didn't touch it, so its cost is evaluating the 2–5 brushes that survive. Transmission
+(0.26–0.31 ms) is second and has had no work yet.
+
+**SDF vs mesh, shipping settings** ([mesh-vs-sdf](Tools/sdf/bench/runs/20261025-143119-ship-mesh-vs-sdf.json), `ship`
+suite, in-run A/B with the new diagnostic `mimiclay_sdf_force_mesh=1`: every prop that would raymarch draws its mesh
+LOD0 instead; 256/256 meshes present except the 083 rug):
+
+| case | SDF sdf ms (prepass / forward / shadows) | all-mesh sdf ms (prepass / forward / shadows) | gap |
+|---|---|---|---|
+| close-lod | 3.98 (0.93 / 2.50 / 0.42) | 0.89 (0.08 / 0.33 / 0.46) | −3.09 (−78%) |
+| dense-lod | 4.09 (0.94 / 2.66 / 0.44) | 1.33 (0.23 / 0.59 / 0.46) | −2.77 (−68%) |
+| overview-lod | 3.65 (0.68 / 2.45 / 0.47) | 1.71 (0.28 / 0.93 / 0.46) | −1.94 (−53%) |
+| complex-lod | 3.02 (0.46 / 1.93 / 0.46) | 0.73 (0.04 / 0.19 / 0.46) | −2.28 (−76%) |
+
+The raymarched path costs **2.3–4.5× the mesh path**, a 1.9–3.1 ms gap at these views; shadows are identical (both are
+mesh casters in shipping). This is the ceiling for any SDF-side optimisation. Images differ heavily (mesh LOD0 is
+lower fidelity and the mesh shader's look isn't identical), so it's a cost comparison, not a like-for-like quality one.
+Open question: the mesh's WHOLE forward pass (0.19–0.93 ms) is less than the SDF forward's post-hit remainder after the
+five SDF stages (0.4–0.6 ms) — compare the two shading paths (`clay_shading`, SV_Depth/early-Z, cluster re-seat) for
+SDF-only overhead.
+
 Ranked by expected impact, not effort. Savings are estimates until a run says otherwise. Work one item at a time
 (one editor, one GPU, and nearly every item touches `sdf_raymarch.shader` / `sdf_eval.hlsl`): gate it behind a
 ConVar, bench with an in-run `ab` arm, commit, then fill in Run / Verdict here.
@@ -134,7 +183,8 @@ the session's scratchpad. Copies of the two scripts are in the side-session note
 | 1 | Screen-traced SDF shadows instead of shadow-map marching (Wright, SIGGRAPH 2015) | shadow passes 1.0–1.3 ms per light type | 0.5–1 ms+, grows with lights | blocked: needs engine PR (see note below) | | partly feasible |
 | 1b | Engine static shadow cache: flag SDF props `StaticObject` (+ static lights), invalidate by nudging the light on edit/boil/claim | spot/point shadow re-renders of unchanged props | most of the static props' 1.03 ms spot share | done, ConVar `mimiclay_sdf_static_shadows` ships OFF (note below) | [static-shadows](Tools/sdf/bench/runs/20261025-123737-shader-static-shadows.json) | bench win: spot shadows 1.01 → 0.04 ms (dense-4spots), 0.39 → 0.03 ms (far), images identical; in game ≈ 0 today |
 | 2 | Conservative depth via FRONT faces (`SV_DepthGreaterEqual`/`LessEqual` per depth direction), fallback shader when camera/light is inside the box | prepass + shadows on hidden layers | 0.3–1.0 ms | todo | | |
-| 3 | Brush data in a constant / structured buffer read at a wave-uniform index (bake: groupshared preload) | material walk 0.7–1.0 ms | 0.2–0.5 ms | todo | | |
+| 3 | Brush data in a constant / structured buffer read at a wave-uniform index (bake: groupshared preload) | material walk 0.7–1.0 ms | 0.2–0.5 ms | tried, ships OFF: structured buffer (a cbuffer can't hold persistent per-object data, note below), ConVar `mimiclay_sdf_brush_buffer` | [brush-buffer-groupcull](Tools/sdf/bench/runs/20261025-132210-shader-brush-buffer-groupcull.json) (+ [confirm](Tools/sdf/bench/runs/20261025-133138-shader-brush-buffer-groupcull-confirm.json), [noop](Tools/sdf/bench/runs/20261025-134424-shader-brush-buffer-groupcull-noop.json)) | `same`: forward −0.03…−0.06 ms alone, images identical |
+| 3b | Order-preserving group cull: one record per 4 packed brushes (union AABB + widest per-op threshold), skip the run when its box is past the threshold | material walk iterations | 0.1–0.3 ms | tried, ships OFF: ConVar `mimiclay_sdf_group_cull` (1 = wave-uniform skip, 2 = per-lane jump) | same runs as #3 | `same` by the bench rule, but complex forward −0.11…−0.15 ms in every run; with #3 −0.13…−0.20 ms; images bit-identical (note below) |
 | 4 | Cone march shared across a wave (bounding cone of the lanes' rays, uniform steps, then per-lane) | empty-space steps, all passes | 0.2–0.6 ms | todo | | |
 | 5 | L2-resident shadow field (~32³ R8 per prop, shadow views only) | cold-L2 shadow pass | 0.3–0.6 ms; moot if #1 lands | todo | | |
 | 6 | Helper-lane early exit (`IsHelperLane()`) in the camera prepass after `wpDx`/`wpDy` | distant/tiny props, silhouettes | 0.2–0.5 ms far views | todo | | |
@@ -156,6 +206,40 @@ close 1.73 / 1.71 / 1.74, complex 1.32 / 1.33 / 1.26. The SPIR-V did change (+0.
 already sunk the loads. The likely reason it doesn't pay: a brush's 7 texels are adjacent (`k * 7 + slot`, 112 B),
 so a culled brush still costs about one cache line either way. Fewer brush iterations or wave-uniform reads (#3) is
 the lever, not fewer texels per iteration. The `SdfDist` bake variant was not tried.
+
+**#3 / #3b result (2026-10-25, in-run A/B, 8× MSAA, 4 s samples; 3 runs, 3–5 repeats).** Both are runtime uniforms
+on the same shader. Forward Δ ms against the run's own A arm (uncapped cases; the spot cases' forward moved ±0.4 ms in
+every arm alike, including the no-op, so they're not read here):
+
+| arm | dense | close | complex | runs |
+|---|---|---|---|---|
+| #3 buffer alone | −0.05 | −0.06 | −0.03 | 1 |
+| #3b mode 1 alone | −0.01 | −0.06 | −0.11 | 1 |
+| #3b mode 2 alone | −0.01 / −0.01 | −0.07 / −0.07 | −0.14 / −0.15 | 2 |
+| #3 + #3b mode 1 | −0.05 / −0.05 / +0.13 | −0.10 / −0.10 / −0.11 | −0.16 / −0.18 / −0.13 | 3 |
+| #3 + #3b mode 2 | −0.05 / +0.15 | −0.12 / −0.13 | −0.20 / −0.17 | 2 |
+| no-op (`group_cull=0`) | −0.01 | −0.01 | 0.00 | 1 |
+
+Images were `identical` (or matched the case's own noise row) in every arm of every run, so the group cull is exact as
+designed. **No arm reads `FASTER`.** The verdict uses whole-case sdf ms with a bar of 2× the A arm's spread, and these
+runs had one slow rep per case in most arms. In the third run every arm of `dense` spanned 3.1–4.3 ms, which is
+where dense's +0.13/+0.15 came from. The complex gain is real and repeats in every run: about 10–14% of its forward pass, where
+the fruit bowl walks 42 brushes. Dense/close props have a median of 7 brushes (two groups), which leaves little to skip.
+**Both ship OFF** under the FASTER rule. The best candidate to switch on is #3 + #3b mode 2: about −0.1 ms on close and
+−0.2 ms on complex, with identical images. Turning it on needs a sign-off decision or a cleaner bench (a forward-pass verdict, or a
+case with more brush-heavy props), not more shader work. **Decision (2026-10-25): both stay OFF, code left in place.**
+
+Engine finding for #3: `RenderAttributes.SetData` (the cbuffer route, e.g. `DirectionalLightCB`) writes a per-frame
+*dynamic* constant buffer through `Graphics.Context`, which exists only inside a render block. A SceneObject's
+attributes, set from Update and kept across frames, can't hold one. So #3 uses the fallback: a `GpuBuffer`
+(992 × 16 B, a copy of the brush texture uploaded with it in `PackBrushes`), read as `StructuredBuffer<float4>
+g_BrushBuf` behind `#define SDF_BRUSH_BUFFER` (raymarch only; the five compute shaders keep the texture). The buffer is
+allocated and uploaded even while the ConVar is off (~4 MiB for 256 props, one synchronous ~16 KB upload per repack).
+Remove it if #3 is dropped for good. #3b: `SdfBrushPacker.PackGroups` appends 32 × 3 texels after the brush texels
+(texture now 992 wide in the renderer; the field baker's texture is unchanged). `SdfSurfaceLocal` keeps one
+`SdfSurfaceBrush` call site: mode 1 sets a skip-until index so k stays wave-uniform; mode 2 jumps `k += 3`. Not done:
+the same group cull in `SdfDist` for the field bake (#8's rebake spike). It would reuse the add / subtract / cutout+gap
+terms; colour brushes never reach the field.
 
 **#1 feasibility (2026-10-25, read-only engine study of the installed 10-23 DLL; `sbox-public-master` lags it):**
 partly feasible, only with engine changes. The SUN already multiplies a full-res, MSAA-aware screen-space shadow mask

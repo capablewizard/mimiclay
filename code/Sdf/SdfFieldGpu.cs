@@ -785,6 +785,50 @@ public static class SdfBrushPacker
 		return true;
 	}
 
+	/// <summary>Brushes per group record (sdf_eval SDF_GROUP_SHIFT) and texels per record (TEXELS_PER_GROUP).</summary>
+	public const int GroupSize = 4;
+	public const int TexelsPerGroup = 3;
+	public const int MaxGroups = MaxBrushes / GroupSize;
+
+	const float NoOp = -1e30f; // an absent op's threshold term — below anything the walk compares it with
+
+	/// <summary>Writes one group record per run of <see cref="GroupSize"/> consecutive packed brushes (never
+	/// reordered; the last run may be short) starting at texel <paramref name="groupBase"/>: the union of the
+	/// members' cull AABBs plus each op's widest threshold term, so sdf_eval's SdfGroupCulled can skip the whole
+	/// run with one test. Texel 0 = AABB min + add blend, 1 = AABB max + subtract blend, 2 = cutout blend + gap,
+	/// cutout colour-edge floor, colour feather threshold. Read off the packed floats so it matches the walk.</summary>
+	public static void PackGroups( float[] data, int count, int texelsPerBrush, int groupBase )
+	{
+		int stride = texelsPerBrush * 4;
+		for ( int g = 0; g * GroupSize < count; g++ )
+		{
+			var mn = new Vector3( float.MaxValue );
+			var mx = new Vector3( float.MinValue );
+			float add = NoOp, sub = NoOp, cut = NoOp, cutFloor = NoOp, colour = NoOp;
+			int end = Math.Min( count, (g + 1) * GroupSize );
+			for ( int i = g * GroupSize; i < end; i++ )
+			{
+				int o = i * stride;
+				mn = Vector3.Min( mn, new Vector3( data[o + 20], data[o + 21], data[o + 22] ) );
+				mx = Vector3.Max( mx, new Vector3( data[o + 24], data[o + 25], data[o + 26] ) );
+				float blend = data[o + 7], op = data[o + 15];
+				if ( op < 0.5f ) add = MathF.Max( add, blend );
+				else if ( op < 1.5f ) sub = MathF.Max( sub, blend );
+				else if ( op < 2.5f )
+				{
+					cut = MathF.Max( cut, blend + data[o + 18] );
+					cutFloor = 0.5f * Sdf.CutoutColorEdge;
+				}
+				else colour = MathF.Max( colour, 0.5f * MathF.Max( blend, Sdf.ColourEdgeFloor ) );
+			}
+
+			int go = (groupBase + g * TexelsPerGroup) * 4;
+			data[go + 0] = mn.x; data[go + 1] = mn.y; data[go + 2] = mn.z; data[go + 3] = add;
+			data[go + 4] = mx.x; data[go + 5] = mx.y; data[go + 6] = mx.z; data[go + 7] = sub;
+			data[go + 8] = cut; data[go + 9] = cutFloor; data[go + 10] = colour; data[go + 11] = 0f;
+		}
+	}
+
 	internal static float SrgbToLinear( float c )
 		=> c <= 0.04045f ? c / 12.92f : MathF.Pow( (c + 0.055f) / 1.055f, 2.4f );
 

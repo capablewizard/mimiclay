@@ -54,6 +54,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 {
 	const int MaxBrushes = SdfBrushPacker.MaxBrushes;
 	const int TexelsPerBrush = 7; // pos+shape, size+blend, quat, colour+op, rounding+(metal|rough packed)+gap+mirrormask, aabbMin, aabbMax
+	// The brush texels, then one group record per 4 brushes (SdfBrushPacker.PackGroups, read by the group cull).
+	const int DataTexels = MaxBrushes * TexelsPerBrush + SdfBrushPacker.MaxGroups * SdfBrushPacker.TexelsPerGroup;
 	const int MaxSplinePoints = SdfBrushPacker.MaxSplinePoints; // shared pool of spline control points (xyz world pos, w radius) across all spline brushes
 
 	/// <summary>Material to render with. Leave empty to use the built-in sdf_raymarch shader.</summary>
@@ -112,6 +114,16 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	/// <summary>Hide every SDF prop — raymarched surface AND sibling mesh. The control frame for the
 	/// SDF benchmark (Editor/SdfBench.cs): GPU time with props minus GPU time without them.</summary>
+	/// <summary>Round 2 #3 experiment A: the material walk reads the brush texels from a structured buffer (BrushBuf, a
+	/// copy of the brush texture uploaded with it) instead of texture fetches. Runtime switch for the bench's A/B.</summary>
+	[ConVar( "mimiclay_sdf_brush_buffer" )]
+	public static bool BrushBufferEnabled { get; set; }
+
+	/// <summary>Round 2 #3 experiment B: test each run of 4 packed brushes against its group record before walking it
+	/// (exact — see sdf_eval SdfGroupCulled). 0 off, 1 wave-uniform skip, 2 per-lane jump. Needs BrushCulling.</summary>
+	[ConVar( "mimiclay_sdf_group_cull" )]
+	public static int GroupCullMode { get; set; }
+
 	[ConVar( "mimiclay_sdf_hide_all" )]
 	public static bool HideAll { get; set; }
 
@@ -716,6 +728,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	SceneObject _so;
 	Texture _dataTex;
+	GpuBuffer _brushBuf; // the same texels as _dataTex, for the structured-buffer read path (BrushBufferEnabled)
 	Texture _splineTex; // spline control points (xyz world pos, w radius); spline brushes index into it
 	readonly SdfTextAtlas _textAtlas = new(); // baked text distance fields (Text brushes), bound as "TextSdf"
 	Material _fallbackMaterial;
@@ -823,7 +836,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	{
 		// Recreate if missing OR the width changed (e.g. TexelsPerBrush changed across a
 		// hot-reload that preserved the old, smaller texture — otherwise Update overruns it).
-		int width = MaxBrushes * TexelsPerBrush;
+		int width = DataTexels;
 		if ( _dataTex is null || _dataTex.Width != width )
 		{
 			_dataTex?.Dispose();
@@ -833,6 +846,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				.Finish();
 
 			_forceRepack = true; // new (empty) texture must be repacked before it's valid
+		}
+
+		if ( _brushBuf is null || !_brushBuf.IsValid || _brushBuf.ElementCount != DataTexels )
+		{
+			_brushBuf?.Dispose();
+			_brushBuf = new GpuBuffer( DataTexels, 16, GpuBuffer.UsageFlags.Structured, "SdfBrushBuf" );
+			_forceRepack = true;
 		}
 
 		if ( _splineTex is null || _splineTex.Width != MaxSplinePoints )
@@ -899,6 +919,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so?.Delete();
 		_so = null;
 		_dataTex?.Dispose(); _dataTex = null;
+		_brushBuf?.Dispose(); _brushBuf = null;
 		_splineTex?.Dispose(); _splineTex = null;
 		_textAtlas.Dispose();
 		_forceRepack = true;
@@ -991,7 +1012,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// Band state from the distance switch's hysteresis flags; static mode (DistanceSwitching off) counts
 		// as permanently inside the SDF band.
 		bool culled = DistanceSwitching && _aboveCull;
-		bool sdf = !culled && (!DistanceSwitching || !_aboveHandoff);
+		bool sdf = !culled && !ForceMesh && (!DistanceSwitching || !_aboveHandoff);
 		int meshLod = _aboveLod2 ? 2 : _aboveLod1 ? 1 : 0;
 
 		// The raymarched surface: its band, minus every hide (ForceHidden folds in RenderHidden-without-
@@ -1210,7 +1231,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 		float ratio = (view - _curCenter).Length / _curRadius;
 		bool culled = DistanceSwitching && _aboveCull;
-		bool marching = !culled && (!DistanceSwitching || !_aboveHandoff);
+		bool marching = !culled && !ForceMesh && (!DistanceSwitching || !_aboveHandoff);
 		int meshLod = _aboveLod2 ? 2 : _aboveLod1 ? 1 : 0;
 
 		string band = !DistanceSwitching
@@ -1327,9 +1348,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	void UpdateBands( Vector3 viewPos )
 	{
 		UpdateShadowBand( viewPos );
-		if ( DistanceSwitching )
+		if ( DistanceSwitching || ForceMesh )
 			UpdateDistanceSwitch( viewPos );
 	}
+
+	/// <summary>Benchmark baseline: every prop that would raymarch draws its mesh LOD0 instead (farther bands and the
+	/// cull are unchanged). Prices the SDF path against a plain mesh renderer with the same look. Diagnostics only.</summary>
+	[ConVar( "mimiclay_sdf_force_mesh" )]
+	public static bool ForceMesh { get; set; }
 
 	// Resolve the pipeline stage from camera distance — COMPUTE ONLY: it updates the hysteresis band flags
 	// and the debug label state; ApplyVisibility (the one visibility writer) turns those into what actually
@@ -1368,6 +1394,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_aboveCull = Above( ratio, CullRadii, _aboveCull, h );
 
 		_switchState = _aboveCull ? 4 : !_aboveHandoff ? 0 : 1 + (_aboveLod2 ? 2 : _aboveLod1 ? 1 : 0);
+		if ( ForceMesh && _switchState == 0 )
+			_switchState = 1;
 	}
 
 	// Hysteresis gate: returns whether `ratio` is above `threshold`, but only flips state once the ratio
@@ -1439,7 +1467,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// landed: on trivially small work (packing two brushes), i.e. GC and GPU-resource creation paying for
 		// the allocations. The brushes were already packed in local space; only the proxy wasn't.
 		int shapeKey = HashCode.Combine( shapeHash, Material, TightBounds, EffectiveUseFieldCache, EffectiveProxyPad );
-		bool inputsMissing = !_dataTex.IsValid() || _dataTex.Width != MaxBrushes * TexelsPerBrush
+		bool inputsMissing = !_dataTex.IsValid() || _dataTex.Width != DataTexels || _brushBuf is not { IsValid: true }
 			|| !_splineTex.IsValid() || _splineTex.Width != MaxSplinePoints;
 		if ( shapeKey != _lastHash || !_so.IsValid() || _forceRepack || inputsMissing )
 		{
@@ -1595,6 +1623,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "SdfShadowBias", ShadowBias );
 		_so.Attributes.Set( "SdfShadowSlopeScale", ShadowSlopeScale );
 		_so.Attributes.Set( "BrushData", _dataTex );
+		_so.Attributes.Set( "BrushBuf", _brushBuf );
 		_so.Attributes.Set( "SplineData", _splineTex );
 		_so.Attributes.Set( "TextSdf", _textAtlas.Texture );
 		_so.Attributes.Set( "BrushCount", _curCount );
@@ -1653,6 +1682,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "SdfUniformMat", UniformMaterialEnabled && _uniformMat ? 1 : 0 );
 		_so.Attributes.Set( "SdfUniformMatValue", _uniformMatValue );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
+		_so.Attributes.Set( "SdfBrushBuf", BrushBufferEnabled ? 1 : 0 );
+		_so.Attributes.Set( "SdfGroupCull", Math.Clamp( GroupCullMode, 0, 2 ) );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
 		// Displacement look (amp/freq) lives on THIS component (see the DispAmp doc for why it left
 		// the material); pushed as attributes for the live-fallback shader path — the baked path
@@ -1837,7 +1868,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	int PackBrushes( List<SdfBrush> brushes )
 	{
-		var data = _packData ??= new float[MaxBrushes * TexelsPerBrush * 4];
+		if ( _packData?.Length != DataTexels * 4 ) _packData = new float[DataTexels * 4]; // a hotload can keep an old size
+		var data = _packData;
 		var spline = _packSpline ??= new float[MaxSplinePoints * 4]; // shared control-point pool (xyz local pos, w radius)
 
 		// LOCAL-space pack (Transform.Zero) — the exact same data the GPU field baker consumes. The march
@@ -1846,8 +1878,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// packed data is placement-invariant.
 		int written = SdfBrushPacker.Pack( brushes, global::Transform.Zero, data, spline, MaxBrushes, TexelsPerBrush, MaxSplinePoints, _textAtlas );
 		_uniformMat = SdfBrushPacker.TryUniformMaterial( data, written, TexelsPerBrush, out _uniformMatValue );
+		SdfBrushPacker.PackGroups( data, written, TexelsPerBrush, MaxBrushes * TexelsPerBrush );
 
-		_dataTex.Update<float>( data, 0, 0, MaxBrushes * TexelsPerBrush, 1 );
+		_dataTex.Update<float>( data, 0, 0, DataTexels, 1 );
+		_brushBuf.SetData<float>( data );
 		_splineTex.Update<float>( spline, 0, 0, MaxSplinePoints, 1 );
 		return written;
 	}

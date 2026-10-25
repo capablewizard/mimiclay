@@ -19,9 +19,28 @@ Texture2D g_tTextSdf   < Attribute( "TextSdf" ); >;    // baked text distance fi
 SamplerState g_sTextSdf < Filter( BILINEAR ); AddressU( CLAMP ); AddressV( CLAMP ); >;
 int   g_nBrushCount < Attribute( "BrushCount" ); Default( 0 ); >;
 int   g_nSdfCull    < Attribute( "SdfCull" ); Default( 1 ); >;  // per-brush AABB early-out (local AABB in slots 5/6)
+// Material-walk group cull (SdfSurfaceLocal): 1 = wave-uniform skip, 2 = per-lane jump. Only the raymarch renderer
+// packs the group records (SdfBrushPacker.PackGroups), so every other consumer leaves this at 0.
+int   g_nSdfGroupCull < Attribute( "SdfGroupCull" ); Default( 0 ); >;
+
+#ifdef SDF_BRUSH_BUFFER
+// The same packed texels as a structured buffer (SdfRaymarchRenderer's BrushBuf), read when SdfBrushBuf is set. The
+// brush index is the walk's loop counter, so every lane reads one address: a buffer load instead of a texture fetch.
+// Raymarch only — the compute shaders keep the texture.
+StructuredBuffer<float4> g_BrushBuf < Attribute( "BrushBuf" ); >;
+int   g_nSdfBrushBuf < Attribute( "SdfBrushBuf" ); Default( 0 ); >;
+#endif
 
 #define TEXELS_PER_BRUSH 7 // must match SdfRaymarchRenderer.TexelsPerBrush
-float4 LoadBrush( int k, int slot ) { return g_tBrushData.Load( int3( k * TEXELS_PER_BRUSH + slot, 0, 0 ) ); }
+float4 LoadBrushTexel( int i )
+{
+#ifdef SDF_BRUSH_BUFFER
+	if ( g_nSdfBrushBuf != 0 )
+		return g_BrushBuf[i];
+#endif
+	return g_tBrushData.Load( int3( i, 0, 0 ) );
+}
+float4 LoadBrush( int k, int slot ) { return LoadBrushTexel( k * TEXELS_PER_BRUSH + slot ); }
 float4 LoadSplinePoint( int i )     { return g_tSplineData.Load( int3( i, 0, 0 ) ); }
 
 // ── Primitives ──
@@ -620,13 +639,51 @@ SdfSurface SdfSurfaceEmpty()
 	return s;
 }
 
+// Group records (SdfBrushPacker.PackGroups): one per run of 4 consecutive packed brushes, after the brush texels.
+// .xyz of texels 0/1 = the union of the members' cull AABBs; the w lanes and texel 2 hold each op's widest
+// threshold term (-1e30 when the op is absent): add blend, subtract blend, cutout blend + gap, cutout floor, colour.
+#define SDF_MAX_BRUSHES  128 // must match SdfBrushPacker.MaxBrushes
+#define SDF_GROUP_SHIFT  2   // 4 brushes per group — must match SdfBrushPacker.GroupSize
+#define TEXELS_PER_GROUP 3   // must match SdfBrushPacker.TexelsPerGroup
+
+// True when no member of group g can touch lp at running distance d. Exact: a skipped group evaluates nothing, so d
+// is the same for every member; each member's own threshold (SdfSurfaceBrush) is at most the group's, and its AABB
+// lies inside the group's, so every member would have culled itself.
+bool SdfGroupCulled( int g, float3 lp, float d )
+{
+	int o = SDF_MAX_BRUSHES * TEXELS_PER_BRUSH + g * TEXELS_PER_GROUP;
+	float4 G0 = LoadBrushTexel( o );
+	float4 G1 = LoadBrushTexel( o + 1 );
+	float4 G2 = LoadBrushTexel( o + 2 );
+	float cullT = max( max( d + G0.w, G1.w - d ), max( max( G2.x - d, G2.y ), G2.z ) );
+	return sdAabb( lp, G0.xyz, G1.xyz ) > cullT;
+}
+
 SdfSurface SdfSurfaceLocal( float3 lp )
 {
 	float d = 1e9;
 	SdfSurface s = SdfSurfaceEmpty();
+	bool groups = g_nSdfGroupCull != 0 && g_nSdfCull != 0;
+	int skipEnd = 0;
 	[loop]
 	for ( int k = 0; k < g_nBrushCount; k++ )
+	{
+		// One SdfSurfaceBrush call site only (a second inlined copy hung the editor's shader compile, 2026-10-24).
+		// Mode 1 keeps k wave-uniform: a culled group's iterations are skipped, and when every lane agrees the wave
+		// branches over them. Mode 2 jumps this lane past the group. A partial last group ends at the loop bound.
+		if ( groups && (k & ((1 << SDF_GROUP_SHIFT) - 1)) == 0 && SdfGroupCulled( k >> SDF_GROUP_SHIFT, lp, d ) )
+		{
+			if ( g_nSdfGroupCull >= 2 )
+			{
+				k += (1 << SDF_GROUP_SHIFT) - 1;
+				continue;
+			}
+			skipEnd = k + (1 << SDF_GROUP_SHIFT);
+		}
+		if ( k < skipEnd )
+			continue;
 		SdfSurfaceBrush( k, lp, d, s );
+	}
 	return s;
 }
 

@@ -1,0 +1,1149 @@
+{
+  "Version": 1,
+  "Suite": "lod",
+  "Label": "lod-baseline-2026-10-25",
+  "Commit": "0e574cb",
+  "DirtyFiles": 0,
+  "Utc": "2026-10-25T13:07:12.6175981Z",
+  "Repeats": 3,
+  "Seconds": 2,
+  "Quick": false,
+  "SourceHash": "EB18821592275593",
+  "Set": {},
+  "Ab": {},
+  "Arms": [],
+  "Warnings": [],
+  "Env": {
+    "Gpu": "NVIDIA GeForce RTX 4090",
+    "Resolution": "1920x1080",
+    "Msaa": "Multisample8x",
+    "Upscaler": "Off",
+    "RenderScale": "1",
+    "ShadowQuality": "High",
+    "Renderer": "native",
+    "Props": "256"
+  },
+  "Memory": {
+    "Renderers": 256,
+    "Pending": 0,
+    "Ready": 256,
+    "UniqueFields": 256,
+    "FieldMiB": 635.3,
+    "LocalMiB": 39.5,
+    "CountedMiB": 674.8,
+    "GlobalCacheMiB": 742.9,
+    "BuildsInFlight": 0,
+    "Bands": {
+      "sdf": 256,
+      "marchedShadows": 256
+    },
+    "Fields": null
+  },
+  "Cases": [
+    {
+      "Name": "close-full",
+      "Lod": "full",
+      "SdfMs": 4.293,
+      "SdfMin": 4.168,
+      "SdfMax": 4.566,
+      "GpuMs": 5.281,
+      "ControlMs": 0.718,
+      "FrameP50": 16.654,
+      "FrameP99": 18.011,
+      "Hitches33": 0,
+      "SlowFrames": 0.033,
+      "Cap": 60,
+      "RendererUpdateMs": 1.275,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "close-full.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.977,
+        "forward": 2.284,
+        "shadows": 1.065,
+        "other": 0.048
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.284,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.065,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.541,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.43
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "close-adaptive",
+      "Lod": "adaptive",
+      "SdfMs": 4.417,
+      "SdfMin": 4.363,
+      "SdfMax": 4.487,
+      "GpuMs": 5.202,
+      "ControlMs": 0.718,
+      "FrameP50": 16.643,
+      "FrameP99": 18.213,
+      "Hitches33": 0,
+      "SlowFrames": 0.025,
+      "Cap": 60,
+      "RendererUpdateMs": 1.303,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "close-adaptive.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.924,
+        "forward": 2.242,
+        "shadows": 1.129,
+        "other": 0.048
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.242,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.129,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.527,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.392
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "close-shadow",
+      "Lod": "shadow",
+      "SdfMs": 3.92,
+      "SdfMin": 3.741,
+      "SdfMax": 4.812,
+      "GpuMs": 4.933,
+      "ControlMs": 0.718,
+      "FrameP50": 16.648,
+      "FrameP99": 20.28,
+      "Hitches33": 0,
+      "SlowFrames": 0.025,
+      "Cap": 60,
+      "RendererUpdateMs": 1.365,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "close-shadow.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.004,
+        "forward": 2.446,
+        "shadows": 0.451,
+        "other": 0.058
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.446,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.57,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.451,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.419
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 9
+      }
+    },
+    {
+      "Name": "close-mesh",
+      "Lod": "mesh",
+      "SdfMs": 4.451,
+      "SdfMin": 4.281,
+      "SdfMax": 4.881,
+      "GpuMs": 5.596,
+      "ControlMs": 0.718,
+      "FrameP50": 16.653,
+      "FrameP99": 17.907,
+      "Hitches33": 0,
+      "SlowFrames": 0.008,
+      "Cap": 60,
+      "RendererUpdateMs": 1.314,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "close-mesh.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.943,
+        "forward": 2.299,
+        "shadows": 1.102,
+        "other": 0.049
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.299,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.102,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.538,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.398
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 252,
+        "marchedShadows": 256,
+        "mesh0": 4,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "close-lod",
+      "Lod": "lod",
+      "SdfMs": 3.998,
+      "SdfMin": 3.903,
+      "SdfMax": 4.325,
+      "GpuMs": 5.04,
+      "ControlMs": 0.718,
+      "FrameP50": 16.649,
+      "FrameP99": 19.414,
+      "Hitches33": 0,
+      "SlowFrames": 0.017,
+      "Cap": 60,
+      "RendererUpdateMs": 1.369,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "close-lod.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.999,
+        "forward": 2.447,
+        "shadows": 0.451,
+        "other": 0.064
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.447,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.57,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.451,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.419
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 252,
+        "mesh0": 4,
+        "marchedShadows": 9,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "dense-full",
+      "Lod": "full",
+      "SdfMs": 4.997,
+      "SdfMin": 4.855,
+      "SdfMax": 5.442,
+      "GpuMs": 5.71,
+      "ControlMs": 0.708,
+      "FrameP50": 16.654,
+      "FrameP99": 19.037,
+      "Hitches33": 0,
+      "SlowFrames": 0.017,
+      "Cap": 60,
+      "RendererUpdateMs": 1.296,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "dense-full.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.038,
+        "forward": 2.639,
+        "shadows": 1.101,
+        "other": 0.079
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.639,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.101,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.886,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.14
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dense-adaptive",
+      "Lod": "adaptive",
+      "SdfMs": 5.358,
+      "SdfMin": 4.594,
+      "SdfMax": 5.382,
+      "GpuMs": 6.061,
+      "ControlMs": 0.708,
+      "FrameP50": 16.662,
+      "FrameP99": 17.628,
+      "Hitches33": 0,
+      "SlowFrames": 0,
+      "Cap": 60,
+      "RendererUpdateMs": 1.278,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "dense-adaptive.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.925,
+        "forward": 2.854,
+        "shadows": 1.05,
+        "other": 0.079
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.854,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.05,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.775,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.137
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dense-shadow",
+      "Lod": "shadow",
+      "SdfMs": 4.359,
+      "SdfMin": 4.353,
+      "SdfMax": 4.937,
+      "GpuMs": 5.071,
+      "ControlMs": 0.708,
+      "FrameP50": 16.715,
+      "FrameP99": 17.819,
+      "Hitches33": 0,
+      "SlowFrames": 0.033,
+      "Cap": 60,
+      "RendererUpdateMs": 1.351,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "dense-shadow.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.004,
+        "forward": 2.793,
+        "shadows": 0.46,
+        "other": 0.093
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.793,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.837,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.46,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.145
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 3
+      }
+    },
+    {
+      "Name": "dense-mesh",
+      "Lod": "mesh",
+      "SdfMs": 4.605,
+      "SdfMin": 4.577,
+      "SdfMax": 5.263,
+      "GpuMs": 5.313,
+      "ControlMs": 0.708,
+      "FrameP50": 16.676,
+      "FrameP99": 18.034,
+      "Hitches33": 0,
+      "SlowFrames": 0.008,
+      "Cap": 60,
+      "RendererUpdateMs": 1.289,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "dense-mesh.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.924,
+        "forward": 2.58,
+        "shadows": 1.044,
+        "other": 0.077
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.58,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.044,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.775,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.137
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 253,
+        "marchedShadows": 256,
+        "mesh0": 3,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "dense-lod",
+      "Lod": "lod",
+      "SdfMs": 4.366,
+      "SdfMin": 4.361,
+      "SdfMax": 4.805,
+      "GpuMs": 5.074,
+      "ControlMs": 0.708,
+      "FrameP50": 16.671,
+      "FrameP99": 18.284,
+      "Hitches33": 0,
+      "SlowFrames": 0.042,
+      "Cap": 60,
+      "RendererUpdateMs": 1.366,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "dense-lod.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 1.002,
+        "forward": 2.804,
+        "shadows": 0.463,
+        "other": 0.091
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.804,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.841,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.463,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 0.145
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Large)": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 253,
+        "marchedShadows": 3,
+        "mesh0": 3,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "overview-full",
+      "Lod": "full",
+      "SdfMs": 4.374,
+      "SdfMin": 4.337,
+      "SdfMax": 4.857,
+      "GpuMs": 5.086,
+      "ControlMs": 0.712,
+      "FrameP50": 16.679,
+      "FrameP99": 17.779,
+      "Hitches33": 0,
+      "SlowFrames": 0.041,
+      "Cap": 60,
+      "RendererUpdateMs": 1.294,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "overview-full.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.872,
+        "forward": 2.319,
+        "shadows": 1.093,
+        "other": 0.058
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.319,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.093,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.852
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "overview-adaptive",
+      "Lod": "adaptive",
+      "SdfMs": 4.074,
+      "SdfMin": 3.984,
+      "SdfMax": 4.461,
+      "GpuMs": 4.785,
+      "ControlMs": 0.712,
+      "FrameP50": 16.651,
+      "FrameP99": 18.336,
+      "Hitches33": 0,
+      "SlowFrames": 0.033,
+      "Cap": 60,
+      "RendererUpdateMs": 1.273,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "overview-adaptive.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.669,
+        "forward": 2.185,
+        "shadows": 1.073,
+        "other": 0.061
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.185,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.073,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.648
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "overview-shadow",
+      "Lod": "shadow",
+      "SdfMs": 3.416,
+      "SdfMin": 3.369,
+      "SdfMax": 4.101,
+      "GpuMs": 4.127,
+      "ControlMs": 0.712,
+      "FrameP50": 16.653,
+      "FrameP99": 18.648,
+      "Hitches33": 0,
+      "SlowFrames": 0.041,
+      "Cap": 60,
+      "RendererUpdateMs": 1.342,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "overview-shadow.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.679,
+        "forward": 2.194,
+        "shadows": 0.463,
+        "other": 0.053
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.194,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.656,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.463
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256
+      }
+    },
+    {
+      "Name": "overview-mesh",
+      "Lod": "mesh",
+      "SdfMs": 3.547,
+      "SdfMin": 3.501,
+      "SdfMax": 3.56,
+      "GpuMs": 4.258,
+      "ControlMs": 0.712,
+      "FrameP50": 16.647,
+      "FrameP99": 18.495,
+      "Hitches33": 0,
+      "SlowFrames": 0.042,
+      "Cap": 60,
+      "RendererUpdateMs": 1.32,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "overview-mesh.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.67,
+        "forward": 2.357,
+        "shadows": 0.421,
+        "other": 0.064
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.357,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.633,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.421
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "mesh0": 74,
+        "marchedShadows": 256,
+        "sdf": 182,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "overview-lod",
+      "Lod": "lod",
+      "SdfMs": 3.541,
+      "SdfMin": 3.525,
+      "SdfMax": 4.254,
+      "GpuMs": 4.263,
+      "ControlMs": 0.712,
+      "FrameP50": 16.664,
+      "FrameP99": 18.006,
+      "Hitches33": 0,
+      "SlowFrames": 0.025,
+      "Cap": 60,
+      "RendererUpdateMs": 1.363,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "overview-lod.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.673,
+        "forward": 2.348,
+        "shadows": 0.462,
+        "other": 0.06
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 2.348,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.639,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.462
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "mesh0": 74,
+        "sdf": 182,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "far-full",
+      "Lod": "full",
+      "SdfMs": 2.214,
+      "SdfMin": 2.204,
+      "SdfMax": 2.356,
+      "GpuMs": 2.875,
+      "ControlMs": 0.651,
+      "FrameP50": 16.634,
+      "FrameP99": 18.212,
+      "Hitches33": 0,
+      "SlowFrames": 0.033,
+      "Cap": 60,
+      "RendererUpdateMs": 1.282,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "far-full.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.368,
+        "forward": 0.73,
+        "shadows": 1.081,
+        "other": 0.035
+      },
+      "Passes": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.081,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.73,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.347
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "far-adaptive",
+      "Lod": "adaptive",
+      "SdfMs": 2.367,
+      "SdfMin": 1.988,
+      "SdfMax": 2.464,
+      "GpuMs": 3.018,
+      "ControlMs": 0.651,
+      "FrameP50": 16.641,
+      "FrameP99": 17.794,
+      "Hitches33": 0,
+      "SlowFrames": 0.042,
+      "Cap": 60,
+      "RendererUpdateMs": 1.26,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "far-adaptive.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.28,
+        "forward": 0.613,
+        "shadows": 1.069,
+        "other": 0.035
+      },
+      "Passes": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.069,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.613,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.258
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "far-shadow",
+      "Lod": "shadow",
+      "SdfMs": 1.023,
+      "SdfMin": 1.019,
+      "SdfMax": 1.04,
+      "GpuMs": 1.69,
+      "ControlMs": 0.651,
+      "FrameP50": 16.656,
+      "FrameP99": 18.114,
+      "Hitches33": 0,
+      "SlowFrames": 0.099,
+      "Cap": 60,
+      "RendererUpdateMs": 1.336,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "far-shadow.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.283,
+        "forward": 0.613,
+        "shadows": 0.1,
+        "other": 0.034
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.613,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.262,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.1
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256
+      }
+    },
+    {
+      "Name": "far-mesh",
+      "Lod": "mesh",
+      "SdfMs": 1.231,
+      "SdfMin": 1.205,
+      "SdfMax": 1.306,
+      "GpuMs": 1.902,
+      "ControlMs": 0.651,
+      "FrameP50": 16.697,
+      "FrameP99": 18.715,
+      "Hitches33": 0,
+      "SlowFrames": 0.041,
+      "Cap": 60,
+      "RendererUpdateMs": 1.365,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "far-mesh.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.145,
+        "forward": 0.781,
+        "shadows": 0.252,
+        "other": 0.049
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.781,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.252,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.117
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "mesh1": 75,
+        "marchedShadows": 256,
+        "mesh0": 117,
+        "mesh2": 51,
+        "sdf": 13,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "far-lod",
+      "Lod": "lod",
+      "SdfMs": 1.436,
+      "SdfMin": 1.218,
+      "SdfMax": 1.439,
+      "GpuMs": 2.086,
+      "ControlMs": 0.651,
+      "FrameP50": 16.666,
+      "FrameP99": 19.387,
+      "Hitches33": 0,
+      "SlowFrames": 0.05,
+      "Cap": 60,
+      "RendererUpdateMs": 1.375,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "far-lod.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.15,
+        "forward": 0.802,
+        "shadows": 0.242,
+        "other": 0.048
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.802,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.242,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.121
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "mesh1": 75,
+        "mesh0": 117,
+        "mesh2": 51,
+        "sdf": 13,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "distant-full",
+      "Lod": "full",
+      "SdfMs": 2.045,
+      "SdfMin": 1.943,
+      "SdfMax": 2.08,
+      "GpuMs": 2.572,
+      "ControlMs": 0.521,
+      "FrameP50": 16.647,
+      "FrameP99": 17.855,
+      "Hitches33": 0,
+      "SlowFrames": 0.05,
+      "Cap": 60,
+      "RendererUpdateMs": 1.268,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "distant-full.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.443,
+        "forward": 0.397,
+        "shadows": 1.085,
+        "other": 0.033
+      },
+      "Passes": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.085,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.429,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.397
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "distant-adaptive",
+      "Lod": "adaptive",
+      "SdfMs": 1.923,
+      "SdfMin": 1.874,
+      "SdfMax": 2.077,
+      "GpuMs": 2.445,
+      "ControlMs": 0.521,
+      "FrameP50": 16.661,
+      "FrameP99": 17.697,
+      "Hitches33": 0,
+      "SlowFrames": 0.058,
+      "Cap": 60,
+      "RendererUpdateMs": 1.268,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "distant-adaptive.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.329,
+        "forward": 0.328,
+        "shadows": 1.081,
+        "other": 0.038
+      },
+      "Passes": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.081,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.328,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.314
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "distant-shadow",
+      "Lod": "shadow",
+      "SdfMs": 0.786,
+      "SdfMin": 0.76,
+      "SdfMax": 0.84,
+      "GpuMs": 1.312,
+      "ControlMs": 0.521,
+      "FrameP50": 16.657,
+      "FrameP99": 18.776,
+      "Hitches33": 0,
+      "SlowFrames": 0.058,
+      "Cap": 60,
+      "RendererUpdateMs": 1.357,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "distant-shadow.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.36,
+        "forward": 0.336,
+        "shadows": 0.057,
+        "other": 0.027
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.346,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.336,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.057
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "sdf": 256
+      }
+    },
+    {
+      "Name": "distant-mesh",
+      "Lod": "mesh",
+      "SdfMs": 0.211,
+      "SdfMin": 0.208,
+      "SdfMax": 0.215,
+      "GpuMs": 0.734,
+      "ControlMs": 0.521,
+      "FrameP50": 16.617,
+      "FrameP99": 18.854,
+      "Hitches33": 0,
+      "SlowFrames": 0.089,
+      "Cap": 60,
+      "RendererUpdateMs": 1.343,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "distant-mesh.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.034,
+        "forward": 0.096,
+        "shadows": 0.062,
+        "other": 0.02
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.096,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.062
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "mesh2": 190,
+        "marchedShadows": 256,
+        "culled": 30,
+        "mesh1": 25,
+        "mesh0": 11,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "distant-lod",
+      "Lod": "lod",
+      "SdfMs": 0.213,
+      "SdfMin": 0.211,
+      "SdfMax": 0.217,
+      "GpuMs": 0.736,
+      "ControlMs": 0.521,
+      "FrameP50": 16.653,
+      "FrameP99": 17.893,
+      "Hitches33": 0,
+      "SlowFrames": 0.088,
+      "Cap": 60,
+      "RendererUpdateMs": 1.378,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": "distant-lod.png",
+      "ImageNoise": "identical",
+      "Buckets": {
+        "prepass": 0.034,
+        "forward": 0.096,
+        "shadows": 0.062,
+        "other": 0.019
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 0.096,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.062
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1
+      },
+      "Bands": {
+        "mesh2": 190,
+        "culled": 30,
+        "mesh1": 25,
+        "mesh0": 11,
+        "noMesh": 1
+      }
+    },
+    {
+      "Name": "dolly-full",
+      "Lod": "full",
+      "SdfMs": null,
+      "SdfMin": null,
+      "SdfMax": null,
+      "GpuMs": 3.809,
+      "ControlMs": null,
+      "FrameP50": 16.659,
+      "FrameP99": 18.627,
+      "Hitches33": 0,
+      "SlowFrames": 0.372,
+      "Cap": 60,
+      "RendererUpdateMs": 1.289,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": null,
+      "ImageNoise": null,
+      "Buckets": {
+        "prepass": 0.648,
+        "forward": 1.39,
+        "shadows": 1.115,
+        "other": 0.386
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1.386,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1.115,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.546,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": 0.122,
+        "Graphics/RenderToSwapChain/Occlusion Cull (Late)": 0.062,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": 0.054
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Occlusion Cull (Late)": 1,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": 1
+      },
+      "Bands": {
+        "sdf": 256,
+        "marchedShadows": 256
+      }
+    },
+    {
+      "Name": "dolly-lod",
+      "Lod": "lod",
+      "SdfMs": null,
+      "SdfMin": null,
+      "SdfMax": null,
+      "GpuMs": 2.992,
+      "ControlMs": null,
+      "FrameP50": 16.668,
+      "FrameP99": 18.148,
+      "Hitches33": 0,
+      "SlowFrames": 0.407,
+      "Cap": 60,
+      "RendererUpdateMs": 1.385,
+      "CountedMiB": 674.8,
+      "UniqueFields": 256,
+      "Image": null,
+      "ImageNoise": null,
+      "Buckets": {
+        "prepass": 0.407,
+        "forward": 1.503,
+        "shadows": 0.415,
+        "other": 0.39
+      },
+      "Passes": {
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1.5,
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 0.415,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 0.29,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": 0.129,
+        "Graphics/RenderToSwapChain/Occlusion Cull (Late)": 0.062,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": 0.059
+      },
+      "PassPresence": {
+        "Graphics/Sandbox.SceneSpotLight_Shadow/DrawDepthOpaque": 1,
+        "Graphics/RenderToSwapChain/Depth Prepass (Small)": 1,
+        "Graphics/RenderToSwapChain/Occlusion Cull (Late)": 1,
+        "Graphics/RenderToSwapChain/Managed: AfterDepthPrepass": 1,
+        "Graphics/RenderToSwapChain/Dynamic Opaque Forward": 1,
+        "Graphics/RenderToSwapChain/Managed: BeforePostProcessing": 1
+      },
+      "Bands": {
+        "sdf": 252,
+        "mesh0": 4,
+        "marchedShadows": 9,
+        "noMesh": 1
+      }
+    }
+  ]
+}

@@ -1566,12 +1566,12 @@ public static class Sdf
 	/// <summary>Width (world units) of a Cutout brush's recolour edge — a small fixed AA band so the colour
 	/// boundary doesn't shimmer at distance (it sits inside the slot, so a wide band costs nothing visible).
 	/// Must match SDF_CUTOUT_COLOR_EDGE in sdf_eval.hlsl.</summary>
-	const float CutoutColorEdge = 1f;
+	internal const float CutoutColorEdge = 1f;
 
 	/// <summary>Floor of a Colour brush's feather — the edge width when Blend is 0. Much tighter than the
 	/// cutout band because paint edges are in plain view and want to read crisp; the trade is some sparkle
 	/// on a far/small prop. Tune here if it needs to go lower still. Must match SDF_COLOUR_EDGE_FLOOR.</summary>
-	const float ColourEdgeFloor = 0.25f;
+	internal const float ColourEdgeFloor = 0.25f;
 
 	/// <summary>The full per-point surface — colour, metalness and roughness — each blended across
 	/// smooth-union seams by the SAME smooth-min factor as the geometry, so material attributes share

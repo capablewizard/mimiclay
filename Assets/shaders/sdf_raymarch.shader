@@ -142,6 +142,7 @@ PS
 	// sdf_brick_classify_cs). The renderer packs brushes in the prop's local frame; this shader folds
 	// each world-space sample into that frame once (SdfDistWs below), so there is no world-space
 	// evaluator copy to keep in sync any more.
+	#define SDF_BRUSH_BUFFER // brush texels may also come from the BrushBuf structured buffer (SdfBrushBuf)
 	#include "sdf_eval.hlsl"
 	#include "clay_shading.hlsl" // ClayShade: the engine's Shade with per-material/per-object decal opt-out
 

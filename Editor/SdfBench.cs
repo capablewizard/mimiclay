@@ -70,6 +70,16 @@ public static class SdfBench
 		new( "dense-4spots-far", -1, 0, 4, Lod.Full, SpotPushBack: 500 ),
 	};
 
+	/// <summary>Shipping settings only (the lod suite's <c>lod</c> policy, four spots) — small enough for multi-arm
+	/// attribution A/Bs of what the game actually pays.</summary>
+	static Case[] ShipSuite() => new Case[]
+	{
+		new( "close-lod", -3, 0, 4, Lod.Lod ),
+		new( "dense-lod", -1, 0, 4, Lod.Lod ),
+		new( "overview-lod", -2, 0, 4, Lod.Lod ),
+		new( "complex-lod", 63, 0, 4, Lod.Lod ),
+	};
+
 	static Case[] LodSuite()
 	{
 		var list = new List<Case>();
@@ -186,7 +196,7 @@ public static class SdfBench
 	public static object Run( string suite = "shader", string label = null, int repeats = 3, float seconds = 2, string set = null, string ab = null )
 	{
 		if ( Busy ) throw new InvalidOperationException( "A benchmark is already running (Mimiclay → SDF Bench → Stop)." );
-		_cases = suite switch { "shader" => ShaderSuite(), "lod" => LodSuite(), _ => throw new ArgumentException( "suite must be shader or lod" ) };
+		_cases = suite switch { "shader" => ShaderSuite(), "lod" => LodSuite(), "ship" => ShipSuite(), _ => throw new ArgumentException( "suite must be shader, lod or ship" ) };
 		BindGpuProfiler(); // fail before touching editor state if the engine API moved
 		_set = ParseOverrides( set );
 		// "a=1;a=2,b=0" → two arms. Each arm is measured against the same A and control.
