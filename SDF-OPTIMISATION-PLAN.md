@@ -109,6 +109,73 @@ Open question: the mesh's WHOLE forward pass (0.19–0.93 ms) is less than the S
 five SDF stages (0.4–0.6 ms) — compare the two shading paths (`clay_shading`, SV_Depth/early-Z, cluster re-seat) for
 SDF-only overhead.
 
+**Occupancy, measured (2026-10-25, Nsight Systems GPU metrics, `shader` suite dense view, 8× MSAA).** Only Nsight
+Systems is installed (no Nsight Graphics), but its `ad10x-gfxt` metric set samples pixel warps and allocated registers
+per TPC, and it works without admin or an editor restart: `nsys profile --trace=none --sample=none --cpuctxsw=none
+--gpu-metrics-devices=0 --gpu-metrics-set=ad10x-gfxt --gpu-metrics-frequency=20000 --duration=5 -o <out> cmd.exe /c
+"ping -n 7 127.0.0.1 >nul"` while a bench case samples, then `nsys export --type sqlite` and read `GPU_METRICS`
+(metric 32 Pixel Warps/cycle, 52 3D Register Allocation, 38 Unallocated Warps, 65 SM Issue Active, 86 L1 texture,
+93 L1 hit) with the bundled `host-windows-x64/sqlite3.exe`. Registers per thread = metric 52 / (metric 32 × 32); values
+are per TPC (2 SMs: 96 warp slots, 131072 registers). The frame's segments are obvious in the 50 µs timeline:
+
+| segment | length | regs / thread | pixel warps / SM | register cap (warps / SM) | issue active | L1 hit |
+|---|---|---|---|---|---|---|
+| depth prepass | ~1.0 ms | ~50 | ~16 | ~40 (not the limit) | 35–45% | 96% |
+| forward | ~2.6 ms | **~145–160** | **~5–10** | **~13 (27% of 48)** | 20–35% | 93% |
+
+The forward raymarch pixel shader allocates ~150 registers per thread, so an SM can hold at most ~13 of its warps
+(27% theoretical occupancy), and it averages 5–10. With the L1 hitting 93% and issue only 20–35% busy, the forward pass
+is latency-bound for lack of warps to switch between. This is the "occupancy" the final pass inferred, now with numbers.
+Register targets: ≤128 → 16 warps/SM (+23%), ≤96 → 21, ≤80 → 25. The prepass (~50 registers) is not register-limited;
+its low warp count has another cause (small per-object draws, depth-output ordering — unmeasured).
+
+This also gives a cheap way to score register-reduction attempts: build a variant, capture 5 s, read regs/thread in the
+forward segment. Candidates: run the material walk BEFORE triplanar/normals so their results aren't live across it;
+half-precision material maths; brush data read at a uniform index from a buffer (NVIDIA can hold uniform loads in
+uniform registers); keep transmission's light loop un-unrolled.
+
+**Register pressure (#21, 2026-10-25).** Each variant was a real build (compile-time define, or edit / measure /
+revert), captured for 5 s during the `shader` suite's `dense r1` sample (`seconds 30`). The number is the **median
+regs/thread** over the forward band (samples ≥ 60 regs/thread with > 0.5 pixel warps/TPC). The ratio counts every
+3D register (vertex warps too) against pixel warps, so read it as a relative score: the mesh shader reads ~96 on the
+same scale.
+
+| build | regs / thread | forward | image |
+|---|---|---|---|
+| HEAD (baseline) | **149** | — | — |
+| **reorder: `SdfShade` before `SdfNormal` / triplanar / normal map (KEPT)** | **122** | −0.14…−1.66 ms, every case of the final run vs both befores | identical |
+| + brush texels only from `g_BrushBuf` (buffer-only compile, #3) | 122 | not benched (no register change) | — |
+| + `min16float` material blends (`SdfSurface` + lerps) | — | editor shader compile never finished (12+ min; the other 5 shaders took seconds) | — |
+| + load A / C after the cull (#10 again) | 123 | not benched | — |
+| + one `OneBrushDist` call site in `BrushDist` (identity = first mirror iteration) | 122 | not benched | — |
+| + slim `Material::Init( pos, ss )` through transmission, full `Init( i )` only before `ClayShade` | 122 | not benched | — |
+| + `[branch]` on the walk, uniform / baked-material tests, transmission and its metal early-out | 122 | not benched | — |
+
+Strip builds (compile-time `SDF_SKIP` mask; 1024 = `ClayShade` replaced by a flat output) show where the peak lives:
+
+| stripped | HEAD order | reordered |
+|---|---|---|
+| nothing | 149 | 122 |
+| walk + transmission (`ClayShade` only) | 117 | 117 |
+| transmission (walk + `ClayShade`) | 149 | 122 |
+| walk (transmission + `ClayShade`) | 145 | 145 |
+| `ClayShade` (walk + transmission) | 148 | 122 |
+| transmission + `ClayShade` (walk alone) | 121 | 122 |
+| walk + `ClayShade` (transmission alone) | 117 | — |
+| walk + transmission + `ClayShade` | ~72 | — |
+| `mimiclay_sdf_force_mesh 1` (mesh shader + `ClayShade`) | ~96 | |
+
+Reading it: at HEAD the walk ran with the normal, the three triplanar results and the rebased `i` fields all live, and
+that pushed the peak to ~149. Reordered, the walk itself (~122) sets the peak, with `ClayShade` alone at ~117. Below
+that, allocation **is not monotone in the code**: stripping the spline primitive (`SDF_SHAPE_STRIP` 1) took the
+reordered build back UP to 147, and stripping spline + extruded + text + cone to 143 (extruded, text or cone alone:
+122). Stripping the walk at compile time also gave 145. The driver's allocator seems to land in two states, ~122 or
+~145, depending on what else is in the program. So shaving the walk's maths is not a reliable lever. Getting to ≤96
+would mean making `ClayShade` cheaper in this shader (it's ~117 here vs ~96 in the mesh shader, and the live state
+across it is small), which can't be done without SASS-level visibility. Transmission's light loop is already `[loop]`
+and doesn't set the reordered peak. Any future change to the forward shading block should be re-scored with this
+capture, since an unrelated edit can flip the allocation back to ~145.
+
 Ranked by expected impact, not effort. Savings are estimates until a run says otherwise. Work one item at a time
 (one editor, one GPU, and nearly every item touches `sdf_raymarch.shader` / `sdf_eval.hlsl`): gate it behind a
 ConVar, bench with an in-run `ab` arm, commit, then fill in Run / Verdict here.
@@ -203,6 +270,7 @@ the session's scratchpad. Copies of the two scripts are in the side-session note
 | 19 | Shading-path comparison: what the forward "lighting + output" remainder (bit 64 − bit 47) is, and any SDF-only overhead in it | forward 0.4–0.6 ms remainder | ? | measured (note "Final pass" below) | [attribution](Tools/sdf/bench/runs/20261025-160846-ship-remainder-attribution.json), strip builds [47](Tools/sdf/bench/runs/20261025-161739-ship-occupancy-strip47.json) / [8](Tools/sdf/bench/runs/20261025-162303-ship-occupancy-strip8.json) / [keep walk](Tools/sdf/bench/runs/20261025-162719-ship-occupancy-keepwalk.json) / [keep transmission](Tools/sdf/bench/runs/20261025-163128-ship-occupancy-keeptrans.json) | the remainder is engine lighting (`ClayShade`, same code as the mesh shader, 0.36–0.6 ms); SDF-only overhead = occupancy, set independently by the material walk and transmission (~0.1–0.2 ms on the march); no cheap fix |
 | 19b | Force `OverdrawOptimization` on every prop (PropGen templates author it off: 146 of 256 dev props, 380 of 660 in prefabs/scenes) | doubled box-face march | 0.3–1 ms (expected) | tried, code reverted (was ConVar `mimiclay_sdf_overdraw_all`) | same runs as #2 | `same`: one face vs both faces on all 256 props differs by ≤ 0.06 ms; images identical |
 | 20 | Cheaper transmission at the same look: wave-uniform light loop (`ClusterForEach`, no per-light shadow sample), lazy inward tap | transmission 0.22–0.38 ms | 0.1–0.2 ms | tried, code reverted (were ConVars `mimiclay_sdf_trans_fast`, `_trans_lazy_tap`) | [trans-fast](Tools/sdf/bench/runs/20261025-163657-ship-trans-fast.json), [lazy-tap](Tools/sdf/bench/runs/20261025-164536-ship-trans-lazy-tap.json) | `same`: forward +0.01 / ±0.01 ms, images identical; the tap costs ~0 and the march 0.06–0.13 ms, so no stage is worth a look change |
+| 21 | Register pressure of the forward PS: run `SdfShade` (the brush walk) BEFORE the normal / triplanar samples so their results aren't live across it; also tried half-precision material, buffer-only brush reads, late A/C loads, one `OneBrushDist` site, slim Material across transmission, `[branch]` | forward occupancy (~149 regs/thread → ≤13 warps/SM) | ≤128 regs (16 warps/SM) | DONE (uncommitted): reorder kept, everything else reverted (note "Register pressure" below) | before / after / before-2 / final: [shader](Tools/sdf/bench/runs/20261025-183140-shader-regs-before.json) / [reorder](Tools/sdf/bench/runs/20261025-183643-shader-regs-reorder.json) / [before-2](Tools/sdf/bench/runs/20261025-184105-shader-regs-before2.json) / [final](Tools/sdf/bench/runs/20261025-192629-shader-regs-reorder-final.json); [ship](Tools/sdf/bench/runs/20261025-183340-ship-regs-before.json) / [reorder](Tools/sdf/bench/runs/20261025-183843-ship-regs-reorder.json) / [before-2](Tools/sdf/bench/runs/20261025-184305-ship-regs-before2.json) / [final](Tools/sdf/bench/runs/20261025-192829-ship-regs-reorder-final.json) | **149 → 122 regs/thread** (16–17 warps/SM cap); forward −0.14…−1.66 ms in every case of the final run vs both befores (`FASTER`: shader dense, ship close-lod); images identical |
 | — | Single-material shortcut (`mimiclay_sdf_uniform_material`) | material walk | | DONE `55543a3` | [uniform-material](Tools/sdf/bench/runs/20261025-104220-shader-uniform-material.json) | forward −0.02…−0.12 ms, images identical (2× MSAA run) |
 
 **#10 result (2026-10-25, 8× MSAA, 4 s samples):** forward ms before / after / before-2: dense 1.96 / 1.96 / 1.97,

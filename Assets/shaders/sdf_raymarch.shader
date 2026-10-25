@@ -1482,6 +1482,28 @@ PS
 			return o;
 		}
 
+		// Blended colour + per-brush metalness/roughness at the hit point. Matches the mesh shader's
+		// semantics so the meshed LODs and the raymarch agree: global sliders stay master controls.
+		// Runs FIRST, before the normal and the triplanar samples: nothing they produce is then live
+		// across the brush walk, which cut the forward pass from ~149 to ~122 registers per thread
+		// (Round 2 #21; Nsight GPU metrics). Keep the walk ahead of any new shading state.
+		SdfSurface surf;
+		surf.col = float3( 1, 1, 1 ); surf.metal = 0.0; surf.rough = 1.0;
+		if ( !SDF_SKIP( 1 ) )
+			surf = SdfShade( p );
+		if ( SDF_SKIP( 512 ) )
+		{
+			o.vColor = float4( surf.metal, surf.rough, 0.0, 1.0 ); // material channels: R metal, G rough
+			o.flDepth = flSurfaceDepth;
+			return o;
+		}
+		if ( SDF_SKIP( 256 ) )
+		{
+			o.vColor = float4( StepHeat( s_surfaceEvals * 4 ), 1.0 );
+			o.flDepth = flSurfaceDepth;
+			return o;
+		}
+
 		float3 baseN = normalize( g_vCameraPositionWs - p );
 		if ( !SDF_SKIP( 32 ) )
 			baseN = SdfNormal( p ); // world-space gradient normal
@@ -1520,25 +1542,6 @@ PS
 		// 1/clip-w matches what the rasterizer supplies (1/viewDepth in perspective, 1 in ortho).
 		i.vPositionSs.z = flSurfaceDepth;
 		i.vPositionSs.w = 1.0 / max( Position4WsToPs( float4( p, 1.0 ) ).w, 1e-4 );
-
-		// Blended colour + per-brush metalness/roughness at the hit point. Matches the mesh shader's
-		// semantics so the meshed LODs and the raymarch agree: global sliders stay master controls.
-		SdfSurface surf;
-		surf.col = float3( 1, 1, 1 ); surf.metal = 0.0; surf.rough = 1.0;
-		if ( !SDF_SKIP( 1 ) )
-			surf = SdfShade( p );
-		if ( SDF_SKIP( 512 ) )
-		{
-			o.vColor = float4( surf.metal, surf.rough, 0.0, 1.0 ); // material channels: R metal, G rough
-			o.flDepth = flSurfaceDepth;
-			return o;
-		}
-		if ( SDF_SKIP( 256 ) )
-		{
-			o.vColor = float4( StepHeat( s_surfaceEvals * 4 ), 1.0 );
-			o.flDepth = flSurfaceDepth;
-			return o;
-		}
 
 		Material m = Material::Init( i );
 		m.Albedo = albedo * g_vTintColor * surf.col;
