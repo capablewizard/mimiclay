@@ -347,7 +347,7 @@ public sealed class HunterGun : Component
 		// be relied on here (reproduced vanishing on 2026-08-25), so force it off outright for this one clone
 		// rather than tightening the shared threshold (and its perf) for every other SDF prop in the game.
 		if ( _viewSdf.IsValid() )
-			_viewSdf.OverdrawOptimization = false;
+			_viewSdf.OverdrawOptimizationOverride = false; // the Viewmodel profile has it off too; this keeps it a hard guarantee
 
 		// No hunter splats on the hunter's own gun. Per-object, because both clones come from gun.prefab, whose
 		// world material (plasticine.vmat) is shared with every prop that SHOULD take splats; the view clone's
@@ -479,9 +479,9 @@ public sealed class HunterGun : Component
 		if ( _worldSdf.IsValid() )
 		{
 			_worldSdf.RenderHidden = firstPerson || HideAll;
-			// Both gun models use the Detail voxel size (the camera gets right up against them). Set every frame
+			// The world gun is part of the pawn (Player profile); the view gun below uses Viewmodel. Set every frame
 			// so it survives a re-clone; the renderer only re-bakes when the resolved grid actually changes.
-			_worldSdf.FieldDensity = SdfFieldDensity.Detail;
+			_worldSdf.RuntimeProfile = SdfQualityProfile.Player;
 		}
 
 		// Repin the muzzle points to the live scales (per frame, so the scale sliders stay live): the brush
@@ -499,7 +499,7 @@ public sealed class HunterGun : Component
 			{
 				if ( _viewSdf.IsValid() )
 				{
-					_viewSdf.FieldDensity = SdfFieldDensity.Detail;
+					_viewSdf.RuntimeProfile = SdfQualityProfile.Viewmodel;
 					_viewSdf.ViewLayer = ViewLayerMode;
 					_viewSdf.ViewmodelFovScale = FovScale();
 

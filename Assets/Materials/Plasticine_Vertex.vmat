@@ -6,13 +6,13 @@ Layer0
 
 	//---- Curvature ----
 	g_bCurveFromVertexPaint "0"
-	g_flCurveDark "0.000"
+	g_flCurveDark "0.350"
 	g_flCurveLight "0.500"
 	g_flCurveLightSatBoost "1.000"
 	g_flCurveNormalBoost "0.000"
-	g_flCurveRadius "2.309"
+	g_flCurveRadius "1.428"
 	g_flCurveRoughBoost "0.000"
-	g_flCurveSatBoost "1.000"
+	g_flCurveSatBoost "1.500"
 
 	//---- Fog ----
 	g_bFogEnabled "1"

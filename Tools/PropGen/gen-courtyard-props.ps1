@@ -466,7 +466,6 @@ function Emit($file, $name, $res, $brushes) {
         FlipFaces = $false; Material = 'materials/plasticine_vertex.vmat'
         OnComponentDestroy = $null; OnComponentDisabled = $null; OnComponentEnabled = $null
         OnComponentFixedUpdate = $null; OnComponentStart = $null; OnComponentUpdate = $null
-        Resolution = 32
     }
     $model = [ordered]@{
         __type = 'Sandbox.ModelRenderer'; __guid = (NG); __enabled = $true; Flags = 0
@@ -480,16 +479,15 @@ function Emit($file, $name, $res, $brushes) {
     }
     $ray = [ordered]@{
         __type = 'Mimiclay.SdfRaymarchRenderer'; __guid = (NG); __enabled = $true; Flags = 0
-        AdaptiveQuality = $true; BrushCulling = $true; CullRadii = 220; DebugBounds = $false
-        DebugLiveField = $false; DebugLod = $false; DebugSwitchState = $false; DepthClamp = $false
-        Displace = $true; DisplaceAmount = 0.35; DisplaceFrequency = 0.25; DistanceSwitching = $true
-        Epsilon = 0.15; FarEpsilon = 3.5; FieldCacheOnly = $true; FieldNormalScale = 0.5
-        FieldResolution = $res; FullQualityRadii = 2; LodHysteresis = 0.06
-        Material = 'materials/plasticine.vmat'; MaxSteps = 50; MeshLod1Radii = 90; MeshLod2Radii = 140
-        MeshMode = 'DepthProxy'; MinQualityRadii = 16; MinSteps = 6
+        # Quality (march steps, epsilon, adaptive quality, LOD radii, overdraw, field density) is NOT written: the
+        # renderer inherits it from its SdfQualityProfile (Standard). Writing it here is how the library drifted.
+        DebugBounds = $false; DebugLiveField = $false; DebugLod = $false; DebugSwitchState = $false; DepthClamp = $false
+        Displace = $true; DisplaceAmount = 0.35; DisplaceFrequency = 0.25
+        FieldCacheOnly = $true; FieldNormalScale = 0.5
+        Material = 'materials/plasticine.vmat'; MeshMode = 'DepthProxy'
         OnComponentDestroy = $null; OnComponentDisabled = $null; OnComponentEnabled = $null
         OnComponentFixedUpdate = $null; OnComponentStart = $null; OnComponentUpdate = $null
-        OverdrawOptimization = $false; SparseField = $true; TightBounds = $false
+        TightBounds = $false
         Transmission = $true; UseFieldCache = $true
     }
     $collider = [ordered]@{

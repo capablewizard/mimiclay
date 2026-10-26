@@ -484,7 +484,10 @@ public static class SurfaceNetsMesher
 			metal += d[o + 1] * w;
 			rough += d[o + 2] * w;
 
-			int packed = (int)(d[o + 3] + 0.5f);
+			// Round in DOUBLE: a colour with blue ≥ 128 packs above 2^23, where a float has no .5 — `x + 0.5f`
+			// rounded half-to-even and added 1 to every odd pack, so white (r = 255) wrapped to r = 0 with a carry
+			// into green, and white meshed as cyan (lemon_wedge's pith, 2026-10-26).
+			int packed = (int)Math.Round( (double)d[o + 3] );
 			r += (packed & 0xFF) * w;
 			gr += ((packed >> 8) & 0xFF) * w;
 			b += ((packed >> 16) & 0xFF) * w;

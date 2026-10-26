@@ -3149,14 +3149,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6bb0d30a-b3e9-4b29-b0b2-78e92603a89a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -3206,14 +3198,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b237d4e4-c6ed-4d6b-883c-26cbb524d886"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -3409,14 +3393,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "be4ca03e-d4f4-418a-b78e-9b63eb26b47d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -3571,14 +3547,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "be4ca03e-d4f4-418a-b78e-9b63eb26b47d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -3636,14 +3604,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70fab36d-b948-404f-826c-9050965f5b1e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -3709,14 +3669,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70fab36d-b948-404f-826c-9050965f5b1e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -3903,14 +3855,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1cd8b14b-e64b-4a8f-afcc-8d8548a52422"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -3968,14 +3912,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "03531e76-ccd0-43d7-98b1-9af8a5f2e685"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -4145,14 +4081,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cc6bfb12-75ab-4297-bb44-840c86125115"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -4210,14 +4138,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9cc14d46-ff3b-454b-a357-50c101f52541"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -4404,14 +4324,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "fa915e5d-627d-4265-93b6-70139e75febd"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -4469,14 +4381,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "23ecc0b9-f023-4cf1-b110-462e98fd567c"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -4534,14 +4438,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "04b8ee35-e7f2-435b-8a4e-21d41ebf994a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -4599,14 +4495,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cc4cfc2d-e760-49a3-8b11-ce3cc4c2a143"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5397,14 +5285,6 @@
                 },
                 "Property": "Model",
                 "Value": "sbox_procedural_model.vmdl"
-              },
-              {
-                "Target": {
-                  "Type": "Component",
-                  "IdValue": "52fbaad2-1e68-4647-ab2a-e00e4539dd87"
-                },
-                "Property": "FieldDensity",
-                "Value": "World"
               }
             ],
             "MovedObjects": []
@@ -5456,14 +5336,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8409619b-f482-4817-93da-ddcbffe011f4"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5529,14 +5401,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cc6bfb12-75ab-4297-bb44-840c86125115"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5602,14 +5466,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9cc14d46-ff3b-454b-a357-50c101f52541"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5667,14 +5523,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "fa915e5d-627d-4265-93b6-70139e75febd"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5724,14 +5572,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5a4a533b-2823-4074-a4c3-cee3f47b4a7f"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5789,14 +5629,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ff119836-9210-494a-afbc-d45f6aed3913"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5854,14 +5686,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "174affe6-5360-4184-89a7-54b1a01b2fe1"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -5919,14 +5743,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9b013de8-3201-48db-b8d7-16b090475a57"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6233,14 +6049,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "e6fe4da6-8025-4954-8bd4-cf577c9c532d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6319,14 +6127,6 @@
                     },
                     "Property": "Model",
                     "Value": "sbox_procedural_model.vmdl"
-                  },
-                  {
-                    "Target": {
-                      "Type": "Component",
-                      "IdValue": "d6f224e9-bc1a-4190-98ca-0eddf32eb516"
-                    },
-                    "Property": "FieldDensity",
-                    "Value": "World"
                   }
                 ],
                 "MovedObjects": []
@@ -6400,14 +6200,6 @@
                     },
                     "Property": "Model",
                     "Value": "sbox_procedural_model.vmdl"
-                  },
-                  {
-                    "Target": {
-                      "Type": "Component",
-                      "IdValue": "c2bfc19f-0e36-4fc6-8d0a-b5d9dd21047f"
-                    },
-                    "Property": "FieldDensity",
-                    "Value": "World"
                   }
                 ],
                 "MovedObjects": []
@@ -6450,14 +6242,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "4d025ec6-b92a-4ab4-98da-cd6c2f82f375"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6499,14 +6283,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.612728357,0.790293455"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6625adfb-86e2-4bac-8d28-54381d2f524c"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6564,14 +6340,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a31fa520-4f39-4619-88cc-77f7479bfc62"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6629,14 +6397,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f2e2895c-f1c5-4c02-83c7-91b395e92af6"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6742,14 +6502,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9cf3c04a-6aea-4cff-a52f-2a963e5c2ce0"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6799,14 +6551,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9cf3c04a-6aea-4cff-a52f-2a963e5c2ce0"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6920,14 +6664,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "20000016-0000-4000-8000-000000000004"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -6977,14 +6713,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a191ebf5-bf3e-43aa-947e-6fc6469caf74"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -7644,14 +7372,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -7701,14 +7421,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -7942,14 +7654,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "253c76f0-6a9a-459b-9d26-7df191da49e0"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8128,14 +7832,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0c7c4e0a-becf-45a5-af09-459685312921"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8314,14 +8010,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d4031c71-7ad9-4c2d-b946-e991603d0b2e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8420,14 +8108,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "84063aeb-13b8-4e10-82b4-ded1858ebf95"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8555,14 +8235,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f1d17cfd-fb65-4a90-a028-f9c5d0011eff"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8604,46 +8276,6 @@
             },
             "Property": "Enabled",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6ac06c99-e9f5-49fc-a466-228dfee01213"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3d5e0a47-ad0b-436a-9ae4-db33243436ef"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "555278aa-635f-4a8f-a043-aa5328b1546d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b846c78a-52bf-4422-ac84-738b66348ace"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "325539b7-7728-4806-b884-7daed4e9f11e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8725,46 +8357,6 @@
             },
             "Property": "Enabled",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6ac06c99-e9f5-49fc-a466-228dfee01213"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3d5e0a47-ad0b-436a-9ae4-db33243436ef"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "555278aa-635f-4a8f-a043-aa5328b1546d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b846c78a-52bf-4422-ac84-738b66348ace"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "325539b7-7728-4806-b884-7daed4e9f11e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8846,46 +8438,6 @@
             },
             "Property": "Enabled",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6ac06c99-e9f5-49fc-a466-228dfee01213"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3d5e0a47-ad0b-436a-9ae4-db33243436ef"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "555278aa-635f-4a8f-a043-aa5328b1546d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b846c78a-52bf-4422-ac84-738b66348ace"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "325539b7-7728-4806-b884-7daed4e9f11e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -8967,46 +8519,6 @@
             },
             "Property": "Enabled",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6ac06c99-e9f5-49fc-a466-228dfee01213"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3d5e0a47-ad0b-436a-9ae4-db33243436ef"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "555278aa-635f-4a8f-a043-aa5328b1546d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b846c78a-52bf-4422-ac84-738b66348ace"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "325539b7-7728-4806-b884-7daed4e9f11e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9088,46 +8600,6 @@
             },
             "Property": "Enabled",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6ac06c99-e9f5-49fc-a466-228dfee01213"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3d5e0a47-ad0b-436a-9ae4-db33243436ef"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "555278aa-635f-4a8f-a043-aa5328b1546d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b846c78a-52bf-4422-ac84-738b66348ace"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "325539b7-7728-4806-b884-7daed4e9f11e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9209,46 +8681,6 @@
             },
             "Property": "Enabled",
             "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6ac06c99-e9f5-49fc-a466-228dfee01213"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3d5e0a47-ad0b-436a-9ae4-db33243436ef"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "555278aa-635f-4a8f-a043-aa5328b1546d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b846c78a-52bf-4422-ac84-738b66348ace"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "325539b7-7728-4806-b884-7daed4e9f11e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9334,14 +8766,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "6ac06c99-e9f5-49fc-a466-228dfee01213"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "ba768d62-c4ee-4ad1-894e-bb8efed32ca7"
             },
             "Property": "LodOverride",
@@ -9354,38 +8778,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3d5e0a47-ad0b-436a-9ae4-db33243436ef"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "555278aa-635f-4a8f-a043-aa5328b1546d"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b846c78a-52bf-4422-ac84-738b66348ace"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "325539b7-7728-4806-b884-7daed4e9f11e"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9526,14 +8918,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2c426cf0-8ebb-4bba-b4fc-fbf5c0d844a2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9583,14 +8967,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2c426cf0-8ebb-4bba-b4fc-fbf5c0d844a2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9640,14 +9016,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2c426cf0-8ebb-4bba-b4fc-fbf5c0d844a2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9697,14 +9065,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2c426cf0-8ebb-4bba-b4fc-fbf5c0d844a2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9762,14 +9122,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b12f821e-109a-4eed-ba08-2a9a4f5930a1"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []

@@ -738,8 +738,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -773,10 +772,8 @@
           "__guid": "95b77a7b-ad49-47ad-976b-f2c0c524e65e",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.05,
           "HideMesh": true,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 96,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -840,8 +837,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -875,10 +871,8 @@
           "__guid": "494d3426-3ed7-4dd3-8d79-6415213faeab",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.05,
           "HideMesh": true,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 96,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -942,8 +936,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -977,10 +970,8 @@
           "__guid": "89e2d9b9-a492-421d-a3eb-1bca2d7799db",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.05,
           "HideMesh": true,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 96,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1044,8 +1035,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 8
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1079,10 +1069,8 @@
           "__guid": "1d0214de-28d5-4ffa-8b87-c309625d4dda",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.05,
           "HideMesh": true,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 96,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1179,8 +1167,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1214,10 +1201,8 @@
           "__guid": "5cdce07f-845c-4ace-8dc6-9af418ecd136",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1314,8 +1299,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1349,10 +1333,8 @@
           "__guid": "16c1d29e-2050-4476-9baa-c289c459d834",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1449,8 +1431,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1484,10 +1465,8 @@
           "__guid": "86af7cd9-1552-41ae-a90f-183f70aa1eb1",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1584,8 +1563,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1619,10 +1597,8 @@
           "__guid": "6dcd34f7-87c6-4c16-aa7e-6e7713f794da",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1719,8 +1695,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1754,10 +1729,8 @@
           "__guid": "73c88651-41fb-43d2-bca0-e3968b04bf7a",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1854,8 +1827,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1889,10 +1861,8 @@
           "__guid": "2d20e67f-c364-42e8-9d96-2d107e0d3036",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -1989,8 +1959,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2024,10 +1993,8 @@
           "__guid": "6dfe149e-a0ff-4bab-9327-df7688da427b",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2124,8 +2091,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2159,10 +2125,8 @@
           "__guid": "04c3c485-ce39-4ce0-9d35-348326fe5c81",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2259,8 +2223,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2294,10 +2257,8 @@
           "__guid": "027e0a0d-a7e2-4553-addd-270fa670cea0",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2394,8 +2355,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2429,10 +2389,8 @@
           "__guid": "45501dea-cdaa-4ef9-9dbd-7f05e6b0acf7",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2529,8 +2487,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2564,10 +2521,8 @@
           "__guid": "aab2dd1f-7c14-401f-bfe3-02b72eeeafbe",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2664,8 +2619,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2699,10 +2653,8 @@
           "__guid": "30cb0c7f-e0d5-4e44-831a-dbb526b33072",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2799,8 +2751,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2834,10 +2785,8 @@
           "__guid": "c3f67bd4-dd72-428c-b8f6-5e70248c565f",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2934,8 +2883,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -2969,10 +2917,8 @@
           "__guid": "827c0b89-bbdd-4ff7-a694-f2529c5a6bc6",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3069,8 +3015,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -3104,10 +3049,8 @@
           "__guid": "59360589-c9c8-49ae-a994-2c1d5829da57",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3204,8 +3147,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -3239,10 +3181,8 @@
           "__guid": "0d267ebd-bfa7-4921-9398-8b402c351475",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3339,8 +3279,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -3374,10 +3313,8 @@
           "__guid": "a80367f0-9c0f-4099-af8a-4564ae81ec26",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3474,8 +3411,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -3509,10 +3445,8 @@
           "__guid": "3a0394bf-efad-474f-94aa-a0b1aa3f0dd1",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3609,8 +3543,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -3644,10 +3577,8 @@
           "__guid": "7f27a32f-7700-401c-be86-4d1956d0dd9b",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3744,8 +3675,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -3779,10 +3709,8 @@
           "__guid": "2b52d2ff-3f6d-4cca-9412-df5318e90ba1",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3879,8 +3807,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -3914,10 +3841,8 @@
           "__guid": "be9d1017-e53d-4e39-b43d-97ddb7067d9c",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4014,8 +3939,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -4049,10 +3973,8 @@
           "__guid": "082b5444-4360-4b6c-a6d2-74885b65e8d5",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4149,8 +4071,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -4184,10 +4105,8 @@
           "__guid": "5c0a0466-61e7-458e-8a11-258488842c21",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4284,8 +4203,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -4319,10 +4237,8 @@
           "__guid": "d1a2cd3d-782e-49fc-9d3a-2379ef3094ad",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4419,8 +4335,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -4454,10 +4369,8 @@
           "__guid": "636add04-ba8f-46d9-b009-6f5d35662645",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4554,8 +4467,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -4589,10 +4501,8 @@
           "__guid": "927ae1e4-b062-4efa-8f1c-d0ee628f722d",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4689,8 +4599,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -4724,10 +4633,8 @@
           "__guid": "890dbcca-564f-416c-9121-842b967228b6",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -4901,8 +4808,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -4936,10 +4842,8 @@
           "__guid": "fa12d633-c074-463c-89f3-28f49e84a6c9",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -5113,8 +5017,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -5148,10 +5051,8 @@
           "__guid": "ff217d51-f479-48a6-b8c8-956d23b835fc",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -5383,8 +5284,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -5418,10 +5318,8 @@
           "__guid": "ab42b064-24d3-49bc-818a-096077854143",
           "__enabled": true,
           "Flags": 0,
-          "Epsilon": 0.15,
           "HideMesh": false,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 64,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,

@@ -7393,14 +7393,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.443332016,0.896357536"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
-            },
-            "Property": "DepthOcclusionCull",
-            "Value": false
           }
         ],
         "MovedObjects": []

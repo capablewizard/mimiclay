@@ -107,13 +107,13 @@ public sealed class PerfBenchSystem : GameObjectSystem
 				foreach ( var r in AllIncludingDisabled<SdfRaymarchRenderer>() ) { r.Enabled = on; n++; }
 				break;
 			case "lod":
-				foreach ( var r in AllIncludingDisabled<SdfRaymarchRenderer>() ) { r.DistanceSwitching = on; n++; }
+				foreach ( var r in AllIncludingDisabled<SdfRaymarchRenderer>() ) { r.DistanceSwitchingOverride = on; n++; }
 				break;
 			case "shadowlod":
-				foreach ( var r in AllIncludingDisabled<SdfRaymarchRenderer>() ) { r.SdfShadowRadii = on ? 10f : 0f; n++; }
+				foreach ( var r in AllIncludingDisabled<SdfRaymarchRenderer>() ) { r.SdfShadowRadiiOverride = on ? 10f : 0f; n++; }
 				break;
 			case "overdraw":
-				foreach ( var r in AllIncludingDisabled<SdfRaymarchRenderer>() ) { r.OverdrawOptimization = on; n++; }
+				foreach ( var r in AllIncludingDisabled<SdfRaymarchRenderer>() ) { r.OverdrawOptimizationOverride = on; n++; }
 				break;
 			default:
 				Log.Warning( $"[bench] unknown feature '{feature}' (sdfshadows|boil|collider|renderer|lod|shadowlod|overdraw)" );

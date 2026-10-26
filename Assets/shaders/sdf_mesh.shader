@@ -63,9 +63,23 @@ VS
 {
 	#include "common/vertex.hlsl"
 
+	// World units to push each vertex out along its normal (see MainVs). Runtime uniform, not a combo.
+	float g_flSdfMeshInflate < Attribute( "SdfMeshInflate" ); Default( 0.0 ); >;
+
 	PixelInput MainVs( VertexInput i )
 	{
 		PixelInput o = ProcessVertex( i );
+		// Match the raymarched LOD's silhouette: the march counts a ray as a hit once it passes within its
+		// epsilon of the surface, so the marched prop reads as the surface grown by that epsilon (the hit is
+		// refined back onto the surface, but a grazing ray's hit still widens the outline). At the mesh hand-off
+		// that epsilon is the profile's FarEpsilon — an inch on Standard — and the exact mesh visibly shrank on
+		// the swap. Push the vertex out along its normal by the same world distance (SdfMeshInflate, set by
+		// SdfRaymarchRenderer on the sibling mesh; 0 = untouched).
+		if ( g_flSdfMeshInflate > 0.0 )
+		{
+			o.vPositionWs.xyz += normalize( o.vNormalWs.xyz ) * g_flSdfMeshInflate;
+			o.vPositionPs = Position3WsToPs( o.vPositionWs.xyz );
+		}
 		// Grab the per-instance tint before overwriting vVertexColor with the mesh's own COLOR0 —
 		// ProcessVertex seeds that slot from it, so assigning i.vColor is what used to make the
 		// renderer's Tint property a no-op on this shader.
@@ -169,6 +183,12 @@ PS
 	// the sibling renderer and by SdfSculpture on model assignment). Drives SeedTexOffset below; 0 (unset)
 	// = authored texture placement.
 	float  g_flBoilSeed < Attribute( "BoilSeed" ); Default( 0.0 ); >;
+
+	// Debug (profile / renderer DebugLod): 1 = replace the albedo with the per-instance tint, which
+	// SdfRaymarchRenderer sets to the mesh band's colour — a flat, readable hand-off view instead of a
+	// tint multiplied into the clay colour. Lighting still applies so the shape reads. Runtime uniform,
+	// not a combo; set on the sibling mesh's scene object every frame and 0 otherwise.
+	float  g_flSdfDebugFlat < Attribute( "SdfDebugFlat" ); Default( 0.0 ); >;
 
 	// Accurate sRGB->linear, so the gamma vertex colour matches the SrgbRead texture albedo.
 	float3 SrgbToLinear( float3 c )
@@ -378,12 +398,16 @@ PS
 		// Cavity and ridge are mutually exclusive, so folding the two lerps into one factor is exact.
 		m.Albedo = BoostSat( m.Albedo, lerp( 1.0, g_flCurveSatBoost, cavity )
 		                             * lerp( 1.0, g_flCurveLightSatBoost, saturate( ridgeLift ) ) );
+		if ( g_flSdfDebugFlat > 0.5 )
+			m.Albedo = i.vInstanceTint.rgb;
 
 		// Floor roughness so near-zero samples don't produce pinpoint specular fireflies. The global
 		// g_flRoughness stays a master multiplier; the triplanar texture adds micro-detail. The
 		// curvature offset is added last, after all multipliers, so it bites even on dark/rough setups.
 		m.Roughness = max( saturate( roughness * g_flRoughness * vMR.y + g_flCurveRoughBoost * curvRidge ), 0.08 );
 		m.Metalness = saturate( vMR.x + g_flMetalness );
+		if ( g_flSdfDebugFlat > 0.5 )
+			m.Metalness = 0.0; // metal would tint the flat debug colour by its reflections
 
 		float4 c = ClayShade( i, m );
 		// Stop NaN/fireflies before the DoF gather smears them into bright bokeh discs.

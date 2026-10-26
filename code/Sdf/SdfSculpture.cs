@@ -23,7 +23,58 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 		new SdfBrush { Shape = SdfShape.Sphere, Size = 24f },
 	};
 
-	[Property, Range( 8, 96 )] public int Resolution { get; set; } = 32;
+	/// <summary>Pin mesh LOD0's cell count for this prop (LOD1/LOD2 mesh at ½ and ¼). Empty — the norm — takes it from the
+	/// quality profile's Mesh LODs rule (a world cell size, see <see cref="SdfQualityProfile.MeshResolution"/>). This used
+	/// to be a plain per-prefab count, which drifted (288 prefabs at 32, the rest at 24–64) and meshed big props at
+	/// 5" cells.</summary>
+	[Property, Title( "Mesh Resolution Override" ), Range( 8, 96 )] public int? ResolutionOverride { get; set; }
+
+	/// <summary>Code-only resolution (NOT authored — a [Property] would leak into network snapshots): wins over everything
+	/// when above 0. The offscreen thumbnail stage meshes a throwaway at 8.</summary>
+	public int RuntimeResolution { get; set; }
+
+	/// <summary>Mesh LOD0's cell count as it will be built: <see cref="RuntimeResolution"/>, then
+	/// <see cref="ResolutionOverride"/>, then the profile's rule over the brushes' world bounds.</summary>
+	public int Resolution
+	{
+		get
+		{
+			if ( RuntimeResolution > 0 ) return Math.Clamp( RuntimeResolution, 4, 96 );
+			if ( ResolutionOverride is int pinned ) return Math.Clamp( pinned, 4, 96 );
+
+			var profile = MeshProfile;
+			var brushes = MeshBrushes( Brushes );
+			if ( brushes is not { Count: > 0 } || !Sdf.TryGetBounds( brushes, out var bounds ) )
+				return Math.Clamp( profile.MeshMinCells, 4, 96 );
+
+			var ws = WorldScale;
+			float scale = MathF.Max( MathF.Abs( ws.x ), MathF.Max( MathF.Abs( ws.y ), MathF.Abs( ws.z ) ) );
+			var size = bounds.Size;
+			float longest = MathF.Max( size.x, MathF.Max( size.y, size.z ) ) * scale;
+			return Math.Clamp( profile.MeshResolution( longest ), 4, 96 );
+		}
+	}
+
+	/// <summary>The profile the mesh LODs follow: the sibling raymarch renderer's (never its Editing promotion — the drag
+	/// shadow is the LOD1 mesh), or Standard for a mesh-only sculpture.</summary>
+	SdfQualityProfile MeshProfile => GameObject.Components.Get<SdfRaymarchRenderer>()?.MeshProfile ?? SdfQualityProfile.Standard;
+
+	// The profile mesh rule the current Model was built for; a change (an inspector edit, a RuntimeProfile swap)
+	// remeshes once. See CheckMeshProfile.
+	(float Cell, int Min, int Knee, int Max) _builtMeshRule;
+	bool _builtMeshRuleValid;
+
+	/// <summary>Remesh if the profile's mesh rule changed since the last build. Called per frame by the sibling
+	/// raymarch renderer (cheap: four compares). Remeshes WITHOUT raising <see cref="Committed"/> — the shape didn't
+	/// change, so colliders and network brush sync have nothing to do.</summary>
+	internal void CheckMeshProfile()
+	{
+		if ( !_builtMeshRuleValid || !AutoRebuild || RuntimeResolution > 0 || ResolutionOverride.HasValue )
+			return;
+		var p = MeshProfile;
+		if ( _builtMeshRule != (p.MeshCellSize, p.MeshMinCells, p.MeshKneeCells, p.MeshMaxCells) )
+			_ = RebuildAsync();
+	}
 
 	[Property] public Material Material { get; set; }
 
@@ -316,6 +367,9 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 		SdfTextSdf.EnsureBaked( brushes );
 
 		var baseMat = Material ?? Material.Load( "materials/dev/reflectivity_50.vmat" );
+		var meshProfile = MeshProfile;
+		_builtMeshRule = (meshProfile.MeshCellSize, meshProfile.MeshMinCells, meshProfile.MeshKneeCells, meshProfile.MeshMaxCells);
+		_builtMeshRuleValid = true;
 		int res = Resolution;
 		bool flip = FlipFaces;
 		int content = ContentHash( brushes, res, flip );

@@ -9857,14 +9857,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3dcc0d2f-bf7b-4e97-ba34-082a2657039a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9906,14 +9898,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -9971,14 +9955,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10036,14 +10012,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10101,14 +10069,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10166,14 +10126,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c6be3474-c77c-464b-98e0-9f1d627589f2"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10305,8 +10257,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -10340,51 +10291,32 @@
           "__guid": "ade585af-b520-4d33-ba1f-e7f1491aef31",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": true,
           "UseFieldCache": true
@@ -10493,14 +10425,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-424.970551"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10550,14 +10474,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10607,14 +10523,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,0.99999994"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10656,14 +10564,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-741.234985,-465.638519"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10705,14 +10605,6 @@
             },
             "Property": "Position",
             "Value": "-250.648331,-584.849365,-371.277924"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10754,14 +10646,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-465.34613"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10803,14 +10687,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1242.81396,-427.365051"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10868,14 +10744,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10917,14 +10785,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1101.1239,-483.758209"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -10966,14 +10826,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-1129.97668,-483.758209"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -11015,14 +10867,6 @@
             },
             "Property": "Position",
             "Value": "-115.19606,-990.478821,-504.864471"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -11088,14 +10932,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -11161,14 +10997,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8c941f26-203d-44cd-9543-cf98c5a1dd55"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -11218,14 +11046,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a5dc336f-3c67-430a-8659-64ca90fbbd9a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -11317,8 +11137,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -11352,51 +11171,32 @@
           "__guid": "a8c9c002-bb3d-43c9-bdd5-9114c409bdc3",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -11555,8 +11355,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -11590,51 +11389,32 @@
           "__guid": "2356c165-a244-46f5-96e9-990ebdb3ec76",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -11793,8 +11573,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -11828,51 +11607,32 @@
           "__guid": "da5592e4-0dc5-4aec-81c1-ae21404151b4",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -12031,8 +11791,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -12066,51 +11825,32 @@
           "__guid": "7265f0e6-a7c5-4c31-9f1c-e644eac74bed",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -12269,8 +12009,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -12304,51 +12043,32 @@
           "__guid": "f90b8da7-bc9e-490b-97d0-c899eb8897f5",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -12507,8 +12227,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -12542,51 +12261,32 @@
           "__guid": "c8d03ebb-027e-47d3-a552-cdfcfcbe15ee",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -12745,8 +12445,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -12780,51 +12479,32 @@
           "__guid": "2e0d12da-17af-48ba-96d8-c2e7e1d08dd5",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -12983,8 +12663,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13018,51 +12697,32 @@
           "__guid": "71ddadd6-e3a4-4c8c-8e9a-8d7b54d1128f",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -13221,8 +12881,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13256,51 +12915,32 @@
           "__guid": "e960e82e-0d1d-4549-9689-6bc12daff90a",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -13459,8 +13099,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13494,51 +13133,32 @@
           "__guid": "4b6bfc42-a00c-4a0f-a180-fbe109ab8318",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -13697,8 +13317,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13732,51 +13351,32 @@
           "__guid": "8c03df0b-7c3c-41df-b6a1-8533bc395cd5",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -13935,8 +13535,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13970,51 +13569,32 @@
           "__guid": "b646a0e6-1d49-4e8f-a4f6-e90536323858",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
           "ShadowTexelEpsilon": 0.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -14131,14 +13711,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -14196,14 +13768,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ae9128e9-aa57-4069-be24-60a0b799fbb3"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -14253,14 +13817,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -14310,14 +13866,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "138d2330-0c29-4860-a270-eaba4c9c29ec"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -14704,14 +14252,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ef219837-1d5f-412f-8938-99c65c87a74c"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -15098,62 +14638,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "CullRadii",
-            "Value": 220
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "FullQualityRadii",
-            "Value": 6
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 90
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 140
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 10
           }
         ],
         "MovedObjects": []
@@ -15211,62 +14695,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "CullRadii",
-            "Value": 220
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "FullQualityRadii",
-            "Value": 6
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 90
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 140
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 10
           }
         ],
         "MovedObjects": []
@@ -16193,22 +15621,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 0.3106796
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "aa4dc91b-f203-8f8b-997a-b9a33b3e1699"
             },
             "Property": "Groups",
@@ -16859,22 +16271,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -16933,22 +16329,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -16991,22 +16371,6 @@
             },
             "Property": "Rotation",
             "Value": "0.000154137611,0.000190317631,-0.591159046,0.806555033"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6625adfb-86e2-4bac-8d28-54381d2f524c"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6625adfb-86e2-4bac-8d28-54381d2f524c"
-            },
-            "Property": "FieldResolution",
-            "Value": 256
           }
         ],
         "MovedObjects": []
@@ -17454,14 +16818,6 @@
                 "BoundingRadius": 2.7031977
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2923add1-725a-4f3f-95d6-239b3ad19cb3"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -17918,14 +17274,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "236b344a-3664-4091-be79-94f64dd145df"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -18434,14 +17782,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1722d7a6-f515-47fa-8cef-4efa147f0ce5"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -18815,14 +18155,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "650b2719-d4f4-4d80-ba94-59dd81331a97"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -18880,14 +18212,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d75a7d42-caa8-4bd7-b3aa-ebd91c607709"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -18929,14 +18253,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "208e5f1e-dc36-4d2a-adda-aaab62430af8"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -18986,14 +18302,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19051,14 +18359,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19108,14 +18408,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f13ba4e2-bffb-484f-9691-8b83745e116a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19503,14 +18795,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f13ba4e2-bffb-484f-9691-8b83745e116a"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19569,14 +18853,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19642,14 +18918,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f209ad5e-7447-4eca-ab11-f31736c30c88"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19715,14 +18983,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19764,14 +19024,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a191ebf5-bf3e-43aa-947e-6fc6469caf74"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19830,14 +19082,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cc42d129-3e63-4238-9cbe-38cd581ddccd"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19895,14 +19139,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f209ad5e-7447-4eca-ab11-f31736c30c88"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -19960,14 +19196,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7ef396b0-597f-45a0-a632-87dc52228dca"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -20952,14 +20180,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1d957c60-f050-4e85-89cc-572156f637cc"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -21018,14 +20238,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a21f5351-8c21-4334-b94d-783bffca524c"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -21876,14 +21088,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0faf42a5-650a-4701-a4fd-507cd8222af7"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -22022,14 +21226,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6a71afea-4d24-45c7-b96e-237af6fa8697"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -22087,14 +21283,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "74827999-5c7c-45b4-8a0d-748a8977f733"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []
@@ -22608,14 +21796,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "FieldDensity",
-            "Value": "World"
           }
         ],
         "MovedObjects": []

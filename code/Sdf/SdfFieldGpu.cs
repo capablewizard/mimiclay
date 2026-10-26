@@ -46,8 +46,9 @@ public sealed class SdfFieldGpu
 	/// overflowing the atlas (overflow tiles get -1 → holes). 6 keeps ~2× headroom over a typical head at 512.</summary>
 	const int TileBudgetPerFace = 6;
 
-	/// <summary>Extra padding (inches) added around the content bounds so a smooth-blend bulge stays inside the
-	/// evaluated volume rather than being clipped at the grid edge. The proxy is grown to match (see the renderer).</summary>
+	/// <summary>The largest padding (inches) around the content bounds, so a smooth-blend bulge stays inside the
+	/// evaluated volume rather than being clipped at the grid edge — used while a prop is being sculpted. A settled
+	/// prop pads by the renderer's proxy pad instead (8"), since the march bracket is the proxy anyway.</summary>
 	public const float BlendPad = 16f;
 
 	// What the raymarch binds (same contract as SdfFieldBaker.BakedField).
@@ -142,11 +143,14 @@ public sealed class SdfFieldGpu
 	/// hash), so a boiling prop costs a few bakes a second rather than per-step noise every frame.
 	/// boilTick &lt; 0 = boil off; jitter/ampJitter mirror <see cref="ClayBoil"/>'s dials.
 	///
-	/// cellSize &gt; 0 = use exactly this LOCAL voxel size (the renderer's density tiers) and derive the voxel count
+	/// pad = the padding (inches, local) around the content bounds, at most <see cref="BlendPad"/> — the renderer uses
+	/// BlendPad while the prop is being sculpted and its (smaller) proxy pad otherwise.
+	///
+	/// cellSize &gt; 0 = use exactly this LOCAL voxel size (the renderer's density rule) and derive the voxel count
 	/// from the bounds; the count is still clamped to the dense/sparse limits, coarsening the cell if it hits them.</summary>
 	public bool Evaluate( List<SdfBrush> brushes, Vector3 localMin, Vector3 localMax, int resolution, bool buildSparse,
 		float dispAmp = 0f, float dispFreq = 0.25f, float boilTick = -1f, float boilJitter = 0f, float boilAmpJitter = 0f,
-		float cellSize = 0f )
+		float cellSize = 0f, float pad = BlendPad )
 	{
 		if ( brushes is null || brushes.Count == 0 )
 			return false;
@@ -166,8 +170,9 @@ public sealed class SdfFieldGpu
 		resolution = Math.Clamp( resolution, 8, maxRes );
 
 		// Pad the bounds so blend bulges stay inside, then size a grid that keeps voxels ~cubic.
-		var mn = localMin - BlendPad;
-		var mx = localMax + BlendPad;
+		pad = Math.Clamp( pad, 0f, BlendPad );
+		var mn = localMin - pad;
+		var mx = localMax + pad;
 		var span = mx - mn;
 		float maxAxis = MathF.Max( span.x, MathF.Max( span.y, span.z ) );
 		if ( maxAxis <= 0f )
