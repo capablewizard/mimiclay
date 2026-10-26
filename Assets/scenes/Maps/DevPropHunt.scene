@@ -114,11 +114,14 @@
               "__guid": "0181cb35-e6e3-40da-933f-e0ad8d3af53f",
               "__enabled": true,
               "Flags": 512,
+              "BakeLightIndex": -1,
               "ContactShadows": true,
               "Contribution": "Diffuse, Specular, Transmissive",
               "FogMode": "Enabled",
               "FogStrength": 1,
+              "IncludeStaticShadowCasters": false,
               "LightColor": "0.94419,0.97767,1,1",
+              "MixedShadows": false,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -619,6 +622,7 @@
           "__enabled": true,
           "Flags": 512,
           "Attenuation": 10,
+          "BakeLightIndex": -1,
           "ConeInner": 0,
           "ConeOuter": 59.571426,
           "Contribution": "Diffuse, Specular, Transmissive",
@@ -626,6 +630,7 @@
           "FogMode": "Enabled",
           "FogStrength": 1,
           "LightColor": "649.4244,696.8024,710.74,1",
+          "MixedShadows": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -715,6 +720,7 @@
           "__enabled": true,
           "Flags": 0,
           "Attenuation": 10,
+          "BakeLightIndex": -1,
           "ConeInner": 0,
           "ConeOuter": 59.571426,
           "Contribution": "Diffuse, Specular, Transmissive",
@@ -722,6 +728,7 @@
           "FogMode": "Enabled",
           "FogStrength": 1,
           "LightColor": "649.4244,696.8024,710.74,1",
+          "MixedShadows": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -811,6 +818,7 @@
           "__enabled": true,
           "Flags": 0,
           "Attenuation": 10,
+          "BakeLightIndex": -1,
           "ConeInner": 0,
           "ConeOuter": 59.571426,
           "Contribution": "Diffuse, Specular, Transmissive",
@@ -818,6 +826,7 @@
           "FogMode": "Enabled",
           "FogStrength": 1,
           "LightColor": "649.4244,696.8024,710.74,1",
+          "MixedShadows": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2228,7 +2237,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "38aad64a-5716-49a9-b455-8a9ab7a80e43",
+            "Id": "daf0ee1a-48ae-47a4-a371-4701257b7e06",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -2263,11 +2272,13 @@
           "__guid": "2fe6ab35-9a66-46f0-9ba6-2d2cf39436c8",
           "__enabled": true,
           "Flags": 0,
+          "__version": 2,
+          "BakeVersion": 0,
+          "BlendDistance": 0,
           "Bounds": {
             "Mins": "-392,-908.25,-247.5",
             "Maxs": "392,908.25,247.5"
           },
-          "Contrast": 1,
           "DistanceTexture": {
             "Id": "a3e7359c-a462-4adf-bf30-082ca8085f4c",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_main_distance_2fe6ab35-9a66-46f0-9ba6-2d2cf39436c8.vtex"
@@ -2289,7 +2300,12 @@
             "Id": "20ab4343-7e06-42f1-97ea-9351016bd9e9",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_main_relocation_2fe6ab35-9a66-46f0-9ba6-2d2cf39436c8.vtex"
           },
-          "RenderExcludeTags": ""
+          "RenderExcludeTags": "",
+          "RuntimeContrast": 1,
+          "RuntimeIntensity": 1,
+          "RuntimeSaturation": 1,
+          "RuntimeTint": "1,1,1,1",
+          "ViewBias": 5
         },
         {
           "__type": "Mimiclay.ProbeRadiosityBoost",
@@ -2348,11 +2364,13 @@
           "__guid": "fff47440-764c-4073-a40f-1b42b199b681",
           "__enabled": true,
           "Flags": 0,
+          "__version": 2,
+          "BakeVersion": 0,
+          "BlendDistance": 0,
           "Bounds": {
             "Mins": "-394,-908.25,-247.5",
             "Maxs": "1421,908.25,247.5"
           },
-          "Contrast": 1,
           "DistanceTexture": {
             "Id": "22a1f43b-4f90-4c4a-a622-6544593cd027",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_distance_fff47440-764c-4073-a40f-1b42b199b681.vtex"
@@ -2371,7 +2389,12 @@
             "Id": "6ad2b3ec-880e-4f5c-8c52-f744dd73e843",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_relocation_fff47440-764c-4073-a40f-1b42b199b681.vtex"
           },
-          "RenderExcludeTags": ""
+          "RenderExcludeTags": "",
+          "RuntimeContrast": 1,
+          "RuntimeIntensity": 1,
+          "RuntimeSaturation": 1,
+          "RuntimeTint": "1,1,1,1",
+          "ViewBias": 5
         },
         {
           "__type": "Mimiclay.ProbeRadiosityBoost",
@@ -2430,11 +2453,13 @@
           "__guid": "a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c",
           "__enabled": true,
           "Flags": 0,
+          "__version": 2,
+          "BakeVersion": 0,
+          "BlendDistance": 0,
           "Bounds": {
             "Mins": "-505.799988,-326,-247.5",
             "Maxs": "505.799988,326,247.5"
           },
-          "Contrast": 1,
           "DistanceTexture": {
             "Id": "7c985288-08c0-4364-93b3-783f5b19ee9c",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_wing_distance_a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c.vtex"
@@ -2456,7 +2481,12 @@
             "Id": "84ad2c6f-5b56-4606-9e81-3eaf983c5b6f",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_wing_relocation_a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c.vtex"
           },
-          "RenderExcludeTags": ""
+          "RenderExcludeTags": "",
+          "RuntimeContrast": 1,
+          "RuntimeIntensity": 1,
+          "RuntimeSaturation": 1,
+          "RuntimeTint": "1,1,1,1",
+          "ViewBias": 5
         },
         {
           "__type": "Mimiclay.ProbeRadiosityBoost",
@@ -3414,6 +3444,7 @@
         "693dd09b-b376-414d-a549-5958bb2ab336": "4e6300aa-5735-49d2-9610-ce2874df0aea",
         "a67bb9f7-07e7-430c-b615-f0ff747d5d9f": "6805bb5a-666e-4591-8ac5-353f551dadc9",
         "bf4f889e-0290-40d7-95aa-8d37f3fdbce5": "ccf03a8a-0c83-4bd6-a37d-5c38c08b8cb0",
+        "3f0b6c2e-8d41-4a7e-9b55-c1e2a7d90f14": "df2ce0f7-bfb4-86a7-a2c6-fb6d6a5a5783",
         "6467dae2-473b-4f40-93f3-c656b7e5a73b": "fdf37c50-c26e-40a8-8fe0-a2247d4da664",
         "85c8e7e9-12dd-4606-a3cb-94e6804a0951": "6dac6ab7-97a8-4119-8f45-817defbe4d58",
         "ad1ba8a3-22a0-4903-a6b9-d78e4d6c79af": "86b66321-b632-497f-a946-bf81f68e0d1a",
