@@ -24,7 +24,7 @@ public sealed class SdfDevelopmentScene : Component
 	[Property] public bool Shadows { get; set; } = true;
 	/// <summary>In Play, force all 256 props to cast raymarched shadows. Restores the original global cap on exit.</summary>
 	[Property] public bool ForceSdfShadows { get; set; } = true;
-	readonly Dictionary<SdfRaymarchRenderer, (bool Shadows, float Radii)> _shadowSettings = new();
+	readonly Dictionary<SdfRaymarchRenderer, (bool Shadows, float? Radii)> _shadowSettings = new();
 	float? _savedShadowCap;
 
 	int _lastView = int.MinValue, _lastLights = -1;
@@ -42,7 +42,7 @@ public sealed class SdfDevelopmentScene : Component
 		SdfRaymarchRenderer.ShadowRadiiCap = _savedShadowCap.Value;
 		_savedShadowCap = null;
 		foreach ( var (renderer, settings) in _shadowSettings )
-			if ( renderer.IsValid() ) { renderer.SdfShadows = settings.Shadows; renderer.SdfShadowRadii = settings.Radii; }
+			if ( renderer.IsValid() ) { renderer.SdfShadows = settings.Shadows; renderer.SdfShadowRadiiOverride = settings.Radii; }
 		_shadowSettings.Clear();
 	}
 
@@ -56,8 +56,8 @@ public sealed class SdfDevelopmentScene : Component
 				_savedShadowCap = SdfRaymarchRenderer.ShadowRadiiCap;
 				foreach ( var r in Scene.GetAllComponents<SdfRaymarchRenderer>() )
 				{
-					_shadowSettings[r] = (r.SdfShadows, r.SdfShadowRadii);
-					r.SdfShadows = true; r.SdfShadowRadii = 0;
+					_shadowSettings[r] = (r.SdfShadows, r.SdfShadowRadiiOverride);
+					r.SdfShadows = true; r.SdfShadowRadiiOverride = 0;
 				}
 				SdfRaymarchRenderer.ShadowRadiiCap = 0;
 			}

@@ -10,18 +10,6 @@ public enum SdfViewLayer
 	OverlayFlag,
 }
 
-/// <summary>How a prop's distance-field grid is sized (see <see cref="SdfRaymarchRenderer.FieldDensity"/>).</summary>
-public enum SdfFieldDensity
-{
-	/// <summary>Fixed world voxel size (mimiclay_sdf_voxel_size), count clamped to [res_min, res_cap]. Default.</summary>
-	World,
-	/// <summary>Finer fixed world voxel size (mimiclay_sdf_voxel_size_detail), count up to detail_res_max —
-	/// hunter heads, weapons, and anything the local player is sculpting.</summary>
-	Detail,
-	/// <summary>Legacy: FieldResolution voxels along the longest padded axis, SparseField as authored.</summary>
-	Authored,
-}
-
 /// <summary>How the sibling meshed ModelRenderer is used while raymarching. The raymarch writes
 /// the depth+normals prepass itself (depth sorting, hardware occlusion, and AO) and — with
 /// <see cref="SdfRaymarchRenderer.SdfShadows"/> on — casts its own shadows too, so the mesh's only
@@ -61,8 +49,124 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// <summary>Material to render with. Leave empty to use the built-in sdf_raymarch shader.</summary>
 	[Property] public Material Material { get; set; }
 
-	[Property, Range( 16, 256 )] public int MaxSteps { get; set; } = 96;
-	[Property, Range( 0.005f, 1f )] public float Epsilon { get; set; } = 0.05f;
+	// ── Quality profile ───────────────────────────────────────────────────────────────────────────────
+	//
+	// March quality, the distance chain, the overdraw switches and the field density come from a shared
+	// SdfQualityProfile, not from this component: s&box serializes every [Property] into each prefab and scene,
+	// so per-prop quality values drifted into several generations that code defaults could never fix. Each
+	// governed setting has a nullable "...Override" property below — null (the norm) inherits the profile, a
+	// value pins it for this prop only. The old names (MaxSteps, MinQualityRadii, …) are now read-only and
+	// return the RESOLVED value, so every reader sees what actually runs.
+
+	/// <summary>The quality profile for this prop. Empty = the project default (<see cref="SdfQualityProfile.Standard"/>),
+	/// or <see cref="SdfQualityProfile.Viewmodel"/> for a non-Normal <see cref="ViewLayer"/>.</summary>
+	[Property, Group( "Quality" )] public SdfQualityProfile Profile { get; set; }
+
+	/// <summary>Runtime profile choice (NOT authored — a [Property] written at runtime would leak into network spawn
+	/// snapshots): wins over <see cref="Profile"/>. Set by code that knows the prop's role on every machine, e.g. the
+	/// hunter's gun clones (Player for the world model, Viewmodel for the view model).</summary>
+	public SdfQualityProfile RuntimeProfile { get; set; }
+
+	/// <summary>Global multiplier on every profile's voxel size (field density): 1 = as authored, 2 = half the voxels
+	/// per axis (⅛ the memory and bake), 0.5 = double. One dial for a whole-game quality setting or a quick A/B.</summary>
+	[ConVar( "mimiclay_sdf_voxel_scale" )]
+	public static float VoxelScale { get; set; } = 1f;
+
+	[Property, Group( "Quality Overrides" ), Title( "Max Steps" ), Range( 16, 256 )] public int? MaxStepsOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Epsilon" ), Range( 0.005f, 1f )] public float? EpsilonOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Adaptive Quality" )] public bool? AdaptiveQualityOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Min Steps" ), Range( 1, 128 )] public int? MinStepsOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Far Epsilon" ), Range( 0.01f, 16f )] public float? FarEpsilonOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Distance Switching" )] public bool? DistanceSwitchingOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Full Quality (radii)" )] public float? FullQualityRadiiOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Mesh Handoff (radii)" )] public float? MinQualityRadiiOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Mesh LOD 1 (radii)" )] public float? MeshLod1RadiiOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Mesh LOD 2 (radii)" )] public float? MeshLod2RadiiOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Cull (radii)" )] public float? CullRadiiOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "LOD Hysteresis" ), Range( 0f, 0.4f )] public float? LodHysteresisOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Shadow Handoff (radii)" ), Range( 0f, 64f )] public float? SdfShadowRadiiOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Overdraw Optimization" )] public bool? OverdrawOptimizationOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Brush Culling" )] public bool? BrushCullingOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Depth Occlusion Cull" )] public bool? DepthOcclusionCullOverride { get; set; }
+	[Property, Group( "Quality Overrides" ), Title( "Voxel Size (in)" ), Range( 0.05f, 4f )] public float? VoxelSizeOverride { get; set; }
+
+	/// <summary>Does this renderer pin any profile-governed setting? (The drift check lists these.)</summary>
+	public bool HasQualityOverrides => MaxStepsOverride.HasValue || EpsilonOverride.HasValue || AdaptiveQualityOverride.HasValue
+		|| MinStepsOverride.HasValue || FarEpsilonOverride.HasValue || DistanceSwitchingOverride.HasValue
+		|| FullQualityRadiiOverride.HasValue || MinQualityRadiiOverride.HasValue || MeshLod1RadiiOverride.HasValue
+		|| MeshLod2RadiiOverride.HasValue || CullRadiiOverride.HasValue || LodHysteresisOverride.HasValue
+		|| SdfShadowRadiiOverride.HasValue || OverdrawOptimizationOverride.HasValue || BrushCullingOverride.HasValue
+		|| DepthOcclusionCullOverride.HasValue || VoxelSizeOverride.HasValue;
+
+	/// <summary>The profile in effect this frame, in priority order: <see cref="SdfQualityProfile.Editing"/> while the
+	/// LOCAL edit session is sculpting this prop, then <see cref="RuntimeProfile"/>, <see cref="Profile"/>, the
+	/// viewmodel rule, and the project default.</summary>
+	public SdfQualityProfile ActiveProfile { get; private set; }
+
+	/// <summary>The profile this prop uses when nobody is sculpting it (what <see cref="ActiveProfile"/> falls back to).</summary>
+	SdfQualityProfile BaseProfile => RuntimeProfile ?? Profile
+		?? (ViewLayer != SdfViewLayer.Normal ? SdfQualityProfile.Viewmodel : SdfQualityProfile.Standard);
+
+	/// <summary>The profile the sibling sculpture's mesh LODs follow (<see cref="BaseProfile"/> — not the Editing promotion).</summary>
+	internal SdfQualityProfile MeshProfile => BaseProfile;
+
+	SdfSculpture _sculptRef;
+
+	bool LocallyEdited => SculptEditSession.Current is { IsEditing: true } s && s.Target.IsValid() && s.Target.GameObject == GameObject;
+
+	// The resolved settings (profile + overrides), refreshed once per frame by ResolveQuality before anything reads
+	// them. Plain fields: these are read many times per frame per prop.
+	int _qMaxSteps = 50, _qMinSteps = 12; // Standard's values until the first ResolveQuality (OnEnabled)
+	float _qEpsilon = 0.18f, _qFarEpsilon = 1f;
+	bool _qAdaptive = true, _qSwitching = true, _qOverdraw = true, _qBrushCull = true, _qDepthCull = true;
+	float _qFullQ = 1f, _qHandoff = 15f, _qLod1 = 20f, _qLod2 = 30f, _qCull = 200f, _qHysteresis = 0.06f, _qShadow = 3f;
+	float _qVoxel = 0.625f; int _qMinVoxels = 32, _qKnee = 160, _qMaxVoxels = 256;
+	bool _qEditing, _qDebugColours, _qDebugLabels;
+
+	void ResolveQuality()
+	{
+		var baseProfile = BaseProfile;
+		_qEditing = LocallyEdited;
+		var p = _qEditing ? SdfQualityProfile.Editing : baseProfile;
+		ActiveProfile = p;
+
+		_qMaxSteps = MaxStepsOverride ?? p.MaxSteps;
+		_qEpsilon = EpsilonOverride ?? p.Epsilon;
+		_qAdaptive = AdaptiveQualityOverride ?? p.AdaptiveQuality;
+		_qMinSteps = MinStepsOverride ?? p.MinSteps;
+		_qFarEpsilon = FarEpsilonOverride ?? p.FarEpsilon;
+		_qSwitching = DistanceSwitchingOverride ?? p.DistanceSwitching;
+		_qHysteresis = LodHysteresisOverride ?? p.LodHysteresis;
+		_qOverdraw = OverdrawOptimizationOverride ?? p.OverdrawOptimization;
+		_qBrushCull = BrushCullingOverride ?? p.BrushCulling;
+		_qDepthCull = DepthOcclusionCullOverride ?? p.DepthOcclusionCull;
+		_qDebugColours = p.DebugLod || baseProfile.DebugLod; // the base profile's too, so sculpting a prop doesn't hide its debug view
+		_qDebugLabels = p.DebugLodLabels || baseProfile.DebugLodLabels;
+
+		// The distance chain, ordered nearest → farthest at USE time: each link is at least the one before it, so
+		// an override (or a mis-authored profile) can never collapse a band behind the inspector's back. The shadow
+		// handoff is a rider capped at the mesh handoff, not a link (see SdfShadowRadii).
+		_qFullQ = MathF.Max( FullQualityRadiiOverride ?? p.FullQualityRadii, 0f );
+		_qHandoff = MathF.Max( MinQualityRadiiOverride ?? p.MinQualityRadii, _qFullQ );
+		_qLod1 = MathF.Max( MeshLod1RadiiOverride ?? p.MeshLod1Radii, _qHandoff );
+		_qLod2 = MathF.Max( MeshLod2RadiiOverride ?? p.MeshLod2Radii, _qLod1 );
+		_qCull = MathF.Max( CullRadiiOverride ?? p.CullRadii, _qLod2 );
+		_qShadow = MathF.Min( MathF.Max( SdfShadowRadiiOverride ?? p.SdfShadowRadii, 0f ), _qHandoff );
+
+		// Density: the profile's rule; the voxel override (and editing) only ever pick the voxel size. Editing never
+		// coarsens a prop whose own profile is already finer (the viewmodel gun).
+		float voxel = VoxelSizeOverride ?? baseProfile.VoxelSize;
+		if ( _qEditing ) voxel = MathF.Min( voxel, p.VoxelSize );
+		_qVoxel = voxel;
+		_qMinVoxels = p.MinVoxels;
+		_qKnee = p.KneeVoxels;
+		_qMaxVoxels = _qEditing ? Math.Max( p.MaxVoxels, baseProfile.MaxVoxels ) : p.MaxVoxels;
+	}
+
+	/// <summary>Sphere-trace step budget at full quality (resolved: profile or <see cref="MaxStepsOverride"/>).</summary>
+	public int MaxSteps => _qMaxSteps;
+	/// <summary>Hit threshold at full quality (resolved).</summary>
+	public float Epsilon => _qEpsilon;
 
 	/// <summary>Cast shadows by re-marching the SDF in each shadow view — the shader detects the sun's
 	/// ORTHOGRAPHIC cascade cameras per-view and traces parallel rays there. Shadows then match the
@@ -90,7 +194,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// <summary>Bake the whole brush field to a 3D distance texture and march by sampling it (one trilinear
 	/// fetch per step) instead of re-evaluating every brush each step. Decouples render cost from brush
 	/// count — the headline win for multi-brush props (a 31-brush giraffe then marches like a 1-brush blob).
-	/// Trilinear interpolation slightly rounds sharp corners; raise <see cref="FieldResolution"/> for crisper
+	/// Trilinear interpolation slightly rounds sharp corners; a finer profile voxel size gives crisper
 	/// edges at the cost of memory + bake time. Off = the exact per-brush march.</summary>
 	[Property, Group( "Distance Field" )] public bool UseFieldCache { get; set; } = true;
 
@@ -137,13 +241,6 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[ConVar( "mimiclay_sdf_field_cache" )]
 	public static bool FieldCacheEnabled { get; set; } = true;
 
-	/// <summary>Voxels along the prop's longest axis in the GPU-evaluated field. Higher = sharper silhouette but
-	/// memory grows with the CUBE (R32F: 64³≈1MB, 128³≈8MB, 256³≈67MB), and each edit re-dispatches every voxel.
-	/// 64 is a good middle for organic clay props; 128–256 for crisp detail. (Past ~256 dense gets prohibitive —
-	/// that's sparse-brick territory.) Only used when <see cref="FieldDensity"/> is Authored — the density tiers
-	/// size the grid from a world voxel size instead.</summary>
-	[Property, Group( "Distance Field" ), Range( 8, 512 )] public int FieldResolution { get; set; } = 64;
-
 	/// <summary>Shading smoothness dial for the cached path: the surface-normal central difference spans this
 	/// fraction of a voxel on each side. Lower (~0.35) keeps more detail but can show cell-scale faceting;
 	/// higher (~0.7) reads smoother but can wash detail out. No effect on the silhouette — lighting only.</summary>
@@ -156,63 +253,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// so the surface is briefly hidden (shadow only) rather than flashing the march. Needs <see cref="UseFieldCache"/>.</summary>
 	[Property, Group( "Distance Field" )] public bool FieldCacheOnly { get; set; }
 
-	/// <summary>Sample the sparse brick ATLAS (only surface bricks stored) instead of the dense field volume —
-	/// the memory win that lets resolution scale (512+) without paying for empty space. A runtime toggle so you
-	/// can A/B it against the dense path; the result should be visually identical. (Built by SdfFieldGpu's
-	/// classify→alloc→fill passes.)</summary>
-	[Property, Group( "Distance Field" )] public bool SparseField { get; set; }
-
 	/// <summary>Global diagnostic kill switch for the sparse classify/allocate/fill path.</summary>
 	[ConVar( "mimiclay_sdf_sparse_field" )]
 	public static bool SparseFieldEnabled { get; set; } = true;
-
-	/// <summary>Global cap on every prop's <see cref="FieldResolution"/> (voxels along the longest axis). The shipped
-	/// prop library authors 195–256 sparse; measured 2026-10-12 (150-prop crowd, 1080p) a 128 DENSE field marches
-	/// in roughly half the time of the sparse 256 atlas (prepass 2.1 → 1.2 ms, marched cascade 3.2 → 1.5 ms) and
-	/// is visually equivalent at play distances (slightly softer only with the camera inside a prop). With the
-	/// shared field cache (SdfFieldCache) a dense 128³ R32F volume is 8 MB per UNIQUE shape, not per instance.
-	/// Also the voxel-count ceiling for <see cref="SdfFieldDensity.World"/> props (very large props hit it and get
-	/// a coarser voxel than mimiclay_sdf_voxel_size). 0 = no cap (authored resolutions rule; World up to 512).</summary>
-	[ConVar( "mimiclay_sdf_field_res_cap" )]
-	public static int FieldResolutionCap { get; set; } = 128;
-
-	/// <summary>Fields at or below this resolution are stored DENSE even when the prop asks for the sparse atlas:
-	/// the sparse sampler costs ~1.8× a dense trilinear fetch per step (guide + indirection + atlas + decode), and
-	/// the memory it saves only matters at the high resolutions the cap above removes. 0 = honour SparseField.</summary>
-	[ConVar( "mimiclay_sdf_dense_max_res" )]
-	public static int DenseMaxResolution { get; set; } = 128;
-
-	/// <summary>How this prop's field grid is sized. <see cref="SdfFieldDensity.World"/> (the default) and
-	/// <see cref="SdfFieldDensity.Detail"/> aim at a fixed WORLD voxel size, so every prop gets about the same
-	/// density whatever its size: a doorknob no longer spends a full 128³ budget on itself. (The grid spans the
-	/// bounds plus <see cref="SdfFieldGpu.BlendPad"/> on every side, so "voxels along the longest axis" used to
-	/// make small props the densest and, being mostly pad and so near-cubic, often the biggest fields too.)
-	/// The voxel count is clamped to a per-tier [min, max], and the result picks dense or sparse on its own
-	/// (see <see cref="DenseMaxResolution"/>). <see cref="SdfFieldDensity.Authored"/> is the old behaviour:
-	/// <see cref="FieldResolution"/> voxels along the longest axis, <see cref="SparseField"/> as authored.
-	/// A prop the LOCAL player is sculpting is always treated as Detail while the session is editing it.</summary>
-	[Property, Group( "Distance Field" )] public SdfFieldDensity FieldDensity { get; set; } = SdfFieldDensity.World;
-
-	/// <summary>Target world voxel size (inches) for <see cref="SdfFieldDensity.World"/> props. 0.5 puts a
-	/// chair-sized prop (~50×50×68 padded) at the old 128 cap; smaller props get proportionally fewer voxels.</summary>
-	[ConVar( "mimiclay_sdf_voxel_size" )]
-	public static float WorldVoxelSize { get; set; } = 0.5f;
-
-	/// <summary>Target world voxel size (inches) for <see cref="SdfFieldDensity.Detail"/>: the hunter's head and
-	/// weapon, and whatever the local player is sculpting — things the camera gets right up against.</summary>
-	[ConVar( "mimiclay_sdf_voxel_size_detail" )]
-	public static float DetailVoxelSize { get; set; } = 0.2f;
-
-	/// <summary>Floor on the voxel count along the longest padded axis for the density tiers, so a coarse voxel
-	/// size can never starve a prop. (With the 16" pad every grid spans ≥ 32", so at the default 0.5 this
-	/// floor never binds — it's the guard for someone raising the voxel size.)</summary>
-	[ConVar( "mimiclay_sdf_field_res_min" )]
-	public static int DensityMinResolution { get; set; } = 32;
-
-	/// <summary>Ceiling on the voxel count for <see cref="SdfFieldDensity.Detail"/> (World props use
-	/// <see cref="FieldResolutionCap"/>). Above <see cref="DenseMaxResolution"/> the field goes sparse.</summary>
-	[ConVar( "mimiclay_sdf_detail_res_max" )]
-	public static int DetailMaxResolution { get; set; } = 256;
 
 	/// <summary>How far (inches) the raymarch PROXY box is grown past the brushes' tight AABB. The field volume is
 	/// padded by <see cref="SdfFieldGpu.BlendPad"/> (16) for live-edit headroom, and the proxy used to grow by the
@@ -227,17 +270,32 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	bool EffectiveUseFieldCache => UseFieldCache && FieldCacheEnabled;
 	// The field grid resolved for this frame by ResolveFieldGrid (called at the bake site, before the hash):
-	// the voxel count dispatched, the exact local voxel size when the density tier drives it (0 = derive it
-	// from the count + bounds, with SdfFieldGpu's hold band), and dense vs sparse.
+	// the voxel count dispatched, the exact local voxel size when the density rule drives it (0 = derive it
+	// from the count + bounds, with SdfFieldGpu's hold band), the padding, and dense vs sparse.
 	int _fieldRes = 64;
 	float _fieldCell;
+	float _fieldPad = SdfFieldGpu.BlendPad;
 	bool _fieldSparse;
-	SdfFieldDensity _fieldTier;
 
 	bool EffectiveSparseField => _fieldSparse;
 
+	/// <summary>Fields up to this many voxels along their longest (padded) axis are stored DENSE; above it, the sparse
+	/// brick atlas. The sparse sampler costs ~1.8× a dense trilinear fetch per step (guide + indirection + atlas +
+	/// decode); a dense volume's memory grows with the cube (R16F: 128³ = 4 MiB, 192³ = 13.5 MiB, 256³ = 32 MiB per
+	/// UNIQUE shape — SdfFieldCache shares clones). 256 is the dense path's own ceiling (SdfFieldGpu.Evaluate).
+	/// Measured 2026-10-25 (dev scene, 256 unique fields, Standard at 0.5"): a 128 limit sent most props sparse and the
+	/// uncapped `shader` suite ran 40–80% slower; 160 / 192 barely helped; 256 brought it back to the old cost. At the
+	/// shipped 0.625" Standard voxel the 256 limit costs +13% field memory (675 → 761 MiB) over the old 128-capped
+	/// fields. Only the very largest props (content past ~230 voxels) and the viewmodel/editing fields go sparse.</summary>
+	const int DenseLimit = 256;
+
+	/// <summary>Diagnostics/A-B: force every field's padding (inches, clamped to [0, BlendPad]). -1 = automatic (see
+	/// <see cref="ResolveFieldGrid"/>).</summary>
+	[ConVar( "mimiclay_sdf_field_pad" )]
+	public static float FieldPadOverride { get; set; } = -1f;
+
 	/// <summary>Runtime override (NOT authored — a [Property] would leak into network spawn snapshots): scales
-	/// <see cref="FieldResolution"/> for this prop's field bakes. Set below 1 by <see cref="SdfNetworkSync"/> on
+	/// this prop's field voxel count. Set below 1 by <see cref="SdfNetworkSync"/> on
 	/// PROXIES during a remote live-drag, where per-frame sample interpolation re-dispatches the field every
 	/// frame — cost scales with the CUBE, so 0.5 makes each dispatch 8× cheaper and a whole prep phase of
 	/// remote sculptors costs about one local edit. Reset to 1 on commit: the settled shape re-bakes once at
@@ -247,58 +305,61 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// to O(brush count) per pixel.</summary>
 	public float FieldResolutionScale { get; set; } = 1f;
 
-	/// <summary>The tier actually used this frame: <see cref="FieldDensity"/>, promoted to Detail while the LOCAL
-	/// edit session is editing this sculpture (entering/leaving edit = one re-bake each way, via the hash).</summary>
-	SdfFieldDensity ResolveFieldTier()
-	{
-		if ( FieldDensity == SdfFieldDensity.World
-			&& SculptEditSession.Current is { IsEditing: true } s && s.Target.IsValid() && s.Target.GameObject == GameObject )
-			return SdfFieldDensity.Detail;
-		return FieldDensity;
-	}
-
-	/// <summary>Resolve the voxel count, exact voxel size and dense/sparse choice for this frame's field (see
-	/// <see cref="FieldDensity"/>). <see cref="FieldResolutionScale"/> (remote live-drag) coarsens all of them;
-	/// the count is floored at 8 so a tiny scale can't produce a degenerate volume.</summary>
+	/// <summary>Resolve the voxel count, exact voxel size, padding and dense/sparse choice for this frame's field.
+	///
+	/// The rule (per profile — <see cref="SdfQualityProfile.ContentVoxels"/>): count voxels along the CONTENT's longest
+	/// axis at the profile's world voxel size (× <see cref="VoxelScale"/>), taper past the knee (each further voxel
+	/// counts half), clamp to the profile's [min, max], then add the padding on top AT THE SAME VOXEL SIZE. (It used to
+	/// count the padded span against a hard 128, so a big prop paid for 32" of padding out of its budget and stretched
+	/// its voxels — the zoo's toy radio marched 0.92" voxels.) Inside the knee and the clamps the voxel size is exact and
+	/// bounds-independent, so a drag that grows the bounds adds voxels instead of rescaling the field; past them the
+	/// count rules and the size follows the bounds (with SdfFieldGpu's hold band). Dense vs sparse follows from the
+	/// final count (<see cref="DenseLimit"/>).
+	///
+	/// Padding: the proxy pad (<see cref="ProxyPad"/>, 8") when that keeps the field DENSE, otherwise
+	/// <see cref="SdfFieldGpu.BlendPad"/> (16") — and always 16" while the local player sculpts the prop. The march
+	/// bracket IS the proxy, so dense field beyond it was never sampled except by the edge-clamped fetch (which can't
+	/// overstep: the clamp point is nearer the surface), and the halved pad keeps many more props under the dense
+	/// limit, where both memory and the march are cheapest. Sparse fields keep 16": with the camera inside the proxy
+	/// and within ~2" of a sparse field's face, the surface below dropped out (the zoo star, 2026-10-25; dense was
+	/// fine), and padding is nearly free there since the atlas stores only surface bricks.
+	/// <see cref="FieldResolutionScale"/> (remote live-drag) coarsens it all; the count is floored at 8 so a tiny
+	/// scale can't produce a degenerate volume.</summary>
 	void ResolveFieldGrid()
 	{
 		float scale = Math.Clamp( FieldResolutionScale, 0.05f, 1f );
-		_fieldTier = ResolveFieldTier();
-
-		if ( _fieldTier == SdfFieldDensity.Authored )
-		{
-			int res = FieldResolutionCap > 0 ? Math.Min( FieldResolution, FieldResolutionCap ) : FieldResolution;
-			_fieldRes = Math.Max( 8, (int)MathF.Round( res * scale ) );
-			_fieldCell = 0f;
-			_fieldSparse = SparseField && SparseFieldEnabled && !(DenseMaxResolution > 0 && _fieldRes <= DenseMaxResolution);
-			return;
-		}
-
-		bool detail = _fieldTier == SdfFieldDensity.Detail;
-		float voxel = MathF.Max( detail ? DetailVoxelSize : WorldVoxelSize, 0.01f );
-		int maxRes = detail ? DetailMaxResolution : FieldResolutionCap;
-		if ( maxRes <= 0 ) maxRes = 512;
-		int minRes = Math.Clamp( DensityMinResolution, 8, maxRes );
 
 		// The field is built in the object's LOCAL frame over the padded bounds (SdfFieldGpu.Evaluate), so the
 		// world voxel target becomes a local one through the object's scale.
 		var ws = WorldScale;
 		float objScale = MathF.Max( MathF.Max( MathF.Abs( ws.x ), MathF.Abs( ws.y ) ), MathF.Max( MathF.Abs( ws.z ), 0.001f ) );
-		var span = (_curLocalMaxs - _curLocalMins) + 2f * SdfFieldGpu.BlendPad;
-		float maxAxis = MathF.Max( span.x, MathF.Max( span.y, span.z ) );
-		float cell = voxel / objScale;
+		var size = _curLocalMaxs - _curLocalMins;
+		float content = MathF.Max( MathF.Max( size.x, size.y ), MathF.Max( size.z, 0.01f ) );
+		float cell = MathF.Max( _qVoxel * MathF.Max( VoxelScale, 0.05f ), 0.01f ) / objScale;
 
-		int want = (int)MathF.Ceiling( maxAxis / cell );
-		int resClamped = Math.Clamp( want, minRes, maxRes );
-		// Inside the clamps the voxel size is EXACT and bounds-independent (a drag that grows the bounds adds
-		// voxels instead of rescaling the whole field). Clamped, the count rules and the size follows the bounds.
-		_fieldCell = resClamped == want ? cell / scale : 0f;
-		_fieldRes = Math.Max( 8, (int)MathF.Round( resClamped * scale ) );
+		float voxels = ContentVoxels( content, cell, out bool exact );
+		float finalCell = exact ? cell : content / voxels;
+		int Res( float pad ) => Math.Max( 8, (int)MathF.Round( MathF.Ceiling( (content + 2f * pad) / finalCell ) * scale ) );
 
-		// Dense up to DenseMaxResolution (the sparse sampler is ~1.8× a dense fetch per step), sparse above it —
-		// and always sparse past 256, where the dense volume clamps.
-		int denseMax = DenseMaxResolution > 0 ? Math.Min( DenseMaxResolution, 256 ) : 256;
-		_fieldSparse = SparseFieldEnabled && _fieldRes > denseMax;
+		if ( FieldPadOverride >= 0f )
+			_fieldPad = Math.Clamp( FieldPadOverride, 0f, SdfFieldGpu.BlendPad );
+		else if ( _qEditing || Res( EffectiveProxyPad ) > DenseLimit )
+			_fieldPad = SdfFieldGpu.BlendPad;
+		else
+			_fieldPad = EffectiveProxyPad;
+
+		_fieldCell = exact ? cell / scale : 0f;
+		_fieldRes = Res( _fieldPad );
+		_fieldSparse = SparseFieldEnabled && _fieldRes > DenseLimit;
+	}
+
+	// The density rule with THIS frame's resolved knobs (the profile's, after the editing promotion).
+	float ContentVoxels( float content, float cell, out bool exact )
+	{
+		int max = Math.Max( _qMaxVoxels, 8 );
+		int min = Math.Clamp( _qMinVoxels, 1, max );
+		int knee = Math.Clamp( _qKnee, min, max );
+		return SdfQualityProfile.ContentVoxels( content, cell, min, knee, max, out exact );
 	}
 
 	/// <summary>Runtime override (NOT authored), the second live-drag lever beside <see cref="FieldResolutionScale"/>:
@@ -313,27 +374,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	RealTimeSince _sinceFieldDispatch; // throttle clock for FieldRebakeInterval
 
-	// ── Adaptive Quality: the SHAPE of the SDF quality ramp (how cheap the floor is). WHERE it ramps is
-	// two links of the LOD / Distance chain below — Full Quality (ramp starts) and Mesh Handoff (ramp
-	// bottoms out, and the SDF hands over). The two used to be mixed into one group, which is what made
-	// them feel like they were fighting: a quality knob and a handoff distance sitting side by side with
-	// no indication that one of them also moved the mesh switch.
-
-	/// <summary>Scale step count / epsilon down as the object shrinks on screen (a pure-SDF LOD —
-	/// distant props march far cheaper while staying raymarched). Quality floors below.</summary>
-	[Property, Group( "Adaptive Quality" )] public bool AdaptiveQuality { get; set; } = true;
-
-	/// <summary>Step-count floor for small/far objects. Practical minimum is ~2-4 (paired with a
-	/// large FarEpsilon); below that, far objects start dropping out as the march can't reach the
-	/// surface. 0 would make them invisible.</summary>
-	[Property, Group( "Adaptive Quality" ), Range( 1, 128 )] public int MinSteps { get; set; } = 28;
-
-	/// <summary>Epsilon (hit threshold, world units) used for small/far objects — bigger = cheaper,
-	/// softer/more inflated. Useful up to roughly the object's bounding radius; past that the march
-	/// hits at the box face and the prop just renders as its bounding box.</summary>
-	[Property, Group( "Adaptive Quality" ), Range( 0.01f, 16f )] public float FarEpsilon { get; set; } = 0.4f;
-
-	// ── LOD / Distance ─────────────────────────────────────────────────────────────────────────────────
+	// ── Adaptive quality + LOD / Distance (resolved from the profile; see SdfQualityProfile) ─────────────
 	//
 	// ONE ordered chain of camera distances, nearest → farthest. Every threshold is in BOUNDING RADII
 	// (camera distance ÷ the prop's bounding radius), so it's scale-invariant: a giraffe and a bottle cap
@@ -347,140 +388,40 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	//          raymarch hands over as it runs out of quality, so there's no window where it's
 	//          paying to march a surface it can no longer resolve)
 	//
-	//        ShadowHandoff sits anywhere in [0, MeshHandoff] — a rider, not a link (see its doc).
+	//        ShadowHandoff sits anywhere in [0, MeshHandoff] — a rider, not a link.
 	//
-	// The chain is ordered BY CONSTRUCTION: setting any threshold pushes its neighbours out of the way
-	// (Unity LODGroup style), so the numbers you see are the numbers that run. It used to be clamped at
-	// USE time instead — dragging one value past another silently collapsed a band to zero width while
-	// the inspector still showed the value you'd typed, and the thresholds were split across three
-	// property groups, so nothing showed you the ordering you were actually fighting.
-	//
-	// This component is the sole owner/driver of all of it.
+	// The chain used to be stored per prop and ordered by construction (a LODGroup-style push on edit). The values
+	// live on the profile now, so ResolveQuality orders them at use time instead: each link is at least the one
+	// before it. A profile or override authored out of order is flagged by Tools/sdf/validate-quality-drift.csx rather
+	// than silently collapsing a band.
 
-	// Chain slots, nearest → farthest. Keep in sync with ChainGet/ChainStore.
-	// The shadow handoff is deliberately NOT a slot — see SdfShadowRadii.
-	const int ChainFullQuality = 0, ChainMeshHandoff = 1;
-	const int ChainLod1 = 2, ChainLod2 = 3, ChainCull = 4, ChainCount = 5;
+	/// <summary>Ramp step count / epsilon down with distance (a pure-SDF LOD). Resolved.</summary>
+	public bool AdaptiveQuality => _qAdaptive;
+	/// <summary>Step-count floor for far props. Resolved.</summary>
+	public int MinSteps => _qMinSteps;
+	/// <summary>Hit threshold at the floor. Resolved.</summary>
+	public float FarEpsilon => _qFarEpsilon;
 
-	float ChainGet( int i ) => i switch
-	{
-		ChainFullQuality => FullQualityRadii,
-		ChainMeshHandoff => MinQualityRadii,
-		ChainLod1 => MeshLod1Radii,
-		ChainLod2 => MeshLod2Radii,
-		_ => CullRadii,
-	};
+	/// <summary>Drive SDF↔mesh↔cull and the mesh LOD from camera distance each frame. Off = static behaviour (SDF
+	/// always on, MeshMode applied literally). The shadow handoff runs either way. Resolved.</summary>
+	public bool DistanceSwitching => _qSwitching;
 
-	void ChainStore( int i, float v )
-	{
-		switch ( i )
-		{
-			case ChainFullQuality: FullQualityRadii = v; break;
-			case ChainMeshHandoff: MinQualityRadii = v; break;
-			case ChainLod1: MeshLod1Radii = v; break;
-			case ChainLod2: MeshLod2Radii = v; break;
-			default: CullRadii = v; break;
-		}
-	}
+	/// <summary>Chain link 1: full-quality march inside this. Resolved.</summary>
+	public float FullQualityRadii => _qFullQ;
 
-	// The chain as of the last sync, so the next one can tell WHICH threshold moved. Null until the
-	// first sync (a fresh enable, or a hotload) — that pass normalises instead of diffing.
-	float[] _chainPrev;
-
-	/// <summary>Keep the distance chain ordered nearest→farthest, LODGroup style: whichever threshold
-	/// moved since last frame pushes the others out of its way.
-	///
-	/// Deliberately a per-frame DIFF rather than logic in the property setters, and that matters twice
-	/// over. Deserialization writes these members one at a time in alphabetical order (see
-	/// ReflectionQueryCache.OrderedSerializableMembers) — a setter that shoved its neighbours mid-load
-	/// would resolve an authored chain differently depending on the order it happened to be written in.
-	/// And keeping every threshold a plain AUTO-property keeps its compiler-generated backing field name
-	/// stable, which is what a code hotload matches state on: renaming the storage to a hand-written
-	/// field silently resets every live prop in the open scene to code defaults — measured, not
-	/// theorised, and one save would then bake those defaults over the authored values on disk.</summary>
-	void SyncChain()
-	{
-		if ( _chainPrev is null )
-		{
-			// No previous state to diff (first enable / post-hotload): just put an authored chain in
-			// order — the monotonic clamp the distance switch used to apply at use time, except it lands
-			// in the STORED values now, so the inspector can't show a threshold that isn't running.
-			_chainPrev = new float[ChainCount];
-			float floor = 0f;
-			for ( int i = 0; i < ChainCount; i++ )
-			{
-				floor = MathF.Max( ChainGet( i ), floor );
-				ChainStore( i, floor );
-				_chainPrev[i] = floor;
-			}
-
-			ClampShadowHandoff();
-			return;
-		}
-
-		for ( int i = 0; i < ChainCount; i++ )
-		{
-			float v = MathF.Max( ChainGet( i ), 0f );
-			if ( v == _chainPrev[i] )
-				continue;
-
-			ChainStore( i, v );
-			for ( int j = i + 1; j < ChainCount; j++ )
-				if ( ChainGet( j ) < v ) ChainStore( j, v );
-			for ( int j = i - 1; j >= 0; j-- )
-				if ( ChainGet( j ) > v ) ChainStore( j, v );
-
-			break; // one drag at a time; a second edit in the same frame is caught by the next sync
-		}
-
-		for ( int i = 0; i < ChainCount; i++ )
-			_chainPrev[i] = ChainGet( i );
-
-		ClampShadowHandoff();
-	}
-
-	// The shadow handoff rides on the chain's upper bound without being IN it (see SdfShadowRadii):
-	// past the mesh handoff the mesh is the caster anyway, so a shadow threshold beyond it means nothing.
-	void ClampShadowHandoff()
-	{
-		if ( SdfShadowRadii > MinQualityRadii )
-			SdfShadowRadii = MinQualityRadii;
-	}
-
-	/// <summary>Master switch for the distance coordinator: drive SDF↔mesh↔cull and the mesh LOD from
-	/// camera distance each frame. Off = static behaviour (SDF always on, MeshMode applied literally) for
-	/// A/B testing. The shadow handoff runs either way — it stands alone.</summary>
-	[Property, Group( "LOD / Distance" )] public bool DistanceSwitching { get; set; } = true;
-
-	/// <summary>Chain link 1. Inside this the raymarch runs at full quality (MaxSteps / Epsilon); past it
-	/// step count and epsilon ramp toward the floor, reaching it at the mesh handoff.</summary>
-	[Property, Group( "LOD / Distance" ), Title( "Full Quality (radii)" )]
-	public float FullQualityRadii { get; set; } = 6f;
-
-	/// <summary>Chain link 2 — the shadow handoff. Beyond this a SETTLED prop hands its shadow to the
-	/// sibling mesh (ShadowsOnly) instead of re-marching the field in every shadow view: by far the
-	/// biggest per-prop render cost in a crowd (measured ~4× the forward march itself on a screen of
-	/// props). Inside the band, while boiling, and for a couple of seconds after any shape change (a live
-	/// edit) the marched shadow stays, so the silhouette never lags the surface where it could be seen
-	/// to. The swap is hard behind the hysteresis — shadow maps can't crossfade casters — but
-	/// displacement is already off in shadow views (see SetupDisplacement), so the two silhouettes agree
-	/// to well under a cascade texel at any sane threshold. 0 = never hand off (marched shadows at any
-	/// distance). Runs with DistanceSwitching off too.
-	///
-	/// NOT a link in the push chain, on purpose — only a rider on its upper bound. Handing the shadow
-	/// over early while the surface still marches at full quality is a perfectly good trade (shadows are
-	/// the expensive half), so this must be free to sit anywhere inside the SDF band; making it a link
-	/// would drag Full Quality around with it — precisely the toe-stepping the chain exists to stop. The
-	/// one real constraint is the upper bound: past the mesh handoff the mesh is casting anyway.</summary>
-	[Property, Group( "LOD / Distance" ), Title( "Shadow Handoff (radii)" ), Range( 0f, 64f )]
-	public float SdfShadowRadii { get; set; } = 10f;
+	/// <summary>The shadow handoff: beyond this a SETTLED prop hands its shadow to the sibling mesh (ShadowsOnly)
+	/// instead of re-marching the field in every shadow view — by far the biggest per-prop render cost in a crowd.
+	/// Inside the band, while boiling, and for a couple of seconds after any shape change the marched shadow stays.
+	/// 0 = never hand off. A rider on the chain (at most the mesh handoff), not a link: handing the shadow over early
+	/// while the surface still marches is a good trade. Runs with DistanceSwitching off too. Resolved.</summary>
+	public float SdfShadowRadii => _qShadow;
 
 	/// <summary>Global cap on every prop's <see cref="SdfShadowRadii"/>: the marched shadow hands off to the
 	/// mesh caster once the camera is beyond THIS many bounding radii (or the prop's own value, whichever is
 	/// smaller). Measured 2026-10-12 (150-prop crowd, 1080p): marched sun cascades + spot shadow were
 	/// ~6.5 of 14.5 GPU ms at the authored 10 radii; at 1-2 radii the shadow passes drop to mesh cost
 	/// (~1 ms) and the frame is visually identical (settled fields and their surface-nets mesh share a
-	/// silhouette). Boiling / live-edited props still march regardless. 0 = no cap (authored values rule).</summary>
+	/// silhouette). Boiling / live-edited props still march regardless. 0 = no cap (profile values rule).</summary>
 	[ConVar( "mimiclay_sdf_shadow_radii_cap" )]
 	public static float ShadowRadiiCap { get; set; } = 2f;
 
@@ -488,27 +429,17 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		? (SdfShadowRadii <= 0f ? ShadowRadiiCap : MathF.Min( SdfShadowRadii, ShadowRadiiCap ))
 		: SdfShadowRadii;
 
-	/// <summary>Chain link 3 — the SDF→mesh handoff, and the same distance at which SDF quality bottoms
-	/// out (see the chain diagram: one distance does both jobs deliberately). The raymarch turns off here
-	/// and mesh LOD0 takes over. (Serialized under its historical name MinQualityRadii.)</summary>
-	[Property, Group( "LOD / Distance" ), Title( "Mesh Handoff (radii)" )]
-	public float MinQualityRadii { get; set; } = 60f;
-
-	/// <summary>Chain link 4: the visible mesh drops from LOD0 to LOD1 here.</summary>
-	[Property, Group( "LOD / Distance" ), Title( "Mesh LOD 1 (radii)" )]
-	public float MeshLod1Radii { get; set; } = 90f;
-
-	/// <summary>Chain link 5: the mesh drops from LOD1 to LOD2 here.</summary>
-	[Property, Group( "LOD / Distance" ), Title( "Mesh LOD 2 (radii)" )]
-	public float MeshLod2Radii { get; set; } = 140f;
-
-	/// <summary>Chain link 6: past this the prop is culled entirely — no SDF, no mesh, no shadow.</summary>
-	[Property, Group( "LOD / Distance" ), Title( "Cull (radii)" )]
-	public float CullRadii { get; set; } = 220f;
-
-	/// <summary>Dead-band around every threshold (fraction of the threshold) so a prop sitting on a
-	/// boundary doesn't flicker between states. 0.06 = ±6%.</summary>
-	[Property, Group( "LOD / Distance" ), Range( 0f, 0.4f )] public float LodHysteresis { get; set; } = 0.06f;
+	/// <summary>Chain link 2 — the SDF→mesh handoff, and where adaptive quality bottoms out. Resolved. (Historical
+	/// name; the profile's "Mesh Handoff".)</summary>
+	public float MinQualityRadii => _qHandoff;
+	/// <summary>Chain link 3: the visible mesh drops from LOD0 to LOD1 here. Resolved.</summary>
+	public float MeshLod1Radii => _qLod1;
+	/// <summary>Chain link 4: the mesh drops from LOD1 to LOD2 here. Resolved.</summary>
+	public float MeshLod2Radii => _qLod2;
+	/// <summary>Chain link 5: past this the prop is culled entirely. Resolved.</summary>
+	public float CullRadii => _qCull;
+	/// <summary>Dead-band around every threshold (fraction of it). Resolved.</summary>
+	public float LodHysteresis => _qHysteresis;
 
 	/// <summary>Debug view of the WHOLE chain on this prop, in the scene view:
 	/// <list type="bullet">
@@ -518,8 +449,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// <item>either way — a label with the band and the bounding-radii ratio that picked it, so you can
 	/// read a threshold straight off the prop rather than guessing which side of it you're on.</item>
 	/// </list>
-	/// (Absorbed the old separate DebugSwitchState toggle — one chain, one debug switch.)</summary>
+	/// (Absorbed the old separate DebugSwitchState toggle — one chain, one debug switch.) For every prop at once,
+	/// use the profile's Debug group instead (colours and labels are separate toggles there).</summary>
 	[Property, Group( "LOD / Distance" )] public bool DebugLod { get; set; }
+
+	// This prop's own switch, or its profile's (resolved per frame in ResolveQuality).
+	bool DebugLodColours => DebugLod || _qDebugColours;
+	bool DebugLodLabel => DebugLod || _qDebugLabels;
 
 	/// <summary>What to do with the sibling meshed ModelRenderer while raymarching.
 	/// <list type="bullet">
@@ -605,7 +541,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	/// <summary>Overdraw optimisation: skip the redundant back-face march (the box draws both faces)
 	/// and use conservative depth so the GPU keeps early-Z and rejects hidden fragments before
-	/// marching. Toggle off to A/B the cost.
+	/// marching. Resolved from the profile (<see cref="OverdrawOptimizationOverride"/> to pin it).
 	///
 	/// Auto-disabled while the camera is within <see cref="OverdrawNearRadii"/> bounding radii of the
 	/// prop (with the usual hysteresis): despite the shader's back-face rationale, a camera inside or
@@ -613,7 +549,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// shadow survives, since the light's views aren't inside the box). The march is a runtime uniform,
 	/// so the per-frame flip costs nothing, and the prop the camera is touching is the one place the
 	/// double-faced march is cheapest to afford (it's one prop, however big on screen).</summary>
-	[Property, Group( "Overdraw" )] public bool OverdrawOptimization { get; set; } = true;
+	public bool OverdrawOptimization => _qOverdraw;
 
 	// The camera band inside which OverdrawOptimization is forced off (bounding radii). The vanish
 	// reproduces with the camera just inside the bounding sphere (ratio ~1); 2 leaves comfortable
@@ -625,7 +561,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// brush's (or spline span's) distance math when its bounds are too far to change the result. Only affects
 	/// the per-brush path (off when the field cache is active) — toggle to A/B its cost while editing a
 	/// multi-brush or high-segment-count prop.</summary>
-	[Property, Group( "Overdraw" )] public bool BrushCulling { get; set; } = true;
+	public bool BrushCulling => _qBrushCull;
 
 	/// <summary>Clamp the FORWARD march against the scene depth the prepass already wrote: a pixel whose
 	/// ray enters the proxy behind nearer opaque geometry returns before marching at all, and miss rays
@@ -633,7 +569,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// shader writes SV_Depth, which disables early-Z — without it a prop fully hidden behind a wall (or
 	/// behind another SDF prop's overlapping proxy) still pays its complete march per covered pixel.
 	/// Toggle off to A/B the cost.</summary>
-	[Property, Group( "Overdraw" )] public bool DepthOcclusionCull { get; set; } = true;
+	public bool DepthOcclusionCull => _qDepthCull;
 
 	// Shadow-view march settings (texel epsilon, step scale) are GLOBAL: see SdfShadowSettings.
 
@@ -658,8 +594,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	[Property, Group( "Displacement" ), Range( 0f, 1.5f )] public float DispAmp { get; set; } = 0.8f;
 
 	/// <summary>Lump density, cells per inch (wavelength = 1/this). Same ownership story as
-	/// <see cref="DispAmp"/>. Keep the wavelength at least ~2–3 field VOXELS (mimiclay_sdf_voxel_size
-	/// for World props, 0.5" by default — coarser only on props big enough to hit the cap) or the bake can't resolve the lumps — they fade or alias, and do so
+	/// <see cref="DispAmp"/>. Keep the wavelength at least ~2–3 field VOXELS (the profile's voxel size — Standard 0.625",
+	/// coarser only on props big enough to pass the density knee) or the bake can't resolve the lumps — they fade or alias, and do so
 	/// differently on differently-sized props. The stock 0.073 (~14" lumps) is safe everywhere.</summary>
 	[Property, Group( "Displacement" ), Range( 0.01f, 1f )] public float DispFreq { get; set; } = 0.073f;
 
@@ -761,8 +697,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	{
 		_released = false; // re-enabling revives a previously released renderer
 		_destroyed = false;
-		_chainPrev = null; // every authored threshold has landed by now — normalise, then track edits
-		SyncChain();
+		ResolveQuality(); // every authored value has landed by now
 		AdoptMeshRenderer();
 
 		_lastHash = 0;
@@ -911,7 +846,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	void UpdateInner()
 	{
-		SyncChain(); // before anything reads a threshold, so the bands and the inspector never disagree
+		ResolveQuality(); // profile + overrides, before anything reads a setting this frame
+
+		// A profile mesh-rule change (an inspector edit, a RuntimeProfile swap) remeshes the sibling sculpture once.
+		if ( !_sculptRef.IsValid() ) _sculptRef = GameObject.Components.Get<SdfSculpture>();
+		_sculptRef?.CheckMeshProfile();
 
 		// Bands FIRST — before anything reads them. Refresh writes band-derived state onto the scene object
 		// (CastShadows from MarchedShadowsNow, the overdraw and depth-cull toggles from _overdrawSafe), and
@@ -1012,11 +951,50 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		var meshSo = mesh.SceneObject;
 		if ( meshSo.IsValid() )
 		{
-			meshSo.ColorTint = DebugLod ? DebugBandTint( culled, sdf, meshLod ) : mesh.Tint;
+			bool flat = DebugLodColours && !culled && !sdf;
+			meshSo.ColorTint = flat ? DebugBandTint( culled, sdf, meshLod ) : mesh.Tint;
+			// The mesh shader swaps its albedo for that tint (sdf_mesh.shader g_flSdfDebugFlat), so the band
+			// colour reads flat instead of being multiplied into the clay colour (orange × cyan was green).
+			meshSo.Attributes.Set( "SdfDebugFlat", flat ? 1f : 0f );
+			// Grow the mesh to the marched silhouette so the swap doesn't shrink the prop (see MeshInflate).
+			meshSo.Attributes.Set( "SdfMeshInflate", MeshInflate( meshLod ) );
 		}
 	}
 
-	// Flat per-band tints for DebugLod, picking up where the shader's SDF heatmap (red = quality floor →
+	/// <summary>Diagnostics/A-B: scale the mesh inflation (1 = match the marched silhouette, 0 = the raw mesh).</summary>
+	[ConVar( "mimiclay_sdf_mesh_inflate" )]
+	public static float MeshInflateScale { get; set; } = 1f;
+
+	/// <summary>How far (fraction of its grid cell) a surface-nets mesh sits INSIDE the true surface, on the median
+	/// vertex. Measured 2026-10-26 by sampling the exact SDF at every LOD0 vertex (dev scene): bowling ball 0.016,
+	/// block_cube 0.019, toy_radio 0.021, fruit_bowl 0.022, dinosaur 0.031, revolver 0.048 of a cell. Corners and thin
+	/// parts erode more (10th percentile up to ~0.25 cell) — that's lost detail a uniform push can't restore.</summary>
+	const float MeshGridInset = 0.03f;
+
+	// How far to push this prop's mesh out (world inches, see sdf_mesh.shader MainVs) so it matches the marched
+	// silhouette: the march's epsilon where it hands over (adaptive quality bottoms out AT the hand-off, so that's
+	// FarEpsilon) — the amount the marched outline is grown by — plus the mesh grid's own inset for the LOD being
+	// drawn (LOD1/LOD2 mesh at ½ and ¼ of SdfSculpture.Resolution, so their cells, and inset, are 2× and 4×).
+	float MeshInflate( int meshLod )
+	{
+		float inflate = AdaptiveQuality ? MathF.Max( FarEpsilon, Epsilon ) : Epsilon;
+
+		var sculpt = GameObject.Components.Get<SdfSculpture>();
+		if ( sculpt is not null )
+		{
+			// Same grid as SurfaceNetsMesher.TryGridSpec: the brushes' longest axis over the LOD's resolution.
+			int res = Math.Clamp( Math.Max( 4, sculpt.Resolution >> Math.Clamp( meshLod, 0, 2 ) ), 4, 96 );
+			var size = _curLocalMaxs - _curLocalMins;
+			var ws = WorldScale;
+			float objScale = MathF.Max( MathF.Abs( ws.x ), MathF.Max( MathF.Abs( ws.y ), MathF.Abs( ws.z ) ) );
+			float longest = MathF.Max( size.x, MathF.Max( size.y, size.z ) ) * objScale;
+			inflate += MeshGridInset * longest / res;
+		}
+
+		return MathF.Max( inflate * MeshInflateScale, 0f );
+	}
+
+	// Per-band colours for DebugLod (drawn flat by the mesh shader), picking up where the shader's SDF heatmap (red = quality floor →
 	// green = full) leaves off: the mesh bands get cool hues, so "still marching" and "handed off to the
 	// mesh" can never be mistaken for one another.
 	static Color DebugBandTint( bool culled, bool sdf, int meshLod )
@@ -1120,7 +1098,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// wherever the prop does, selected or not, in the editor and in game.</summary>
 	void DrawLodLabel()
 	{
-		if ( !DebugLod || _released || _curRadius <= 0.01f || BandViewPos is not Vector3 view )
+		if ( !DebugLodLabel || _released || _curRadius <= 0.01f || BandViewPos is not Vector3 view )
 			return;
 
 		float ratio = (view - _curCenter).Length / _curRadius;
@@ -1174,7 +1152,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// marches its own SdfFieldGpu volume. The useful facts are the resolution it's paying for, whether
 		// it's sparse, and whether it has landed yet.
 		string field = !EffectiveUseFieldCache ? "analytic (per-brush)"
-			: _fieldGpu is { IsValid: true } && _fieldReady ? $"{_fieldGpu.SurfaceDims.x:0}×{_fieldGpu.SurfaceDims.y:0}×{_fieldGpu.SurfaceDims.z:0}{(EffectiveSparseField ? " sparse" : " dense")} {_fieldTier}"
+			: _fieldGpu is { IsValid: true } && _fieldReady ? $"{_fieldGpu.SurfaceDims.x:0}×{_fieldGpu.SurfaceDims.y:0}×{_fieldGpu.SurfaceDims.z:0}{(EffectiveSparseField ? " sparse" : " dense")} {ActiveProfile?.ResourceName ?? "?"} {DebugVoxelSize:0.00}\" pad {_fieldPad:0}"
 			: "baking…";
 		sb.Append( $"\n{_curCount} brushes   field: {field}" );
 
@@ -1280,8 +1258,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		float ratio = (viewPos - _curCenter).Length / _curRadius;
 		float h = LodHysteresis;
 
-		// No clamping here any more: SyncChain orders the chain where it's STORED, so these are the
-		// authored values and the authored values are what run.
+		// The chain is ordered where it is RESOLVED (ResolveQuality), so these thresholds are what runs.
 		_aboveHandoff = Above( ratio, MinQualityRadii, _aboveHandoff, h );
 		_aboveLod1 = Above( ratio, MeshLod1Radii, _aboveLod1, h );
 		_aboveLod2 = Above( ratio, MeshLod2Radii, _aboveLod2, h );
@@ -1546,7 +1523,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			_so.Attributes.Set( "LodFar", 10000f );
 		}
 
-		_so.Attributes.Set( "DebugLod", DebugLod ? 1f : 0f );
+		_so.Attributes.Set( "DebugLod", DebugLodColours ? 1f : 0f );
 		// Runtime uniforms, not combos — a 7th combo once crashed the Vfx compiler, and none of these
 		// gate resources or per-step inner-loop cost, so per-draw uniform branches are effectively free.
 		// (D_DEPTH_CLAMP was deleted with its property: nothing shipped used it, and inter-object
@@ -1637,7 +1614,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			// live, instead of only when a brush is moved.
 			ResolveFieldGrid();
 			int res = _fieldRes;
-			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell, SdfFieldGpu.FieldHalfEnabled ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
+			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell, _fieldPad, SdfFieldGpu.FieldHalfEnabled ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
 			bool haveField = _fieldGpu is { IsValid: true };
 			if ( (fieldHash != _lastFieldHash || !haveField)
 				&& (!haveField || _sinceFieldDispatch >= FieldRebakeInterval) )
@@ -1646,7 +1623,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 				// bake it once; a prop editing alone re-bakes its own field in place exactly as before.
 				var field = SdfFieldCache.Acquire( fieldHash, _fieldGpu, out bool bake );
 				if ( !bake || field.Evaluate( brushes, _curLocalMins, _curLocalMaxs, res, EffectiveSparseField,
-					bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter, _fieldCell ) )
+					bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter, _fieldCell, _fieldPad ) )
 				{
 					_fieldGpu = field;
 					_lastFieldHash = fieldHash;
@@ -1983,8 +1960,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	internal long TextAtlasBytes => _textAtlas.EstimatedBytes;
 	internal long LocalResourceBytes => SdfGpuMemory.TextureBytes( _dataTex ) + SdfGpuMemory.TextureBytes( _splineTex ) + TextAtlasBytes;
 	internal Vector3 DebugFieldDims => _fieldGpu is { IsValid: true } ? _fieldGpu.SurfaceDims : default;
-	internal SdfFieldDensity DebugFieldTier => _fieldTier;
+	internal string DebugFieldTier => ActiveProfile?.ResourceName ?? "builtin";
+	internal float DebugFieldPad => _fieldPad;
 	internal bool DebugFieldSparse => _fieldSparse;
+	/// <summary>The built field's actual world voxel size (inches), 0 with no field.</summary>
+	internal float DebugVoxelSize => _fieldGpu is { IsValid: true } ? (_fieldGpu.Maxs.x - _fieldGpu.Mins.x) / MathF.Max( _fieldGpu.SurfaceDims.x - 1f, 1f ) * MathF.Abs( WorldScale.x ) : 0f;
 	internal bool DebugFieldReady => _fieldReady;
 	internal bool DebugMarchedShadows => MarchedShadowsNow;
 	internal int DebugSwitchState => _switchState;

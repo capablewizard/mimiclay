@@ -534,54 +534,6 @@
               "Type": "Component",
               "IdValue": "843f408a-e514-4b16-a324-4bdc8fda34cb"
             },
-            "Property": "Epsilon",
-            "Value": 0.25
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "843f408a-e514-4b16-a324-4bdc8fda34cb"
-            },
-            "Property": "FarEpsilon",
-            "Value": 1.8
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "843f408a-e514-4b16-a324-4bdc8fda34cb"
-            },
-            "Property": "FieldResolution",
-            "Value": 135
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "843f408a-e514-4b16-a324-4bdc8fda34cb"
-            },
-            "Property": "MaxSteps",
-            "Value": 32
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "843f408a-e514-4b16-a324-4bdc8fda34cb"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 20
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "843f408a-e514-4b16-a324-4bdc8fda34cb"
-            },
-            "Property": "MinSteps",
-            "Value": 5
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "843f408a-e514-4b16-a324-4bdc8fda34cb"
-            },
             "Property": "Transmission",
             "Value": true
           }
@@ -1457,8 +1409,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1492,9 +1443,6 @@
           "__guid": "c74a72cd-b282-4c7b-aac8-bfdbccbf72e1",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 220,
           "DebugBounds": false,
           "DebugLod": false,
           "DebugSwitchState": false,
@@ -1502,27 +1450,15 @@
           "Displace": true,
           "DisplaceAmount": 0.35,
           "DisplaceFrequency": 0.25,
-          "DistanceSwitching": true,
-          "Epsilon": 0.05,
-          "FarEpsilon": 0.4,
           "FieldNormalScale": 0.5,
-          "FieldResolution": 64,
-          "FullQualityRadii": 6,
-          "LodHysteresis": 0.06,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 96,
-          "MeshLod1Radii": 90,
-          "MeshLod2Radii": 140,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 60,
-          "MinSteps": 28,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "TightBounds": false,
           "Transmission": true,
           "UseFieldCache": true

@@ -1911,7 +1911,7 @@ public sealed partial class SculptEditSession : Component
 		try
 		{
 			Target.Brushes = rebuilt;
-			Target.Resolution = state.Resolution;
+			// (state.Resolution is metadata now: the mesh resolution comes from the quality profile.)
 			Target.FlipFaces = state.FlipFaces;
 
 			// Every cached brush REFERENCE now dangles (the gizmo's fade-out brush, both hover ghosts, the
@@ -2018,7 +2018,7 @@ public sealed partial class SculptEditSession : Component
 			return false;
 
 		Target.Brushes = entry.Brushes;
-		Target.Resolution = entry.Resolution;
+		// entry.Resolution is ignored: mesh resolution comes from the quality profile now.
 		Target.FlipFaces = entry.FlipFaces;
 		Selected = -1; // the loaded brushes are a different set — never keep a stale index into the old list
 

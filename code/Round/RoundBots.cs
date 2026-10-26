@@ -88,7 +88,7 @@ public static class RoundBots
 			return true;
 
 		sculpture.Brushes = entry.Brushes;
-		sculpture.Resolution = entry.Resolution;
+		// entry.Resolution is ignored: mesh resolution comes from the quality profile now.
 		sculpture.FlipFaces = entry.FlipFaces;
 		sculpture.Rebuild();
 		return true;

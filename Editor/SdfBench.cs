@@ -30,7 +30,7 @@ namespace Editor;
 /// </summary>
 public static class SdfBench
 {
-	const int Version = 1;
+	const int Version = 2; // 2: quality profiles — the dev scene inherits Standard (was authored 50 steps, adaptive/LOD off)
 	const string DevScene = "scenes/sdf_development.scene";
 	const BindingFlags All = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
 
@@ -151,7 +151,7 @@ public static class SdfBench
 	static (int Max, int Inactive, int Menu, bool VSync, bool Profiler) _oldSettings;
 	static readonly List<(SceneEditorSession Session, bool Update)> _sessions = new();
 	static (int View, float Distance, int Lights, bool Shadows, bool Force, Transform Camera, bool Fly) _oldDev;
-	static readonly Dictionary<SdfRaymarchRenderer, (bool Adaptive, bool Switching)> _oldRenderers = new();
+	static readonly Dictionary<SdfRaymarchRenderer, (bool? Adaptive, bool? Switching)> _oldRenderers = new();
 	static DirectionalLight _sun;
 	static readonly List<(SpotLight Light, Vector3 Position, float Radius)> _oldSpots = new();
 
@@ -381,7 +381,7 @@ public static class SdfBench
 		_oldDev = (dev.View, dev.CloseDistance, dev.LightCount, dev.Shadows, dev.ForceSdfShadows, dev.Camera.WorldTransform, fly.IsValid() && fly.Enabled);
 		if ( fly.IsValid() ) fly.Enabled = false; // no stray input moves the camera mid-sample
 		_oldRenderers.Clear();
-		foreach ( var r in _scene.GetAllComponents<SdfRaymarchRenderer>() ) _oldRenderers[r] = (r.AdaptiveQuality, r.DistanceSwitching);
+		foreach ( var r in _scene.GetAllComponents<SdfRaymarchRenderer>() ) _oldRenderers[r] = (r.AdaptiveQualityOverride, r.DistanceSwitchingOverride);
 		_appliedLod = null;
 		_sun = _scene.GetAllComponents<DirectionalLight>().FirstOrDefault();
 		_oldSunShadows = _sun.IsValid() && _sun.Shadows;
@@ -413,8 +413,9 @@ public static class SdfBench
 		{
 			foreach ( var r in _scene.GetAllComponents<SdfRaymarchRenderer>() )
 			{
-				r.AdaptiveQuality = c.Lod != Lod.Full;
-				r.DistanceSwitching = MeshHandoff( c.Lod );
+				// Through the overrides, so the policy wins over whatever the profile says (restored afterwards).
+				r.AdaptiveQualityOverride = c.Lod != Lod.Full;
+				r.DistanceSwitchingOverride = MeshHandoff( c.Lod );
 			}
 			_appliedLod = c.Lod;
 		}
@@ -547,7 +548,7 @@ public static class SdfBench
 		}
 		else if ( _dev.IsValid() && _scene is not null )
 		{
-			foreach ( var (r, old) in _oldRenderers ) if ( r.IsValid() ) { r.AdaptiveQuality = old.Adaptive; r.DistanceSwitching = old.Switching; }
+			foreach ( var (r, old) in _oldRenderers ) if ( r.IsValid() ) { r.AdaptiveQualityOverride = old.Adaptive; r.DistanceSwitchingOverride = old.Switching; }
 			if ( _sun.IsValid() ) _sun.Shadows = _oldSunShadows;
 			PlaceSpots( 0 );
 			_dev.View = _oldDev.View; _dev.CloseDistance = _oldDev.Distance; _dev.LightCount = _oldDev.Lights;

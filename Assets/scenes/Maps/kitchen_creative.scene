@@ -10695,8 +10695,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -10730,50 +10729,31 @@
           "__guid": "ade585af-b520-4d33-ba1f-e7f1491aef31",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": true,
           "UseFieldCache": true
@@ -13285,8 +13265,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13320,50 +13299,31 @@
           "__guid": "a8c9c002-bb3d-43c9-bdd5-9114c409bdc3",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -13522,8 +13482,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13557,50 +13516,31 @@
           "__guid": "2356c165-a244-46f5-96e9-990ebdb3ec76",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -13759,8 +13699,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -13794,50 +13733,31 @@
           "__guid": "da5592e4-0dc5-4aec-81c1-ae21404151b4",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -13996,8 +13916,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -14031,50 +13950,31 @@
           "__guid": "7265f0e6-a7c5-4c31-9f1c-e644eac74bed",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -14233,8 +14133,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -14268,50 +14167,31 @@
           "__guid": "f90b8da7-bc9e-490b-97d0-c899eb8897f5",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -14470,8 +14350,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -14505,50 +14384,31 @@
           "__guid": "c8d03ebb-027e-47d3-a552-cdfcfcbe15ee",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -14707,8 +14567,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -14742,50 +14601,31 @@
           "__guid": "2e0d12da-17af-48ba-96d8-c2e7e1d08dd5",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -14944,8 +14784,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -14979,50 +14818,31 @@
           "__guid": "71ddadd6-e3a4-4c8c-8e9a-8d7b54d1128f",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -15181,8 +15001,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15216,50 +15035,31 @@
           "__guid": "e960e82e-0d1d-4549-9689-6bc12daff90a",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -15418,8 +15218,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15453,50 +15252,31 @@
           "__guid": "4b6bfc42-a00c-4a0f-a180-fbe109ab8318",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -15655,8 +15435,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15690,50 +15469,31 @@
           "__guid": "8c03df0b-7c3c-41df-b6a1-8533bc395cd5",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -15892,8 +15652,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15927,50 +15686,31 @@
           "__guid": "b646a0e6-1d49-4e8f-a4f6-e90536323858",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "BrushCulling": true,
-          "CullRadii": 200,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
-          "DepthOcclusionCull": true,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 1,
           "FieldCacheOnly": true,
-          "FieldDensity": "World",
           "FieldNormalScale": 0.5,
-          "FieldResolution": 195,
-          "FullQualityRadii": 1,
-          "LodHysteresis": 0.06,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
-          "MaxSteps": 50,
-          "MeshLod1Radii": 20,
-          "MeshLod2Radii": 30,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 15,
-          "MinSteps": 12,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "ReceiveDecals": true,
           "ReusePrepassDepth": true,
-          "SdfShadowRadii": 3,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "SparseField": true,
           "TightBounds": false,
           "Transmission": false,
           "UseFieldCache": true
@@ -18020,54 +17760,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "CullRadii",
-            "Value": 220
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "FullQualityRadii",
-            "Value": 6
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 90
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 140
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b72ac8dc-113f-4002-8d02-e5a711b013f7"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 10
           }
         ],
         "MovedObjects": []
@@ -18374,54 +18066,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "CullRadii",
-            "Value": 220
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "FullQualityRadii",
-            "Value": 6
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 90
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 140
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 10
           }
         ],
         "MovedObjects": []
@@ -19348,14 +18992,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 0.3106796
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "aa4dc91b-f203-8f8b-997a-b9a33b3e1699"
             },
             "Property": "Groups",
@@ -20215,14 +19851,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "AdaptiveQuality",
-            "Value": false
           }
         ],
         "MovedObjects": []
@@ -20490,14 +20118,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
-            },
-            "Property": "AdaptiveQuality",
-            "Value": false
           }
         ],
         "MovedObjects": []
@@ -20709,14 +20329,6 @@
                 "BoundingRadius": 23.616362
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6625adfb-86e2-4bac-8d28-54381d2f524c"
-            },
-            "Property": "FieldResolution",
-            "Value": 256
           }
         ],
         "MovedObjects": []

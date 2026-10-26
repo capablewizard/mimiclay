@@ -137,7 +137,7 @@ two runs are more than 20 minutes apart.
 5. For a small or surprising result, run the baseline again (A/B/A). Effects under ~0.25 ms need longer samples
    (`"seconds": 5`).
 
-`set` applies ConVar overrides to a whole run (`"set":"mimiclay_sdf_field_res_cap=96"`). They're recorded in the
+`set` applies ConVar overrides to a whole run (`"set":"mimiclay_sdf_voxel_scale=1.5"`). They're recorded in the
 file and shown in comparisons. Each run also stores a `SourceHash` over every `code/Sdf` and `Assets/shaders`
 source. Equal hashes in a comparison print "sources identical", meaning any difference is noise or settings. A
 hash that changes mid-run, from a hotload landing during the benchmark, produces a warning.

@@ -1276,54 +1276,6 @@
             },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
-            },
-            "Property": "CullRadii",
-            "Value": 220
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
-            },
-            "Property": "FullQualityRadii",
-            "Value": 6
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 90
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 140
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 60
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7992de8b-01a3-4048-b61f-860ad5928ef2"
-            },
-            "Property": "SdfShadowRadii",
-            "Value": 10
           }
         ],
         "MovedObjects": []

@@ -131,7 +131,8 @@ function NewSculpt($brushes, $res) {
         FlipFaces = $false; Material = 'materials/plasticine_vertex.vmat'
         OnComponentDestroy = $null; OnComponentDisabled = $null; OnComponentEnabled = $null
         OnComponentFixedUpdate = $null; OnComponentStart = $null; OnComponentUpdate = $null
-        Resolution = $res
+        # Mesh resolution comes from the quality profile; only the thin-part classes (above 32) pin theirs.
+        ResolutionOverride = $(if ($res -gt 32) { $res } else { $null })
     }
 }
 function NewModel {
@@ -148,16 +149,15 @@ function NewModel {
 function NewRay {
     [ordered]@{
         __type = 'Mimiclay.SdfRaymarchRenderer'; __guid = (NG); __enabled = $true; Flags = 0
-        AdaptiveQuality = $true; BrushCulling = $true; CullRadii = 80; DebugBounds = $false
-        DebugLiveField = $false; DebugLod = $false; DebugSwitchState = $false; DepthClamp = $false
-        Displace = $false; DisplaceAmount = 0.96202534; DisplaceFrequency = 0.12755275; DistanceSwitching = $true
-        Epsilon = 0.18; FarEpsilon = 0.5; FieldCacheOnly = $true; FieldNormalScale = 0.5
-        FieldResolution = 256; FullQualityRadii = 2; LodHysteresis = 0.06
-        Material = 'materials/plasticine.vmat'; MaxSteps = 50; MeshLod1Radii = 30; MeshLod2Radii = 40
-        MeshMode = 'DepthProxy'; MinQualityRadii = 12; MinSteps = 6
+        # Quality (march steps, epsilon, adaptive quality, LOD radii, overdraw, field density) is NOT written: the
+        # renderer inherits it from its SdfQualityProfile (Standard). Writing it here is how the library drifted.
+        DebugBounds = $false; DebugLiveField = $false; DebugLod = $false; DebugSwitchState = $false; DepthClamp = $false
+        Displace = $false; DisplaceAmount = 0.96202534; DisplaceFrequency = 0.12755275
+        FieldCacheOnly = $true; FieldNormalScale = 0.5
+        Material = 'materials/plasticine.vmat'; MeshMode = 'DepthProxy'
         OnComponentDestroy = $null; OnComponentDisabled = $null; OnComponentEnabled = $null
         OnComponentFixedUpdate = $null; OnComponentStart = $null; OnComponentUpdate = $null
-        OverdrawOptimization = $false; SparseField = $true; TightBounds = $false
+        TightBounds = $false
         Transmission = $true; UseFieldCache = $true
     }
 }

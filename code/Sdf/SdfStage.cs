@@ -119,7 +119,7 @@ public sealed class SdfStage : IDisposable
 			_sculpt = _host.Components.Create<SdfSculpture>();
 			// The meshed path is dead weight here (we only ever raymarch), but SdfSculpture rebuilds a
 			// surface-nets mesh on enable regardless — keep that build trivial.
-			_sculpt.Resolution = 8;
+			_sculpt.RuntimeResolution = 8;
 			_sculpt.AutoRebuild = false;
 
 			_renderer = _host.Components.Create<SdfRaymarchRenderer>();
@@ -130,13 +130,13 @@ public sealed class SdfStage : IDisposable
 			_renderer.ShadowBias = _sdfShadowBias;
 			// AdaptiveQuality is off below, so these are the constant quality for every pixel — including the
 			// depth the shadow pass writes, which is where march error turns into acne.
-			_renderer.MaxSteps = _maxSteps;
-			_renderer.Epsilon = _epsilon;
+			_renderer.MaxStepsOverride = _maxSteps;
+			_renderer.EpsilonOverride = _epsilon;
 			// Both LOD systems key off the GAME camera's distance to the prop, which has nothing to do with how
 			// our camera frames it — leave them on and the thumbnail LODs out (or culls) based on where the
 			// player happens to be standing.
-			_renderer.DistanceSwitching = false;
-			_renderer.AdaptiveQuality = false;
+			_renderer.DistanceSwitchingOverride = false;
+			_renderer.AdaptiveQualityOverride = false;
 			// Analytic march, no baked field: a thumbnail is small and renders once, so the compute dispatch
 			// would cost more than it saves — and skipping it means the very first frame is already correct
 			// rather than blank while a bake lands.

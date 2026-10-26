@@ -452,10 +452,10 @@ public sealed class HunterController : Component
 		// Wiring OrbitCamera onto the session is what makes SetActive enable/disable the camera for us.
 		Face ??= ResolveFace();
 
-		// Heads are worn on screen at close range and sculpted face-on: always the Detail voxel size, on every
+		// Heads are worn on screen at close range and sculpted face-on: always the Player profile, on every
 		// machine (proxies included — everyone looks at everyone's head).
 		if ( Face.IsValid() && Face.GameObject.Components.Get<SdfRaymarchRenderer>() is { } faceSdf )
-			faceSdf.FieldDensity = SdfFieldDensity.Detail;
+			faceSdf.RuntimeProfile = SdfQualityProfile.Player;
 
 		// Wear the saved head NOW rather than when the edit session's own OnStart reaches its persist-slot
 		// load — the session is only CREATED below (AttachEditing), so its OnStart is a frame away, and that

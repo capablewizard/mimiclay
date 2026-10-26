@@ -549,6 +549,72 @@ still default off), uniform material, register reorder, edge AA, FXAA. Verified 
 the known regime flip ([before](Tools/sdf/bench/runs/20261025-211643-ship-trim-before.json) /
 [after](Tools/sdf/bench/runs/20261025-212406-ship-trim-after.json)).
 
+## Quality profiles (2026-10-25)
+
+Per-prop quality `[Property]`s drifted into three generations (s&box serializes every property into every prefab and
+scene, so code defaults never reached authored props): 441 renderers had adaptive quality off, 439 the mesh hand-off,
+383 overdraw. They're now in `SdfQualityProfile` assets (`Assets/sdf/quality/*.sdfq`): **Standard** (every prop,
+the default), **Player** (pawn head/body/hand, world gun), **Viewmodel** (first-person gun; also any non-Normal view
+layer) and **Editing** (automatic while the local player sculpts). Renderers keep only object-describing settings plus
+rare nullable `...Override`s. Field density is a per-profile rule: content voxels at a world voxel size, half-rate past
+a knee, clamped, padding added on top (8" when the field stays dense, 16" when sparse or being sculpted). Migration:
+`Tools/sdf/migrate-quality-profiles.cs` ([report](Tools/sdf/quality-migration-report.md)); drift check in
+`Tools/sdf/validate-resources.csx`.
+
+| profile | march | adaptive (min steps / far eps) | chain FullQ / hand-off / LOD1 / LOD2 / cull | voxel / min / knee / max |
+|---|---|---|---|---|
+| Standard | 50 / 0.18 | on, 12 / 1 | 1 / 15 / 20 / 30 / 200, shadow 3 | 0.625" / 32 / 160 / 256 |
+| Player | 96 / 0.05 | on, 28 / 0.4 | 6 / 60 / 90 / 140 / 220, shadow 10 | 0.3" / 48 / 192 / 256 |
+| Viewmodel | 96 / 0.05 | off | switching off, overdraw off | 0.15" / 64 / 256 / 384 |
+| Editing | 96 / 0.05 | on, 28 / 0.4 | 6 / 60 / 90 / 140 / 220 | 0.2" / 64 / 256 / 384 |
+
+Dense limit raised 128 → 256 (`SdfRaymarchRenderer.DenseLimit`). All runs on the dev scene (256 unique fields), 4090,
+1080p, 8× MSAA. Before = old code and authored values; the `ship`/`lod` policies force adaptive + hand-off on every prop
+either way, so the real-game gain for the ~440 renderers that had them off is larger than these rows show (compare a
+case's `full` and `lod` rows: far 4.54 → 1.06 ms).
+
+**Density** (uncapped `shader` suite, Standard march 50/0.18, in-run arms,
+[options](Tools/sdf/bench/runs/20261025-225243-shader-profiles-density-options.json),
+[limits](Tools/sdf/bench/runs/20261025-223251-shader-profiles-denselimit.json)): at 0.5" with the 128 dense limit most
+props went sparse and the suite ran 40–80% slower than before (869 MiB); dense limits 160/192 barely helped; 256
+restored the old cost except shadows (1169 MiB). 0.625" + 256 ≈ the old cost at 761 MiB (+13%). Voxels: toy_radio 0.92
+→ 0.63", dinosaur 1.09 → 0.63", clay_clumps 1.66 → 0.81".
+
+**Standard march/LOD** (`ship`: [code defaults](Tools/sdf/bench/runs/20261025-223811-ship-profiles-stdC.json) vs
+[generator set](Tools/sdf/bench/runs/20261025-224224-ship-profiles-stdB.json); `lod`: hand-off
+[15](Tools/sdf/bench/runs/20261025-225941-lod-profiles-stdB-d625.json) vs
+[60](Tools/sdf/bench/runs/20261025-230644-lod-profiles-stdM-d625.json)): 50/0.18 is 13–27% cheaper than 96/0.05 with
+~1 px of silhouette difference; hand-off 15 is 25–85% cheaper than 60 from overview out (overview 3.33 vs 4.45, far
+1.06 vs 1.68, distant 0.21 vs 1.38 ms). At 1200 u the mesh LOD1/2 (20/30 radii) drop thin features (pliers, a ring
+handle) that hand-off 60 keeps — raising LOD1/LOD2 only costs mesh triangles.
+
+| sdf ms | before | after | | sdf ms (`lod` policy) | before | after |
+|---|---|---|---|---|---|---|
+| shader dense | 3.98 | 2.99 | | close | 4.40 | 4.20 |
+| shader close | 3.41 | 2.77 | | dense | 4.00 | 4.09 |
+| shader complex | 1.99 | 1.68 | | overview | 4.23 | 4.16 |
+| shader 4spots | 6.86 | 6.78 | | far | 1.56 | 1.06 |
+| shader sun | 5.44 | 5.19 | | distant | 0.57 | 0.42 |
+| shader 4spots-far | 4.87 | 4.23 | | dolly (GPU ms) | 3.05 | 3.26 |
+| counted MiB | 675 | 761 | | | | |
+
+Runs: [shader before](Tools/sdf/bench/runs/20261025-215614-shader-profiles-before.json) /
+[after](Tools/sdf/bench/runs/20261025-231806-shader-profiles-after.json),
+[ship before](Tools/sdf/bench/runs/20261025-215906-ship-profiles-before.json) /
+[after](Tools/sdf/bench/runs/20261025-232139-ship-profiles-after.json) (close 4.51 → 4.53, dense 3.86 → 4.13,
+overview 3.29 → 3.87 because half the dev props were authored at a 12-radii hand-off, complex 2.57 → 2.54; capped,
+regime flips seen up to ±25% between identical runs), [lod before](Tools/sdf/bench/runs/20261025-220144-lod-profiles-before.json) /
+[after](Tools/sdf/bench/runs/20261025-232531-lod-profiles-after.json). Before and after are ~80 min apart (old code
+can't run on migrated assets), so read <10% deltas as noise. Main-thread renderer update read 1.26–1.44 → 1.48–1.54
+ms/frame; `ResolveQuality` + `ResolveFieldGrid` measure 0.03 ms for all 256, so most of that is unexplained/noise.
+
+Rebake GPU time (`baketime.cs`, old → new): all 256 props 71.9 → 66.1 ms (smaller pad); 8 most-brush props 3.9 → 4.7 ms;
+8 physically largest 2.3 → 11.3 ms (five of them now exceed 256 and go sparse at ~290 — matters for boiling or
+live-edited giants). Registers: no shader source changed, so the forward pass is unchanged by construction.
+
+Found on the way: a sparse field with the camera inside the proxy and within ~2" of the field's face dropped the
+surface below (zoo star tip) — dense was fine; sparse fields keep the 16" pad for that reason.
+
 ## Rules
 
 - Keep 8× MSAA, resolution, field density and the SDF→mesh hand-off distances fixed while measuring. Lowering any

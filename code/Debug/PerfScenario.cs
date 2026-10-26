@@ -20,7 +20,7 @@ namespace Mimiclay;
 ///   mimi_perf_role hunter|prop                 swap the local player's pawn (creative only)
 ///   mimi_perf_stats                            field VRAM, ready/pending counts, caster split, mesh builds
 ///   mimi_perf_set [Property] [value]        set any SdfRaymarchRenderer property on every perf prop (bisecting)
-///   mimi_perf_field [res]                      pin Authored FieldResolution on every perf prop; 0 = World density
+///   mimi_perf_field [voxel]                    pin a world voxel size (inches) on every perf prop; 0 = the profile's
 ///   mimi_perf_sample [seconds] [label]         frame-time + CPU-system sample (prints [perf-sample] lines)
 /// </summary>
 public sealed class PerfScenarioSystem : GameObjectSystem
@@ -209,10 +209,13 @@ public static class PerfScenario
 		object v;
 		try
 		{
-			v = prop.PropertyType == typeof( bool ) ? (object)(value == "1" || value.Equals( "true", StringComparison.OrdinalIgnoreCase ))
-				: prop.PropertyType == typeof( int ) ? int.Parse( value )
-				: prop.PropertyType == typeof( float ) ? float.Parse( value )
-				: prop.PropertyType.IsEnum ? Enum.Parse( prop.PropertyType, value, true )
+			// Nullable properties (the renderer's quality overrides): "null" clears the override back to the profile.
+			var t = Nullable.GetUnderlyingType( prop.PropertyType ) ?? prop.PropertyType;
+			v = t != prop.PropertyType && value.Equals( "null", StringComparison.OrdinalIgnoreCase ) ? null
+				: t == typeof( bool ) ? (object)(value == "1" || value.Equals( "true", StringComparison.OrdinalIgnoreCase ))
+				: t == typeof( int ) ? int.Parse( value )
+				: t == typeof( float ) ? float.Parse( value )
+				: t.IsEnum ? Enum.Parse( t, value, true )
 				: value;
 		}
 		catch ( Exception e ) { Log.Warning( $"[perf] can't parse '{value}' as {prop.PropertyType.Name}: {e.Message}" ); return; }
@@ -222,19 +225,18 @@ public static class PerfScenario
 	}
 
 	[ConCmd( "mimi_perf_field" )]
-	public static void Field( int res )
+	public static void Field( float voxel )
 	{
 		var scene = Game.ActiveScene;
 		if ( scene is null ) return;
 		int n = 0;
-		// 0 = back to the World density tier; anything else pins the legacy authored resolution.
+		// 0 = back to the profile's voxel size; anything else pins this one (a VoxelSizeOverride).
 		foreach ( var r in PerfRenderers( scene ) )
 		{
-			r.FieldDensity = res > 0 ? SdfFieldDensity.Authored : SdfFieldDensity.World;
-			if ( res > 0 ) r.FieldResolution = res;
+			r.VoxelSizeOverride = voxel > 0f ? voxel : null;
 			n++;
 		}
-		Log.Info( $"[perf] {(res > 0 ? $"FieldResolution={res} (Authored)" : "FieldDensity=World")} on {n} renderers" );
+		Log.Info( $"[perf] {(voxel > 0f ? $"VoxelSizeOverride={voxel}" : "voxel size from the profile")} on {n} renderers" );
 	}
 
 	// ── Stats ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -259,7 +261,7 @@ public static class PerfScenario
 			if ( r.DrawnSceneObjectLive ) soOn++;
 			if ( r.DebugFieldSparse ) sparse++;
 			states[Math.Clamp( r.DebugSwitchState, 0, 4 )]++;
-			// Longest surface-grid axis actually built, bucketed to 16s (the density tiers make this continuous).
+			// Longest surface-grid axis actually built, bucketed to 16s (the density rule makes this continuous).
 			var dims = r.DebugFieldDims;
 			int longest = (int)MathF.Max( dims.x, MathF.Max( dims.y, dims.z ) ) / 16 * 16;
 			resHist[longest] = resHist.GetValueOrDefault( longest ) + 1;
@@ -277,7 +279,7 @@ public static class PerfScenario
 		Log.Info( $"[perf-stats] {SdfFieldCache.DebugLine()}" );
 		Log.Info( $"[perf-stats] scene GPU payload={((localBytes + uniqueFieldBytes) / 1048576.0):0.0}MiB uniqueFields={fields.Count}/{uniqueFieldBytes / 1048576.0:0.0}MiB rendererLocal={localBytes / 1048576.0:0.0}MiB (rendererText={all.Sum( r => r.TextAtlasBytes ) / 1048576.0:0.0}MiB fieldText={fields.Sum( f => f.TextAtlasBytes ) / 1048576.0:0.0}MiB); excludes mesh buffers, mesh-bake scratch, driver overhead and other scenes" );
 		Log.Info( $"[perf-stats] convars: field_cache={SdfRaymarchRenderer.FieldCacheEnabled} sparse={SdfRaymarchRenderer.SparseFieldEnabled} atlas8={SdfFieldGpu.Atlas8BitEnabled} screen={Screen.Size}" );
-		Log.Info( $"[perf-stats] density: voxel={SdfRaymarchRenderer.WorldVoxelSize} detail={SdfRaymarchRenderer.DetailVoxelSize} res=[{SdfRaymarchRenderer.DensityMinResolution},{SdfRaymarchRenderer.FieldResolutionCap}] detailMax={SdfRaymarchRenderer.DetailMaxResolution} denseMax={SdfRaymarchRenderer.DenseMaxResolution} tiers={string.Join( ",", all.GroupBy( r => r.DebugFieldTier ).Select( g => $"{g.Key}x{g.Count()}" ) )}" );
+		Log.Info( $"[perf-stats] density: voxelScale={SdfRaymarchRenderer.VoxelScale} profiles={string.Join( ",", all.GroupBy( r => r.DebugFieldTier ).Select( g => $"{g.Key}x{g.Count()}" ) )}" );
 	}
 
 	// ── Load test: synchronous spawn cost + time/hitches until every field and mesh has landed ──────────────

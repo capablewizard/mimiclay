@@ -3497,24 +3497,8 @@
               "Type": "Component",
               "IdValue": "b1b34208-4711-4703-985b-23fac8126ee5"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1b34208-4711-4703-985b-23fac8126ee5"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1b34208-4711-4703-985b-23fac8126ee5"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -3677,24 +3661,8 @@
               "Type": "Component",
               "IdValue": "b1b34208-4711-4703-985b-23fac8126ee5"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1b34208-4711-4703-985b-23fac8126ee5"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "b1b34208-4711-4703-985b-23fac8126ee5"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -4925,24 +4893,8 @@
               "Type": "Component",
               "IdValue": "6fc1c8a7-e4f7-42f9-983b-d952bf0e16ed"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6fc1c8a7-e4f7-42f9-983b-d952bf0e16ed"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "6fc1c8a7-e4f7-42f9-983b-d952bf0e16ed"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -4993,24 +4945,8 @@
               "Type": "Component",
               "IdValue": "140d0633-c00e-4124-80bc-f6baed61f111"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "140d0633-c00e-4124-80bc-f6baed61f111"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "140d0633-c00e-4124-80bc-f6baed61f111"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -5069,24 +5005,8 @@
               "Type": "Component",
               "IdValue": "10e95ab9-df0b-4869-970d-6bb5708d2ca7"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "10e95ab9-df0b-4869-970d-6bb5708d2ca7"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "10e95ab9-df0b-4869-970d-6bb5708d2ca7"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -5145,24 +5065,8 @@
               "Type": "Component",
               "IdValue": "43e71f82-886f-4126-b7be-504809318160"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "43e71f82-886f-4126-b7be-504809318160"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "43e71f82-886f-4126-b7be-504809318160"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -5755,24 +5659,8 @@
               "Type": "Component",
               "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "41820ea1-1179-47ef-8578-3c0c288101d0"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -6085,24 +5973,8 @@
               "Type": "Component",
               "IdValue": "01f39a65-92b1-478b-938a-47eb475ec42f"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "01f39a65-92b1-478b-938a-47eb475ec42f"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "01f39a65-92b1-478b-938a-47eb475ec42f"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -6415,24 +6287,8 @@
               "Type": "Component",
               "IdValue": "01f39a65-92b1-478b-938a-47eb475ec42f"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "01f39a65-92b1-478b-938a-47eb475ec42f"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "01f39a65-92b1-478b-938a-47eb475ec42f"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -6850,24 +6706,8 @@
               "Type": "Component",
               "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -6926,24 +6766,8 @@
               "Type": "Component",
               "IdValue": "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a7f2618d-f053-4f56-9dd1-1fb0eef6f58b"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -7002,24 +6826,8 @@
               "Type": "Component",
               "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -7086,24 +6894,8 @@
               "Type": "Component",
               "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -7354,24 +7146,8 @@
               "Type": "Component",
               "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -7622,24 +7398,8 @@
               "Type": "Component",
               "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "962dcd7c-0892-4c79-8c92-7dd5f155fa5a"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -7749,24 +7509,8 @@
               "Type": "Component",
               "IdValue": "357bbf81-ea29-4952-8bc3-91d136b9eebb"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "357bbf81-ea29-4952-8bc3-91d136b9eebb"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "357bbf81-ea29-4952-8bc3-91d136b9eebb"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -8064,24 +7808,8 @@
               "Type": "Component",
               "IdValue": "8055e640-5701-4473-b747-ecdb71cfb8c4"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8055e640-5701-4473-b747-ecdb71cfb8c4"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8055e640-5701-4473-b747-ecdb71cfb8c4"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -8680,24 +8408,8 @@
               "Type": "Component",
               "IdValue": "01d46c24-e65b-4fb1-9f74-6feebbc109c7"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "01d46c24-e65b-4fb1-9f74-6feebbc109c7"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "01d46c24-e65b-4fb1-9f74-6feebbc109c7"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -8801,24 +8513,8 @@
               "Type": "Component",
               "IdValue": "95a1f128-f69a-481d-9752-e0bff2398f85"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "95a1f128-f69a-481d-9752-e0bff2398f85"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "95a1f128-f69a-481d-9752-e0bff2398f85"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -9200,24 +8896,8 @@
               "Type": "Component",
               "IdValue": "44e74e00-9884-4877-9776-665907a3eccf"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "44e74e00-9884-4877-9776-665907a3eccf"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "44e74e00-9884-4877-9776-665907a3eccf"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -9277,24 +8957,8 @@
               "Type": "Component",
               "IdValue": "5661849f-f383-4b19-b62a-0f76edf1cc85"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5661849f-f383-4b19-b62a-0f76edf1cc85"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5661849f-f383-4b19-b62a-0f76edf1cc85"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -9397,24 +9061,8 @@
               "Type": "Component",
               "IdValue": "cf899413-7927-4f54-93aa-00fbb22e3fd0"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cf899413-7927-4f54-93aa-00fbb22e3fd0"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "cf899413-7927-4f54-93aa-00fbb22e3fd0"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -9472,24 +9120,8 @@
               "Type": "Component",
               "IdValue": "619b1992-c9f8-4220-83b1-f2be71f0f223"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "619b1992-c9f8-4220-83b1-f2be71f0f223"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "619b1992-c9f8-4220-83b1-f2be71f0f223"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -9540,24 +9172,8 @@
               "Type": "Component",
               "IdValue": "9cf3c04a-6aea-4cff-a52f-2a963e5c2ce0"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9cf3c04a-6aea-4cff-a52f-2a963e5c2ce0"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9cf3c04a-6aea-4cff-a52f-2a963e5c2ce0"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -9661,24 +9277,8 @@
               "Type": "Component",
               "IdValue": "4fae545f-c8e0-42a2-8cb7-8a1d2ed66082"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "4fae545f-c8e0-42a2-8cb7-8a1d2ed66082"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "4fae545f-c8e0-42a2-8cb7-8a1d2ed66082"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10033,24 +9633,8 @@
               "Type": "Component",
               "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d1176097-b5b5-49d1-b0cf-63001c68503c"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10101,24 +9685,8 @@
               "Type": "Component",
               "IdValue": "515c7a2f-a5e1-4fd6-adb7-0590d012479c"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "515c7a2f-a5e1-4fd6-adb7-0590d012479c"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "515c7a2f-a5e1-4fd6-adb7-0590d012479c"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10186,24 +9754,8 @@
               "Type": "Component",
               "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "23056d9f-08e5-449a-b0fe-3dc439c3d3d9"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10261,24 +9813,8 @@
               "Type": "Component",
               "IdValue": "8409619b-f482-4817-93da-ddcbffe011f4"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8409619b-f482-4817-93da-ddcbffe011f4"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8409619b-f482-4817-93da-ddcbffe011f4"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10345,24 +9881,8 @@
               "Type": "Component",
               "IdValue": "8409619b-f482-4817-93da-ddcbffe011f4"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8409619b-f482-4817-93da-ddcbffe011f4"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8409619b-f482-4817-93da-ddcbffe011f4"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10413,24 +9933,8 @@
               "Type": "Component",
               "IdValue": "5a4a533b-2823-4074-a4c3-cee3f47b4a7f"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5a4a533b-2823-4074-a4c3-cee3f47b4a7f"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5a4a533b-2823-4074-a4c3-cee3f47b4a7f"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10603,24 +10107,8 @@
               "Type": "Component",
               "IdValue": "253c76f0-6a9a-459b-9d26-7df191da49e0"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "253c76f0-6a9a-459b-9d26-7df191da49e0"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "253c76f0-6a9a-459b-9d26-7df191da49e0"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10793,24 +10281,8 @@
               "Type": "Component",
               "IdValue": "0c7c4e0a-becf-45a5-af09-459685312921"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0c7c4e0a-becf-45a5-af09-459685312921"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "0c7c4e0a-becf-45a5-af09-459685312921"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -10983,24 +10455,8 @@
               "Type": "Component",
               "IdValue": "d4031c71-7ad9-4c2d-b946-e991603d0b2e"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d4031c71-7ad9-4c2d-b946-e991603d0b2e"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d4031c71-7ad9-4c2d-b946-e991603d0b2e"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -11173,24 +10629,8 @@
               "Type": "Component",
               "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d18818a7-d31c-44a0-8c71-702227370bfe"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -11355,24 +10795,8 @@
               "Type": "Component",
               "IdValue": "8f38980e-0fda-481c-bed7-8d0bc055a06c"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8f38980e-0fda-481c-bed7-8d0bc055a06c"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8f38980e-0fda-481c-bed7-8d0bc055a06c"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -11545,24 +10969,8 @@
               "Type": "Component",
               "IdValue": "92d3a55b-1a9d-4109-9473-f43d6e7f6c61"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "92d3a55b-1a9d-4109-9473-f43d6e7f6c61"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "92d3a55b-1a9d-4109-9473-f43d6e7f6c61"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -11621,24 +11029,8 @@
               "Type": "Component",
               "IdValue": "1240b238-21ac-440a-b087-028a06207923"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1240b238-21ac-440a-b087-028a06207923"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1240b238-21ac-440a-b087-028a06207923"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {
@@ -11697,24 +11089,8 @@
               "Type": "Component",
               "IdValue": "ed757fb7-d20b-4897-9e3f-c911e212fdfb"
             },
-            "Property": "AdaptiveQuality",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ed757fb7-d20b-4897-9e3f-c911e212fdfb"
-            },
             "Property": "Displace",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ed757fb7-d20b-4897-9e3f-c911e212fdfb"
-            },
-            "Property": "DistanceSwitching",
-            "Value": false
           },
           {
             "Target": {

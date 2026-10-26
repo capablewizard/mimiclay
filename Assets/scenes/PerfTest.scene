@@ -519,8 +519,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -554,8 +553,6 @@
           "__guid": "57404eef-9cd7-4338-ac36-dec22dc84dcb",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": false,
-          "CullRadii": 220,
           "DebugBounds": false,
           "DebugLod": false,
           "DebugSwitchState": false,
@@ -563,25 +560,14 @@
           "Displace": false,
           "DisplaceAmount": 0.35,
           "DisplaceFrequency": 0.25,
-          "DistanceSwitching": true,
-          "Epsilon": 0.15,
-          "FarEpsilon": 3.5881817,
-          "FullQualityRadii": 2,
-          "LodHysteresis": 0.06,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 50,
-          "MeshLod1Radii": 90,
-          "MeshLod2Radii": 140,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 16,
-          "MinSteps": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "TightBounds": true
         },
         {
@@ -807,22 +793,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "e2b20dca-1bbb-475f-99bb-88b4161174df"
-            },
-            "Property": "Resolution",
-            "Value": 64
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
-            },
-            "Property": "CullRadii",
-            "Value": 80
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
             },
             "Property": "DepthClamp",
@@ -851,46 +821,6 @@
             },
             "Property": "DisplaceFrequency",
             "Value": 0.12755275
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
-            },
-            "Property": "Epsilon",
-            "Value": 0.18
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
-            },
-            "Property": "FarEpsilon",
-            "Value": 0.5
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 30
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 40
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "9640bcd2-e459-40df-8dcc-ec80e8f210fa"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 12
           },
           {
             "Target": {
@@ -1018,8 +948,7 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Resolution": 32
+          "OnComponentUpdate": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -1053,8 +982,6 @@
           "__guid": "f9110143-3480-490f-9f16-b16499501bdd",
           "__enabled": true,
           "Flags": 0,
-          "AdaptiveQuality": true,
-          "CullRadii": 80,
           "DebugBounds": false,
           "DebugLod": false,
           "DebugSwitchState": true,
@@ -1062,25 +989,14 @@
           "Displace": false,
           "DisplaceAmount": 0.35,
           "DisplaceFrequency": 0.25,
-          "DistanceSwitching": true,
-          "Epsilon": 0.18,
-          "FarEpsilon": 0.5,
-          "FullQualityRadii": 2,
-          "LodHysteresis": 0.06,
           "Material": "materials/plasticine.vmat",
-          "MaxSteps": 50,
-          "MeshLod1Radii": 30,
-          "MeshLod2Radii": 40,
           "MeshMode": "DepthProxy",
-          "MinQualityRadii": 12,
-          "MinSteps": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "OverdrawOptimization": true,
           "TightBounds": false
         }
       ],
@@ -1533,14 +1449,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000002"
-            },
-            "Property": "Resolution",
-            "Value": 64
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "2000000d-0000-4000-8000-000000000003"
             },
             "Property": "LodOverride",
@@ -1553,14 +1461,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000004"
-            },
-            "Property": "CullRadii",
-            "Value": 80
           },
           {
             "Target": {
@@ -1593,54 +1493,6 @@
             },
             "Property": "DisplaceFrequency",
             "Value": 0.12755275
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000004"
-            },
-            "Property": "Epsilon",
-            "Value": 0.18
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000004"
-            },
-            "Property": "FarEpsilon",
-            "Value": 0.5
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 30
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 40
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000004"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 12
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2000000d-0000-4000-8000-000000000004"
-            },
-            "Property": "MinSteps",
-            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -2026,22 +1878,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000002"
-            },
-            "Property": "Resolution",
-            "Value": 64
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "CullRadii",
-            "Value": 80
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "1000000a-0000-4000-8000-000000000004"
             },
             "Property": "DepthClamp",
@@ -2070,46 +1906,6 @@
             },
             "Property": "DisplaceFrequency",
             "Value": 0.12755275
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "Epsilon",
-            "Value": 0.18
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "FarEpsilon",
-            "Value": 0.5
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 30
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 40
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -2178,14 +1974,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000002"
-            },
-            "Property": "Resolution",
-            "Value": 64
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "1000000a-0000-4000-8000-000000000003"
             },
             "Property": "LodOverride",
@@ -2198,14 +1986,6 @@
             },
             "Property": "RenderType",
             "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "CullRadii",
-            "Value": 80
           },
           {
             "Target": {
@@ -2238,46 +2018,6 @@
             },
             "Property": "DisplaceFrequency",
             "Value": 0.12755275
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "Epsilon",
-            "Value": 0.18
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "FarEpsilon",
-            "Value": 0.5
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 30
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 40
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 12
           }
         ],
         "MovedObjects": []
@@ -2385,22 +2125,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000002"
-            },
-            "Property": "Resolution",
-            "Value": 64
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "CullRadii",
-            "Value": 80
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "1000000a-0000-4000-8000-000000000004"
             },
             "Property": "DepthClamp",
@@ -2429,46 +2153,6 @@
             },
             "Property": "DisplaceFrequency",
             "Value": 0.12755275
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "Epsilon",
-            "Value": 0.18
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "FarEpsilon",
-            "Value": 0.5
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod1Radii",
-            "Value": 30
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MeshLod2Radii",
-            "Value": 40
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "1000000a-0000-4000-8000-000000000004"
-            },
-            "Property": "MinQualityRadii",
-            "Value": 12
           }
         ],
         "MovedObjects": []

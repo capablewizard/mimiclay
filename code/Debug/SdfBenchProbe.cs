@@ -43,7 +43,7 @@ public static class SdfBenchProbe
 			BuildsInFlight = SdfSculpture.BuildsInFlight,
 			Bands = Bands( scene ),
 			Fields = perRenderer ? rs.Select( r => new { Name = r.GameObject.Name, Bytes = r.FieldVramBytes,
-				Dimensions = r.DebugFieldDims.ToString(), Tier = r.DebugFieldTier.ToString(),
+				Dimensions = r.DebugFieldDims.ToString(), Tier = r.DebugFieldTier, Voxel = System.MathF.Round( r.DebugVoxelSize, 3 ),
 				Sparse = r.DebugFieldSparse, Ready = r.DebugFieldReady, Band = r.DebugSwitchState } ).ToArray() : null
 		};
 	}
