@@ -36,9 +36,11 @@ public static class SdfShadowSettings
 	[ConVar( "mimiclay_sdf_shadow_texel_eps_sun" )]
 	public static float SunTexelEpsilon { get; set; } = 1.5f;
 
-	/// <summary>Spot/point-light shadow hit epsilon, in shadow-map texels (0 = full camera precision).</summary>
+	/// <summary>Spot/point-light shadow hit epsilon, in shadow-map texels (0 = full camera precision). Was 2: rays
+	/// skimming within 2 texels of a rim count as hits, so the rim's shadow spread into hollows (a dark blob on the
+	/// kitchen mug's tea, 2026-10-26). The bench scene has no deep cavities, so its pixel diffs missed it.</summary>
 	[ConVar( "mimiclay_sdf_shadow_texel_eps_local" )]
-	public static float LocalTexelEpsilon { get; set; } = 2f;
+	public static float LocalTexelEpsilon { get; set; } = 1f;
 
 	/// <summary>Shadow-view step length multiplier, up to a full sphere-trace step. Props with baked displacement march
 	/// at ~half steps (the lumps steepen the field); in a shadow map a missed lump is invisible. Measured free: 2.</summary>

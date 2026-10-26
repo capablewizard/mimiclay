@@ -314,8 +314,16 @@ public sealed class FbxBlockoutImporter : Component, Component.ExecuteInEditor
 			builder.AddMesh( mesh );
 		}
 
-		if ( BuildCollision && piece.CollisionIndices.Count > 0 )
-			builder.AddCollisionMesh( piece.CollisionVertices, piece.CollisionIndices );
+		if ( piece.CollisionIndices.Count > 0 )
+		{
+			// render-mesh traces (UseRenderMeshes) only see a model's trace mesh — without it the DDGI bake's
+			// probe relocation looks straight through every piece: probes inside cabinets stay active (black)
+			// and probes in front of the door see the ShadowBlocker's backfaces and get deactivated
+			builder.AddTraceMesh( piece.CollisionVertices, piece.CollisionIndices );
+
+			if ( BuildCollision )
+				builder.AddCollisionMesh( piece.CollisionVertices, piece.CollisionIndices );
+		}
 
 		return builder.Create();
 	}
