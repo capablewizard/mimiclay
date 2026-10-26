@@ -35,3 +35,6 @@ Exports/
 # Blender bridge exchange files (written by the editor, read by Tools/blender/sbox_bridge.py)
 Tools/blender/bridge/
 __pycache__/
+
+# SDF benchmark reference images (large; the run JSON next to them is small and committed)
+Tools/sdf/bench/runs/images/
