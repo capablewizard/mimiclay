@@ -1,8 +1,9 @@
 {
   "mcpServers": {
     "sbox": {
-      "type": "http",
-      "url": "http://127.0.0.1:7269/mcp"
+      "type": "stdio",
+      "command": "D:/SteamLibrary/steamapps/common/sbox/bin/managed/sbox-cli.exe",
+      "args": ["--connect", "D:/SBox/Projects/mimiclay/mimiclay.sbproj"]
     }
   }
 }

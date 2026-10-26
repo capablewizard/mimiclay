@@ -67,30 +67,37 @@ public sealed class SdfFieldGpu
 	/// period lapses. Nothing disposed these before: old fields lived until the GC finaliser got round to them.</summary>
 	public void Dispose()
 	{
+		// RenderAttributes owns strong texture handles independently of the Texture wrappers.
+		_cs?.Attributes.Clear();
+		ReleaseSparseResources();
 		Texture?.Dispose(); Texture = null;
+		_brushTex?.Dispose(); _brushTex = null;
+		_splineTex?.Dispose(); _splineTex = null;
+		_textAtlas.Dispose();
+		_nx = _ny = _nz = 0;
+	}
+
+	void ReleaseSparseResources()
+	{
+		_classifyCs?.Attributes.Clear();
+		_allocCs?.Attributes.Clear();
+		_fillCs?.Attributes.Clear();
 		Occupancy?.Dispose(); Occupancy = null;
 		Atlas?.Dispose(); Atlas = null;
 		IndirectionTex?.Dispose(); IndirectionTex = null;
-		_brushTex?.Dispose(); _brushTex = null;
-		_splineTex?.Dispose(); _splineTex = null;
 		_counter?.Dispose(); _counter = null;
-		_nx = _ny = _nz = 0;
 		_bx = _by = _bz = 0;
 		_indBx = _indBy = _indBz = 0;
 		_atlasX = _atlasY = _atlasZ = 0;
+		AtlasEncodeBand = 0f;
 	}
 
-	/// <summary>Resident VRAM estimate of every texture this field owns (guide/dense field, occupancy, atlas,
-	/// indirection). Diagnostics only (mimi_perf_stats).</summary>
-	public long EstimatedBytes => Bytes( Texture ) + Bytes( Occupancy ) + Bytes( Atlas ) + Bytes( IndirectionTex );
-
-	static long Bytes( Texture t )
-	{
-		if ( !t.IsValid() ) return 0;
-		long px = (long)t.Width * Math.Max( t.Height, 1 ) * Math.Max( t.Depth, 1 );
-		int bpp = t.ImageFormat switch { ImageFormat.I8 => 1, ImageFormat.R32F => 4, ImageFormat.RGBA32323232F => 16, _ => 4 };
-		return px * bpp;
-	}
+	/// <summary>Owned GPU payload, including persistent bake inputs. Excludes driver overhead and staging.</summary>
+	public long EstimatedBytes => FieldTextureBytes + InputTextureBytes + TextAtlasBytes + (_counter is null ? 0 : 4);
+	public long FieldTextureBytes => SdfGpuMemory.TextureBytes( Texture ) + SdfGpuMemory.TextureBytes( Occupancy )
+		+ SdfGpuMemory.TextureBytes( Atlas ) + SdfGpuMemory.TextureBytes( IndirectionTex );
+	public long InputTextureBytes => SdfGpuMemory.TextureBytes( _brushTex ) + SdfGpuMemory.TextureBytes( _splineTex );
+	public long TextAtlasBytes => _textAtlas.EstimatedBytes;
 
 	Texture _brushTex, _splineTex;
 	readonly SdfTextAtlas _textAtlas = new(); // baked text distance fields (Text brushes), bound as "TextSdf"
@@ -263,6 +270,8 @@ public sealed class SdfFieldGpu
 		// sparse — otherwise every edit pays to build an atlas the dense path never samples. Run at the SURFACE res.
 		if ( buildSparse )
 			ClassifyBricks( snx, sny, snz, surfCell );
+		else
+			ReleaseSparseResources();
 		return true;
 	}
 
@@ -275,6 +284,7 @@ public sealed class SdfFieldGpu
 
 		if ( !Occupancy.IsValid() || _bx != bx || _by != by || _bz != bz )
 		{
+			Occupancy?.Dispose();
 			Occupancy = Texture.CreateVolume( bx, by, bz, ImageFormat.R32F )
 				.WithUAVBinding().WithName( "sdf_brick_occupancy" ).Finish();
 			if ( !Occupancy.IsValid() )
@@ -326,6 +336,7 @@ public sealed class SdfFieldGpu
 		_counter ??= new GpuBuffer( 1, 4, GpuBuffer.UsageFlags.Structured, "sdf_brick_counter" );
 		if ( !IndirectionTex.IsValid() || _indBx != _bx || _indBy != _by || _indBz != _bz )
 		{
+			IndirectionTex?.Dispose();
 			// 2D (NOT a volume): a second user volume texture bound to the material PS aliases the dense field
 			// (engine limit). A 2D texture uses the separate slot pool the brush-data texture already reads from.
 			// Layout: x = brick.x, y = brick.y + brickDims.y*brick.z. Width=bx, height=by*bz.
@@ -340,6 +351,7 @@ public sealed class SdfFieldGpu
 		// refuses it (format+UAV support varies), fall back to R32F and leave AtlasEncodeBand at 0 = raw floats.
 		if ( !Atlas.IsValid() || _atlasZ != az || _atlas8Bit != Atlas8BitEnabled )
 		{
+			Atlas?.Dispose();
 			Atlas = Atlas8BitEnabled
 				? Texture.CreateVolume( ax, ay, az, ImageFormat.I8 ).WithUAVBinding().WithName( "sdf_atlas" ).Finish()
 				: null;
@@ -478,12 +490,23 @@ public sealed class SdfFieldGpu
 		return s;
 	}
 
+	/// <summary>Store the distance field as 16-bit floats: half the field memory at the same resolution. All maths stays
+	/// float32; only the stored samples round (11-bit mantissa: ~0.002 u at 4 u from the surface, where hits and normals
+	/// are taken). Part of the renderer's field hash, so toggling rebakes and the cache never mixes formats.
+	/// Default ON (2026-10-24, 256-prop shader suite): field memory 1271 → 675 MiB, frame-capped spot shadows −35%
+	/// (the shadow pass is memory-latency-bound), images within 0.3% of pixels (silhouette hit/miss flips).
+	/// Set 0 for the float32 fallback.</summary>
+	[ConVar( "mimiclay_sdf_field_half" )]
+	public static bool FieldHalfEnabled { get; set; } = true;
+
 	bool EnsureVolume( int nx, int ny, int nz )
 	{
-		if ( Texture.IsValid() && _nx == nx && _ny == ny && _nz == nz )
+		var format = FieldHalfEnabled ? ImageFormat.R16F : ImageFormat.R32F;
+		if ( Texture.IsValid() && _nx == nx && _ny == ny && _nz == nz && Texture.ImageFormat == format )
 			return true;
 
-		Texture = Texture.CreateVolume( nx, ny, nz, ImageFormat.R32F )
+		Texture?.Dispose();
+		Texture = Texture.CreateVolume( nx, ny, nz, format )
 			.WithUAVBinding()
 			.WithName( "sdf_field_gpu" )
 			.Finish();
@@ -498,9 +521,15 @@ public sealed class SdfFieldGpu
 	void EnsureBrushTextures()
 	{
 		if ( _brushTex is null || _brushTex.Width != MaxBrushes * TexelsPerBrush )
+		{
+			_brushTex?.Dispose();
 			_brushTex = Texture.Create( MaxBrushes * TexelsPerBrush, 1 ).WithFormat( ImageFormat.RGBA32323232F ).WithDynamicUsage().Finish();
+		}
 		if ( _splineTex is null || _splineTex.Width != MaxSplinePoints )
+		{
+			_splineTex?.Dispose();
 			_splineTex = Texture.Create( MaxSplinePoints, 1 ).WithFormat( ImageFormat.RGBA32323232F ).WithDynamicUsage().Finish();
+		}
 		_data ??= new float[MaxBrushes * TexelsPerBrush * 4];
 		_spline ??= new float[MaxSplinePoints * 4];
 	}
@@ -598,6 +627,7 @@ public static class SdfBrushPacker
 			break;
 		}
 
+		textAtlas?.FinishPacking( textSlot );
 		return written;
 
 		void PackOne( SdfBrush b )
@@ -667,6 +697,72 @@ public static class SdfBrushPacker
 			data[o + 24] = wmx.x; data[o + 25] = wmx.y; data[o + 26] = wmx.z;
 			data[o + 27] = b.Slice; // planar slice fraction (sphere/cone), riding the AABB-max texel's free lane
 			written++;
+		}
+	}
+
+	/// <summary>True when every packed brush carries the same colour and metal+rough lane. Every material blend in
+	/// sdf_eval's walk is then lerp(a, a, h) = a, and the first Add always replaces the empty-space material outright,
+	/// so the surface material IS that value at every hit — the raymarch skips the walk (SdfUniformMat). Read off the
+	/// packed floats, not the brushes, so groups, the linearised colour and the lane quantisation match exactly.</summary>
+	public static bool TryUniformMaterial( float[] data, int count, int texelsPerBrush, out Vector4 value )
+	{
+		value = default;
+		if ( count <= 0 )
+			return false;
+
+		int stride = texelsPerBrush * 4;
+		for ( int i = 1; i < count; i++ )
+		{
+			int o = i * stride;
+			if ( data[o + 12] != data[12] || data[o + 13] != data[13] || data[o + 14] != data[14] || data[o + 17] != data[17] )
+				return false;
+		}
+
+		value = new Vector4( data[12], data[13], data[14], data[17] );
+		return true;
+	}
+
+	/// <summary>Brushes per group record (sdf_eval SDF_GROUP_SHIFT) and texels per record (TEXELS_PER_GROUP).</summary>
+	public const int GroupSize = 4;
+	public const int TexelsPerGroup = 3;
+	public const int MaxGroups = MaxBrushes / GroupSize;
+
+	const float NoOp = -1e30f; // an absent op's threshold term — below anything the walk compares it with
+
+	/// <summary>Writes one group record per run of <see cref="GroupSize"/> consecutive packed brushes (never
+	/// reordered; the last run may be short) starting at texel <paramref name="groupBase"/>: the union of the
+	/// members' cull AABBs plus each op's widest threshold term, so sdf_eval's SdfGroupCulled can skip the whole
+	/// run with one test. Texel 0 = AABB min + add blend, 1 = AABB max + subtract blend, 2 = cutout blend + gap,
+	/// cutout colour-edge floor, colour feather threshold. Read off the packed floats so it matches the walk.</summary>
+	public static void PackGroups( float[] data, int count, int texelsPerBrush, int groupBase )
+	{
+		int stride = texelsPerBrush * 4;
+		for ( int g = 0; g * GroupSize < count; g++ )
+		{
+			var mn = new Vector3( float.MaxValue );
+			var mx = new Vector3( float.MinValue );
+			float add = NoOp, sub = NoOp, cut = NoOp, cutFloor = NoOp, colour = NoOp;
+			int end = Math.Min( count, (g + 1) * GroupSize );
+			for ( int i = g * GroupSize; i < end; i++ )
+			{
+				int o = i * stride;
+				mn = Vector3.Min( mn, new Vector3( data[o + 20], data[o + 21], data[o + 22] ) );
+				mx = Vector3.Max( mx, new Vector3( data[o + 24], data[o + 25], data[o + 26] ) );
+				float blend = data[o + 7], op = data[o + 15];
+				if ( op < 0.5f ) add = MathF.Max( add, blend );
+				else if ( op < 1.5f ) sub = MathF.Max( sub, blend );
+				else if ( op < 2.5f )
+				{
+					cut = MathF.Max( cut, blend + data[o + 18] );
+					cutFloor = 0.5f * Sdf.CutoutColorEdge;
+				}
+				else colour = MathF.Max( colour, 0.5f * MathF.Max( blend, Sdf.ColourEdgeFloor ) );
+			}
+
+			int go = (groupBase + g * TexelsPerGroup) * 4;
+			data[go + 0] = mn.x; data[go + 1] = mn.y; data[go + 2] = mn.z; data[go + 3] = add;
+			data[go + 4] = mx.x; data[go + 5] = mx.y; data[go + 6] = mx.z; data[go + 7] = sub;
+			data[go + 8] = cut; data[go + 9] = cutFloor; data[go + 10] = colour; data[go + 11] = 0f;
 		}
 	}
 

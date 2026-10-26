@@ -32,6 +32,9 @@ CS
 		// Dims-1 -> FieldMax), matching the CPU baker and the shader's UVW remap.
 		float3 cell = (g_vFieldMax - g_vFieldMin) / max( g_vFieldDims - 1.0, 1.0 );
 		float3 lp = g_vFieldMin + float3( id ) * cell;
-		g_tField[id] = SdfDistBaked( lp );
+		// Clamped to a float16-safe range: the evaluator starts from 1e9 (an all-disabled brush list returns it), which
+		// stores as +Inf in an R16F field (mimiclay_sdf_field_half) and poisons trilinear filtering. No-op for real
+		// distances, which never come near 60000 units inside a prop's bounds.
+		g_tField[id] = clamp( SdfDistBaked( lp ), -60000.0, 60000.0 );
 	}
 }

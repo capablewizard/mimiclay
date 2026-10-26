@@ -280,26 +280,46 @@ public static class SdfTextSdf
 /// (deterministic, so the renderer's and the field baker's independent atlases agree) and calls
 /// <see cref="Set"/>, which only uploads a slot when its content actually changed.
 /// </summary>
-public sealed class SdfTextAtlas
+public sealed class SdfTextAtlas : IDisposable
 {
 	Texture _tex;
 	readonly SdfTextData[] _slots = new SdfTextData[SdfTextSdf.MaxSlots];
 
-	public Texture Texture
-	{
-		get
-		{
-			_tex ??= Texture.Create( SdfTextData.Width, SdfTextData.Height * SdfTextSdf.MaxSlots )
-				.WithFormat( ImageFormat.R32F ).WithDynamicUsage().Finish();
-			return _tex;
-		}
-	}
+	// Every shader needs a valid binding, but only Text brushes sample it. Reading this property
+	// must not allocate a 1 MiB atlas for a prop with no text. The fallback is engine-owned.
+	public Texture Texture => _tex.IsValid() ? _tex : Sandbox.Texture.White;
+	public long EstimatedBytes => SdfGpuMemory.TextureBytes( _tex );
 
 	public void Set( int slot, SdfTextData data )
 	{
-		if ( slot < 0 || slot >= SdfTextSdf.MaxSlots || data?.Grid is null || _slots[slot] == data )
+		if ( slot < 0 || slot >= SdfTextSdf.MaxSlots || data?.Grid is null )
 			return;
+		if ( !_tex.IsValid() )
+		{
+			_tex = Sandbox.Texture.Create( SdfTextData.Width, SdfTextData.Height * SdfTextSdf.MaxSlots )
+				.WithFormat( ImageFormat.R32F ).WithDynamicUsage().WithName( "sdf_text_atlas" ).Finish();
+			Array.Clear( _slots, 0, _slots.Length );
+		}
+		if ( _slots[slot] == data )
+			return;
+		_tex.Update<float>( data.Grid, 0, slot * SdfTextData.Height, SdfTextData.Width, SdfTextData.Height );
 		_slots[slot] = data;
-		Texture.Update<float>( data.Grid, 0, slot * SdfTextData.Height, SdfTextData.Width, SdfTextData.Height );
+	}
+
+	/// <summary>Don't release the atlas when a pack has no text (for a shared, frequently reused atlas).</summary>
+	public bool KeepAllocated { get; init; }
+
+	/// <summary>Called after each pack, including when the last enabled Text brush was removed.</summary>
+	public void FinishPacking( int textCount )
+	{
+		if ( textCount == 0 && !KeepAllocated )
+			Dispose();
+	}
+
+	public void Dispose()
+	{
+		_tex?.Dispose();
+		_tex = null;
+		Array.Clear( _slots, 0, _slots.Length );
 	}
 }

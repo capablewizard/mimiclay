@@ -561,7 +561,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "e73e921b-22fe-45b7-b791-0a0ed58b2cd1",
+            "Id": "b69e651c-f486-4cfe-816f-74ec8617904a",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -618,7 +618,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "e73e921b-22fe-45b7-b791-0a0ed58b2cd1",
+            "Id": "b69e651c-f486-4cfe-816f-74ec8617904a",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1572,7 +1572,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "c1f14400-a562-48d3-bf4f-24158c9df677",
+                "Id": "081b5467-c22f-43f4-a609-f658d03e1f9f",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1618,7 +1618,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f16fa611-37f5-4b8a-a185-bda3d628cad0",
+                "Id": "0c053d13-fc6c-4352-ae84-701adb225cf0",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1646,7 +1646,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f16fa611-37f5-4b8a-a185-bda3d628cad0",
+                "Id": "0c053d13-fc6c-4352-ae84-701adb225cf0",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1693,7 +1693,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "4d6dba60-c35a-4524-89e6-14727d23a7fb",
+                "Id": "2c6e0e68-41c3-4ce3-ab6a-ab0323d38bd7",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1737,7 +1737,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "8fcbdab2-3408-4bbb-852d-0ee37e173d0d",
+                "Id": "41ab4607-96cc-4cd3-9f96-3b9280c6bad7",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2049,7 +2049,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "057d5166-bf7b-42aa-83ed-cbf9d5e449d1",
+                "Id": "e2a87c6a-80e3-4b05-b144-6ecd43f3af5e",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2093,7 +2093,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "9ebf509f-e980-43ef-bb34-c0bf306e14ad",
+                "Id": "7bab3818-904b-4abe-b262-f3da42d382e7",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2137,7 +2137,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "7a9be397-713c-48f7-8d2c-8ea8d17f17fc",
+                "Id": "e56b3826-b119-4ef8-ba99-beff4fb0d663",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2183,7 +2183,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "f81b20c3-4578-4d3c-abd1-df7727664cfb",
+                "Id": "83de3ef6-6f7e-45f6-932f-5ae322ab09c4",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2211,7 +2211,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "f81b20c3-4578-4d3c-abd1-df7727664cfb",
+                "Id": "83de3ef6-6f7e-45f6-932f-5ae322ab09c4",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3321,7 +3321,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3349,7 +3349,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3398,7 +3398,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3426,7 +3426,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "827a28d3-511f-454c-a09b-15a0ce5f5f10",
+                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -4727,6 +4727,7 @@
         "693dd09b-b376-414d-a549-5958bb2ab336": "ae1c215e-5f24-4906-9e37-f67229188082",
         "a67bb9f7-07e7-430c-b615-f0ff747d5d9f": "1bf238ce-e8c9-4ba6-a799-21776fab845a",
         "bf4f889e-0290-40d7-95aa-8d37f3fdbce5": "e4f70766-54b2-49a9-82e1-6d9852173270",
+        "3f0b6c2e-8d41-4a7e-9b55-c1e2a7d90f14": "12c85c2c-987d-8163-98e0-96658fd3c285",
         "6467dae2-473b-4f40-93f3-c656b7e5a73b": "8ad92dc6-6ae8-4a3f-bd66-9d06fc366f22",
         "85c8e7e9-12dd-4606-a3cb-94e6804a0951": "fdf04d1e-c83a-4e2c-bf86-09bd82395c53",
         "ad1ba8a3-22a0-4903-a6b9-d78e4d6c79af": "1c215f2b-1a45-4f8a-901a-ab529ad446a0",
@@ -5347,7 +5348,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "63 object(s), 67661 tris — 12:08:13",
+          "LastImport": "63 object(s), 67661 tris — 22:01:14",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -11052,8 +11053,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11198,8 +11215,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11344,8 +11377,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11490,8 +11539,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11636,8 +11701,24 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11803,35 +11884,51 @@
           "__guid": "ade585af-b520-4d33-ba1f-e7f1491aef31",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": true,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -12026,6 +12123,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12432,6 +12545,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12562,6 +12691,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -13137,7 +13282,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -13429,7 +13574,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -13576,22 +13721,6 @@
                 "BoundingRadius": 7.99971
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -14374,35 +14503,51 @@
           "__guid": "a8c9c002-bb3d-43c9-bdd5-9114c409bdc3",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -14592,35 +14737,51 @@
           "__guid": "2356c165-a244-46f5-96e9-990ebdb3ec76",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -14785,7 +14946,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -14802,7 +14963,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -14810,35 +14971,51 @@
           "__guid": "da5592e4-0dc5-4aec-81c1-ae21404151b4",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -15003,7 +15180,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15020,7 +15197,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15028,35 +15205,51 @@
           "__guid": "7265f0e6-a7c5-4c31-9f1c-e644eac74bed",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -15246,35 +15439,51 @@
           "__guid": "f90b8da7-bc9e-490b-97d0-c899eb8897f5",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -15464,35 +15673,51 @@
           "__guid": "c8d03ebb-027e-47d3-a552-cdfcfcbe15ee",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -15682,35 +15907,51 @@
           "__guid": "2e0d12da-17af-48ba-96d8-c2e7e1d08dd5",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -15875,7 +16116,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15892,7 +16133,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15900,35 +16141,51 @@
           "__guid": "71ddadd6-e3a4-4c8c-8e9a-8d7b54d1128f",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -16118,35 +16375,51 @@
           "__guid": "e960e82e-0d1d-4549-9689-6bc12daff90a",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -16336,35 +16609,51 @@
           "__guid": "4b6bfc42-a00c-4a0f-a180-fbe109ab8318",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -16554,35 +16843,51 @@
           "__guid": "8c03df0b-7c3c-41df-b6a1-8533bc395cd5",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -16772,35 +17077,51 @@
           "__guid": "b646a0e6-1d49-4e8f-a4f6-e90536323858",
           "__enabled": true,
           "Flags": 0,
+          "AdaptiveQualityOverride": null,
+          "BrushCullingOverride": null,
+          "CullRadiiOverride": null,
           "DebugBounds": false,
           "DebugLiveField": false,
           "DebugLod": false,
+          "DepthOcclusionCullOverride": null,
           "DispAmp": 0.8,
           "DispFreq": 0.073,
           "Displace": false,
           "DisplaceShadows": false,
+          "DistanceSwitchingOverride": null,
+          "EpsilonOverride": null,
+          "FarEpsilonOverride": null,
           "FieldCacheOnly": true,
           "FieldNormalScale": 0.5,
+          "FullQualityRadiiOverride": null,
+          "LodHysteresisOverride": null,
           "Material": {
             "Id": "72d1472a-f5c1-4449-b49d-f0229c2f98fa",
             "Path": "materials/plasticine.vmat"
           },
+          "MaxStepsOverride": null,
+          "MeshLod1RadiiOverride": null,
+          "MeshLod2RadiiOverride": null,
           "MeshMode": "DepthProxy",
+          "MinQualityRadiiOverride": null,
+          "MinStepsOverride": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "OverdrawOptimizationOverride": null,
+          "Profile": null,
           "ReceiveDecals": true,
-          "ReusePrepassDepth": true,
+          "SdfShadowRadiiOverride": null,
           "SdfShadows": true,
           "ShadowBias": 0,
           "ShadowSlopeScale": 1.5,
-          "ShadowTexelEpsilon": 0.5,
           "TightBounds": false,
           "Transmission": false,
-          "UseFieldCache": true
+          "UseFieldCache": true,
+          "VoxelSizeOverride": null
         },
         {
           "__type": "Mimiclay.SdfCollider",
@@ -23206,8 +23527,24 @@
               "Type": "Component",
               "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -23392,8 +23729,24 @@
               "Type": "Component",
               "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -26799,8 +27152,24 @@
               "Type": "Component",
               "IdValue": "a347f32f-d129-4f28-a743-ecfe966bbffa"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a347f32f-d129-4f28-a743-ecfe966bbffa"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a347f32f-d129-4f28-a743-ecfe966bbffa"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -29748,7 +30117,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "5bdd11ad-09bf-48fc-9e80-20e406216a54",
+            "Id": "daf0ee1a-48ae-47a4-a371-4701257b7e06",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -29939,8 +30308,24 @@
               "Type": "Component",
               "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -30165,8 +30550,24 @@
               "Type": "Component",
               "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []

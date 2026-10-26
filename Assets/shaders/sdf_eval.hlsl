@@ -19,9 +19,13 @@ Texture2D g_tTextSdf   < Attribute( "TextSdf" ); >;    // baked text distance fi
 SamplerState g_sTextSdf < Filter( BILINEAR ); AddressU( CLAMP ); AddressV( CLAMP ); >;
 int   g_nBrushCount < Attribute( "BrushCount" ); Default( 0 ); >;
 int   g_nSdfCull    < Attribute( "SdfCull" ); Default( 1 ); >;  // per-brush AABB early-out (local AABB in slots 5/6)
+// Material-walk group cull (SdfSurfaceLocal): 1 = wave-uniform skip, 2 = per-lane jump. Only the raymarch renderer
+// packs the group records (SdfBrushPacker.PackGroups), so every other consumer leaves this at 0.
+int   g_nSdfGroupCull < Attribute( "SdfGroupCull" ); Default( 0 ); >;
 
 #define TEXELS_PER_BRUSH 7 // must match SdfRaymarchRenderer.TexelsPerBrush
-float4 LoadBrush( int k, int slot ) { return g_tBrushData.Load( int3( k * TEXELS_PER_BRUSH + slot, 0, 0 ) ); }
+float4 LoadBrushTexel( int i ) { return g_tBrushData.Load( int3( i, 0, 0 ) ); }
+float4 LoadBrush( int k, int slot ) { return LoadBrushTexel( k * TEXELS_PER_BRUSH + slot ); }
 float4 LoadSplinePoint( int i )     { return g_tSplineData.Load( int3( i, 0, 0 ) ); }
 
 // ── Primitives ──
@@ -508,105 +512,157 @@ struct SdfSurface { float3 col; float metal; float rough; };
 // Tighter than the cutout band: paint edges are in plain view and want to read crisp.
 #define SDF_COLOUR_EDGE_FLOOR 0.25
 
-SdfSurface SdfSurfaceLocal( float3 lp )
+// ONE brush's contribution to the material walk at local point lp: the incremental AABB cull, then the blend
+// of colour/metal/rough by the same smooth factors as the geometry. SdfSurfaceLocal below is its only call site
+// (a second inlined copy hung the editor's shader compile, 2026-10-24).
+void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 {
-	float d = 1e9;
-	SdfSurface s;
-	s.col = float3( 1, 1, 1 ); s.metal = 0.0; s.rough = 1.0; // empty-space material; the first brush overrides it
-	[loop]
-	for ( int k = 0; k < g_nBrushCount; k++ )
+	float4 A = LoadBrush( k, 0 );
+	float4 B = LoadBrush( k, 1 );
+	float4 C = LoadBrush( k, 2 );
+	float4 D = LoadBrush( k, 3 );
+	float4 E = LoadBrush( k, 4 ); // rounding .x, metal+rough packed .y, cutout gap .z, mirror mask .w
+	float4 F = LoadBrush( k, 5 ); // cull AABB min .xyz, extruded cross-section id .w
+	float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
+
+	// The same incremental AABB early-out as SdfDist: a far brush can't change the blended distance,
+	// and it can't change the colour either — the colour lerps use the same h factors. A Colour brush
+	// has no distance term: it only matters within half its feather of the boundary. A Cutout needs BOTH
+	// bounds: its shell geometry (as SdfDist) and its recolour edge, which reaches half the AA band outside
+	// the brush regardless of Blend/Gap (Blend 0 + Gap 0 at the surface would otherwise cull its outer half).
+	float cullT = (D.w < 0.5) ? d + B.w
+		: (D.w < 1.5) ? B.w - d
+		: (D.w < 2.5) ? max( B.w - d + E.z, 0.5 * SDF_CUTOUT_COLOR_EDGE )
+		: 0.5 * max( B.w, SDF_COLOUR_EDGE_FLOOR );
+	if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > cullT )
+		return;
+
+	float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
+	float kk = B.w;
+	// Metalness + roughness ride one lane as two 10-bit integers (round(m*1023) + 1024*round(r*1023)) —
+	// exact in the RGBA32F brush texture; mirrors SdfBrushPacker.PackMaterial.
+	float roughQ = floor( E.y / 1024.0 );
+	float metal = (E.y - roughQ * 1024.0) / 1023.0;
+	float rough = roughQ / 1023.0;
+
+	if ( D.w >= 2.5 )
 	{
-		float4 A = LoadBrush( k, 0 );
-		float4 B = LoadBrush( k, 1 );
-		float4 C = LoadBrush( k, 2 );
-		float4 D = LoadBrush( k, 3 );
-		float4 E = LoadBrush( k, 4 ); // rounding .x, metal+rough packed .y, cutout gap .z, mirror mask .w
-		float4 F = LoadBrush( k, 5 ); // cull AABB min .xyz, extruded cross-section id .w
-		float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
+		// Colour: paint the clay inside the brush, no geometry. The edge feathers over Blend units about
+		// the brush boundary (floored at the cutout AA band so Blend 0 is a crisp edge).
+		float hc = saturate( 0.5 - bd / max( kk, SDF_COLOUR_EDGE_FLOOR ) );
+		s.col = lerp( s.col, D.rgb, hc );
+		s.metal = lerp( s.metal, metal, hc );
+		s.rough = lerp( s.rough, rough, hc );
+		return;
+	}
 
-		// The same incremental AABB early-out as SdfDist: a far brush can't change the blended distance,
-		// and it can't change the colour either — the colour lerps use the same h factors. A Colour brush
-		// has no distance term: it only matters within half its feather of the boundary.
-		float cullT = (D.w < 0.5) ? d + B.w
-			: (D.w < 1.5) ? B.w - d
-			: (D.w < 2.5) ? B.w - d + E.z
-			: 0.5 * max( B.w, SDF_COLOUR_EDGE_FLOOR );
-		if ( g_nSdfCull != 0 && sdAabb( lp, F.xyz, G.xyz ) > cullT )
-			continue;
-
-		float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
-		float kk = B.w;
-		// Metalness + roughness ride one lane as two 10-bit integers (round(m*1023) + 1024*round(r*1023)) —
-		// exact in the RGBA32F brush texture; mirrors SdfBrushPacker.PackMaterial.
-		float roughQ = floor( E.y / 1024.0 );
-		float metal = (E.y - roughQ * 1024.0) / 1023.0;
-		float rough = roughQ / 1023.0;
-
-		if ( D.w >= 2.5 )
+	if ( D.w >= 1.5 )
+	{
+		// Cutout: slot the brush boundary (the same shell subtract as SdfDist) WITHOUT tinting the
+		// cut walls, then recolour the clay inside the brush — the "cut out and set back in place"
+		// look. The recolour edge sits at bd = 0, the slot's centre, so each wall wears the colour
+		// of the side it belongs to.
+		float shell = abs( bd ) - E.z;
+		if ( kk <= 0.0 )
+			d = max( d, -shell );
+		else
 		{
-			// Colour: paint the clay inside the brush, no geometry. The edge feathers over Blend units about
-			// the brush boundary (floored at the cutout AA band so Blend 0 is a crisp edge).
-			float hc = saturate( 0.5 - bd / max( kk, SDF_COLOUR_EDGE_FLOOR ) );
-			s.col = lerp( s.col, D.rgb, hc );
-			s.metal = lerp( s.metal, metal, hc );
-			s.rough = lerp( s.rough, rough, hc );
-			continue;
+			float hs = saturate( 0.5 - 0.5 * (d + shell) / kk );
+			d = lerp( d, -shell, hs ) + kk * hs * (1.0 - hs);
 		}
 
-		if ( D.w >= 1.5 )
-		{
-			// Cutout: slot the brush boundary (the same shell subtract as SdfDist) WITHOUT tinting the
-			// cut walls, then recolour the clay inside the brush — the "cut out and set back in place"
-			// look. The recolour edge sits at bd = 0, the slot's centre, so each wall wears the colour
-			// of the side it belongs to.
-			float shell = abs( bd ) - E.z;
-			if ( kk <= 0.0 )
-				d = max( d, -shell );
-			else
-			{
-				float hs = saturate( 0.5 - 0.5 * (d + shell) / kk );
-				d = lerp( d, -shell, hs ) + kk * hs * (1.0 - hs);
-			}
+		float hc = saturate( 0.5 - bd / SDF_CUTOUT_COLOR_EDGE );
+		s.col = lerp( s.col, D.rgb, hc );
+		s.metal = lerp( s.metal, metal, hc );
+		s.rough = lerp( s.rough, rough, hc );
+		return;
+	}
 
-			float hc = saturate( 0.5 - bd / SDF_CUTOUT_COLOR_EDGE );
-			s.col = lerp( s.col, D.rgb, hc );
-			s.metal = lerp( s.metal, metal, hc );
-			s.rough = lerp( s.rough, rough, hc );
-			continue;
-		}
-
-		if ( D.w >= 0.5 )
-		{
-			// Subtraction tints the cut walls with the brush material, blended by the same
-			// smooth-subtract factor as the geometry.
-			if ( kk <= 0.0 )
-			{
-				if ( -bd > d ) { s.col = D.rgb; s.metal = metal; s.rough = rough; }
-				d = max( d, -bd );
-			}
-			else
-			{
-				float h = saturate( 0.5 - 0.5 * (d + bd) / kk );
-				s.col = lerp( s.col, D.rgb, h );    // h->1 takes the cut material
-				s.metal = lerp( s.metal, metal, h );
-				s.rough = lerp( s.rough, rough, h );
-				d = lerp( d, -bd, h ) + kk * h * (1.0 - h);
-			}
-			continue;
-		}
-
+	if ( D.w >= 0.5 )
+	{
+		// Subtraction tints the cut walls with the brush material, blended by the same
+		// smooth-subtract factor as the geometry.
 		if ( kk <= 0.0 )
 		{
-			if ( bd < d ) { d = bd; s.col = D.rgb; s.metal = metal; s.rough = rough; }
+			if ( -bd > d ) { s.col = D.rgb; s.metal = metal; s.rough = rough; }
+			d = max( d, -bd );
 		}
 		else
 		{
-			float h = saturate( 0.5 + 0.5 * (bd - d) / kk );
-			s.col = lerp( D.rgb, s.col, h );        // h->1 keeps accumulated, h->0 takes new
-			s.metal = lerp( metal, s.metal, h );
-			s.rough = lerp( rough, s.rough, h );
-			d = lerp( bd, d, h ) - kk * h * (1.0 - h);
+			float h = saturate( 0.5 - 0.5 * (d + bd) / kk );
+			s.col = lerp( s.col, D.rgb, h );    // h->1 takes the cut material
+			s.metal = lerp( s.metal, metal, h );
+			s.rough = lerp( s.rough, rough, h );
+			d = lerp( d, -bd, h ) + kk * h * (1.0 - h);
 		}
+		return;
+	}
+
+	if ( kk <= 0.0 )
+	{
+		if ( bd < d ) { d = bd; s.col = D.rgb; s.metal = metal; s.rough = rough; }
+	}
+	else
+	{
+		float h = saturate( 0.5 + 0.5 * (bd - d) / kk );
+		s.col = lerp( D.rgb, s.col, h );        // h->1 keeps accumulated, h->0 takes new
+		s.metal = lerp( metal, s.metal, h );
+		s.rough = lerp( rough, s.rough, h );
+		d = lerp( bd, d, h ) - kk * h * (1.0 - h);
+	}
+}
+
+SdfSurface SdfSurfaceEmpty()
+{
+	SdfSurface s;
+	s.col = float3( 1, 1, 1 ); s.metal = 0.0; s.rough = 1.0; // empty-space material; the first brush overrides it
+	return s;
+}
+
+// Group records (SdfBrushPacker.PackGroups): one per run of 4 consecutive packed brushes, after the brush texels.
+// .xyz of texels 0/1 = the union of the members' cull AABBs; the w lanes and texel 2 hold each op's widest
+// threshold term (-1e30 when the op is absent): add blend, subtract blend, cutout blend + gap, cutout floor, colour.
+#define SDF_MAX_BRUSHES  128 // must match SdfBrushPacker.MaxBrushes
+#define SDF_GROUP_SHIFT  2   // 4 brushes per group — must match SdfBrushPacker.GroupSize
+#define TEXELS_PER_GROUP 3   // must match SdfBrushPacker.TexelsPerGroup
+
+// True when no member of group g can touch lp at running distance d. Exact: a skipped group evaluates nothing, so d
+// is the same for every member; each member's own threshold (SdfSurfaceBrush) is at most the group's, and its AABB
+// lies inside the group's, so every member would have culled itself.
+bool SdfGroupCulled( int g, float3 lp, float d )
+{
+	int o = SDF_MAX_BRUSHES * TEXELS_PER_BRUSH + g * TEXELS_PER_GROUP;
+	float4 G0 = LoadBrushTexel( o );
+	float4 G1 = LoadBrushTexel( o + 1 );
+	float4 G2 = LoadBrushTexel( o + 2 );
+	float cullT = max( max( d + G0.w, G1.w - d ), max( max( G2.x - d, G2.y ), G2.z ) );
+	return sdAabb( lp, G0.xyz, G1.xyz ) > cullT;
+}
+
+SdfSurface SdfSurfaceLocal( float3 lp )
+{
+	float d = 1e9;
+	SdfSurface s = SdfSurfaceEmpty();
+	bool groups = g_nSdfGroupCull != 0 && g_nSdfCull != 0;
+	int skipEnd = 0;
+	[loop]
+	for ( int k = 0; k < g_nBrushCount; k++ )
+	{
+		// One SdfSurfaceBrush call site only (a second inlined copy hung the editor's shader compile, 2026-10-24).
+		// Mode 1 keeps k wave-uniform: a culled group's iterations are skipped, and when every lane agrees the wave
+		// branches over them. Mode 2 jumps this lane past the group. A partial last group ends at the loop bound.
+		if ( groups && (k & ((1 << SDF_GROUP_SHIFT) - 1)) == 0 && SdfGroupCulled( k >> SDF_GROUP_SHIFT, lp, d ) )
+		{
+			if ( g_nSdfGroupCull >= 2 )
+			{
+				k += (1 << SDF_GROUP_SHIFT) - 1;
+				continue;
+			}
+			skipEnd = k + (1 << SDF_GROUP_SHIFT);
+		}
+		if ( k < skipEnd )
+			continue;
+		SdfSurfaceBrush( k, lp, d, s );
 	}
 	return s;
 }

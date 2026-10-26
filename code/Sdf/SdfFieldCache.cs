@@ -10,8 +10,7 @@ namespace Mimiclay;
 ///
 /// Before this every <see cref="SdfRaymarchRenderer"/> owned a private field: a crowd of 150 props from 42
 /// prefabs held 150 fields (~4.2 MB each at the shipped 195–256 res, 667 MB) and dispatched 150 bakes at load.
-/// Identical shapes now share one field — N clones of a prefab cost one bake and one texture set — which is
-/// also the only sharing that matters for a prop-hunt level (the library is small, the placements many).
+/// Identical shapes share one field; unique props still own independent fields and bake inputs.
 ///
 /// Edit paths keep their old behaviour by construction: a renderer whose hash changes while it is the SOLE
 /// owner of its field re-evaluates that same field object in place (same textures, no allocation — exactly
@@ -51,8 +50,11 @@ public static class SdfFieldCache
 	/// <summary>Sum of owner references — i.e. how many renderers would have held a private field without sharing.</summary>
 	public static int TotalRefs => _byKey.Values.Sum( e => e.Refs );
 
-	/// <summary>Resident bytes across every cached field (owned + grace).</summary>
+	/// <summary>GPU payload across every cached field (owned + grace), including bake inputs and text.</summary>
 	public static long ResidentBytes => _byKey.Values.Sum( e => e.Field.EstimatedBytes );
+	public static long FieldTextureBytes => _byKey.Values.Sum( e => e.Field.FieldTextureBytes );
+	public static long InputTextureBytes => _byKey.Values.Sum( e => e.Field.InputTextureBytes );
+	public static long TextAtlasBytes => _byKey.Values.Sum( e => e.Field.TextAtlasBytes );
 
 	/// <summary>Bytes held by unowned (grace) entries only.</summary>
 	public static long UnownedBytes => _byKey.Values.Where( e => e.Refs == 0 ).Sum( e => e.Field.EstimatedBytes );
@@ -119,7 +121,7 @@ public static class SdfFieldCache
 	}
 
 	/// <summary>Evict grace entries past their time, and the oldest beyond the unowned budget. Cheap; runs at most
-	/// a few times a second from <see cref="Acquire"/>.</summary>
+	/// a few times a second, including frames in which no new fields are acquired.</summary>
 	public static void Sweep()
 	{
 		if ( _sinceSweep < 0.25f )
@@ -166,5 +168,15 @@ public static class SdfFieldCache
 	}
 
 	public static string DebugLine()
-		=> $"fieldCache entries={Count} owned={OwnedCount} refs={TotalRefs} resident={ResidentBytes / 1048576.0:0.0}MB grace={UnownedBytes / 1048576.0:0.0}MB";
+		=> $"fieldCache(global) entries={Count} owned={OwnedCount} refs={TotalRefs} payload={ResidentBytes / 1048576.0:0.0}MiB fields={FieldTextureBytes / 1048576.0:0.0}MiB inputs={InputTextureBytes / 1048576.0:0.0}MiB text={TextAtlasBytes / 1048576.0:0.0}MiB grace={UnownedBytes / 1048576.0:0.0}MiB";
+}
+
+/// <summary>Expire unowned fields even after the last renderer stops requesting bakes.
+/// The cache is shared across scenes; Sweep only evicts entries with no owners.</summary>
+public sealed class SdfFieldCacheSystem : GameObjectSystem
+{
+	public SdfFieldCacheSystem( Scene scene ) : base( scene )
+	{
+		Listen( Stage.FinishUpdate, 100, SdfFieldCache.Sweep, "SdfFieldCache" );
+	}
 }

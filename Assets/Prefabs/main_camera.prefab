@@ -107,6 +107,21 @@
         "Rate": 1
       },
       {
+        "__type": "Mimiclay.Fxaa",
+        "__guid": "3f0b6c2e-8d41-4a7e-9b55-c1e2a7d90f14",
+        "__enabled": true,
+        "EdgeThreshold": 0.125,
+        "EdgeThresholdMin": 0.0312,
+        "Flags": 0,
+        "OnComponentDestroy": null,
+        "OnComponentDisabled": null,
+        "OnComponentEnabled": null,
+        "OnComponentFixedUpdate": null,
+        "OnComponentStart": null,
+        "OnComponentUpdate": null,
+        "Subpixel": 0.75
+      },
+      {
         "__type": "Sandbox.Sharpen",
         "__guid": "6467dae2-473b-4f40-93f3-c656b7e5a73b",
         "__enabled": true,

@@ -269,11 +269,15 @@ public static class PerfScenario
 			if ( mr.IsValid() && mr.Enabled ) meshOn++;
 		}
 		foreach ( var r in perf ) perfBytes += r.FieldVramBytes;
+		var fields = all.Select( r => r.DebugField ).Where( f => f is not null ).Distinct().ToList();
+		long localBytes = all.Sum( r => r.LocalResourceBytes );
+		long uniqueFieldBytes = fields.Sum( f => f.EstimatedBytes );
 
 		int brushes = scene.GetAllComponents<SdfSculpture>().Sum( s => s.Brushes?.Count ?? 0 );
 		Log.Info( $"[perf-stats] renderers={all.Count} (perf={perf.Count}) brushes={brushes} fieldReady={ready} pending={pending} marchedShadow={marched} soOn={soOn} meshOn={meshOn} sparse={sparse} bands[sdf={states[0]} lod0={states[1]} lod1={states[2]} lod2={states[3]} cull={states[4]}]" );
-		Log.Info( $"[perf-stats] fieldVRAM(sum over renderers, shared fields counted per owner) total={bytes / 1048576.0:0.0}MB perf={perfBytes / 1048576.0:0.0}MB avg/prop={(all.Count > 0 ? bytes / 1048576.0 / all.Count : 0):0.00}MB res={string.Join( ",", resHist.OrderBy( k => k.Key ).Select( k => $"{k.Key}x{k.Value}" ) )} meshBuildsInFlight={SdfSculpture.BuildsInFlight} colliderBuilds={SdfCollider.BuildCount}" );
+		Log.Info( $"[perf-stats] fieldPayload(sum over renderers, shared fields counted per owner) total={bytes / 1048576.0:0.0}MiB perf={perfBytes / 1048576.0:0.0}MiB avg/prop={(all.Count > 0 ? bytes / 1048576.0 / all.Count : 0):0.00}MiB res={string.Join( ",", resHist.OrderBy( k => k.Key ).Select( k => $"{k.Key}x{k.Value}" ) )} meshBuildsInFlight={SdfSculpture.BuildsInFlight} colliderBuilds={SdfCollider.BuildCount}" );
 		Log.Info( $"[perf-stats] {SdfFieldCache.DebugLine()}" );
+		Log.Info( $"[perf-stats] scene GPU payload={((localBytes + uniqueFieldBytes) / 1048576.0):0.0}MiB uniqueFields={fields.Count}/{uniqueFieldBytes / 1048576.0:0.0}MiB rendererLocal={localBytes / 1048576.0:0.0}MiB (rendererText={all.Sum( r => r.TextAtlasBytes ) / 1048576.0:0.0}MiB fieldText={fields.Sum( f => f.TextAtlasBytes ) / 1048576.0:0.0}MiB); excludes mesh buffers, mesh-bake scratch, driver overhead and other scenes" );
 		Log.Info( $"[perf-stats] convars: field_cache={SdfRaymarchRenderer.FieldCacheEnabled} sparse={SdfRaymarchRenderer.SparseFieldEnabled} atlas8={SdfFieldGpu.Atlas8BitEnabled} screen={Screen.Size}" );
 		Log.Info( $"[perf-stats] density: voxelScale={SdfRaymarchRenderer.VoxelScale} profiles={string.Join( ",", all.GroupBy( r => r.DebugFieldTier ).Select( g => $"{g.Key}x{g.Count()}" ) )}" );
 	}

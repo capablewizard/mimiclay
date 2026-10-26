@@ -42,6 +42,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 {
 	const int MaxBrushes = SdfBrushPacker.MaxBrushes;
 	const int TexelsPerBrush = 7; // pos+shape, size+blend, quat, colour+op, rounding+(metal|rough packed)+gap+mirrormask, aabbMin, aabbMax
+	// The brush texels, then one group record per 4 brushes (SdfBrushPacker.PackGroups, read by the group cull).
+	const int DataTexels = MaxBrushes * TexelsPerBrush + SdfBrushPacker.MaxGroups * SdfBrushPacker.TexelsPerGroup;
 	const int MaxSplinePoints = SdfBrushPacker.MaxSplinePoints; // shared pool of spline control points (xyz world pos, w radius) across all spline brushes
 
 	/// <summary>Material to render with. Leave empty to use the built-in sdf_raymarch shader.</summary>
@@ -195,6 +197,45 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// Trilinear interpolation slightly rounds sharp corners; a finer profile voxel size gives crisper
 	/// edges at the cost of memory + bake time. Off = the exact per-brush march.</summary>
 	[Property, Group( "Distance Field" )] public bool UseFieldCache { get; set; } = true;
+
+	/// <summary>Cost attribution for the SDF benchmark: a bitmask that switches individual shader stages off
+	/// (1 material lookup, 2 triplanar maps, 4 curvature, 8 transmission, 16 shadow-view normals, 32 forward
+	/// normals, 64 step-count heatmap, 128 heatmap incl. misses). Bits are documented on g_nSdfDebugSkip in
+	/// sdf_raymarch.shader. Diagnostics only — every bit changes the image.</summary>
+	[ConVar( "mimiclay_sdf_debug_skip" )]
+	public static int DebugSkip { get; set; }
+
+	/// <summary>Skip the per-pixel material walk on props whose brushes all share one colour + metal/rough
+	/// (SdfBrushPacker.TryUniformMaterial) — exact, the walk could only return that value. Off = always walk (A/B).</summary>
+	[ConVar( "mimiclay_sdf_uniform_material" )]
+	public static bool UniformMaterialEnabled { get; set; } = true;
+
+	/// <summary>Silhouette anti-aliasing for the raymarch. MSAA can't see the SDF's edge (the rasterised proxy box
+	/// covers every sample; the hit/miss is decided once per pixel), so the forward march tracks how close a MISS ray
+	/// came to the surface and spends that as an SV_Coverage mask: a near-miss pixel shades at its closest approach
+	/// and covers a fraction of the samples, which the MSAA resolve blends with the background. Value = ramp width in
+	/// pixels (1 = one-pixel ramp just outside the edge), 0 = off. Needs MSAA; a no-op on single-sample targets.</summary>
+	[ConVar( "mimiclay_sdf_edge_aa" )]
+	public static float EdgeAntiAlias { get; set; } = 1f;
+
+	/// <summary>Round 2 #3b: test each run of 4 packed brushes against its group record before walking it (exact — see
+	/// sdf_eval SdfGroupCulled). 0 off, 1 wave-uniform skip, 2 per-lane jump. Needs BrushCulling. Measured −0.11…−0.20 ms
+	/// forward on the 42-brush bowl, `same` in crowds.</summary>
+	[ConVar( "mimiclay_sdf_group_cull" )]
+	public static int GroupCullMode { get; set; }
+
+	/// <summary>Hide every SDF prop — raymarched surface AND sibling mesh. The control frame for the
+	/// SDF benchmark (Editor/SdfBench.cs): GPU time with props minus GPU time without them.</summary>
+	[ConVar( "mimiclay_sdf_hide_all" )]
+	public static bool HideAll { get; set; }
+
+	/// <summary>Flip <see cref="HideAll"/> — eyeball the frame-time impact of every SDF prop.</summary>
+	[ConCmd( "sdf_toggle" )]
+	public static void ToggleHideAll()
+	{
+		HideAll = !HideAll;
+		Log.Info( $"[sdf] renderers {(HideAll ? "OFF" : "ON")} (mimiclay_sdf_hide_all {(HideAll ? 1 : 0)})" );
+	}
 
 	/// <summary>Global diagnostic kill switch for the field-cache compute path.</summary>
 	[ConVar( "mimiclay_sdf_field_cache" )]
@@ -530,30 +571,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// Toggle off to A/B the cost.</summary>
 	public bool DepthOcclusionCull => _qDepthCull;
 
-	/// <summary>FORWARD pass: instead of sphere-tracing the field a second time, read the depth the camera
-	/// prepass already wrote for this pixel, verify that point lies on this prop's surface (one field tap),
-	/// and shade there. The prepass march is the only march; the forward pass pays shading taps only.
-	/// Measured 2026-10-12: Dynamic Opaque Forward 3.4 → ~1.5 ms on a 150-prop crowd (1080p). Also removes
-	/// the prepass↔forward hit-spread sparkle class entirely (the forward hit IS the prepass hit). Off = the
-	/// legacy double march. No effect on shadow views or the viewmodel (both still march).</summary>
-	[Property, Group( "Overdraw" )] public bool ReusePrepassDepth { get; set; } = true; // gated by the ConVar below, which ships OFF
-
-	/// <summary>Global kill switch for <see cref="ReusePrepassDepth"/>.</summary>
-	[ConVar( "mimiclay_sdf_reuse_prepass" )]
-	public static bool ReusePrepassEnabled { get; set; } = false; // OFF by default (2026-10-12): under MSAA (this project: 8x) only the warm-start mode is exact and it measured ~0 gain; mode 2 is the win, for non-MSAA targets only
-
-	/// <summary>How far the forward pass trusts the stored prepass depth. 2 (default): a warm-started march
-	/// around it finds our hit, and a miss means the pixel is not ours (exact when the depth chain is a plain
-	/// copy of the depth buffer — any non-MSAA target). 1: a miss falls back to the full march, which keeps
-	/// MSAA targets exact (their chain is a resolve of several samples) at the cost of the miss-pixel saving.</summary>
-	[ConVar( "mimiclay_sdf_reuse_prepass_mode" )]
-	public static int ReusePrepassMode { get; set; } = 1; // this project renders MSAA 8x (video settings): mode 2 is only exact without MSAA
-
-	/// <summary>SHADOW (ortho cascade) views: raise the march hit epsilon to this many shadow-map texels
-	/// (world size of one texel of the cascade being rendered). A shadow map can't resolve detail finer than
-	/// its texel, so marching a cascade at the camera's 0.05 u epsilon is wasted steps; far cascades (big
-	/// texels) get very cheap. 0 = march shadows at full camera precision (old behaviour).</summary>
-	[Property, Group( "Shadows" ), Range( 0f, 2f )] public float ShadowTexelEpsilon { get; set; } = 0.5f;
+	// Shadow-view march settings (texel epsilon, step scale) are GLOBAL: see SdfShadowSettings.
 
 	/// <summary>Render a tight bounding-SPHERE proxy instead of the AABB box, so round props march
 	/// fewer wasted pixels around their silhouette. Best for round/blobby props; an AABB box can be
@@ -724,9 +742,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	{
 		// Recreate if missing OR the width changed (e.g. TexelsPerBrush changed across a
 		// hot-reload that preserved the old, smaller texture — otherwise Update overruns it).
-		int width = MaxBrushes * TexelsPerBrush;
+		int width = DataTexels;
 		if ( _dataTex is null || _dataTex.Width != width )
 		{
+			_dataTex?.Dispose();
 			_dataTex = Texture.Create( width, 1 )
 				.WithFormat( ImageFormat.RGBA32323232F )
 				.WithDynamicUsage()
@@ -737,6 +756,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 		if ( _splineTex is null || _splineTex.Width != MaxSplinePoints )
 		{
+			_splineTex?.Dispose();
 			_splineTex = Texture.Create( MaxSplinePoints, 1 )
 				.WithFormat( ImageFormat.RGBA32323232F )
 				.WithDynamicUsage()
@@ -748,8 +768,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	protected override void OnDisabled()
 	{
-		_so?.Delete();
-		_so = null;
+		ReleaseSceneObject();
 
 		// Hand the sibling mesh back as a normal visible renderer when the raymarch renderer is
 		// disabled but the object lives on (e.g. the user unchecks this component). We CAN'T tell
@@ -769,7 +788,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		try { await Task.Yield(); }
 		catch { return; }
 
-		if ( _destroyed || !go.IsValid() || !go.Active || !mesh.IsValid() )
+		if ( _destroyed || Enabled || !go.IsValid() || !go.Active || !mesh.IsValid() )
 			return;
 
 		mesh.Enabled = true;
@@ -794,13 +813,19 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	internal void ReleaseSceneObject()
 	{
 		_released = true;
+		_so?.Attributes.Clear();
 		_so?.Delete();
 		_so = null;
+		_dataTex?.Dispose(); _dataTex = null;
+		_splineTex?.Dispose(); _splineTex = null;
+		_textAtlas.Dispose();
+		_forceRepack = true;
 
 		// Let go of our reference on the shared field (re-acquired on the next Refresh if this renderer comes back).
 		SdfFieldCache.Release( _fieldGpu );
 		_fieldGpu = null;
 		_lastFieldHash = 0;
+		_fieldReady = false;
 	}
 
 	// Diagnostics: main-thread time spent in every renderer's OnUpdate since the last TakeUpdateMs (PerfScenario).
@@ -864,15 +889,30 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// UpdateDistanceSwitch, ApplyRenderHidden, ApplyFieldOnlyHide, RestoreStaticState, ApplyMeshMode) whose
 	// correctness depended on their call order — and, worse, on having SEEN every transition. Keep it that
 	// way: a new visibility input belongs HERE, not in a new "runs last" or "runs on change" method.
+	// The static-shadow decision runs right after, from the state just written, on every path.
 	void ApplyVisibility()
+	{
+		ResolveVisibility();
+	}
+
+	void ResolveVisibility()
 	{
 		if ( !_so.IsValid() )
 			return;
 
+		// Benchmark control: nothing SDF draws or casts, in any band. Level-driven like the rest, so
+		// clearing the flag restores every renderer on the next frame.
+		if ( HideAll )
+		{
+			_so.RenderingEnabled = false;
+			if ( MeshRenderer.IsValid() ) MeshRenderer.Enabled = false;
+			return;
+		}
+
 		// Band state from the distance switch's hysteresis flags; static mode (DistanceSwitching off) counts
 		// as permanently inside the SDF band.
 		bool culled = DistanceSwitching && _aboveCull;
-		bool sdf = !culled && (!DistanceSwitching || !_aboveHandoff);
+		bool sdf = !culled && !ForceMesh && (!DistanceSwitching || !_aboveHandoff);
 		int meshLod = _aboveLod2 ? 2 : _aboveLod1 ? 1 : 0;
 
 		// The raymarched surface: its band, minus every hide (ForceHidden folds in RenderHidden-without-
@@ -1063,7 +1103,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 		float ratio = (view - _curCenter).Length / _curRadius;
 		bool culled = DistanceSwitching && _aboveCull;
-		bool marching = !culled && (!DistanceSwitching || !_aboveHandoff);
+		bool marching = !culled && !ForceMesh && (!DistanceSwitching || !_aboveHandoff);
 		int meshLod = _aboveLod2 ? 2 : _aboveLod1 ? 1 : 0;
 
 		string band = !DistanceSwitching
@@ -1180,9 +1220,14 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	void UpdateBands( Vector3 viewPos )
 	{
 		UpdateShadowBand( viewPos );
-		if ( DistanceSwitching )
+		if ( DistanceSwitching || ForceMesh )
 			UpdateDistanceSwitch( viewPos );
 	}
+
+	/// <summary>Benchmark baseline: every prop that would raymarch draws its mesh LOD0 instead (farther bands and the
+	/// cull are unchanged). Prices the SDF path against a plain mesh renderer with the same look. Diagnostics only.</summary>
+	[ConVar( "mimiclay_sdf_force_mesh" )]
+	public static bool ForceMesh { get; set; }
 
 	// Resolve the pipeline stage from camera distance — COMPUTE ONLY: it updates the hysteresis band flags
 	// and the debug label state; ApplyVisibility (the one visibility writer) turns those into what actually
@@ -1220,6 +1265,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_aboveCull = Above( ratio, CullRadii, _aboveCull, h );
 
 		_switchState = _aboveCull ? 4 : !_aboveHandoff ? 0 : 1 + (_aboveLod2 ? 2 : _aboveLod1 ? 1 : 0);
+		if ( ForceMesh && _switchState == 0 )
+			_switchState = 1;
 	}
 
 	// Hysteresis gate: returns whether `ratio` is above `threshold`, but only flips state once the ratio
@@ -1250,9 +1297,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		var sculpt = GameObject.Components.Get<SdfSculpture>();
 		var brushes = sculpt?.Brushes;
 		if ( brushes is not { Count: > 0 } )
+		{
+			ReleaseSceneObject();
+			_released = false; // an empty sculpture can acquire brushes again while still enabled
 			return;
-
-		EnsureResources();
+		}
 
 		// A SceneObject belongs to the world it was constructed in, so a TargetWorld swap can't be patched onto
 		// the live one — drop it and let the block below rebuild it in the new world.
@@ -1288,14 +1337,22 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// landed: on trivially small work (packing two brushes), i.e. GC and GPU-resource creation paying for
 		// the allocations. The brushes were already packed in local space; only the proxy wasn't.
 		int shapeKey = HashCode.Combine( shapeHash, Material, TightBounds, EffectiveUseFieldCache, EffectiveProxyPad );
-		if ( shapeKey != _lastHash || !_so.IsValid() || _forceRepack )
+		bool inputsMissing = !_dataTex.IsValid() || _dataTex.Width != DataTexels
+			|| !_splineTex.IsValid() || _splineTex.Width != MaxSplinePoints;
+		if ( shapeKey != _lastHash || !_so.IsValid() || _forceRepack || inputsMissing )
 		{
 			// Bounds computed in the object's LOCAL frame, so the proxy can be ORIENTED to the object
 			// instead of a world-axis-aligned cube (a rotated/flat prop's world AABB is hugely bloated).
 			long rt0 = PawnPerfProbe.Enabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0; // diagnostics only
 			if ( !TryLocalBounds( brushes, out var lmins, out var lmaxs ) )
+			{
+				ReleaseSceneObject();
+				_released = false;
 				return;
+			}
 
+			// Validate bounds before allocating, so an all-disabled/empty-spline list doesn't churn textures.
+			EnsureResources();
 			_forceRepack = false;
 			_lastHash = shapeKey;
 			_curCount = PackBrushes( brushes );
@@ -1473,12 +1530,15 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// occlusion rides the engine depth chain via the prepass.)
 		_so.Attributes.Set( "SdfOverdrawOpt", OverdrawOptimization && _overdrawSafe ? 1 : 0 );
 		_so.Attributes.Set( "SdfDepthCull", DepthOcclusionCull ? 1 : 0 );
-		// Forward pass reuses the camera prepass depth instead of re-marching (see ReusePrepassDepth). Only in the
-		// scene's own world (the thumbnail stage renders without the engine depth chain) and never for the viewmodel
-		// (its overlay prepass is stencil-claimed, not part of the world chain the forward pass samples).
-		_so.Attributes.Set( "SdfReusePrepass", ReusePrepassDepth && ReusePrepassEnabled && TargetWorld is null && ViewLayer == SdfViewLayer.Normal ? Math.Clamp( ReusePrepassMode, 1, 2 ) : 0 );
-		_so.Attributes.Set( "SdfShadowTexelEps", ShadowTexelEpsilon );
+		_so.Attributes.Set( "SdfShadowTexelEps", SdfShadowSettings.SunTexelEpsilon );
+		_so.Attributes.Set( "SdfShadowTexelEpsLocal", SdfShadowSettings.LocalTexelEpsilon );
+		_so.Attributes.Set( "SdfShadowStepScale", SdfShadowSettings.StepScale );
+		_so.Attributes.Set( "SdfDebugSkip", DebugSkip );
+		_so.Attributes.Set( "SdfEdgeAA", EdgeAntiAlias );
+		_so.Attributes.Set( "SdfUniformMat", UniformMaterialEnabled && _uniformMat ? 1 : 0 );
+		_so.Attributes.Set( "SdfUniformMatValue", _uniformMatValue );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );
+		_so.Attributes.Set( "SdfGroupCull", Math.Clamp( GroupCullMode, 0, 2 ) );
 		_so.Attributes.Set( "SdfTightBounds", TightBounds ? 1 : 0 );
 		// Displacement look (amp/freq) lives on THIS component (see the DispAmp doc for why it left
 		// the material); pushed as attributes for the live-fallback shader path — the baked path
@@ -1554,7 +1614,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			// live, instead of only when a brush is moved.
 			ResolveFieldGrid();
 			int res = _fieldRes;
-			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell, _fieldPad ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
+			int fieldHash = HashCode.Combine( Hash( brushes ), HashCode.Combine( res, _fieldCell, _fieldPad, SdfFieldGpu.FieldHalfEnabled ), EffectiveSparseField, bakeAmp, bakeFreq, bakeTick, bakeJitter, bakeAmpJitter );
 			bool haveField = _fieldGpu is { IsValid: true };
 			if ( (fieldHash != _lastFieldHash || !haveField)
 				&& (!haveField || _sinceFieldDispatch >= FieldRebakeInterval) )
@@ -1597,6 +1657,12 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 					_so.Attributes.Set( "BrickDims", _fieldGpu.BrickDims );
 					_so.Attributes.Set( "AtlasDims", _fieldGpu.AtlasDims );
 					_so.Attributes.Set( "AtlasEncode", _fieldGpu.AtlasEncodeBand ); // 8-bit tile decode band (0 = raw R32F)
+				}
+				else
+				{
+					// Clear the strong handles retained from a previous sparse bake.
+					_so.Attributes.Set( "Atlas", (Texture)null );
+					_so.Attributes.Set( "IndirectionTex", (Texture)null );
 				}
 				_so.Attributes.Set( "SdfSparse", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 
@@ -1652,10 +1718,13 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// Pack buffers are kept across packs — the packer clears them itself, and allocating ~18KB per pack was a
 	// steady source of GC pressure (see the shape-pass note in Refresh).
 	float[] _packData, _packSpline;
+	bool _uniformMat;
+	Vector4 _uniformMatValue;
 
 	int PackBrushes( List<SdfBrush> brushes )
 	{
-		var data = _packData ??= new float[MaxBrushes * TexelsPerBrush * 4];
+		if ( _packData?.Length != DataTexels * 4 ) _packData = new float[DataTexels * 4]; // a hotload can keep an old size
+		var data = _packData;
 		var spline = _packSpline ??= new float[MaxSplinePoints * 4]; // shared control-point pool (xyz local pos, w radius)
 
 		// LOCAL-space pack (Transform.Zero) — the exact same data the GPU field baker consumes. The march
@@ -1663,8 +1732,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// the brushes being baked to world, so both consumers share one evaluator (sdf_eval.hlsl) and the
 		// packed data is placement-invariant.
 		int written = SdfBrushPacker.Pack( brushes, global::Transform.Zero, data, spline, MaxBrushes, TexelsPerBrush, MaxSplinePoints, _textAtlas );
+		_uniformMat = SdfBrushPacker.TryUniformMaterial( data, written, TexelsPerBrush, out _uniformMatValue );
+		SdfBrushPacker.PackGroups( data, written, TexelsPerBrush, MaxBrushes * TexelsPerBrush );
 
-		_dataTex.Update<float>( data, 0, 0, MaxBrushes * TexelsPerBrush, 1 );
+		_dataTex.Update<float>( data, 0, 0, DataTexels, 1 );
 		_splineTex.Update<float>( spline, 0, 0, MaxSplinePoints, 1 );
 		return written;
 	}
@@ -1885,6 +1956,9 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 	// Diagnostics (mimi_perf_stats): read-only views of per-frame state.
 	internal long FieldVramBytes => _fieldGpu?.EstimatedBytes ?? 0;
+	internal SdfFieldGpu DebugField => _fieldGpu;
+	internal long TextAtlasBytes => _textAtlas.EstimatedBytes;
+	internal long LocalResourceBytes => SdfGpuMemory.TextureBytes( _dataTex ) + SdfGpuMemory.TextureBytes( _splineTex ) + TextAtlasBytes;
 	internal Vector3 DebugFieldDims => _fieldGpu is { IsValid: true } ? _fieldGpu.SurfaceDims : default;
 	internal string DebugFieldTier => ActiveProfile?.ResourceName ?? "builtin";
 	internal float DebugFieldPad => _fieldPad;
@@ -1972,6 +2046,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			a.Set( $"BrickDims{slot}", _fieldGpu.BrickDims );
 			a.Set( $"AtlasDims{slot}", _fieldGpu.AtlasDims );
 			a.Set( $"AtlasEncode{slot}", _fieldGpu.AtlasEncodeBand ); // 8-bit tile decode band (0 = raw R32F)
+		}
+		else
+		{
+			a.Set( $"Atlas{slot}", (Texture)null );
+			a.Set( $"IndirectionTex{slot}", (Texture)null );
 		}
 		a.Set( $"SdfSparse{slot}", EffectiveSparseField && _fieldGpu.Atlas.IsValid() ? 1 : 0 );
 	}
