@@ -27,13 +27,13 @@ public sealed class Fxaa : BasePostProcess<Fxaa>
 
 	/// <summary>Global kill switch, for A/B: `mimiclay_fxaa 0`.</summary>
 	[ConVar( "mimiclay_fxaa" )]
-	public static bool Enabled { get; set; } = true;
+	public static bool GlobalEnabled { get; set; } = true;
 
 	static readonly Material Shader = Material.FromShader( "shaders/pp_fxaa.shader" );
 
 	public override void Render()
 	{
-		if ( !Enabled )
+		if ( !GlobalEnabled )
 			return;
 
 		Attributes.Set( "EdgeThreshold", GetWeighted( x => x.EdgeThreshold, 0.125f ) );

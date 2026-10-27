@@ -548,39 +548,6 @@
               "RuntimeSaturation": 1,
               "RuntimeTint": "1,1,1,1",
               "ViewBias": 5
-            },
-            {
-              "__type": "Mimiclay.ProbeRadiosityBoost",
-              "__guid": "f972bce2-5d44-440f-a5b3-4b0ce31dfee7",
-              "__enabled": false,
-              "Flags": 0,
-              "__version": 1,
-              "AmbientColor": "1,1,1,1",
-              "AmbientLift": 0,
-              "BaseIrradiance": {
-                "Id": "c6296c72-c54a-4180-b98c-eb68a9e1f028",
-                "Path": "scenes/maps/charadeszoo_art2_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex"
-              },
-              "BounceSaturation": 1,
-              "BounceTint": "1,1,1,1",
-              "BounceTintAmount": 1,
-              "Contrast": 1,
-              "FallbackEnvmap": null,
-              "Iterations": 8,
-              "Level": 1,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Volume": {
-                "_type": "component",
-                "component_id": "90761139-afac-4b8f-b380-e3dae344f47f",
-                "go": "0373f329-6208-44b4-96bd-227908c116b3",
-                "component_type": "IndirectLightVolume"
-              },
-              "WallBlocking": 1
             }
           ],
           "Children": []

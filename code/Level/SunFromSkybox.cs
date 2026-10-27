@@ -70,7 +70,7 @@ public sealed class SunFromSkybox : Component, Component.ExecuteInEditor
 		var tex = sky.SkyTexture;
 		if ( tex is null || tex.Width <= 0 || tex.Height <= 0 ) return;
 
-		var key = $"{tex.ResourceId}:{tex.Width}x{tex.Height}x{tex.Depth}:{sky.SkyMaterial?.ResourcePath}";
+		var key = $"{tex.ResourcePath}#{tex.GetHashCode()}:{tex.Width}x{tex.Height}x{tex.Depth}:{sky.SkyMaterial?.ResourcePath}";
 		if ( key != _scannedKey || !_hotspotUsed.AlmostEqual( HotspotFraction ) )
 		{
 			if ( !Scan( tex ) ) return;

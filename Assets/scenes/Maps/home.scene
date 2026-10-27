@@ -1925,7 +1925,10 @@
             "Path": "scenes/maps/home_scene_data/ddgi/probes_distance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex"
           },
           "InsideGeometry": "Relocate",
-          "IrradianceTexture": null,
+          "IrradianceTexture": {
+            "Id": "27900b13-f10e-4642-a51d-5eff1d73caec",
+            "Path": "scenes/maps/home_scene_data/ddgi/probes_irradiance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex"
+          },
           "NormalBias": 32.233505,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -1939,34 +1942,6 @@
             "Path": "scenes/maps/home_scene_data/ddgi/probes_relocation_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex"
           },
           "RenderExcludeTags": "clip"
-        },
-        {
-          "__type": "Mimiclay.ProbeRadiosityBoost",
-          "__guid": "d611f2ff-8510-4227-b53d-98d64050212d",
-          "__enabled": true,
-          "Flags": 0,
-          "AmbientColor": "0.51163,0.42953,0.34743,1",
-          "AmbientLift": 0.14054054,
-          "BaseIrradiance": {
-            "Id": "27900b13-f10e-4642-a51d-5eff1d73caec",
-            "Path": "scenes/maps/home_scene_data/ddgi/probes_irradiance_3045dc37-b2bc-4193-b40b-6400c8a3bfeb.vtex"
-          },
-          "BounceSaturation": 0.52791876,
-          "Gain": 0.45,
-          "Iterations": 8,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Volume": {
-            "_type": "component",
-            "component_id": "3045dc37-b2bc-4193-b40b-6400c8a3bfeb",
-            "go": "85629a76-b42b-4ccd-b80d-1b53e94843c2",
-            "component_type": "IndirectLightVolume"
-          },
-          "WallBlocking": 1
         }
       ],
       "Children": [

@@ -2306,39 +2306,6 @@
           "RuntimeSaturation": 1,
           "RuntimeTint": "1,1,1,1",
           "ViewBias": 5
-        },
-        {
-          "__type": "Mimiclay.ProbeRadiosityBoost",
-          "__guid": "788178c0-a2ec-4e2b-8f39-263d442fc16d",
-          "__enabled": false,
-          "Flags": 0,
-          "__version": 1,
-          "AmbientColor": "0.91628,0.78331,0.69467,1",
-          "AmbientLift": 0,
-          "BaseIrradiance": {
-            "Id": "5c38799f-3a3d-436b-9c9b-4febf4b49ac1",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_main_irradiance_2fe6ab35-9a66-46f0-9ba6-2d2cf39436c8.vtex"
-          },
-          "BounceSaturation": 0,
-          "BounceTint": "1,0.8,0.6,1",
-          "BounceTintAmount": 0,
-          "Contrast": 1,
-          "FallbackEnvmap": null,
-          "Iterations": 8,
-          "Level": 1.3,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Volume": {
-            "_type": "component",
-            "component_id": "2fe6ab35-9a66-46f0-9ba6-2d2cf39436c8",
-            "go": "21172289-330c-4c44-8025-75ce6337bd62",
-            "component_type": "IndirectLightVolume"
-          },
-          "WallBlocking": 1
         }
       ],
       "Children": []
@@ -2376,7 +2343,10 @@
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_distance_fff47440-764c-4073-a40f-1b42b199b681.vtex"
           },
           "InsideGeometry": "Relocate",
-          "IrradianceTexture": null,
+          "IrradianceTexture": {
+            "Id": "4c862c8b-1650-464f-8cf5-8182ff1a5989",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_irradiance_fff47440-764c-4073-a40f-1b42b199b681.vtex"
+          },
           "NormalBias": 5,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -2395,39 +2365,6 @@
           "RuntimeSaturation": 1,
           "RuntimeTint": "1,1,1,1",
           "ViewBias": 5
-        },
-        {
-          "__type": "Mimiclay.ProbeRadiosityBoost",
-          "__guid": "e7f41f3c-da11-4986-9add-ec74ad93af81",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "AmbientColor": "0.91628,0.78331,0.69467,1",
-          "AmbientLift": 0,
-          "BaseIrradiance": {
-            "Id": "4c862c8b-1650-464f-8cf5-8182ff1a5989",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_whole_irradiance_fff47440-764c-4073-a40f-1b42b199b681.vtex"
-          },
-          "BounceSaturation": 0,
-          "BounceTint": "1,0.8,0.6,1",
-          "BounceTintAmount": 0,
-          "Contrast": 1,
-          "FallbackEnvmap": null,
-          "Iterations": 8,
-          "Level": 1.3,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Volume": {
-            "_type": "component",
-            "component_id": "fff47440-764c-4073-a40f-1b42b199b681",
-            "go": "aeea1c31-57d6-4115-b4d6-1c91c85d02d3",
-            "component_type": "IndirectLightVolume"
-          },
-          "WallBlocking": 1
         }
       ],
       "Children": []
@@ -2487,39 +2424,6 @@
           "RuntimeSaturation": 1,
           "RuntimeTint": "1,1,1,1",
           "ViewBias": 5
-        },
-        {
-          "__type": "Mimiclay.ProbeRadiosityBoost",
-          "__guid": "70c84222-1f8a-404a-a4e6-764795f7b045",
-          "__enabled": false,
-          "Flags": 0,
-          "__version": 1,
-          "AmbientColor": "0.91628,0.78331,0.69467,1",
-          "AmbientLift": 0,
-          "BaseIrradiance": {
-            "Id": "0ff2c28c-af93-42aa-b657-fb523c27d9f8",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_wing_irradiance_a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c.vtex"
-          },
-          "BounceSaturation": 0,
-          "BounceTint": "1,0.8,0.6,1",
-          "BounceTintAmount": 0,
-          "Contrast": 1,
-          "FallbackEnvmap": null,
-          "Iterations": 8,
-          "Level": 1.3,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Volume": {
-            "_type": "component",
-            "component_id": "a7c3646f-7cb4-4d9d-abe5-7f79dd6b435c",
-            "go": "2b630961-e797-4818-a202-1ea3cad95347",
-            "component_type": "IndirectLightVolume"
-          },
-          "WallBlocking": 1
         }
       ],
       "Children": []

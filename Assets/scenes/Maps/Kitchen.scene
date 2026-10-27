@@ -4104,7 +4104,7 @@
           "Contrast": 1,
           "DistanceTexture": "scenes/maps/kitchen_scene_data/ddgi/ddgi_distance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
           "InsideGeometry": "Relocate",
-          "IrradianceTexture": null,
+          "IrradianceTexture": "scenes/maps/kitchen_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
           "NormalBias": 5,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -4148,31 +4148,6 @@
           "UpdateStrategy": "OnEnabled",
           "ZFar": 4096,
           "ZNear": 16
-        },
-        {
-          "__type": "Mimiclay.ProbeRadiosityBoost",
-          "__guid": "4e25b30e-b1e6-43bc-a212-0c2f216d155a",
-          "__enabled": true,
-          "Flags": 0,
-          "AmbientColor": "0.91628,0.78331,0.69467,1",
-          "AmbientLift": 0,
-          "BaseIrradiance": "scenes/maps/kitchen_scene_data/ddgi/ddgi_irradiance_90761139-afac-4b8f-b380-e3dae344f47f.vtex",
-          "BounceSaturation": 0,
-          "Gain": 0.2,
-          "Iterations": 8,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Volume": {
-            "_type": "component",
-            "component_id": "90761139-afac-4b8f-b380-e3dae344f47f",
-            "go": "0373f329-6208-44b4-96bd-227908c116b3",
-            "component_type": "IndirectLightVolume"
-          },
-          "WallBlocking": 1
         }
       ],
       "Children": []
