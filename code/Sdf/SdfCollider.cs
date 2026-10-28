@@ -209,7 +209,7 @@ public sealed class SdfCollider : Component
 		int key = HashCode.Combine(
 			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
 			(int)MathF.Round( downLocal.x * 100f ), (int)MathF.Round( downLocal.y * 100f ), (int)MathF.Round( downLocal.z * 100f ),
-			BuildAsTrigger );
+			BuildAsTrigger, SdfCollisionBuilder.CodeVersion );
 
 		if ( key == _builtKey && _builtModel is not null
 			&& standing.IsValid() && standing.Enabled && ReferenceEquals( standing.Model, _builtModel ) )

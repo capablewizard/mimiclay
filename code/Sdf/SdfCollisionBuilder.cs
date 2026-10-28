@@ -22,10 +22,11 @@ namespace Mimiclay;
 ///    convex shape. List order matters: <c>SdfBrush.Sample</c> folds in order, so a subtract only
 ///    carves brushes BEFORE it, and an add placed after a subtract re-fills the hole with its own collider.
 ///
-/// Splines carve PER SWEPT SPHERE — the sweep is already a decomposition, so a sphere a subtract fully
-/// swallows is dropped, one it only grazes stays an exact sphere, and one it genuinely bites is voxelised on
-/// its own small sculpture-aligned grid. Only the spheres that need it pay; a long spline never voxelises as
-/// a whole. TEXT is the one exemption: glyph strokes are thinner than a voxel, so a carved voxelisation would
+/// Splines collide as as few CAPSULES as reproduce the tube to within <see cref="SplineCapsuleTolerance"/>
+/// (see <see cref="FitSplineCapsules"/>): a straight run is one capsule however long, and only the bends spend
+/// more. They carve PER CAPSULE SAMPLE — spheres along each capsule's axis: a sample a subtract fully swallows
+/// is dropped, unbitten runs re-merge into capsules, and one it genuinely bites is voxelised on its own small
+/// sculpture-aligned grid. Only the stretches that need it pay; a long spline never voxelises as a whole. TEXT is the one exemption: glyph strokes are thinner than a voxel, so a carved voxelisation would
 /// dissolve the letters — a text brush keeps its ink-box hull, and the foot probes skip its carvers the same way.
 ///
 /// Cheap enough to rebuild synchronously on the main thread whenever the shape is committed (e.g. on gizmo
@@ -37,7 +38,11 @@ public static class SdfCollisionBuilder
 	// approximation, so these are far lower than the render mesher's.
 	const int Ring = 12;   // segments around a cylinder/cone
 	const int EllipsoidStacks = 3; // horizontal rings between the poles
-	const float SplineSweepSpacing = 1.0f; // swept-sphere step, in local radii (hover ghost uses 0.6)
+	const float SplineSweepSpacing = 1.0f; // sample-sphere step along a capsule axis, in local radii (carve
+	                                       // classification, clamp samples, foot probes — not physics shapes)
+	const float SplineCapsuleTolerance = 0.25f;  // capsule fit: worst surface error allowed, in local radii
+	const float SplineCapsuleMinTolerance = 1f;  // ...floored in sculpture units, so a hair-thin tube isn't
+	                                             // chased into slivers it can't visibly use
 
 	// Carve-aware path (see BuildCarved). All biases are fractions of the smallest voxel edge.
 	const float CarveGateFraction = 0.005f; // swap to voxels only when subtracts remove at least this fraction.
@@ -54,7 +59,12 @@ public static class SdfCollisionBuilder
 	                                       // instead of the wall dissolving, which would be far worse)
 	const float SplineCarveGraze = 0.25f;  // fraction of a swept sphere's radius a subtract may bite before the
 	                                       // sphere trades its exact primitive for voxels
-	const int SplineSphereCells = 5;       // per-axis grid for ONE voxelised swept sphere (cell = 2r/5)
+	const int SplineSphereCells = 5;       // cells across a voxelised capsule run's diameter (cell = 2r/5)
+
+	/// <summary>Differs per compile of this code: [SkipHotload] keeps hotload from carrying the old value over, so
+	/// the new assembly's initializer stands. Fold it into any cache key over a build's output — a brush hash alone
+	/// survives a hotload, and the cache would keep serving what the OLD builder made.</summary>
+	[SkipHotload] public static readonly int CodeVersion = Guid.NewGuid().GetHashCode();
 
 	// Detail gate (see EffectiveMinExtent): an additive brush whose local bounding box is under this on EVERY
 	// axis is decoration — an eye, a button, a stud — and contributes no collider. All three axes must be
@@ -81,8 +91,10 @@ public static class SdfCollisionBuilder
 	/// <summary>What kind of primitive one emitted collision shape is — for the collision debug view.</summary>
 	public enum ShapeKind
 	{
-		/// <summary>An exact sphere: a uniform sphere brush, or one swept sphere of a spline.</summary>
+		/// <summary>An exact sphere: a uniform sphere brush, or a single-point spline.</summary>
 		Sphere,
+		/// <summary>One fitted capsule of a spline tube.</summary>
+		Capsule,
 		/// <summary>An exact convex hull: box/cylinder/cone/prism/ellipsoid/text, or one star kite.</summary>
 		Hull,
 		/// <summary>A greedy-merged voxel box from the carve-aware path.</summary>
@@ -114,6 +126,19 @@ public static class SdfCollisionBuilder
 	static void FrameSphere( Vector3 c, float r )
 	{
 		_emitted?.Add( new EmittedShape( ShapeKind.Sphere, _brushIndex ) );
+		FrameSpherePoints( c, r );
+	}
+
+	// A capsule's silhouette is its two end spheres' — so their points frame it exactly as well.
+	static void FrameCapsule( Vector3 a, Vector3 b, float r )
+	{
+		_emitted?.Add( new EmittedShape( ShapeKind.Capsule, _brushIndex ) );
+		FrameSpherePoints( a, r );
+		FrameSpherePoints( b, r );
+	}
+
+	static void FrameSpherePoints( Vector3 c, float r )
+	{
 		if ( _frame is null )
 			return;
 
@@ -172,6 +197,7 @@ public static class SdfCollisionBuilder
 		Span<Vector3> centres = stackalloc Vector3[8];
 		var pts = new List<Vector3>( 32 );
 		var sweep = new List<Vector4>( 64 ); // reused swept-sphere buffer (spline brushes)
+		var capsules = new List<SplineCapsule>( 16 ); // the current spline's fitted capsules
 		var carvers = new List<SdfBrush>( 4 );                      // subtracts that can hollow the current brush
 		var carverBounds = new List<(Vector3 lo, Vector3 hi)>( 4 ); // their sculpture-space AABBs (all copies)
 		float minExtent = EffectiveMinExtent( brushes );
@@ -193,32 +219,29 @@ public static class SdfCollisionBuilder
 			if ( b.Shape != SdfShape.Text )
 				CollectCarvers( brushes, bi, centres, sweep, carvers, carverBounds );
 
-			// A spline: spheres SWEPT along the drawn curve (curve-aware, radius-interpolated), at every mirror
-			// copy. Spheres are the natural fit for the variable-radius tube and need no orientation; sweeping
-			// (rather than one sphere per control point) keeps the tube solid however sparse the control points
-			// are. SplineSweepSpacing spaces them at one local radius — overlapping (gap-free) but coarser than
-			// the 0.6 the hover ghost uses, so long splines don't flood the physics scene with shapes. When
-			// subtracts bite, BuildCarvedSpline decides per swept sphere: drop, keep, or voxelise (see summary).
+			// A spline: the fewest capsules that reproduce the drawn tube to within tolerance (FitSplineCapsules),
+			// at every mirror copy. A capsule is exactly a tube stretch with round ends, so straight runs cost one
+			// shape however long, and the curvature alone decides how many more. When subtracts bite,
+			// BuildCarvedSpline decides along each capsule: drop, keep, or voxelise (see summary).
 			if ( b.Shape == SdfShape.Spline )
 			{
+				FitSplineCapsules( b, sweep, capsules );
 				if ( carvers.Count > 0 )
 				{
-					any |= BuildCarvedSpline( b, bi, carvers, carverBounds, sweep, builder, carvedCopies );
+					any |= BuildCarvedSpline( b, bi, carvers, carverBounds, capsules, sweep, builder, carvedCopies );
 					continue;
 				}
 
-				b.BuildSplineSweep( sweep, SplineSweepSpacing );
 				int snx = b.EffectiveMirrorX ? 1 : 0, sny = b.EffectiveMirrorY ? 1 : 0, snz = b.EffectiveMirrorZ ? 1 : 0;
 				for ( int sx = 0; sx <= snx; sx++ )
 				for ( int sy = 0; sy <= sny; sy++ )
 				for ( int sz = 0; sz <= snz; sz++ )
 				{
 					var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
-					foreach ( var pt in sweep )
+					foreach ( var cap in capsules )
 					{
-						var c = new Vector3( pt.x, pt.y, pt.z ) * sign;
-						builder.AddCollisionSphere( MathF.Max( pt.w, 0.5f ), c );
-						FrameSphere( c, MathF.Max( pt.w, 0.5f ) );
+						var m = cap.Mirrored( sign );
+						EmitCapsule( builder, m.A, m.B, m.Radius );
 						any = true;
 					}
 				}
@@ -384,22 +407,27 @@ public static class SdfCollisionBuilder
 
 		bool any = false;
 
-		// Spline: the same swept spheres the collider emits, per mirror copy (sweep was already filled by
-		// TooSmall's measurement above — same call, same spacing).
+		// Spline: the same fitted capsules the collider emits, per mirror copy. The sample mirror is spheres
+		// along each inset capsule's axis (both ends included) — inside the capsule, so never leakier than it.
 		if ( b.Shape == SdfShape.Spline )
 		{
+			var capsules = new List<SplineCapsule>( 16 );
+			FitSplineCapsules( b, sweep, capsules );
 			int snx = b.EffectiveMirrorX ? 1 : 0, sny = b.EffectiveMirrorY ? 1 : 0, snz = b.EffectiveMirrorZ ? 1 : 0;
 			for ( int sx = 0; sx <= snx; sx++ )
 			for ( int sy = 0; sy <= sny; sy++ )
 			for ( int sz = 0; sz <= snz; sz++ )
 			{
 				var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
-				foreach ( var pt in sweep )
+				foreach ( var cap in capsules )
 				{
-					var c = new Vector3( pt.x, pt.y, pt.z ) * sign;
-					float r = MathF.Max( pt.w - inset, 0.5f );
-					body.AddSphereShape( c, r, rebuildMass: false );
-					samples?.Add( new Vector4( c.x, c.y, c.z, r ) );
+					var m = cap.Mirrored( sign ) with { Radius = MathF.Max( cap.Radius - inset, 0.5f ) };
+					if ( m.IsSphere )
+						body.AddSphereShape( m.A, m.Radius, rebuildMass: false );
+					else
+						body.AddCapsuleShape( m.A, m.B, m.Radius, rebuildMass: false );
+					if ( samples is not null )
+						CapsuleSpheres( m, samples );
 					any = true;
 				}
 			}
@@ -688,17 +716,21 @@ public static class SdfCollisionBuilder
 		return any;
 	}
 
-	// Carve-aware collider for a spline: the sweep is already a decomposition, so carve PER SWEPT SPHERE — a
-	// sphere a subtract fully swallows is dropped, one it merely grazes (< SplineCarveGraze of the radius)
-	// stays an exact sphere, and one it genuinely bites is voxelised on its own small grid. Only the spheres
-	// that need it pay, so a long spline never voxelises as a whole. Judged per mirror copy like everything
-	// else (an asymmetric subtract must not hollow the untouched reflection).
+	// Carve-aware collider for a spline: carve ALONG each fitted capsule, judged at sample spheres spaced down
+	// its axis — a sample a subtract fully swallows is dropped, one it merely grazes (< SplineCarveGraze of the
+	// radius) is kept, and one it genuinely bites is voxelised. Consecutive samples of one class merge: a kept
+	// run within one capsule becomes ONE capsule (first to last kept centre); a bitten run — across capsule
+	// joints too, since a carve tends to sit on a tightly-fitted bend or flare — becomes ONE chord-aligned voxel
+	// grid, so the greedy merge runs boxes down the tube (a bored-out spout is a ring of long staves, not a
+	// pile of cubes). Judged per mirror copy like everything else (an asymmetric subtract must not hollow the
+	// untouched reflection).
 	static bool BuildCarvedSpline( SdfBrush b, int index, List<SdfBrush> carvers, List<(Vector3 lo, Vector3 hi)> carverBounds,
-		List<Vector4> sweep, ModelBuilder builder, List<CarvedCopy> carvedCopies )
+		List<SplineCapsule> capsules, List<Vector4> line, ModelBuilder builder, List<CarvedCopy> carvedCopies )
 	{
-		b.BuildSplineSweep( sweep, SplineSweepSpacing );
 		bool any = false;
-		var near = new List<SdfBrush>( 4 ); // carvers whose AABB reaches the current sphere
+		var cls = new List<int>( 32 );    // per sample: 0 swallowed, 1 kept, 2 bitten
+		var owner = new List<int>( 32 );  // per sample: its capsule (a joint appears once per capsule)
+		var runs = new List<CarvedCopy>( 4 );
 
 		int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= mx; sx++ )
@@ -707,74 +739,281 @@ public static class SdfCollisionBuilder
 		{
 			var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
 
-			// The copy's record: everything stored sign-folded in sculpture space (frame = identity), kept
-			// spheres included so the probe sync sees the copy's FULL collider. Only published if anything
-			// actually voxelised — an untouched copy needs no sync.
-			var record = new CarvedCopy { BrushIndex = index, Sign = Vector3.One, Position = Vector3.Zero, Rotation = Rotation.Identity };
+			// The copy's kept samples (sign-folded sculpture space, frame = identity), so the probe sync sees
+			// the copy's FULL collider; each voxelised run gets its own record in its own capsule frame. Only
+			// published if anything actually voxelised — an untouched copy needs no sync.
+			var kept = new CarvedCopy { BrushIndex = index, Sign = Vector3.One, Position = Vector3.Zero, Rotation = Rotation.Identity };
+			runs.Clear();
 
-			foreach ( var pt in sweep )
+			// The whole chain of samples, capsule after capsule (w = that capsule's radius).
+			line.Clear();
+			owner.Clear();
+			for ( int ki = 0; ki < capsules.Count; ki++ )
 			{
-				float r = MathF.Max( pt.w, 0.5f );
-				var c = new Vector3( pt.x, pt.y, pt.z ) * sign;
+				int before = line.Count;
+				CapsuleSpheres( capsules[ki].Mirrored( sign ), line );
+				for ( int k = before; k < line.Count; k++ )
+					owner.Add( ki );
+			}
 
-				// Carvers whose AABB reaches this sphere, and the deepest bite among them at its centre —
-				// the nearest carver surface being r away in either direction classifies the sphere outright.
-				near.Clear();
-				float d = float.MaxValue;
+			// Classify: the deepest bite among the carvers whose AABB reaches the sample, at its centre —
+			// the nearest carver surface being r away in either direction classifies it outright.
+			cls.Clear();
+			foreach ( var s in line )
+			{
+				float r = s.w, d = float.MaxValue;
 				for ( int ci = 0; ci < carvers.Count; ci++ )
 				{
 					var (nlo, nhi) = carverBounds[ci];
-					if ( c.x + r < nlo.x || c.x - r > nhi.x ||
-						 c.y + r < nlo.y || c.y - r > nhi.y ||
-						 c.z + r < nlo.z || c.z - r > nhi.z )
+					if ( s.x + r < nlo.x || s.x - r > nhi.x ||
+						 s.y + r < nlo.y || s.y - r > nhi.y ||
+						 s.z + r < nlo.z || s.z - r > nhi.z )
 						continue;
-					near.Add( carvers[ci] );
-					d = MathF.Min( d, carvers[ci].Distance( c ) );
+					d = MathF.Min( d, carvers[ci].Distance( new Vector3( s.x, s.y, s.z ) ) );
 				}
-
-				if ( d <= -r )
-					continue; // fully inside a subtract — the sphere is deactivated
-				if ( d >= r * (1f - SplineCarveGraze) )
-				{
-					builder.AddCollisionSphere( r, c ); // untouched, or only a sliver lost — keep it exact
-					FrameSphere( c, r );
-					record.Spheres.Add( new Vector4( c.x, c.y, c.z, r ) );
-					any = true;
-					continue;
-				}
-
-				any |= VoxeliseSphere( c, r, near, builder, record );
+				cls.Add( d <= -r ? 0 : d >= r * (1f - SplineCarveGraze) ? 1 : 2 );
 			}
 
-			if ( carvedCopies is not null && record.Boxes.Count > 0 )
-				carvedCopies.Add( record );
+			// Emit each same-class run whole — kept runs stop at capsule joints (a capsule is straight).
+			for ( int i = 0; i < line.Count; )
+			{
+				int j = i;
+				while ( j + 1 < line.Count && cls[j + 1] == cls[i] && (cls[i] != 1 || owner[j + 1] == owner[i]) )
+					j++;
+
+				if ( cls[i] == 1 )
+				{
+					var a = new Vector3( line[i].x, line[i].y, line[i].z );
+					var e = new Vector3( line[j].x, line[j].y, line[j].z );
+					EmitCapsule( builder, a, e, line[i].w );
+					for ( int k = i; k <= j; k++ )
+						kept.Spheres.Add( line[k] );
+					any = true;
+				}
+				else if ( cls[i] == 2 )
+				{
+					any |= VoxeliseSplineRun( line, i, j, index, carvers, carverBounds, builder, runs );
+				}
+				i = j + 1;
+			}
+
+			if ( carvedCopies is not null && runs.Count > 0 )
+			{
+				carvedCopies.Add( kept );
+				carvedCopies.AddRange( runs );
+			}
 		}
 		return any;
 	}
 
-	// One partially-carved swept sphere → carved voxel boxes on its own small grid, directly in sculpture
-	// space (a spline evaluates there — no brush frame). Cells are 2r/SplineSphereCells, so the carve
-	// resolution scales with the tube radius; occupancy biases match the brush voxeliser's.
-	static bool VoxeliseSphere( Vector3 centre, float r, List<SdfBrush> carvers, ModelBuilder builder, CarvedCopy record )
+	/// <summary>One collision capsule of a spline tube, in sculpture space. A == B is a plain sphere (a
+	/// single-point spline).</summary>
+	readonly record struct SplineCapsule( Vector3 A, Vector3 B, float Radius )
 	{
-		const int n = SplineSphereCells;
-		float cell = 2f * r / n;
-		float solidAt = -SolidBias * cell;
-		float carveAt = -CarveBias * cell;
-		var lo = centre - new Vector3( r );
+		public bool IsSphere => (B - A).LengthSquared < 1e-4f;
+		public SplineCapsule Mirrored( Vector3 sign ) => this with { A = A * sign, B = B * sign };
+	}
 
-		var solid = new bool[n * n * n];
-		int kept = 0;
-		for ( int iz = 0; iz < n; iz++ )
-		for ( int iy = 0; iy < n; iy++ )
-		for ( int ix = 0; ix < n; ix++ )
+	// Physics + frame + debug tag for one capsule (or the sphere a degenerate one is).
+	static void EmitCapsule( ModelBuilder builder, Vector3 a, Vector3 b, float r )
+	{
+		if ( (b - a).LengthSquared < 1e-4f )
 		{
-			var p = lo + new Vector3( (ix + 0.5f) * cell, (iy + 0.5f) * cell, (iz + 0.5f) * cell );
-			if ( (p - centre).Length - r > solidAt )
-				continue; // outside (or in the skin of) the sphere
+			builder.AddCollisionSphere( r, a );
+			FrameSphere( a, r );
+			return;
+		}
+		builder.AddCollisionCapsule( a, b, r );
+		FrameCapsule( a, b, r );
+	}
+
+	// Sample spheres down one capsule's axis, both ends included, at most SplineSweepSpacing radii apart —
+	// what the carve classifier, the clamp's sample mirror and the foot probes read in place of the capsule.
+	static void CapsuleSpheres( SplineCapsule cap, List<Vector4> dst )
+	{
+		float len = (cap.B - cap.A).Length;
+		int n = Math.Clamp( (int)MathF.Ceiling( len / (cap.Radius * SplineSweepSpacing) ), 1, 64 );
+		if ( cap.IsSphere )
+			n = 0;
+		for ( int i = 0; i <= n; i++ )
+		{
+			var c = n == 0 ? cap.A : Vector3.Lerp( cap.A, cap.B, i / (float)n );
+			dst.Add( new Vector4( c.x, c.y, c.z, cap.Radius ) );
+		}
+	}
+
+	/// <summary>Fit the FEWEST capsules that reproduce <paramref name="b"/>'s tube to within
+	/// <see cref="SplineCapsuleTolerance"/> of the local radius: a greedy longest-fit walk over the drawn skeleton
+	/// (<see cref="SdfBrush.BuildSplinePolyline"/> — the exact rounded-cone chain the renderer marches), where a
+	/// stretch's error at each skeleton sphere is its distance off the capsule axis PLUS its radius' difference
+	/// from the capsule's (the best radius for the stretch). A straight run collapses to one capsule however long;
+	/// curvature and taper alone spend more. The skeleton is densified first, so a tapered straight span (two
+	/// skeleton points) still has interior points to split at. Unmirrored, sculpture space.</summary>
+	static void FitSplineCapsules( SdfBrush b, List<Vector4> scratch, List<SplineCapsule> dst )
+	{
+		dst.Clear();
+		b.BuildSplinePolyline( scratch );
+		if ( scratch.Count == 0 )
+			return;
+
+		var dense = new List<Vector4>( scratch.Count * 2 ) { scratch[0] };
+		for ( int i = 1; i < scratch.Count; i++ )
+		{
+			var a = scratch[i - 1];
+			var c = scratch[i];
+			float len = (new Vector3( c.x, c.y, c.z ) - new Vector3( a.x, a.y, a.z )).Length;
+			float step = MathF.Max( 0.5f * MathF.Min( a.w, c.w ), SplineCapsuleMinTolerance );
+			int k = Math.Clamp( (int)MathF.Ceiling( len / step ), 1, 32 );
+			for ( int s = 1; s <= k; s++ )
+			{
+				float t = s / (float)k;
+				dense.Add( new Vector4( a.x + (c.x - a.x) * t, a.y + (c.y - a.y) * t, a.z + (c.z - a.z) * t, a.w + (c.w - a.w) * t ) );
+			}
+		}
+
+		if ( dense.Count == 1 )
+		{
+			var p = new Vector3( dense[0].x, dense[0].y, dense[0].z );
+			dst.Add( new SplineCapsule( p, p, MathF.Max( dense[0].w, 0.5f ) ) );
+			return;
+		}
+
+		// Greedy: from each start, the LONGEST capsule that still fits. (Not Douglas–Peucker: on a steady taper
+		// the worst radius error always sits beside an end, so splitting at it peels one sliver per step — the
+		// teapot spout came out as a run of 1.4u capsules.) The error isn't strictly monotone in the end point
+		// (a chord can re-straighten past a wiggle), so look a few samples past the first miss before settling.
+		const int lookahead = 6;
+		int lo = 0, last = dense.Count - 1;
+		while ( lo < last )
+		{
+			int best = lo + 1;
+			float bestR = Fits( lo, best, out float r1 ) ? r1 : (dense[lo].w + dense[best].w) * 0.5f;
+			for ( int hi = lo + 2; hi <= last && hi - best <= lookahead; hi++ )
+			{
+				if ( Fits( lo, hi, out float r ) )
+				{
+					best = hi;
+					bestR = r;
+				}
+			}
+
+			var a = new Vector3( dense[lo].x, dense[lo].y, dense[lo].z );
+			var c = new Vector3( dense[best].x, dense[best].y, dense[best].z );
+			dst.Add( new SplineCapsule( a, c, MathF.Max( bestR, 0.5f ) ) );
+			lo = best;
+		}
+
+		// Does one capsule lo→hi hold every skeleton sphere in between to tolerance? Each sphere i, sitting d_i
+		// off the axis, needs |r_i − r| ≤ tol − d_i — an interval for r. They fit iff the intervals intersect;
+		// r is then the intersection's middle (the best radius, not just the mid one).
+		bool Fits( int lo, int hi, out float r )
+		{
+			var a = new Vector3( dense[lo].x, dense[lo].y, dense[lo].z );
+			var c = new Vector3( dense[hi].x, dense[hi].y, dense[hi].z );
+			float rMin = float.MaxValue;
+			for ( int i = lo; i <= hi; i++ )
+				rMin = MathF.Min( rMin, dense[i].w );
+			float tol = MathF.Max( SplineCapsuleTolerance * rMin, SplineCapsuleMinTolerance );
+
+			float low = float.MinValue, high = float.MaxValue;
+			r = 0f;
+			for ( int i = lo; i <= hi; i++ )
+			{
+				float slack = tol - SegmentDistance( new Vector3( dense[i].x, dense[i].y, dense[i].z ), a, c );
+				if ( slack < 0f )
+					return false;
+				low = MathF.Max( low, dense[i].w - slack );
+				high = MathF.Min( high, dense[i].w + slack );
+				if ( low > high )
+					return false;
+			}
+			r = (low + high) * 0.5f;
+			return true;
+		}
+	}
+
+	static float SegmentDistance( Vector3 p, Vector3 a, Vector3 b )
+	{
+		var ab = b - a;
+		float l2 = ab.LengthSquared;
+		float t = l2 > 1e-8f ? Math.Clamp( Vector3.Dot( p - a, ab ) / l2, 0f, 1f ) : 0f;
+		return (p - (a + ab * t)).Length;
+	}
+
+	// One bitten run of the spline's capsule-sample chain (line[i..j], sign-folded sculpture space, w = radius)
+	// → carved voxel boxes on ONE grid aligned to the run's chord (frame x = first → last sample, origin the
+	// first), so the greedy merge runs boxes down the tube even across capsule joints. The solid is the union
+	// of the capsules between consecutive samples — exactly the emitted collider being carved. Cells are
+	// 2r/SplineSphereCells for the run's thinnest radius, so the carve resolution scales with the tube; each
+	// axis is capped (then the cells stretch). Occupancy biases match the brush voxeliser's. The run's boxes
+	// are recorded in their own frame on a new CarvedCopy appended to `runs`.
+	static bool VoxeliseSplineRun( List<Vector4> line, int i, int j, int index, List<SdfBrush> carvers,
+		List<(Vector3 lo, Vector3 hi)> carverBounds, ModelBuilder builder, List<CarvedCopy> runs )
+	{
+		const int maxAlong = 48, maxAcross = 12;
+		static Vector3 P( Vector4 v ) => new( v.x, v.y, v.z );
+
+		// Frame: x down the chord — or, for a run that closes on itself, toward its farthest sample.
+		var a = P( line[i] );
+		var far = P( line[j] );
+		for ( int k = i; k <= j && (far - a).LengthSquared < 1e-4f; k++ )
+			far = P( line[k] );
+		var rot = (far - a).LengthSquared > 1e-6f ? Rotation.LookAt( (far - a).Normal ) : Rotation.Identity;
+		var inv = rot.Inverse;
+
+		// Frame-local bounds of every sample sphere, the thinnest radius, and the sculpture-space AABB.
+		Vector3 lo = new( float.MaxValue ), hi = new( float.MinValue );
+		Vector3 lo3 = new( float.MaxValue ), hi3 = new( float.MinValue );
+		float rMin = float.MaxValue;
+		for ( int k = i; k <= j; k++ )
+		{
+			var p = P( line[k] );
+			float r = line[k].w;
+			var lp = inv * (p - a);
+			lo = Vector3.Min( lo, lp - new Vector3( r ) );
+			hi = Vector3.Max( hi, lp + new Vector3( r ) );
+			lo3 = Vector3.Min( lo3, p - new Vector3( r ) );
+			hi3 = Vector3.Max( hi3, p + new Vector3( r ) );
+			rMin = MathF.Min( rMin, r );
+		}
+
+		// Only the carvers whose AABB reaches the run's.
+		var near = new List<SdfBrush>( 4 );
+		for ( int ci = 0; ci < carvers.Count; ci++ )
+		{
+			var (nlo, nhi) = carverBounds[ci];
+			if ( hi3.x < nlo.x || lo3.x > nhi.x || hi3.y < nlo.y || lo3.y > nhi.y || hi3.z < nlo.z || lo3.z > nhi.z )
+				continue;
+			near.Add( carvers[ci] );
+		}
+
+		float target = 2f * rMin / SplineSphereCells;
+		var ext = hi - lo;
+		int nx = Math.Clamp( (int)MathF.Ceiling( ext.x / target ), 1, maxAlong );
+		int ny = Math.Clamp( (int)MathF.Ceiling( ext.y / target ), 1, maxAcross );
+		int nz = Math.Clamp( (int)MathF.Ceiling( ext.z / target ), 1, maxAcross );
+		var cell = new Vector3( ext.x / nx, ext.y / ny, ext.z / nz );
+		float cellMin = MathF.Min( cell.x, MathF.Min( cell.y, cell.z ) );
+		float solidAt = -SolidBias * cellMin;
+		float carveAt = -CarveBias * cellMin;
+
+		var solid = new bool[nx * ny * nz];
+		int count = 0;
+		for ( int iz = 0; iz < nz; iz++ )
+		for ( int iy = 0; iy < ny; iy++ )
+		for ( int ix = 0; ix < nx; ix++ )
+		{
+			var p = a + rot * (lo + new Vector3( (ix + 0.5f) * cell.x, (iy + 0.5f) * cell.y, (iz + 0.5f) * cell.z ));
+
+			// Inside the union of the run's capsule pieces (a lone sample is just its sphere)?
+			float dist = (p - P( line[i] )).Length - line[i].w;
+			for ( int k = i; k < j && dist > solidAt; k++ )
+				dist = MathF.Min( dist, SegmentDistance( p, P( line[k] ), P( line[k + 1] ) ) - MathF.Max( line[k].w, line[k + 1].w ) );
+			if ( dist > solidAt )
+				continue; // outside (or in the skin of) the tube
 
 			bool cut = false;
-			foreach ( var s in carvers )
+			foreach ( var s in near )
 			{
 				if ( s.Distance( p ) < carveAt )
 				{
@@ -785,13 +1024,16 @@ public static class SdfCollisionBuilder
 			if ( cut )
 				continue;
 
-			solid[(iz * n + iy) * n + ix] = true;
-			kept++;
+			solid[(iz * ny + iy) * nx + ix] = true;
+			count++;
 		}
 
-		if ( kept == 0 )
+		if ( count == 0 )
 			return false; // biased sampling ate it whole — close enough to fully swallowed
-		return GreedyBoxes( Vector3.Zero, Rotation.Identity, Vector3.One, lo, new Vector3( cell ), solid, n, n, n, builder, record, carvers );
+
+		var record = new CarvedCopy { BrushIndex = index, Sign = Vector3.One, Position = a, Rotation = rot };
+		runs.Add( record );
+		return GreedyBoxes( a, rot, Vector3.One, lo, cell, solid, nx, ny, nz, builder, record, near );
 	}
 
 	// One mirror copy's EXACT convex collider — the same shapes the uncarved path builds, emitted for a
@@ -1241,7 +1483,7 @@ public static class SdfCollisionBuilder
 			// carved space as EMPTY: a chopped-off bottom otherwise leaves phantom probes floating below the real
 			// collider — the body hovers on them mid-air, then buries them under the floor and reads stuck.
 			// Splines are carve-aware too — their carved copies are recorded like any other's, with the KEPT
-			// swept spheres included, so probes ride the emitted spheres+boxes exactly. Text is exempt,
+			// capsule samples included, so probes ride the emitted capsules+boxes. Text is exempt,
 			// matching its uncarved ink-box hull.
 			carvers.Clear();
 			if ( b.Shape != SdfShape.Text )
@@ -1558,11 +1800,16 @@ public static class SdfCollisionBuilder
 			return;
 		}
 
-		// Spline: the bottom point of every swept collision sphere, per mirror copy — its ground-contact
-		// candidates (the generic hull path below reads Position/Size, which mean nothing for a spline).
+		// Spline: the bottom point of every sample sphere down the collision capsules, per mirror copy — its
+		// ground-contact candidates (the generic hull path below reads Position/Size, which mean nothing for a
+		// spline).
 		if ( b.Shape == SdfShape.Spline )
 		{
-			b.BuildSplineSweep( sweep, SplineSweepSpacing );
+			var capsules = new List<SplineCapsule>( 16 );
+			FitSplineCapsules( b, sweep, capsules );
+			sweep.Clear();
+			foreach ( var cap in capsules )
+				CapsuleSpheres( cap, sweep );
 			int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
 			for ( int sx = 0; sx <= mx; sx++ )
 			for ( int sy = 0; sy <= my; sy++ )

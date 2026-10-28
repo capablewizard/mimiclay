@@ -63,6 +63,7 @@ public static class SdfCollisionDebug
 
 		internal readonly List<(Line[] Lines, SdfCollisionBuilder.ShapeKind? Kind, int Brush)> Hulls = new();
 		internal readonly List<(Sphere Sphere, int Brush)> Spheres = new();
+		internal readonly List<(Capsule Capsule, int Brush)> Capsules = new();
 		internal Vector3[] Feet = Array.Empty<Vector3>();
 		internal readonly List<(Vector3 Position, string Text)> Missing = new();
 		internal int VoxelBoxes, DroppedHulls;
@@ -101,6 +102,25 @@ public static class SdfCollisionDebug
 					float a0 = MathF.Tau * i / n, a1 = MathF.Tau * (i + 1) / n;
 					Seg( sphere.Center + Circle( axis, a0 ) * sphere.Radius, sphere.Center + Circle( axis, a1 ) * sphere.Radius, c );
 				}
+			}
+
+			// Capsules: both end spheres' great circles plus four lines down the sides.
+			foreach ( var (cap, brush) in Capsules )
+			{
+				var c = ShapeColor( SdfCollisionBuilder.ShapeKind.Capsule, brush );
+				foreach ( var centre in new[] { cap.CenterA, cap.CenterB } )
+				for ( int axis = 0; axis < 3; axis++ )
+				for ( int i = 0; i < n; i++ )
+				{
+					float a0 = MathF.Tau * i / n, a1 = MathF.Tau * (i + 1) / n;
+					Seg( centre + Circle( axis, a0 ) * cap.Radius, centre + Circle( axis, a1 ) * cap.Radius, c );
+				}
+
+				var dir = (cap.CenterB - cap.CenterA).Normal;
+				var side = Vector3.Cross( dir, MathF.Abs( dir.z ) < 0.9f ? Vector3.Up : Vector3.Forward ).Normal;
+				var up = Vector3.Cross( side, dir );
+				foreach ( var off in new[] { side, -side, up, -up } )
+					Seg( cap.CenterA + off * cap.Radius, cap.CenterB + off * cap.Radius, c );
 			}
 
 			if ( FootProbes )
@@ -144,7 +164,7 @@ public static class SdfCollisionDebug
 			return $"{collider.GameObject.Name}: no collider";
 
 		int exactHulls = snap.Hulls.Count - snap.VoxelBoxes;
-		var text = $"{collider.GameObject.Name}: {exactHulls} hull · {snap.Spheres.Count} sphere · {snap.VoxelBoxes} voxel box";
+		var text = $"{collider.GameObject.Name}: {exactHulls} hull · {snap.Spheres.Count} sphere · {snap.Capsules.Count} capsule · {snap.VoxelBoxes} voxel box";
 		if ( snap.DroppedHulls > 0 )
 			text += $" · {snap.DroppedHulls} hull REJECTED by physics";
 		return text;
@@ -175,6 +195,12 @@ public static class SdfCollisionDebug
 		{
 			Gizmo.Draw.Color = ShapeColor( SdfCollisionBuilder.ShapeKind.Sphere, brush ).WithAlpha( 0.9f );
 			Gizmo.Draw.LineSphere( sphere, 6 );
+		}
+
+		foreach ( var (capsule, brush) in snap.Capsules )
+		{
+			Gizmo.Draw.Color = ShapeColor( SdfCollisionBuilder.ShapeKind.Capsule, brush ).WithAlpha( 0.9f );
+			Gizmo.Draw.LineCapsule( capsule, 6 );
 		}
 
 		if ( FootProbes && snap.Feet.Length > 0 )
@@ -212,7 +238,7 @@ public static class SdfCollisionDebug
 
 		return kind switch
 		{
-			SdfCollisionBuilder.ShapeKind.Sphere => SphereColor,
+			SdfCollisionBuilder.ShapeKind.Sphere or SdfCollisionBuilder.ShapeKind.Capsule => SphereColor,
 			SdfCollisionBuilder.ShapeKind.VoxelBox => VoxelColor,
 			SdfCollisionBuilder.ShapeKind.Hull => HullColor,
 			_ => Color.White, // the engine's shape list didn't line up with what was emitted — still the real shape
@@ -261,7 +287,7 @@ public static class SdfCollisionDebug
 		var probeFrame = SdfCollider.ProbeFrame( collider.WorldRotation );
 		int key = HashCode.Combine(
 			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
-			probeFrame, collider.FootProbeSpacing );
+			probeFrame, collider.FootProbeSpacing, SdfCollisionBuilder.CodeVersion );
 
 		var snap = collider.DebugSnapshot;
 		if ( snap is not null && (snap.Key == key || snap.Built < EditorRebuildInterval) )
@@ -294,18 +320,29 @@ public static class SdfCollisionDebug
 		var snap = new Snapshot { Model = model, Built = 0f };
 		snap.Feet = feet?.ToArray() ?? Array.Empty<Vector3>();
 
-		var hullTags = emitted.Where( e => e.Kind != SdfCollisionBuilder.ShapeKind.Sphere ).ToList();
+		var hullTags = emitted.Where( e => e.Kind is SdfCollisionBuilder.ShapeKind.Hull or SdfCollisionBuilder.ShapeKind.VoxelBox ).ToList();
 		var sphereTags = emitted.Where( e => e.Kind == SdfCollisionBuilder.ShapeKind.Sphere ).ToList();
+		var capsuleTags = emitted.Where( e => e.Kind == SdfCollisionBuilder.ShapeKind.Capsule ).ToList();
 
 		var physics = model?.Physics;
 		if ( physics is not null )
 		{
 			var hulls = new List<(Transform, PhysicsGroupDescription.BodyPart.HullPart)>();
 			var spheres = new List<(Transform, PhysicsGroupDescription.BodyPart.SpherePart)>();
+			var capsules = new List<(Transform, PhysicsGroupDescription.BodyPart.CapsulePart)>();
 			foreach ( var part in physics.Parts )
 			{
 				foreach ( var h in part.Hulls ) hulls.Add( (part.Transform, h) );
 				foreach ( var s in part.Spheres ) spheres.Add( (part.Transform, s) );
+				foreach ( var c in part.Capsules ) capsules.Add( (part.Transform, c) );
+			}
+
+			bool capsulesAlign = capsules.Count == capsuleTags.Count;
+			for ( int i = 0; i < capsules.Count; i++ )
+			{
+				var (tx, c) = capsules[i];
+				var capsule = new Capsule( tx.PointToWorld( c.Capsule.CenterA ), tx.PointToWorld( c.Capsule.CenterB ), c.Capsule.Radius * tx.UniformScale );
+				snap.Capsules.Add( (capsule, capsulesAlign ? capsuleTags[i].BrushIndex : -1) );
 			}
 
 			// Emission order is the engine's order, so tags map 1:1 — unless physics rejected a degenerate hull,
