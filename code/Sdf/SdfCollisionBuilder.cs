@@ -34,8 +34,16 @@ namespace Mimiclay;
 /// </summary>
 public static class SdfCollisionBuilder
 {
+	// The physics engine SILENTLY drops a convex hull with more than 255 half-edges — about 127 edges once
+	// coplanar faces merge (measured 2026-10-28: a 44-vertex triangulated sphere passes, 45 vanishes).
+	// FlushPending thins any hull over this, so none can disappear.
+	const int HullEdgeLimit = 120;   // a little under the 127 ceiling
+	const int HullThinVertices = 40; // a thinned hull's vertex count — a triangulated 40 has 114 edges
+
 	// Tessellation of the round primitives' hull point clouds. Collision only needs a coarse convex
-	// approximation, so these are far lower than the render mesher's.
+	// approximation, so these are far lower than the render mesher's. (Denser was tried 2026-10-28: within
+	// HullEdgeLimit a sphere caps near 12 × 4, and the teapot body only tightened 3.98 → 3.87u for more shapes
+	// and build time.)
 	const int Ring = 12;   // segments around a cylinder/cone
 	const int EllipsoidStacks = 3; // horizontal rings between the poles
 	const float SplineSweepSpacing = 1.0f; // sample-sphere step along a capsule axis, in local radii (carve
@@ -114,53 +122,304 @@ public static class SdfCollisionBuilder
 	/// <see cref="BrushIndex"/> indexes the GROUP-FLATTENED brush list (<c>SdfGroups.Flatten</c>).</summary>
 	public readonly record struct EmittedShape( ShapeKind Kind, int BrushIndex );
 
-	// Optional capture of everything Build emits, as sculpture-space points (hull vertices, voxel-box corners,
-	// points on each collision sphere). Every emitted shape passes through builder.AddCollisionHull /
-	// AddCollisionSphere, so recording at those call sites frames the EXACT collider — carve decisions and all
-	// — with no second pass. A static rather than a parameter threaded through every helper: Build is
-	// main-thread-only (it creates physics shapes) and the field lives only for the duration of one call.
-	// _emitted rides the same call sites (kind + the brush being built, tracked in _brushIndex).
+	// Every shape a build makes is RECORDED here first (RecordHull / RecordSphere / RecordCapsule — the only
+	// emission points), then FlushPending culls the buried ones and hands the rest to the ModelBuilder in order.
+	// The optional captures ride the flush, so they describe exactly the shapes physics gets: _frame as
+	// sculpture-space points (hull vertices, voxel-box corners, points on each sphere/capsule end), _emitted as
+	// kind + source brush (tracked in _brushIndex). Statics rather than parameters threaded through every helper:
+	// Build is main-thread-only (it creates physics shapes) and they live only for the duration of one call.
+	sealed class PendingShape
+	{
+		public ShapeKind Kind;
+		public int Brush;
+		public List<Vector3> Hull;    // hull / voxel box points; null for a sphere or capsule
+		public Vector3 A, B;          // sphere: A == B; capsule: the segment
+		public float R;
+		public bool Culled;
+	}
+
 	static List<Vector3> _frame;
 	static List<EmittedShape> _emitted;
+	static List<PendingShape> _pending;
 	static int _brushIndex;
 
-	static void FrameHull( List<Vector3> hull, ShapeKind kind = ShapeKind.Hull )
+	static void RecordHull( List<Vector3> hull, ShapeKind kind = ShapeKind.Hull ) =>
+		_pending.Add( new PendingShape { Kind = kind, Brush = _brushIndex, Hull = hull } );
+
+	static void RecordSphere( Vector3 c, float r ) =>
+		_pending.Add( new PendingShape { Kind = ShapeKind.Sphere, Brush = _brushIndex, A = c, B = c, R = r } );
+
+	static void RecordCapsule( Vector3 a, Vector3 b, float r ) =>
+		_pending.Add( new PendingShape { Kind = ShapeKind.Capsule, Brush = _brushIndex, A = a, B = b, R = r } );
+
+	// Thin any hull physics would silently drop, cull the buried shapes, then hand the survivors to the builder in
+	// recording order (the debug view relies on the order) along with their frame points and emitted tags. Thinning
+	// runs FIRST so the cull judges coverage against the hulls physics actually gets. Null when nothing survives.
+	static Model FlushPending( ModelBuilder builder )
 	{
-		_emitted?.Add( new EmittedShape( kind, _brushIndex ) );
-		_frame?.AddRange( hull );
+		foreach ( var p in _pending )
+			if ( p.Hull is { Count: > HullThinVertices } && ConvexHull.EdgeCount( p.Hull ) > HullEdgeLimit )
+				p.Hull = ConvexHull.Thin( p.Hull, HullThinVertices );
+
+		if ( CullBuried )
+			CullBuriedShapes( _pending );
+
+		bool any = false;
+		foreach ( var p in _pending )
+		{
+			if ( p.Culled )
+				continue;
+			switch ( p.Kind )
+			{
+				case ShapeKind.Sphere:
+					builder.AddCollisionSphere( p.R, p.A );
+					FrameSpherePoints( p.A, p.R );
+					break;
+				case ShapeKind.Capsule:
+					// A capsule's silhouette is its two end spheres' — so their points frame it exactly as well.
+					builder.AddCollisionCapsule( p.A, p.B, p.R );
+					FrameSpherePoints( p.A, p.R );
+					FrameSpherePoints( p.B, p.R );
+					break;
+				default:
+					builder.AddCollisionHull( p.Hull );
+					_frame?.AddRange( p.Hull );
+					break;
+			}
+			_emitted?.Add( new EmittedShape( p.Kind, p.Brush ) );
+			any = true;
+		}
+		return any ? builder.Create() : null;
 	}
 
-	static void FrameSphere( Vector3 c, float r )
+	// ── Buried-shape culling ─────────────────────────────────────────────────────────────────────────────
+
+	// Drop shapes the rest of the collider already covers (CullBuriedShapes). Script-tunable for A/B;
+	// [SkipHotload] so a recompile applies the default.
+	[SkipHotload] public static bool CullBuried = true;
+	[SkipHotload] public static float CullTolerance = 0.5f; // a culled shape may stick out of the rest by at most this
+	const int CullMaxSamples = 1500;    // per shape; a bigger surface samples coarser and must sit deeper inside
+	const float CullCoverRadius = 0.75f; // any surface point lies within about this × spacing of a sample
+
+	// What the cull reads per shape: bounds, a 1-Lipschitz signed distance (≤ 0 inside), and its surface.
+	sealed class CullShape
 	{
-		_emitted?.Add( new EmittedShape( ShapeKind.Sphere, _brushIndex ) );
-		FrameSpherePoints( c, r );
+		public PendingShape P;
+		public Vector3 Lo, Hi;
+		public float Volume;                                   // of the bounds — the processing order
+		public float Area;
+		public List<(Vector3 n, float d)> Planes;              // hulls
+		public List<(Vector3 a, Vector3 b, Vector3 c)> Tris;   // hulls
+		public List<Vector3> Extremes;                         // hull vertices / points on the sphere ends
+
+		// Hull: the max plane distance (exact inside, a lower bound of the true distance outside — still 1-Lipschitz).
+		public float Sd( Vector3 p )
+		{
+			if ( Planes is not null )
+			{
+				float d = float.MinValue;
+				foreach ( var (n, o) in Planes )
+					d = MathF.Max( d, Vector3.Dot( n, p ) - o );
+				return d;
+			}
+			return SegmentDistance( p, P.A, P.B ) - P.R;
+		}
 	}
 
-	// A capsule's silhouette is its two end spheres' — so their points frame it exactly as well.
-	static void FrameCapsule( Vector3 a, Vector3 b, float r )
+	/// <summary>Mark every recorded shape that the REST of the collider already covers — the teapot lid's sphere
+	/// sitting inside the body and the dome, a spline root sunk into the body — so physics never carries it.
+	/// Smallest first, and a culled shape never vouches for a later one, so whatever is culled stays covered by
+	/// what's left.
+	///
+	/// The test is a bound, not a guess: the shape's surface is sampled at spacing h, and every cover's signed
+	/// distance is 1-Lipschitz, so if each sample sits at least <see cref="CullCoverRadius"/>·h −
+	/// <see cref="CullTolerance"/> inside the union of the covers, no point of the dropped shape sticks out of the
+	/// rest by more than the tolerance. (Only the SURFACE is checked: a void enclosed entirely inside the shape by
+	/// other shapes would go unseen — not a shape clay produces.) Fixed cost per shape: bounds overlap, a reject
+	/// on its extreme points (most shapes stop there), then ≤ <see cref="CullMaxSamples"/> samples.</summary>
+	static void CullBuriedShapes( List<PendingShape> shapes )
 	{
-		_emitted?.Add( new EmittedShape( ShapeKind.Capsule, _brushIndex ) );
-		FrameSpherePoints( a, r );
-		FrameSpherePoints( b, r );
+		if ( shapes.Count < 2 )
+			return;
+
+		var cs = new List<CullShape>( shapes.Count );
+		foreach ( var p in shapes )
+		{
+			var c = PrepareCull( p );
+			if ( c is not null )
+				cs.Add( c );
+		}
+
+		var order = new List<int>( cs.Count );
+		for ( int i = 0; i < cs.Count; i++ )
+			order.Add( i );
+		order.Sort( ( x, y ) => cs[x].Volume != cs[y].Volume ? cs[x].Volume.CompareTo( cs[y].Volume ) : x.CompareTo( y ) );
+
+		var covers = new List<CullShape>( 16 );
+		var samples = new List<Vector3>( 512 );
+		foreach ( int si in order )
+		{
+			var s = cs[si];
+			covers.Clear();
+			Vector3 ulo = new( float.MaxValue ), uhi = new( float.MinValue );
+			foreach ( var t in cs )
+			{
+				if ( t == s || t.P.Culled )
+					continue;
+				if ( t.Lo.x > s.Hi.x || t.Hi.x < s.Lo.x || t.Lo.y > s.Hi.y || t.Hi.y < s.Lo.y || t.Lo.z > s.Hi.z || t.Hi.z < s.Lo.z )
+					continue;
+				covers.Add( t );
+				ulo = Vector3.Min( ulo, t.Lo );
+				uhi = Vector3.Max( uhi, t.Hi );
+			}
+			if ( covers.Count == 0 )
+				continue;
+
+			// Cheap rejects: the covers' joint bounds must contain this shape's, and so must its extreme points.
+			var tol = new Vector3( CullTolerance );
+			if ( s.Lo.x < ulo.x - tol.x || s.Lo.y < ulo.y - tol.y || s.Lo.z < ulo.z - tol.z
+				|| s.Hi.x > uhi.x + tol.x || s.Hi.y > uhi.y + tol.y || s.Hi.z > uhi.z + tol.z )
+				continue;
+			if ( !AllCovered( s.Extremes, covers, CullTolerance ) )
+				continue;
+
+			float h = MathF.Max( CullTolerance / CullCoverRadius, MathF.Sqrt( s.Area / CullMaxSamples ) );
+			samples.Clear();
+			if ( !SampleSurface( s, h, samples ) )
+				continue; // couldn't sample it within budget — keep it
+			if ( AllCovered( samples, covers, CullTolerance - CullCoverRadius * h ) )
+				s.P.Culled = true;
+		}
+	}
+
+	static bool AllCovered( List<Vector3> pts, List<CullShape> covers, float maxSd )
+	{
+		foreach ( var p in pts )
+		{
+			bool ok = false;
+			foreach ( var t in covers )
+			{
+				if ( t.Sd( p ) <= maxSd )
+				{
+					ok = true;
+					break;
+				}
+			}
+			if ( !ok )
+				return false;
+		}
+		return true;
+	}
+
+	static CullShape PrepareCull( PendingShape p )
+	{
+		var c = new CullShape { P = p };
+		if ( p.Hull is not null )
+		{
+			c.Planes = new List<(Vector3 n, float d)>( 32 );
+			c.Tris = new List<(Vector3 a, Vector3 b, Vector3 c)>( 32 );
+			c.Extremes = new List<Vector3>( 16 );
+			if ( !ConvexHull.TryBuild( p.Hull, c.Planes, c.Extremes, c.Tris ) )
+				return null; // degenerate — neither cullable nor a trustworthy cover
+			c.Lo = new Vector3( float.MaxValue );
+			c.Hi = new Vector3( float.MinValue );
+			foreach ( var v in c.Extremes )
+			{
+				c.Lo = Vector3.Min( c.Lo, v );
+				c.Hi = Vector3.Max( c.Hi, v );
+			}
+			foreach ( var (a, b, t) in c.Tris )
+				c.Area += 0.5f * Vector3.Cross( b - a, t - a ).Length;
+		}
+		else
+		{
+			c.Lo = Vector3.Min( p.A, p.B ) - new Vector3( p.R );
+			c.Hi = Vector3.Max( p.A, p.B ) + new Vector3( p.R );
+			float len = (p.B - p.A).Length;
+			c.Area = 4f * MathF.PI * p.R * p.R + 2f * MathF.PI * p.R * len;
+			c.Extremes = new List<Vector3>( 28 );
+			AddSpherePoints( c.Extremes, p.A, p.R );
+			if ( len > 1e-3f )
+				AddSpherePoints( c.Extremes, p.B, p.R );
+		}
+		var size = c.Hi - c.Lo;
+		c.Volume = size.x * size.y * size.z;
+		return c;
+	}
+
+	// 6 axis extremes + 8 diagonal points, all ON the sphere — enough that its projected rect hugs the silhouette
+	// from any angle (worst-case slack ~8% of r, vs 41% for its bounding box's corners). Also the cull's cheap
+	// first check of a sphere or capsule end.
+	static void AddSpherePoints( List<Vector3> dst, Vector3 c, float r )
+	{
+		dst.Add( c + new Vector3( r, 0f, 0f ) );
+		dst.Add( c - new Vector3( r, 0f, 0f ) );
+		dst.Add( c + new Vector3( 0f, r, 0f ) );
+		dst.Add( c - new Vector3( 0f, r, 0f ) );
+		dst.Add( c + new Vector3( 0f, 0f, r ) );
+		dst.Add( c - new Vector3( 0f, 0f, r ) );
+		float d = r * 0.577350269f; // r / √3 — the on-sphere diagonal
+		for ( int i = 0; i < 8; i++ )
+			dst.Add( c + new Vector3( (i & 1) != 0 ? d : -d, (i & 2) != 0 ? d : -d, (i & 4) != 0 ? d : -d ) );
+	}
+
+	// Surface samples at spacing ≈ h. False when a hull's triangles would need more than twice the sample budget
+	// (long slivers) — the caller then keeps the shape rather than test it coarsely.
+	static bool SampleSurface( CullShape s, float h, List<Vector3> dst )
+	{
+		var p = s.P;
+		if ( s.Tris is not null )
+		{
+			foreach ( var (a, b, c) in s.Tris )
+			{
+				float edge = MathF.Max( (b - a).Length, MathF.Max( (c - b).Length, (a - c).Length ) );
+				int n = Math.Max( 1, (int)MathF.Ceiling( edge / h ) );
+				for ( int i = 0; i <= n; i++ )
+				for ( int j = 0; j <= n - i; j++ )
+					dst.Add( a + (b - a) * (i / (float)n) + (c - a) * (j / (float)n) );
+				if ( dst.Count > 2 * CullMaxSamples )
+					return false;
+			}
+			return true;
+		}
+
+		// Sphere / capsule: Fibonacci points on the end spheres (only their outward halves for a capsule), rings
+		// down the shaft.
+		var axis = p.B - p.A;
+		float len = axis.Length;
+		var dir = len > 1e-3f ? axis / len : Vector3.Up;
+		int nCap = Math.Max( 14, (int)MathF.Ceiling( 4f * MathF.PI * p.R * p.R / (h * h) ) );
+		for ( int i = 0; i < nCap; i++ )
+		{
+			float z = 1f - 2f * (i + 0.5f) / nCap;
+			float rr = MathF.Sqrt( MathF.Max( 0f, 1f - z * z ) );
+			float phi = i * 2.399963229f; // golden angle
+			var u = new Vector3( MathF.Cos( phi ) * rr, MathF.Sin( phi ) * rr, z );
+			if ( len <= 1e-3f )
+				dst.Add( p.A + u * p.R );
+			else
+				dst.Add( (Vector3.Dot( u, dir ) < 0f ? p.A : p.B) + u * p.R );
+		}
+		if ( len > 1e-3f )
+		{
+			var side = Vector3.Cross( dir, MathF.Abs( dir.z ) < 0.9f ? Vector3.Up : Vector3.Forward ).Normal;
+			var up = Vector3.Cross( side, dir );
+			int rings = Math.Max( 1, (int)MathF.Ceiling( len / h ) );
+			int around = Math.Max( 6, (int)MathF.Ceiling( 2f * MathF.PI * p.R / h ) );
+			for ( int i = 0; i <= rings; i++ )
+			for ( int j = 0; j < around; j++ )
+			{
+				float ang = MathF.Tau * j / around;
+				dst.Add( p.A + axis * (i / (float)rings) + (side * MathF.Cos( ang ) + up * MathF.Sin( ang )) * p.R );
+			}
+		}
+		return true;
 	}
 
 	static void FrameSpherePoints( Vector3 c, float r )
 	{
-		if ( _frame is null )
-			return;
-
-		// 6 axis extremes + 8 diagonal points, all ON the sphere — enough that its projected rect hugs the
-		// silhouette from any angle (worst-case slack ~8% of r, vs 41% for its bounding box's corners).
-		_frame.Add( c + new Vector3( r, 0f, 0f ) );
-		_frame.Add( c - new Vector3( r, 0f, 0f ) );
-		_frame.Add( c + new Vector3( 0f, r, 0f ) );
-		_frame.Add( c - new Vector3( 0f, r, 0f ) );
-		_frame.Add( c + new Vector3( 0f, 0f, r ) );
-		_frame.Add( c - new Vector3( 0f, 0f, r ) );
-
-		float d = r * 0.577350269f; // r / √3 — the on-sphere diagonal
-		for ( int i = 0; i < 8; i++ )
-			_frame.Add( c + new Vector3( (i & 1) != 0 ? d : -d, (i & 2) != 0 ? d : -d, (i & 4) != 0 ? d : -d ) );
+		if ( _frame is not null )
+			AddSpherePoints( _frame, c, r );
 	}
 
 	/// <summary>Build a collision-only Model (no render mesh) from the additive brushes, carving the ones that
@@ -186,6 +445,7 @@ public static class SdfCollisionBuilder
 
 		_frame = framePoints;
 		_emitted = emitted;
+		_pending = new List<PendingShape>( 64 );
 		try
 		{
 			return BuildInternal( brushes, carvedCopies );
@@ -194,6 +454,7 @@ public static class SdfCollisionBuilder
 		{
 			_frame = null;
 			_emitted = null;
+			_pending = null;
 		}
 	}
 
@@ -248,7 +509,7 @@ public static class SdfCollisionBuilder
 					foreach ( var cap in capsules )
 					{
 						var m = cap.Mirrored( sign );
-						EmitCapsule( builder, m.A, m.B, m.Radius );
+						EmitCapsule( m.A, m.B, m.Radius );
 						any = true;
 					}
 				}
@@ -271,8 +532,7 @@ public static class SdfCollisionBuilder
 				int n = b.MirrorCentres( centres );
 				for ( int i = 0; i < n; i++ )
 				{
-					builder.AddCollisionSphere( MathF.Max( b.Size.x, 0.5f ), centres[i] );
-					FrameSphere( centres[i], MathF.Max( b.Size.x, 0.5f ) );
+					RecordSphere( centres[i], MathF.Max( b.Size.x, 0.5f ) );
 					any = true;
 				}
 				continue;
@@ -304,13 +564,12 @@ public static class SdfCollisionBuilder
 				foreach ( var lp in pts )
 					hull.Add( (b.Position + b.Rotation * lp) * sign );
 
-				builder.AddCollisionHull( hull );
-				FrameHull( hull );
+				RecordHull( hull );
 				any = true;
 			}
 		}
 
-		return any ? builder.Create() : null;
+		return any ? FlushPending( builder ) : null;
 	}
 
 	// Five convex kite hulls covering a star-profile brush (per mirror copy): each is the extruded quad
@@ -352,8 +611,7 @@ public static class SdfCollisionBuilder
 				hull.Add( (b.Position + b.Rotation * new Vector3( v.x, v.y, sz )) * sign );
 				hull.Add( (b.Position + b.Rotation * new Vector3( v.x, v.y, -sz )) * sign );
 			}
-			builder.AddCollisionHull( hull );
-			FrameHull( hull );
+			RecordHull( hull );
 			any = true;
 		}
 		return any;
@@ -837,8 +1095,7 @@ public static class SdfCollisionBuilder
 		var hull = new List<Vector3>( verts.Count );
 		foreach ( var v in verts )
 			hull.Add( (b.Position + b.Rotation * v) * sign );
-		builder.AddCollisionHull( hull );
-		FrameHull( hull );
+		RecordHull( hull );
 		return true;
 	}
 
@@ -911,7 +1168,7 @@ public static class SdfCollisionBuilder
 				{
 					var a = new Vector3( line[i].x, line[i].y, line[i].z );
 					var e = new Vector3( line[j].x, line[j].y, line[j].z );
-					EmitCapsule( builder, a, e, line[i].w );
+					EmitCapsule( a, e, line[i].w );
 					for ( int k = i; k <= j; k++ )
 						kept.Spheres.Add( line[k] );
 					any = true;
@@ -940,17 +1197,15 @@ public static class SdfCollisionBuilder
 		public SplineCapsule Mirrored( Vector3 sign ) => this with { A = A * sign, B = B * sign };
 	}
 
-	// Physics + frame + debug tag for one capsule (or the sphere a degenerate one is).
-	static void EmitCapsule( ModelBuilder builder, Vector3 a, Vector3 b, float r )
+	// Record one capsule (or the sphere a degenerate one is).
+	static void EmitCapsule( Vector3 a, Vector3 b, float r )
 	{
 		if ( (b - a).LengthSquared < 1e-4f )
 		{
-			builder.AddCollisionSphere( r, a );
-			FrameSphere( a, r );
+			RecordSphere( a, r );
 			return;
 		}
-		builder.AddCollisionCapsule( a, b, r );
-		FrameCapsule( a, b, r );
+		RecordCapsule( a, b, r );
 	}
 
 	// Sample spheres down one capsule's axis, both ends included, at most SplineSweepSpacing radii apart —
@@ -1169,8 +1424,7 @@ public static class SdfCollisionBuilder
 	{
 		if ( b.Shape == SdfShape.Sphere && IsUniform( b.Size ) && b.Slice <= 0f )
 		{
-			builder.AddCollisionSphere( MathF.Max( b.Size.x, 0.5f ), b.Position * sign );
-			FrameSphere( b.Position * sign, MathF.Max( b.Size.x, 0.5f ) );
+			RecordSphere( b.Position * sign, MathF.Max( b.Size.x, 0.5f ) );
 			return true;
 		}
 
@@ -1186,8 +1440,7 @@ public static class SdfCollisionBuilder
 		var hull = new List<Vector3>( pts.Count );
 		foreach ( var lp in pts )
 			hull.Add( (b.Position + b.Rotation * lp) * sign );
-		builder.AddCollisionHull( hull );
-		FrameHull( hull );
+		RecordHull( hull );
 		return true;
 	}
 
@@ -1237,8 +1490,7 @@ public static class SdfCollisionBuilder
 					(c & 4) != 0 ? bhi.z : blo.z );
 				hull.Add( (framePos + frameRot * corner) * sign );
 			}
-			builder.AddCollisionHull( hull );
-			FrameHull( hull, ShapeKind.VoxelBox );
+			RecordHull( hull, ShapeKind.VoxelBox );
 			record?.Boxes.Add( (blo, bhi) );
 			any = true;
 		}

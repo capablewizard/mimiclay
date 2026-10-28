@@ -19,12 +19,15 @@ public static class ConvexHull
 	}
 
 	/// <summary>Hull <paramref name="points"/>. Fills <paramref name="planes"/> (outward unit normal n and offset d:
-	/// inside ⇔ n·p − d ≤ 0 for every plane) and <paramref name="vertices"/> (the points on the hull). False when
-	/// the points are degenerate (fewer than 4, or all on a plane/line).</summary>
-	public static bool TryBuild( List<Vector3> points, List<(Vector3 n, float d)> planes, List<Vector3> vertices )
+	/// inside ⇔ n·p − d ≤ 0 for every plane), <paramref name="vertices"/> (the points on the hull) and, when given,
+	/// <paramref name="triangles"/> (the hull's surface). False when the points are degenerate (fewer than 4, or all
+	/// on a plane/line).</summary>
+	public static bool TryBuild( List<Vector3> points, List<(Vector3 n, float d)> planes, List<Vector3> vertices,
+		List<(Vector3 a, Vector3 b, Vector3 c)> triangles = null )
 	{
 		planes.Clear();
 		vertices.Clear();
+		triangles?.Clear();
 		if ( points.Count < 4 )
 			return false;
 
@@ -159,6 +162,7 @@ public static class ConvexHull
 			if ( !f.Alive )
 				continue;
 			planes.Add( (f.N, f.D) );
+			triangles?.Add( (pts[f.A], pts[f.B], pts[f.C]) );
 			used.Add( f.A );
 			used.Add( f.B );
 			used.Add( f.C );
@@ -166,6 +170,70 @@ public static class ConvexHull
 		foreach ( int i in used )
 			vertices.Add( pts[i] );
 		return planes.Count >= 4;
+	}
+
+	/// <summary>Edges of the hull of <paramref name="points"/> once coplanar triangles merge into polygon faces
+	/// (Euler: E = V + F − 2) — what the physics engine's half-edge limit counts. −1 when degenerate.</summary>
+	public static int EdgeCount( List<Vector3> points )
+	{
+		var planes = new List<(Vector3 n, float d)>( 64 );
+		var verts = new List<Vector3>( 64 );
+		if ( !TryBuild( points, planes, verts ) )
+			return -1;
+
+		var faces = new List<(Vector3 n, float d)>( planes.Count );
+		foreach ( var (n, d) in planes )
+		{
+			bool merged = false;
+			foreach ( var (fn, fd) in faces )
+			{
+				if ( Vector3.Dot( n, fn ) > 0.9999f && MathF.Abs( d - fd ) < 1e-3f )
+				{
+					merged = true;
+					break;
+				}
+			}
+			if ( !merged )
+				faces.Add( (n, d) );
+		}
+		return verts.Count + faces.Count - 2;
+	}
+
+	/// <summary>Up to <paramref name="count"/> of the hull's vertices, spread as evenly as possible (farthest-point
+	/// sampling from the vertex farthest from the centroid). Their hull lies inside the original.</summary>
+	public static List<Vector3> Thin( List<Vector3> points, int count )
+	{
+		var planes = new List<(Vector3 n, float d)>( 64 );
+		var verts = new List<Vector3>( 64 );
+		if ( !TryBuild( points, planes, verts ) || verts.Count <= count )
+			return verts.Count > 0 ? verts : points;
+
+		var centroid = Vector3.Zero;
+		foreach ( var v in verts )
+			centroid += v;
+		centroid /= verts.Count;
+
+		var minD = new float[verts.Count];
+		Array.Fill( minD, float.MaxValue );
+		var picked = new List<Vector3>( count );
+		int next = Farthest( verts, i => (verts[i] - centroid).LengthSquared );
+		while ( picked.Count < count )
+		{
+			picked.Add( verts[next] );
+			float best = -1f;
+			for ( int i = 0; i < verts.Count; i++ )
+			{
+				minD[i] = MathF.Min( minD[i], (verts[i] - verts[next]).LengthSquared );
+				if ( minD[i] > best )
+				{
+					best = minD[i];
+					next = i;
+				}
+			}
+			if ( best <= 0f )
+				break;
+		}
+		return picked;
 	}
 
 	// Akl–Toussaint prefilter: the extreme points along 26 directions (±axes, face and corner diagonals) are hull
