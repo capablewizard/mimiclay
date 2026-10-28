@@ -212,9 +212,10 @@ public sealed class SculptBounds : Component
 		: (_sibling.IsValid() ? _sibling : _sibling = Components.Get<SdfSculpture>());
 
 	/// <summary>Is this sculpt one the LOCAL player authors — a locally-owned player pawn's disguise/face,
-	/// or the active edit session's target (the menu sculpt toy)? Everything else — remote pawns, host-owned
-	/// bot pawns, scene DECOYS (exported disguise templates carry this component too) — gets no live
-	/// checking, no warning feedback and no toast.</summary>
+	/// or the active edit session's target (the menu sculpt toy, an in-place creative sculpt)? Everything else —
+	/// remote pawns, host-owned bot pawns, RELEASED props (scenery the host merely simulates — nobody authors
+	/// it; grabbing a tiny knob converts it into one), scene DECOYS (exported disguise templates carry this
+	/// component too) — gets no live checking, no warning feedback and no toast.</summary>
 	public bool LocallyEditable
 	{
 		get
@@ -222,17 +223,25 @@ public sealed class SculptBounds : Component
 			if ( IsProxy )
 				return false;
 
-			var root = GameObject.Root;
-			bool pawn = root.Components.Get<HiderController>( FindMode.EverythingInSelf ).IsValid()
-				|| root.Components.Get<HunterController>( FindMode.EverythingInSelf ).IsValid();
-			if ( pawn )
-				return !RoundManager.IsBotPawn( root );
+			if ( EditedHere )
+				return true;
 
-			// No pawn above it: a decoy — unless it's what the active session is editing (menu toy /
-			// future creative mode).
-			return SculptEditSession.Current is { } s && s.Target == Target && s.Target.IsValid();
+			var root = GameObject.Root;
+			var hider = root.Components.Get<HiderController>( FindMode.EverythingInSelf );
+			bool pawn = hider.IsValid() || root.Components.Get<HunterController>( FindMode.EverythingInSelf ).IsValid();
+			return pawn && !RoundManager.IsBotPawn( root ) && !PropClaims.IsReleased( hider );
 		}
 	}
+
+	// Is the local edit session on this sculpt right now?
+	bool EditedHere => SculptEditSession.Current is { IsEditing: true } s && s.Target.IsValid() && s.Target == Target;
+
+	/// <summary>Should the too-big / too-small FEEDBACK show — the toast, the warning outline, the too-big
+	/// shell? Only while the local player is actually EDITING this sculpt. Size only matters to the person
+	/// shaping it: wearing, carrying or scaling a prop that's outside the limits (a converted map knob is
+	/// often under the minimum) must never raise a warning nothing outside edit mode can fix. The checks
+	/// themselves still run for anything <see cref="LocallyEditable"/> — the network and revert gates need them.</summary>
+	public bool ShowsWarning => !IsProxy && EditedHere && !IsSculptValid;
 
 	// ── Evaluation entry points ─────────────────────────────────────────────────────────────────────────
 
@@ -793,9 +802,10 @@ public sealed class SculptBounds : Component
 			}
 		}
 
-		bool invalid = owner && !IsSculptValid;
-		DriveOutlines( invalid );
-		DriveShell( owner && TooBig );
+		// Feedback only while it's being edited (see ShowsWarning) — the checks above run regardless.
+		bool warn = owner && ShowsWarning;
+		DriveOutlines( warn );
+		DriveShell( warn && TooBig );
 		DriveSupportDebug();
 	}
 

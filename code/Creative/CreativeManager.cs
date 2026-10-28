@@ -355,9 +355,10 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost, 
 		var pawn = _pawns.GetValueOrDefault( c.Id );
 		var hider = pawn.IsValid() ? pawn.Components.Get<HiderController>() : null;
 
-		// The swap pop, where the body we're leaving stands (a released prop stays right there).
+		// The swap pop, where the body we're leaving stands (a released prop stays right there). Leaving a PROP
+		// (back to a hunter) plays it low — the grab's drop pop: putting the prop down.
 		if ( pawn.IsValid() && Claims.IsValid() )
-			Claims.PlaySwapPop( PropClaims.PopSpot( pawn ) );
+			Claims.PlaySwapPop( PropClaims.PopSpot( pawn ), hider.IsValid() ? PropClaims.DropPopPitch : 1f );
 
 		if ( hider.IsValid() )
 		{

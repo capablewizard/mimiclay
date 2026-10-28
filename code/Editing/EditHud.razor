@@ -836,7 +836,7 @@
 		{
 			foreach ( var sb in Scene.GetAllComponents<SculptBounds>() )
 			{
-				if ( !sb.LocallyEditable || sb.IsSculptValid )
+				if ( !sb.ShowsWarning )
 					continue;
 				return sb;
 			}

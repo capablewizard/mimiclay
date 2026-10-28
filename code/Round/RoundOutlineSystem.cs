@@ -265,7 +265,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	static bool IsLocalWarning( SdfHighlightOutline outline )
 	{
 		var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
-		return bounds.IsValid() && bounds.LocallyEditable && !bounds.IsSculptValid;
+		return bounds.IsValid() && bounds.ShowsWarning;
 	}
 
 	void DisableRevealFlashes()
@@ -485,7 +485,7 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			// enabled while the warning is live (WarningOnly), so this branch is rarely even reached.
 			var bounds = outline.Components.Get<SculptBounds>( FindMode.EverythingInSelf );
 			if ( bounds.IsValid() )
-				return bounds.LocallyEditable && !bounds.IsSculptValid;
+				return bounds.ShowsWarning;
 
 			// The hunt glow — threat information FOR THE PROPS, so only machines NOT playing a hunter get
 			// it: fellow hunters can already see each other in the open and don't need the tell (LocalRole

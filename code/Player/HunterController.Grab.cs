@@ -174,25 +174,16 @@ public sealed partial class HunterController
 		_grabRaw = _grabRelative;
 	}
 
-	// Would the shape at this scale pass the size limits? The same stateless check the host makes before it
-	// applies one (SculptBounds.ValidateIncoming), so the holder's factor stops exactly where the prop does.
+	// May the scale step to this factor? The exact rule the host applies (PropClaims.GrabScaleStepAllowed:
+	// stop at the limits, but a prop already outside them may always move back toward them), so the holder's
+	// factor stops exactly where the prop does.
 	bool CanScaleTo( GameObject held, float factor )
 	{
 		if ( _grabBase is null )
 			return false;
 
 		var limits = held.Components.Get<SculptBounds>( FindMode.EverythingInSelfAndDescendants );
-		if ( !limits.IsValid() )
-			return true;
-
-		var work = new List<SdfBrush>( _grabBase.Count );
-		foreach ( var b in _grabBase )
-		{
-			var scaled = b.Copy();
-			SdfScaling.ScaleUniform( scaled, _grabPivot, factor );
-			work.Add( scaled );
-		}
-		return limits.ValidateIncoming( work, withVolume: true );
+		return PropClaims.GrabScaleStepAllowed( limits, _grabBase, _grabPivot, _grabScale, factor );
 	}
 
 	void LetGo( GameObject held, bool freeze = false )

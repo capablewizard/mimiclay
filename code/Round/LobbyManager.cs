@@ -357,9 +357,11 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 		Players[c.Id] = row;
 		_known.Add( c.Id );
 
-		// The swap pop, where the body we're leaving stands (a released prop stays right there).
+		// The swap pop, where the body we're leaving stands (a released prop stays right there). Leaving a PROP
+		// (back to a hunter) plays it low — the grab's drop pop: putting the prop down.
 		if ( PropClaims.Current.IsValid() && _pawns.TryGetValue( c.Id, out var leaving ) && leaving.IsValid() )
-			PropClaims.Current.PlaySwapPop( PropClaims.PopSpot( leaving ) );
+			PropClaims.Current.PlaySwapPop( PropClaims.PopSpot( leaving ),
+				row.Role == PlayerRole.Hunter ? PropClaims.DropPopPitch : 1f );
 
 		// Leaving a CLAIMED prop (a scene prop the claim service converted — see PropClaims.IsConverted): it's
 		// map furniture, not a practice body, so it's RELEASED back into the world — claimable again — instead

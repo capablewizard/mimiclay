@@ -719,16 +719,17 @@ public sealed partial class PropClaims : Component, IInteractable
 
 	/// <summary>Host-only: play the body-swap "pop" at <paramref name="at"/> on every machine — possessing a prop,
 	/// popping out of one, the hunter ⇄ prop swap. Every swap is granted on the host, so this is called from
-	/// the grant sites (HandOver here, the modes' swap/release RPCs), once per swap.</summary>
-	public void PlaySwapPop( Vector3 at )
+	/// the grant sites (HandOver here, the modes' swap/release RPCs), once per swap. <paramref name="pitch"/>
+	/// varies the same pop for related events — the grab's drop plays it lower (see <see cref="DropPopPitch"/>).</summary>
+	public void PlaySwapPop( Vector3 at, float pitch = 1f )
 	{
 		if ( Networking.IsActive && !Networking.IsHost )
 			return;
-		BroadcastSwapPop( at );
+		BroadcastSwapPop( at, pitch );
 	}
 
 	[Rpc.Broadcast]
-	void BroadcastSwapPop( Vector3 at )
+	void BroadcastSwapPop( Vector3 at, float pitch )
 	{
 		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
 			return;
@@ -736,8 +737,12 @@ public sealed partial class PropClaims : Component, IInteractable
 		// Read off the mode's prop PREFAB (see HiderController.SwapPopSound) — every machine resolves it locally,
 		// the same way the hover reads PropPrefab.
 		var sound = Host?.PropPrefab?.Components.Get<HiderController>( FindMode.EverythingInSelf )?.SwapPopSound;
-		if ( sound is not null )
-			Sound.Play( sound, at );
+		if ( sound is null )
+			return;
+
+		var handle = Sound.Play( sound, at );
+		if ( handle.IsValid() && pitch != 1f )
+			handle.Pitch *= pitch;
 	}
 
 	// Where a pop for this body goes: the middle of its clay (a prop's root sits at its feet), else its origin.

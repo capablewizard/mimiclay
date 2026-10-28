@@ -212,27 +212,54 @@ public sealed partial class PropClaims
 		if ( MathF.Abs( factor - st.Applied ) < 1e-3f )
 			return;
 
+		var limits = sculpture.GameObject.Components.Get<SculptBounds>();
+		if ( !GrabScaleStepAllowed( limits, st.Base, st.Pivot, st.Applied, factor ) )
+			return;
+
 		// Base × factor, then whatever damage tail is live now (craters heal on their own clock — never rescaled
 		// from a stale snapshot).
-		var work = new List<SdfBrush>( current.Count );
-		foreach ( var b in st.Base )
-		{
-			var scaled = b.Copy();
-			SdfScaling.ScaleUniform( scaled, st.Pivot, factor );
-			work.Add( scaled );
-		}
+		var work = ScaledCopy( st.Base, st.Pivot, factor );
 		work.AddRange( current.Skip( sculpture.AuthoredBrushCount ) );
-
-		// The size limits every shape on the wire answers to: past them the scale simply stops where it is.
-		var limits = sculpture.GameObject.Components.Get<SculptBounds>();
-		if ( limits.IsValid() && !limits.ValidateIncoming( work, withVolume: true ) )
-			return;
 
 		sculpture.Brushes = work;
 		sculpture.RebuildShadowProxy();
 		st.Applied = factor;
 		st.Pending = true;
 		st.SinceChange = 0f;
+	}
+
+	/// <summary>May a grab scale go from <paramref name="from"/> to <paramref name="to"/> (factors of
+	/// <paramref name="baseBrushes"/> about <paramref name="pivot"/>)? The size limits every shape on the wire
+	/// answers to (<see cref="SculptBounds.ValidateIncoming"/>) stop a VALID prop at the limit. But a prop that's
+	/// ALREADY outside them — a converted map knob under the minimum — isn't the player's problem outside edit
+	/// mode: any step back toward the limits is allowed (growing a too-small prop, shrinking a too-big one), so
+	/// it never sticks. Shared by the holder (to stop its factor) and the host (to apply it), so both agree.
+	/// While the shape is still outside the limits the host keeps it local — the owner's network gate publishes
+	/// only valid shapes — and everyone sees it the moment it fits.</summary>
+	internal static bool GrabScaleStepAllowed( SculptBounds limits, List<SdfBrush> baseBrushes, Vector3 pivot, float from, float to )
+	{
+		if ( !limits.IsValid() || limits.ValidateIncoming( ScaledCopy( baseBrushes, pivot, to ), withVolume: true ) )
+			return true;
+
+		var now = ScaledCopy( baseBrushes, pivot, from );
+		if ( !limits.ValidateIncoming( now, withVolume: false ) )
+			return to < from; // too big already: shrinking helps
+		if ( !limits.ValidateIncoming( now, withVolume: true ) )
+			return to > from; // too small already: growing helps
+		return false;         // fits now — this step would break it, so stop at the limit
+	}
+
+	/// <summary>Copies of <paramref name="brushes"/> scaled by the group rule (<see cref="SdfScaling.ScaleUniform"/>).</summary>
+	internal static List<SdfBrush> ScaledCopy( List<SdfBrush> brushes, Vector3 pivot, float factor )
+	{
+		var work = new List<SdfBrush>( brushes.Count );
+		foreach ( var b in brushes )
+		{
+			var scaled = b.Copy();
+			SdfScaling.ScaleUniform( scaled, pivot, factor );
+			work.Add( scaled );
+		}
+		return work;
 	}
 
 	// Host, per frame: commit any scale preview that has held still long enough.
@@ -271,6 +298,11 @@ public sealed partial class PropClaims
 	/// <summary>The grab's scale limits, relative to the prop's size when the hold began.</summary>
 	public const float MinGrabScale = 0.2f, MaxGrabScale = 5f;
 
+	/// <summary>Pitch of the pop every PUT-DOWN makes — a grab's drop (release, freeze, a swap to another prop, a
+	/// sweep) and leaving a prop for a hunter (creative's and the lobby's swap): the same "thunk" as picking up,
+	/// lower, read as letting go.</summary>
+	public const float DropPopPitch = 0.7f;
+
 	// Host-only: end a connection's hold. The prop stays where it is, released — loose, or frozen.
 	void DropFor( Connection c, bool freeze = false )
 	{
@@ -280,8 +312,11 @@ public sealed partial class PropClaims
 		Held.Remove( c.Id );
 		_grabTargets.Remove( id );
 		EndGrabScale( id );
-		if ( !Scene.Directory.FindByGuid( id ).IsValid() )
+		var go = Scene.Directory.FindByGuid( id );
+		if ( !go.IsValid() )
 			return;
+
+		PlaySwapPop( PopSpot( go ), DropPopPitch );
 
 		if ( freeze )
 		{
@@ -314,8 +349,12 @@ public sealed partial class PropClaims
 			Held.Remove( holder );
 			_grabTargets.Remove( pawnId );
 			EndGrabScale( pawnId );
-			if ( Scene.Directory.FindByGuid( pawnId ).IsValid() )
+			var go = Scene.Directory.FindByGuid( pawnId );
+			if ( go.IsValid() )
+			{
 				LooseProps[pawnId] = true;
+				PlaySwapPop( PopSpot( go ), DropPopPitch );
+			}
 		}
 	}
 }
