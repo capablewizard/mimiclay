@@ -84,6 +84,17 @@ public sealed class SdfCollider : Component
 	/// derived from the brush list instead cannot know what a subtract carved away.</summary>
 	public IReadOnlyList<Vector3> FramePoints => _framePoints;
 
+	// Kind + source brush of every shape the last build emitted, in emission order (the debug view's colouring).
+	readonly List<SdfCollisionBuilder.EmittedShape> _emitted = new();
+
+	/// <summary>The collision model this component last built (null until it builds) and the kind + source brush of
+	/// each shape in it — what <see cref="SdfCollisionDebug"/> draws at runtime.</summary>
+	public Model BuiltModel => _builtModel;
+	public IReadOnlyList<SdfCollisionBuilder.EmittedShape> EmittedShapes => _emitted;
+
+	// The collision debug view's derived draw data (and, in the editor, its private preview build).
+	internal SdfCollisionDebug.Snapshot DebugSnapshot;
+
 	SdfSculpture _sculpture;
 	SculptBounds _bounds;
 	Model _builtModel; // the model THIS component last assigned to the sibling ModelCollider (null until it builds)
@@ -134,6 +145,28 @@ public sealed class SdfCollider : Component
 		_builtKey = null;   // ...and never a skip candidate
 		_footPoints.Clear();
 		_framePoints.Clear();
+		_emitted.Clear();
+	}
+
+	/// <summary>The brushes this collider builds from — the authored prefix, or everything when
+	/// <see cref="CarveCollision"/> opts the craters in. Null without a sibling sculpture.</summary>
+	public List<SdfBrush> CollisionBrushes()
+	{
+		_sculpture ??= GameObject.Components.Get<SdfSculpture>();
+		return BuildBrushes( _sculpture.IsValid() ? _sculpture.Brushes : null );
+	}
+
+	/// <summary>The foot-probe frame for a sculpture at <paramref name="worldRotation"/>: sculpture-local → a frame
+	/// whose −Z is world down, or null when (near-)upright. See <see cref="SdfCollisionBuilder.ComputeFootPoints"/>.</summary>
+	public static Rotation? ProbeFrame( Rotation worldRotation )
+	{
+		var downLocal = worldRotation.Inverse * Vector3.Down;
+		if ( downLocal.z <= -0.9999f )
+			return null;
+
+		return downLocal.z > 0.9999f
+			? Rotation.FromAxis( Vector3.Forward, 180f ) // upside-down: FromToRotation's axis degenerates
+			: Rotation.FromToRotation( downLocal, Vector3.Down );
 	}
 
 	/// <summary>Rebuild the primitive collider from the sibling sculpture's additive brushes and assign it to a
@@ -208,7 +241,7 @@ public sealed class SdfCollider : Component
 		// voxel boxes gets its probes placed ON those boxes (see ComputeFootPoints), not on the smooth field.
 		// The frame points ride the same build (see FramePoints).
 		var carved = new List<SdfCollisionBuilder.CarvedCopy>();
-		var model = SdfCollisionBuilder.Build( brushes, carved, _framePoints );
+		var model = SdfCollisionBuilder.Build( brushes, carved, _framePoints, _emitted );
 
 		var collider = standing.IsValid() ? standing : GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
@@ -228,14 +261,8 @@ public sealed class SdfCollider : Component
 		// noise in a live rotation must not perturb the standing behaviour).
 		try
 		{
-			Rotation? probeFrame = null;
-			if ( downLocal.z > -0.9999f )
-				probeFrame = downLocal.z > 0.9999f
-					? Rotation.FromAxis( Vector3.Forward, 180f ) // upside-down: FromToRotation's axis degenerates
-					: Rotation.FromToRotation( downLocal, Vector3.Down );
-
 			_footPoints = brushes is not null
-				? SdfCollisionBuilder.ComputeFootPoints( brushes, FootProbeSpacing, carved, probeFrame )
+				? SdfCollisionBuilder.ComputeFootPoints( brushes, FootProbeSpacing, carved, ProbeFrame( WorldRotation ) )
 				: new();
 		}
 		catch
@@ -243,6 +270,9 @@ public sealed class SdfCollider : Component
 			_footPoints = new();
 		}
 	}
+
+	// Editor + runtime collision view (the viewport's Collision panel) — see SdfCollisionDebug.
+	protected override void DrawGizmos() => SdfCollisionDebug.Draw( this );
 
 	// ── Diagnostics ──────────────────────────────────────────────────────────────────────────────────
 	// Prints what the physics world ACTUALLY enforces for the hunter head: the live headcollider rules

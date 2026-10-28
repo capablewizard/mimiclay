@@ -77,6 +77,10 @@ public static class SculptPanel
 
 	static readonly Dictionary<SceneViewportWidget, SculptPanelWidget> _widgets = new();
 
+	/// <summary>This viewport's panel, if it has one — the Collision panel stacks on top of it.</summary>
+	internal static SculptPanelWidget WidgetFor( SceneViewportWidget viewport )
+		=> _widgets.TryGetValue( viewport, out var widget ) && widget.IsValid() ? widget : null;
+
 	/// <summary>What the current selection allows, recomputed every editor frame.</summary>
 	internal readonly record struct SelectionState( bool Convert, bool Collapse, bool AddShape, bool AddPoint, bool Relax );
 

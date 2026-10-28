@@ -78,17 +78,42 @@ public static class SdfCollisionBuilder
 		                                               // inside the boxes' footprint would be wrongly dropped
 	}
 
+	/// <summary>What kind of primitive one emitted collision shape is — for the collision debug view.</summary>
+	public enum ShapeKind
+	{
+		/// <summary>An exact sphere: a uniform sphere brush, or one swept sphere of a spline.</summary>
+		Sphere,
+		/// <summary>An exact convex hull: box/cylinder/cone/prism/ellipsoid/text, or one star kite.</summary>
+		Hull,
+		/// <summary>A greedy-merged voxel box from the carve-aware path.</summary>
+		VoxelBox,
+	}
+
+	/// <summary>One shape <see cref="Build"/> emitted, in emission order. Spheres line up with the built model's
+	/// <c>Physics.Parts[0].Spheres</c> and hulls/boxes with its <c>Hulls</c>, each in order — the engine keeps
+	/// the order, so the debug view can colour the real collider by where each shape came from.
+	/// <see cref="BrushIndex"/> indexes the GROUP-FLATTENED brush list (<c>SdfGroups.Flatten</c>).</summary>
+	public readonly record struct EmittedShape( ShapeKind Kind, int BrushIndex );
+
 	// Optional capture of everything Build emits, as sculpture-space points (hull vertices, voxel-box corners,
 	// points on each collision sphere). Every emitted shape passes through builder.AddCollisionHull /
 	// AddCollisionSphere, so recording at those call sites frames the EXACT collider — carve decisions and all
 	// — with no second pass. A static rather than a parameter threaded through every helper: Build is
 	// main-thread-only (it creates physics shapes) and the field lives only for the duration of one call.
+	// _emitted rides the same call sites (kind + the brush being built, tracked in _brushIndex).
 	static List<Vector3> _frame;
+	static List<EmittedShape> _emitted;
+	static int _brushIndex;
 
-	static void FrameHull( List<Vector3> hull ) => _frame?.AddRange( hull );
+	static void FrameHull( List<Vector3> hull, ShapeKind kind = ShapeKind.Hull )
+	{
+		_emitted?.Add( new EmittedShape( kind, _brushIndex ) );
+		_frame?.AddRange( hull );
+	}
 
 	static void FrameSphere( Vector3 c, float r )
 	{
+		_emitted?.Add( new EmittedShape( ShapeKind.Sphere, _brushIndex ) );
 		if ( _frame is null )
 			return;
 
@@ -112,11 +137,14 @@ public static class SdfCollisionBuilder
 	/// copies' boxes — hand the same list to <see cref="ComputeFootPoints"/> so the ground probes sit exactly
 	/// on the emitted collider. Pass <paramref name="framePoints"/> to receive sculpture-space points outlining
 	/// every shape actually emitted — the carve-aware extent, for consumers that must match the VISIBLE clay
-	/// (the creative-mode prompt frames the prop on screen with them).</summary>
-	public static Model Build( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies = null, List<Vector3> framePoints = null )
+	/// (the creative-mode prompt frames the prop on screen with them). Pass <paramref name="emitted"/> to receive
+	/// each emitted shape's kind and source brush (see <see cref="EmittedShape"/>).</summary>
+	public static Model Build( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies = null, List<Vector3> framePoints = null,
+		List<EmittedShape> emitted = null )
 	{
 		carvedCopies?.Clear();
 		framePoints?.Clear();
+		emitted?.Clear();
 		if ( brushes is null || brushes.Count == 0 )
 			return null;
 
@@ -125,6 +153,7 @@ public static class SdfCollisionBuilder
 		brushes = SdfGroups.Flatten( brushes );
 
 		_frame = framePoints;
+		_emitted = emitted;
 		try
 		{
 			return BuildInternal( brushes, carvedCopies );
@@ -132,6 +161,7 @@ public static class SdfCollisionBuilder
 		finally
 		{
 			_frame = null;
+			_emitted = null;
 		}
 	}
 
@@ -153,6 +183,7 @@ public static class SdfCollisionBuilder
 				continue; // hidden or subtractive — contributes no solid volume
 			if ( TooSmall( b, minExtent, pts, sweep ) )
 				continue; // decoration — no shape, and ComputeFootPoints skips it identically
+			_brushIndex = bi;
 
 			// Subtracts that can hollow THIS brush — only ones AFTER it in the list (see the class summary for
 			// the ordering rule), pre-filtered by AABB overlap. Text is exempt: glyph strokes are thinner than
@@ -839,7 +870,7 @@ public static class SdfCollisionBuilder
 				hull.Add( (framePos + frameRot * corner) * sign );
 			}
 			builder.AddCollisionHull( hull );
-			FrameHull( hull );
+			FrameHull( hull, ShapeKind.VoxelBox );
 			record?.Boxes.Add( (blo, bhi) );
 			any = true;
 		}
@@ -951,6 +982,22 @@ public static class SdfCollisionBuilder
 		}
 
 		return 0f; // it's ALL detail: the whole shape is the prop, collide with every bit of it
+	}
+
+	/// <summary>Is each brush of a GROUP-FLATTENED list (<c>SdfGroups.Flatten</c>) dropped by the detail gate?
+	/// Same answer <see cref="Build"/> gets — for the collision debug view's "why no collider" labels.</summary>
+	public static bool[] DetailGated( List<SdfBrush> flat )
+	{
+		var gated = new bool[flat.Count];
+		float minExtent = EffectiveMinExtent( flat );
+		var pts = new List<Vector3>( 32 );
+		var sweep = new List<Vector4>( 64 );
+		for ( int i = 0; i < flat.Count; i++ )
+		{
+			var b = flat[i];
+			gated[i] = b.Enabled && b.Operation == SdfOperation.Add && TooSmall( b, minExtent, pts, sweep );
+		}
+		return gated;
 	}
 
 	// Is this additive brush pure decoration — under minExtent on all three axes of its LOCAL bounding box?
