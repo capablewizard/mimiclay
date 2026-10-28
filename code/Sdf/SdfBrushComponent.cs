@@ -128,6 +128,11 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor
 	/// <summary>This brush as a complete <see cref="SdfBrush"/> in the space of a sculpture whose world
 	/// transform is <paramref name="sculptWorld"/>: transform from the object, the rest from the properties.
 	/// A disabled object (or component) gathers as a disabled brush — the hierarchy checkbox is the eye toggle.</summary>
+	/// <remarks>Scaling follows <see cref="SdfScaling"/>'s two rules through the hierarchy: this object's OWN
+	/// scale is the brush's size (scaling one shape = size only), while scale INHERITED from parent objects
+	/// between it and the sculpture is a GROUP scale — it scales the feature lengths too (rounding, blend, gap,
+	/// spline radii), so scaling a parent of several brush objects leaves the arrangement identical apart from
+	/// its size. The properties hold the values as authored at unit parent scale (see <see cref="InheritedScale"/>).</remarks>
 	public SdfBrush ToBrush( in Transform sculptWorld )
 	{
 		var local = sculptWorld.ToLocal( WorldTransform );
@@ -138,14 +143,26 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor
 		b.Size = local.Scale;
 		b.Damage = false;
 		b.Points = b.Shape == SdfShape.Spline ? GatherPoints( sculptWorld ) : null;
+		SdfScaling.ScaleFeatures( b, InheritedScale( sculptWorld ) );
 		return b;
 	}
 
+	/// <summary>The group scale this brush object inherits: the (geometric-mean) scale of its PARENT relative to
+	/// the sculpture — 1 when it sits directly under the sculpture. Its own scale is excluded (that's its size).</summary>
+	public float InheritedScale( in Transform sculptWorld )
+	{
+		var parent = GameObject.Parent;
+		return parent.IsValid() ? SdfScaling.MeanScale( sculptWorld.ToLocal( parent.WorldTransform ).Scale ) : 1f;
+	}
+
 	/// <summary>Spline control points from the child <see cref="SdfSplinePoint"/> objects, in sculpture space
-	/// (xyz) with each point's radius (w). Sibling order is point order.</summary>
+	/// (xyz) with each point's radius (w). Sibling order is point order. A radius is the point's SIZE, so it
+	/// scales with everything above the point — the spline object included (scaling one spline grows its tube,
+	/// like the R scrub does) — not just with the parents.</summary>
 	public List<Vector4> GatherPoints( in Transform sculptWorld )
 	{
 		var pts = new List<Vector4>();
+		float radiusScale = SdfScaling.MeanScale( sculptWorld.ToLocal( WorldTransform ).Scale );
 		foreach ( var child in GameObject.Children )
 		{
 			if ( !child.IsValid() || !child.Enabled )
@@ -154,7 +171,7 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor
 			if ( p is null )
 				continue;
 			var lp = sculptWorld.PointToLocal( child.WorldPosition );
-			pts.Add( new Vector4( lp.x, lp.y, lp.z, p.Radius ) );
+			pts.Add( new Vector4( lp.x, lp.y, lp.z, p.Radius * radiusScale ) );
 		}
 		return pts;
 	}

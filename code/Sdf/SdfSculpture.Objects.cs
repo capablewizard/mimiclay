@@ -447,6 +447,17 @@ public sealed partial class SdfSculpture
 			go.WorldTransform = world.ToWorld( new Transform( b.Position, b.Rotation, b.Size ) );
 		}
 
+		// The inverse of ToBrush's group scale: under a scaled parent the properties store the feature lengths
+		// as at unit parent scale, so the object gathers back to exactly this brush. (Spline radii need nothing:
+		// the frame above is placed at scale 1 in sculpture space.)
+		float inherited = comp.InheritedScale( world );
+		if ( MathF.Abs( inherited - 1f ) > 1e-5f )
+		{
+			comp.Blend = b.Blend / inherited;
+			comp.Gap = b.Gap / inherited;
+			comp.Rounding = b.Rounding / inherited;
+		}
+
 		go.Enabled = b.Enabled;
 		return go;
 	}

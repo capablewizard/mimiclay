@@ -12,10 +12,17 @@ namespace Mimiclay;
 // what the collider actually does.
 //
 // HOST-SIMULATED, like all released scenery. The prop never changes owner: the holder computes where they want
-// it (a full root transform, scale included) and streams that to the host every frame (UpdateGrab, unreliable),
-// and the host's HiderController chases it with velocities — so the held prop still collides with the world on
-// its way, and keeps its momentum the moment it's let go (a swing becomes a throw). Holding one costs the host
-// nothing it isn't already doing for scenery; a client holder sees their own hold one round-trip late.
+// it (root position + rotation) and streams that to the host every frame (UpdateGrab, unreliable), and the
+// host's HiderController chases it with velocities — so the held prop still collides with the world on its way,
+// and keeps its momentum the moment it's let go (a swing becomes a throw). Holding one costs the host nothing it
+// isn't already doing for scenery; a client holder sees their own hold one round-trip late.
+//
+// SCALE is applied to the SHAPE, never the transform: the raymarcher folds samples through position + rotation
+// only, so a scaled transform would grow the collider and leave the clay its old size. The host rescales the
+// brushes with the group rule (SdfScaling.ScaleUniform about the clay's centre — every length, so the prop stays
+// identical apart from its size), from a snapshot taken when the scaling started (so shrinking and growing back
+// round-trips exactly). Live frames preview (RebuildShadowProxy → the sync's stream); once the factor holds still
+// for a moment, or the prop is dropped, it commits (Rebuild → collider, durable publish).
 //
 // Scene clay is converted on the first grab exactly as an in-place sculpt converts it (host-owned released
 // scenery), so everything after that only ever deals with prop pawns.
@@ -132,8 +139,9 @@ public sealed partial class PropClaims
 		PlaySwapPop( PopSpot( prop.GameObject ) );
 	}
 
-	/// <summary>Holder → host, every frame while holding: the root transform (scale included) the prop should
-	/// chase. Unreliable — the next frame's pose replaces a lost one. Ignored from anyone not holding it.</summary>
+	/// <summary>Holder → host, every frame while holding: the root position + rotation the prop should chase,
+	/// and the shape scale relative to its size when this hold began. Unreliable — the next frame's pose replaces
+	/// a lost one. Ignored from anyone not holding it.</summary>
 	[Rpc.Host( NetFlags.UnreliableNoDelay )]
 	public void UpdateGrab( GameObject prop, Vector3 position, Rotation rotation, float scale )
 	{
@@ -141,7 +149,102 @@ public sealed partial class PropClaims
 		if ( c is null || !prop.IsValid() || !Held.TryGetValue( c.Id, out var id ) || id != prop.Id )
 			return;
 
-		_grabTargets[id] = new Transform( position, rotation, Math.Clamp( scale, MinGrabScale, MaxGrabScale ) );
+		_grabTargets[id] = new Transform( position, rotation );
+		ApplyGrabScale( prop, Math.Clamp( scale, MinGrabScale, MaxGrabScale ) );
+	}
+
+	// ── Shape scaling (host) ─────────────────────────────────────────────────────────────────────────────
+	// Per held prop: the authored brushes as they were when scaling started, the pivot (their bounds centre —
+	// the point the holder floats at the hold point, so the prop grows about where it hangs), the factor
+	// currently applied, and whether a preview is waiting to be committed.
+	sealed class GrabScale
+	{
+		public List<SdfBrush> Base;
+		public Vector3 Pivot;
+		public float Applied = 1f;
+		public bool Pending;
+		public RealTimeSince SinceChange;
+	}
+
+	readonly Dictionary<Guid, GrabScale> _grabScales = new();
+
+	// How long the factor must hold still before a preview commits (the collider and the durable publish follow
+	// the commit, so committing every frame of a scrub would rebuild the collider per frame).
+	const float GrabScaleSettle = 0.3f;
+
+	void ApplyGrabScale( GameObject prop, float factor )
+	{
+		var sculpture = prop.Components.Get<HiderController>()?.DisguiseSculpture;
+		if ( !sculpture.IsValid() || sculpture.Brushes is not { Count: > 0 } current )
+			return;
+
+		if ( !_grabScales.TryGetValue( prop.Id, out var st ) )
+		{
+			if ( MathF.Abs( factor - 1f ) < 1e-3f )
+				return; // never scaled — nothing to snapshot
+
+			// Pivot: the clay's centre (the point the holder floats at the hold point — PopSpot), moved onto the
+			// symmetry plane of any mirrored axis, or the mirror copies wouldn't scale with their originals.
+			var authored = current.GetRange( 0, sculpture.AuthoredBrushCount ).Select( b => b.Copy() ).ToList();
+			if ( authored.Count == 0 || !Sdf.TryGetBounds( current, out var bounds ) )
+				return;
+
+			st = new GrabScale { Base = authored, Pivot = SdfScaling.SymmetricPivot( authored, bounds.Center ) };
+			_grabScales[prop.Id] = st;
+		}
+
+		if ( MathF.Abs( factor - st.Applied ) < 1e-3f )
+			return;
+
+		// Base × factor, then whatever damage tail is live now (craters heal on their own clock — never rescaled
+		// from a stale snapshot).
+		var work = new List<SdfBrush>( current.Count );
+		foreach ( var b in st.Base )
+		{
+			var scaled = b.Copy();
+			SdfScaling.ScaleUniform( scaled, st.Pivot, factor );
+			work.Add( scaled );
+		}
+		work.AddRange( current.Skip( sculpture.AuthoredBrushCount ) );
+
+		// The size limits every shape on the wire answers to: past them the scale simply stops where it is.
+		var limits = sculpture.GameObject.Components.Get<SculptBounds>();
+		if ( limits.IsValid() && !limits.ValidateIncoming( work, withVolume: true ) )
+			return;
+
+		sculpture.Brushes = work;
+		sculpture.RebuildShadowProxy();
+		st.Applied = factor;
+		st.Pending = true;
+		st.SinceChange = 0f;
+	}
+
+	// Host, per frame: commit any scale preview that has held still long enough.
+	void SettleGrabScales()
+	{
+		foreach ( var (pawnId, st) in _grabScales )
+		{
+			if ( st.Pending && st.SinceChange > GrabScaleSettle )
+				CommitGrabScale( pawnId, st );
+		}
+	}
+
+	void CommitGrabScale( Guid pawnId, GrabScale st )
+	{
+		st.Pending = false;
+		var sculpture = Scene.Directory.FindByGuid( pawnId )?.Components.Get<HiderController>()?.DisguiseSculpture;
+		if ( sculpture.IsValid() )
+			sculpture.Rebuild();
+	}
+
+	// The hold on this prop ended: land any pending scale and forget the snapshot (the next hold measures from
+	// whatever size it ends up).
+	void EndGrabScale( Guid pawnId )
+	{
+		if ( !_grabScales.Remove( pawnId, out var st ) )
+			return;
+		if ( st.Pending )
+			CommitGrabScale( pawnId, st );
 	}
 
 	/// <summary>Holder lets go. <paramref name="throwVelocity"/> is added to whatever the hold was already doing
@@ -157,7 +260,7 @@ public sealed partial class PropClaims
 			hider.PhysicsBody.Velocity += throwVelocity.ClampLength( MaxThrowSpeed );
 	}
 
-	/// <summary>The grab's scale limits, relative to the prop's authored size.</summary>
+	/// <summary>The grab's scale limits, relative to the prop's size when the hold began.</summary>
 	public const float MinGrabScale = 0.2f, MaxGrabScale = 5f;
 
 	const float MaxThrowSpeed = 2000f;
@@ -175,6 +278,7 @@ public sealed partial class PropClaims
 
 		Held.Remove( c.Id );
 		_grabTargets.Remove( id );
+		EndGrabScale( id );
 		if ( Scene.Directory.FindByGuid( id ).IsValid() )
 			LooseProps[id] = true;
 	}
@@ -183,6 +287,8 @@ public sealed partial class PropClaims
 	// hunter, on a prop that still exists. Anything else drops it where it is.
 	void SweepHolders()
 	{
+		SettleGrabScales();
+
 		if ( Held.Count == 0 )
 			return;
 
@@ -196,6 +302,7 @@ public sealed partial class PropClaims
 
 			Held.Remove( holder );
 			_grabTargets.Remove( pawnId );
+			EndGrabScale( pawnId );
 			if ( Scene.Directory.FindByGuid( pawnId ).IsValid() )
 				LooseProps[pawnId] = true;
 		}

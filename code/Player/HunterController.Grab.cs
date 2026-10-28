@@ -22,8 +22,12 @@ public sealed partial class HunterController
 	float _grabDistance;          // eye → hold point
 	Rotation _grabRelative;       // the prop's rotation in our view-yaw frame — turning carries it round
 	Rotation _grabRaw;            // the E rotate's unsnapped orientation (same frame); Shift applies it snapped
-	Vector3 _grabCentre;          // root-local (unscaled) point that sits at the hold point: the clay's centre
-	float _grabScale = 1f;
+	Vector3 _grabCentre;          // root-local point that sits at the hold point: the clay's centre (the host
+	                              // scales the shape about this same point, so it never moves as the prop grows)
+	float _grabScale = 1f;        // shape scale relative to the size at grab time (applied to the brushes by the host)
+	List<SdfBrush> _grabBase;     // the shape at grab time + the host's pivot for it — only to test a scale step
+	Vector3 _grabPivot;           // against the size limits here, so the factor stops AT the limit instead of
+	                              // running on past it while the host refuses (see CanScaleTo)
 
 	// A drop/throw is ours the instant we send it, but the host's row lingers a round-trip on a client: ignore
 	// the row for the prop we just let go of until it's gone (or this times out).
@@ -119,14 +123,24 @@ public sealed partial class HunterController
 
 			// The edit mode's R scrub, same rule: mouse right grows, every ScaleHalfDoublePx doubles.
 			if ( Input.Down( "Reload" ) )
-				_grabScale = Math.Clamp( _grabScale * MathF.Pow( 2f, BrushScrub.CapturedDelta.x / BrushScrub.ScaleHalfDoublePx ),
+			{
+				var next = Math.Clamp( _grabScale * MathF.Pow( 2f, BrushScrub.CapturedDelta.x / BrushScrub.ScaleHalfDoublePx ),
 					PropClaims.MinGrabScale, PropClaims.MaxGrabScale );
+				if ( next != _grabScale && CanScaleTo( held, next ) )
+					_grabScale = next;
+			}
 		}
+
+		// The clay's centre in root space, re-read every frame: a committed scale re-centres the pawn's origin on
+		// the new feet (HiderController.RecenterOriginOnShape — root moves, clay counter-shifts, nothing moves in
+		// the world), so a centre cached at grab time would yank the prop by that offset. The host scales about
+		// this same centre, so it never drifts while R is held.
+		_grabCentre = held.WorldTransform.PointToLocal( PropClaims.PopSpot( held ) );
 
 		// Where we want it: the clay's centre on the aim at the hold distance, turned with our yaw.
 		var rotation = yawFrame * _grabRelative;
 		var hold = eye + _aimDir * _grabDistance;
-		var root = hold - rotation * (_grabCentre * _grabScale);
+		var root = hold - rotation * _grabCentre;
 		PropClaims.Current.UpdateGrab( held, root, rotation, _grabScale );
 
 		PublishGrabHover( held, hold );
@@ -139,10 +153,40 @@ public sealed partial class HunterController
 
 		var centre = PropClaims.PopSpot( held ); // the middle of its clay
 		_grabCentre = held.WorldTransform.PointToLocal( centre );
-		_grabScale = held.WorldScale.x;
+		_grabScale = 1f;
+
+		// Mirror the host's scale snapshot (PropClaims.ApplyGrabScale): authored brushes + the symmetric pivot.
+		var clay = held.Components.Get<HiderController>()?.DisguiseSculpture;
+		_grabBase = null;
+		if ( clay.IsValid() && clay.Brushes is { Count: > 0 } all && Sdf.TryGetBounds( all, out var bounds ) )
+		{
+			_grabBase = all.GetRange( 0, clay.AuthoredBrushCount ).Select( b => b.Copy() ).ToList();
+			_grabPivot = SdfScaling.SymmetricPivot( _grabBase, bounds.Center );
+		}
 		_grabDistance = Math.Clamp( eye.Distance( centre ), GrabMinDistance, GrabMaxDistance );
 		_grabRelative = Rotation.FromYaw( _controller.EyeAngles.yaw ).Inverse * held.WorldRotation;
 		_grabRaw = _grabRelative;
+	}
+
+	// Would the shape at this scale pass the size limits? The same stateless check the host makes before it
+	// applies one (SculptBounds.ValidateIncoming), so the holder's factor stops exactly where the prop does.
+	bool CanScaleTo( GameObject held, float factor )
+	{
+		if ( _grabBase is null )
+			return false;
+
+		var limits = held.Components.Get<SculptBounds>( FindMode.EverythingInSelfAndDescendants );
+		if ( !limits.IsValid() )
+			return true;
+
+		var work = new List<SdfBrush>( _grabBase.Count );
+		foreach ( var b in _grabBase )
+		{
+			var scaled = b.Copy();
+			SdfScaling.ScaleUniform( scaled, _grabPivot, factor );
+			work.Add( scaled );
+		}
+		return limits.ValidateIncoming( work, withVolume: true );
 	}
 
 	void LetGo( GameObject held, Vector3 throwVelocity )

@@ -752,6 +752,10 @@ public sealed partial class SculptEditSession : Component
 		bool scaled = f != Vector3.One;
 		bool uniform = scaled && MathF.Abs( f.x - f.y ) < 1e-4f && MathF.Abs( f.y - f.z ) < 1e-4f;
 
+		// Uniform scale pivots the WHOLE selection on the symmetry plane of every axis any member mirrors (see
+		// SdfScaling.SymmetricPivot) — the only pivot that keeps it identical apart from its size.
+		var groupPivot = uniform ? SdfScaling.SymmetricPivot( SelectedBrushes, pivot ) : pivot;
+
 		if ( moved || rotated || scaled )
 		{
 			foreach ( var b in SelectedBrushes )
@@ -773,6 +777,20 @@ public sealed partial class SculptEditSession : Component
 					if ( b.MirrorZ ) bp.z = 0f;
 				}
 
+				// UNIFORM scale = the group rule (SdfScaling): every length — position about the pivot, size,
+				// spline points + radii, rounding, blend, gap — scales by the same factor, so the selection
+				// stays identical apart from its size. No floors or tool caps mid-drag: this runs per frame off
+				// the frame's own delta, and a floor hit while shrinking would never undo on the way back up.
+				if ( uniform )
+				{
+					SdfScaling.ScaleUniform( b, groupPivot, f.x );
+					if ( dPos != Vector3.Zero )
+						OffsetBrush( b, dPos );
+					continue;
+				}
+
+				// Move / rotate / PER-AXIS scale: per-axis stretches the ARRANGEMENT only (a rotated brush's size
+				// can't scale along the group's axes), so sizes and feature lengths stay put.
 				if ( b.Shape == SdfShape.Spline && b.Points is { Count: > 0 } pts )
 				{
 					// A spline's transform is inert — carry its control points through the same orbit.
@@ -782,10 +800,7 @@ public sealed partial class SculptEditSession : Component
 						if ( rotated ) rel = dq * rel;
 						if ( scaled ) rel *= f;
 						var np = bp + rel + dPos;
-						float r = uniform
-							? Math.Clamp( pts[i].w * f.x, 1f, SdfBrush.MaxSplineRadius )
-							: pts[i].w;
-						pts[i] = new Vector4( np.x, np.y, np.z, r );
+						pts[i] = new Vector4( np.x, np.y, np.z, pts[i].w );
 					}
 				}
 				else
@@ -796,12 +811,6 @@ public sealed partial class SculptEditSession : Component
 					b.Position = bp + rel + dPos;
 					if ( rotated )
 						b.Rotation = dq * b.Rotation;
-					if ( uniform )
-					{
-						float floor = b.Shape == SdfShape.Text ? 0.6f : 1f; // the gizmo's own scale floor
-						b.Size = Vector3.Max( b.Size * f.x, new Vector3( floor ) );
-						b.Rounding = Math.Clamp( b.Rounding * f.x, SdfBrush.MinRounding, b.MaxRounding() );
-					}
 				}
 			}
 		}

@@ -1081,10 +1081,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( Body.Sleeping )
 			Body.Sleeping = false;
 
-		// Scale is a transform write (collision rescales with it), only when it actually changed.
-		if ( MathF.Abs( WorldScale.x - target.Scale.x ) > 0.001f )
-			WorldScale = target.Scale;
-
+		// (No scale here: the grab scales the SHAPE, host-side — see PropClaims.Grab.)
 		var dt = MathF.Max( Time.Delta, 0.001f );
 		var toTarget = target.Position - WorldPosition;
 		Body.Velocity = (toTarget * MathF.Min( HoldPull, 1f / dt )).ClampLength( HoldMaxSpeed );
