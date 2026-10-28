@@ -51,15 +51,22 @@ public static class SdfCollisionBuilder
 	                                        // flattened sphere rests on the missing pole and visibly hovers), so
 	                                        // any carve that registers at all should swap; the real "too shallow
 	                                        // to matter" filter is CarveBias, not this.
-	const float VoxelTarget = 5f;          // target voxel edge (sculpture units)
-	const int VoxelMaxPerAxis = 14;        // grid cap — 14³ ≈ 2.7k field samples per copy, commit-time only
+	// ONE voxel size for every carved collider — solid brushes and spline runs alike — so the boxes read the
+	// same everywhere. A box can't follow a CURVED cut, so it can sit up to about one cell into the cut-away
+	// space: this edge length IS the flush error. Script-tunable (A/B sweeps); [SkipHotload] so a recompile
+	// applies the default.
+	[SkipHotload] public static float VoxelTarget = 5f; // target voxel edge (sculpture units)
+	[SkipHotload] public static int VoxelMaxPerAxis = 14; // grid cap per axis — bounds the field samples per copy;
+	                                                      // past it a big brush's cells stretch
 	const float SolidBias = 0.25f;         // a cell centre must be this deep INSIDE the brush to count as solid
 	const float CarveBias = 0.35f;         // a subtract must reach this deep to empty a cell — biased SOLID so a
 	                                       // wall thinner than a voxel survives (the cavity shrinks a hair
 	                                       // instead of the wall dissolving, which would be far worse)
 	const float SplineCarveGraze = 0.25f;  // fraction of a swept sphere's radius a subtract may bite before the
 	                                       // sphere trades its exact primitive for voxels
-	const int SplineSphereCells = 5;       // cells across a voxelised capsule run's diameter (cell = 2r/5)
+	const int SplineMinCellsAcross = 3;    // a voxelised tube gets at least this many cells across its thinnest
+	                                       // diameter — the fewest that can hold a bore (wall, hole, wall); only
+	                                       // tubes thinner than 3 × VoxelTarget go finer than VoxelTarget
 
 	/// <summary>Differs per compile of this code: [SkipHotload] keeps hotload from carrying the old value over, so
 	/// the new assembly's initializer stands. Fold it into any cache key over a build's output — a brush hash alone
@@ -623,6 +630,7 @@ public static class SdfCollisionBuilder
 		float cellMin = MathF.Min( cell.x, MathF.Min( cell.y, cell.z ) );
 		float solidAt = -SolidBias * cellMin; // required depth inside the brush
 		float carveAt = -CarveBias * cellMin; // required depth inside a subtract
+		float emptyAt = HullPhantomFraction * cellMin; // clearly outside the clay (TryCarvedHull's rejection test)
 
 		// This copy's sculpture-space AABB pieces, for the per-copy carver skip. The extents are the abs-sums
 		// of the rotated grid half-axes, which reflection can't change — only the centre moves per copy.
@@ -636,6 +644,7 @@ public static class SdfCollisionBuilder
 			MathF.Abs( ax.z ) + MathF.Abs( ay.z ) + MathF.Abs( az.z ) );
 
 		var solid = new bool[nx * ny * nz];
+		var empty = new bool[nx * ny * nz];
 		bool any = false;
 
 		int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
@@ -666,30 +675,36 @@ public static class SdfCollisionBuilder
 			}
 
 			// Occupancy: a cell is solid where the brush is (SolidBias deep, so the boxes sit a hair inside
-			// the surface like the hull path's sharp primitives) and no carver eats it (CarveBias deep).
+			// the surface like the hull path's sharp primitives) and no carver eats it (CarveBias deep). Cells
+			// CLEARLY outside the clay (past emptyAt, either way) are flagged for TryCarvedHull's check.
 			int kept = 0, carved = 0;
 			Array.Clear( solid, 0, solid.Length );
+			Array.Clear( empty, 0, empty.Length );
 			for ( int iz = 0; iz < nz; iz++ )
 			for ( int iy = 0; iy < ny; iy++ )
 			for ( int ix = 0; ix < nx; ix++ )
 			{
+				int ci = (iz * ny + iy) * nx + ix;
 				var lp = new Vector3( lo.x + (ix + 0.5f) * cell.x, lo.y + (iy + 0.5f) * cell.y, lo.z + (iz + 0.5f) * cell.z );
 				var p = (b.Position + b.Rotation * lp) * sign;
-				if ( b.Distance( p ) > solidAt )
-					continue; // outside (or in the skin of) the brush — not part of it either way
-
-				bool cut = false;
-				foreach ( var s in carvers )
+				float bd = b.Distance( p );
+				if ( bd > solidAt )
 				{
-					if ( s.Distance( p ) < carveAt )
-					{
-						cut = true;
-						break;
-					}
+					empty[ci] = bd > emptyAt;
+					continue; // outside (or in the skin of) the brush — not part of it either way
 				}
 
-				if ( cut ) { carved++; continue; }
-				solid[(iz * ny + iy) * nx + ix] = true;
+				float depth = float.MinValue; // deepest a carver reaches here
+				foreach ( var s in carvers )
+					depth = MathF.Max( depth, -s.Distance( p ) );
+
+				if ( depth > -carveAt )
+				{
+					carved++;
+					empty[ci] = depth > emptyAt;
+					continue;
+				}
+				solid[ci] = true;
 				kept++;
 			}
 
@@ -704,6 +719,12 @@ public static class SdfCollisionBuilder
 			if ( kept == 0 )
 				continue; // the subtracts ate the whole copy — nothing solid left
 
+			if ( CarvedHulls && TryCarvedHull( b, sign, pts, carvers, lo, cell, nx, ny, nz, empty, builder ) )
+			{
+				any = true;
+				continue;
+			}
+
 			CarvedCopy record = null;
 			if ( carvedCopies is not null )
 			{
@@ -714,6 +735,111 @@ public static class SdfCollisionBuilder
 		}
 
 		return any;
+	}
+
+	// ── Carved copy → one convex hull ────────────────────────────────────────────────────────────────────
+
+	// A carved copy whose result is still CONVEX — a sphere with a cap sliced off (the teapot body and lid) —
+	// collides as ONE hull instead of a staircase of voxel boxes. Timed 2026-10-28 on kitchen_creative: same build
+	// cost as the voxel path (≤ +0.3 ms per prop), carved props 821 → 684 shapes, fit equal or better. A switch
+	// rather than a const so it can be A/B'd from a script; [SkipHotload] so a recompile applies the default.
+	[SkipHotload] public static bool CarvedHulls = true;
+	const float HullPhantomFraction = 0.5f; // a hull may cover no cell more than this many cells outside the clay
+	const int CarvedHullBisect = 8;         // bisection steps locating the cut rim (1/256 of a point-cloud gap)
+
+	/// <summary>Collide a carved copy as ONE convex hull when the carved result is convex. Deliberately a single
+	/// attempt with a fixed cost — no search, no splitting: Build runs synchronously on load and in the
+	/// collision preview, and a multi-hull decomposition here froze the editor.
+	///
+	/// Points: the brush's own coarse hull cloud (<paramref name="pts"/>, the same one the uncarved collider
+	/// uses) minus the points the carvers remove, plus the cut rim — for each removed point, where the carve
+	/// surface crosses the segment to its nearest kept point (bisected). Cost: one carver evaluation per cloud
+	/// point, <see cref="CarvedHullBisect"/> per removed point, a hull of ~100 points, and one pass of the
+	/// occupancy cells the voxel path already sampled.
+	///
+	/// Accepted only if no cell the hull covers is <paramref name="empty"/> (clearly outside the clay), so a real
+	/// cavity — a hollowed bowl — always falls back to voxel boxes. No CarvedCopy record: the hull follows the
+	/// carved field, which the foot probes already march for carved brushes.</summary>
+	static bool TryCarvedHull( SdfBrush b, Vector3 sign, List<Vector3> pts, List<SdfBrush> carvers, Vector3 lo, Vector3 cell,
+		int nx, int ny, int nz, bool[] empty, ModelBuilder builder )
+	{
+		float CarveDepth( Vector3 lp )
+		{
+			var p = (b.Position + b.Rotation * lp) * sign;
+			float d = float.MinValue;
+			foreach ( var s in carvers )
+				d = MathF.Max( d, -s.Distance( p ) );
+			return d;
+		}
+
+		var keptPts = new List<Vector3>( pts.Count );
+		var removed = new List<Vector3>( pts.Count );
+		foreach ( var lp in pts )
+			(CarveDepth( lp ) > 0f ? removed : keptPts).Add( lp );
+		if ( keptPts.Count < 4 )
+			return false;
+
+		var hullPts = new List<Vector3>( keptPts.Count + removed.Count );
+		hullPts.AddRange( keptPts );
+		foreach ( var r in removed )
+		{
+			var k = keptPts[0];
+			float best = float.MaxValue;
+			foreach ( var c in keptPts )
+			{
+				float d2 = (c - r).LengthSquared;
+				if ( d2 < best )
+				{
+					best = d2;
+					k = c;
+				}
+			}
+
+			// k is outside every carver, r inside one: keep the outside end of the bracket.
+			Vector3 outside = k, inside = r;
+			for ( int i = 0; i < CarvedHullBisect; i++ )
+			{
+				var m = (outside + inside) * 0.5f;
+				if ( CarveDepth( m ) > 0f )
+					inside = m;
+				else
+					outside = m;
+			}
+			hullPts.Add( outside );
+		}
+
+		var planes = new List<(Vector3 n, float d)>( 128 );
+		var verts = new List<Vector3>( 64 );
+		if ( !ConvexHull.TryBuild( hullPts, planes, verts ) )
+			return false;
+
+		// Reject if the hull covers any clearly-empty cell — the carve left a concavity one hull would fill.
+		for ( int iz = 0; iz < nz; iz++ )
+		for ( int iy = 0; iy < ny; iy++ )
+		for ( int ix = 0; ix < nx; ix++ )
+		{
+			if ( !empty[(iz * ny + iy) * nx + ix] )
+				continue;
+			var lp = new Vector3( lo.x + (ix + 0.5f) * cell.x, lo.y + (iy + 0.5f) * cell.y, lo.z + (iz + 0.5f) * cell.z );
+			bool inside = true;
+			foreach ( var (n, d) in planes )
+			{
+				if ( Vector3.Dot( n, lp ) - d > 1e-3f )
+				{
+					inside = false;
+					break;
+				}
+			}
+			if ( inside )
+				return false;
+		}
+
+		var hull = new List<Vector3>( verts.Count );
+		foreach ( var v in verts )
+			hull.Add( (b.Position + b.Rotation * v) * sign );
+		builder.AddCollisionHull( hull );
+		FrameHull( hull );
+		return true;
 	}
 
 	// Carve-aware collider for a spline: carve ALONG each fitted capsule, judged at sample spheres spaced down
@@ -943,8 +1069,8 @@ public static class SdfCollisionBuilder
 	// One bitten run of the spline's capsule-sample chain (line[i..j], sign-folded sculpture space, w = radius)
 	// → carved voxel boxes on ONE grid aligned to the run's chord (frame x = first → last sample, origin the
 	// first), so the greedy merge runs boxes down the tube even across capsule joints. The solid is the union
-	// of the capsules between consecutive samples — exactly the emitted collider being carved. Cells are
-	// 2r/SplineSphereCells for the run's thinnest radius, so the carve resolution scales with the tube; each
+	// of the capsules between consecutive samples — exactly the emitted collider being carved. Cells are the
+	// shared VoxelTarget, finer only when the thinnest diameter would get fewer than SplineMinCellsAcross; each
 	// axis is capped (then the cells stretch). Occupancy biases match the brush voxeliser's. The run's boxes
 	// are recorded in their own frame on a new CarvedCopy appended to `runs`.
 	static bool VoxeliseSplineRun( List<Vector4> line, int i, int j, int index, List<SdfBrush> carvers,
@@ -987,7 +1113,7 @@ public static class SdfCollisionBuilder
 			near.Add( carvers[ci] );
 		}
 
-		float target = 2f * rMin / SplineSphereCells;
+		float target = MathF.Min( VoxelTarget, 2f * rMin / SplineMinCellsAcross );
 		var ext = hi - lo;
 		int nx = Math.Clamp( (int)MathF.Ceiling( ext.x / target ), 1, maxAlong );
 		int ny = Math.Clamp( (int)MathF.Ceiling( ext.y / target ), 1, maxAcross );
