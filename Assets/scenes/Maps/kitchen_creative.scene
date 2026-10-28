@@ -78,12 +78,52 @@
           "__guid": "0181cb35-e6e3-40da-933f-e0ad8d3af53f",
           "__enabled": true,
           "Flags": 512,
+          "__version": 1,
+          "AnimationCurve": [
+            {
+              "x": 0,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 0.5,
+              "y": 1,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "AnimationDuration": 2,
+          "AnimationEnabled": false,
+          "AnimationGradient": {
+            "blend": "Linear",
+            "color": [
+              {
+                "t": 0.5,
+                "c": "1,1,1,1"
+              }
+            ],
+            "alpha": []
+          },
+          "AnimationPattern": "Flicker",
+          "AnimationSpeed": 1,
+          "AnimationTimeOffset": 0,
           "BakeLightIndex": -1,
           "ContactShadows": true,
           "Contribution": "Diffuse, Specular, Transmissive",
           "FogMode": "Enabled",
           "FogStrength": 1,
           "IncludeStaticShadowCasters": false,
+          "Intensity": 1,
           "LightColor": "0.94419,0.97767,1,1",
           "MixedShadows": false,
           "OnComponentDestroy": null,
@@ -98,6 +138,7 @@
           "ShadowHardness": 0,
           "Shadows": true,
           "SkyColor": "0.03548,0.04247,0.04651,1",
+          "Temperature": 6500,
           "Visualizer": {}
         }
       ],
@@ -270,7 +311,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "169ee097-3b5e-4001-bb4e-166e0e6e797d",
+            "Id": "097b7cb0-9640-4260-b528-38979e3b7388",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -327,7 +368,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "169ee097-3b5e-4001-bb4e-166e0e6e797d",
+            "Id": "097b7cb0-9640-4260-b528-38979e3b7388",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -900,6 +941,45 @@
               "__guid": "75f9e04c-6b1f-4bfe-b870-ef898184c54d",
               "__enabled": true,
               "Flags": 0,
+              "__version": 1,
+              "AnimationCurve": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "in": 0,
+                  "out": 0,
+                  "mode": "Mirrored"
+                },
+                {
+                  "x": 0.5,
+                  "y": 1,
+                  "in": 0,
+                  "out": 0,
+                  "mode": "Mirrored"
+                },
+                {
+                  "x": 1,
+                  "y": 0,
+                  "in": 0,
+                  "out": 0,
+                  "mode": "Mirrored"
+                }
+              ],
+              "AnimationDuration": 2,
+              "AnimationEnabled": false,
+              "AnimationGradient": {
+                "blend": "Linear",
+                "color": [
+                  {
+                    "t": 0.5,
+                    "c": "1,1,1,1"
+                  }
+                ],
+                "alpha": []
+              },
+              "AnimationPattern": "Flicker",
+              "AnimationSpeed": 1,
+              "AnimationTimeOffset": 0,
               "Attenuation": 0.1305483,
               "BakeLightIndex": -1,
               "ConeInner": 60.391647,
@@ -908,6 +988,7 @@
               "Cookie": null,
               "FogMode": "Enabled",
               "FogStrength": 1,
+              "Intensity": 1,
               "LightColor": "0.91373,0.98039,1,1",
               "MixedShadows": false,
               "OnComponentDestroy": null,
@@ -919,7 +1000,8 @@
               "Radius": 1000,
               "ShadowBias": 0,
               "ShadowHardness": 0,
-              "Shadows": true
+              "Shadows": true,
+              "Temperature": 6500
             }
           ],
           "Children": []
@@ -1281,7 +1363,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "b886fc22-8d16-4a57-a396-4ca2a21aa700",
+                "Id": "5dc7b541-1726-4924-9ed8-83e127da61ca",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1327,7 +1409,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "c543363a-c4c6-47e2-89d9-50e683c981e2",
+                "Id": "5045d5c4-a177-4100-a8ee-303992200396",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1355,7 +1437,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "c543363a-c4c6-47e2-89d9-50e683c981e2",
+                "Id": "5045d5c4-a177-4100-a8ee-303992200396",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1402,7 +1484,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "ddfe232e-5b48-415c-b0f7-e1571af26e14",
+                "Id": "a58a630c-4e36-4e18-8f4d-fca73e4e74f6",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1446,7 +1528,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "62fb696b-a24a-4abd-aadc-7302a3dc05ad",
+                "Id": "d1be03a8-6313-4d92-8852-f9366ccf118f",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1758,7 +1840,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "0e3003d7-4433-483a-9bc5-fbfae7878754",
+                "Id": "14c25a0e-951e-442f-8eae-f5d7a76500cc",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1802,7 +1884,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "b9cbcd75-e82b-4dfe-8605-d95ae1ce37e4",
+                "Id": "e307a388-048f-425d-af09-370b4331d31c",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1846,7 +1928,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "38e34c1b-298a-410a-8cf2-2b3bd5c08767",
+                "Id": "bf592706-660b-44b3-9b0a-0df74d085305",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1892,7 +1974,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "58a58e34-67d5-4e9b-88c8-c838627ee3ab",
+                "Id": "42c397a6-ee37-4afb-97de-80329a0a8993",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1920,7 +2002,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "58a58e34-67d5-4e9b-88c8-c838627ee3ab",
+                "Id": "42c397a6-ee37-4afb-97de-80329a0a8993",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3030,7 +3112,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "364c3ea6-b2c9-47b4-9e65-025f18c5a568",
+                "Id": "3c015176-8229-4c2f-a8cf-a865eb2de365",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3058,7 +3140,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "364c3ea6-b2c9-47b4-9e65-025f18c5a568",
+                "Id": "3c015176-8229-4c2f-a8cf-a865eb2de365",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3107,7 +3189,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "364c3ea6-b2c9-47b4-9e65-025f18c5a568",
+                "Id": "3c015176-8229-4c2f-a8cf-a865eb2de365",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3135,7 +3217,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "364c3ea6-b2c9-47b4-9e65-025f18c5a568",
+                "Id": "3c015176-8229-4c2f-a8cf-a865eb2de365",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3403,6 +3485,45 @@
           "__guid": "d72f561e-cca9-4877-bf26-fa063711074c",
           "__enabled": true,
           "Flags": 512,
+          "__version": 1,
+          "AnimationCurve": [
+            {
+              "x": 0,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 0.5,
+              "y": 1,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "AnimationDuration": 2,
+          "AnimationEnabled": false,
+          "AnimationGradient": {
+            "blend": "Linear",
+            "color": [
+              {
+                "t": 0.5,
+                "c": "1,1,1,1"
+              }
+            ],
+            "alpha": []
+          },
+          "AnimationPattern": "Flicker",
+          "AnimationSpeed": 1,
+          "AnimationTimeOffset": 0,
           "Attenuation": 10,
           "BakeLightIndex": -1,
           "ConeInner": 0,
@@ -3411,6 +3532,7 @@
           "Cookie": null,
           "FogMode": "Enabled",
           "FogStrength": 1,
+          "Intensity": 1,
           "LightColor": "649.4244,696.8024,710.74,1",
           "MixedShadows": false,
           "OnComponentDestroy": null,
@@ -3422,7 +3544,8 @@
           "Radius": 900,
           "ShadowBias": 0,
           "ShadowHardness": 0.3,
-          "Shadows": true
+          "Shadows": true,
+          "Temperature": 6500
         }
       ],
       "Children": [
@@ -3572,9 +3695,9 @@
           "DelayBetweenUpdates": 0.1,
           "Feathering": 8,
           "FrameInterval": 5,
-          "MaxDistance": 512,
+          "MaxDistance": 1000,
           "Mode": "Baked",
-          "MultiBounce": true,
+          "MultiBounce": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -3587,7 +3710,7 @@
           "Resolution": "Medium",
           "Texture": null,
           "TintColor": "1,1,1,1",
-          "UpdateStrategy": "OnEnabled",
+          "UpdateStrategy": "EveryFrame",
           "ZFar": 4096,
           "ZNear": 16
         }
@@ -4251,7 +4374,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "63 object(s), 67661 tris — 10:08:47",
+          "LastImport": "63 object(s), 67661 tris — 09:49:25",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -11483,6 +11606,22 @@
                 "BoundingRadius": 7.99971
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12165,22 +12304,6 @@
                 "BoundingRadius": 7.99971
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -15322,7 +15445,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15339,7 +15462,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15557,7 +15680,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15574,7 +15697,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -22461,24 +22584,8 @@
               "Type": "Component",
               "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -28833,7 +28940,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "e7ebb209-f69f-4f8f-a145-9f83116043e8",
+            "Id": "fc3b885f-51d1-44db-8ae4-1a1a11032964",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
