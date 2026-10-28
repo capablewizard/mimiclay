@@ -775,7 +775,7 @@ public static class SdfBench
 		["Resolution"] = $"{Screen.Size.x:0}x{Screen.Size.y:0}",
 		["Msaa"] = _settings?.AntiAliasQuality.ToString(),
 		["Upscaler"] = _settings?.UpscalerMode.ToString(),
-		["RenderScale"] = _settings?.UpscalerRenderScale.ToString(),
+		["RenderScale"] = _settings?.RenderScale.ToString(),
 		["ShadowQuality"] = _settings?.ShadowQuality.ToString(),
 		["Renderer"] = typeof( GpuProfilerStats ).GetProperty( "Renderer", All )?.GetValue( null )?.ToString(),
 		["Props"] = _scene?.GetAllComponents<SdfRaymarchRenderer>().Count().ToString(),
