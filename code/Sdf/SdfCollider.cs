@@ -63,6 +63,15 @@ public sealed class SdfCollider : Component
 	/// geometry — the camera boom's world-only mode filters on it.</summary>
 	public const string ClayTag = "clay";
 
+	/// <summary>The physics surface every SDF collider is built with: default physics (density, friction, bounce
+	/// — prop masses and handling are unchanged) with the physics splat (splat_physics.sound — separate from the
+	/// gun's SplatSound) as its impact sounds. Played through
+	/// <see cref="Surface.PlayCollisionSound"/> by props that are simulating freely (see HiderController's
+	/// impact sounds).</summary>
+	public const string ClaySurfacePath = "surfaces/clay.surface";
+
+	public static Surface ClaySurface => ResourceLibrary.Get<Surface>( ClaySurfacePath );
+
 	// Sculpture-local footprint snapshot (underside contact points), refreshed with the collider. Used by the
 	// player controller for multi-point ground checks. Decoupled from the collider build (see Rebuild) so a
 	// problem computing it can never stop the sculpture from being solid.
@@ -245,6 +254,7 @@ public sealed class SdfCollider : Component
 
 		var collider = standing.IsValid() ? standing : GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
+		collider.Surface = ClaySurface;
 		collider.IsTrigger = BuildAsTrigger;
 		collider.Enabled = model is not null;
 		_builtModel = model;

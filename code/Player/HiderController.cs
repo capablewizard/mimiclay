@@ -22,7 +22,7 @@ namespace Mimiclay;
 [Title( "Hider Controller" )]
 [Category( "Mimiclay" )]
 [Icon( "directions_run" )]
-public sealed class HiderController : Component, IGameObjectNetworkEvents
+public sealed partial class HiderController : Component, IGameObjectNetworkEvents
 {
 	/// <summary>Collision tag stamped on every player prop's disguise. ProjectSettings/Collision.config pairs it
 	/// with ITSELF as Ignore, so two player props never generate contacts — they pass through each other and

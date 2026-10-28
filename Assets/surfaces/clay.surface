@@ -1,0 +1,14 @@
+{
+  "BaseSurface": "surfaces/default.surface",
+  "AudioSurface": "Generic",
+  "Description": "SDF clay props: default physics, splat_physics impact sounds (gunshot splats are the hunter's own SplatSound).",
+  "Friction": 0.8,
+  "Elasticity": 0.05,
+  "Density": 2000,
+  "RollingResistance": 0,
+  "BounceThreshold": 35,
+  "SoundCollection": {
+    "ImpactHard": { "Path": "sounds/game/splats/splat_physics.sound" },
+    "ImpactSoft": { "Path": "sounds/game/splats/splat_physics.sound" }
+  }
+}
