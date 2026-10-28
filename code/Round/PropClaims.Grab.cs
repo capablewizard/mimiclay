@@ -6,10 +6,11 @@ namespace Mimiclay;
 
 // ── The grab (creative's gravity-gun pickup) ─────────────────────────────────────────────────────────────────
 // Holding RMB on claimable clay carries it: the prop floats in front of the holder, E+mouse rotates it, R+mouse
-// scales it, the wheel sets the distance; releasing RMB drops it and LMB throws it. A dropped prop becomes LOOSE — a free
-// rigidbody (engine gravity, all rotation unlocked) instead of the upright character body released props
+// scales it, the wheel sets the distance; releasing RMB drops it and LMB FREEZES it. A dropped prop becomes LOOSE —
+// a free rigidbody (engine gravity, all rotation unlocked) instead of the upright character body released props
 // normally are — so it tumbles, stacks and rolls. That's the point: a way to throw clay at the world and watch
-// what the collider actually does.
+// what the collider actually does. A frozen prop is left exactly where it was with motion off (FrozenProps) —
+// a fixed obstacle to drop things onto; grabbing it again unfreezes it.
 //
 // HOST-SIMULATED, like all released scenery. The prop never changes owner: the holder computes where they want
 // it (root position + rotation) and streams that to the host every frame (UpdateGrab, unreliable), and the
@@ -54,9 +55,17 @@ public sealed partial class PropClaims
 		return false;
 	}
 
+	/// <summary>Props FROZEN from a grab (LMB while holding): motion off where they were let go — solid, but no
+	/// physics at all. Grabbing one again unfreezes it; possessing one clears it.</summary>
+	[Sync] public NetDictionary<Guid, bool> FrozenProps { get; private set; } = new();
+
 	/// <summary>Is this prop loose — a free rigidbody since it was last dropped?</summary>
 	public static bool IsLoose( HiderController hider )
 		=> hider.IsValid() && Current.IsValid() && Current.LooseProps.ContainsKey( hider.GameObject.Id );
+
+	/// <summary>Is this prop frozen in place (see <see cref="FrozenProps"/>)?</summary>
+	public static bool IsFrozen( HiderController hider )
+		=> hider.IsValid() && Current.IsValid() && Current.FrozenProps.ContainsKey( hider.GameObject.Id );
 
 	/// <summary>The prop this machine's player holds (registry answer — the host may have refused or ended it).</summary>
 	public static GameObject LocalHeld
@@ -140,6 +149,7 @@ public sealed partial class PropClaims
 		}
 
 		DropFor( c ); // one prop per player
+		FrozenProps.Remove( prop.GameObject.Id ); // picking a frozen prop up unfreezes it
 		Held[c.Id] = prop.GameObject.Id;
 		_grabTargets[prop.GameObject.Id] = prop.WorldTransform;
 		PlaySwapPop( PopSpot( prop.GameObject ) );
@@ -253,31 +263,16 @@ public sealed partial class PropClaims
 			CommitGrabScale( pawnId, st );
 	}
 
-	/// <summary>Holder lets go. <paramref name="throwVelocity"/> is added to whatever the hold was already doing
-	/// (zero for a plain drop — a swing still carries). The prop goes LOOSE.</summary>
+	/// <summary>Holder lets go: RMB released (<paramref name="freeze"/> false — the prop goes LOOSE, keeping
+	/// whatever motion the hold gave it, so a swing still carries) or LMB (true — FROZEN where it is).</summary>
 	[Rpc.Host]
-	public void DropGrab( Vector3 throwVelocity )
-	{
-		var c = Rpc.Caller ?? Connection.Local;
-		var hider = HeldBy( c );
-		DropFor( c );
-
-		if ( hider.IsValid() && hider.PhysicsBody.IsValid() && !throwVelocity.IsNearZeroLength )
-			hider.PhysicsBody.Velocity += throwVelocity.ClampLength( MaxThrowSpeed );
-	}
+	public void DropGrab( bool freeze ) => DropFor( Rpc.Caller ?? Connection.Local, freeze );
 
 	/// <summary>The grab's scale limits, relative to the prop's size when the hold began.</summary>
 	public const float MinGrabScale = 0.2f, MaxGrabScale = 5f;
 
-	const float MaxThrowSpeed = 2000f;
-
-	HiderController HeldBy( Connection c )
-		=> c is not null && Held.TryGetValue( c.Id, out var id )
-			? Scene.Directory.FindByGuid( id )?.Components.Get<HiderController>()
-			: null;
-
-	// Host-only: end a connection's hold. The prop stays where it is, released and now loose.
-	void DropFor( Connection c )
+	// Host-only: end a connection's hold. The prop stays where it is, released — loose, or frozen.
+	void DropFor( Connection c, bool freeze = false )
 	{
 		if ( c is null || !Held.TryGetValue( c.Id, out var id ) )
 			return;
@@ -285,8 +280,18 @@ public sealed partial class PropClaims
 		Held.Remove( c.Id );
 		_grabTargets.Remove( id );
 		EndGrabScale( id );
-		if ( Scene.Directory.FindByGuid( id ).IsValid() )
+		if ( !Scene.Directory.FindByGuid( id ).IsValid() )
+			return;
+
+		if ( freeze )
+		{
+			LooseProps.Remove( id );
+			FrozenProps[id] = true;
+		}
+		else
+		{
 			LooseProps[id] = true;
+		}
 	}
 
 	// Host-only, per frame (beside SweepEditors): a hold must belong to a connected player whose pawn is still a

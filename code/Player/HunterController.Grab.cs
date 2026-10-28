@@ -6,15 +6,14 @@ namespace Mimiclay;
 // The holder's half of the grab (see PropClaims.Grab for the host half). Owner-only: once the host's Held row
 // names our prop, every frame we work out where we want it — floating at a distance along the aim, turned with
 // our view's yaw, at the scale we've dialled — and stream that pose to the host, which steers the body there.
-// The grab lasts exactly as long as RMB is held: press to pick up, release to drop. While holding: LMB throws,
-// E+mouse rotates, R+mouse scales, the wheel pushes/pulls. The hover prompts are replaced by those verbs as
-// cards under the held prop.
+// The grab lasts exactly as long as RMB is held: press to pick up, release to drop. While holding: LMB freezes
+// it in place (and ends the hold), E+mouse rotates, R+mouse scales, the wheel pushes/pulls. The hover prompts
+// are replaced by those verbs as cards under the held prop.
 public sealed partial class HunterController
 {
 	const float GrabMinDistance = 30f;
 	const float GrabMaxDistance = 300f;
 	const float GrabWheelStep = 12f;     // units per wheel notch
-	const float GrabThrowSpeed = 900f;
 	const float GrabSnapDeg = 90f;       // Shift snap while carrying: square to the view (front/back/sides/top/bottom)
 	const float GrabRotateScale = 0.5f;  // E rotate speed relative to edit mode's scrub (BrushScrub.DegPerPx) — calmer for a carry
 
@@ -73,7 +72,7 @@ public sealed partial class HunterController
 		// Sculpting (face edit or in place) takes the mouse and the keys — put the prop down first.
 		if ( EditMode || LeaseEditing )
 		{
-			LetGo( held, Vector3.Zero );
+			LetGo( held );
 			return false;
 		}
 
@@ -81,18 +80,20 @@ public sealed partial class HunterController
 		// (a client's round-trip) drops straight back where it was instead of jumping into the hand.
 		if ( !Input.Down( "Attack2" ) )
 		{
-			LetGo( held, Vector3.Zero );
+			LetGo( held );
 			return true;
 		}
 
 		if ( held != _grabbed )
 			SeedGrab( held, eye );
 
+		// LMB: freeze it right where it hangs and let go (the hold ends even with RMB still down — re-grabbing
+		// takes a fresh press, so the freeze can't be undone by accident).
 		if ( Input.Pressed( "Attack1" ) )
 		{
 			LastFiredSlot = InteractSlot.Sculpt;
 			SinceFired = 0;
-			LetGo( held, _aimDir * GrabThrowSpeed );
+			LetGo( held, freeze: true );
 			return true;
 		}
 
@@ -194,13 +195,13 @@ public sealed partial class HunterController
 		return limits.ValidateIncoming( work, withVolume: true );
 	}
 
-	void LetGo( GameObject held, Vector3 throwVelocity )
+	void LetGo( GameObject held, bool freeze = false )
 	{
 		_grabLetGo = held.Id;
 		_sinceGrabLetGo = 0f;
 		_grabbed = null;
 		PropClaims.MarkGrabPending( false );
-		PropClaims.Current?.DropGrab( throwVelocity );
+		PropClaims.Current?.DropGrab( freeze );
 	}
 
 	// The held prop's verbs, as the crosshair's cards (and its outline, through the local hover).
@@ -218,7 +219,7 @@ public sealed partial class HunterController
 		if ( _grabChoices.Count == 0 )
 		{
 			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.rotate", "Rotate", InteractSlot.Primary ) ) );
-			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.throw", "Throw", InteractSlot.Sculpt ) ) );
+			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.freeze", "Freeze", InteractSlot.Sculpt ) ) );
 			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.scale", "Scale", InteractSlot.Scale ) ) );
 		}
 

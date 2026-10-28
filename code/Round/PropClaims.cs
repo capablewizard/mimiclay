@@ -689,9 +689,11 @@ public sealed partial class PropClaims : Component, IInteractable
 	// (RosterIdOf → the roster pips, own-prop lookups) reads Network.Owner, so even a host self-claim assigns.
 	void HandOver( Connection c, GameObject hunterPawn, HiderController prop, bool assignOwnership )
 	{
-		// A loose (dropped, tumbled) prop goes back to being a character body: its root stands up again with
-		// the tumble folded into the Disguise, so the shape stays exactly where it lay (see SettleUpright).
-		if ( LooseProps.Remove( prop.GameObject.Id ) )
+		// A loose (dropped, tumbled) or frozen prop goes back to being a character body: its root stands up again
+		// with any tilt folded into the Disguise, so the shape stays exactly where it lay (see SettleUpright).
+		bool wasLoose = LooseProps.Remove( prop.GameObject.Id );
+		bool wasFrozen = FrozenProps.Remove( prop.GameObject.Id );
+		if ( wasLoose || wasFrozen )
 			prop.SettleUpright();
 
 		Host.OnClaimGranted( c, hunterPawn, prop );

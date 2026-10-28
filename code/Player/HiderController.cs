@@ -845,6 +845,21 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		// After the proxy gate so it runs exactly on the machine simulating this body: the owner, or the
 		// host for its bots and released scenery props. Dormant/editing states included on purpose — a
 		// scenery prop that escapes the map should come back too.
+		// Grabbed (creative's pickup — see PropClaims.Grab): chase the holder's pose, free to rotate, no gravity.
+		// Ahead of everything else: a held prop is nobody's body and nobody's sculpt.
+		Transform held = default;
+		bool isHeld = Scenery && PropClaims.Current.IsValid() && PropClaims.Current.TryGetGrabTarget( this, out held );
+
+		// Frozen from a grab (LMB while holding): exactly where it was let go, with motion OFF — solid, but no
+		// physics at all (no gravity, nothing can push it). Ahead of the fall check and the motion recovery
+		// below, both of which would otherwise move or re-enable it. A new grab unfreezes it (the registry row
+		// goes on the grant), so a held prop never reads frozen.
+		if ( !isHeld && Scenery && PropClaims.IsFrozen( this ) )
+		{
+			SetPhysicsMode( PhysicsMode.Frozen );
+			return;
+		}
+
 		if ( FallRespawn.Fell( WorldPosition.z, _fallAnchor.Position.z ) )
 		{
 			WorldPosition = _fallAnchor.Position;
@@ -857,9 +872,7 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( !Body.MotionEnabled )
 			Body.MotionEnabled = true;
 
-		// Grabbed (creative's pickup — see PropClaims.Grab): chase the holder's pose, free to rotate, no gravity.
-		// Ahead of everything else: a held prop is nobody's body and nobody's sculpt.
-		if ( Scenery && PropClaims.Current.IsValid() && PropClaims.Current.TryGetGrabTarget( this, out var held ) )
+		if ( isHeld )
 		{
 			SetPhysicsMode( PhysicsMode.Held );
 			DriveHeld( held );
@@ -1044,12 +1057,13 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 	}
 
 	// ── Grab / loose physics (see PropClaims.Grab) ─────────────────────────────────────────────────────────
-	// The body runs in one of three modes. CHARACTER is everything this controller was built for: upright
+	// The body runs in one of four modes. CHARACTER is everything this controller was built for: upright
 	// (pitch/roll locked), our own gravity, ground probes. HELD chases the grab's target pose with velocities —
 	// all axes free, no gravity, still colliding on the way. LOOSE is a plain dynamic rigidbody: engine gravity,
-	// every axis free, the engine's own sleep. Switched only on a change, so the per-tick cost is a compare.
+	// every axis free, the engine's own sleep. FROZEN has motion disabled: solid where it stands, never moved by
+	// anything. Switched only on a change, so the per-tick cost is a compare.
 
-	enum PhysicsMode { Character, Held, Loose }
+	enum PhysicsMode { Character, Held, Loose, Frozen }
 	PhysicsMode _physicsMode = PhysicsMode.Character;
 
 	// Hold feel: how hard the prop is pulled toward the target (1/s) and the speed cap that keeps a fast swing
@@ -1068,6 +1082,17 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			? new PhysicsLock { Pitch = true, Yaw = false, Roll = true }
 			: default;
 		Body.Gravity = mode == PhysicsMode.Loose;
+
+		if ( mode == PhysicsMode.Frozen )
+		{
+			Body.Velocity = Vector3.Zero;
+			Body.AngularVelocity = Vector3.Zero;
+			Body.MotionEnabled = false;
+			return;
+		}
+
+		if ( !Body.MotionEnabled )
+			Body.MotionEnabled = true;
 		if ( Body.Sleeping )
 			Body.Sleeping = false;
 		_settleTicks = 0;
