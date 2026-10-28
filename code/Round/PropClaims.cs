@@ -24,6 +24,10 @@ public interface IPropClaimHost
 	/// opts in explicitly.</summary>
 	bool LeasesAllowed => false;
 
+	/// <summary>May a hunter GRAB props (RMB — hold one in front of you, rotate/scale it, drop it as a loose
+	/// physics object; see <see cref="PropClaims.RequestGrab"/>)? Creative's sandbox says yes. Default off.</summary>
+	bool GrabAllowed => false;
+
 	/// <summary>The prop-pawn prefab a claimed SCENE prop converts into (read live off scene furniture — a
 	/// NetworkSpawn'd manager's [Property] refs only exist on the host).</summary>
 	GameObject PropPrefab { get; }
@@ -66,7 +70,7 @@ public interface IPropClaimHost
 [Title( "Prop Claims" )]
 [Category( "Mimiclay" )]
 [Icon( "pan_tool" )]
-public sealed class PropClaims : Component, IInteractable
+public sealed partial class PropClaims : Component, IInteractable
 {
 	/// <summary>The live claim service (null wherever props aren't editable — round maps, the menu). The
 	/// hunter's hover detection and the outline system read this to know claim rules apply. Named Current like
@@ -124,6 +128,10 @@ public sealed class PropClaims : Component, IInteractable
 		// away exits.
 		if ( (Host?.LeasesAllowed ?? false) && IsSculptable( ctx.Sculpture ) )
 			options.Add( new InteractOption( SculptOption, "Sculpt", InteractSlot.Sculpt ) );
+
+		// RMB: pick it up (see RequestGrab). Same clay a claim can take; not mid-lease (RMB deselects there).
+		if ( GrabOpen && IsClaimable( ctx.Sculpture ) && !(ctx.Hunter?.LeaseEditing ?? false) )
+			options.Add( new InteractOption( GrabOption, "Grab", InteractSlot.Pickup ) );
 	}
 
 	void IInteractable.Interact( in InteractContext ctx, string optionId )
@@ -138,6 +146,14 @@ public sealed class PropClaims : Component, IInteractable
 			// clay. The hunter owns the rest of the flow — it opens the session once the lease lands.
 			var leaseHider = ctx.Sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 			ctx.Hunter?.RequestSculptEdit( leaseHider.IsValid() ? leaseHider.GameObject : ctx.Sculpture.GameObject );
+			return;
+		}
+
+		if ( optionId == GrabOption )
+		{
+			// Same root rule again — the hunter streams the hold pose once the host's row lands.
+			var grabHider = ctx.Sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+			ctx.Hunter?.BeginGrab( grabHider.IsValid() ? grabHider.GameObject : ctx.Sculpture.GameObject );
 			return;
 		}
 
@@ -184,7 +200,8 @@ public sealed class PropClaims : Component, IInteractable
 
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
-			return IsReleased( hider ) && (joinEdited || !IsBeingEdited( hider )); // a pawn's body: only once released into the world — and, for a claim, not while people are sculpting it in place
+			return IsReleased( hider ) && (joinEdited || !IsBeingEdited( hider )) // a pawn's body: only once released into the world — and, for a claim, not while people are sculpting it in place
+				&& !IsHeld( hider ); // nor while someone is carrying it around
 
 		return IsScenery( sculpture ); // scene-placed clay — claimable by conversion
 	}
@@ -561,6 +578,7 @@ public sealed class PropClaims : Component, IInteractable
 		if ( Networking.IsActive && !Networking.IsHost )
 			return;
 		SweepEditors();
+		SweepHolders();
 	}
 
 	// Host-only: pawns minted by ConvertSceneProp, by pawn GameObject id. The lobby reads this to tell borrowed
@@ -671,6 +689,11 @@ public sealed class PropClaims : Component, IInteractable
 	// (RosterIdOf → the roster pips, own-prop lookups) reads Network.Owner, so even a host self-claim assigns.
 	void HandOver( Connection c, GameObject hunterPawn, HiderController prop, bool assignOwnership )
 	{
+		// A loose (dropped, tumbled) prop goes back to being a character body: its root stands up again with
+		// the tumble folded into the Disguise, so the shape stays exactly where it lay (see SettleUpright).
+		if ( LooseProps.Remove( prop.GameObject.Id ) )
+			prop.SettleUpright();
+
 		Host.OnClaimGranted( c, hunterPawn, prop );
 		hunterPawn.Destroy();
 		PossessedProps[prop.GameObject.Id] = true;

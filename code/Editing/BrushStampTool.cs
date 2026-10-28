@@ -864,8 +864,22 @@ public static class BrushScrub
 	const float SlicePerPx = 0.0035f; // MaxSlice (0.95) across ~270 px
 	const float SplineSizePerPx = 0.08f;
 	const float ProfileStepPx = 80f;
-	const float ScaleHalfDoublePx = 240f; // px of mouse travel that doubles the size
-	const float DegPerPx = 0.4f; // matches the gizmo trackball's TrackballDegPerPx — one free-rotate feel
+	internal const float ScaleHalfDoublePx = 240f; // px of mouse travel that doubles the size (the grab's R scale too)
+	internal const float DegPerPx = 0.4f; // matches the gizmo trackball's TrackballDegPerPx — one free-rotate feel (the grab's E rotate too)
+
+	// The engine's default mouse sensitivity (Preferences.Sensitivity) — the setting every per-px rate above was
+	// tuned at.
+	const float DefaultSensitivity = 8f;
+
+	/// <summary>This frame's mouse motion for a captured-cursor gesture, in px AT DEFAULT SENSITIVITY: raw
+	/// <see cref="Mouse.Delta"/> scaled by the player's sensitivity relative to the engine default. Every scrub
+	/// hides the cursor (the HUD captures it and draws the frozen dot; first person is locked anyway), so there's
+	/// no on-screen cursor for raw px to keep pace with — they'd only make a high-DPI mouse scrub faster. The
+	/// sensitivity is how the player already tuned their mouse, so scrubs follow it like looking does. The
+	/// per-px rates keep their meaning (at default sensitivity nothing changes). Not
+	/// <see cref="Input.AnalogLook"/>: that's zeroed while the cursor is visible, pitch-inverted by preference
+	/// and divided by the screen size. Visible-cursor drags (the gizmo's trackball) stay on raw px.</summary>
+	public static Vector2 CapturedDelta => Mouse.Delta * (Preferences.Sensitivity / DefaultSensitivity);
 
 	/// <summary>Run one frame. Returns true when the brush changed; <paramref name="ended"/> fires on the
 	/// frame a scrub's key is released (edit mode commits there). Passing a null brush or allow=false ends
@@ -944,7 +958,7 @@ public static class BrushScrub
 			return false;
 		}
 
-		var delta = Mouse.Delta;
+		var delta = CapturedDelta;
 		if ( delta.LengthSquared < 0.0001f )
 			return false;
 

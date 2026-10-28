@@ -630,6 +630,8 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 			_iconPoseSeeded = true;
 		}
 
+		RefreshProbesOnTilt();
+
 		// Read the toggles even while control is suspended, so edit mode can be exited. Charades LOCKS the
 		// mimic's editor outside the sculpt phase (no sculpting before the word is chosen or after the
 		// reveal) — exiting is always allowed, only opening is gated.
@@ -855,6 +857,25 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		if ( !Body.MotionEnabled )
 			Body.MotionEnabled = true;
 
+		// Grabbed (creative's pickup — see PropClaims.Grab): chase the holder's pose, free to rotate, no gravity.
+		// Ahead of everything else: a held prop is nobody's body and nobody's sculpt.
+		if ( Scenery && PropClaims.Current.IsValid() && PropClaims.Current.TryGetGrabTarget( this, out var held ) )
+		{
+			SetPhysicsMode( PhysicsMode.Held );
+			DriveHeld( held );
+			return;
+		}
+
+		// Dropped from a grab: a FREE rigidbody — engine gravity, every axis unlocked, the engine's own sleep.
+		// Nothing of the character step runs (no ground probes, no snap). An in-place sculpt still pins it below.
+		if ( Scenery && PropClaims.IsLoose( this ) && !BeingEdited )
+		{
+			SetPhysicsMode( PhysicsMode.Loose );
+			return;
+		}
+
+		SetPhysicsMode( PhysicsMode.Character );
+
 		// EditGravity test option: pin the body for the whole edit session — no gravity, no ground-snap, no
 		// re-settle after commits; it hangs exactly where the edit began (jump-sculpting included). Velocity
 		// is re-zeroed every step rather than disabling motion, so the solver can still separate a genuine
@@ -1020,6 +1041,108 @@ public sealed class HiderController : Component, IGameObjectNetworkEvents
 		float contactSpin = Body.AngularVelocity.z - _lastSetYawRate; // spin the solver introduced on its own
 		_lastSetYawRate = mouseRate + contactSpin * SnagCompliance;
 		Body.AngularVelocity = Body.AngularVelocity.WithZ( _lastSetYawRate );
+	}
+
+	// ── Grab / loose physics (see PropClaims.Grab) ─────────────────────────────────────────────────────────
+	// The body runs in one of three modes. CHARACTER is everything this controller was built for: upright
+	// (pitch/roll locked), our own gravity, ground probes. HELD chases the grab's target pose with velocities —
+	// all axes free, no gravity, still colliding on the way. LOOSE is a plain dynamic rigidbody: engine gravity,
+	// every axis free, the engine's own sleep. Switched only on a change, so the per-tick cost is a compare.
+
+	enum PhysicsMode { Character, Held, Loose }
+	PhysicsMode _physicsMode = PhysicsMode.Character;
+
+	// Hold feel: how hard the prop is pulled toward the target (1/s) and the speed cap that keeps a fast swing
+	// from tunnelling it through a thin wall.
+	const float HoldPull = 18f;
+	const float HoldTurn = 14f;
+	const float HoldMaxSpeed = 1800f;
+
+	void SetPhysicsMode( PhysicsMode mode )
+	{
+		if ( _physicsMode == mode || !Body.IsValid() )
+			return;
+
+		_physicsMode = mode;
+		Body.Locking = mode == PhysicsMode.Character
+			? new PhysicsLock { Pitch = true, Yaw = false, Roll = true }
+			: default;
+		Body.Gravity = mode == PhysicsMode.Loose;
+		if ( Body.Sleeping )
+			Body.Sleeping = false;
+		_settleTicks = 0;
+		_turnSeeded = false;
+	}
+
+	// Host (the simulating machine): steer the body toward the holder's pose. Velocity, not teleports, so the
+	// solver still stops it at walls and it leaves the hand with whatever motion it had.
+	void DriveHeld( Transform target )
+	{
+		if ( Body.Sleeping )
+			Body.Sleeping = false;
+
+		// Scale is a transform write (collision rescales with it), only when it actually changed.
+		if ( MathF.Abs( WorldScale.x - target.Scale.x ) > 0.001f )
+			WorldScale = target.Scale;
+
+		var dt = MathF.Max( Time.Delta, 0.001f );
+		var toTarget = target.Position - WorldPosition;
+		Body.Velocity = (toTarget * MathF.Min( HoldPull, 1f / dt )).ClampLength( HoldMaxSpeed );
+
+		// Shortest-arc rotation from here to the target, as an angular velocity (radians/s).
+		var q = target.Rotation * WorldRotation.Inverse;
+		if ( q.w < 0f )
+			q = new Rotation( -q.x, -q.y, -q.z, -q.w );
+		var sinHalf = MathF.Sqrt( q.x * q.x + q.y * q.y + q.z * q.z );
+		if ( sinHalf < 1e-5f )
+		{
+			Body.AngularVelocity = Vector3.Zero;
+			return;
+		}
+
+		var angle = 2f * MathF.Atan2( sinHalf, q.w );
+		var axis = new Vector3( q.x, q.y, q.z ) / sinHalf;
+		Body.AngularVelocity = axis * angle * MathF.Min( HoldTurn, 1f / dt );
+	}
+
+	/// <summary>Host-only, as a loose prop is possessed: stand the ROOT back up (yaw kept) and move the tumble
+	/// onto the Disguise, so the clay stays exactly where it lay — the shape never moves on its own — while the
+	/// body becomes an upright character again. The new owner's ground probes follow the tilt on their first
+	/// controlling frame (see <see cref="RefreshProbesOnTilt"/>).</summary>
+	internal void SettleUpright()
+	{
+		var disguise = _body.IsValid() ? _body.GameObject : null;
+		var keep = disguise.IsValid() ? disguise.WorldTransform : default;
+
+		WorldRotation = Rotation.FromYaw( WorldRotation.Angles().yaw );
+		if ( disguise.IsValid() )
+			disguise.WorldTransform = keep;
+
+		if ( Body.IsValid() )
+		{
+			Body.Velocity = Vector3.Zero;
+			Body.AngularVelocity = Vector3.Zero;
+		}
+		SetPhysicsMode( PhysicsMode.Character );
+	}
+
+	// Owner, controlling: the collider's foot probes are built against the disguise's tilt at build time (see
+	// SdfCollider.ProbeFrame). A possessed loose prop arrives with its tumble moved onto the Disguise, possibly a
+	// frame after control resumes — so watch world-down in the disguise's frame (yaw-invariant: turning never
+	// trips it) and rebuild when it moves. Rebuild skips itself when nothing it keys on changed.
+	Vector3 _probeDown;
+
+	void RefreshProbesOnTilt()
+	{
+		if ( !_body.IsValid() || !_collider.IsValid() )
+			return;
+
+		var down = _body.WorldRotation.Inverse * Vector3.Down;
+		if ( (down - _probeDown).LengthSquared < 1e-4f )
+			return;
+
+		_probeDown = down;
+		_collider.Rebuild();
 	}
 
 	// Dormant only, right after a character step: count consecutive steps at rest on the ground, and once there

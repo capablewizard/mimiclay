@@ -21,7 +21,7 @@ namespace Mimiclay;
 [Title( "Hunter Controller" )]
 [Category( "Mimiclay" )]
 [Icon( "sports_esports" )]
-public sealed class HunterController : Component
+public sealed partial class HunterController : Component
 {
 	[Property, Group( "Weapon" )] public float Range { get; set; } = 4096f;
 
@@ -703,7 +703,7 @@ public sealed class HunterController : Component
 			// orbit starts reading the mouse — otherwise one frame of look would leak into both.
 			UpdateAltOrbit( play && !LeaseEditing ); // alt is the HUD-cursor key while sculpting in place
 
-			_controller.UseLookControls = play && !_altOrbiting && !LeaseLookPaused;
+			_controller.UseLookControls = play && !_altOrbiting && !LeaseLookPaused && !GrabLookFrozen;
 			// Alt in a sculpt session (cursor free, view frozen) hands the keyboard to the editor: no walking
 			// off while you scrub a slider with S or add a shape with Space.
 			_controller.UseInputControls = play && !locked && !_leaseCursorFree;
@@ -801,7 +801,8 @@ public sealed class HunterController : Component
 			// the fresh aim, so the prompt and the action agree on what the dot shows. Mid-lease it keeps
 			// running for every OTHER prop (the edited one belongs to the session's own hover), so LMB on the
 			// next prop hands this one back and takes that — "freely in and out of props".
-			bool clickTaken = UpdateInteractHover( eye );
+			// Holding a grabbed prop replaces the hover: its verbs are the cards, LMB throws (see the grab partial).
+			bool clickTaken = UpdateGrab( eye ) || UpdateInteractHover( eye );
 
 			// Sculpting in place: the crosshair is the edit pointer — no trigger. The lease session reads
 			// the aim through EditPointer; everything below is play-only.

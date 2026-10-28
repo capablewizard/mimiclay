@@ -31,6 +31,10 @@ public static class PawnSwapKeys
 			if ( session.IsValid() && session.IsEditing && (session.ScrubKeysLive || session.ExitConfirmPending) )
 				return true;
 
+			// Holding a grabbed prop: E rotates it and R scales it (see HunterController's grab).
+			if ( PropClaims.LocalGrabActive )
+				return true;
+
 			return Sandbox.UI.InputFocus.Current is not null
 				|| PauseMenu.IsOpen
 				|| RoundSetup.IsOpen

@@ -14,13 +14,17 @@ public enum InteractSlot
 	/// <summary>F ("SecondaryUse") — a second verb beside the main one: the radio's on/off.</summary>
 	Secondary,
 
-	/// <summary>RMB ("Attack2") — reserved for picking props up. Nothing offers it yet.</summary>
-	Pickup,
-
 	/// <summary>LMB ("Attack1") — sculpt the hovered clay in place, first person (the edit lease; see
 	/// <see cref="PropClaims"/>). The trigger's own press: when a provider offers this slot and it fires, the
 	/// hunter swallows the shot.</summary>
 	Sculpt,
+
+	/// <summary>RMB ("Attack2") — pick a prop up with the grab (creative; see <see cref="PropClaims"/>'s grab).</summary>
+	Pickup,
+
+	/// <summary>R ("Reload") — only offered while holding a grabbed prop: scale it. Never a hover verb, because
+	/// R is the hunter ⇄ prop swap everywhere else (see <see cref="PawnSwapKeys"/>).</summary>
+	Scale,
 }
 
 /// <summary>One thing the player can do to what's under the crosshair. <see cref="Id"/> is handed back to the
@@ -92,6 +96,7 @@ public static class Interactions
 		InteractSlot.Secondary => "SecondaryUse",
 		InteractSlot.Pickup => "Attack2",
 		InteractSlot.Sculpt => "Attack1",
+		InteractSlot.Scale => "Reload",
 		_ => "Use",
 	};
 
@@ -106,7 +111,7 @@ public static class Interactions
 
 		var key = Input.GetButtonOrigin( ActionFor( slot ) );
 		if ( string.IsNullOrEmpty( key ) )
-			return slot switch { InteractSlot.Secondary => "F", _ => "E" };
+			return slot switch { InteractSlot.Secondary => "F", InteractSlot.Scale => "R", _ => "E" };
 		return key.ToUpperInvariant();
 	}
 

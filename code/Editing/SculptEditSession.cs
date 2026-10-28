@@ -178,16 +178,45 @@ public sealed partial class SculptEditSession : Component
 		MathF.Round( p.y / GridStep ) * GridStep,
 		MathF.Round( p.z / GridStep ) * GridStep );
 
-	/// <summary>Quantize an orientation onto the <see cref="SnapDeg"/> angle grid: its local Euler angles
-	/// each rounded to the step. Lands exactly on the clean axis-aligned orientations (0/45/90…) in the
-	/// sculpture's frame.</summary>
-	public static Rotation SnapRotation( Rotation r )
+	/// <summary>Quantize an orientation onto an angle grid — <paramref name="stepDeg"/>, the edit controls'
+	/// <see cref="SnapDeg"/> by default: its local Euler angles each rounded to the step, landing exactly on the
+	/// clean axis-aligned orientations (0/45/90…) in the sculpture's frame. A step of 90 or more is the
+	/// FACE snap (the grab uses it): the nearest of the 24 axis-aligned orientations, chosen outright —
+	/// per-axis Euler rounding near ±90° pitch jumps between them unpredictably, and snapping forward then up
+	/// misses the nearest one about 6% of the time.</summary>
+	public static Rotation SnapRotation( Rotation r, float stepDeg = SnapDeg )
 	{
-		var a = r.Angles();
+		if ( stepDeg >= 90f )
+		{
+			// The 24 axis-aligned orientations (every forward axis × every up axis perpendicular to it), built
+			// per call rather than cached in a static: static struct collections on components break hotload
+			// upgrades, and this only runs while a snap key is held. Nearest = largest |q·a| (the quaternion
+			// dot is the cosine of half the angle between them, either sign).
+			ReadOnlySpan<Vector3> axes = stackalloc Vector3[] { Vector3.Forward, Vector3.Backward, Vector3.Left, Vector3.Right, Vector3.Up, Vector3.Down };
+			var best = Rotation.Identity;
+			float bestDot = -1f;
+			foreach ( var f in axes )
+			foreach ( var u in axes )
+			{
+				if ( MathF.Abs( Vector3.Dot( f, u ) ) > 0.5f )
+					continue;
+
+				var a = Rotation.LookAt( f, u );
+				float d = MathF.Abs( r.x * a.x + r.y * a.y + r.z * a.z + r.w * a.w );
+				if ( d > bestDot )
+				{
+					bestDot = d;
+					best = a;
+				}
+			}
+			return best;
+		}
+
+		var e = r.Angles();
 		return Rotation.From(
-			MathF.Round( a.pitch / SnapDeg ) * SnapDeg,
-			MathF.Round( a.yaw / SnapDeg ) * SnapDeg,
-			MathF.Round( a.roll / SnapDeg ) * SnapDeg );
+			MathF.Round( e.pitch / stepDeg ) * stepDeg,
+			MathF.Round( e.yaw / stepDeg ) * stepDeg,
+			MathF.Round( e.roll / stepDeg ) * stepDeg );
 	}
 
 	/// <summary>The shared accelerated scroll-depth step (size-scaled, scroll-accelerated,

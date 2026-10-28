@@ -154,6 +154,10 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	{
 		var hover = HoverSculpture();
 		var editing = EditingSculpture();
+
+		// The prop the local player is carrying (the grab publishes it as the hover): keep the rim so you can
+		// see what you hold, but drop the inside fill and the hover churn — it's being placed, not offered.
+		var holding = hover.IsValid() && hover == HeldSculpture();
 		PrepareHoverOutline( hover, editing );
 
 		foreach ( var outline in Scene.GetAllComponents<SdfHighlightOutline>() )
@@ -193,11 +197,12 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 			if ( editingIt )
 				Tint( outline, EditingColor, EditingWidth, fill: false ); // the prop you're on outranks a hover (it's never hovered anyway)
 			else if ( hovered )
-				Tint( outline, HoverColor, HoverWidth );
+				Tint( outline, HoverColor, HoverWidth, fill: !holding );
 		}
 
-		ApplyClaimBoils( hover );
-		ApplySceneBoils( hover );
+		var boilHover = holding ? null : hover;
+		ApplyClaimBoils( boilHover );
+		ApplySceneBoils( boilHover );
 
 		// The Reveal pulse never runs here (no phases reach Reveal) — asserted OFF the same both-ways way the
 		// round branch asserts it, so a snapshot that shipped a mid-Reveal flash can't leave one pulsing.
@@ -246,6 +251,13 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 	{
 		var hover = Interactions.LocalHoverSculpture;
 		return hover.IsValid() && !TutorialNpc.Of( hover ).IsValid() ? hover : null;
+	}
+
+	// The clay of the prop this machine's player is carrying with the grab (null = not holding).
+	static SdfSculpture HeldSculpture()
+	{
+		var held = PropClaims.LocalHeld;
+		return held.IsValid() ? held.Components.Get<HiderController>()?.DisguiseSculpture : null;
 	}
 
 	// The owner-only SculptBounds WARNING outline (co-located with the bounds component): the one outline that
