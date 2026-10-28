@@ -59,6 +59,13 @@ public static class SdfCollisionBuilder
 	                                        // flattened sphere rests on the missing pole and visibly hovers), so
 	                                        // any carve that registers at all should swap; the real "too shallow
 	                                        // to matter" filter is CarveBias, not this.
+	// ...EXCEPT a cut that is both shallow and small AND leaves the copy non-convex (a dimple, a button hole, an
+	// engraved line — a convex result already gets its own exact hull from TryCarvedHull first). Such a cut
+	// can't change where the prop rests or open a cavity, but without this it turned one hull into ~50 voxel
+	// boxes. Depth is the deepest carved cell CENTRE inside the brush, in cells (a surface cell's centre sits
+	// SolidBias..1 cell deep, so anything under one cell can only be the skin); both tests must pass.
+	[SkipHotload] public static float CarveShallowCells = 1.0f; // × the smallest voxel edge
+	const float CarveShallowFraction = 0.05f;                    // of the brush copy's cells
 	// ONE voxel size for every carved collider — solid brushes and spline runs alike — so the boxes read the
 	// same everywhere. A box can't follow a CURVED cut, so it can sit up to about one cell into the cut-away
 	// space: this edge length IS the flush error. Script-tunable (A/B sweeps); [SkipHotload] so a recompile
@@ -443,12 +450,74 @@ public static class SdfCollisionBuilder
 		// CarvedCopy.BrushIndex lines up between the two for the same input list.
 		brushes = SdfGroups.Flatten( brushes );
 
-		_frame = framePoints;
-		_emitted = emitted;
+		var cached = GetOrBuild( brushes );
+		carvedCopies?.AddRange( cached.Carved );
+		framePoints?.AddRange( cached.Frame );
+		emitted?.AddRange( cached.Emitted );
+		return cached.Model;
+	}
+
+	/// <summary>The clay's solid volume (sculpture units³) for the same brush list <see cref="Build"/> takes —
+	/// the mass a prop should have, free of the collider's overlapping shapes (every buried sphere, every voxel
+	/// box under a hull adds its own volume to the engine's automatic mass). Sampled once per unique shape on
+	/// the same cache as the collider.</summary>
+	public static float ClayVolume( List<SdfBrush> brushes )
+	{
+		if ( brushes is null || brushes.Count == 0 )
+			return 0f;
+		var flat = SdfGroups.Flatten( brushes );
+		var built = GetOrBuild( flat );
+		built.Volume ??= EstimateVolume( flat ); // lazily: only pawns weigh anything, scenery never asks
+		return built.Volume.Value;
+	}
+
+	// ── Build cache ─────────────────────────────────────────────────────────────────────────────────────
+	// One build per unique shape: identical prefab instances (three plates, fourteen knobs, twelve fridge letters)
+	// share a Model — a Model is a resource, and the engine makes each ModelCollider's shapes from it — plus the
+	// carved copies, frame points and tags that go with it. Keyed on the brush content plus every setting that
+	// changes a build (and CodeVersion, so a hotload never serves the old builder's shapes). Cleared when the
+	// play session ends (SessionResetSystem) — statics outlive Stop→Play in the editor — and wholesale when it
+	// grows past CacheLimit (sculpting churns through hashes; nothing here is worth an LRU).
+	sealed class CachedBuild
+	{
+		public Model Model;
+		public float? Volume; // filled on the first ClayVolume request
+		public readonly List<CarvedCopy> Carved = new();
+		public readonly List<Vector3> Frame = new();
+		public readonly List<EmittedShape> Emitted = new();
+	}
+
+	const int CacheLimit = 512;
+	static readonly Dictionary<int, CachedBuild> _cache = new();
+
+	/// <summary>Builds that came from the cache rather than running. Diagnostics.</summary>
+	public static int CacheHits { get; private set; }
+
+	/// <summary>Drop every cached build (play session end; a settings sweep).</summary>
+	public static void ClearCache() => _cache.Clear();
+
+	static int SettingsHash() => HashCode.Combine( CodeVersion, VoxelTarget, VoxelMaxPerAxis, CarvedHulls, CullBuried,
+		CullTolerance, CarveShallowCells );
+
+	static CachedBuild GetOrBuild( List<SdfBrush> flat )
+	{
+		int key = HashCode.Combine( SdfSculpture.ContentHashPrefix( flat, flat.Count, 0, false ), SettingsHash() );
+		if ( _cache.TryGetValue( key, out var hit ) )
+		{
+			CacheHits++;
+			return hit;
+		}
+
+		if ( _cache.Count >= CacheLimit )
+			_cache.Clear();
+
+		var built = new CachedBuild();
+		_frame = built.Frame;
+		_emitted = built.Emitted;
 		_pending = new List<PendingShape>( 64 );
 		try
 		{
-			return BuildInternal( brushes, carvedCopies );
+			built.Model = BuildInternal( flat, built.Carved );
 		}
 		finally
 		{
@@ -456,6 +525,41 @@ public static class SdfCollisionBuilder
 			_emitted = null;
 			_pending = null;
 		}
+		_cache[key] = built;
+		return built;
+	}
+
+	// The clay's solid volume from a fixed grid of field samples over its bounds (~VolumeSamples in all — a few
+	// percent accurate, which is all mass needs). Fixed cost: the sample count never grows with the shape.
+	// Measured 2026-10-28: ~0.7 ms per unique shape in the kitchen, paid once, lazily, by pawns only.
+	const int VolumeSamples = 1024;
+
+	static float EstimateVolume( List<SdfBrush> flat )
+	{
+		if ( !Sdf.TryGetBounds( flat, out var bounds ) )
+			return 0f;
+
+		var size = bounds.Size;
+		if ( size.x <= 0f || size.y <= 0f || size.z <= 0f )
+			return 0f;
+
+		// Cells roughly cubic: n_i ∝ size_i, with n_x·n_y·n_z ≈ VolumeSamples.
+		float scale = MathF.Cbrt( VolumeSamples / (size.x * size.y * size.z) );
+		int nx = Math.Clamp( (int)MathF.Round( size.x * scale ), 2, 64 );
+		int ny = Math.Clamp( (int)MathF.Round( size.y * scale ), 2, 64 );
+		int nz = Math.Clamp( (int)MathF.Round( size.z * scale ), 2, 64 );
+		var cell = new Vector3( size.x / nx, size.y / ny, size.z / nz );
+
+		int solid = 0;
+		for ( int iz = 0; iz < nz; iz++ )
+		for ( int iy = 0; iy < ny; iy++ )
+		for ( int ix = 0; ix < nx; ix++ )
+		{
+			var p = bounds.Mins + new Vector3( (ix + 0.5f) * cell.x, (iy + 0.5f) * cell.y, (iz + 0.5f) * cell.z );
+			if ( Sdf.Sample( flat, p ) <= 0f )
+				solid++;
+		}
+		return solid * cell.x * cell.y * cell.z;
 	}
 
 	static Model BuildInternal( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies )
@@ -936,6 +1040,7 @@ public static class SdfCollisionBuilder
 			// the surface like the hull path's sharp primitives) and no carver eats it (CarveBias deep). Cells
 			// CLEARLY outside the clay (past emptyAt, either way) are flagged for TryCarvedHull's check.
 			int kept = 0, carved = 0;
+			float maxCut = 0f; // deepest carved cell centre inside the brush — how far the exact hull would over-cover
 			Array.Clear( solid, 0, solid.Length );
 			Array.Clear( empty, 0, empty.Length );
 			for ( int iz = 0; iz < nz; iz++ )
@@ -959,6 +1064,7 @@ public static class SdfCollisionBuilder
 				if ( depth > -carveAt )
 				{
 					carved++;
+					maxCut = MathF.Max( maxCut, -bd );
 					empty[ci] = depth > emptyAt;
 					continue;
 				}
@@ -966,10 +1072,9 @@ public static class SdfCollisionBuilder
 				kept++;
 			}
 
-			// The gate: a graze keeps the exact convex shape; a real hollow goes voxel. total == 0 means the
-			// grid straddled a degenerate brush — the exact shape is at least as good, fall back to it.
+			// Untouched (or a degenerate brush the grid straddled — total == 0) → the exact convex shape.
 			int total = kept + carved;
-			if ( total == 0 || carved < total * CarveGateFraction )
+			if ( total == 0 || carved == 0 )
 			{
 				any |= EmitExactCopy( b, sign, pts, builder );
 				continue;
@@ -977,9 +1082,21 @@ public static class SdfCollisionBuilder
 			if ( kept == 0 )
 				continue; // the subtracts ate the whole copy — nothing solid left
 
+			// Convex after the cut → one exact hull of the cut shape, however small the cut: a sphere with 3u
+			// shaved off its bottom rests on the shave, not 3u in the air on the pole it no longer has.
 			if ( CarvedHulls && TryCarvedHull( b, sign, pts, carvers, lo, cell, nx, ny, nz, empty, builder ) )
 			{
 				any = true;
+				continue;
+			}
+
+			// Not convex, but a graze (CarveGateFraction) or a shallow, small cut (CarveShallowCells) → the uncut
+			// shape, over-covering the cut by at most about a cell, instead of a voxel box per dent.
+			bool graze = carved < total * CarveGateFraction;
+			bool shallow = maxCut <= CarveShallowCells * cellMin && carved <= total * CarveShallowFraction;
+			if ( graze || shallow )
+			{
+				any |= EmitExactCopy( b, sign, pts, builder );
 				continue;
 			}
 

@@ -845,6 +845,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// After the proxy gate so it runs exactly on the machine simulating this body: the owner, or the
 		// host for its bots and released scenery props. Dormant/editing states included on purpose — a
 		// scenery prop that escapes the map should come back too.
+		ApplyClayMass();
+
 		// Grabbed (creative's pickup — see PropClaims.Grab): chase the holder's pose, free to rotate, no gravity.
 		// Ahead of everything else: a held prop is nobody's body and nobody's sculpt.
 		Transform held = default;
@@ -1062,6 +1064,20 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	// all axes free, no gravity, still colliding on the way. LOOSE is a plain dynamic rigidbody: engine gravity,
 	// every axis free, the engine's own sleep. FROZEN has motion disabled: solid where it stands, never moved by
 	// anything. Switched only on a change, so the per-tick cost is a compare.
+
+	// The body weighs what the clay weighs (SdfCollider.ClayMass), not what its overlapping collision shapes add
+	// up to. Re-asserted every tick on the simulating machine: the collider rebuilds on commit without telling
+	// us, and the engine recomputes mass from the shapes whenever the collider rebinds. One float compare when
+	// nothing changed. Mass only shows in Loose and Held (the character step integrates its own motion), but a
+	// steady value everywhere is cheaper than tracking mode changes.
+	void ApplyClayMass()
+	{
+		if ( !Body.IsValid() || !_collider.IsValid() )
+			return;
+		float mass = _collider.ClayMass;
+		if ( mass > 0f && MathF.Abs( Body.MassOverride - mass ) > 1e-3f )
+			Body.MassOverride = mass;
+	}
 
 	enum PhysicsMode { Character, Held, Loose, Frozen }
 	PhysicsMode _physicsMode = PhysicsMode.Character;

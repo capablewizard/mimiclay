@@ -110,6 +110,7 @@ public sealed class SessionResetSystem : GameObjectSystem
 			SculptSceneLibrary.NotePlayEnded(); // next play session autosaves into its OWN folder
 			Interactions.Reset(); // registered sources + the local hover are statics
 			PawnSwapKeys.Reset(); // a swap parked on the revert dialog
+			SdfCollisionBuilder.ClearCache(); // shared collider Models don't outlive the session
 		}
 
 		base.Dispose();

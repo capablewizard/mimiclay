@@ -83,6 +83,40 @@ public sealed class SdfCollider : Component
 	/// the floor — and stays valid while the pawn yaws (yaw cancels out of the tilt).</summary>
 	public IReadOnlyList<Vector3> FootPoints => _footPoints;
 
+	/// <summary>The clay's solid volume (sculpture units³) for the shape last built — see
+	/// <see cref="SdfCollisionBuilder.ClayVolume"/>. Sampled on the first read after a build (and shared by every
+	/// sculpture of the same shape), so scenery that never weighs anything never pays for it. 0 until it builds.</summary>
+	public float ClayVolume
+	{
+		get
+		{
+			if ( _clayVolume is null )
+			{
+				try
+				{
+					_clayVolume = _volumeBrushes is not null ? SdfCollisionBuilder.ClayVolume( _volumeBrushes ) : 0f;
+				}
+				catch
+				{
+					_clayVolume = 0f; // mass is a nicety; never let it throw into the controller
+				}
+			}
+			return _clayVolume.Value;
+		}
+	}
+
+	float? _clayVolume;
+	List<SdfBrush> _volumeBrushes; // the brush list of the last build, for the lazy volume
+
+	/// <summary>The mass (kg) the clay should have: its true volume at the clay surface's density. The engine's
+	/// automatic mass sums the collider's SHAPES instead, and those overlap (buried capsule roots, voxel boxes
+	/// under hulls, mirror copies meeting at the plane), so a prop would weigh more than its clay. 0 until it
+	/// builds, and for a trigger build (nothing to weigh).</summary>
+	public float ClayMass => BuildAsTrigger ? 0f : ClayVolume * MetresPerUnitCubed * ClaySurface.Density;
+
+	// Sculpture units are inches; Surface.Density is kg/m³.
+	const float MetresPerUnitCubed = 0.0254f * 0.0254f * 0.0254f;
+
 	// Sculpture-local points outlining every shape the last build EMITTED — hull vertices, voxel-box corners,
 	// points on each collision sphere — captured by SdfCollisionBuilder.Build itself, so they carry its carve
 	// decisions exactly (a hollowed bin's frame stops at its real base, not the uncarved cylinder's).
@@ -279,6 +313,9 @@ public sealed class SdfCollider : Component
 		{
 			_footPoints = new();
 		}
+
+		_volumeBrushes = brushes;
+		_clayVolume = null; // re-sampled on the next ClayVolume read
 	}
 
 	// Editor + runtime collision view (the viewport's Collision panel) — see SdfCollisionDebug.
