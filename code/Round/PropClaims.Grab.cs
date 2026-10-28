@@ -86,6 +86,45 @@ public sealed partial class PropClaims
 	// grab so it hangs still until the first stream lands.
 	readonly Dictionary<Guid, Transform> _grabTargets = new();
 
+	// Host-only: per held prop, the PhysicsFilters that stop it colliding with its HOLDER. Up close a held prop
+	// otherwise gets pinned between a wall and the holder's own body, and the two shove each other back and
+	// forth. Only the holder: the prop still collides with every other player and everything else. One filter
+	// per body in the holder's pawn (the movement body, the head's kinematic body). Runtime-only components on
+	// the prop root: never saved, cloned or networked — collisions are the host's business alone.
+	readonly Dictionary<Guid, List<PhysicsFilter>> _holderFilters = new();
+
+	void IgnoreHolder( Connection c, HiderController prop )
+	{
+		ClearHolderFilters( prop.GameObject.Id );
+
+		var pawn = Host?.ClaimantPawn( c );
+		if ( !pawn.IsValid() )
+			return;
+
+		var filters = new List<PhysicsFilter>();
+		foreach ( var rb in pawn.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			var filter = prop.GameObject.Components.Create<PhysicsFilter>( startEnabled: false );
+			filter.Flags |= ComponentFlags.NotSaved | ComponentFlags.NotNetworked | ComponentFlags.NotCloned | ComponentFlags.Hidden;
+			filter.Body = rb.GameObject;
+			filter.Enabled = true;
+			filters.Add( filter );
+		}
+		_holderFilters[prop.GameObject.Id] = filters;
+	}
+
+	void ClearHolderFilters( Guid pawnId )
+	{
+		if ( !_holderFilters.Remove( pawnId, out var filters ) )
+			return;
+
+		foreach ( var filter in filters )
+		{
+			if ( filter.IsValid() )
+				filter.Destroy();
+		}
+	}
+
 	// Host-side per-caller rate gate on RequestGrab (see GrabFor).
 	const float GrabCooldown = 0.1f;
 	readonly Dictionary<Guid, RealTimeUntil> _grabGate = new();
@@ -152,6 +191,7 @@ public sealed partial class PropClaims
 		FrozenProps.Remove( prop.GameObject.Id ); // picking a frozen prop up unfreezes it
 		Held[c.Id] = prop.GameObject.Id;
 		_grabTargets[prop.GameObject.Id] = prop.WorldTransform;
+		IgnoreHolder( c, prop );
 		PlaySwapPop( PopSpot( prop.GameObject ) );
 	}
 
@@ -312,6 +352,7 @@ public sealed partial class PropClaims
 		Held.Remove( c.Id );
 		_grabTargets.Remove( id );
 		EndGrabScale( id );
+		ClearHolderFilters( id );
 		var go = Scene.Directory.FindByGuid( id );
 		if ( !go.IsValid() )
 			return;
@@ -349,6 +390,7 @@ public sealed partial class PropClaims
 			Held.Remove( holder );
 			_grabTargets.Remove( pawnId );
 			EndGrabScale( pawnId );
+			ClearHolderFilters( pawnId );
 			var go = Scene.Directory.FindByGuid( pawnId );
 			if ( go.IsValid() )
 			{

@@ -164,8 +164,9 @@ public sealed partial class HunterController
 	// stays the chosen maximum: step back from the obstruction and the prop springs back out to it.
 	//
 	// The aim sweep starts a short way out, which can already be inside something when we stand against a
-	// wall or the prop is big; then the fallback sweeps from where the prop actually IS (the solver keeps
-	// that clear) toward the target, so it still stops at the surface rather than being asked through it.
+	// wall or the prop is big; then the fallback sweeps from where the prop actually IS toward the target, so it
+	// still stops at the surface rather than being asked through it — and if even that starts inside
+	// something, the prop is simply held where it is.
 	Vector3 ClampedRoot( GameObject held, Vector3 eye, Rotation rotation )
 	{
 		Transform RootAt( float distance ) => new( eye + _aimDir * distance - rotation * _grabCentre, rotation );
@@ -188,7 +189,15 @@ public sealed partial class HunterController
 
 		var from = new Transform( held.WorldPosition, rotation );
 		var path = GrabTrace( held ).Sweep( body, from, new Transform( desired, rotation ) ).Run();
-		if ( path.StartedSolid || !path.Hit )
+
+		// Starting inside something too (resting contact, the press, a prop bigger than the gap we're in):
+		// there's no clear point to aim for, so ask the prop to stay exactly where it is. Never fall back to
+		// the unclamped target — that's the full-strength shove into the wall this whole clamp exists to stop.
+		// Checked before Hit: a sweep that starts solid needn't report a hit.
+		if ( path.StartedSolid )
+			return held.WorldPosition;
+
+		if ( !path.Hit )
 			return desired;
 
 		var travel = desired - from.Position;
