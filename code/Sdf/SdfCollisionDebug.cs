@@ -10,10 +10,13 @@ namespace Mimiclay;
 /// brushes — coloured by where each shape came from (exact hull / exact sphere / carve voxel box, or per source
 /// brush), with optional foot probes, per-sculpture stats and labels on brushes that got no collider at all.
 ///
-/// Driven from <see cref="SdfCollider"/>'s DrawGizmos. In PLAY it shows the live collider the component built.
-/// In the EDITOR the component never runs (physics is a play concern), so this builds a private preview with
-/// the same builder + brush selection + probe frame — identical to what play will build for the shape on
-/// screen — cached on the shape's content hash and throttled while it changes (a gizmo drag).
+/// Two draw paths over one <see cref="Snapshot"/>:
+///  • EDITOR scene — gizmos, from <see cref="SdfCollider"/>'s DrawGizmos. The component never runs there (physics
+///    is a play concern), so this builds a private preview with the same builder + brush selection + probe frame
+///    — identical to what play will build for the shape on screen — cached on the shape's content hash and
+///    throttled while it changes (a gizmo drag).
+///  • PLAY — the game camera never draws gizmos, so <see cref="SdfCollisionDebugSystem"/> renders the LIVE
+///    collider the component built as one line-list scene object per collider, plus overlay text.
 ///
 /// The switches are statics so both assemblies see them: the editor's Collision panel owns their persistence
 /// (see <c>CollisionPanel</c>); <c>mimi_collision_view</c> toggles the master in game.
@@ -63,21 +66,99 @@ public static class SdfCollisionDebug
 		internal Vector3[] Feet = Array.Empty<Vector3>();
 		internal readonly List<(Vector3 Position, string Text)> Missing = new();
 		internal int VoxelBoxes, DroppedHulls;
+
+		// Play path: every shape as sculpture-local line-list vertices, built once per option set that shapes them.
+		Vertex[] _lines;
+		(bool ByBrush, bool Probes) _linesMode;
+
+		internal Vertex[] LineVertices()
+		{
+			if ( _lines is not null && _linesMode == (ColourByBrush, FootProbes) )
+				return _lines;
+
+			var verts = new List<Vertex>();
+			void Seg( Vector3 a, Vector3 b, Color c )
+			{
+				verts.Add( new Vertex( a, c ) );
+				verts.Add( new Vertex( b, c ) );
+			}
+
+			foreach ( var (lines, kind, brush) in Hulls )
+			{
+				var c = ShapeColor( kind, brush );
+				foreach ( var l in lines )
+					Seg( l.Start, l.End, c );
+			}
+
+			// Three great circles per sphere — reads as a sphere from any angle.
+			const int n = 16;
+			foreach ( var (sphere, brush) in Spheres )
+			{
+				var c = ShapeColor( SdfCollisionBuilder.ShapeKind.Sphere, brush );
+				for ( int axis = 0; axis < 3; axis++ )
+				for ( int i = 0; i < n; i++ )
+				{
+					float a0 = MathF.Tau * i / n, a1 = MathF.Tau * (i + 1) / n;
+					Seg( sphere.Center + Circle( axis, a0 ) * sphere.Radius, sphere.Center + Circle( axis, a1 ) * sphere.Radius, c );
+				}
+			}
+
+			if ( FootProbes )
+			{
+				foreach ( var p in Feet )
+				{
+					Seg( p - Vector3.Forward, p + Vector3.Forward, ProbeColor );
+					Seg( p - Vector3.Left, p + Vector3.Left, ProbeColor );
+					Seg( p, p + Vector3.Down * 4f, ProbeColor );
+				}
+			}
+
+			_lines = verts.ToArray();
+			_linesMode = (ColourByBrush, FootProbes);
+			return _lines;
+		}
+
+		// Point at angle a on the unit circle normal to the given axis (0 = x, 1 = y, 2 = z).
+		static Vector3 Circle( int axis, float a )
+		{
+			float s = MathF.Sin( a ), c = MathF.Cos( a );
+			return axis switch { 0 => new Vector3( 0f, c, s ), 1 => new Vector3( c, 0f, s ), _ => new Vector3( c, s, 0f ) };
+		}
 	}
 
 	[ConCmd( "mimi_collision_view" )]
 	public static void ViewCmd( bool on ) => Enabled = on;
 
-	/// <summary>Draw <paramref name="collider"/>'s collision. Called inside its gizmo scope (sculpture-local space,
-	/// scale included — exactly the space the collider's shapes live in).</summary>
-	public static void Draw( SdfCollider collider )
+	/// <summary>Should this collider draw at all right now (master switch, thumbnail scenes, the selection filter)?</summary>
+	internal static bool ShouldDraw( SdfCollider collider )
 	{
 		if ( !Enabled || !collider.IsValid() || SdfThumbnail.IsThumbnailScene( collider.Scene ) )
-			return;
-		if ( SelectedOnly && !IsSelected( collider.GameObject ) )
+			return false;
+		return !SelectedOnly || IsSelected( collider );
+	}
+
+	/// <summary>The sculpture's shape-count line for the stats label.</summary>
+	internal static string StatsText( SdfCollider collider, Snapshot snap )
+	{
+		if ( snap.Model is null )
+			return $"{collider.GameObject.Name}: no collider";
+
+		int exactHulls = snap.Hulls.Count - snap.VoxelBoxes;
+		var text = $"{collider.GameObject.Name}: {exactHulls} hull · {snap.Spheres.Count} sphere · {snap.VoxelBoxes} voxel box";
+		if ( snap.DroppedHulls > 0 )
+			text += $" · {snap.DroppedHulls} hull REJECTED by physics";
+		return text;
+	}
+
+	/// <summary>Draw <paramref name="collider"/>'s collision as gizmos — EDITOR scene only (play draws through
+	/// <see cref="SdfCollisionDebugSystem"/>, whose scene objects the scene view sees too). Called inside the
+	/// collider's gizmo scope (sculpture-local space, scale included — the space its shapes live in).</summary>
+	public static void Draw( SdfCollider collider )
+	{
+		if ( !ShouldDraw( collider ) || !collider.Scene.IsEditor )
 			return;
 
-		var snap = collider.Scene.IsEditor ? EditorSnapshot( collider ) : RuntimeSnapshot( collider );
+		var snap = EditorSnapshot( collider );
 		if ( snap is null )
 			return;
 
@@ -113,13 +194,7 @@ public static class SdfCollisionDebug
 		if ( Stats )
 		{
 			Gizmo.Draw.Color = Color.White.WithAlpha( 0.9f );
-			int exactHulls = snap.Hulls.Count - snap.VoxelBoxes;
-			var text = snap.Model is null
-				? $"{collider.GameObject.Name}: no collider"
-				: $"{collider.GameObject.Name}: {exactHulls} hull · {snap.Spheres.Count} sphere · {snap.VoxelBoxes} voxel box";
-			if ( snap.DroppedHulls > 0 )
-				text += $" · {snap.DroppedHulls} hull REJECTED by physics";
-			Gizmo.Draw.ScreenText( text, world.Position, new Vector2( 12f, -24f ), size: 12f );
+			Gizmo.Draw.ScreenText( StatsText( collider, snap ), world.Position, new Vector2( 12f, -24f ), size: 12f );
 		}
 
 		if ( FlagMissing )
@@ -130,7 +205,7 @@ public static class SdfCollisionDebug
 		}
 	}
 
-	static Color ShapeColor( SdfCollisionBuilder.ShapeKind? kind, int brush )
+	internal static Color ShapeColor( SdfCollisionBuilder.ShapeKind? kind, int brush )
 	{
 		if ( ColourByBrush && brush >= 0 )
 			return new ColorHsv( (brush * 137.508f) % 360f, 0.65f, 1f ).ToColor(); // golden-angle hues
@@ -148,9 +223,16 @@ public static class SdfCollisionDebug
 	/// selection isn't reachable from here).</summary>
 	[SkipHotload] public static readonly List<GameObject> Selection = new();
 
-	// The sculpture itself, or anything under it (a brush object, a spline point), is selected.
-	static bool IsSelected( GameObject go )
+	// The sculpture itself, or anything under it (a brush object, a spline point), is selected. In play the
+	// editor's selection is of EDITOR-scene objects, so there "selected" also means the sculpture this machine
+	// is sculpting right now (the local edit session's target).
+	static bool IsSelected( SdfCollider collider )
 	{
+		var go = collider.GameObject;
+		if ( !collider.Scene.IsEditor && SculptEditSession.Current is { IsEditing: true } s && s.Target.IsValid()
+			&& s.Target.GameObject == go )
+			return true;
+
 		foreach ( var sel in Selection )
 			for ( var g = sel; g.IsValid(); g = g.Parent )
 				if ( g == go )
@@ -158,12 +240,13 @@ public static class SdfCollisionDebug
 		return false;
 	}
 
-	// PLAY: the component's own build — what physics is actually simulating.
-	static Snapshot RuntimeSnapshot( SdfCollider collider )
+	/// <summary>PLAY: the component's own build — what physics is actually simulating. Re-derived only when the
+	/// component swaps its model.</summary>
+	internal static Snapshot RuntimeSnapshot( SdfCollider collider )
 	{
 		var model = collider.BuiltModel;
 		var snap = collider.DebugSnapshot;
-		if ( snap is not null && snap.Model == model && snap.Model is not null )
+		if ( snap is not null && snap.Model == model )
 			return snap;
 
 		snap = Derive( model, collider.EmittedShapes, collider.FootPoints, collider.CollisionBrushes() );
