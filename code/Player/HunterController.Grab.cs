@@ -30,7 +30,9 @@ public sealed partial class HunterController
 	                              // running on past it while the host refuses (see CanScaleTo)
 
 	// A drop/throw is ours the instant we send it, but the host's row lingers a round-trip on a client: ignore
-	// the row for the prop we just let go of until it's gone (or this times out).
+	// the row for the prop we just let go of until it's gone (or this times out). Ended EARLY — the moment the
+	// row is seen gone, or we ask for a new grab — or re-grabbing the prop you just dropped sat ignored for the
+	// rest of the timeout: granted, but hanging where it was until the latch ran out.
 	Guid _grabLetGo;
 	RealTimeSince _sinceGrabLetGo = 999f;
 
@@ -45,6 +47,7 @@ public sealed partial class HunterController
 		if ( !PropClaims.Current.IsValid() || !target.IsValid() )
 			return;
 
+		_grabLetGo = default; // a new request: the next row naming any prop is this grant, not the old hold
 		PropClaims.MarkGrabPending( true );
 		PropClaims.Current.RequestGrab( target );
 	}
@@ -54,7 +57,9 @@ public sealed partial class HunterController
 	bool UpdateGrab( Vector3 eye )
 	{
 		var held = PropClaims.LocalHeld;
-		if ( held.IsValid() && held.Id == _grabLetGo && _sinceGrabLetGo < 1f )
+		if ( !held.IsValid() || held.Id != _grabLetGo )
+			_grabLetGo = default; // the old hold's row is gone (or replaced) — nothing left to ignore
+		else if ( _sinceGrabLetGo < 1f )
 			held = null;
 
 		if ( !held.IsValid() )

@@ -77,6 +77,10 @@ public sealed partial class PropClaims
 	// grab so it hangs still until the first stream lands.
 	readonly Dictionary<Guid, Transform> _grabTargets = new();
 
+	// Host-side per-caller rate gate on RequestGrab (see GrabFor).
+	const float GrabCooldown = 0.1f;
+	readonly Dictionary<Guid, RealTimeUntil> _grabGate = new();
+
 	/// <summary>Host: the pose a held prop should chase, or false when nobody holds it.</summary>
 	internal bool TryGetGrabTarget( HiderController hider, out Transform target )
 	{
@@ -100,9 +104,11 @@ public sealed partial class PropClaims
 		if ( !pawn.IsValid() || !pawn.Components.Get<HunterController>().IsValid() )
 			return;
 
-		if ( _possessGate.TryGetValue( c.Id, out var gate ) && gate > 0f )
+		// Its own, shorter anti-spam gate: hold-to-carry makes quick re-presses normal (drop, grab again), and
+		// sharing possession's 0.3s refused them outright.
+		if ( _grabGate.TryGetValue( c.Id, out var gate ) && gate > 0f )
 			return;
-		_possessGate[c.Id] = PossessCooldown;
+		_grabGate[c.Id] = GrabCooldown;
 
 		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange )
 			return;
