@@ -1083,6 +1083,13 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			: default;
 		Body.Gravity = mode == PhysicsMode.Loose;
 
+		// Continuous collision while it moves as an OBJECT — carried (the hold can swing it fast) or loose (falling,
+		// tumbling, flung). Without it a step longer than the prop's own thickness passes straight through thin
+		// geometry: a lemon slice falling off a counter tunnelled through shelves. It only costs anything when a
+		// body moves far relative to its size, so it's on for every loose prop rather than gated by size. Off for
+		// a character body (its own steps never move fast enough) and a frozen one (it doesn't move).
+		Body.EnhancedCcd = mode is PhysicsMode.Held or PhysicsMode.Loose;
+
 		if ( mode == PhysicsMode.Frozen )
 		{
 			Body.Velocity = Vector3.Zero;
