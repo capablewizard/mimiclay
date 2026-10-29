@@ -162,15 +162,15 @@ public sealed partial class HunterController
 	// reached, so the host's chase pushes the body into the surface at full strength every tick while the solver
 	// shoves it back — the jitter. Instead, sweep the prop's own collision shape (its live physics body, so the
 	// exact collider — carves, scale and all) along the aim from just in front of us out to the chosen distance,
-	// at the rotation we're holding it, and stop at the first hit PLUS GrabPressDepth: a shallow overlap the
-	// chase answers with a gentle, steady push (depth × the hold pull), so the prop presses flush against the
-	// surface — settling onto it — instead of hovering a hair off it or being rammed through it. _grabDistance
-	// stays the chosen maximum: step back from the obstruction and the prop springs back out to it.
+	// at the rotation we're holding it; at the first hit, slide the rest along the surface and press
+	// GrabPressDepth into it: a shallow overlap the chase answers with a steady push (depth × the hold pull),
+	// so the prop settles flush against the surface instead of hovering a hair off it or being rammed through
+	// it. _grabDistance stays the chosen maximum: step back from the obstruction and the prop springs back out.
 	//
 	// The aim sweep starts a short way out, which can already be inside something when we stand against a
-	// wall or the prop is big; then the fallback sweeps from where the prop actually IS toward the target, so it
-	// still stops at the surface rather than being asked through it — and if even that starts inside
-	// something, the prop is simply held where it is.
+	// wall, look down, or the prop is big; then the fallback sweeps from where the prop actually IS toward the
+	// target, sliding along whatever it meets rather than being asked through it — and if even that starts
+	// inside something, the target only steps a little way toward where it should be.
 	Vector3 ClampedRoot( GameObject held, Vector3 eye, Rotation rotation )
 	{
 		Transform RootAt( float distance ) => new( eye + _aimDir * distance - rotation * _grabCentre, rotation );
@@ -184,22 +184,39 @@ public sealed partial class HunterController
 		var desired = RootAt( far ).Position;
 
 		var body = rigidbody?.PhysicsBody;
-		if ( body is null || !body.IsValid() || far <= near )
+		if ( body is null || !body.IsValid() )
 			return desired;
 
-		var aim = GrabTrace( held ).Sweep( body, RootAt( near ), RootAt( far ) ).Run();
-		if ( !aim.StartedSolid )
+		// No span to sweep along the aim (a big prop held close: the clearance pushes near out to the hold
+		// distance) → straight to the sweep from where the prop is. Never the unswept target: big props close up
+		// flipped between it and the swept ones every few frames, and each flip threw the prop (the jitter).
+		// An aim sweep that hits at its very START is already touching (looking down, the near end sits on the
+		// floor) — treated like starting inside: the slide from there would start in the floor too and only step
+		// GrabUnstickStep from the near end, so the target flipped between that and the fallback's every frame
+		// at the pitch where the two met (a 29u jump each way: the jitter there).
+		bool aimSpan = far > near + 0.5f;
+		var aim = aimSpan ? GrabTrace( held ).Sweep( body, RootAt( near ), RootAt( far ) ).Run() : default;
+		if ( aimSpan && !aim.StartedSolid && (!aim.Hit || aim.Fraction > 0.001f) )
 		{
 			if ( !aim.Hit )
 				return desired;
 
-			float span = far - near;
-			float reach = MathF.Min( aim.Fraction * span + GrabPressDepth, span );
-			return RootAt( near + reach ).Position;
+			// Blocked along the aim: slide the rest along what it hit, like the fallback below — so both land on
+			// the same spot (the hold point's projection onto the surface: looking down, the prop sits on the
+			// floor out at the hold distance and comes in as you look further down). Stopping AT the hit pulled
+			// it in toward you instead, and the fallback then snapped it back out — two drags, and jitter
+			// where they met.
+			return RootAt( near ).Position + SlideAndPress( held, body, RootAt( near ), desired - RootAt( near ).Position, aim );
 		}
 
-		var from = new Transform( held.WorldPosition, rotation );
-		var path = GrabTrace( held ).Sweep( body, from, new Transform( desired, rotation ) ).Run();
+		// The prop AS IT IS (its real rotation — the contact hold may have turned it flush against something, and
+		// the aimed rotation placed here would already be inside the floor), its clay centre moved toward where
+		// the centre should end up; the target root is then wherever that centre lands, at the aimed rotation.
+		var now = held.WorldTransform.WithScale( 1f );
+		var centreNow = held.WorldTransform.PointToWorld( _grabCentre );
+		var travel = desired + rotation * _grabCentre - centreNow;
+		Vector3 RootFor( Vector3 move ) => centreNow + move - rotation * _grabCentre;
+		var path = GrabTrace( held ).Sweep( body, now, now.WithPosition( now.Position + travel ) ).Run();
 
 		// Starting inside something too (resting contact, the press, a prop bigger than the gap we're in):
 		// there's no clear point to aim for, so ask for a short step toward the target. Not "stay where it
@@ -209,15 +226,36 @@ public sealed partial class HunterController
 		// step frees it, the sweeps above take over again. Checked before Hit: a sweep that starts solid
 		// needn't report a hit.
 		if ( path.StartedSolid )
-			return held.WorldPosition + (desired - held.WorldPosition).ClampLength( GrabUnstickStep );
+			return RootFor( travel.ClampLength( GrabUnstickStep ) );
 
 		if ( !path.Hit )
 			return desired;
 
-		var travel = desired - from.Position;
-		float length = travel.Length;
-		float keep = length > 1e-3f ? MathF.Min( path.Fraction + GrabPressDepth / length, 1f ) : 0f;
-		return from.Position + travel * keep;
+		return RootFor( SlideAndPress( held, body, now, travel, path ) );
+	}
+
+	// A sweep from `start` along `travel` hit something: SLIDE the rest of the way along what it hit (one
+	// collide-and-slide step), then press into it (GrabPressDepth along the normal). Returns the total move from
+	// `start`. Stopping at the hit instead pinned the target ~the press from wherever the prop already was: look
+	// down with a big prop and back away, and the prop crawled after you at ~70 u/s, catching up in a rush when
+	// you looked up. The slide starts where the sweep stopped (sweeps stop just short of contact); if even that
+	// reads as inside something — a second surface it's touching, like a counter's edge above a prop on the
+	// floor — it still steps a little along the surface rather than not at all.
+	Vector3 SlideAndPress( GameObject held, PhysicsBody body, Transform start, Vector3 travel, SceneTraceResult hit )
+	{
+		var toContact = travel * hit.Fraction;
+		var rest = travel * (1f - hit.Fraction);
+		var slide = rest - hit.Normal * Vector3.Dot( rest, hit.Normal );
+		var at = start.WithPosition( start.Position + toContact );
+		var slid = GrabTrace( held ).Sweep( body, at, at.WithPosition( at.Position + slide ) ).Run();
+		var moved = toContact + (slid.StartedSolid ? slide.ClampLength( GrabUnstickStep ) : slide * slid.Fraction);
+
+		// The press scales with how hard you PUSH: how far past the surface the aim wants the prop (the part of
+		// the travel the slide took away), up to GrabPressDepth. Touching lightly rests the prop against the
+		// surface at the angle you hold it; aim further in and it levers flush. A fixed full press snapped
+		// everything flush the instant it touched.
+		float push = MathF.Max( Vector3.Dot( rest, -hit.Normal ), 0f );
+		return moved - hit.Normal * MathF.Min( push * GrabPushScale, GrabPressDepth );
 	}
 
 	// The hold distance (eye → clay centre along the aim), lengthened if the prop's closest point to the eye would
@@ -237,10 +275,16 @@ public sealed partial class HunterController
 	// How far in front of the eye (along the aim) the held prop's nearest surface must stay.
 	const float GrabNearClearance = 24f;
 
-	// How far past the first hit the target goes (units along the sweep): the "press". Small enough that the
-	// chase into it is a soft push (× HiderController's HoldPull ≈ 70 u/s at 4) the solver absorbs quietly;
-	// 0 = stop exactly at contact.
-	const float GrabPressDepth = 4f;
+	// The most "press" there is: how far into the surface hit the target goes, straight along its normal, when
+	// you push hard (see SlideAndPress — it scales with the push) — the same in both of ClampedRoot's branches,
+	// so switching between them doesn't move the target. It's what levers a prop flush (the contact hold chases
+	// it at × HoldPull). Measured (copper pot tilted 30°, pressed into the floor): ≤10 → stays ~23°, 12 →
+	// 0.0°, resting at ~7 u/s; along the travel instead didn't help.
+	const float GrabPressDepth = 12f;
+
+	// Press per unit of push (see SlideAndPress): 1 still snapped props flush on a light touch; at 0.25 the
+	// full press needs the aim ~48u into the surface.
+	const float GrabPushScale = 0.25f;
 
 	// How far toward the target a stuck prop (both sweeps start inside something) is asked to move per frame.
 	const float GrabUnstickStep = 8f;
