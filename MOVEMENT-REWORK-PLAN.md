@@ -1,6 +1,6 @@
 # Prop movement — plan (v2, from scratch)
 
-Status: Phase 1 (floor controller) BUILT and verified; Phase 2 (physics press alignment) BUILT, not yet felt in play; on branch `prop_movement_rework`,
+Status: Phase 1 (floor controller), Phase 2 (physics press) and Phase 3 (physics climbing) BUILT; on branch `prop_movement_rework`,
 2026-10-29. Phase 3 (climbing) not started.
 Supersedes v1 (body-sweep mover) and the sphere-proxy discussion.
 
@@ -128,47 +128,73 @@ GameObject Ground     // what we are on, for platform carry
 
 Moving cost: about 2 to 5 single-hull sweeps per tick. That is cheaper than today's probes on every shape.
 
-## Flush alignment ("push into it")
+## Flush alignment
 
-On commit, cluster the hull's faces into **flat sides**: merge faces whose normals are within ~10°, sum their
-areas, drop sides smaller than a minimum area. Store each side's local normal and area.
+Done as the physics **press** (see Progress): pushing into a wall hard enough makes the body dynamic, and the real
+collider's contact turns it flush, capped at `PressMaxTurnRate`. The scripted hinge design that used to be here
+was built, rejected and removed.
 
-**Pushing to align.** While attached or touching a surface S and pushing into it (input toward S, or crouch
-on the floor) with *Stick* held for `AlignHold` (~0.15s):
+## Climbing (physics, v3 — BUILT 2026-10-29, `HiderController.Climb.cs`)
 
-1. Pick the side whose current world normal is closest to `−S.normal`.
-2. Target rotation = shortest arc taking that side's normal onto `−S.normal`, keeping the twist about S.
-3. **Hinge** about the contact point toward the target with a rotating sweep, over ~0.15s. If the hinge is
-   blocked part-way, stop there.
+Climbing is the press carried on: the same dynamic body and real-collider contacts, with gravity swapped for a
+pull toward the surface the prop is touching. Nothing is scripted to rotate it; contacts lay it flat on whatever
+it's stuck to, exactly as the press turns it flush now.
 
-The prop tips over like a real object pushed onto its side, so it never teleports into a pose. Round clay has
-no large flat sides, so it simply sticks without rotating. Concave clay rests on its hull, meaning a hook rests
-on its tips, which is how it would physically rest.
+**Controls (Meccha Chameleon's scheme, no new key):**
 
-**Settling on landing.** When a falling prop lands on a corner or edge, hinge it onto the side nearest world
-down whose centroid projection is inside the side (a stable rest pose), so it never balances on a vertex.
+| Input | On the floor | While pressing a wall | While climbing |
+| --- | --- | --- | --- |
+| Space | Jump | Start climbing | Hold: move up the surface |
+| Ctrl | Crouch (slow) | — | Hold: move down the surface |
+| WASD | Walk | Push / slide along the wall | Move along the surface, camera-relative |
+| Shift | Run | Run | Let go (fall) |
 
-**Upright.** One key returns to the authored orientation (the way the player sculpted it), validated by the
-same rotating sweep, with a lift along `Normal` if it would overlap.
+**State:** a new `PhysicsMode.Climbing` (dynamic, engine gravity OFF), plus the current surface normal and the
+last contact point, both read from the real collider (see step 1).
 
-## Climbing
+**Per tick while climbing:**
 
-Requires *Stick* held (or toggled, see decisions). Without it the prop behaves like a normal player
-controller: walls block, ledges drop you.
+1. **Contact.** Collision events on the body (enable update events for this mode) give the touching surface's
+   normal and point; smooth the normal over a few ticks so a bumpy clay or tile surface doesn't jitter it.
+   Between events, a short `Scene.Trace.Body` of the real rigidbody along −normal confirms the surface is still
+   there (translation only, which is all the engine's body traces can do).
+2. **Stick.** The velocity we write always carries a small component into the surface (`StickSpeed`, ~40 u/s),
+   so the contact stays loaded. Pitch and roll stay LOCKED (upright only); the contact only turns it about the
+   vertical, capped by `PressMaxTurnRate`.
+3. **Move.** WASD camera-relative, projected onto the surface plane; Space/Ctrl along the surface's "up" (world up
+   projected onto the plane; on a ceiling, the camera's forward projected instead).
+4. **Inner corner** (wall → ceiling, floor → wall): moving into a second surface puts a second contact on the
+   body; its normal takes over and the contacts roll the prop onto it. No special case.
+5. **Outer edge** (over a table lip, round under a shelf): the contact disappears as the prop moves past the edge.
+   The pull then aims at the LAST CONTACT POINT instead of along the old normal, so the prop swings round the
+   edge like a magnet and the new face's contact lays it flat. If no surface is regained within a short reach
+   (~1 body length), it lets go and falls.
+6. **Park on the wall.** No input for a few ticks → the body goes KEYFRAMED where it is (no gravity, no drift),
+   still "climbing". Any input makes it dynamic again. A prop hiding on a wall costs nothing and cannot slide.
+7. **Edit while climbing.** Entering edit mode parks it on the wall the same way, so you can sculpt in the air
+   (the coat-hook case). Leaving edit mode resumes climbing; if the new shape no longer touches the surface, it
+   gets the outer-edge reach to find it again, then falls.
+8. **Letting go.** Shift, losing the surface, a jump pad, or a control lock: back to the mover, which falls and
+   parks as normal (keeping whatever orientation the wall left — no auto-upright).
 
-- **Inner corner** (floor to wall, wall to ceiling). Slide hits a surface steeper than the current one while the
-  wish pushes into it: run the flush alignment against that surface, then attach to it.
-- **Outer edge** (over a table lip, round to the underside of a shelf). Snap misses after a move: hinge the
-  hull about the last contact point, rotating toward `−Normal` around the axis `Normal × moveDir`, as one
-  rotating sweep of up to 120°. The first hit is the surface round the corner: align and attach. No hit means
-  airborne.
-- **Ceiling from the floor.** Jump with *Stick* held. The first surface the hull touches mid-air is attached
-  and aligned.
-- **Letting go.** Releasing *Stick* on a wall or ceiling drops you with gravity, keeping your orientation, then
-  settles on landing. Jump pushes off along `Normal`.
-- **Editing in place.** Entering edit mode parks the prop exactly where and however it hangs. On exit, snap
-  against the last normal; a miss means it falls. `BrushWorldClamp` keeps the clay out of the world during the
-  edit, so a commit cannot embed it, and the move hull rebuilds from the new shape.
+**Air grab (reworked after "jumping into a wall mostly doesn't stick"):** the first version needed Space HELD at the
+instant of contact, but a jump is a tap released long before the wall. Now intent = this airborne stretch began
+with our own jump, OR Space held, OR Space pressed within `ClimbGrabBuffer` (0.35s); and the wall is FOUND by a
+hull sweep toward where you're steering, out to `ClimbGrabReach` (10u). Walls need you steering into them (no
+accidental sticks beside a wall); a jump-only grab skips a ledge you're about to clear (the wall must continue a
+step above, so jumping onto a counter still lands on it). Ceilings need Space while not yet falling fast. Not
+steering: the wall last slid along in the air counts for `ClimbGrabWindow` (0.3s).
+
+**Decided (user, 2026-10-29):** props stay UPRIGHT — physics may only turn them about the vertical, never tilt
+them — so pitch and roll stay locked on walls and ceilings too, and there is nothing to restore after letting go.
+Space grabs both while pressing a wall and when held while touching a wall or ceiling mid-air.
+
+**Verified on the radio (single player):** press turned it flush (167° → 180°); Space grabbed the wall; holding
+Space climbed straight up at ~80 u/s, upright; climbing into an object overhead transferred onto its underside
+(inner corner); with no input it held still (0.000u over 1.5s, keyframed); Ctrl climbed down and let go onto a
+ledge, then it landed and parked; launched at the wall with Space held, it grabbed mid-air. NOT yet verified: the
+outer-edge pull (over a lip, round under a shelf), edit mode while stuck, Shift to let go (scripts can't press
+keys), and multiplayer. `mimi_dbg_climb_vertical 1/-1` fakes holding Space/Ctrl for scripted tests.
 
 ## Hunters
 
@@ -212,8 +238,8 @@ roll. Gate it with climb stamina so hunters cannot camp a ceiling. The surface r
 1. **Floor controller.** Full walk, jump, step, ramp, fall, turn, park. Released scenery uses settle-and-park.
    Delete the probe system. Exit: no drift on any prefab in `Assets/prefabs/Props`, no stuck case on kitchen
    counters and steps.
-2. **Flush alignment.** Flat sides, push-to-align hinge, settle on landing, Upright key.
-3. **Climbing.** Inner corners, outer-edge wrap, ceilings, letting go, editing while attached.
+2. **Flush alignment.** Physics press (done).
+3. **Climbing.** Physics climb mode: stick, move on surfaces, inner corners, outer-edge magnet, park on the wall, edit while stuck, let go.
 4. **Hunter climbing.** `MoveModeClimb`, stamina, sounds.
 5. **Multiplayer pass.** Two tiled clients: climb and park while watched, hunter rides a proxy prop, possess a
    wall-attached released prop, grab one in creative, mid-load join during a climb.

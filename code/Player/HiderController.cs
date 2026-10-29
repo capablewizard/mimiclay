@@ -45,13 +45,11 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	public const string PropBodyTag = "propbody";
 
 	// ── Movement ──────────────────────────────────────────────────────────────────────────────────────
-	// Speeds are deliberately the HUNTER's numbers — the stock PlayerController defaults the hunter prefab runs on
-	// (WalkSpeed 110 / RunSpeed 320 / DuckedSpeed 70 / JumpSpeed 300). A prop that moved slower than the thing
-	// chasing it can never break a chase, and the two pawns are the same game: keep them in step, and if the balance
-	// wants props slower, do it deliberately here rather than by them having drifted apart.
-	[Property, Group( "Movement" )] public float WalkSpeed { get; set; } = 110f;
-	[Property, Group( "Movement" )] public float RunSpeed { get; set; } = 320f;
-	[Property, Group( "Movement" )] public float CrouchSpeed { get; set; } = 70f;
+	// Props have no sprint: they always move at the hunter's RUN speed (the stock PlayerController's RunSpeed 320 the
+	// hunter prefab runs on), so a prop can always break a chase, and Shift is free (it lets go of a climb). Crouch is
+	// the fine-positioning speed — the hunter's walk, 110 — for lining a prop up exactly where it should hide.
+	[Property, Group( "Movement" )] public float WalkSpeed { get; set; } = 320f;
+	[Property, Group( "Movement" )] public float CrouchSpeed { get; set; } = 110f;
 
 	/// <summary>Launch speed of a jump (u/s) — the hunter's JumpSpeed, against the same 800 rise gravity, so both
 	/// pawns clear exactly the same height (~56u).</summary>
@@ -600,7 +598,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		UpdateTaunts();
 
 		if ( ControlActive && Input.Pressed( "jump" ) )
+		{
 			_jumpQueued = true;
+			_sinceJumpPress = 0f; // also an air-grab request (see HiderController.Climb)
+		}
 
 		// Free cam toggle — blocked while editing (the sculpt rig already owns navigation there) or while a
 		// cursor-owning panel is open (same guard PlayCamera uses, so F doesn't fire behind a menu). Only where
@@ -822,6 +823,21 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			return;
 		}
 
+		// Stuck to a wall or ceiling (see HiderController.Climb). Edit mode and control locks just hold on; only
+		// becoming scenery lets go.
+		if ( _climbing )
+		{
+			if ( Scenery )
+			{
+				EndClimb();
+			}
+			else
+			{
+				StepClimb( controlled: ControlActive );
+				return;
+			}
+		}
+
 		// Pressed into a wall: physics is turning it flush (see HiderController.Press). Only while it's someone's
 		// body under control — anything else hands it straight back to the mover.
 		if ( _pressing )
@@ -865,7 +881,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			return;
 		}
 
-		IsCrouching = Input.Down( "duck" ); // a prop's shape never changes, so crouch just slows it down
+		IsCrouching = Input.Down( "duck" ); // crouch is the slow, fine-positioning speed (a prop's shape never changes)
 		StepMover( controlled: true );
 	}
 
@@ -891,8 +907,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	}
 
 	// Pressing = a character body pushed into a wall, briefly dynamic so contacts turn it flush (see
-	// HiderController.Press).
-	enum PhysicsMode { Character, Held, Loose, Frozen, Pressing }
+	// HiderController.Press). Climbing = stuck to a wall or ceiling, dynamic with no gravity; ClimbHold = the same,
+	// held still (keyframed) while there's no input (see HiderController.Climb).
+	enum PhysicsMode { Character, Held, Loose, Frozen, Pressing, Climbing, ClimbHold }
 	PhysicsMode _physicsMode = PhysicsMode.Character;
 
 	// Hold feel: how hard the prop is pulled toward the target (1/s) and the speed cap that keeps a fast swing
@@ -909,7 +926,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// Dynamic only as an object (held / loose) or while pressed into a wall. Asserted every call, not just on a
 		// change: the field starts at Character, which no change ever announces, and nothing else may leave a
 		// character body dynamic.
-		bool dynamic = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Pressing;
+		bool dynamic = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Pressing or PhysicsMode.Climbing;
 		if ( Body.MotionEnabled != dynamic )
 		{
 			if ( dynamic )
@@ -932,13 +949,14 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		_physicsMode = mode;
 		if ( mode != PhysicsMode.Held )
 			ReleaseHoldJoint();
-		if ( mode is not (PhysicsMode.Held or PhysicsMode.Pressing) )
-			RestoreHeldFriction(); // pressing slides frictionless like a held prop
-		ApplyPressDamping( mode == PhysicsMode.Pressing );
+		bool againstSurface = mode is PhysicsMode.Pressing or PhysicsMode.Climbing;
+		if ( mode is not PhysicsMode.Held && !againstSurface )
+			RestoreHeldFriction(); // pressing and climbing slide frictionless like a held prop
+		ApplyPressDamping( againstSurface );
 
-		// A pressed body turns only about the vertical — the wall lays it flush, it never tips it over.
-		Body.Locking = mode == PhysicsMode.Pressing ? new PhysicsLock { Pitch = true, Roll = true } : default;
-		Body.Gravity = mode is PhysicsMode.Loose or PhysicsMode.Pressing;
+		// Pressed or climbing, a body turns only about the vertical — surfaces lay it flush, they never tip it over.
+		Body.Locking = againstSurface ? new PhysicsLock { Pitch = true, Roll = true } : default;
+		Body.Gravity = mode is PhysicsMode.Loose or PhysicsMode.Pressing; // a climber's pull replaces gravity
 
 		// Continuous collision while it moves as an OBJECT — carried (the hold can swing it fast) or loose (falling,
 		// tumbling, flung). Without it a step longer than the prop's own thickness passes straight through thin

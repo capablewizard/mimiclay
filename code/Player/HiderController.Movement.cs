@@ -84,6 +84,9 @@ public sealed partial class HiderController
 			return;
 		}
 
+		EndClimb(); // a launch tears it off the wall
+		EndPress();
+
 		_velocity = velocity;
 		IsGrounded = false;
 		_launched = true;
@@ -105,6 +108,7 @@ public sealed partial class HiderController
 		Unpark();
 		_pushPerKg = 0f;
 		_pressing = false; // OnFixedUpdate puts the body back to keyframed on its next Character tick
+		_climbing = false;
 	}
 
 	/// <summary>One fixed tick of prop locomotion. <paramref name="controlled"/> = read input; otherwise the prop
@@ -161,6 +165,14 @@ public sealed partial class HiderController
 		else
 			MoveAirborne( ref pos, rot, move );
 
+		// Holding Space against a wall or ceiling in the air: grab it (see HiderController.Climb).
+		if ( controlled && !IsGrounded && TryAirGrab( pos, rot, wish ) )
+		{
+			_launched = false;
+			Commit( pos, rot );
+			return;
+		}
+
 		_launched = false;
 
 		// Park once there's nothing left to do: grounded, no input, no speed.
@@ -186,7 +198,7 @@ public sealed partial class HiderController
 
 	Vector3 ReadWish()
 	{
-		float speed = IsCrouching ? CrouchSpeed : (Input.Down( "run" ) ? RunSpeed : WalkSpeed);
+		float speed = IsCrouching ? CrouchSpeed : WalkSpeed; // no sprint for props — crouch is the fine control
 
 		// CLAMP, don't normalize — exactly what the stock controller does: raw AnalogMove is per-axis, so two
 		// keys give length √2; clamping caps it at 1 while a part-deflected stick can still ask for less.
@@ -272,6 +284,7 @@ public sealed partial class HiderController
 			if ( jump )
 			{
 				_velocity = _velocity.WithZ( JumpPower );
+				_airFromJump = true; // a jump at a wall grabs it (see HiderController.Climb)
 				IsGrounded = false;
 			}
 		}
@@ -291,6 +304,8 @@ public sealed partial class HiderController
 
 	void MoveGrounded( ref Vector3 pos, Rotation rot, Vector3 move, Vector3 wish )
 	{
+		_sinceAirWall = 999f; // an air grab only counts walls touched since leaving the ground
+		_airFromJump = false;
 		var start = pos;
 		var startVel = _velocity;
 
@@ -327,7 +342,8 @@ public sealed partial class HiderController
 	void MoveAirborne( ref Vector3 pos, Rotation rot, Vector3 move )
 	{
 		_pushPerKg = 0f;
-		Slide( ref pos, rot, move, out _ );
+		Slide( ref pos, rot, move, out var steep );
+		NoteAirContact( steep );
 
 		// Landing: only while not rising, and only on something walkable.
 		if ( _velocity.z <= 0f && SnapToGround( ref pos, rot, Skin * 2f + 0.5f ) )
@@ -396,7 +412,7 @@ public sealed partial class HiderController
 		return true;
 	}
 
-	/// <summary>The steepest blocking surface a slide met (walls; not floors or ceilings).</summary>
+	/// <summary>The steepest blocking surface a slide met — walls first, else a ceiling (never a floor).</summary>
 	struct SteepHit
 	{
 		public bool Hit;
@@ -435,7 +451,7 @@ public sealed partial class HiderController
 			var remaining = move * (1f - tr.Fraction);
 			var n = tr.Normal;
 
-			if ( !Walkable( n ) && n.z > -0.7f && (!steep.Hit || MathF.Abs( n.z ) < MathF.Abs( steep.Normal.z )) )
+			if ( !Walkable( n ) && (!steep.Hit || MathF.Abs( n.z ) < MathF.Abs( steep.Normal.z )) )
 				steep = new SteepHit { Hit = true, Normal = n, Point = tr.HitPosition };
 
 			float into = Vector3.Dot( _velocity, n );

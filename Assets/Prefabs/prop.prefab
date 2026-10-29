@@ -30,7 +30,7 @@
         "CameraDistance": 180,
         "CameraHeightOffset": 16,
         "CenterPivotOnShape": true,
-        "CrouchSpeed": 70,
+        "CrouchSpeed": 110,
         "DebugCameraPivot": false,
         "DebugGroundProbes": false,
         "DisguisePrefab": "prefabs/disguise.prefab",
@@ -59,10 +59,9 @@
         "OnComponentUpdate": null,
         "PanSpeed": 1,
         "PivotSmoothSpeed": 2,
-        "RunSpeed": 320,
         "SnagCompliance": 1,
         "StopSpeed": 6,
-        "WalkSpeed": 110,
+        "WalkSpeed": 320,
         "ZoomSpeed": 0.01
       },
       {

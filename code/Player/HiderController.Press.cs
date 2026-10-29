@@ -104,7 +104,17 @@ public sealed partial class HiderController
 		float did = Vector3.Dot( Body.Velocity.WithZ( 0f ), into );
 		AddPush( asked - did );
 
-		if ( _pushPerKg < PressExitForce || _jumpQueued )
+		// Space while pressing a wall: climb it (see HiderController.Climb) instead of jumping.
+		if ( _jumpQueued )
+		{
+			_jumpQueued = false;
+			_pressing = false;
+			_pushPerKg = 0f;
+			StartClimb( _pushNormal, WorldPosition );
+			return;
+		}
+
+		if ( _pushPerKg < PressExitForce )
 		{
 			EndPress();
 			return;
@@ -113,12 +123,7 @@ public sealed partial class HiderController
 		// Our input drives it; gravity keeps it on the floor. The wall stops the push and turns it flush.
 		_pressCommand = ApplyLeash( ReadWish().WithZ( 0f ), pullIn: true );
 		Body.Velocity = _pressCommand.WithZ( Body.Velocity.z );
-
-		// Cap the turn the wall is giving it (yaw only — pitch and roll are locked). Radians/s on the body.
-		float maxRate = PressMaxTurnRate.DegreeToRadian();
-		var spin = Body.AngularVelocity;
-		if ( MathF.Abs( spin.z ) > maxRate )
-			Body.AngularVelocity = spin.WithZ( MathF.Sign( spin.z ) * maxRate );
+		CapTurnRate();
 	}
 
 	void EndPress()
@@ -129,24 +134,36 @@ public sealed partial class HiderController
 		_pressing = false;
 		_pushPerKg = 0f; // a fresh press has to build its own force
 		SetPhysicsMode( PhysicsMode.Character );
-
-		// The contact solver leaves a sliver of penetration; ease the move hull off the wall so the mover's
-		// first sweep starts clear (the hull may also stick out past the real collider where the clay is concave).
-		_hull.Refresh( _collider, Scene.PhysicsWorld );
-		if ( _hull.Ready && PoseBlocked( WorldPosition, WorldRotation ) )
-		{
-			var n = _pushNormal.WithZ( 0f );
-			n = n.IsNearZeroLength ? Vector3.Up : n.Normal;
-			for ( float d = 0.25f; d <= 4f; d *= 2f )
-			{
-				if ( PoseBlocked( WorldPosition + n * d, WorldRotation ) )
-					continue;
-				WorldPosition += n * d;
-				break;
-			}
-		}
-
+		EaseHullOff( _pushNormal );
 		IsGrounded = true; // it was standing on the floor; the mover's snap confirms it (or starts a fall)
+	}
+
+	// Handing a dynamic body back to the mover: the contact solver leaves a sliver of penetration, and the move hull
+	// may stick out past the real collider where the clay is concave — ease the hull off along the surface's normal
+	// so the mover's first sweep starts clear.
+	void EaseHullOff( Vector3 normal )
+	{
+		_hull.Refresh( _collider, Scene.PhysicsWorld );
+		if ( !_hull.Ready || !PoseBlocked( WorldPosition, WorldRotation ) )
+			return;
+
+		var n = normal.IsNearZeroLength ? Vector3.Up : normal.Normal;
+		for ( float d = 0.25f; d <= 4f; d *= 2f )
+		{
+			if ( PoseBlocked( WorldPosition + n * d, WorldRotation ) )
+				continue;
+			WorldPosition += n * d;
+			return;
+		}
+	}
+
+	// The wall may turn the prop about the vertical, but no faster than PressMaxTurnRate (pitch and roll are locked).
+	void CapTurnRate()
+	{
+		float maxRate = PressMaxTurnRate.DegreeToRadian();
+		var spin = Body.AngularVelocity;
+		if ( MathF.Abs( spin.z ) > maxRate )
+			Body.AngularVelocity = spin.WithZ( MathF.Sign( spin.z ) * maxRate );
 	}
 
 	// SetPhysicsMode's press-specific bits: damping on the way in, back on the way out.
