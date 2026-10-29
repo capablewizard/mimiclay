@@ -8,11 +8,11 @@ namespace Mimiclay;
 /// The collision debug view: draws every <see cref="SdfCollider"/>'s ACTUAL physics shapes over the clay — the
 /// engine's own hull edges and spheres from the built <see cref="Model.Physics"/>, not a re-derivation from the
 /// brushes — coloured by where each shape came from (exact hull / exact sphere / carve voxel box, or per source
-/// brush), with optional foot probes, per-sculpture stats and labels on brushes that got no collider at all.
+/// brush), with per-sculpture stats and labels on brushes that got no collider at all.
 ///
 /// Two draw paths over one <see cref="Snapshot"/>:
 ///  • EDITOR scene — gizmos, from <see cref="SdfCollider"/>'s DrawGizmos. The component never runs there (physics
-///    is a play concern), so this builds a private preview with the same builder + brush selection + probe frame
+///    is a play concern), so this builds a private preview with the same builder + brush selection
 ///    — identical to what play will build for the shape on screen — cached on the shape's content hash and
 ///    throttled while it changes (a gizmo drag).
 ///  • PLAY — the game camera never draws gizmos, so <see cref="SdfCollisionDebugSystem"/> renders the LIVE
@@ -35,8 +35,9 @@ public static class SdfCollisionDebug
 	/// <summary>Colour each shape by its source brush instead of by its kind.</summary>
 	public static bool ColourByBrush;
 
-	/// <summary>Draw the ground-probe foot points the player controller traces from.</summary>
-	public static bool FootProbes;
+	/// <summary>Prop pawns draw the convex move hull their locomotion sweeps (see <c>PropMoveHull</c>), plus the
+	/// support contact. Drawn by the pawn itself, in play only — independent of <see cref="Enabled"/>.</summary>
+	public static bool MoveHull;
 
 	/// <summary>Per-sculpture shape counts next to each sculpture.</summary>
 	public static bool Stats = true;
@@ -48,7 +49,6 @@ public static class SdfCollisionDebug
 	public static readonly Color SphereColor = new( 0.31f, 0.76f, 0.97f );
 	public static readonly Color VoxelColor = new( 1f, 0.72f, 0.30f );
 	public static readonly Color MissingColor = new( 1f, 0.36f, 0.36f );
-	public static readonly Color ProbeColor = new( 1f, 0.95f, 0.35f );
 
 	// Editor previews rebuild at most this often while the shape keeps changing (a drag rebuilds per frame
 	// otherwise, and a carved build samples the field per voxel).
@@ -64,17 +64,16 @@ public static class SdfCollisionDebug
 		internal readonly List<(Line[] Lines, SdfCollisionBuilder.ShapeKind? Kind, int Brush)> Hulls = new();
 		internal readonly List<(Sphere Sphere, int Brush)> Spheres = new();
 		internal readonly List<(Capsule Capsule, int Brush)> Capsules = new();
-		internal Vector3[] Feet = Array.Empty<Vector3>();
 		internal readonly List<(Vector3 Position, string Text)> Missing = new();
 		internal int VoxelBoxes, DroppedHulls;
 
 		// Play path: every shape as sculpture-local line-list vertices, built once per option set that shapes them.
 		Vertex[] _lines;
-		(bool ByBrush, bool Probes) _linesMode;
+		bool _linesMode;
 
 		internal Vertex[] LineVertices()
 		{
-			if ( _lines is not null && _linesMode == (ColourByBrush, FootProbes) )
+			if ( _lines is not null && _linesMode == ColourByBrush )
 				return _lines;
 
 			var verts = new List<Vertex>();
@@ -123,18 +122,8 @@ public static class SdfCollisionDebug
 					Seg( cap.CenterA + off * cap.Radius, cap.CenterB + off * cap.Radius, c );
 			}
 
-			if ( FootProbes )
-			{
-				foreach ( var p in Feet )
-				{
-					Seg( p - Vector3.Forward, p + Vector3.Forward, ProbeColor );
-					Seg( p - Vector3.Left, p + Vector3.Left, ProbeColor );
-					Seg( p, p + Vector3.Down * 4f, ProbeColor );
-				}
-			}
-
 			_lines = verts.ToArray();
-			_linesMode = (ColourByBrush, FootProbes);
+			_linesMode = ColourByBrush;
 			return _lines;
 		}
 
@@ -203,17 +192,6 @@ public static class SdfCollisionDebug
 			Gizmo.Draw.LineCapsule( capsule, 6 );
 		}
 
-		if ( FootProbes && snap.Feet.Length > 0 )
-		{
-			Gizmo.Draw.Color = ProbeColor;
-			Gizmo.Draw.LineThickness = 2f;
-			foreach ( var p in snap.Feet )
-			{
-				Gizmo.Draw.SolidSphere( p, 0.8f, 6, 6 );
-				Gizmo.Draw.Line( p, p + Vector3.Down * 4f );
-			}
-		}
-
 		Gizmo.Draw.IgnoreDepth = false;
 
 		var world = collider.WorldTransform;
@@ -275,50 +253,36 @@ public static class SdfCollisionDebug
 		if ( snap is not null && snap.Model == model )
 			return snap;
 
-		snap = Derive( model, collider.EmittedShapes, collider.FootPoints, collider.CollisionBrushes() );
+		snap = Derive( model, collider.EmittedShapes, collider.CollisionBrushes() );
 		collider.DebugSnapshot = snap;
 		return snap;
 	}
 
-	// EDITOR: a private preview build, same inputs Rebuild uses (brush selection, probe spacing, probe frame).
+	// EDITOR: a private preview build, same inputs Rebuild uses (the brush selection).
 	static Snapshot EditorSnapshot( SdfCollider collider )
 	{
 		var brushes = collider.CollisionBrushes();
-		var probeFrame = SdfCollider.ProbeFrame( collider.WorldRotation );
 		int key = HashCode.Combine(
 			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
-			probeFrame, collider.FootProbeSpacing, SdfCollisionBuilder.CodeVersion );
+			SdfCollisionBuilder.CodeVersion );
 
 		var snap = collider.DebugSnapshot;
 		if ( snap is not null && (snap.Key == key || snap.Built < EditorRebuildInterval) )
 			return snap;
 
 		var emitted = new List<SdfCollisionBuilder.EmittedShape>();
-		var carved = new List<SdfCollisionBuilder.CarvedCopy>();
-		var model = SdfCollisionBuilder.Build( brushes, carved, null, emitted );
+		var model = SdfCollisionBuilder.Build( brushes, null, null, emitted );
 
-		List<Vector3> feet = null;
-		try
-		{
-			if ( brushes is not null )
-				feet = SdfCollisionBuilder.ComputeFootPoints( brushes, collider.FootProbeSpacing, carved, probeFrame );
-		}
-		catch
-		{
-			// Probes are a side view here, same as at runtime — never let them stop the shapes drawing.
-		}
-
-		snap = Derive( model, emitted, feet, brushes );
+		snap = Derive( model, emitted, brushes );
 		snap.Key = key;
 		collider.DebugSnapshot = snap;
 		return snap;
 	}
 
 	static Snapshot Derive( Model model, IReadOnlyList<SdfCollisionBuilder.EmittedShape> emitted,
-		IReadOnlyList<Vector3> feet, List<SdfBrush> brushes )
+		List<SdfBrush> brushes )
 	{
 		var snap = new Snapshot { Model = model, Built = 0f };
-		snap.Feet = feet?.ToArray() ?? Array.Empty<Vector3>();
 
 		var hullTags = emitted.Where( e => e.Kind is SdfCollisionBuilder.ShapeKind.Hull or SdfCollisionBuilder.ShapeKind.VoxelBox ).ToList();
 		var sphereTags = emitted.Where( e => e.Kind == SdfCollisionBuilder.ShapeKind.Sphere ).ToList();

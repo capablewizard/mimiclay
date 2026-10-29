@@ -92,26 +92,39 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 			return;
 		}
 
-		// Hider/prop: HiderController drives its own Rigidbody manually (see HiderController.cs — "a synced
-		// proxy is moved, not simulated", hence the same IsProxy gate here). Exposed via PhysicsBody since the
-		// field itself is private (this game's disguise body, not something outside code normally touches).
+		// Hider/prop: its body is keyframed and moved by its own mover, so the launch goes through the mover
+		// (HiderController.Launch), not the rigidbody. Same IsProxy gate: a proxy is moved, not simulated.
 		var hider = root.Components.Get<HiderController>();
-		if ( hider.IsValid() )
-			Launch( hider, hider.PhysicsBody, hider.IsProxy );
+		if ( hider.IsValid() && !hider.IsProxy && TakeCooldown( hider.GameObject ) )
+		{
+			hider.Launch( LaunchVelocity( hider.Velocity ) );
+			BroadcastBoing();
+		}
 	}
 
-	void Launch( Component pawn, Rigidbody body, bool isProxy )
+	bool TakeCooldown( GameObject go )
+	{
+		if ( _lastLaunch.TryGetValue( go, out var since ) && since < Cooldown )
+			return false;
+		_lastLaunch[go] = 0;
+		return true;
+	}
+
+	Vector3 LaunchVelocity( Vector3 current )
+	{
+		var vel = current.WithZ( LaunchSpeed );
+		if ( ForwardSpeed > 0f )
+			vel += WorldRotation.Forward * ForwardSpeed;
+		return vel;
+	}
+
+	void Launch( PlayerController pc, Rigidbody body, bool isProxy )
 	{
 		if ( isProxy )
 			return; // this machine doesn't simulate this pawn — the owner's own trigger fires there instead
 
-		if ( !body.IsValid() )
+		if ( !body.IsValid() || !TakeCooldown( pc.GameObject ) )
 			return;
-
-		var go = pawn.GameObject;
-		if ( _lastLaunch.TryGetValue( go, out var since ) && since < Cooldown )
-			return;
-		_lastLaunch[go] = 0;
 
 		// PlayerController re-snaps to the ground and ZEROES vertical velocity every physics tick while
 		// IsOnGround is true (MoveModeWalk.PostPhysicsStep -> StickToGround -> PlayerController.Reground) — a
@@ -119,23 +132,14 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 		// (this is exactly what "just resets to 0" was). PreventGrounding is the engine's own public escape
 		// hatch for this — its Jump(Vector3) helper uses the same call internally. Estimate enough airtime to
 		// clear the ground trace: a touch more than the time to rise back to launch height under gravity.
-		if ( pawn is PlayerController pc )
-			pc.PreventGrounding( AirborneEstimate( LaunchSpeed ) );
-
-		var vel = body.Velocity.WithZ( LaunchSpeed );
-		if ( ForwardSpeed > 0f )
-			vel += WorldRotation.Forward * ForwardSpeed;
-
-		// A released prop sleeping on the pad (see HiderController.SleepWhenSettled) ignores a bare velocity write.
-		body.Sleeping = false;
-		body.Velocity = vel;
+		pc.PreventGrounding( AirborneEstimate( LaunchSpeed ) );
+		body.Velocity = LaunchVelocity( body.Velocity );
 
 		BroadcastBoing();
 	}
 
-	// HiderController's Rigidbody has no such ground-snap fighting it (its own OnFixedUpdate ground-probe/
-	// grounding logic is IsProxy-gated the same way ours is, so it simply won't run this same tick), so only
-	// the PlayerController side needs the PreventGrounding escape hatch.
+	// Only the PlayerController needs the PreventGrounding escape hatch: HiderController.Launch un-grounds the
+	// prop mover itself.
 	static float AirborneEstimate( float launchSpeed )
 	{
 		const float gravity = 800f; // s&box's default PlayerController.Gravity magnitude

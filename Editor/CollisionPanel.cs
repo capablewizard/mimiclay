@@ -19,7 +19,7 @@ public static class CollisionPanel
 	const string SelectedOnlyCookie = "Mimiclay.CollisionPanel.SelectedOnly";
 	const string ThroughClayCookie = "Mimiclay.CollisionPanel.ThroughClay";
 	const string ByBrushCookie = "Mimiclay.CollisionPanel.ByBrush";
-	const string ProbesCookie = "Mimiclay.CollisionPanel.Probes";
+	const string MoveHullCookie = "Mimiclay.CollisionPanel.MoveHull";
 	const string StatsCookie = "Mimiclay.CollisionPanel.Stats";
 	const string MissingCookie = "Mimiclay.CollisionPanel.Missing";
 
@@ -62,10 +62,10 @@ public static class CollisionPanel
 		set { SdfCollisionDebug.ColourByBrush = value; EditorCookie.Set( ByBrushCookie, value ); }
 	}
 
-	public static bool FootProbes
+	public static bool MoveHull
 	{
-		get => SdfCollisionDebug.FootProbes;
-		set { SdfCollisionDebug.FootProbes = value; EditorCookie.Set( ProbesCookie, value ); }
+		get => SdfCollisionDebug.MoveHull;
+		set { SdfCollisionDebug.MoveHull = value; EditorCookie.Set( MoveHullCookie, value ); }
 	}
 
 	public static bool Stats
@@ -94,7 +94,7 @@ public static class CollisionPanel
 			SdfCollisionDebug.SelectedOnly = EditorCookie.Get( SelectedOnlyCookie, false );
 			SdfCollisionDebug.ThroughClay = EditorCookie.Get( ThroughClayCookie, true );
 			SdfCollisionDebug.ColourByBrush = EditorCookie.Get( ByBrushCookie, false );
-			SdfCollisionDebug.FootProbes = EditorCookie.Get( ProbesCookie, false );
+			SdfCollisionDebug.MoveHull = EditorCookie.Get( MoveHullCookie, false );
 			SdfCollisionDebug.Stats = EditorCookie.Get( StatsCookie, true );
 			SdfCollisionDebug.FlagMissing = EditorCookie.Get( MissingCookie, true );
 		}
@@ -224,8 +224,8 @@ internal class CollisionPanelWidget : Widget
 				"Draw the shapes on top of the clay instead of depth-testing them" );
 			AddToggle( "Colour by brush", CollisionPanel.ColourByBrush, v => CollisionPanel.ColourByBrush = v,
 				"One colour per source brush instead of per shape kind (the legend below)" );
-			AddToggle( "Foot probes", CollisionPanel.FootProbes, v => CollisionPanel.FootProbes = v,
-				"The ground-probe points the controller traces down from" );
+			AddToggle( "Move hull", CollisionPanel.MoveHull, v => CollisionPanel.MoveHull = v,
+				"Prop pawns: the convex hull their movement sweeps, plus the ground contact (play only)" );
 			AddToggle( "Shape counts", CollisionPanel.Stats, v => CollisionPanel.Stats = v,
 				"Hull / sphere / voxel-box counts next to each sculpture, and any hull physics rejected" );
 			AddToggle( "Flag uncollided brushes", CollisionPanel.FlagMissing, v => CollisionPanel.FlagMissing = v,

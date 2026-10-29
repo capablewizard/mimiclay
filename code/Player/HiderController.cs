@@ -3,21 +3,20 @@ using System;
 namespace Mimiclay;
 
 /// <summary>
-/// Hider: a third-person controller whose body is an <see cref="SdfSculpture"/> disguise. It owns its own
-/// physics — a <see cref="Rigidbody"/> driven like a character (we integrate gravity ourselves, lock the body
-/// upright, and turn it through the solver so an obstacle can physically block a turn) — and collides using the
-/// disguise's generated <see cref="ModelCollider"/>, so a prop is exactly as solid as it looks. None of this is
-/// shared with the hunter, which is a vanilla first-person <see cref="PlayerController"/>; the prop's needs
-/// (footprint ground-probing, flush ground-snap, slope handling, compliance turning, live-while-sculpting) are
-/// specific enough that it stands alone.
+/// Hider: a third-person controller whose body is an <see cref="SdfSculpture"/> disguise. As a character its
+/// <see cref="Rigidbody"/> is KEYFRAMED: it moves by sweeping one convex move hull (see
+/// <c>HiderController.Movement</c> and <see cref="PropMoveHull"/>) and nothing in the physics world can push it.
+/// The disguise's generated <see cref="ModelCollider"/> rides that body, so to everyone else a prop is exactly as
+/// solid as it looks. Held, loose and frozen props (creative's grab) switch the same body to a dynamic object.
+/// None of this is shared with the hunter, which is a vanilla first-person <see cref="PlayerController"/>.
 ///
 /// <b>Play mode:</b> WASD to move, free mouse-look turns the camera AND the disguise together. Holding Alt
 /// decouples them — the mouse orbits only the camera (the disguise keeps facing where it was); release Alt and
 /// the disguise simply adopts wherever the camera now points (no snap-back).
 ///
 /// <b>Edit mode</b> (tab): locomotion input stops and the sculpt gizmo appears; the camera switches to
-/// Maya-style alt navigation (alt+LMB orbit, alt+RMB dolly, alt+MMB vertical pan), cursor freed. The body stays
-/// physically live so it re-settles onto its new shape as you sculpt.
+/// Maya-style alt navigation (alt+LMB orbit, alt+RMB dolly, alt+MMB vertical pan), cursor freed. The mover keeps
+/// running without input, so the prop re-settles onto its new shape as you sculpt.
 /// </summary>
 [Title( "Hider Controller" )]
 [Category( "Mimiclay" )]
@@ -31,9 +30,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	///
 	/// <b>Why.</b> Props can't see each other while hiding (in Infection they aren't even on the wire until the
 	/// Hunt — see RoundManager), so two of them choosing the same spot is a thing the game actively prevents them
-	/// from noticing. Left solid, that overlap resolves the instant both pawns are published: a prop is a DYNAMIC
-	/// rigidbody on its owner's machine only, so each machine ejects its own pawn out of the other, both at once,
-	/// from a deep penetration. Non-colliding props just overlap visually, which is rare and harmless.
+	/// from noticing. Non-colliding props just overlap visually, which is rare and harmless. The prop mover's
+	/// sweeps look through the tag for the same reason.
 	///
 	/// Applied at RUNTIME to the pawn's disguise clone rather than authored on disguise.prefab: saved props and
 	/// decoys are exported from that same template, and they must stay solid to players. Physics shapes take
@@ -67,46 +65,15 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	/// as the rise; higher = quicker, punchier landings.</summary>
 	[Property, Group( "Movement" )] public float FallGravityMult { get; set; } = 1.9f;
 
-	/// <summary>Keep gravity (and ground-settle) running while this pawn's disguise is being sculpted — the
-	/// current behavior: an editing prop keeps falling and re-settles onto its shape as soon as a commit
-	/// rebuilds collision. OFF (test option): the body is held perfectly still for the whole edit session —
-	/// it hangs wherever the edit began, mid-air included, and resumes normal physics the moment the
-	/// session ends. Edit sessions only; released/dormant scenery always keeps settling.</summary>
-	[Property, Group( "Movement" )] public bool EditGravity { get; set; } = true;
-
 	/// <summary>How quickly horizontal velocity chases the input target on the ground (per second, exponential).
 	/// Higher = snappier starts/stops; this also serves as the "friction" (input zero decays velocity to zero).
 	/// The hunter has effectively NO ramp — the stock controller's AddVelocity adds several times the wish per tick
-	/// and clamps, so it hits full speed within a tick or two and brakes on a damping of 10 — which is what made
-	/// props feel sluggish next to it even at matched top speeds: they spent a quarter-second getting there. 30
-	/// reaches 95% in ~0.1s, close enough to read as instant while still easing the body into motion rather than
-	/// stepping its velocity (this drives a Rigidbody through contacts, not a swept character).</summary>
+	/// and clamps, so it hits full speed within a tick or two. 30 reaches 95% in ~0.1s, close enough to read as
+	/// instant while still easing the prop into motion.</summary>
 	[Property, Group( "Movement" )] public float GroundControl { get; set; } = 30f;
 
 	/// <summary>Weaker horizontal control while airborne, so a jump keeps most of its momentum.</summary>
 	[Property, Group( "Movement" )] public float AirControl { get; set; } = 2.5f;
-
-	/// <summary>Max speed (u/s) the body eases DOWN to sit flush when a foot is hovering above the floor. A foot
-	/// reads grounded slightly before it touches; rather than freeze the fall there (the old hover), we close the
-	/// remaining gap at up to this speed. The disguise collider arrests the descent at contact, so it can't bury
-	/// the prop — higher just snaps a residual gap shut more sharply.</summary>
-	[Property, Group( "Movement" )] public float GroundSnapSpeed { get; set; } = 300f;
-
-	/// <summary>On a slope, the tiny gap (units, at full tilt) the body floats above the surface instead of pressing
-	/// flush — pressing straight down onto an incline is what the solver deflects into a slow downhill slide, so a
-	/// hair of float removes the contact and kills it. Scaled by steepness, so FLAT ground stays perfectly flush
-	/// (zero gap). Keep small to stay unnoticeable.</summary>
-	[Property, Group( "Movement" )] public float GroundRestGap { get; set; } = 4f;
-
-	/// <summary>Below this horizontal speed (u/s), a grounded body with no move input stops dead — clears any residual
-	/// drift so it can't creep down an incline.</summary>
-	[Property, Group( "Movement" )] public float StopSpeed { get; set; } = 6f;
-
-	/// <summary>How much of the spin the physics solver introduces on its own (a snagged part being pivoted by
-	/// our forward push, or a blocked turn being cancelled) is kept, 0..1. 1 = mouse input fully defers to
-	/// physics: blocked turns simply don't happen and the shape works itself free. Lower = the body asserts the
-	/// mouse turn more even against a contact (less compliant). Compliance-first turning lives or dies on this.</summary>
-	[Property, Group( "Movement" ), Range( 0f, 1f )] public float SnagCompliance { get; set; } = 1f;
 
 	// ── Look / Camera ─────────────────────────────────────────────────────────────────────────────────
 	[Property, Group( "Look" ), Range( -89f, 0f )] public float MinPitch { get; set; } = -89f;
@@ -158,10 +125,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	[Property, Group( "Camera" ), Range( 1f, 30f )] public float PivotSmoothSpeed { get; set; } = 8f;
 
 	// ── Debug ─────────────────────────────────────────────────────────────────────────────────────────
-	/// <summary>Draw the ground-probe points + traces each step (green = found ground, red = nothing) — including
-	/// in edit mode — so you can see the footprint snapshot the body is standing on.</summary>
-	[Property, Group( "Debug" )] public bool DebugGroundProbes { get; set; }
-
 	/// <summary>Draw a marker at the orbit camera's pivot every frame (magenta sphere + vertical line), so you
 	/// can see exactly what point the camera is orbiting.</summary>
 	[Property, Group( "Debug" )] public bool DebugCameraPivot { get; set; }
@@ -175,7 +138,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	public bool IsCrouching { get; private set; }
 
-	/// <summary>True when a downward probe found ground this fixed step (gates jumping + full ground control).</summary>
+	/// <summary>True when the move hull is resting on walkable ground (gates jumping + full ground control).</summary>
 	public bool IsGrounded { get; private set; }
 
 	Rigidbody Body;          // our physics body (the disguise's ModelCollider aggregates into it)
@@ -244,29 +207,15 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	// Jump is an edge event read on the frame; consumed on the next fixed step so it can't be missed.
 	bool _jumpQueued;
 
-	// The yaw spin we set last fixed step. Comparing it against the body's actual spin this step tells us what
-	// the physics solver added on its own (a snag pivoting us, or a blocked turn cancelled) so we can keep it.
-	float _lastSetYawRate;
 	// The facing yaw last fixed step — the delta is how much the mouse asked to turn this step. No absolute target
 	// is stored, so we never try to force the body back to a "correct" yaw (that was the feedback loop).
 	float _prevFacingYaw;
 	bool _turnSeeded; // false until the first step / after a freeze, so resuming doesn't snap from a stale yaw
 
-	// Released scenery goes to SLEEP once it has settled (see OnFixedUpdate's dormant branch): consecutive fixed
-	// steps it has read grounded and at rest. Every released prop otherwise keeps running the full character step
-	// forever on the host — gravity, ground-snap and one sphere-trace per footprint probe (up to 10×10 per Add
-	// brush) — and jumping in and out of a dozen props left a dozen such bodies ticking, which is what dragged the
-	// frame down. Asleep, the body costs nothing until something wakes it (a claim, or a contact from a live body).
-	int _settleTicks;
-	bool _sleptAsScenery; // we put the body to sleep — so a later proxy flip (handed to a claimant) wakes it
-	const int SleepAfterTicks = 10;    // ~0.2s at rest before sleeping — long enough to be sure it's not mid-bounce
-	const float SleepSpeed = 2f;       // u/s, linear
-	const float SleepSpin = 0.05f;     // rad/s, angular
-
 	internal bool EditMode => _session?.IsEditing ?? false;
 
 	// Edit mode AND the Starting-countdown freeze (RoundManager.ControlsLocked) both stop locomotion input, but the
-	// body stays physically live and the camera keeps running — so a frozen prop still settles onto the ground and
+	// mover keeps running and the camera keeps running — so a frozen prop still settles onto the ground and
 	// you can look around, you just can't walk or jump until the round begins. Free cam (see UpdateFreeCam) stops
 	// it the same way: the body just sits/settles wherever it was left while the camera flies off without it.
 	// The charades mimic's phrase pick (CharadesManager.LocalPicking) holds the prop too, until they've chosen.
@@ -405,18 +354,12 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		_dormant = false;
 		_woken = true; // somebody's wearing it now — see BornScenery
 		_jumpQueued = false;
-		_settleTicks = 0;
-		_sleptAsScenery = false;
+		ResetMover(); // scenery was parked by another machine's mover — start this one from rest
 
 		// The claim this machine asked for has landed (we're driving the prop) — the swap keys may read E again
 		// (PawnSwapKeys.LeavePressed stands down while a claim is pending, so the press that took us in can't
 		// also take us out).
 		PropClaims.ClearLocalClaimPending();
-
-		// Scenery sleeps once settled (see OnFixedUpdate) — somebody's about to drive it, so wake the body first.
-		// Velocity writes alone can't be relied on to wake a sleeping body, and a sleeping one ignores our step.
-		if ( Body.IsValid() && Body.Sleeping )
-			Body.Sleeping = false;
 
 		// Somebody's driving again — give the voice back (a no-op on a claimant whose copy was never muted;
 		// the mute only ever landed on the machine that ran the release).
@@ -479,11 +422,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	protected override void OnAwake()
 	{
 		Body = GameObject.Components.GetOrCreate<Rigidbody>();
-		Body.Gravity = false; // we integrate gravity ourselves so rise/fall can differ (snappy landings)
+		Body.Gravity = false; // the mover integrates its own gravity so rise/fall can differ (snappy landings)
 		Body.RigidbodyFlags = RigidbodyFlags.DisableCollisionSounds; // a prop is silent — no clatter scraping the world
-		// Lock pitch/roll so the body stays upright, but leave YAW free so we can turn it through the physics solver
-		// — that's what lets an obstacle physically block the turn.
-		Body.Locking = new PhysicsLock { Pitch = true, Yaw = false, Roll = true };
+		Body.MotionEnabled = false; // keyframed from birth: the mover moves it, nothing else may (see SetPhysicsMode)
 
 		// Seed look from however the pawn was spawned, flattened (no starting pitch/roll).
 		EyeAngles = WorldRotation.Angles() with { pitch = 0f, roll = 0f };
@@ -580,6 +521,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	{
 		ReleaseHoldJoint();
 		_scrapeHandle?.Stop();
+		_hull.Dispose();
 		if ( _body.IsValid() )
 			_body.Committed -= RecenterOriginOnShape;
 	}
@@ -633,8 +575,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			_iconPoseSeeded = true;
 		}
 
-		RefreshProbesOnTilt();
-
 		// Read the toggles even while control is suspended, so edit mode can be exited. Charades LOCKS the
 		// mimic's editor outside the sculpt phase (no sculpting before the word is chosen or after the
 		// reveal) — exiting is always allowed, only opening is gated.
@@ -676,9 +616,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		else
 			UpdateCamera();
 
-		// Drawn here (not in the fixed step) so it shows in edit mode too, where movement is suspended.
-		if ( DebugGroundProbes )
-			DrawGroundProbes();
+		// Drawn per frame (not in the fixed step) so it tracks the interpolated body, edit mode included.
+		if ( DebugMovement || SdfCollisionDebug.MoveHull )
+			DrawMovement();
 		if ( DebugCameraPivot )
 			DrawCameraPivot(); // after UpdateCamera, so it shows this frame's pivot (override included)
 	}
@@ -736,7 +676,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	}
 
 	// The propbody tag tracks "this disguise is someone's BODY" (see PropBodyTag): released scenery must shed it
-	// so player props collide with it (and can stand on it — ProbeGround skips the tag). Asserted per-frame on
+	// so player props collide with it (and can stand on it — the mover's sweeps skip the tag). Asserted per-frame on
 	// EVERY machine from PropClaims.IsReleased — the one released-state signal that provably replicates — rather
 	// than written at the release/claim seams: those run host-side across an ownership edge, and the contacts
 	// that matter happen on OTHER machines (each machine simulates its own dynamic pawn against its local copy
@@ -828,20 +768,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	protected override void OnFixedUpdate()
 	{
 		// Proxy: the engine drives this body from the networked transform (see Rigidbody.ShouldSimulatePhysics —
-		// a synced proxy is moved, not simulated, and our velocity writes are no-ops on it anyway). Skip our
-		// character physics entirely so we don't run ground-probe traces for a body we're not simulating.
+		// a synced proxy is moved, not simulated). Skip the mover entirely for a body we're not simulating.
 		if ( IsProxy )
-		{
-			// Scenery the HOST put to sleep that's just been handed to a claimant: this copy is now driven from
-			// the network, so make sure the body isn't still asleep under the engine's transform moves.
-			if ( _sleptAsScenery )
-			{
-				_sleptAsScenery = false;
-				if ( Body.IsValid() && Body.Sleeping )
-					Body.Sleeping = false;
-			}
 			return;
-		}
 
 		// Fell out of the world (blockout floor holes, physics tunnelling): put the body back at its spawn
 		// spot, upright and at rest — keeping its current heading so the player's camera relation survives.
@@ -869,13 +798,14 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		{
 			WorldPosition = _fallAnchor.Position;
 			WorldRotation = Rotation.FromYaw( WorldRotation.Angles().yaw );
-			Body.Velocity = Vector3.Zero;
-			Body.AngularVelocity = Vector3.Zero;
-			return; // let the teleport land before running movement against stale ground probes
+			if ( Body.MotionEnabled )
+			{
+				Body.Velocity = Vector3.Zero;
+				Body.AngularVelocity = Vector3.Zero;
+			}
+			ResetMover();
+			return; // let the teleport land before running movement from the new spot
 		}
-
-		if ( !Body.MotionEnabled )
-			Body.MotionEnabled = true;
 
 		if ( isHeld )
 		{
@@ -885,7 +815,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 
 		// Dropped from a grab: a FREE rigidbody — engine gravity, every axis unlocked, the engine's own sleep.
-		// Nothing of the character step runs (no ground probes, no snap). An in-place sculpt still pins it below.
+		// The mover doesn't run. An in-place sculpt still pins it below.
 		if ( Scenery && PropClaims.IsLoose( this ) && !BeingEdited )
 		{
 			SetPhysicsMode( PhysicsMode.Loose );
@@ -894,179 +824,41 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 		SetPhysicsMode( PhysicsMode.Character );
 
-		// EditGravity test option: pin the body for the whole edit session — no gravity, no ground-snap, no
-		// re-settle after commits; it hangs exactly where the edit began (jump-sculpting included). Velocity
-		// is re-zeroed every step rather than disabling motion, so the solver can still separate a genuine
-		// penetration within a tick and nothing here fights the MotionEnabled recovery above. Keyed on
-		// EditMode specifically — NOT the broader !ControlActive below — so freecam scouting and round
-		// control locks keep normal gravity, and dormant scenery keeps settling.
-		if ( !EditGravity && EditMode )
-		{
-			Body.Velocity = Vector3.Zero;
-			Body.AngularVelocity = Vector3.Zero;
-			return;
-		}
-
-		// Released into the level (dormant): settle, then SLEEP. The body stays live only until it has come to
-		// rest on the ground — gravity and ground-snap still bring a just-released prop down onto its feet — and
-		// then it's put to sleep: no character step, no ground probes, no velocity writes, nothing per tick but
-		// the fall check above. A sleeping body still blocks, holds props up and is hit by traces; the engine
-		// wakes it when a live body touches it, which lands back here to re-settle and re-sleep. A claim wakes it
-		// explicitly (ResumeControl). Bots are dormant too and sleep the same way — they never move anyway.
 		if ( Scenery )
 		{
-			// Being sculpted in place (see BeingEdited) — the host simulates it, PINNED: no gravity, no
-			// ground-snap, velocity re-zeroed every step, so it hangs exactly where the sculptors found it
-			// (a converted door knob stays on its door) for as long as anyone is on it. Motion stays enabled
-			// so the solver can still separate a genuine penetration within a tick. Normal scenery settling
-			// resumes the moment the last editor leaves.
+			// Being sculpted in place (see BeingEdited) — the host simulates it, PINNED: it hangs exactly where
+			// the sculptors found it (a converted door knob stays on its door) for as long as anyone is on it.
+			// Normal settling resumes the moment the last editor leaves.
 			if ( BeingEdited )
 			{
-				if ( Body.Sleeping )
-					Body.Sleeping = false;
-				Body.Velocity = Vector3.Zero;
-				Body.AngularVelocity = Vector3.Zero;
+				ResetMover();
 				return;
 			}
 
-			if ( Body.Sleeping )
-				return;
-
-			UpdateMovement( controlled: false );
-			SleepWhenSettled();
+			// Released into the level (dormant), and bots: no input — the mover settles it onto the ground and
+			// then PARKS it, after which it costs nothing per tick until its shape or its ground changes.
+			StepMover( controlled: false );
 			return;
 		}
 
-		// No locomotion input when editing (control suspended): the body stays LIVE — gravity, collision and
-		// ground-snap still run, so an editing prop re-settles onto its shape as soon as a commit rebuilds collision.
+		// No locomotion input when editing (control suspended): the mover still runs, so an editing prop
+		// re-settles onto its shape as soon as a commit rebuilds collision.
 		if ( !ControlActive )
 		{
-			UpdateMovement( controlled: false );
+			StepMover( controlled: false );
 			return;
 		}
 
 		IsCrouching = Input.Down( "duck" ); // a prop's shape never changes, so crouch just slows it down
-		UpdateMovement( controlled: true );
-	}
-
-	void UpdateMovement( bool controlled )
-	{
-		IsGrounded = CheckGround( out float groundGap, out Vector3 groundNormal );
-
-		// No locomotion input while suspended-but-simulating: the wish stays zero so friction settles the body in
-		// place — it still falls and ground-snaps onto its current shape, it just won't walk while you sculpt.
-		var wish = Vector3.Zero;
-		if ( controlled )
-		{
-			float speed = IsCrouching ? CrouchSpeed : (Input.Down( "run" ) ? RunSpeed : WalkSpeed);
-
-			// CLAMP, don't normalize — exactly what the stock controller does with the same input (see
-			// MoveMode.UpdateMove). Raw AnalogMove is per-axis, so holding two keys gives a vector of length √2 and
-			// diagonals ran 41% faster than straight lines; clamping caps the magnitude at 1 while leaving a
-			// part-deflected analog stick free to ask for less than full speed.
-			var move = Input.AnalogMove.ClampLength( 1f );
-
-			// WASD is in local space; orient it by yaw only so look-up doesn't slow you down.
-			wish = Rotation.FromYaw( MoveYaw ) * move * speed;
-
-			// Benchmark route driver (PerfScenario.mimi_perf_walk): a world-space wish replaces input.
-			if ( PerfScenario.DriveProp( GameObject, speed ) is Vector3 perfWish )
-				wish = perfWish;
-		}
-
-		// Leash: pressing outward at the edge is simply not asked for — the tangential part survives, so
-		// you slide along the circle instead of stalling against an invisible wall.
-		wish = ApplyLeash( wish, pullIn: false );
-
-		var vel = Body.Velocity;
-
-		// Chase the target velocity exponentially — snappy on the ground, looser in the air. Input of zero decays it
-		// back to rest, which doubles as friction.
-		float control = IsGrounded ? GroundControl : AirControl;
-		float t = 1f - MathF.Exp( -control * Time.Delta );
-
-		Vector3 newVel;
-		if ( IsGrounded )
-		{
-			// Walk ALONG the slope: reproject the (flat) wish onto the ground plane so we don't drive into an incline
-			// and get ejected upward (the pop that launched the prop when you stopped). On a slope this gives the wish
-			// a vertical component — uphill climbs, downhill descends — so the body follows the surface in full 3D.
-			var slopeWish = ProjectOntoSlope( wish, groundNormal );
-			newVel = Vector3.Lerp( vel, slopeWish, t );
-
-			// Ground-snap: ease DOWN to close the gap so the prop sits flush instead of hovering — the collider arrests
-			// the descent at contact, so it can't bury the prop. But on a slope we keep a SMALL rest gap (scaled by how
-			// steep it is): pressing straight onto an incline is what the solver deflects into a slow downhill slide, so
-			// floating a hair clear of the surface removes the contact and stops it. Flat ground has zero rest gap and
-			// still sits perfectly flush.
-			float tilt = MathF.Sqrt( MathF.Max( 0f, 1f - groundNormal.z * groundNormal.z ) ); // sin(slope): 0 flat, 1 wall
-			float snapGap = MathF.Max( groundGap - GroundRestGap * tilt, 0f );
-			newVel = newVel.WithZ( newVel.z - MathF.Min( snapGap / Time.Delta, GroundSnapSpeed ) );
-
-			// With no move input, once we're crawling, stop dead — the rest gap removes the slide source, this clears
-			// any leftover numerical drift so a parked prop can't creep down a slope.
-			if ( wish.IsNearZeroLength && newVel.WithZ( 0f ).Length < StopSpeed )
-				newVel = new Vector3( 0f, 0f, newVel.z );
-
-			if ( controlled && _jumpQueued )
-			{
-				newVel = newVel.WithZ( JumpPower );
-				IsGrounded = false; // so CheckGround's rising-reject lets the jump actually leave next step
-			}
-		}
-		else
-		{
-			// Airborne: chase horizontally only (weaker control keeps a jump's momentum) and integrate our own gravity
-			// — falling faster than we rose (FallGravityMult) so the descent is snappy, not floaty.
-			var horiz = Vector3.Lerp( vel.WithZ( 0f ), wish.WithZ( 0f ), t );
-			float g = Gravity * (vel.z < 0f ? FallGravityMult : 1f);
-			newVel = horiz.WithZ( vel.z - g * Time.Delta );
-		}
-
-		// Leash, on the RESULT this time (a solver shove or a jump's momentum can carry the body outward with
-		// no input at all): strip outward radial velocity at the edge, and pull gently back if we're past it.
-		newVel = ApplyLeash( newVel, pullIn: true );
-
-		Body.Velocity = newVel;
-		_jumpQueued = false;
-
-		if ( !controlled )
-		{
-			// Locked while editing: don't apply mouse-turn, and kill any residual yaw spin so the prop holds still as
-			// you sculpt. Leave the turn un-seeded so resuming play re-seeds from the live facing (no snap).
-			Body.AngularVelocity = Body.AngularVelocity.WithZ( 0f );
-			_turnSeeded = false;
-			return;
-		}
-
-		// Compliance-first turning: rotate the body by exactly how much the mouse turned THIS step, plus only the spin
-		// the physics solver contributed on its own (a snag pivoting us, or a blocked turn it cancelled). There is NO
-		// absolute facing target, so nothing ever forces a rotation against a contact — a blocked turn just doesn't
-		// happen, the snag pivot survives, and nothing accumulates. So mouse input always defers to physics and we
-		// can't fight ourselves into a loop. FacingYaw is the disguise's own yaw, so it keeps its facing while WASD
-		// moves relative to the camera.
-		if ( !_turnSeeded )
-		{
-			_prevFacingYaw = FacingYaw;
-			_lastSetYawRate = Body.AngularVelocity.z;
-			_turnSeeded = true;
-		}
-
-		// AngularVelocity is in RADIANS/s, so convert the mouse's degrees-of-turn before using it as a rate.
-		float mouseRate = MathX.DeltaDegrees( _prevFacingYaw, FacingYaw ) * (MathF.PI / 180f) / Time.Delta;
-		_prevFacingYaw = FacingYaw;
-
-		float contactSpin = Body.AngularVelocity.z - _lastSetYawRate; // spin the solver introduced on its own
-		_lastSetYawRate = mouseRate + contactSpin * SnagCompliance;
-		Body.AngularVelocity = Body.AngularVelocity.WithZ( _lastSetYawRate );
+		StepMover( controlled: true );
 	}
 
 	// ── Grab / loose physics (see PropClaims.Grab) ─────────────────────────────────────────────────────────
-	// The body runs in one of four modes. CHARACTER is everything this controller was built for: upright
-	// (pitch/roll locked), our own gravity, ground probes. HELD chases the grab's target pose with velocities —
-	// all axes free, no gravity, still colliding on the way. LOOSE is a plain dynamic rigidbody: engine gravity,
-	// every axis free, the engine's own sleep. FROZEN has motion disabled: solid where it stands, never moved by
-	// anything. Switched only on a change, so the per-tick cost is a compare.
+	// The body runs in one of four modes. CHARACTER is a KEYFRAMED body driven by the mover (see
+	// HiderController.Movement): nothing pushes it. HELD chases the grab's target pose with velocities — all axes
+	// free, no gravity, still colliding on the way. LOOSE is a plain dynamic rigidbody: engine gravity, every axis
+	// free, the engine's own sleep. FROZEN is keyframed too, and simply never moved. Motion is asserted every call
+	// (a compare); everything else only on a change.
 
 	// The body weighs what the clay weighs (SdfCollider.ClayMass), not what its overlapping collision shapes add
 	// up to. Re-asserted every tick on the simulating machine: the collider rebuilds on commit without telling
@@ -1093,7 +885,29 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	void SetPhysicsMode( PhysicsMode mode )
 	{
-		if ( _physicsMode == mode || !Body.IsValid() )
+		if ( !Body.IsValid() )
+			return;
+
+		// Dynamic only as an object (held / loose). Asserted every call, not just on a change: the field starts at
+		// Character, which no change ever announces, and nothing else may leave a character body dynamic.
+		bool dynamic = mode is PhysicsMode.Held or PhysicsMode.Loose;
+		if ( Body.MotionEnabled != dynamic )
+		{
+			if ( dynamic )
+			{
+				Body.MotionEnabled = true;
+				Body.Velocity = _velocity; // leave the character step at the speed it was going
+				Body.AngularVelocity = Vector3.Zero;
+			}
+			else
+			{
+				// Into Character, keep an object's momentum (a flung prop possessed mid-air keeps flying).
+				_velocity = mode == PhysicsMode.Character ? Body.Velocity : Vector3.Zero;
+				Body.MotionEnabled = false; // keyframed (this clears the body's own velocity)
+			}
+		}
+
+		if ( _physicsMode == mode )
 			return;
 
 		_physicsMode = mode;
@@ -1102,9 +916,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			ReleaseHoldJoint();
 			RestoreHeldFriction();
 		}
-		Body.Locking = mode == PhysicsMode.Character
-			? new PhysicsLock { Pitch = true, Yaw = false, Roll = true }
-			: default;
+		Body.Locking = default;
 		Body.Gravity = mode == PhysicsMode.Loose;
 
 		// Continuous collision while it moves as an OBJECT — carried (the hold can swing it fast) or loose (falling,
@@ -1118,19 +930,16 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// something, and both squelch when sliding (see HiderController.Impacts).
 		Body.CollisionUpdateEventsEnabled = mode is PhysicsMode.Held or PhysicsMode.Loose;
 
-		if ( mode == PhysicsMode.Frozen )
-		{
-			Body.Velocity = Vector3.Zero;
-			Body.AngularVelocity = Vector3.Zero;
-			Body.MotionEnabled = false;
-			return;
-		}
-
-		if ( !Body.MotionEnabled )
-			Body.MotionEnabled = true;
-		if ( Body.Sleeping )
+		if ( dynamic && Body.Sleeping )
 			Body.Sleeping = false;
-		_settleTicks = 0;
+
+		// Back to being a character: forget the old ground and settle from wherever the object left it.
+		if ( mode == PhysicsMode.Character )
+		{
+			IsGrounded = false;
+			_groundObject = null;
+			Unpark();
+		}
 		_turnSeeded = false;
 	}
 
@@ -1283,8 +1092,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	/// <summary>Host-only, as a loose prop is possessed: stand the ROOT back up (yaw kept) and move the tumble
 	/// onto the Disguise, so the clay stays exactly where it lay — the shape never moves on its own — while the
-	/// body becomes an upright character again. The new owner's ground probes follow the tilt on their first
-	/// controlling frame (see <see cref="RefreshProbesOnTilt"/>).</summary>
+	/// body becomes an upright character again; its move hull is re-derived from the new disguise placement on
+	/// the next mover tick (see <see cref="PropMoveHull"/>).</summary>
 	internal void SettleUpright()
 	{
 		var disguise = _body.IsValid() ? _body.GameObject : null;
@@ -1300,83 +1109,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			Body.AngularVelocity = Vector3.Zero;
 		}
 		SetPhysicsMode( PhysicsMode.Character );
-	}
-
-	// Owner, controlling: the collider's foot probes are built against the disguise's tilt at build time (see
-	// SdfCollider.ProbeFrame). A possessed loose prop arrives with its tumble moved onto the Disguise, possibly a
-	// frame after control resumes — so watch world-down in the disguise's frame (yaw-invariant: turning never
-	// trips it) and rebuild when it moves. Rebuild skips itself when nothing it keys on changed.
-	Vector3 _probeDown;
-
-	void RefreshProbesOnTilt()
-	{
-		if ( !_body.IsValid() || !_collider.IsValid() )
-			return;
-
-		var down = _body.WorldRotation.Inverse * Vector3.Down;
-		if ( (down - _probeDown).LengthSquared < 1e-4f )
-			return;
-
-		_probeDown = down;
-		_collider.Rebuild();
-	}
-
-	// Dormant only, right after a character step: count consecutive steps at rest on the ground, and once there
-	// have been enough, zero the body and put it to sleep (see _settleTicks). Grounded is required so a prop
-	// still falling — or hung on a ledge where the probes miss — keeps simulating exactly as before; the
-	// velocity read is the one UpdateMovement just wrote, so "at rest" means the step itself asked for rest
-	// (flat ground: the stop-dead rule; slopes: the rest gap has removed the contact and the drift is gone).
-	void SleepWhenSettled()
-	{
-		bool settled = IsGrounded
-			&& Body.Velocity.Length < SleepSpeed
-			&& Body.AngularVelocity.Length < SleepSpin;
-		_settleTicks = settled ? _settleTicks + 1 : 0;
-		if ( _settleTicks < SleepAfterTicks )
-			return;
-
-		_settleTicks = 0;
-		_sleptAsScenery = true;
-		Body.Velocity = Vector3.Zero;
-		Body.AngularVelocity = Vector3.Zero;
-		Body.Sleeping = true;
-	}
-
-	// Ground test: sphere-probe straight down from EACH footprint point (see GroundProbePoints), so a body made of
-	// several uneven / off-centre / floating colliders is grounded when ANY part of its underside is at the floor —
-	// not just a single guess at the bounds centre. Rejects hits while rising so a jump actually leaves. Also reports
-	// the SMALLEST gap (closest foot to the floor below it) so the body can settle flush instead of hovering, and the
-	// averaged surface NORMAL across the feet that hit, so movement can run along a slope.
-	bool CheckGround( out float gap, out Vector3 normal )
-	{
-		gap = 0f;
-		normal = Vector3.Up;
-		if ( Body.Velocity.z > 50f )
-			return false;
-
-		bool grounded = false;
-		float minGap = float.MaxValue;
-		var normalSum = Vector3.Zero;
-		foreach ( var p in GroundProbePoints() )
-		{
-			var tr = ProbeGround( p );
-			if ( !tr.Hit )
-				continue;
-
-			grounded = true;
-			// The sphere starts GroundProbeUp above the foot point; tr.Distance it travelled before contact equals how
-			// far that foot sits above the floor directly beneath it (0 = touching).
-			minGap = MathF.Min( minGap, tr.Distance );
-			normalSum += tr.Normal; // averaged below so an uneven multi-foot body reads the overall slope, not one tri
-		}
-
-		if ( grounded )
-		{
-			gap = minGap;
-			if ( !normalSum.IsNearZeroLength )
-				normal = normalSum.Normal;
-		}
-		return grounded;
 	}
 
 	// The leash rule on one velocity-shaped vector (see LeashCentre). Horizontal only — Z passes straight
@@ -1409,65 +1141,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 
 		return v;
-	}
-
-	// Reproject a flat, world-space wish velocity onto the ground plane so movement runs ALONG a slope instead of
-	// driving into it (which makes the solver eject the body upward). Speed is preserved — walking uphill covers the
-	// surface at the same rate, trading slower horizontal progress for the climb, as it should. Flat ground is a no-op.
-	static Vector3 ProjectOntoSlope( Vector3 wish, Vector3 normal )
-	{
-		float speed = wish.Length;
-		if ( speed < 0.01f )
-			return wish;
-
-		var projected = wish - normal * Vector3.Dot( wish, normal );
-		return projected.IsNearZeroLength ? Vector3.Zero : projected.Normal * speed;
-	}
-
-	// World-space points to probe straight down for ground: the disguise's footprint snapshot (one point per
-	// underside cell), transformed to world — so an uneven multi-collider prop is probed under each foot. Falls back
-	// to the bottom centre of the body's bounds until the disguise + its snapshot exist.
-	IEnumerable<Vector3> GroundProbePoints()
-	{
-		var feet = _collider.IsValid() ? _collider.FootPoints : null;
-		if ( feet is { Count: > 0 } )
-		{
-			var tx = _body.WorldTransform;
-			foreach ( var f in feet )
-				yield return tx.PointToWorld( f );
-			yield break;
-		}
-
-		var b = Body.GetWorldBounds();
-		yield return new Vector3( b.Center.x, b.Center.y, b.Mins.z );
-	}
-
-	// One downward sphere-probe from a footprint point. Small + tight so the body only reads grounded when a foot is
-	// right at the floor (a generous probe hovers). Ignores our own hierarchy (the disguise collider is a child),
-	// and every OTHER player prop: traces don't consult the collision rules unless they opt in, so without this a
-	// prop would read as grounded on a fellow prop that its physics passes straight through — hovering inside one,
-	// then dropping when that player walked off. Decoys, saved props and RELEASED props are untagged (the last
-	// per UpdateReleasedSolidity) and still hold us up. The charades stage fence is skipped too: a foot
-	// probe grazing the side of an invisible wall read it as steep "ground", and the tilted normal turned a
-	// push into the wall into an upward wish — the prop climbed a wall that isn't there.
-	const float GroundProbeRadius = 3f, GroundProbeUp = 3f, GroundProbeDown = 4f;
-
-	SceneTraceResult ProbeGround( Vector3 p ) => Scene.Trace
-		.Sphere( GroundProbeRadius, p + Vector3.Up * GroundProbeUp, p - Vector3.Up * GroundProbeDown )
-		.IgnoreGameObjectHierarchy( GameObject )
-		.WithoutTags( PropBodyTag, CharadesStageFence.WallTag )
-		.Run();
-
-	// Draw every ground probe (green = found ground, red = nothing). Called every frame from OnUpdate — including edit
-	// mode — so you can watch the footprint snapshot change as you sculpt.
-	void DrawGroundProbes()
-	{
-		foreach ( var p in GroundProbePoints() )
-		{
-			var col = ProbeGround( p ).Hit ? Color.Green : Color.Red;
-			Scene.DebugOverlay.Sphere( new Sphere( p, GroundProbeRadius ), col, 0f );
-			Scene.DebugOverlay.Line( p + Vector3.Up * GroundProbeUp, p - Vector3.Up * GroundProbeDown, col, 0f );
-		}
 	}
 
 	// Smoothed X/Y of the shape's bounds centre in the BODY'S LOCAL frame (null = pin off). Smoothing locally

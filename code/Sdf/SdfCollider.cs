@@ -24,11 +24,6 @@ namespace Mimiclay;
 [Icon( "view_in_ar" )]
 public sealed class SdfCollider : Component
 {
-	/// <summary>Spacing (sculpture-local units) between ground-probe points sampled across each brush's underside.
-	/// Smaller = denser coverage but more traces; each brush gets at least a 2×2 spread. See
-	/// <see cref="SdfCollisionBuilder.ComputeFootPoints"/> and <see cref="FootPoints"/>.</summary>
-	[Property, Range( 4f, 32f )] public float FootProbeSpacing { get; set; } = 12f;
-
 	/// <summary>Build the collider as a TRIGGER instead of a solid: it generates no physical contacts (never
 	/// blocks or pushes anything), but the gun's rays still hit it because they opt in with HitTriggers().
 	/// The hunter head's mode — its collider exists purely for bullet hit detection. Default off: disguises,
@@ -72,16 +67,9 @@ public sealed class SdfCollider : Component
 
 	public static Surface ClaySurface => ResourceLibrary.Get<Surface>( ClaySurfacePath );
 
-	// Sculpture-local footprint snapshot (underside contact points), refreshed with the collider. Used by the
-	// player controller for multi-point ground checks. Decoupled from the collider build (see Rebuild) so a
-	// problem computing it can never stop the sculpture from being solid.
-	List<Vector3> _footPoints = new();
-
-	/// <summary>Sculpture-local underside contact points captured when the collider was last built (empty until
-	/// the first build). Transform by <see cref="GameObject"/>'s world transform to probe the ground. The
-	/// underside is WORLD-down at build time — a tilted sculpture's points sit on the face actually resting on
-	/// the floor — and stays valid while the pawn yaws (yaw cancels out of the tilt).</summary>
-	public IReadOnlyList<Vector3> FootPoints => _footPoints;
+	/// <summary>Bumped on every collider build that actually ran — consumers that derive data from the built
+	/// shape (the prop's move hull) compare it to know when to re-derive.</summary>
+	public int BuildSerial { get; private set; }
 
 	/// <summary>The clay's solid volume (sculpture units³) for the shape last built — see
 	/// <see cref="SdfCollisionBuilder.ClayVolume"/>. Sampled on the first read after a build (and shared by every
@@ -186,7 +174,6 @@ public sealed class SdfCollider : Component
 			collider.Enabled = false;
 		_builtModel = null; // the next enable's build is a first build again — never a freeze candidate
 		_builtKey = null;   // ...and never a skip candidate
-		_footPoints.Clear();
 		_framePoints.Clear();
 		_emitted.Clear();
 	}
@@ -197,19 +184,6 @@ public sealed class SdfCollider : Component
 	{
 		_sculpture ??= GameObject.Components.Get<SdfSculpture>();
 		return BuildBrushes( _sculpture.IsValid() ? _sculpture.Brushes : null );
-	}
-
-	/// <summary>The foot-probe frame for a sculpture at <paramref name="worldRotation"/>: sculpture-local → a frame
-	/// whose −Z is world down, or null when (near-)upright. See <see cref="SdfCollisionBuilder.ComputeFootPoints"/>.</summary>
-	public static Rotation? ProbeFrame( Rotation worldRotation )
-	{
-		var downLocal = worldRotation.Inverse * Vector3.Down;
-		if ( downLocal.z <= -0.9999f )
-			return null;
-
-		return downLocal.z > 0.9999f
-			? Rotation.FromAxis( Vector3.Forward, 180f ) // upside-down: FromToRotation's axis degenerates
-			: Rotation.FromToRotation( downLocal, Vector3.Down );
 	}
 
 	/// <summary>Rebuild the primitive collider from the sibling sculpture's additive brushes and assign it to a
@@ -235,14 +209,11 @@ public sealed class SdfCollider : Component
 		//
 		// The skip only trusts a standing collider THIS component built (model identity, same test the freeze
 		// uses) — a prefab-deserialized placeholder or a disabled/absent collider always builds. Keyed on the
-		// authored hash plus the foot-probe frame (world-down expressed locally, quantised), since the probes
-		// below depend on the build-time tilt: identical brushes under a new tilt must still rebuild the probes.
+		// authored hash: the collider is pure sculpture-local geometry, so tilt and position never matter.
 		var standing = GameObject.Components.Get<ModelCollider>();
 		var brushes = BuildBrushes( all );
-		var downLocal = WorldRotation.Inverse * Vector3.Down;
 		int key = HashCode.Combine(
 			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
-			(int)MathF.Round( downLocal.x * 100f ), (int)MathF.Round( downLocal.y * 100f ), (int)MathF.Round( downLocal.z * 100f ),
 			BuildAsTrigger, SdfCollisionBuilder.CodeVersion );
 
 		if ( key == _builtKey && _builtModel is not null
@@ -280,11 +251,8 @@ public sealed class SdfCollider : Component
 		if ( mayFreeze && !BuildAsTrigger && BrushWorldClamp.EmbeddedInWorld( _sculpture ) )
 			return;
 
-		// The carved-copy record keeps the foot probes in lockstep with the collider: any copy Build swaps to
-		// voxel boxes gets its probes placed ON those boxes (see ComputeFootPoints), not on the smooth field.
-		// The frame points ride the same build (see FramePoints).
-		var carved = new List<SdfCollisionBuilder.CarvedCopy>();
-		var model = SdfCollisionBuilder.Build( brushes, carved, _framePoints, _emitted );
+		// The frame points ride the same build (see FramePoints) — the prop's move hull is derived from them.
+		var model = SdfCollisionBuilder.Build( brushes, null, _framePoints, _emitted );
 
 		var collider = standing.IsValid() ? standing : GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
@@ -293,26 +261,7 @@ public sealed class SdfCollider : Component
 		collider.Enabled = model is not null;
 		_builtModel = model;
 		_builtKey = key;
-
-		// Footprint snapshot for ground probes — computed AFTER the collider is fully set up, and guarded, so a
-		// problem here can NEVER stop the sculpture from being solid (the collider build must not depend on it).
-		//
-		// The probes trace WORLD-down, but the snapshot is sculpture-local: a sculpture standing tilted (a scene
-		// prop placed on its side — conversion moves that tilt onto the disguise child) has its real underside on
-		// a local side face. Hand the builder the local→down-aligned frame so the probes land on the face resting
-		// on the floor. Built from the CURRENT rotation, yet stable at runtime: the pawn only ever yaws, and yaw
-		// cancels out of world-down expressed locally. Near-upright snaps to null (the common case, and float
-		// noise in a live rotation must not perturb the standing behaviour).
-		try
-		{
-			_footPoints = brushes is not null
-				? SdfCollisionBuilder.ComputeFootPoints( brushes, FootProbeSpacing, carved, ProbeFrame( WorldRotation ) )
-				: new();
-		}
-		catch
-		{
-			_footPoints = new();
-		}
+		BuildSerial++;
 
 		_volumeBrushes = brushes;
 		_clayVolume = null; // re-sampled on the next ClayVolume read
