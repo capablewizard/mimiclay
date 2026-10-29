@@ -959,6 +959,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( mode is not PhysicsMode.Held && !againstSurface )
 			RestoreHeldFriction(); // pressing and climbing slide frictionless like a held prop
 		ApplyPressDamping( againstSurface );
+		UseHullCollision( againstSurface ); // press and climb collide as the mover sweeps (see AlignWithMoveHull)
 
 		// Pressed or climbing, a body turns only about the vertical — surfaces lay it flush, they never tip it over.
 		Body.Locking = againstSurface ? new PhysicsLock { Pitch = true, Roll = true } : default;

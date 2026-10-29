@@ -83,6 +83,10 @@ public sealed partial class HiderController
 	// Called at the top of every simulated fixed tick: how far did the LAST tick (and its physics step) carry us?
 	void WatchMoveJumps()
 	{
+		// Always: a short history of where we were and in what mode, for the buried diagnostic (see StepBuried).
+		_history[_historyNext] = (WorldPosition, _physicsMode, _pressing, _climbing, IsGrounded);
+		_historyNext = (_historyNext + 1) % _history.Length;
+
 		if ( !DebugMoveJumps )
 		{
 			_jumpWatchSeeded = false;
@@ -185,6 +189,30 @@ public sealed partial class HiderController
 			return;
 		}
 		_parked = false;
+
+		// Buried: genuinely inside something (deeper than the overlap inset), and the unstick search's short hops
+		// can't get out. Long automatic hops are what fired props through walls, so instead the player steers out
+		// (see StepBuried) — no collision, no gravity — until the hull is clear again.
+		if ( PoseBlocked( pos, rot ) )
+		{
+			var freed = pos;
+			if ( TryUnstick( ref freed, rot ) && !PoseBlocked( freed, rot ) )
+			{
+				pos = freed;
+				_buried = false;
+			}
+			else
+			{
+				StepBuried( ref pos, rot, controlled );
+				Commit( pos, rot );
+				return;
+			}
+		}
+		else if ( _buried )
+		{
+			_buried = false; // steered clear — normal movement (and gravity) resume from here
+			_velocity = Vector3.Zero;
+		}
 
 		if ( MathF.Abs( turn ) > 0.001f )
 			rot = Turn( ref pos, rot, turn );
@@ -327,7 +355,9 @@ public sealed partial class HiderController
 			float t = 1f - MathF.Exp( -AirControl * dt );
 			var horiz = Vector3.Lerp( _velocity.WithZ( 0f ), wish.WithZ( 0f ), t );
 			float g = Gravity * (_velocity.z < 0f ? FallGravityMult : 1f);
-			_velocity = horiz.WithZ( _velocity.z - g * dt );
+			// Terminal speed: a long fall must not build a velocity that sweeps through floors in one tick (a stuck
+			// prop once "fell" to -52 000 u/s while wedged in a shelf).
+			_velocity = horiz.WithZ( MathF.Max( _velocity.z - g * dt, -MaxFallSpeed ) );
 		}
 
 		// Leash on the result too: a launch or a jump's momentum can carry the body outward with no input.

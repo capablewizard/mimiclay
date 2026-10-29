@@ -219,6 +219,29 @@ away. Now "only touching" nudges out in small steps (0.25–2u; the way we came,
 spot `PropMoveHull.StartsSolid` (full hull) says is clear, and the press/climb hand-back eases off by the same test.
 Verified on the radio: let go of a climb and walked 293u away in 1s; pressed then walked 328u away in 1s.
 
+**Buried escape (after a train got impaled on the end of a 16u wall shelf, `Cube.017`, a keyframed mesh):** the capped
+unstick hops can't clear a deep overlap, and the airborne mover had piled gravity up to -52 800 u/s. Now
+(`HiderController.Buried.cs`): genuinely inside something (inset overlap) and unstick fails → BURIED: no collision, no
+gravity, the player steers out (WASD by full camera view, Space up, Ctrl down, `BuriedEscapeSpeed` 120) until clear —
+no automatic long teleports, so it can't fling. Press and climb hand back to the mover after 0.3s buried. Falls are
+capped at `MaxFallSpeed` (3000). Becoming buried logs `[buried]` once with what it's inside and the last 12 ticks'
+positions and modes — the way in is still unknown (suspect: the climb's edge pull dragging a tall prop round a thin
+shelf edge).
+
+**Getting stuck — root causes found from the `[buried]` logs (train vs stove, wall shelf):**
+1. The press capped only the push into the surface it STARTED on; steering into a different one (stove front vs a
+   knob or the radio) ran at full walk speed. Now every press tick sweeps the hull along the command and caps the push
+   into whatever it would actually hit (two passes for corners), and `_pushNormal` follows that real surface.
+2. The clay collider (concave) nestled where its convex hull overlaps things, so the hand-back found the hull
+   buried. Now press and climb COLLIDE WITH THE MOVE HULL (`AlignWithMoveHull`, on): the hull is attached to the
+   pawn body as its solid shape, the clay shapes stop making contacts (traces still hit them). Against flat walls
+   and ceilings this aligns identically (a flat surface only touches the convex envelope).
+3. A shape added straight to a body has NO collision tags, and the untagged hull passed through clay props (the
+   released radio, the copper pot). It now copies the disguise's tags.
+4. A press now ends once the prop is falling (it used to keep driving it off a counter edge).
+Measured: 20 approaches into the stove at 5–35° — 0 burials (was ~1 in 10). One "launched up high" case was a jump pad.
+`[buried]` logs now name the overlapping bodies.
+
 **Decided (user, 2026-10-29):** props stay UPRIGHT — physics may only turn them about the vertical, never tilt
 them — so pitch and roll stay locked on walls and ceilings too, and there is nothing to restore after letting go.
 Space grabs both while pressing a wall and when held while touching a wall or ceiling mid-air.

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Mimiclay;
 
@@ -100,6 +101,13 @@ public sealed partial class HiderController
 	{
 		SetPhysicsMode( PhysicsMode.Pressing );
 		ApplyHeldFriction();
+		UseHullCollision( true );
+
+		if ( TooLongBuried( WorldPosition ) )
+		{
+			EndPress(); // inside something, not against it — the mover's buried escape takes over
+			return;
+		}
 
 		// What the wall did to last tick's command: the part we asked for into the wall that the body didn't do.
 		var into = (-_pushNormal).WithZ( 0f );
@@ -118,7 +126,8 @@ public sealed partial class HiderController
 			return;
 		}
 
-		if ( _pushPerKg < PressExitForce )
+		// Falling (pushed off a ledge along the wall): a press is a floor thing — hand back to the mover, which falls.
+		if ( _pushPerKg < PressExitForce || Body.Velocity.z < -PressFallSpeed )
 		{
 			EndPress();
 			return;
@@ -128,10 +137,27 @@ public sealed partial class HiderController
 		// PressPushSpeed of it goes INTO the wall: we rewrite the velocity every tick, so the solver's push-back never
 		// accumulates, and at the full walk speed (6u a tick) that drove props straight through thin mesh walls.
 		// Sliding along the wall keeps the full speed.
+		//
+		// "The wall" is whatever the hull would ACTUALLY hit along the command this tick — not the surface the press
+		// started on. Capping only the remembered one let the push into a different surface (a train pressed onto a
+		// stove knob, then steered into the stove front) run at full speed and bury the prop. Two passes cover a corner.
 		var command = ApplyLeash( ReadWish().WithZ( 0f ), pullIn: true );
-		float intoWall = Vector3.Dot( command, into );
-		if ( intoWall > PressPushSpeed )
-			command -= into * (intoWall - PressPushSpeed);
+		CapPushInto( ref command, into );
+		for ( int pass = 0; pass < 2 && !command.IsNearZeroLength; pass++ )
+		{
+			var dir = command.Normal;
+			var from = WorldPosition - dir * ClimbBackOff; // backed off: a sweep that starts touching reads start-solid
+			var hit = HullSweep( from, WorldRotation, WorldPosition + dir * (command.Length * Time.Delta + 4f) );
+			if ( !hit.Hit || hit.StartedSolid || Walkable( hit.Normal ) )
+				break;
+
+			var wall = (-hit.Normal).WithZ( 0f );
+			if ( wall.IsNearZeroLength )
+				break;
+			_pushNormal = hit.Normal; // the force, the exit and the hand-back all follow the real wall
+			if ( !CapPushInto( ref command, wall.Normal ) )
+				break;
+		}
 		_pressCommand = command;
 		Body.Velocity = command.WithZ( Body.Velocity.z );
 		CapTurnRate();
@@ -147,6 +173,21 @@ public sealed partial class HiderController
 		SetPhysicsMode( PhysicsMode.Character );
 		EaseHullOff( _pushNormal );
 		IsGrounded = true; // it was standing on the floor; the mover's snap confirms it (or starts a fall)
+	}
+
+	// Limit the part of `command` going along `into` to PressPushSpeed. True if it had to.
+	// Falling faster than this (u/s) ends a press.
+	const float PressFallSpeed = 60f;
+
+	bool CapPushInto( ref Vector3 command, Vector3 into )
+	{
+		if ( into.IsNearZeroLength )
+			return false;
+		float intoWall = Vector3.Dot( command, into );
+		if ( intoWall <= PressPushSpeed )
+			return false;
+		command -= into * (intoWall - PressPushSpeed);
+		return true;
 	}
 
 	// Handing a dynamic body back to the mover: the contact solver leaves a sliver of penetration, and the move hull
@@ -182,6 +223,57 @@ public sealed partial class HiderController
 		var spin = Body.AngularVelocity;
 		if ( MathF.Abs( spin.z ) > maxRate )
 			Body.AngularVelocity = spin.WithZ( MathF.Sign( spin.z ) * maxRate );
+	}
+
+	/// <summary>While pressing or climbing, collide with the convex MOVE HULL instead of the clay collider. The two
+	/// are identical against flat walls and ceilings (a flat surface only ever touches a shape's convex envelope),
+	/// but the clay can nestle into bumps its hull covers — stove knobs under a train's chassis, a shelf end above
+	/// its boiler — and handing that back to the mover left the hull embedded: "buried". Off = the clay collider,
+	/// for A/B-ing the feel.</summary>
+	[Property, Group( "Alignment" )] public bool AlignWithMoveHull { get; set; } = true;
+
+	readonly List<PhysicsShape> _clayShapesOff = new();
+	PhysicsShape _taggedHullShape;
+
+	// Pressing/climbing on: the move hull becomes the body's solid shape and the clay's shapes stop making contacts
+	// (traces still hit them — bullets, hover prompts). Re-asserted every dynamic tick: a commit rebuilds the clay
+	// collider with solid shapes, and a re-made body drops ours. Off: put everything back.
+	void UseHullCollision( bool on )
+	{
+		var pb = Body.IsValid() ? Body.PhysicsBody : null;
+		if ( !on || !AlignWithMoveHull || pb is null || !pb.IsValid() )
+		{
+			_hull.Detach();
+			foreach ( var shape in _clayShapesOff )
+				if ( shape.IsValid() )
+					shape.EnableSolidCollisions = true;
+			_clayShapesOff.Clear();
+			return;
+		}
+
+		_hull.Refresh( _collider, Scene.PhysicsWorld );
+		var hullShape = _hull.AttachTo( pb );
+		if ( hullShape is null )
+			return; // no hull yet — keep colliding with the clay
+		hullShape.Friction = 0f; // slides and turns against the wall like a held prop
+
+		// Collision tags: a shape added straight to a body has NONE (a Collider copies its object's tags onto its
+		// shapes) and an untagged shape went straight through clay props — a train pressed into the released radio
+		// ended up inside it. Wear the disguise's tags, so the hull follows exactly the clay collider's rules
+		// (solid to scenery clay, passing through fellow live props).
+		if ( _body.IsValid() && _taggedHullShape != hullShape )
+		{
+			hullShape.Tags.SetFrom( _body.GameObject.Tags );
+			_taggedHullShape = hullShape;
+		}
+
+		foreach ( var shape in pb.Shapes )
+		{
+			if ( shape == hullShape || shape.IsTrigger || !shape.EnableSolidCollisions )
+				continue;
+			shape.EnableSolidCollisions = false;
+			_clayShapesOff.Add( shape );
+		}
 	}
 
 	// SetPhysicsMode's press-specific bits: damping on the way in, back on the way out.

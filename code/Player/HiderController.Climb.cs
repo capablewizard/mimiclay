@@ -271,6 +271,14 @@ public sealed partial class HiderController
 		var pos = WorldPosition;
 		var n = _climbNormal;
 
+		// Genuinely inside something (not just sunk into the surface we're on — that pushes out below) for a while:
+		// let go, and the mover's buried escape takes over (see HiderController.Buried).
+		if ( TooLongBuried( pos ) )
+		{
+			EndClimb();
+			return;
+		}
+
 		// Sense the surface: from a pose backed off it, trace the real body back toward it.
 		// If the body has been shoved INTO the surface deeper than the back-off, the trace starts inside it and reads
 		// start-solid. That used to count as "surface lost", which fired the edge pull — straight at the last contact
@@ -386,6 +394,7 @@ public sealed partial class HiderController
 
 		SetPhysicsMode( PhysicsMode.Climbing );
 		ApplyHeldFriction();
+		UseHullCollision( true );
 
 		// On a surface: press into it. Off one (an outer edge): pull toward where we last touched it, so the prop
 		// swings round the edge onto the next face.

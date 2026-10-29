@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Mimiclay;
 
@@ -162,6 +163,32 @@ public sealed class PropMoveHull : IDisposable
 		return false;
 	}
 
+	/// <summary>Diagnostics: which bodies the (inset) hull at <paramref name="pose"/> genuinely overlaps, and how.</summary>
+	public string OverlapReport( Scene scene, SceneTrace trace, GameObject ignoreRoot, string[] ignoreTags, in Transform pose )
+	{
+		if ( !Ready )
+			return "(no hull)";
+
+		var found = new List<string>();
+		var nudge = pose.WithPosition( pose.Position + Vector3.Up * 0.05f );
+		foreach ( var tr in trace.Sweep( _insetBody, pose, nudge ).RunAll() )
+			if ( tr.StartedSolid && tr.GameObject.IsValid() )
+				found.Add( $"{tr.GameObject.Name} (start-solid{(tr.Shape?.IsMeshShape == true ? ", mesh" : "")}, tags [{string.Join( ",", tr.GameObject.Tags.TryGetAll() )}])" );
+
+		var bounds = LocalBounds.Transform( pose ).Grow( 1f );
+		foreach ( var body in scene.PhysicsWorld.Bodies )
+		{
+			if ( body == _body || body == _insetBody || !bounds.Overlaps( body.GetBounds() ) )
+				continue;
+			var go = body.GameObject;
+			if ( go.IsValid() && (go.Root == ignoreRoot || go.Tags.HasAny( ignoreTags )) )
+				continue;
+			if ( body.Shapes.Any( s => !s.IsTrigger && !s.IsMeshShape ) && body.CheckOverlap( _insetBody, pose ) )
+				found.Add( $"{go?.Name ?? "(no object)"} (convex overlap, {body.BodyType}, tags [{(go.IsValid() ? string.Join( ",", go.Tags.TryGetAll() ) : "")}])" );
+		}
+		return found.Count == 0 ? "(nothing — clear)" : string.Join( "; ", found.Distinct() );
+	}
+
 	/// <summary>Does the FULL hull at <paramref name="pose"/> start inside something (a short sweep's start-solid)?
 	/// The test the mover's sweeps actually trip over: a body resting a hair into a wall is "touching" to
 	/// <see cref="Overlaps"/> (inset hull) but still blocks every full-hull sweep that starts there.</summary>
@@ -173,8 +200,40 @@ public sealed class PropMoveHull : IDisposable
 		return Sweep( trace, pose, nudge ).StartedSolid;
 	}
 
+	PhysicsShape _attached;
+	PhysicsBody _attachedTo;
+	int _attachedVersion = -1;
+
+	/// <summary>The hull shape currently attached to a pawn body (see <see cref="AttachTo"/>), or null.</summary>
+	public PhysicsShape AttachedShape => _attached is not null && _attached.IsValid() ? _attached : null;
+
+	/// <summary>Put this hull on <paramref name="body"/> as a real collision shape (pawn-root space = body space), so
+	/// a DYNAMIC pawn collides exactly as the mover sweeps. Re-attaches when the hull or the body changed.</summary>
+	public PhysicsShape AttachTo( PhysicsBody body )
+	{
+		if ( !Ready || body is null || !body.IsValid() )
+			return null;
+		if ( AttachedShape is not null && _attachedTo == body && _attachedVersion == Version )
+			return _attached;
+
+		Detach();
+		_attached = body.AddHullShape( Vector3.Zero, Rotation.Identity, _verts );
+		_attachedTo = body;
+		_attachedVersion = Version;
+		return _attached;
+	}
+
+	public void Detach()
+	{
+		if ( _attached is not null && _attached.IsValid() )
+			_attached.Remove();
+		_attached = null;
+		_attachedTo = null;
+	}
+
 	public void Dispose()
 	{
+		Detach();
 		if ( _body is not null && _body.IsValid() )
 			_body.Remove();
 		if ( _insetBody is not null && _insetBody.IsValid() )
