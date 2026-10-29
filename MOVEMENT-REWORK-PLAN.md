@@ -144,8 +144,8 @@ it's stuck to, exactly as the press turns it flush now.
 
 | Input | On the floor | While pressing a wall | While climbing |
 | --- | --- | --- | --- |
-| Space | Jump | Start climbing | Hop up the surface (~50u) |
-| Ctrl | Crouch (slow) | — | Slow (fine positioning) |
+| Space | Jump | Start climbing | Move up the surface (held) |
+| Ctrl | Crouch (slow) | — | Move down the surface (held) |
 | Shift | — | — | Let go |
 | WASD | Walk | Push / slide along the wall | Move along the surface, camera-relative |
 
@@ -256,7 +256,58 @@ Mouse turning stays continuous across walking/pressing/climbing (only the grab's
 it by CrouchSpeed/WalkSpeed like crouch on the floor; the mouse turns it; SHIFT LETS GO; SPACE HOPS up the surface
 (`ClimbHopSpeed` 300 fading at `ClimbHopDecay` 6 ≈ 50u, still stuck; on a ceiling it hops the way the camera looks; a
 hop carries round a corner like the climb does). Ctrl no longer moves down. Space still grabs: while pressing a wall, or held/just pressed
+
+**Tried and reverted (user, 2026-10-29: "movement feels a lot worse"):** making props less sticky over pots and pans by
+(1) Space while pressing = jump, (2) hold-Space-to-grab only (no grab from the jump itself), (3) no pressing against
+other clay props. Don't retry that combination as-is.
+
+**Props as floor (EXPERIMENT, user 2026-10-29: "props still feel really sticky … perhaps they just act like a floor"):**
+`PropsAsFloor` (on), `PropStepHeight` 40. ANY clay prop (SdfSculpture or released prop pawn; user: "don't stick to any props" —
+the 64u height cap was removed the same day): any surface facing up past `PropFloorMinZ` 0.25 (≈76°) counts as ground (`WalkableHit`, used by
+slide, snap, landing and the step-down); its sides step up to 40u; it is never pressed against or air-grabbed. Non-clay
+furniture behaves as before. A climb's corner look-ahead never turns onto a clay prop: it steps over it like a bump.
+**Mantle (user, 2026-10-29: "climb to the top of the tablecloth and can't really move, still registering as stuck"):**
+`TryMantle` — sweep the hull over the lip (toward the wall, `ClimbMantleReach` 16), then down onto ground (`WalkableHit`); if
+it lands, end the climb there, grounded, with a little carry onto the top. Tried (a) when the wall is lost while climbing up
+(the outer-edge pull used to drag the prop back BELOW the lip, so it bobbed there), and (b) as soon as sensing reads a
+walkable top past a steep wall (the body grazing the table top was gated as a "bump edge" while moving, so the climb never
+ended). Fails harmlessly while the wall is still in front (the floor at a climb's foot). Untested in play.
+Small ledges (user: "trips up on very small ledges — the shelves, the washing machine door"): the mantle only steps up when the
+space over the lip is OPEN. If the sweep over the lip hits a steep non-prop wall within `ClimbMantleReach`, it's a ledge on
+the way up: no mantle, the outer-edge pull is aimed at that wall (`_climbPoint`) and the let-go timer is reset, so the prop
+steps in onto it and keeps climbing. A shelf deeper than 16u still counts as a top.
+
+Surfaces CARRYING props (user: "the fridge with the magnets, doors with doorknobs feel hard to climb"): grabs and the climb's
+surface sensing look THROUGH clay (`PropFreeTrace` = MoveTrace without the clay tag) to the wall behind. `GrabSweep` re-sweeps
+through props when the plain sweep stopped on one, out to `ClimbGrabReach` + `PropClingReach` (24); sensing that only finds a
+prop under the body reaches `ClimbReach` + `PropClingReach` to the wall. The corner look-ahead still SEES props, so magnets
+stay bumps to step over. A bigger hull was rejected: it would hit the props sooner and sit further off the wall. Not tested
+yet (the user was in play mode); 24u is a guess at magnet/knob depth. Two fixes rode along: walking up a slope steeper than
+`WalkAngle` lifts no faster than a `WalkAngle` ramp, and walking off the ground (not jumping) drops any upward speed.
+Controls unchanged (Space while pressing still climbs, a jump still grabs walls). Scripted check on open floor as the toy
+train: crossed fryingpan, castironpan, pot_copper, mug, dinnerplate, dinnerbowl, egg_cup with no press or grab; with it
+off the 44u egg cup pressed and stalled. Not hand-tested; not tested on the hob or as a small prop. Test lanes: the
+kitchen floor near (-150,-575) has a JUMP PAD (900 u/s) — a "launch" there is the pad, not the mover.
+
+**Bumps vs corners (user: "climbing the fridge as a letter, crossing another letter turns W into up/left"):** the
+corner look-ahead treated any surface >45° off as an inner corner, so a neighbouring letter's rounded edge became "the
+new surface" and the corner carry rotated W onto it — and kept it rotated while W stayed held. Now: (1) a hit is
+re-checked from a pose lifted `StepHeight` (18u) off the surface; if that clears it, it's a BUMP — no switch; the prop
+lifts off the surface for `ClimbStepOverTime` (0.12s) and the stick pulls it back after. (2) The carry is dropped once
+the surface faces the way the one it came from did. (3) A sensed normal more than 35° off the current one (a bump's
+side or edge) no longer tilts the surface; only the corner logic changes surfaces. Verified on the fridge: ~200u
+straight up through two letter columns, step-over fired at each letter, normal stayed (0,−1,0), sideways drift ≤1.3u.
 while touching a wall or ceiling mid-air. The let-go press can't re-grab (it predates the let-go, see the cooldown).
+
+**Climb jitter on a pot (follow-up):** a train came to rest on top of a pot while still "climbing" on a stale slanted
+normal; every sensed reading (the pot top, ~60° away) was ignored by the 35° gate, and the climb bounced between
+"on it" and "lost it" forever. Two causes: (1) a wish straight INTO the surface flattens to float noise whose direction
+is meaningless, and the corner look-ahead steered by it — into the floor, the pot — so the climb now needs
+`CornerMinSpeed` (5 u/s) along the surface before looking for corners (this also ended climbs started on the
+ground); (2) the gate now ADOPTS an off-angle reading that faces back along the stick (dot > 0.3) and has persisted
+0.2s while the prop isn't moving — a surface it's resting on, not a bump it's passing. (Adopting walkable readings at
+once was tried and ended climbs on a passing letter's sloped top.) Verified: the pot repro holds still within 0.1s;
+the fridge climb is unchanged (187u through letters, ≤1.5u drift).
 
 **Decided (user, 2026-10-29):** props stay UPRIGHT — physics may only turn them about the vertical, never tilt
 them — so pitch and roll stay locked on walls and ceilings too, and there is nothing to restore after letting go.

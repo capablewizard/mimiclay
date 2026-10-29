@@ -26,6 +26,17 @@ public sealed partial class HiderController
 	/// <summary>Below this speed (u/s), a grounded prop with no input stops dead.</summary>
 	[Property, Group( "Movement" )] public float StopSpeed { get; set; } = 6f;
 
+	/// <summary>EXPERIMENT: clay props (pots, pans, teapots, released props — any size) act like FLOOR, not walls. Any of their surfaces
+	/// that faces up at all can be stood on and walked up, you step up their sides up to <see cref="PropStepHeight"/>,
+	/// and you never press against or grab them. Off: they collide like any other wall.</summary>
+	[Property, Group( "Movement" )] public bool PropsAsFloor { get; set; } = true;
+
+	/// <summary>Tallest side of a floor-like clay prop the mover steps straight up (see <see cref="PropsAsFloor"/>).</summary>
+	[Property, Group( "Movement" )] public float PropStepHeight { get; set; } = 40f;
+
+	// A floor-like prop surface counts as ground if it faces up at all past this (≈76° from flat).
+	const float PropFloorMinZ = 0.25f;
+
 	/// <summary>Draw the move hull (green grounded, yellow airborne, blue parked) and the ground normal.</summary>
 	[Property, Group( "Debug" )] public bool DebugMovement { get; set; }
 
@@ -63,6 +74,21 @@ public sealed partial class HiderController
 	float WalkCos => MathF.Cos( WalkAngle.DegreeToRadian() );
 	bool Walkable( Vector3 normal ) => normal.z >= WalkCos;
 
+	// Walkable for THIS hit: ordinary ground, or any upward-facing surface of a floor-like clay prop.
+	bool WalkableHit( in SceneTraceResult tr ) => Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( tr ));
+
+	// Any clay prop — a sculpture in the map or a released prop pawn — under PropsAsFloor (see there).
+	bool IsFloorProp( in SceneTraceResult tr )
+	{
+		if ( !PropsAsFloor || !tr.Hit )
+			return false;
+		var go = tr.GameObject;
+		bool clay = false;
+		for ( var g = go; g.IsValid() && !clay; g = g.Parent )
+			clay = g.Tags.Has( SdfCollider.ClayTag ) || g.Components.Get<SdfSculpture>().IsValid() || g.Components.Get<HiderController>().IsValid();
+		return clay;
+	}
+
 	SceneTrace MoveTrace => Scene.Trace.IgnoreGameObjectHierarchy( GameObject ).WithoutTags( MoveIgnoreTags );
 
 	SceneTraceResult HullSweep( Vector3 from, Rotation rot, Vector3 to )
@@ -97,7 +123,7 @@ public sealed partial class HiderController
 		if ( _jumpWatchSeeded )
 		{
 			float moved = (pos - _jumpWatchPos).Length;
-			float allowed = MathF.Max( WalkSpeed, MathF.Abs( _velocity.z ) + 50f ) * Time.Delta * 1.5f + StepHeight + 2f;
+			float allowed = MathF.Max( WalkSpeed, MathF.Abs( _velocity.z ) + 50f ) * Time.Delta * 1.5f + MathF.Max( StepHeight, PropsAsFloor ? PropStepHeight : 0f ) + 2f;
 			if ( moved > allowed )
 				Log.Warning( $"[move jump] {GameObject.Name}: moved {moved:0.0}u in one tick (allowed {allowed:0.0}) " +
 					$"{_jumpWatchMode} -> {_physicsMode}, from {_jumpWatchPos} to {pos}, body vel {(Body.IsValid() ? Body.Velocity.Length : 0f):0}, " +
@@ -336,6 +362,10 @@ public sealed partial class HiderController
 			// Chase the wish along the ground plane, so an incline is walked up rather than driven into.
 			float t = 1f - MathF.Exp( -GroundControl * dt );
 			var target = ProjectOntoSlope( wish, _groundNormal );
+			// A floor-like prop's side is steeper than any ramp: walking up it may lift us no faster than the steepest ramp
+			// would (the full projection aimed nearly all the speed straight up, and fired the prop into the air off the top).
+			if ( !Walkable( _groundNormal ) )
+				target = target.WithZ( MathF.Min( target.z, target.WithZ( 0f ).Length * MathF.Tan( WalkAngle.DegreeToRadian() ) ) );
 			_velocity = Vector3.Lerp( _velocity, target, t );
 
 			if ( wish.IsNearZeroLength && _velocity.Length < StopSpeed )
@@ -376,7 +406,8 @@ public sealed partial class HiderController
 		bool stepped = false;
 
 		// Blocked by something steep: try the step — up, across, down — and keep it if it got further.
-		if ( steep.Hit && StepHeight > 0f && TryStep( start, rot, move.WithZ( 0f ), startVel, out var up, out var stepVel ) )
+		float stepHeight = steep.FloorProp ? MathF.Max( StepHeight, PropStepHeight ) : StepHeight;
+		if ( steep.Hit && stepHeight > 0f && TryStep( start, rot, move.WithZ( 0f ), startVel, stepHeight, out var up, out var stepVel ) )
 		{
 			float walkedFlat = (walked - start).WithZ( 0f ).LengthSquared;
 			float steppedFlat = (up - start).WithZ( 0f ).LengthSquared;
@@ -389,7 +420,7 @@ public sealed partial class HiderController
 		}
 
 		// Held against a wall: once the push has lasted, physics turns it flush (see HiderController.Press).
-		NotePush( wish, stepped ? default : steep );
+		NotePush( wish, stepped || steep.FloorProp ? default : steep ); // never press against a floor-like prop
 
 		pos = walked;
 
@@ -398,6 +429,7 @@ public sealed partial class HiderController
 		{
 			IsGrounded = false;
 			_groundObject = null;
+			_velocity = _velocity.WithZ( MathF.Min( _velocity.z, 0f ) ); // walked off: no launch from the slope we left (a jump never gets here)
 		}
 	}
 
@@ -413,20 +445,20 @@ public sealed partial class HiderController
 	}
 
 	// Up by StepHeight (or as far as the ceiling allows), across by the flat move, down onto walkable ground.
-	bool TryStep( Vector3 start, Rotation rot, Vector3 flatMove, Vector3 startVel, out Vector3 pos, out Vector3 vel )
+	bool TryStep( Vector3 start, Rotation rot, Vector3 flatMove, Vector3 startVel, float height, out Vector3 pos, out Vector3 vel )
 	{
 		pos = start;
 		vel = startVel;
 		var saved = _velocity;
 		_velocity = startVel;
 
-		var up = HullSweep( start, rot, start + Vector3.Up * StepHeight );
+		var up = HullSweep( start, rot, start + Vector3.Up * height );
 		if ( up.StartedSolid )
 		{
 			_velocity = saved;
 			return false;
 		}
-		var raised = up.Hit ? up.EndPosition - Vector3.Up * Skin : start + Vector3.Up * StepHeight;
+		var raised = up.Hit ? up.EndPosition - Vector3.Up * Skin : start + Vector3.Up * height;
 		float lift = raised.z - start.z;
 		if ( lift < 1f )
 		{
@@ -438,7 +470,7 @@ public sealed partial class HiderController
 		Slide( ref across, rot, flatMove, out _ );
 
 		var down = HullSweep( across, rot, across - Vector3.Up * (lift + Skin * 2f) );
-		if ( down.StartedSolid || !down.Hit || !Walkable( down.Normal ) )
+		if ( down.StartedSolid || !down.Hit || !WalkableHit( down ) )
 		{
 			_velocity = saved;
 			return false;
@@ -462,7 +494,7 @@ public sealed partial class HiderController
 				return IsGrounded; // still stuck — keep whatever we had rather than flicker
 		}
 
-		if ( !tr.Hit || !Walkable( tr.Normal ) )
+		if ( !tr.Hit || !WalkableHit( tr ) )
 			return false;
 
 		pos = tr.EndPosition + Vector3.Up * Skin;
@@ -480,6 +512,7 @@ public sealed partial class HiderController
 		public bool Hit;
 		public Vector3 Normal;
 		public Vector3 Point;
+		public bool FloorProp; // a floor-like clay prop (see PropsAsFloor): stepped over, never pressed or grabbed
 	}
 
 	// Collide-and-slide: advance to each hit (a skin off the surface), then continue along the surface with
@@ -518,8 +551,8 @@ public sealed partial class HiderController
 			var remaining = move * (1f - tr.Fraction);
 			var n = tr.Normal;
 
-			if ( !Walkable( n ) && (!steep.Hit || MathF.Abs( n.z ) < MathF.Abs( steep.Normal.z )) )
-				steep = new SteepHit { Hit = true, Normal = n, Point = tr.HitPosition };
+			if ( !WalkableHit( tr ) && (!steep.Hit || MathF.Abs( n.z ) < MathF.Abs( steep.Normal.z )) )
+				steep = new SteepHit { Hit = true, Normal = n, Point = tr.HitPosition, FloorProp = IsFloorProp( tr ) };
 
 			float into = Vector3.Dot( _velocity, n );
 			if ( into < 0f )
