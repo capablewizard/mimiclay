@@ -33,7 +33,14 @@ public sealed class PropMoveHull : IDisposable
 	static readonly Vector3 ParkingSpot = new( 0f, 0f, -210000f );
 
 	PhysicsBody _body;
+	PhysicsBody _insetBody;   // the same hull pulled in by OverlapInset — what the overlap test uses
 	PhysicsWorld _world;
+
+	// Contact is not penetration: the native overlap query reports a hull resting a skin away from a convex body
+	// (another prop) as overlapping, and every false overlap sent the mover's unstick search hopping the prop
+	// around — "fired through a wall" when walking near props. The overlap test uses a hull this much smaller
+	// (the brush clamp settled on the same rule). Sweeps still use the full hull.
+	const float OverlapInset = 1f;
 	int _builtSerial = -1;
 	Transform _builtLocal;
 	readonly List<Vector3> _verts = new();
@@ -83,15 +90,28 @@ public sealed class PropMoveHull : IDisposable
 		LocalBounds = BBox.FromPoints( _verts );
 		Centre = SurfaceCentroid( _tris, LocalBounds.Center );
 
-		if ( _body is null || !_body.IsValid() || _world != world )
+		if ( _body is null || !_body.IsValid() || _insetBody is null || !_insetBody.IsValid() || _world != world )
 		{
 			_body?.Remove();
+			_insetBody?.Remove();
 			_body = new PhysicsBody( world ) { BodyType = PhysicsBodyType.Static, Position = ParkingSpot };
+			_insetBody = new PhysicsBody( world ) { BodyType = PhysicsBodyType.Static, Position = ParkingSpot };
 			_world = world;
 		}
 
 		_body.ClearShapes();
 		_body.AddHullShape( Vector3.Zero, Rotation.Identity, _verts );
+
+		// Each vertex pulled toward the centre by OverlapInset (at most halfway, so a thin hull stays a hull).
+		var inset = new List<Vector3>( _verts.Count );
+		foreach ( var v in _verts )
+		{
+			var off = v - Centre;
+			float len = off.Length;
+			inset.Add( len > 1e-3f ? v - off / len * MathF.Min( OverlapInset, len * 0.5f ) : v );
+		}
+		_insetBody.ClearShapes();
+		_insetBody.AddHullShape( Vector3.Zero, Rotation.Identity, inset );
 		Version++;
 	}
 
@@ -112,14 +132,15 @@ public sealed class PropMoveHull : IDisposable
 		if ( !Ready )
 			return false;
 
+		// Both halves on the INSET hull: resting against something is not overlapping it (see OverlapInset).
 		var nudge = pose.WithPosition( pose.Position + Vector3.Up * 0.05f );
-		if ( Sweep( trace, pose, nudge ).StartedSolid )
+		if ( trace.Sweep( _insetBody, pose, nudge ).Run().StartedSolid )
 			return true;
 
 		var bounds = LocalBounds.Transform( pose ).Grow( 1f );
 		foreach ( var body in scene.PhysicsWorld.Bodies )
 		{
-			if ( body == _body || !bounds.Overlaps( body.GetBounds() ) )
+			if ( body == _body || body == _insetBody || !bounds.Overlaps( body.GetBounds() ) )
 				continue;
 
 			var go = body.GameObject;
@@ -135,17 +156,31 @@ public sealed class PropMoveHull : IDisposable
 					break;
 				}
 			}
-			if ( convex && body.CheckOverlap( _body, pose ) )
+			if ( convex && body.CheckOverlap( _insetBody, pose ) )
 				return true;
 		}
 		return false;
+	}
+
+	/// <summary>Does the FULL hull at <paramref name="pose"/> start inside something (a short sweep's start-solid)?
+	/// The test the mover's sweeps actually trip over: a body resting a hair into a wall is "touching" to
+	/// <see cref="Overlaps"/> (inset hull) but still blocks every full-hull sweep that starts there.</summary>
+	public bool StartsSolid( SceneTrace trace, in Transform pose )
+	{
+		if ( !Ready )
+			return false;
+		var nudge = pose.WithPosition( pose.Position + Vector3.Up * 0.05f );
+		return Sweep( trace, pose, nudge ).StartedSolid;
 	}
 
 	public void Dispose()
 	{
 		if ( _body is not null && _body.IsValid() )
 			_body.Remove();
+		if ( _insetBody is not null && _insetBody.IsValid() )
+			_insetBody.Remove();
 		_body = null;
+		_insetBody = null;
 		_world = null;
 		_verts.Clear();
 		_tris.Clear();

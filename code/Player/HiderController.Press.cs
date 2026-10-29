@@ -35,6 +35,10 @@ public sealed partial class HiderController
 	/// <summary>Seconds the push force is averaged over (exponential).</summary>
 	[Property, Group( "Alignment" ), Range( 0.01f, 0.5f )] public float PressForceSmoothing { get; set; } = 0.08f;
 
+	/// <summary>Most of the walk speed (u/s) that drives INTO the wall while pressing. Enough to keep the contact
+	/// loaded so the wall turns the prop flush; more just pushes the body through thin walls.</summary>
+	[Property, Group( "Alignment" )] public float PressPushSpeed { get; set; } = 60f;
+
 	/// <summary>Angular damping while pressing — higher turns flush more gently.</summary>
 	[Property, Group( "Alignment" ), Range( 0f, 30f )] public float PressAngularDamping { get; set; } = 10f;
 
@@ -120,9 +124,16 @@ public sealed partial class HiderController
 			return;
 		}
 
-		// Our input drives it; gravity keeps it on the floor. The wall stops the push and turns it flush.
-		_pressCommand = ApplyLeash( ReadWish().WithZ( 0f ), pullIn: true );
-		Body.Velocity = _pressCommand.WithZ( Body.Velocity.z );
+		// Our input drives it; gravity keeps it on the floor. The wall stops the push and turns it flush. Only
+		// PressPushSpeed of it goes INTO the wall: we rewrite the velocity every tick, so the solver's push-back never
+		// accumulates, and at the full walk speed (6u a tick) that drove props straight through thin mesh walls.
+		// Sliding along the wall keeps the full speed.
+		var command = ApplyLeash( ReadWish().WithZ( 0f ), pullIn: true );
+		float intoWall = Vector3.Dot( command, into );
+		if ( intoWall > PressPushSpeed )
+			command -= into * (intoWall - PressPushSpeed);
+		_pressCommand = command;
+		Body.Velocity = command.WithZ( Body.Velocity.z );
 		CapTurnRate();
 	}
 
@@ -143,14 +154,21 @@ public sealed partial class HiderController
 	// so the mover's first sweep starts clear.
 	void EaseHullOff( Vector3 normal )
 	{
+		_unstickHint = normal; // if the mover still finds itself inside, it backs out this way (see TryUnstick)
+		_sinceUnstickHint = 0f;
+
+		// Clear means the FULL hull starts clear (the mover's sweeps need that), not just "no real overlap" — the
+		// inset test calls a hull a hair into the wall merely touching, which left the mover unable to sweep away.
 		_hull.Refresh( _collider, Scene.PhysicsWorld );
-		if ( !_hull.Ready || !PoseBlocked( WorldPosition, WorldRotation ) )
+		var trace = MoveTrace;
+		bool Clear( Vector3 p ) => !_hull.StartsSolid( trace, new Transform( p, WorldRotation ) ) && !PoseBlocked( p, WorldRotation );
+		if ( !_hull.Ready || Clear( WorldPosition ) )
 			return;
 
 		var n = normal.IsNearZeroLength ? Vector3.Up : normal.Normal;
-		for ( float d = 0.25f; d <= 4f; d *= 2f )
+		for ( float d = 0.25f; d <= 8f; d *= 2f )
 		{
-			if ( PoseBlocked( WorldPosition + n * d, WorldRotation ) )
+			if ( !Clear( WorldPosition + n * d ) )
 				continue;
 			WorldPosition += n * d;
 			return;

@@ -75,6 +75,10 @@ public sealed partial class HiderController
 	RealTimeSince _sinceCornerSwitch = 999f;
 	const float CornerSwitchCooldown = 0.2f; // no second corner straight after one — never ping-pong between two
 
+	// Where the climb went still, and on which shape — a hold re-checks the surface if either changes.
+	Vector3 _climbHoldPos;
+	int _climbHoldHull;
+
 	// The mover's last wall or ceiling contact in the air, for a jump-and-grab.
 	Vector3 _airWallNormal, _airWallPoint;
 	float _sinceAirWall = 999f;
@@ -257,17 +261,34 @@ public sealed partial class HiderController
 			vertical = Math.Clamp( DebugClimbVertical, -1f, 1f );
 		bool input = !move.IsNearZeroLength || perfWish is { IsNearZeroLength: false } || vertical != 0f;
 
-		// Holding still on the surface: keyframed, nothing to do until there's input again.
-		if ( _physicsMode == PhysicsMode.ClimbHold && !input )
+		// Holding still on the surface: keyframed, nothing to do until there's input again — unless something moved us
+		// (a teleport) or changed our shape (sculpting while stuck): then re-check, we may now be sunk into the surface.
+		_hull.Refresh( _collider, Scene.PhysicsWorld );
+		if ( _physicsMode == PhysicsMode.ClimbHold && !input
+			&& WorldPosition.AlmostEqual( _climbHoldPos, 0.01f ) && _hull.Version == _climbHoldHull )
 			return;
 
 		var pos = WorldPosition;
 		var n = _climbNormal;
 
 		// Sense the surface: from a pose backed off it, trace the real body back toward it.
-		var tr = ClimbTrace( pos + n * ClimbBackOff, pos - n * ClimbReach );
-		bool surface = tr.Hit && !tr.StartedSolid;
-		if ( surface )
+		// If the body has been shoved INTO the surface deeper than the back-off, the trace starts inside it and reads
+		// start-solid. That used to count as "surface lost", which fired the edge pull — straight at the last contact
+		// point, i.e. into the wall, harder — a runaway that carried props through walls. Back off further instead,
+		// and if we only find the surface from further out, we're embedded: push OUT this tick.
+		SceneTraceResult tr = default;
+		bool embedded = false;
+		for ( float back = ClimbBackOff; back <= ClimbBackOff * 8f; back *= 2f )
+		{
+			tr = ClimbTrace( pos + n * back, pos - n * ClimbReach );
+			if ( !tr.StartedSolid )
+				break;
+			embedded = true;
+		}
+		if ( tr.StartedSolid )
+			tr = default; // buried even from 16u out — don't trust it, but still push out (embedded)
+		bool surface = tr.Hit || embedded;
+		if ( tr.Hit )
 		{
 			_climbNormal = Vector3.Lerp( _climbNormal, tr.Normal, 0.5f ).Normal; // smooth a bumpy clay or tile face
 			_climbPoint = tr.HitPosition;
@@ -347,12 +368,14 @@ public sealed partial class HiderController
 		}
 
 		// Hold still when there's no input (or no control) and we're on the surface.
-		if ( !input && surface )
+		if ( !input && surface && !embedded ) // never freeze in place while sunk into the surface
 		{
 			_climbStill++;
 			if ( !controlled || _climbStill >= ParkAfterTicks )
 			{
 				SetPhysicsMode( PhysicsMode.ClimbHold );
+				_climbHoldPos = WorldPosition;
+				_climbHoldHull = _hull.Version;
 				return;
 			}
 		}
@@ -366,9 +389,26 @@ public sealed partial class HiderController
 
 		// On a surface: press into it. Off one (an outer edge): pull toward where we last touched it, so the prop
 		// swings round the edge onto the next face.
-		var velocity = surface
-			? along - n * ClimbStickSpeed
-			: along * 0.5f + (_climbPoint - pb.MassCenter).Normal * ClimbEdgePullSpeed;
+		Vector3 velocity;
+		if ( embedded )
+		{
+			// Sunk into the surface: back out of it (along it still works) rather than pressing deeper.
+			velocity = along + n * ClimbStickSpeed * 2f;
+		}
+		else if ( surface )
+		{
+			velocity = along - n * ClimbStickSpeed;
+		}
+		else
+		{
+			// Round an outer edge — but never INTO the old surface faster than the ordinary stick: past the edge the
+			// pull wraps us round it, short of the edge it must not ram us through the wall.
+			var pull = (_climbPoint - pb.MassCenter).Normal * ClimbEdgePullSpeed;
+			float inward = Vector3.Dot( pull, -n );
+			if ( inward > ClimbStickSpeed )
+				pull -= -n * (inward - ClimbStickSpeed);
+			velocity = along * 0.5f + pull;
+		}
 
 		Body.Velocity = ApplyLeash( velocity, pullIn: true );
 		CapTurnRate();

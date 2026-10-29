@@ -40,7 +40,6 @@ public sealed partial class HiderController
 	const float Skin = 0.25f;
 	const int SlideIterations = 4;
 	const int ParkAfterTicks = 6;
-	const float MaxUnstick = 32f;
 
 	// Tags the move hull looks straight through: fellow LIVE prop bodies (Collision.config ignores the pair),
 	// the hunter's trace-only head trigger, triggers and water, and the charades stage fence (an invisible
@@ -71,6 +70,39 @@ public sealed partial class HiderController
 
 	bool PoseBlocked( Vector3 pos, Rotation rot )
 		=> _hull.Overlaps( Scene, MoveTrace, GameObject, MoveIgnoreTags, new Transform( pos, rot ) );
+
+	/// <summary>Debug: log any fixed tick where this prop moved much further than its own speed allows — the
+	/// "fired through a wall" hunt. Logs the mode before and after and the distance.</summary>
+	[ConVar( "mimi_dbg_move_jumps", Help = "Debug: log prop ticks that move much further than their speed allows." )]
+	public static bool DebugMoveJumps { get; set; }
+
+	Vector3 _jumpWatchPos;
+	PhysicsMode _jumpWatchMode;
+	bool _jumpWatchSeeded;
+
+	// Called at the top of every simulated fixed tick: how far did the LAST tick (and its physics step) carry us?
+	void WatchMoveJumps()
+	{
+		if ( !DebugMoveJumps )
+		{
+			_jumpWatchSeeded = false;
+			return;
+		}
+
+		var pos = WorldPosition;
+		if ( _jumpWatchSeeded )
+		{
+			float moved = (pos - _jumpWatchPos).Length;
+			float allowed = MathF.Max( WalkSpeed, MathF.Abs( _velocity.z ) + 50f ) * Time.Delta * 1.5f + StepHeight + 2f;
+			if ( moved > allowed )
+				Log.Warning( $"[move jump] {GameObject.Name}: moved {moved:0.0}u in one tick (allowed {allowed:0.0}) " +
+					$"{_jumpWatchMode} -> {_physicsMode}, from {_jumpWatchPos} to {pos}, body vel {(Body.IsValid() ? Body.Velocity.Length : 0f):0}, " +
+					$"pressing={_pressing} climbing={_climbing} grounded={IsGrounded}" );
+		}
+		_jumpWatchPos = pos;
+		_jumpWatchMode = _physicsMode;
+		_jumpWatchSeeded = true;
+	}
 
 	/// <summary>Launch the prop (jump pad). Simulating machine only — a proxy's copy is driven by the network.</summary>
 	public void Launch( Vector3 velocity )
@@ -448,6 +480,11 @@ public sealed partial class HiderController
 			}
 
 			pos = tr.EndPosition + tr.Normal * Skin;
+			if ( !Walkable( tr.Normal ) )
+			{
+				_unstickHint = tr.Normal; // the wall we just met is the side we came from
+				_sinceUnstickHint = 0f;
+			}
 			var remaining = move * (1f - tr.Fraction);
 			var n = tr.Normal;
 
@@ -483,32 +520,85 @@ public sealed partial class HiderController
 		return v;
 	}
 
-	// Something put the hull inside solid (a commit that grew the shape, a mover pushing into us): find the
-	// nearest clear pose — up first, then sideways, then down — out to MaxUnstick. Gravity and the snap
-	// settle it back onto whatever it was resting on.
+	// The normal of the last surface the prop was pushed against (a slide hit, a pressed wall, a climbed surface):
+	// "back the way we came" for TryUnstick.
+	Vector3 _unstickHint;
+	RealTimeSince _sinceUnstickHint = 999f;
+
+	// How far each unstick direction may hop. Every hop is a TELEPORT (the hull starts inside something, so it can't be
+	// swept), so long hops are how a prop got fired through walls; a bigger overlap than this stays put instead.
+	const float MaxBackOutUnstick = 8f;
+	const float MaxUpUnstick = 16f;
+	// The "way we came" hint only counts if it's this fresh — an old wall's normal points nowhere useful now.
+	const float UnstickHintLife = 1f;
+
+	// Sideways unstick never hops further than this: a long sideways hop can land on the FAR side of a thin wall.
+	const float MaxSideUnstick = 4f;
+
+	// Something put the hull inside solid (a commit that grew the shape, a press or climb handing back a body sunk
+	// into a wall): find the nearest clear pose. First BACK OUT the way we came (_unstickHint — the one direction
+	// that can't cross a wall), then up (the floor case), then only short hops sideways or down. Gravity and the
+	// snap settle it back onto whatever it was resting on.
 	bool TryUnstick( ref Vector3 pos, Rotation rot )
 	{
 		if ( !PoseBlocked( pos, rot ) )
 		{
-			pos += Vector3.Up * Skin; // only touching: lift off the contact, the next sweep will start clear
+			// Only TOUCHING (within the inset — a hair into a wall a press or climb left us in): no real overlap,
+			// but every full-hull sweep from here starts solid, so lifting a skin and hoping left a prop hovering
+			// against the wall, unable to move away from it. Nudge out in small steps — back the way we came
+			// first, then up, then sideways — to the first spot the FULL hull starts clear.
+			var trace = MoveTrace;
+			Span<Vector3> nudges = stackalloc Vector3[6];
+			int count = 0;
+			if ( _sinceUnstickHint < UnstickHintLife && !_unstickHint.IsNearZeroLength )
+				nudges[count++] = _unstickHint.Normal;
+			nudges[count++] = Vector3.Up;
+			nudges[count++] = rot * Vector3.Forward;
+			nudges[count++] = rot * Vector3.Backward;
+			nudges[count++] = rot * Vector3.Left;
+			nudges[count++] = rot * Vector3.Right;
+			for ( float d = Skin; d <= 2f; d *= 2f )
+			{
+				for ( int i = 0; i < count; i++ )
+				{
+					var c = pos + nudges[i] * d;
+					if ( _hull.StartsSolid( trace, new Transform( c, rot ) ) )
+						continue;
+					pos = c;
+					return true;
+				}
+			}
+
+			pos += Vector3.Up * Skin; // nothing clear within 2u: lift a hair, as before
 			return true;
 		}
 
-		Span<Vector3> dirs = stackalloc Vector3[] { Vector3.Up, Vector3.Forward, Vector3.Backward, Vector3.Left, Vector3.Right, Vector3.Down };
-		for ( float d = 1f; d <= MaxUnstick; d *= 2f )
+		bool TryAlong( ref Vector3 p, Vector3 dir, float max )
 		{
-			foreach ( var dir in dirs )
+			for ( float d = 1f; d <= max; d *= 2f )
 			{
-				var c = pos + rot * dir * d;
-				if ( dir == Vector3.Up || dir == Vector3.Down )
-					c = pos + dir * d;
+				var c = p + dir * d;
 				if ( PoseBlocked( c, rot ) )
 					continue;
-
-				pos = c;
+				p = c;
 				Unpark();
 				return true;
 			}
+			return false;
+		}
+
+		if ( _sinceUnstickHint < UnstickHintLife && !_unstickHint.IsNearZeroLength
+			&& TryAlong( ref pos, _unstickHint.Normal, MaxBackOutUnstick ) )
+			return true;
+		if ( TryAlong( ref pos, Vector3.Up, MaxUpUnstick ) )
+			return true;
+
+		Span<Vector3> dirs = stackalloc Vector3[] { Vector3.Forward, Vector3.Backward, Vector3.Left, Vector3.Right, Vector3.Down };
+		foreach ( var dir in dirs )
+		{
+			var d = dir == Vector3.Down ? dir : rot * dir;
+			if ( TryAlong( ref pos, d, MaxSideUnstick ) )
+				return true;
 		}
 		return false;
 	}

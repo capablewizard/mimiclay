@@ -195,6 +195,30 @@ direction is kept while the same keys stay held; changing/releasing them hands W
 cooldown between corner switches. Not
 steering: the wall last slid along in the air counts for `ClimbGrabWindow` (0.3s).
 
+**Anti-tunnelling (after "it's quite easy to get pushed through a wall"):** (1) the press drives at most
+`PressPushSpeed` (60 u/s) INTO the wall — at the 320 walk speed it rewrote ~6u/tick into thin mesh walls; sliding along
+keeps full speed. (2) Climb sensing backs off up to 16u when the body is sunk deeper than the 2u back-off; found
+only from further out = EMBEDDED → push out along the surface normal (and never hold still while embedded). Before,
+start-solid read as "surface lost", which fired the edge pull INTO the wall — a runaway. (3) The edge pull never drives
+into the old surface faster than the stick speed. (4) EnhancedCcd on for Pressing/Climbing. (5) `TryUnstick` first backs
+out along `_unstickHint` (the last wall/pressed/climbed surface normal), then up, then only ≤4u sideways — the old
+search tried 32u sideways hops that could land beyond a thin wall. (6) A held climb re-checks the surface when it
+is moved or its shape changes. Verified on the radio: 3s full-speed press never passed the wall surface; shoved 8u
+into the wall while holding on, it came back out on its own side within 0.1s and held with zero drift.
+
+**Fired through walls near other props (follow-up):** `PropMoveHull.Overlaps` used the full hull with the native
+`CheckOverlap`, which reports a hull resting a skin away from a CONVEX body (another prop) as overlapping. Every false
+overlap ran the unstick search, which teleported up to 32u along a possibly stale wall normal or up. Now: overlap
+tests use an INSET copy of the hull (1u smaller; the brush clamp's "contact is not penetration" rule), unstick hops
+are capped (8u back out, 16u up, 4u sideways), and the back-out direction only counts for 1s after it was set.
+Couldn't reproduce the fling on demand; `mimi_dbg_move_jumps 1` logs any tick that moves much further than the
+prop's speed allows, with its mode — turn it on if it happens again.
+That inset broke unsticking (follow-up): a body a hair into a wall reads "only touching" to the inset test, but every
+FULL-hull sweep from there starts solid, so the old "lift a skin" left props hovering against walls, unable to move
+away. Now "only touching" nudges out in small steps (0.25–2u; the way we came, then up, then sideways) to the first
+spot `PropMoveHull.StartsSolid` (full hull) says is clear, and the press/climb hand-back eases off by the same test.
+Verified on the radio: let go of a climb and walked 293u away in 1s; pressed then walked 328u away in 1s.
+
 **Decided (user, 2026-10-29):** props stay UPRIGHT — physics may only turn them about the vertical, never tilt
 them — so pitch and roll stay locked on walls and ceilings too, and there is nothing to restore after letting go.
 Space grabs both while pressing a wall and when held while touching a wall or ceiling mid-air.

@@ -777,6 +777,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( IsProxy )
 			return;
 
+		WatchMoveJumps();
+
 		// Fell out of the world (blockout floor holes, physics tunnelling): put the body back at its spawn
 		// spot, upright and at rest — keeping its current heading so the player's camera relation survives.
 		// After the proxy gate so it runs exactly on the machine simulating this body: the owner, or the
@@ -967,7 +969,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// geometry: a lemon slice falling off a counter tunnelled through shelves. It only costs anything when a
 		// body moves far relative to its size, so it's on for every loose prop rather than gated by size. Off for
 		// a character body (its own steps never move fast enough) and a frozen one (it doesn't move).
-		Body.EnhancedCcd = mode is PhysicsMode.Held or PhysicsMode.Loose;
+		Body.EnhancedCcd = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Pressing or PhysicsMode.Climbing; // pressed into walls, a body is one bad tick from tunnelling
 
 		// Persisting-contact events while held or loose: the hold switches to the velocity chase while touching
 		// something, and both squelch when sliding (see HiderController.Impacts).
