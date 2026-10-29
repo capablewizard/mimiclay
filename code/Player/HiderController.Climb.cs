@@ -51,6 +51,11 @@ public sealed partial class HiderController
 	/// <summary>Seconds a Space press in the air stays "I want to grab" while waiting to reach a wall.</summary>
 	[Property, Group( "Climbing" ), Range( 0f, 1f )] public float ClimbGrabBuffer { get; set; } = 0.35f;
 
+	/// <summary>Camera pitch (degrees, looking down) treated as "level" when W/S steer up and down a surface — the
+	/// orbit camera rests looking a little down at the prop. Facing a wall, W climbs until the camera looks about
+	/// 20° further down than this, then goes down instead.</summary>
+	[Property, Group( "Climbing" ), Range( 0f, 45f )] public float ClimbLevelPitch { get; set; } = 15f;
+
 	/// <summary>True while the prop is stuck to a wall or ceiling.</summary>
 	public bool IsClimbing => _climbing;
 
@@ -170,6 +175,32 @@ public sealed partial class HiderController
 		return false;
 	}
 
+	// WASD while climbing, by the camera's FULL view (pitch included), flattened onto the surface: W goes where you
+	// look — up a wall when you look up it, down when you look down it, forward along a ceiling — and A/D go to the
+	// camera's sides. The third-person camera normally looks a little DOWN at the prop, so facing a wall its forward
+	// alone would flatten to "down the wall"; the camera's up blends in as its forward turns square to the surface
+	// (weight (1 − |flattened forward|)²), so looking at a wall roughly head-on still means W = up.
+	Vector3 ClimbAlong( Vector3 move, Vector3 n )
+	{
+		if ( move.IsNearZeroLength )
+			return Vector3.Zero;
+
+		// The orbit camera's resting look-down counts as level, so W's flip from "up" to "down" sits well past it.
+		var view = _orbit.IsValid()
+			? (_orbit.Angles with { pitch = _orbit.Angles.pitch - ClimbLevelPitch }).ToRotation()
+			: Rotation.FromYaw( MoveYaw );
+		Vector3 Flat( Vector3 v ) => v - n * Vector3.Dot( v, n );
+
+		var f = Flat( view.Forward );
+		float squareOn = 1f - MathF.Min( f.Length, 1f );
+		var forward = f + Flat( view.Up ) * squareOn * squareOn;
+		var left = Flat( view.Left );
+
+		var dir = (forward.IsNearZeroLength ? Vector3.Zero : forward.Normal) * move.x
+			+ (left.IsNearZeroLength ? Vector3.Zero : left.Normal) * move.y;
+		return dir.ClampLength( 1f ) * ClimbSpeed;
+	}
+
 	SceneTraceResult ClimbTrace( Vector3 from, Vector3 to )
 		=> MoveTrace.Body( Body.PhysicsBody, new Transform( from, WorldRotation ), to ).Run();
 
@@ -188,11 +219,12 @@ public sealed partial class HiderController
 			return;
 		}
 
-		var wish = controlled ? ReadWish().WithZ( 0f ) : Vector3.Zero;
+		var perfWish = controlled ? PerfScenario.DriveProp( GameObject, ClimbSpeed ) : null;
+		var move = controlled ? Input.AnalogMove.ClampLength( 1f ) : Vector3.Zero;
 		float vertical = controlled ? (Input.Down( "jump" ) ? 1f : 0f) - (Input.Down( "duck" ) ? 1f : 0f) : 0f;
 		if ( controlled && DebugClimbVertical != 0f )
 			vertical = Math.Clamp( DebugClimbVertical, -1f, 1f );
-		bool input = !wish.IsNearZeroLength || vertical != 0f;
+		bool input = !move.IsNearZeroLength || perfWish is { IsNearZeroLength: false } || vertical != 0f;
 
 		// Holding still on the surface: keyframed, nothing to do until there's input again.
 		if ( _physicsMode == PhysicsMode.ClimbHold && !input )
@@ -229,10 +261,9 @@ public sealed partial class HiderController
 
 		n = _climbNormal;
 
-		// Along the surface: the flat wish projected onto it (on a wall that's sideways only — up and down are
-		// Space and Ctrl), plus up/down along the surface's own "up".
-		var along = wish - n * Vector3.Dot( wish, n );
-		along = along.ClampLength( ClimbSpeed );
+		// Along the surface: WASD by the camera's full view (see ClimbAlong), plus Space/Ctrl along the surface's
+		// own "up".
+		var along = perfWish is { } pw ? (pw - n * Vector3.Dot( pw, n )).ClampLength( ClimbSpeed ) : ClimbAlong( move, n );
 		var up = Vector3.Up - n * Vector3.Dot( Vector3.Up, n );
 		if ( up.Length > 0.2f )
 			along += up.Normal * ClimbSpeed * vertical;

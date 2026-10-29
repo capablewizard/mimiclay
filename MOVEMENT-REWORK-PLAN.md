@@ -161,7 +161,10 @@ last contact point, both read from the real collider (see step 1).
 2. **Stick.** The velocity we write always carries a small component into the surface (`StickSpeed`, ~40 u/s),
    so the contact stays loaded. Pitch and roll stay LOCKED (upright only); the contact only turns it about the
    vertical, capped by `PressMaxTurnRate`.
-3. **Move.** WASD camera-relative, projected onto the surface plane; Space/Ctrl along the surface's "up" (world up
+3. **Move.** WASD by the camera's FULL view (pitch included) flattened onto the surface: W goes where you look (up a
+   wall when looking up it, down when looking well down it, forward along a ceiling); the camera's up blends in as
+   its forward turns square to the surface so head-on means up, and `ClimbLevelPitch` (15°) counts the orbit camera's
+   resting look-down as level; Space/Ctrl along the surface's "up" (world up
    projected onto the plane; on a ceiling, the camera's forward projected instead).
 4. **Inner corner** (wall → ceiling, floor → wall): moving into a second surface puts a second contact on the
    body; its normal takes over and the contacts roll the prop onto it. No special case.
