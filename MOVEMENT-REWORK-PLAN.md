@@ -144,10 +144,11 @@ it's stuck to, exactly as the press turns it flush now.
 
 | Input | On the floor | While pressing a wall | While climbing |
 | --- | --- | --- | --- |
-| Space | Jump | Start climbing | Hold: move up the surface |
-| Ctrl | Crouch (slow) | — | Hold: move down the surface |
+| Space | Jump | Start climbing | Hop up the surface (~50u) |
+| Ctrl | Crouch (slow) | — | Slow (fine positioning) |
+| Shift | — | — | Let go |
 | WASD | Walk | Push / slide along the wall | Move along the surface, camera-relative |
-| Shift | Run | Run | Let go (fall) |
+
 
 **State:** a new `PhysicsMode.Climbing` (dynamic, engine gravity OFF), plus the current surface normal and the
 last contact point, both read from the real collider (see step 1).
@@ -250,6 +251,12 @@ directly through the pose-tested `Turn`, so a surface still blocks a turn into i
 contact's own spin is blended in (capped at `PressMaxTurnRate`). Verified: under a shelf the train turned 90° and
 −45° exactly; pressed skewed with no mouse it stayed at 25°; turning into the wall stopped when its far end met it.
 Mouse turning stays continuous across walking/pressing/climbing (only the grab's object modes re-seed it).
+
+**Climb controls, current (user, 2026-10-29):** WASD by the camera's full view (up/down a wall included); Ctrl slows
+it by CrouchSpeed/WalkSpeed like crouch on the floor; the mouse turns it; SHIFT LETS GO; SPACE HOPS up the surface
+(`ClimbHopSpeed` 300 fading at `ClimbHopDecay` 6 ≈ 50u, still stuck; on a ceiling it hops the way the camera looks; a
+hop carries round a corner like the climb does). Ctrl no longer moves down. Space still grabs: while pressing a wall, or held/just pressed
+while touching a wall or ceiling mid-air. The let-go press can't re-grab (it predates the let-go, see the cooldown).
 
 **Decided (user, 2026-10-29):** props stay UPRIGHT — physics may only turn them about the vertical, never tilt
 them — so pitch and roll stay locked on walls and ceilings too, and there is nothing to restore after letting go.

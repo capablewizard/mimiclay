@@ -8,7 +8,8 @@ namespace Mimiclay;
 // as the press. On a wall it hangs upright against it; on a ceiling it hangs upright beneath it.
 //
 // Controls (Meccha Chameleon's scheme): Space while pressing a wall — or held while jumping into a wall or a
-// ceiling — grabs it. WASD moves along the surface (camera-relative), Space / Ctrl move up / down it, Shift lets go.
+// ceiling — grabs it. WASD moves along the surface by the camera's full view (look up the wall and W climbs), Ctrl
+// slows it like crouch on the floor, the mouse turns it, Shift lets go (Space does nothing while climbing).
 //
 // Each tick the surface is SENSED with a short trace of the real rigidbody (translation only — all the engine's
 // body traces can do) from a pose backed a little off the surface, toward it. That gives the surface's normal and
@@ -28,6 +29,13 @@ public sealed partial class HiderController
 
 	/// <summary>Speed along a surface while climbing (u/s).</summary>
 	[Property, Group( "Climbing" )] public float ClimbSpeed { get; set; } = 80f;
+
+	/// <summary>Space while climbing hops up the surface: the hop's starting speed (u/s). It fades at ClimbHopDecay, so
+	/// it covers about ClimbHopSpeed / ClimbHopDecay units — ~50 by default, about a jump.</summary>
+	[Property, Group( "Climbing" )] public float ClimbHopSpeed { get; set; } = 300f;
+
+	/// <summary>How fast a climbing hop fades (per second, exponential).</summary>
+	[Property, Group( "Climbing" ), Range( 1f, 20f )] public float ClimbHopDecay { get; set; } = 6f;
 
 	/// <summary>How hard the prop is pulled into the surface it's stuck to (u/s into it).</summary>
 	[Property, Group( "Climbing" )] public float ClimbStickSpeed { get; set; } = 40f;
@@ -100,7 +108,8 @@ public sealed partial class HiderController
 		_sinceSurface = 0f;
 		_climbStill = 0;
 		_jumpQueued = false;
-		_letGoQueued = false;
+		_climbHop = Vector3.Zero;
+		_letGoQueued = false; // a Shift tap from before the grab must not drop us at once
 		_carryDir = null;
 		IsGrounded = false;
 	}
@@ -126,8 +135,11 @@ public sealed partial class HiderController
 	const float LetGoCooldown = 0.4f;
 	RealTimeSince _sinceLetGo = 999f;
 
-	// Shift, latched per frame (a tap can fall between fixed ticks) and consumed by the climb.
+	// Shift, latched per frame by OnUpdate and consumed by the climb.
 	bool _letGoQueued;
+
+	// Space's hop up the surface: a velocity added to the climb that decays at ClimbHopDecay.
+	Vector3 _climbHop;
 
 	// Mover, airborne: remember the wall or ceiling the hull just slid along, so Space can grab it.
 	void NoteAirContact( SteepHit steep )
@@ -244,11 +256,14 @@ public sealed partial class HiderController
 		if ( pb is null || !pb.IsValid() )
 			return;
 
-		_jumpQueued = false; // Space means "up" here, never a jump once we let go
+		// Space HOPS up the surface (see ClimbHopSpeed) — consumed here, so it never queues a jump for after we let go.
+		bool hop = controlled && _jumpQueued;
+		_jumpQueued = false;
 
+		// Shift lets go — latched per frame (see OnUpdate) so a quick tap can't fall between fixed ticks.
 		bool letGo = _letGoQueued;
 		_letGoQueued = false;
-		if ( controlled && (letGo || Input.Pressed( "run" )) )
+		if ( controlled && letGo )
 		{
 			EndClimb();
 			return;
@@ -256,11 +271,17 @@ public sealed partial class HiderController
 
 		var perfWish = controlled ? PerfScenario.DriveProp( GameObject, ClimbSpeed ) : null;
 		var move = controlled ? Input.AnalogMove.ClampLength( 1f ) : Vector3.Zero;
-		float vertical = controlled ? (Input.Down( "jump" ) ? 1f : 0f) - (Input.Down( "duck" ) ? 1f : 0f) : 0f;
-		if ( controlled && DebugClimbVertical != 0f )
-			vertical = Math.Clamp( DebugClimbVertical, -1f, 1f );
+
+		// Ctrl: the fine-positioning speed, scaled like crouch on the floor (CrouchSpeed / WalkSpeed).
+		if ( controlled && Input.Down( "duck" ) && WalkSpeed > 0f )
+			move *= Math.Clamp( CrouchSpeed / WalkSpeed, 0f, 1f );
+
+		// Up and down a surface come from WASD and the camera now (ClimbAlong); only the test harness still pushes
+		// straight up or down it.
+		float vertical = controlled && DebugClimbVertical != 0f ? Math.Clamp( DebugClimbVertical, -1f, 1f ) : 0f;
 		float turn = controlled ? ReadTurn() : 0f; // the mouse turns a climbing prop too (see ApplySurfaceTurn)
-		bool input = !move.IsNearZeroLength || perfWish is { IsNearZeroLength: false } || vertical != 0f || MathF.Abs( turn ) > 0.01f;
+		bool input = !move.IsNearZeroLength || perfWish is { IsNearZeroLength: false } || vertical != 0f || MathF.Abs( turn ) > 0.01f
+			|| hop || _climbHop.Length > 5f; // a hop in flight keeps it awake until it's spent
 
 		// Holding still on the surface: keyframed, nothing to do until there's input again — unless something moved us
 		// (a teleport) or changed our shape (sculpting while stuck): then re-check, we may now be sunk into the surface.
@@ -322,7 +343,7 @@ public sealed partial class HiderController
 
 		n = _climbNormal;
 
-		// Along the surface: WASD by the camera's full view (see ClimbAlong), plus Space/Ctrl along the surface's
+		// Along the surface: WASD by the camera's full view (see ClimbAlong), plus the test harness's push along the surface's
 		// own "up".
 		var wasd = perfWish is { } pw ? (pw - n * Vector3.Dot( pw, n )).ClampLength( ClimbSpeed ) : ClimbAlong( move, n );
 
@@ -347,6 +368,17 @@ public sealed partial class HiderController
 		if ( up.Length > 0.2f )
 			along += up.Normal * ClimbSpeed * vertical;
 
+		// Space: hop up the surface — a burst that fades over ~0.2s, about a jump's height, still stuck to it. On a
+		// ceiling there's no "up the surface", so the hop goes the way the camera looks instead.
+		if ( hop )
+		{
+			var hopDir = up.Length > 0.2f ? up.Normal : ClimbAlong( Vector3.Forward, n );
+			if ( !hopDir.IsNearZeroLength )
+				_climbHop = hopDir.Normal * ClimbHopSpeed;
+		}
+		along += _climbHop;
+		_climbHop *= MathF.Exp( -ClimbHopDecay * Time.Delta );
+
 		// Inner corner: moving into a different surface — it takes over (a floor ends the climb next tick). The look-
 		// ahead starts backed off BOTH the surface we're on and the way we're going: the body is pressed into the
 		// surface (and may already be pressed against the next one — a train shoved up into the ceiling), and a
@@ -361,6 +393,7 @@ public sealed partial class HiderController
 				// Turn the motion over the corner edge with the surface: what went into the new surface now goes
 				// away from the old one — up a wall becomes along the ceiling, away from the wall.
 				var corner = Rotation.FromToRotation( n, ahead.Normal );
+				_climbHop = corner * _climbHop; // a hop carries round the corner too (up a wall → along the ceiling)
 				if ( !move.IsNearZeroLength && !wasd.IsNearZeroLength )
 				{
 					_carryDir = corner * wasd.Normal;
