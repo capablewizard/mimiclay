@@ -103,6 +103,8 @@ public sealed partial class HiderController
 		_groundObject = null;
 		IsGrounded = false;
 		Unpark();
+		_pushPerKg = 0f;
+		_pressing = false; // OnFixedUpdate puts the body back to keyframed on its next Character tick
 	}
 
 	/// <summary>One fixed tick of prop locomotion. <paramref name="controlled"/> = read input; otherwise the prop
@@ -117,7 +119,7 @@ public sealed partial class HiderController
 		}
 
 		var pos = WorldPosition;
-		var rot = Rotation.FromYaw( WorldRotation.Angles().yaw ); // upright: tilt lives on the disguise child
+		var rot = WorldRotation; // whatever the last press left it at (see HiderController.Press)
 
 		// Woken by anything that changed under us: a new shape (it may now overlap or float), a teleport.
 		if ( _hull.Version != _hullVersion )
@@ -149,13 +151,13 @@ public sealed partial class HiderController
 		_parked = false;
 
 		if ( MathF.Abs( turn ) > 0.001f )
-			rot = Turn( pos, rot, turn );
+			rot = Turn( ref pos, rot, turn );
 
 		UpdateVelocity( wish, jump );
 
 		var move = _velocity * Time.Delta;
 		if ( IsGrounded )
-			MoveGrounded( ref pos, rot, move );
+			MoveGrounded( ref pos, rot, move, controlled ? wish : Vector3.Zero );
 		else
 			MoveAirborne( ref pos, rot, move );
 
@@ -214,24 +216,44 @@ public sealed partial class HiderController
 		return delta;
 	}
 
-	// Turn about the root (the shape's feet) by up to `degrees`, as far as the pose stays clear.
-	Rotation Turn( Vector3 pos, Rotation rot, float degrees )
+	// Turn about the world vertical through the hull's centre by up to `degrees`, as far as the pose stays clear.
+	// World vertical, not the root's own up: a prop lying on its side still spins flat on the floor.
+	Rotation Turn( ref Vector3 pos, Rotation rot, float degrees )
 	{
-		var full = rot * Rotation.FromYaw( degrees );
-		if ( !PoseBlocked( pos, full ) )
-			return full;
+		var start = pos;
+		var centre = start + rot * _hull.Centre;
+		var centreXY = new Vector3( centre.x, centre.y, start.z );
+
+		(Vector3, Rotation) At( float deg )
+		{
+			var spin = Rotation.FromAxis( Vector3.Up, deg );
+			return (centreXY + spin * (start - centreXY), spin * rot);
+		}
+
+		var (fullPos, fullRot) = At( degrees );
+		if ( !PoseBlocked( fullPos, fullRot ) )
+		{
+			pos = fullPos;
+			return fullRot;
+		}
 
 		// Blocked: bisect for the largest clear fraction. Small turns per tick, so a few halvings is plenty.
 		float lo = 0f, hi = 1f;
 		for ( int i = 0; i < 4; i++ )
 		{
 			float mid = (lo + hi) * 0.5f;
-			if ( PoseBlocked( pos, rot * Rotation.FromYaw( degrees * mid ) ) )
+			var (p, r) = At( degrees * mid );
+			if ( PoseBlocked( p, r ) )
 				hi = mid;
 			else
 				lo = mid;
 		}
-		return lo > 0f ? rot * Rotation.FromYaw( degrees * lo ) : rot;
+		if ( lo <= 0f )
+			return rot;
+
+		var (okPos, okRot) = At( degrees * lo );
+		pos = okPos;
+		return okRot;
 	}
 
 	void UpdateVelocity( Vector3 wish, bool jump )
@@ -267,25 +289,30 @@ public sealed partial class HiderController
 		_velocity = ApplyLeash( _velocity, pullIn: true );
 	}
 
-	void MoveGrounded( ref Vector3 pos, Rotation rot, Vector3 move )
+	void MoveGrounded( ref Vector3 pos, Rotation rot, Vector3 move, Vector3 wish )
 	{
 		var start = pos;
 		var startVel = _velocity;
 
 		var walked = start;
-		Slide( ref walked, rot, move, out bool hitSteep );
+		Slide( ref walked, rot, move, out var steep );
+		bool stepped = false;
 
 		// Blocked by something steep: try the step — up, across, down — and keep it if it got further.
-		if ( hitSteep && StepHeight > 0f && TryStep( start, rot, move.WithZ( 0f ), startVel, out var stepped, out var stepVel ) )
+		if ( steep.Hit && StepHeight > 0f && TryStep( start, rot, move.WithZ( 0f ), startVel, out var up, out var stepVel ) )
 		{
 			float walkedFlat = (walked - start).WithZ( 0f ).LengthSquared;
-			float steppedFlat = (stepped - start).WithZ( 0f ).LengthSquared;
+			float steppedFlat = (up - start).WithZ( 0f ).LengthSquared;
 			if ( steppedFlat > walkedFlat + 0.01f )
 			{
-				walked = stepped;
+				walked = up;
 				_velocity = stepVel;
+				stepped = true;
 			}
 		}
+
+		// Held against a wall: once the push has lasted, physics turns it flush (see HiderController.Press).
+		NotePush( wish, stepped ? default : steep );
 
 		pos = walked;
 
@@ -299,6 +326,7 @@ public sealed partial class HiderController
 
 	void MoveAirborne( ref Vector3 pos, Rotation rot, Vector3 move )
 	{
+		_pushPerKg = 0f;
 		Slide( ref pos, rot, move, out _ );
 
 		// Landing: only while not rising, and only on something walkable.
@@ -368,12 +396,20 @@ public sealed partial class HiderController
 		return true;
 	}
 
+	/// <summary>The steepest blocking surface a slide met (walls; not floors or ceilings).</summary>
+	struct SteepHit
+	{
+		public bool Hit;
+		public Vector3 Normal;
+		public Vector3 Point;
+	}
+
 	// Collide-and-slide: advance to each hit (a skin off the surface), then continue along the surface with
 	// what's left, clipping our velocity so we stop pushing into it. Creases between two surfaces slide along
 	// their shared line; a third blocks.
-	void Slide( ref Vector3 pos, Rotation rot, Vector3 move, out bool hitSteep )
+	void Slide( ref Vector3 pos, Rotation rot, Vector3 move, out SteepHit steep )
 	{
-		hitSteep = false;
+		steep = default;
 		Span<Vector3> planes = stackalloc Vector3[SlideIterations];
 		int count = 0;
 		bool unstuck = false;
@@ -399,8 +435,8 @@ public sealed partial class HiderController
 			var remaining = move * (1f - tr.Fraction);
 			var n = tr.Normal;
 
-			if ( !Walkable( n ) && n.z > -0.7f )
-				hitSteep = true;
+			if ( !Walkable( n ) && n.z > -0.7f && (!steep.Hit || MathF.Abs( n.z ) < MathF.Abs( steep.Normal.z )) )
+				steep = new SteepHit { Hit = true, Normal = n, Point = tr.HitPosition };
 
 			float into = Vector3.Dot( _velocity, n );
 			if ( into < 0f )
@@ -503,7 +539,7 @@ public sealed partial class HiderController
 
 		Slide( ref pos, rot, target - pos, out _ );
 		if ( MathF.Abs( yaw ) > 0.001f )
-			rot = Turn( pos, rot, yaw );
+			rot = Turn( ref pos, rot, yaw );
 	}
 
 	// Reproject a flat, world-space wish onto the ground plane so movement runs ALONG a slope instead of driving

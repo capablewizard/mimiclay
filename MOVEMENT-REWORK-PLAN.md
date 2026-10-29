@@ -1,6 +1,7 @@
 # Prop movement — plan (v2, from scratch)
 
-Status: Phase 1 (floor controller) BUILT on branch `prop_movement_rework`, 2026-10-29. Phases 2+ not started.
+Status: Phase 1 (floor controller) BUILT and verified; Phase 2 (physics press alignment) BUILT, not yet felt in play; on branch `prop_movement_rework`,
+2026-10-29. Phase 3 (climbing) not started.
 Supersedes v1 (body-sweep mover) and the sphere-proxy discussion.
 
 ## Progress
@@ -29,6 +30,32 @@ rotation in small increments and pose-test each step rather than sweep it.
   pad's trigger.
 - A prop is blocked by loose dynamic props rather than pushing them. Hunters' capsules block props.
 - Multiplayer (client owner, proxies, host-simulated scenery) not yet tested with two instances.
+
+**Phase 2 — physics press (replaces a rejected hinge version).** `HiderController.Press.cs`. A first version
+animated scripted "hinges" (crouch-tip, a wall-flush spin, settle-on-landing, a Z upright key) driven by flat
+sides of the move hull. The user rejected the feel and the hull's accuracy for alignment; it was removed
+2026-10-29.
+
+Now: pushing into a wall hard enough hands the prop to PHYSICS. The root rigidbody goes dynamic
+(`PhysicsMode.Pressing`): input drives its horizontal velocity, engine gravity holds it down, friction is off,
+pitch and roll are locked, and `PressAngularDamping` keeps the turn gentle. The REAL SDF collider's contact with
+the wall turns it flush, the same way a grabbed prop lays flush when it is pressed into a surface (the grab's
+velocity chase while touching). Once the push force drops away, or on a jump, edit mode or a control lock, the body goes back to keyframed, is eased off the wall if the move hull overlaps it, and the mover
+resumes and parks as before. Mouse turning pauses while pressing.
+
+**Force, not time, decides both ends.** Push force = clay mass × the commanded velocity the wall cancels, per second
+(read off the mover's sweep before the press, off the real physics step during it), smoothed over
+`PressForceSmoothing` (0.08s). Compared PER KILOGRAM because input sets a velocity, so force scales with mass
+(clay spans ~20 kg knobs to ~4500 kg pots): enter above `PressEnterForce` (2500 u/s², ~25° into a wall at walk
+speed; head-on is ~5500), leave below `PressExitForce` (800). Tested on the teapot: a head-on push entered the
+press at once and held it; released, it parked with no overlap. The teapot only turned ~3° before settling,
+because its round body pushes back through its centre (no torque) — a boxy prop is needed to see alignment.
+
+NOT verified in play yet (the user was mid-session in the editor): the feel and speed of the turn, whether the
+damping value is right, and whether the hand-back pops the prop off the wall.
+
+Kept from the hinge version: the root rotation is no longer forced upright each tick, turning spins about the
+world vertical through the hull centre, and the camera pivot pin uses the bounds centre's height.
 
 ## Goals
 

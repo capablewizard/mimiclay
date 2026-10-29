@@ -822,6 +822,22 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			return;
 		}
 
+		// Pressed into a wall: physics is turning it flush (see HiderController.Press). Only while it's someone's
+		// body under control — anything else hands it straight back to the mover.
+		if ( _pressing )
+		{
+			if ( Scenery || !ControlActive )
+			{
+				EndPress();
+			}
+			else
+			{
+				IsCrouching = Input.Down( "duck" );
+				StepPress();
+				return;
+			}
+		}
+
 		SetPhysicsMode( PhysicsMode.Character );
 
 		if ( Scenery )
@@ -874,7 +890,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			Body.MassOverride = mass;
 	}
 
-	enum PhysicsMode { Character, Held, Loose, Frozen }
+	// Pressing = a character body pushed into a wall, briefly dynamic so contacts turn it flush (see
+	// HiderController.Press).
+	enum PhysicsMode { Character, Held, Loose, Frozen, Pressing }
 	PhysicsMode _physicsMode = PhysicsMode.Character;
 
 	// Hold feel: how hard the prop is pulled toward the target (1/s) and the speed cap that keeps a fast swing
@@ -888,9 +906,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( !Body.IsValid() )
 			return;
 
-		// Dynamic only as an object (held / loose). Asserted every call, not just on a change: the field starts at
-		// Character, which no change ever announces, and nothing else may leave a character body dynamic.
-		bool dynamic = mode is PhysicsMode.Held or PhysicsMode.Loose;
+		// Dynamic only as an object (held / loose) or while pressed into a wall. Asserted every call, not just on a
+		// change: the field starts at Character, which no change ever announces, and nothing else may leave a
+		// character body dynamic.
+		bool dynamic = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Pressing;
 		if ( Body.MotionEnabled != dynamic )
 		{
 			if ( dynamic )
@@ -912,12 +931,14 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 		_physicsMode = mode;
 		if ( mode != PhysicsMode.Held )
-		{
 			ReleaseHoldJoint();
-			RestoreHeldFriction();
-		}
-		Body.Locking = default;
-		Body.Gravity = mode == PhysicsMode.Loose;
+		if ( mode is not (PhysicsMode.Held or PhysicsMode.Pressing) )
+			RestoreHeldFriction(); // pressing slides frictionless like a held prop
+		ApplyPressDamping( mode == PhysicsMode.Pressing );
+
+		// A pressed body turns only about the vertical — the wall lays it flush, it never tips it over.
+		Body.Locking = mode == PhysicsMode.Pressing ? new PhysicsLock { Pitch = true, Roll = true } : default;
+		Body.Gravity = mode is PhysicsMode.Loose or PhysicsMode.Pressing;
 
 		// Continuous collision while it moves as an OBJECT — carried (the hold can swing it fast) or loose (falling,
 		// tumbling, flung). Without it a step longer than the prop's own thickness passes straight through thin
@@ -1173,10 +1194,11 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 				? Vector2.Lerp( current, targetLocal, 1f - MathF.Exp( -PivotSmoothSpeed * Time.Delta ) )
 				: targetLocal; // first frame (spawn / toggled back on): start on target, no glide from stale state
 
-			// Rotate the smoothed local offset out by the body's LIVE transform (upright-locked, so local Z
-			// never bleeds into world X/Y).
+			// Rotate the smoothed local offset out by the body's LIVE transform. At the bounds' own height, not
+			// local zero: a prop lying on its side (flush alignment tilts the root) would otherwise pin the
+			// camera to a point beside the shape.
 			var local = _pivotOffsetXY.Value;
-			var world = _body.WorldTransform.PointToWorld( new Vector3( local.x, local.y, 0f ) );
+			var world = _body.WorldTransform.PointToWorld( new Vector3( local.x, local.y, b.Center.z ) );
 			_orbit.PivotXYOverride = new Vector2( world.x, world.y );
 		}
 		else

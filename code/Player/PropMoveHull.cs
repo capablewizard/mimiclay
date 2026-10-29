@@ -51,6 +51,9 @@ public sealed class PropMoveHull : IDisposable
 	/// <summary>Bumped whenever the hull changes — movers un-park on it.</summary>
 	public int Version { get; private set; }
 
+	/// <summary>Area-weighted centroid of the hull surface, pawn-root space — what turning spins about.</summary>
+	public Vector3 Centre { get; private set; }
+
 	/// <summary>Re-derive from <paramref name="collider"/> if its build or its placement under the pawn root
 	/// changed. The disguise is a direct child of the root, so its local transform IS disguise→root.</summary>
 	public void Refresh( SdfCollider collider, PhysicsWorld world )
@@ -77,8 +80,8 @@ public sealed class PropMoveHull : IDisposable
 			return;
 		}
 
-		var bounds = BBox.FromPoints( _verts );
-		LocalBounds = bounds;
+		LocalBounds = BBox.FromPoints( _verts );
+		Centre = SurfaceCentroid( _tris, LocalBounds.Center );
 
 		if ( _body is null || !_body.IsValid() || _world != world )
 		{
@@ -93,7 +96,8 @@ public sealed class PropMoveHull : IDisposable
 	}
 
 	/// <summary>Sweep the hull from <paramref name="from"/> to <paramref name="to"/> (pawn-root transforms) through
-	/// the world <paramref name="trace"/> sees. Rotation may change during the sweep.</summary>
+	/// the world <paramref name="trace"/> sees. Translation only: the engine ignores <paramref name="to"/>'s
+	/// rotation, so test rotations with <see cref="Overlaps"/>.</summary>
 	public SceneTraceResult Sweep( SceneTrace trace, in Transform from, in Transform to )
 		=> trace.Sweep( _body, from, to ).Run();
 
@@ -159,6 +163,20 @@ public sealed class PropMoveHull : IDisposable
 			scene.DebugOverlay.Line( wb, wc, color, 0f );
 			scene.DebugOverlay.Line( wc, wa, color, 0f );
 		}
+	}
+
+	// Area-weighted centroid of the hull's surface (falls back to the bounds centre for a degenerate hull).
+	static Vector3 SurfaceCentroid( List<(Vector3 a, Vector3 b, Vector3 c)> tris, Vector3 fallback )
+	{
+		var sum = Vector3.Zero;
+		float total = 0f;
+		foreach ( var (a, b, c) in tris )
+		{
+			float area = Vector3.Cross( b - a, c - a ).Length * 0.5f;
+			sum += (a + b + c) / 3f * area;
+			total += area;
+		}
+		return total > 1e-3f ? sum / total : fallback;
 	}
 
 	// Hull the points, thinning to MaxVertices when needed: the resting face (everything within
