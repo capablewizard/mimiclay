@@ -19,6 +19,34 @@ public sealed partial class HiderController
 	/// <summary>Tallest ledge the prop walks up without jumping (the bedroom blockout's step is 18).</summary>
 	[Property, Group( "Movement" )] public float StepHeight { get; set; } = 18f;
 
+	/// <summary>A prop steps up at most this fraction of its OWN height (user, 2026-10-29: a small prop was popping onto
+	/// things far taller than itself). StepHeight and PropStepHeight are the caps for big props.</summary>
+	[Property, Group( "Movement" ), Range( 0f, 1f )] public float StepHeightFraction { get; set; } = 0.5f;
+
+	/// <summary>Props smaller than this (u — the cube root of the move hull's width × depth × height) move slower (user,
+	/// 2026-10-29: "small props zoom around way too fast"). Speed scales with the square root of size / this, so it falls
+	/// off gently; bigger props keep full speed.</summary>
+	[Property, Group( "Movement" )] public float SpeedReferenceSize { get; set; } = 64f;
+
+	/// <summary>The slowest a tiny prop gets, as a fraction of full speed.</summary>
+	[Property, Group( "Movement" ), Range( 0f, 1f )] public float MinSpeedScale { get; set; } = 0.35f;
+
+	// Walk, crouch and climb speeds are scaled by this (see SpeedReferenceSize).
+	float SizeSpeedScale
+	{
+		get
+		{
+			if ( !_hull.Ready || SpeedReferenceSize <= 0f )
+				return 1f;
+			var s = _hull.LocalBounds.Size;
+			float size = MathF.Cbrt( MathF.Max( s.x * s.y * s.z, 0f ) );
+			return Math.Clamp( MathF.Sqrt( size / SpeedReferenceSize ), MinSpeedScale, 1f );
+		}
+	}
+
+	// This prop's step: `max` (StepHeight or PropStepHeight), but never more than StepHeightFraction of its height.
+	float ScaledStep( float max ) => _hull.Ready ? MathF.Min( max, _hull.LocalBounds.Size.z * StepHeightFraction ) : max;
+
 	/// <summary>Steepest surface (degrees from flat) the prop can stand on. Steeper surfaces are walls: the prop
 	/// slides down them.</summary>
 	[Property, Group( "Movement" ), Range( 0f, 89f )] public float WalkAngle { get; set; } = 50f;
@@ -284,7 +312,7 @@ public sealed partial class HiderController
 
 	Vector3 ReadWish()
 	{
-		float speed = IsCrouching ? CrouchSpeed : WalkSpeed; // no sprint for props — crouch is the fine control
+		float speed = (IsCrouching ? CrouchSpeed : WalkSpeed) * SizeSpeedScale; // no sprint for props — crouch is the fine control; small props are slower
 
 		// CLAMP, don't normalize — exactly what the stock controller does: raw AnalogMove is per-axis, so two
 		// keys give length √2; clamping caps it at 1 while a part-deflected stick can still ask for less.
@@ -406,7 +434,7 @@ public sealed partial class HiderController
 		bool stepped = false;
 
 		// Blocked by something steep: try the step — up, across, down — and keep it if it got further.
-		float stepHeight = steep.FloorProp ? MathF.Max( StepHeight, PropStepHeight ) : StepHeight;
+		float stepHeight = ScaledStep( steep.FloorProp ? MathF.Max( StepHeight, PropStepHeight ) : StepHeight );
 		if ( steep.Hit && stepHeight > 0f && TryStep( start, rot, move.WithZ( 0f ), startVel, stepHeight, out var up, out var stepVel ) )
 		{
 			float walkedFlat = (walked - start).WithZ( 0f ).LengthSquared;
@@ -425,7 +453,7 @@ public sealed partial class HiderController
 		pos = walked;
 
 		// Stay on the ground: snap down a step's height (down stairs and ramps), or start falling.
-		if ( !SnapToGround( ref pos, rot, StepHeight + Skin ) )
+		if ( !SnapToGround( ref pos, rot, ScaledStep( StepHeight ) + Skin ) )
 		{
 			IsGrounded = false;
 			_groundObject = null;

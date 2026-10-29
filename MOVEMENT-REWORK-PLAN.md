@@ -298,6 +298,16 @@ as holding both used to be. The steady U dilutes the flattened look's sideways w
 now roughly cancels (as Space+W did): S is the way down. (A first try that REPLACED the look with a surface-frame mapping —
 head-on = up, down at ~45° below level — was superseded the same day.) Space/Ctrl kept for now.
 
+**Speed scales with the prop (user, 2026-10-29: "small props zoom around way too fast"):** `SizeSpeedScale` =
+clamp(√(size / `SpeedReferenceSize` 64), `MinSpeedScale` 0.35, 1), size = cube root of the move hull's x·y·z. Multiplies
+WalkSpeed/CrouchSpeed (`ReadWish`) and ClimbSpeed (`ScaledClimbSpeed`: WASD, Space/Ctrl, carry, test driver). Size 16 →
+0.5, 32 → 0.71, 64+ → 1 (the toy train, ~75, is full speed). Jump, stick and edge-pull speeds are not scaled. Untested in play.
+
+**Step height scales with the prop (user, 2026-10-29: "a small prop is teleported to the top of a really tall prop … max
+step up around 50% of the height of the prop"):** `ScaledStep(max)` = min(max, move-hull height × `StepHeightFraction` 0.5).
+Used for the step-up (cap StepHeight 18, or PropStepHeight 40 against clay props) and the grounded snap-down. The climb's
+bump lift, ledge check and mantle drop still use the flat StepHeight. Untested in play.
+
 **Mantle (user, 2026-10-29: "climb to the top of the tablecloth and can't really move, still registering as stuck"):**
 `TryMantle` — sweep the hull over the lip (toward the wall, `ClimbMantleReach` 16), then down onto ground (`WalkableHit`); if
 it lands, end the climb there, grounded, with a little carry onto the top. Tried (a) when the wall is lost while climbing up

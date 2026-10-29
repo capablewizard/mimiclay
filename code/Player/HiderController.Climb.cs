@@ -30,6 +30,9 @@ public sealed partial class HiderController
 	/// <summary>Speed along a surface while climbing (u/s).</summary>
 	[Property, Group( "Climbing" )] public float ClimbSpeed { get; set; } = 80f;
 
+	// ClimbSpeed for THIS prop: small props climb slower too (see SizeSpeedScale).
+	float ScaledClimbSpeed => ClimbSpeed * SizeSpeedScale;
+
 	/// <summary>How hard the prop is pulled into the surface it's stuck to (u/s into it).</summary>
 	[Property, Group( "Climbing" )] public float ClimbStickSpeed { get; set; } = 40f;
 
@@ -293,7 +296,7 @@ public sealed partial class HiderController
 		var side = Flat( view.Left );
 		side = side.Length >= 0.3f ? side.Normal : side / 0.3f; // looking along the wall: A/D say little, so slow rather than snap
 
-		return (depth * move.x + side * move.y).ClampLength( 1f ) * ClimbSpeed;
+		return (depth * move.x + side * move.y).ClampLength( 1f ) * ScaledClimbSpeed;
 	}
 
 	// How hard W/S push INTO the surface (0..1, S negative): the level look's share pointing at it. Mounts a ledge.
@@ -338,7 +341,7 @@ public sealed partial class HiderController
 			return;
 		}
 
-		var perfWish = controlled ? PerfScenario.DriveProp( GameObject, ClimbSpeed ) : null;
+		var perfWish = controlled ? PerfScenario.DriveProp( GameObject, ScaledClimbSpeed ) : null;
 		var move = controlled ? Input.AnalogMove.ClampLength( 1f ) : Vector3.Zero;
 
 		// Space climbs UP the surface and Ctrl DOWN it (user, 2026-10-29). A/D go sideways and W/S in depth (ClimbAlong).
@@ -440,7 +443,7 @@ public sealed partial class HiderController
 
 		// Along the surface: WASD by the camera's full view (see ClimbAlong), plus the test harness's push along the surface's
 		// own "up".
-		var wasd = perfWish is { } pw ? (pw - n * Vector3.Dot( pw, n )).ClampLength( ClimbSpeed ) : ClimbAlong( move, n );
+		var wasd = perfWish is { } pw ? (pw - n * Vector3.Dot( pw, n )).ClampLength( ScaledClimbSpeed ) : ClimbAlong( move, n );
 		float into = controlled ? ClimbInto( move, n ) : 0f; // W at the wall: "get onto the top" when it runs out
 
 		// Corner carry: still holding the same keys since crossing onto this surface — keep going the way we were
@@ -457,7 +460,7 @@ public sealed partial class HiderController
 		{
 			var flat = carry - n * Vector3.Dot( carry, n );
 			if ( !flat.IsNearZeroLength )
-				wasd = flat.Normal * ClimbSpeed * MathF.Min( move.Length, 1f );
+				wasd = flat.Normal * ScaledClimbSpeed * MathF.Min( move.Length, 1f );
 		}
 		else
 		{
@@ -467,7 +470,7 @@ public sealed partial class HiderController
 		var along = wasd;
 		var up = Vector3.Up - n * Vector3.Dot( Vector3.Up, n );
 		if ( up.Length > 0.2f )
-			along += up.Normal * ClimbSpeed * vertical;
+			along += up.Normal * ScaledClimbSpeed * vertical;
 
 		// Just round a corner, same keys still held: don't head back into the surface we left (see _cornerLeft).
 		if ( _cornerLeft is { } left )
