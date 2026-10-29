@@ -603,6 +603,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			_sinceJumpPress = 0f; // also an air-grab request (see HiderController.Climb)
 		}
 
+		// Shift lets go of a climb — latched here so a quick tap can't fall between fixed ticks.
+		if ( _climbing && ControlActive && Input.Pressed( "run" ) )
+			_letGoQueued = true;
+
 		// Free cam toggle — blocked while editing (the sculpt rig already owns navigation there) or while a
 		// cursor-owning panel is open (same guard PlayCamera uses, so F doesn't fire behind a menu). Only where
 		// it's part of the game (FreeCamAllowed); dropped on the spot if we stop being in one.

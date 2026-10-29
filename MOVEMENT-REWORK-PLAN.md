@@ -185,7 +185,14 @@ instant of contact, but a jump is a tap released long before the wall. Now inten
 with our own jump, OR Space held, OR Space pressed within `ClimbGrabBuffer` (0.35s); and the wall is FOUND by a
 hull sweep toward where you're steering, out to `ClimbGrabReach` (10u). Walls need you steering into them (no
 accidental sticks beside a wall); a jump-only grab skips a ledge you're about to clear (the wall must continue a
-step above, so jumping onto a counter still lands on it). Ceilings need Space while not yet falling fast. Not
+step above, so jumping onto a counter still lands on it). Ceilings need Space OR our own jump, while not yet falling fast (a full jump takes ~0.37s to peak, longer than the
+press buffer). Wall→ceiling corners: the look-ahead trace starts backed off both the current surface and the
+direction of travel — started from the pressed-in pose it read start-solid and was discarded, so a train climbing
+up a wall never transferred to the ceiling. Then a W-up-the-wall ping-ponged: on the ceiling the camera mapped W to
+"toward the wall", which crossed straight back, every tick (jitter). Fix: CORNER CARRY — on a corner switch the
+motion is rotated over the edge (`FromToRotation(oldN, newN)`: up the wall → along the ceiling away from it) and that
+direction is kept while the same keys stay held; changing/releasing them hands W/S back to the camera. Plus a 0.2s
+cooldown between corner switches. Not
 steering: the wall last slid along in the air counts for `ClimbGrabWindow` (0.3s).
 
 **Decided (user, 2026-10-29):** props stay UPRIGHT — physics may only turn them about the vertical, never tilt

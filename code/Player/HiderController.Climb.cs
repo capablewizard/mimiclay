@@ -69,6 +69,12 @@ public sealed partial class HiderController
 	float _sinceSurface;
 	int _climbStill;
 
+	// Corner carry (see StepClimb): the travel direction turned over the last corner, and the keys held then.
+	Vector3? _carryDir;
+	Vector3 _carryMove;
+	RealTimeSince _sinceCornerSwitch = 999f;
+	const float CornerSwitchCooldown = 0.2f; // no second corner straight after one — never ping-pong between two
+
 	// The mover's last wall or ceiling contact in the air, for a jump-and-grab.
 	Vector3 _airWallNormal, _airWallPoint;
 	float _sinceAirWall = 999f;
@@ -90,6 +96,8 @@ public sealed partial class HiderController
 		_sinceSurface = 0f;
 		_climbStill = 0;
 		_jumpQueued = false;
+		_letGoQueued = false;
+		_carryDir = null;
 		IsGrounded = false;
 	}
 
@@ -101,7 +109,21 @@ public sealed partial class HiderController
 		_climbing = false;
 		SetPhysicsMode( PhysicsMode.Character );
 		EaseHullOff( _climbNormal );
+
+		// Letting go must not re-grab on the next tick: we're in the air right beside (or under) the surface we left,
+		// still flagged as airborne from the jump that got us up there, maybe with Space still held from climbing.
+		// Clear the intent, and for LetGoCooldown only a FRESH Space press grabs again.
+		_airFromJump = false;
+		_sinceAirWall = 999f;
+		_sinceLetGo = 0f;
 	}
+
+	// After letting go: how long only a fresh Space press (not a held one, not the old jump) may grab again.
+	const float LetGoCooldown = 0.4f;
+	RealTimeSince _sinceLetGo = 999f;
+
+	// Shift, latched per frame (a tap can fall between fixed ticks) and consumed by the climb.
+	bool _letGoQueued;
 
 	// Mover, airborne: remember the wall or ceiling the hull just slid along, so Space can grab it.
 	void NoteAirContact( SteepHit steep )
@@ -130,6 +152,11 @@ public sealed partial class HiderController
 			return false;
 
 		bool spaceIntent = Input.Down( "jump" ) || _sinceJumpPress < ClimbGrabBuffer || DebugClimbVertical > 0f;
+
+		// Just let go: only a Space press made AFTER letting go counts (see EndClimb).
+		if ( _sinceLetGo < LetGoCooldown )
+			spaceIntent = _sinceJumpPress < _sinceLetGo;
+
 		if ( !spaceIntent && !_airFromJump )
 			return false;
 
@@ -154,8 +181,10 @@ public sealed partial class HiderController
 			}
 		}
 
-		// Ceilings: Space and still rising (or near the top of the arc) into one.
-		if ( spaceIntent && _velocity.z > -100f )
+		// Ceilings: still rising (or near the top of the arc) into one, on our own jump or with Space. (Space alone
+		// wasn't enough: a full jump takes ~0.37s to peak, longer than the press buffer, so a tap-jump into a
+		// ceiling near the top of the arc never grabbed it.)
+		if ( (spaceIntent || _airFromJump) && _velocity.z > -100f )
 		{
 			var tr = HullSweep( pos, rot, pos + Vector3.Up * ClimbGrabReach );
 			if ( tr.Hit && !tr.StartedSolid && tr.Normal.z <= -0.7f )
@@ -213,7 +242,9 @@ public sealed partial class HiderController
 
 		_jumpQueued = false; // Space means "up" here, never a jump once we let go
 
-		if ( controlled && Input.Pressed( "run" ) )
+		bool letGo = _letGoQueued;
+		_letGoQueued = false;
+		if ( controlled && (letGo || Input.Pressed( "run" )) )
 		{
 			EndClimb();
 			return;
@@ -263,22 +294,55 @@ public sealed partial class HiderController
 
 		// Along the surface: WASD by the camera's full view (see ClimbAlong), plus Space/Ctrl along the surface's
 		// own "up".
-		var along = perfWish is { } pw ? (pw - n * Vector3.Dot( pw, n )).ClampLength( ClimbSpeed ) : ClimbAlong( move, n );
+		var wasd = perfWish is { } pw ? (pw - n * Vector3.Dot( pw, n )).ClampLength( ClimbSpeed ) : ClimbAlong( move, n );
+
+		// Corner carry: still holding the same keys since crossing onto this surface — keep going the way we were
+		// going, rotated over the corner, instead of re-reading the camera. Without it W up a wall maps, on the
+		// ceiling, to "toward the wall", which crossed straight back — the two surfaces swapped every tick (the
+		// jitter that stopped a train sticking to the ceiling). Changing or releasing the keys hands W/S back to
+		// the camera.
+		if ( _carryDir is { } carry && !move.IsNearZeroLength && Vector3.Dot( move.Normal, _carryMove.Normal ) > 0.95f )
+		{
+			var flat = carry - n * Vector3.Dot( carry, n );
+			if ( !flat.IsNearZeroLength )
+				wasd = flat.Normal * ClimbSpeed * MathF.Min( move.Length, 1f );
+		}
+		else
+		{
+			_carryDir = null;
+		}
+
+		var along = wasd;
 		var up = Vector3.Up - n * Vector3.Dot( Vector3.Up, n );
 		if ( up.Length > 0.2f )
 			along += up.Normal * ClimbSpeed * vertical;
 
-		// Inner corner: moving into a different surface — it takes over (a floor ends the climb next tick).
-		if ( !along.IsNearZeroLength )
+		// Inner corner: moving into a different surface — it takes over (a floor ends the climb next tick). The look-
+		// ahead starts backed off BOTH the surface we're on and the way we're going: the body is pressed into the
+		// surface (and may already be pressed against the next one — a train shoved up into the ceiling), and a
+		// trace that starts touching something reads start-solid and is thrown away, so the ceiling never took over.
+		if ( !along.IsNearZeroLength && _sinceCornerSwitch > CornerSwitchCooldown )
 		{
-			var ahead = ClimbTrace( pos, pos + along.Normal * (along.Length * Time.Delta + 3f) );
+			var dir = along.Normal;
+			var from = pos + n * ClimbBackOff - dir * ClimbBackOff;
+			var ahead = ClimbTrace( from, from + dir * (ClimbBackOff + along.Length * Time.Delta + 3f) );
 			if ( ahead.Hit && !ahead.StartedSolid && Vector3.Dot( ahead.Normal, n ) < 0.7f )
 			{
+				// Turn the motion over the corner edge with the surface: what went into the new surface now goes
+				// away from the old one — up a wall becomes along the ceiling, away from the wall.
+				var corner = Rotation.FromToRotation( n, ahead.Normal );
+				if ( !move.IsNearZeroLength && !wasd.IsNearZeroLength )
+				{
+					_carryDir = corner * wasd.Normal;
+					_carryMove = move;
+				}
+				along = corner * along;
+
 				_climbNormal = ahead.Normal;
 				_climbPoint = ahead.HitPosition;
 				_sinceSurface = 0f;
+				_sinceCornerSwitch = 0f;
 				n = _climbNormal;
-				along -= n * MathF.Min( Vector3.Dot( along, n ), 0f );
 			}
 		}
 
