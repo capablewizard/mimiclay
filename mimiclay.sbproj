@@ -58,6 +58,13 @@
       "ShowChangeMap": false,
       "DefaultMap": null,
       "MapTarget": null
-    }
+    },
+    "WorkshopTags": [
+      "Casual",
+      "Party",
+      "Sandbox",
+      "Shooter",
+      "Social"
+    ]
   }
 }

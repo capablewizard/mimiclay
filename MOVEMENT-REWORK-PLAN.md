@@ -38,7 +38,7 @@ sides of the move hull. The user rejected the feel and the hull's accuracy for a
 
 Now: pushing into a wall hard enough hands the prop to PHYSICS. The root rigidbody goes dynamic
 (`PhysicsMode.Pressing`): input drives its horizontal velocity, engine gravity holds it down, friction is off,
-pitch and roll are locked, and `PressAngularDamping` keeps the turn gentle. The REAL SDF collider's contact with
+pitch and roll are locked, and `PressAngularDamping` (10) plus a `PressMaxTurnRate` cap (40°/s) keep the turn gentle. The REAL SDF collider's contact with
 the wall turns it flush, the same way a grabbed prop lays flush when it is pressed into a surface (the grab's
 velocity chase while touching). Once the push force drops away, or on a jump, edit mode or a control lock, the body goes back to keyframed, is eased off the wall if the move hull overlaps it, and the mover
 resumes and parks as before. Mouse turning pauses while pressing.

@@ -36,7 +36,12 @@ public sealed partial class HiderController
 	[Property, Group( "Alignment" ), Range( 0.01f, 0.5f )] public float PressForceSmoothing { get; set; } = 0.08f;
 
 	/// <summary>Angular damping while pressing — higher turns flush more gently.</summary>
-	[Property, Group( "Alignment" ), Range( 0f, 30f )] public float PressAngularDamping { get; set; } = 6f;
+	[Property, Group( "Alignment" ), Range( 0f, 30f )] public float PressAngularDamping { get; set; } = 10f;
+
+	/// <summary>Fastest the wall may turn the prop while pressing (degrees per second). The contacts still decide
+	/// which way and how far it turns; this only caps how fast — every tick's push into the wall is a big contact
+	/// impulse, so without a cap the turn lands almost instantly whatever the damping.</summary>
+	[Property, Group( "Alignment" ), Range( 5f, 360f )] public float PressMaxTurnRate { get; set; } = 40f;
 
 	/// <summary>True while physics is aligning the prop against a wall.</summary>
 	public bool IsPressing => _pressing;
@@ -108,6 +113,12 @@ public sealed partial class HiderController
 		// Our input drives it; gravity keeps it on the floor. The wall stops the push and turns it flush.
 		_pressCommand = ApplyLeash( ReadWish().WithZ( 0f ), pullIn: true );
 		Body.Velocity = _pressCommand.WithZ( Body.Velocity.z );
+
+		// Cap the turn the wall is giving it (yaw only — pitch and roll are locked). Radians/s on the body.
+		float maxRate = PressMaxTurnRate.DegreeToRadian();
+		var spin = Body.AngularVelocity;
+		if ( MathF.Abs( spin.z ) > maxRate )
+			Body.AngularVelocity = spin.WithZ( MathF.Sign( spin.z ) * maxRate );
 	}
 
 	void EndPress()
