@@ -205,6 +205,12 @@ public sealed partial class PropClaims
 		if ( c is null || !prop.IsValid() || !Held.TryGetValue( c.Id, out var id ) || id != prop.Id )
 			return;
 
+		// Keep the target within reach of where the HOST sees the holder (sandbox's physgun does the same): the
+		// joint has no speed cap, so a stale or bogus pose far away would fling the prop across the map.
+		var pawn = Host?.ClaimantPawn( c );
+		if ( pawn.IsValid() )
+			position = pawn.WorldPosition + (position - pawn.WorldPosition).ClampLength( GrabTargetReach );
+
 		_grabTargets[id] = new Transform( position, rotation );
 		ApplyGrabScale( prop, Math.Clamp( scale, MinGrabScale, MaxGrabScale ) );
 	}
@@ -334,6 +340,11 @@ public sealed partial class PropClaims
 	/// whatever motion the hold gave it, so a swing still carries) or LMB (true — FROZEN where it is).</summary>
 	[Rpc.Host]
 	public void DropGrab( bool freeze ) => DropFor( Rpc.Caller ?? Connection.Local, freeze );
+
+	// Furthest a held prop's ROOT may be asked to go from its holder's pawn origin. A sanity bound, not the hold
+	// range (that's the holder's 300u to the clay centre) — generous for a 5×-scaled prop whose root sits far
+	// from its centre.
+	const float GrabTargetReach = 1200f;
 
 	/// <summary>The grab's scale limits, relative to the prop's size when the hold began.</summary>
 	public const float MinGrabScale = 0.2f, MaxGrabScale = 5f;

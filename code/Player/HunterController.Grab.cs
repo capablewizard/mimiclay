@@ -37,6 +37,10 @@ public sealed partial class HunterController
 
 	readonly List<InteractChoice> _grabChoices = new();
 
+	/// <summary>Test harness: a grab keeps holding as if RMB were down (scripts can't hold buttons).</summary>
+	[ConVar( "mimi_dbg_grab_hold", Help = "Debug: grabs hold as if RMB were held down." )]
+	public static bool DebugGrabHold { get; set; }
+
 	/// <summary>E or R held over a grabbed prop: the mouse is turning or scaling it, so the view must not move.</summary>
 	internal bool GrabLookFrozen => _grabbed.IsValid() && (Input.Down( "Use" ) || Input.Down( "Reload" ));
 
@@ -78,7 +82,7 @@ public sealed partial class HunterController
 
 		// Hold-to-carry: RMB up = let go. Checked before seeding, so a grant that lands after a quick click
 		// (a client's round-trip) drops straight back where it was instead of jumping into the hand.
-		if ( !Input.Down( "Attack2" ) )
+		if ( !Input.Down( "Attack2" ) && !DebugGrabHold )
 		{
 			LetGo( held );
 			return true;
@@ -170,32 +174,42 @@ public sealed partial class HunterController
 	Vector3 ClampedRoot( GameObject held, Vector3 eye, Rotation rotation )
 	{
 		Transform RootAt( float distance ) => new( eye + _aimDir * distance - rotation * _grabCentre, rotation );
-		var desired = RootAt( _grabDistance ).Position;
 
-		var body = held.Components.Get<Rigidbody>()?.PhysicsBody;
-		if ( body is null || !body.IsValid() || _grabDistance <= GrabMinDistance )
+		// Both ends pushed out so the prop's NEAREST surface stays GrabNearClearance in front of the eye, not just
+		// its centre (sandbox's PhysicsHold.ClampGrabDistance): a big or scaled-up prop held close otherwise
+		// swallows the camera — and it doesn't collide with its holder, so nothing else stops it.
+		var rigidbody = held.Components.Get<Rigidbody>();
+		float near = ClearOfEye( rigidbody, held, eye, GrabMinDistance );
+		float far = MathF.Max( ClearOfEye( rigidbody, held, eye, _grabDistance ), near );
+		var desired = RootAt( far ).Position;
+
+		var body = rigidbody?.PhysicsBody;
+		if ( body is null || !body.IsValid() || far <= near )
 			return desired;
 
-		var aim = GrabTrace( held ).Sweep( body, RootAt( GrabMinDistance ), RootAt( _grabDistance ) ).Run();
+		var aim = GrabTrace( held ).Sweep( body, RootAt( near ), RootAt( far ) ).Run();
 		if ( !aim.StartedSolid )
 		{
 			if ( !aim.Hit )
 				return desired;
 
-			float span = _grabDistance - GrabMinDistance;
+			float span = far - near;
 			float reach = MathF.Min( aim.Fraction * span + GrabPressDepth, span );
-			return RootAt( GrabMinDistance + reach ).Position;
+			return RootAt( near + reach ).Position;
 		}
 
 		var from = new Transform( held.WorldPosition, rotation );
 		var path = GrabTrace( held ).Sweep( body, from, new Transform( desired, rotation ) ).Run();
 
 		// Starting inside something too (resting contact, the press, a prop bigger than the gap we're in):
-		// there's no clear point to aim for, so ask the prop to stay exactly where it is. Never fall back to
-		// the unclamped target — that's the full-strength shove into the wall this whole clamp exists to stop.
-		// Checked before Hit: a sweep that starts solid needn't report a hit.
+		// there's no clear point to aim for, so ask for a short step toward the target. Not "stay where it
+		// is" — a prop merely touching the floor and a counter then could never be lifted off them, and a
+		// pressed one flipped between the press and standing still every frame. Not the unclamped target
+		// either — that's the full-strength shove into the wall this whole clamp exists to stop. Once the
+		// step frees it, the sweeps above take over again. Checked before Hit: a sweep that starts solid
+		// needn't report a hit.
 		if ( path.StartedSolid )
-			return held.WorldPosition;
+			return held.WorldPosition + (desired - held.WorldPosition).ClampLength( GrabUnstickStep );
 
 		if ( !path.Hit )
 			return desired;
@@ -206,10 +220,30 @@ public sealed partial class HunterController
 		return from.Position + travel * keep;
 	}
 
+	// The hold distance (eye → clay centre along the aim), lengthened if the prop's closest point to the eye would
+	// sit nearer than GrabNearClearance along the aim. Measured on the body as it is now — close enough, since
+	// the prop is turning with the view and its extent past the centre barely changes frame to frame.
+	float ClearOfEye( Rigidbody rigidbody, GameObject held, Vector3 eye, float distance )
+	{
+		if ( !rigidbody.IsValid() )
+			return distance;
+
+		var centre = held.WorldTransform.PointToWorld( _grabCentre );
+		var closest = rigidbody.FindClosestPoint( eye );
+		float along = distance + Vector3.Dot( closest - centre, _aimDir );
+		return along < GrabNearClearance ? distance + (GrabNearClearance - along) : distance;
+	}
+
+	// How far in front of the eye (along the aim) the held prop's nearest surface must stay.
+	const float GrabNearClearance = 24f;
+
 	// How far past the first hit the target goes (units along the sweep): the "press". Small enough that the
 	// chase into it is a soft push (× HiderController's HoldPull ≈ 70 u/s at 4) the solver absorbs quietly;
 	// 0 = stop exactly at contact.
 	const float GrabPressDepth = 4f;
+
+	// How far toward the target a stuck prop (both sweeps start inside something) is asked to move per frame.
+	const float GrabUnstickStep = 8f;
 
 	// What a held prop is swept against: the world as its body collides with it, minus the prop itself, us,
 	// and things nothing physical stops at.

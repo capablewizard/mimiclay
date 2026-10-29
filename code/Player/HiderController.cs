@@ -578,6 +578,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	protected override void OnDestroy()
 	{
+		ReleaseHoldJoint();
+		_scrapeHandle?.Stop();
 		if ( _body.IsValid() )
 			_body.Committed -= RecenterOriginOnShape;
 	}
@@ -589,6 +591,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// after this point is owner-only.
 		UpdateConcealment();
 		UpdateReleasedSolidity();
+		UpdateScrape();
 
 		// A granted possession resumes here — before the dormant gate, because a HOST possessing a prop it
 		// released itself still has _dormant latched on its own copy (ResumeControl clears it).
@@ -1094,6 +1097,11 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			return;
 
 		_physicsMode = mode;
+		if ( mode != PhysicsMode.Held )
+		{
+			ReleaseHoldJoint();
+			RestoreHeldFriction();
+		}
 		Body.Locking = mode == PhysicsMode.Character
 			? new PhysicsLock { Pitch = true, Yaw = false, Roll = true }
 			: default;
@@ -1105,6 +1113,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// body moves far relative to its size, so it's on for every loose prop rather than gated by size. Off for
 		// a character body (its own steps never move fast enough) and a frozen one (it doesn't move).
 		Body.EnhancedCcd = mode is PhysicsMode.Held or PhysicsMode.Loose;
+
+		// Persisting-contact events while held or loose: the hold switches to the velocity chase while touching
+		// something, and both squelch when sliding (see HiderController.Impacts).
+		Body.CollisionUpdateEventsEnabled = mode is PhysicsMode.Held or PhysicsMode.Loose;
 
 		if ( mode == PhysicsMode.Frozen )
 		{
@@ -1122,20 +1134,139 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		_turnSeeded = false;
 	}
 
-	// Host (the simulating machine): steer the body toward the holder's pose. Velocity, not teleports, so the
-	// solver still stops it at walls and it leaves the hand with whatever motion it had.
+	/// <summary>Hold a grabbed prop with a control joint (the sandbox physgun's way) instead of overwriting its
+	/// velocity every tick. Off = the old velocity chase, kept for A/B-ing the feel.</summary>
+	[ConVar( "mimi_grab_joint", Help = "Grabbed props: 1 = spring joint hold (sandbox physgun), 0 = velocity chase." )]
+	public static bool GrabJoint { get; set; } = true;
+
+	// The joint hold, as sandbox's PhysicsHold: a keyframed anchor body we teleport to the target each tick, tied
+	// to the prop's mass centre by a control joint with linear + angular springs. The springs are solved INSIDE
+	// the physics step alongside the contacts, so a prop pressed into a wall settles against it instead of the
+	// solver and our per-tick velocity write fighting (the jitter); the force is capped by the prop's mass, so a
+	// heavy one swings with weight; and the stepwise targets a client streams are smoothed by the spring.
+	// Force ≤ mass × this (torque scaled from the inertia). Sandbox uses 700000; that out-pulls the contacts, so
+	// a fast swing dragged a small prop straight through a 2u wall. Measured on that wall: 80000 tunnels, 40000
+	// and 30000 hold — and 30000 still settles a 90° swing in 0.2s, no slower than 700000.
+	const float HoldMaxAccel = 30000f;
+	const float HoldLinearHz = 32f;
+	const float HoldAngularHz = 64f;
+	const float HoldDamping = 4f;
+
+	// The joint is for FREE AIR only. The moment the held prop touches something (a contact event within
+	// HoldContactWindow) it drops the joint and goes back to the velocity chase — which is what lays a prop
+	// FLUSH when pressed into a surface and SLIDES it when dragged. Rewriting the velocity every tick pushes
+	// through the contact solver in a way a capped spring can't copy. Measured (pot tilted 30°, pressed into
+	// the floor): chase → 1°; joint with a soft rotation spring → 0° but dragged props ROLL (knob 41–47° off);
+	// joint with the rotation chase only → stuck at 26°, at any linear stiffness. Free air keeps the joint's
+	// wins: fast swings, no wall tunnelling, the client's stepwise targets smoothed.
+	const float HoldContactWindow = 0.1f;  // seconds since the last contact event that still count as touching
+
+	Sandbox.Physics.ControlJoint _holdJoint;
+	PhysicsBody _holdAnchor;
+	PhysicsBody _holdOn;        // the body the joint was made on — a re-made body needs a new joint
+	Vector3 _holdMassCentre;    // its local mass centre then — a scale commit moves it, so the joint is remade
+
+	void ReleaseHoldJoint()
+	{
+		_holdJoint?.Remove();
+		_holdJoint = null;
+		if ( _holdAnchor is not null && _holdAnchor.IsValid() )
+			_holdAnchor.Remove();
+		_holdAnchor = null;
+		_holdOn = null;
+	}
+
+	void DriveHeldJoint( Transform target )
+	{
+		var pb = Body.PhysicsBody;
+		if ( pb is null || !pb.IsValid() )
+			return;
+
+		if ( _holdJoint is null || _holdOn != pb || !_holdMassCentre.AlmostEqual( pb.LocalMassCenter, 0.01f ) )
+		{
+			ReleaseHoldJoint();
+			_holdOn = pb;
+			_holdMassCentre = pb.LocalMassCenter;
+			_holdAnchor = new PhysicsBody( pb.World ) { BodyType = PhysicsBodyType.Keyframed, AutoSleep = false };
+			_holdAnchor.Transform = new Transform( WorldTransform.WithScale( 1f ).PointToWorld( _holdMassCentre ), WorldRotation );
+
+			var inertia = pb.Inertia;
+			float maxForce = pb.Mass * HoldMaxAccel;
+			float maxTorque = HoldMaxAccel * MathF.Sqrt( pb.Mass * MathF.Max( inertia.x, MathF.Max( inertia.y, inertia.z ) ) );
+
+			_holdJoint = Sandbox.Physics.PhysicsJoint.CreateControl(
+				new Sandbox.Physics.PhysicsPoint( _holdAnchor ), new Sandbox.Physics.PhysicsPoint( pb, _holdMassCentre ) );
+			_holdJoint.LinearSpring = new Sandbox.Physics.PhysicsSpring( HoldLinearHz, HoldDamping, maxForce );
+			_holdJoint.AngularSpring = new Sandbox.Physics.PhysicsSpring( HoldAngularHz, HoldDamping, maxTorque );
+		}
+
+		// The target is the ROOT pose; the joint holds the mass centre, so the anchor goes where that lands — at
+		// most HoldMaxSpeed units/s (the old chase's cap) rather than jumping there. A fast swing can put the
+		// target behind a wall the aim sweep never saw (it sweeps along the aim, not along the prop's path); the
+		// joint then pulls the prop at it, and only the HoldMaxAccel cap keeps the contact winning.
+		var dt = MathF.Max( Time.Delta, 0.001f );
+		var want = target.PointToWorld( _holdMassCentre );
+		var from = _holdAnchor.Position;
+		_holdAnchor.Transform = new Transform( from + (want - from).ClampLength( HoldMaxSpeed * dt ), target.Rotation );
+	}
+
+	// A held prop has NO friction: it slides over whatever it's pressed against or dragged across instead of
+	// gripping it. Every collider's own override is remembered and put back when the hold ends (a scale
+	// commit's rebuilt collider is a new component, picked up on the next tick).
+	const float HeldFriction = 0f;
+	readonly Dictionary<Collider, float?> _heldFriction = new();
+
+	void ApplyHeldFriction()
+	{
+		foreach ( var c in Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( _heldFriction.ContainsKey( c ) )
+				continue;
+			_heldFriction[c] = c.Friction;
+			c.Friction = HeldFriction;
+		}
+	}
+
+	void RestoreHeldFriction()
+	{
+		foreach ( var (c, friction) in _heldFriction )
+		{
+			if ( c.IsValid() )
+				c.Friction = friction;
+		}
+		_heldFriction.Clear();
+	}
+
+	// Host (the simulating machine): steer the body toward the holder's pose — through the joint in free air,
+	// with velocities while touching (see HoldContactWindow). Never teleports, so the solver still stops it at
+	// walls and it leaves the hand with whatever motion it had. Leaving contact remakes the joint at the body's
+	// current pose, so the hand-over doesn't kick.
 	void DriveHeld( Transform target )
 	{
 		if ( Body.Sleeping )
 			Body.Sleeping = false;
 
+		ApplyHeldFriction();
+
 		// (No scale here: the grab scales the SHAPE, host-side — see PropClaims.Grab.)
+		if ( GrabJoint && _sinceHeldContact >= HoldContactWindow )
+		{
+			DriveHeldJoint( target );
+			return;
+		}
+		ReleaseHoldJoint();
+
 		var dt = MathF.Max( Time.Delta, 0.001f );
 		var toTarget = target.Position - WorldPosition;
 		Body.Velocity = (toTarget * MathF.Min( HoldPull, 1f / dt )).ClampLength( HoldMaxSpeed );
+		ChaseHeldRotation( target.Rotation, dt );
+	}
 
-		// Shortest-arc rotation from here to the target, as an angular velocity (radians/s).
-		var q = target.Rotation * WorldRotation.Inverse;
+	// Turn the body toward the target rotation by writing its angular velocity: shortest arc, at HoldTurn per
+	// second. The velocity hold's rotation, and the joint hold's while touching (see HoldContactWindow).
+	void ChaseHeldRotation( Rotation target, float dt )
+	{
+		var q = target * WorldRotation.Inverse;
 		if ( q.w < 0f )
 			q = new Rotation( -q.x, -q.y, -q.z, -q.w );
 		var sinHalf = MathF.Sqrt( q.x * q.x + q.y * q.y + q.z * q.z );
