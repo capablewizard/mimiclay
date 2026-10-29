@@ -242,6 +242,15 @@ shelf edge).
 Measured: 20 approaches into the stove at 5–35° — 0 burials (was ~1 in 10). One "launched up high" case was a jump pad.
 `[buried]` logs now name the overlapping bodies.
 
+**Mouse rotation while pressing/climbing (user: "too little control over rotation", "alignment too strong"):** the mouse
+now turns the prop on walls and ceilings too. `PressAlignStrength` (0..1, default 0) is how much of the turn the
+surface causes by itself. At 0 the body's YAW is LOCKED while pressing/climbing — zeroing the spin each tick wasn't
+enough, contact impulses land inside the physics step (a train pressed in at 25° swung to 91°) — and the mouse turns it
+directly through the pose-tested `Turn`, so a surface still blocks a turn into it. Above 0 the yaw is free and the
+contact's own spin is blended in (capped at `PressMaxTurnRate`). Verified: under a shelf the train turned 90° and
+−45° exactly; pressed skewed with no mouse it stayed at 25°; turning into the wall stopped when its far end met it.
+Mouse turning stays continuous across walking/pressing/climbing (only the grab's object modes re-seed it).
+
 **Decided (user, 2026-10-29):** props stay UPRIGHT — physics may only turn them about the vertical, never tilt
 them — so pitch and roll stay locked on walls and ceilings too, and there is nothing to restore after letting go.
 Space grabs both while pressing a wall and when held while touching a wall or ceiling mid-air.

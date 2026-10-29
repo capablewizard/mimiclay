@@ -10,7 +10,8 @@ namespace Mimiclay;
 //
 // While pressing the body is DYNAMIC: our input drives its velocity (vertical left to engine gravity), friction
 // is off so the contact slides and turns instead of gripping, pitch and roll are locked so it only turns about
-// the vertical, and angular damping keeps that turn gentle. Mouse turning pauses — the wall owns the facing.
+// the vertical. The MOUSE turns it (see ApplySurfaceTurn): the wall only blocks a turn into it, and pulls it toward
+// flush only as much as PressAlignStrength allows (default none).
 //
 // FORCE decides both ends. The push force is how hard the wall is pushing back: the clay's mass times the part of
 // the commanded velocity the wall cancels, per second. Before the press that's read off the mover's sweep (the
@@ -160,7 +161,7 @@ public sealed partial class HiderController
 		}
 		_pressCommand = command;
 		Body.Velocity = command.WithZ( Body.Velocity.z );
-		CapTurnRate();
+		ApplySurfaceTurn( ReadTurn() ); // the mouse turns it; the wall can only block (or, at PressAlignStrength, nudge)
 	}
 
 	void EndPress()
@@ -216,13 +217,52 @@ public sealed partial class HiderController
 		}
 	}
 
-	// The wall may turn the prop about the vertical, but no faster than PressMaxTurnRate (pitch and roll are locked).
-	void CapTurnRate()
+	/// <summary>How much of the turn a wall or ceiling puts on the prop by itself is kept, 0..1, while pressing or
+	/// climbing. 0 = none: the prop only turns when you turn it (the mouse), and contacts merely BLOCK a turn into
+	/// them — line it up against a surface by turning into it. Higher = surfaces also pull it toward flush.</summary>
+	[Property, Group( "Alignment" ), Range( 0f, 1f )] public float PressAlignStrength { get; set; } = 0f;
+
+	float _lastSetSpin;
+	bool _spinSeeded;
+
+	// Pressing/climbing, every dynamic tick: the MOUSE turns the prop about the vertical (pitch and roll are locked),
+	// at whatever rate it's turning. The physics step can still stop that turn against a surface. Whatever spin the
+	// contacts added on their own last step is kept only at PressAlignStrength (capped at PressMaxTurnRate) — the
+	// compliance-turning idea: mouse input leads, surfaces can only block it or (optionally) nudge it flush.
+	// `turnDegrees` is this tick's mouse turn (ReadTurn), 0 when not controlled.
+	void ApplySurfaceTurn( float turnDegrees )
 	{
-		float maxRate = PressMaxTurnRate.DegreeToRadian();
-		var spin = Body.AngularVelocity;
-		if ( MathF.Abs( spin.z ) > maxRate )
-			Body.AngularVelocity = spin.WithZ( MathF.Sign( spin.z ) * maxRate );
+		// No alignment: LOCK the yaw too, so contacts can't turn the body at all — zeroing the spin each tick isn't
+		// enough, the contact impulses land INSIDE the physics step (a train pressed in skewed swung 25°→91° that
+		// way). The mouse then turns it directly, pose-tested against the move hull (Turn), so it still can't be
+		// turned into a wall.
+		bool lockYaw = PressAlignStrength <= 0.001f;
+		if ( Body.Locking.Yaw != lockYaw || !Body.Locking.Pitch || !Body.Locking.Roll )
+			Body.Locking = new PhysicsLock { Pitch = true, Roll = true, Yaw = lockYaw };
+
+		if ( lockYaw )
+		{
+			Body.AngularVelocity = Vector3.Zero;
+			if ( MathF.Abs( turnDegrees ) > 0.001f && _hull.Ready )
+			{
+				var pos = WorldPosition;
+				var rot = Turn( ref pos, WorldRotation, turnDegrees );
+				if ( !rot.AlmostEqual( WorldRotation ) )
+					WorldTransform = new Transform( pos, rot, WorldScale );
+			}
+			return;
+		}
+
+		float dt = MathF.Max( Time.Delta, 0.001f );
+		float mouseRate = turnDegrees.DegreeToRadian() / dt;
+		float spin = Body.AngularVelocity.z;
+		float fromContacts = _spinSeeded ? spin - _lastSetSpin : 0f;
+		_spinSeeded = true;
+
+		float maxAlign = PressMaxTurnRate.DegreeToRadian();
+		float aligned = Math.Clamp( fromContacts * PressAlignStrength, -maxAlign, maxAlign );
+		_lastSetSpin = mouseRate + aligned;
+		Body.AngularVelocity = Body.AngularVelocity.WithZ( _lastSetSpin );
 	}
 
 	/// <summary>While pressing or climbing, collide with the convex MOVE HULL instead of the clay collider. The two

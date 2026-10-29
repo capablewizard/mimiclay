@@ -259,7 +259,8 @@ public sealed partial class HiderController
 		float vertical = controlled ? (Input.Down( "jump" ) ? 1f : 0f) - (Input.Down( "duck" ) ? 1f : 0f) : 0f;
 		if ( controlled && DebugClimbVertical != 0f )
 			vertical = Math.Clamp( DebugClimbVertical, -1f, 1f );
-		bool input = !move.IsNearZeroLength || perfWish is { IsNearZeroLength: false } || vertical != 0f;
+		float turn = controlled ? ReadTurn() : 0f; // the mouse turns a climbing prop too (see ApplySurfaceTurn)
+		bool input = !move.IsNearZeroLength || perfWish is { IsNearZeroLength: false } || vertical != 0f || MathF.Abs( turn ) > 0.01f;
 
 		// Holding still on the surface: keyframed, nothing to do until there's input again — unless something moved us
 		// (a teleport) or changed our shape (sculpting while stuck): then re-check, we may now be sunk into the surface.
@@ -420,6 +421,6 @@ public sealed partial class HiderController
 		}
 
 		Body.Velocity = ApplyLeash( velocity, pullIn: true );
-		CapTurnRate();
+		ApplySurfaceTurn( turn );
 	}
 }

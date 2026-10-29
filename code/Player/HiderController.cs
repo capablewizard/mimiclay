@@ -986,7 +986,12 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			_groundObject = null;
 			Unpark();
 		}
-		_turnSeeded = false;
+
+		// The mouse turn is continuous across walking, pressing and climbing (and a climb's hold) — re-seeding there
+		// ate the turn that woke a held climb. Only an OBJECT mode (held, loose, frozen) starts it afresh.
+		if ( mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Frozen )
+			_turnSeeded = false;
+		_spinSeeded = false; // the contact-spin bookkeeping (ApplySurfaceTurn) is per dynamic stretch
 	}
 
 	/// <summary>Hold a grabbed prop with a control joint (the sandbox physgun's way) instead of overwriting its
