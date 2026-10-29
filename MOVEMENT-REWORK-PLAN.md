@@ -144,10 +144,11 @@ it's stuck to, exactly as the press turns it flush now.
 
 | Input | On the floor | While pressing a wall | While climbing |
 | --- | --- | --- | --- |
-| Space | Jump | Start climbing | Move up the surface (held) |
-| Ctrl | Crouch (slow) | — | Move down the surface (held) |
+| Space | Jump | Start climbing | Up the surface (held) |
+| Ctrl | Crouch (slow) | — | Down the surface (held) |
 | Shift | — | — | Let go |
-| WASD | Walk | Push / slide along the wall | Move along the surface, camera-relative |
+| A/D | Walk | Slide along the wall | Sideways along the surface (camera's left) |
+| W/S | Walk | Push into the wall | Depth: forward/back along a ceiling; into a wall (mounts the top) |
 
 
 **State:** a new `PhysicsMode.Climbing` (dynamic, engine gravity OFF), plus the current surface normal and the
@@ -266,6 +267,37 @@ other clay props. Don't retry that combination as-is.
 the 64u height cap was removed the same day): any surface facing up past `PropFloorMinZ` 0.25 (≈76°) counts as ground (`WalkableHit`, used by
 slide, snap, landing and the step-down); its sides step up to 40u; it is never pressed against or air-grabbed. Non-clay
 furniture behaves as before. A climb's corner look-ahead never turns onto a clay prop: it steps over it like a bump.
+**Climb controls, FINAL for now (user, 2026-10-29: "space = move up, ctrl = move down, a/d = side to side, w/s =
+forward/backward but in depth mainly to make mounting easier and moving on the ceiling work, shift = unstick"):**
+`vertical` = Space − Ctrl along U (world up flattened onto the surface). `ClimbAlong`: A/D = camera-left flattened onto the
+surface (scaled down, not snapped, when looking along the wall); W/S = the camera's LEVEL forward flattened onto the surface
+× |n.z| — all of it on a ceiling, none on an upright wall. Pitch no longer matters (`ClimbLevelPitch` removed). `ClimbInto`
+= W's level share pointing into the surface; > 0.3 also triggers `TryMantle` when the wall runs out, so W at the lip
+mounts the top. The Space push-off (`ClimbLaunchSpeed`) and Ctrl-slow were removed again. The three entries below are
+the steps that led here.
+Wall→ceiling ping-pong (user: "jump onto a wall and climb up to the ceiling in one movement, I can't latch on"): with Space
+(up the wall) and W (on the ceiling: forward = toward the wall) both held, every corner cooldown passed the prop between wall
+and ceiling (reproduced by script: normal flipped every 0.2s for 3s). Fix `_cornerLeft`: each corner switch remembers the
+surface left and the keys held (move + vertical); while those keys are unchanged, the part of `along` heading back into
+that surface is dropped. New keys clear it, so a fresh W still goes back to the wall. Re-test: latched to the ceiling and
+held for 3s.
+
+Tried and REVERTED (user: "feels a bit awkward"): limiting the corner carry to just rounding the corner (body depth + 4u),
+so W off a ceiling stopped partway down the wall. The carry runs for as long as the same keys are held again.
+
+**Space / Ctrl while climbing (user, 2026-10-29: "disable space/crouch for up/down … spacebar = launch off the wall, ctrl
+= slow movement"):** Space launches off the surface via `Launch` — `_climbNormal` × `ClimbLaunchSpeed` (250), straight off the
+surface with NO lift (user: "the push off shouldn't add an uplift at all"); the let-go cooldown stops a held Space re-grabbing at once. Ctrl
+scales the climb by CrouchSpeed/WalkSpeed again. Up/down a wall is W/S only (`mimi_dbg_climb_vertical` still fakes it).
+
+**W/S on walls (user, 2026-10-29: "holding W on the drawers wobbles left/right a lot more than Space", then "W should
+feel like pressing Space AND W … climb up and move forward over the ledge"):** `ClimbAlong` keeps the old look mapping
+(camera forward flattened onto the surface, camera up blended in head-on), clamped to 1, and on walls ADDS U·move.x — U =
+world up flattened onto the surface, exactly Space's direction. So W = Space + old W, S = Ctrl + old S; up to 2× ClimbSpeed,
+as holding both used to be. The steady U dilutes the flattened look's sideways wobble on bumpy faces. Looking down with W
+now roughly cancels (as Space+W did): S is the way down. (A first try that REPLACED the look with a surface-frame mapping —
+head-on = up, down at ~45° below level — was superseded the same day.) Space/Ctrl kept for now.
+
 **Mantle (user, 2026-10-29: "climb to the top of the tablecloth and can't really move, still registering as stuck"):**
 `TryMantle` — sweep the hull over the lip (toward the wall, `ClimbMantleReach` 16), then down onto ground (`WalkableHit`); if
 it lands, end the climb there, grounded, with a little carry onto the top. Tried (a) when the wall is lost while climbing up

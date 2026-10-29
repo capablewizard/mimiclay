@@ -8,8 +8,8 @@ namespace Mimiclay;
 // as the press. On a wall it hangs upright against it; on a ceiling it hangs upright beneath it.
 //
 // Controls (Meccha Chameleon's scheme): Space while pressing a wall — or held while jumping into a wall or a
-// ceiling — grabs it. WASD moves along the surface by the camera's full view (look up the wall and W climbs), Space
-// moves up the surface and Ctrl down it, the mouse turns it, Shift lets go.
+// ceiling — grabs it. Climbing: Space up the surface, Ctrl down it, A/D sideways (camera's left), W/S in depth (forward along
+// a ceiling; into a wall, which mounts the top), the mouse turns it, Shift lets go.
 //
 // Each tick the surface is SENSED with a short trace of the real rigidbody (translation only — all the engine's
 // body traces can do) from a pose backed a little off the surface, toward it. That gives the surface's normal and
@@ -59,11 +59,6 @@ public sealed partial class HiderController
 	/// <summary>Seconds a Space press in the air stays "I want to grab" while waiting to reach a wall.</summary>
 	[Property, Group( "Climbing" ), Range( 0f, 1f )] public float ClimbGrabBuffer { get; set; } = 0.35f;
 
-	/// <summary>Camera pitch (degrees, looking down) treated as "level" when W/S steer up and down a surface — the
-	/// orbit camera rests looking a little down at the prop. Facing a wall, W climbs until the camera looks about
-	/// 20° further down than this, then goes down instead.</summary>
-	[Property, Group( "Climbing" ), Range( 0f, 45f )] public float ClimbLevelPitch { get; set; } = 15f;
-
 	/// <summary>True while the prop is stuck to a wall or ceiling.</summary>
 	public bool IsClimbing => _climbing;
 
@@ -82,6 +77,13 @@ public sealed partial class HiderController
 	Vector3 _carryMove;
 	RealTimeSince _sinceCornerSwitch = 999f;
 	Vector3 _carryFrom;
+
+	// The surface the last corner took us OFF, and the keys held then. While they're still held, motion back into that
+	// surface is dropped (see StepClimb) — otherwise Space (up the wall) and W (toward the wall, on the ceiling) passed
+	// the prop back and forth between wall and ceiling every corner cooldown, never settling on either.
+	Vector3? _cornerLeft;
+	Vector3 _cornerMove;
+	float _cornerVertical;
 
 	// Stepping over a bump on the surface (see the corner look-ahead): seconds left of lifting off it.
 	float _climbStepOver;
@@ -125,6 +127,7 @@ public sealed partial class HiderController
 		_climbStepOver = 0f;
 		_surfaceGated = 0f;
 		_letGoQueued = false; // a Shift tap from before the grab must not drop us at once
+		_cornerLeft = null;
 		_carryDir = null;
 		IsGrounded = false;
 	}
@@ -274,30 +277,30 @@ public sealed partial class HiderController
 		return false;
 	}
 
-	// WASD while climbing, by the camera's FULL view (pitch included), flattened onto the surface: W goes where you
-	// look — up a wall when you look up it, down when you look down it, forward along a ceiling — and A/D go to the
-	// camera's sides. The third-person camera normally looks a little DOWN at the prop, so facing a wall its forward
-	// alone would flatten to "down the wall"; the camera's up blends in as its forward turns square to the surface
-	// (weight (1 − |flattened forward|)²), so looking at a wall roughly head-on still means W = up.
+	// WASD while climbing (user, 2026-10-29): A/D go SIDEWAYS along the surface, by the camera's left; W/S go in DEPTH —
+	// the camera's level forward, kept only as far as the surface faces up or down: all of it on a ceiling (W = forward
+	// along it), none on an upright wall, where W only pushes INTO the wall (ClimbInto — that's what mounts a ledge at the
+	// top). Up and down a wall are Space and Ctrl. Pitch is ignored, so neither wobbles with the look or a bumpy face.
 	Vector3 ClimbAlong( Vector3 move, Vector3 n )
 	{
 		if ( move.IsNearZeroLength )
 			return Vector3.Zero;
 
-		// The orbit camera's resting look-down counts as level, so W's flip from "up" to "down" sits well past it.
-		var view = _orbit.IsValid()
-			? (_orbit.Angles with { pitch = _orbit.Angles.pitch - ClimbLevelPitch }).ToRotation()
-			: Rotation.FromYaw( MoveYaw );
+		var view = Rotation.FromYaw( _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw );
 		Vector3 Flat( Vector3 v ) => v - n * Vector3.Dot( v, n );
 
-		var f = Flat( view.Forward );
-		float squareOn = 1f - MathF.Min( f.Length, 1f );
-		var forward = f + Flat( view.Up ) * squareOn * squareOn;
-		var left = Flat( view.Left );
+		var depth = Flat( view.Forward ) * MathF.Abs( n.z );
+		var side = Flat( view.Left );
+		side = side.Length >= 0.3f ? side.Normal : side / 0.3f; // looking along the wall: A/D say little, so slow rather than snap
 
-		var dir = (forward.IsNearZeroLength ? Vector3.Zero : forward.Normal) * move.x
-			+ (left.IsNearZeroLength ? Vector3.Zero : left.Normal) * move.y;
-		return dir.ClampLength( 1f ) * ClimbSpeed;
+		return (depth * move.x + side * move.y).ClampLength( 1f ) * ClimbSpeed;
+	}
+
+	// How hard W/S push INTO the surface (0..1, S negative): the level look's share pointing at it. Mounts a ledge.
+	float ClimbInto( Vector3 move, Vector3 n )
+	{
+		var forward = Rotation.FromYaw( _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw ).Forward;
+		return move.x * Vector3.Dot( forward, -n );
 	}
 
 	SceneTraceResult ClimbTrace( Vector3 from, Vector3 to, bool throughProps = false )
@@ -338,8 +341,8 @@ public sealed partial class HiderController
 		var perfWish = controlled ? PerfScenario.DriveProp( GameObject, ClimbSpeed ) : null;
 		var move = controlled ? Input.AnalogMove.ClampLength( 1f ) : Vector3.Zero;
 
-		// Space climbs UP the surface, Ctrl DOWN it (user, 2026-10-29: back to the original keys), on top of WASD by the
-		// camera (ClimbAlong). The debug ConVar fakes holding them.
+		// Space climbs UP the surface and Ctrl DOWN it (user, 2026-10-29). A/D go sideways and W/S in depth (ClimbAlong).
+		// The debug ConVar fakes holding Space or Ctrl.
 		float vertical = controlled ? (Input.Down( "jump" ) ? 1f : 0f) - (Input.Down( "duck" ) ? 1f : 0f) : 0f;
 		if ( controlled && DebugClimbVertical != 0f )
 			vertical = Math.Clamp( DebugClimbVertical, -1f, 1f );
@@ -438,6 +441,7 @@ public sealed partial class HiderController
 		// Along the surface: WASD by the camera's full view (see ClimbAlong), plus the test harness's push along the surface's
 		// own "up".
 		var wasd = perfWish is { } pw ? (pw - n * Vector3.Dot( pw, n )).ClampLength( ClimbSpeed ) : ClimbAlong( move, n );
+		float into = controlled ? ClimbInto( move, n ) : 0f; // W at the wall: "get onto the top" when it runs out
 
 		// Corner carry: still holding the same keys since crossing onto this surface — keep going the way we were
 		// going, rotated over the corner, instead of re-reading the camera. Without it W up a wall maps, on the
@@ -464,6 +468,15 @@ public sealed partial class HiderController
 		var up = Vector3.Up - n * Vector3.Dot( Vector3.Up, n );
 		if ( up.Length > 0.2f )
 			along += up.Normal * ClimbSpeed * vertical;
+
+		// Just round a corner, same keys still held: don't head back into the surface we left (see _cornerLeft).
+		if ( _cornerLeft is { } left )
+		{
+			if ( vertical != _cornerVertical || (move - _cornerMove).Length > 0.05f )
+				_cornerLeft = null; // new keys: a fresh press back toward it is meant
+			else if ( Vector3.Dot( along, -left ) > 0f )
+				along -= -left * Vector3.Dot( along, -left );
+		}
 
 		// Inner corner: moving into a different surface — it takes over (a floor ends the climb next tick). The look-
 		// ahead starts backed off BOTH the surface we're on and the way we're going: the body is pressed into the
@@ -507,6 +520,9 @@ public sealed partial class HiderController
 				}
 				along = corner * along;
 
+				_cornerLeft = n;
+				_cornerMove = move;
+				_cornerVertical = vertical;
 				_climbNormal = ahead.Normal;
 				_climbPoint = ahead.HitPosition;
 				_sinceSurface = 0f;
@@ -554,7 +570,7 @@ public sealed partial class HiderController
 		{
 			velocity = along - n * ClimbStickSpeed;
 		}
-		else if ( along.z > 1f && MathF.Abs( n.z ) < 0.7f && TryMantle( pos, n ) )
+		else if ( (along.z > 1f || into > 0.3f) && MathF.Abs( n.z ) < 0.7f && TryMantle( pos, n ) )
 		{
 			return; // climbed off the top of a wall onto the ground above it
 		}
