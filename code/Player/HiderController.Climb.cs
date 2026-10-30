@@ -440,15 +440,23 @@ public sealed partial class HiderController
 		return true;
 	}
 
+	// The climb's probe: sweep the shape the body actually COLLIDES with — the move hull, while it's the climbing body's
+	// shape (AlignWithMoveHull) — not the whole rigidbody. A body trace also carries the clay's own collider shapes (they
+	// stop colliding while climbing, but traces still see them), and for a round prop the clay sphere bulges past its
+	// inscribed hull: resting on the hull, the probe read the sphere as sunk into the wall ("embedded" → push out → lose
+	// the wall → push in), and a climbing sphere shook in and out every tick instead of holding still.
 	SceneTraceResult ClimbTrace( Vector3 from, Vector3 to, bool throughProps = false )
 	{
 		var trace = MoveTrace;
 		var tx = new Transform( from, WorldRotation );
-		var tr = trace.Body( Body.PhysicsBody, tx, to ).Run();
+		SceneTraceResult Run( SceneTrace t ) => AlignWithMoveHull && _hull.Ready
+			? _hull.Sweep( t, tx, new Transform( to, WorldRotation ) )
+			: t.Body( Body.PhysicsBody, tx, to ).Run();
+		var tr = Run( trace );
 		for ( int i = 0; throughProps && i < 4 && tr.Hit && IsFloorProp( tr ); i++ )
 		{
 			trace = trace.IgnoreGameObjectHierarchy( tr.Body?.GameObject ?? tr.GameObject );
-			tr = trace.Body( Body.PhysicsBody, tx, to ).Run();
+			tr = Run( trace );
 		}
 		return tr;
 	}

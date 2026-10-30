@@ -551,3 +551,11 @@ top +158) climb straight on in ~1.3s. What the bad sites exposed, now fixed:
 - Walk ground probe: the foot slab is inset 1.5u sideways (`PropMoveHull.FootInset`), and if it still starts solid a ray
   from the hull centre stands in — landing pressed against a wall read "no ground" and the train SANK 11u into the floor.
 - `StartMantleCarry(dir, topZ, time)` shared by both mantles; `mimi_dbg_climb_corners` logs corner/bump/overhang decisions.
+
+Round props jittered on walls (user: "why is climbing as a rounded item like a sphere so jittery?"). Live sample: a 48u
+sphere on a wall flipped every tick or two between "on the surface" (push in at ClimbStickSpeed 40) and "embedded" (push
+out at 80), shaking ~1u and never reaching ClimbHold. Cause: physics collides the climbing body as the MOVE HULL (40
+points, inscribed in a sphere), but `ClimbTrace` traced the whole rigidbody — including the clay's round collider shapes,
+which stop colliding while climbing but are still seen by traces. Resting on the hull, the probe found the sphere sunk
+into the wall. Fix: `ClimbTrace` sweeps the move hull itself (when AlignWithMoveHull). Same sphere right after: ClimbHold,
+0 movement over 1s. Flat-faced props were barely affected (hull and collider coincide on faces).
