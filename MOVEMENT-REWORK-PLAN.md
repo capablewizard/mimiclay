@@ -298,6 +298,16 @@ as holding both used to be. The steady U dilutes the flattened look's sideways w
 now roughly cancels (as Space+W did): S is the way down. (A first try that REPLACED the look with a surface-frame mapping —
 head-on = up, down at ~45° below level — was superseded the same day.) Space/Ctrl kept for now.
 
+**Cling on possess (user, 2026-10-29: "if I possess a prop which is artificially stuck to a prop, it immediately falls"):**
+`TryClingOnPossess` runs on the first mover tick of a non-scenery body (`_clingCheckPending`: set at creation and in
+`ResumeControl`, cleared after one check). No walkable ground within a scaled step below, but a wall or ceiling within
+`ClingReach` 4u (probes on world axes, the prop's own axes, and up; each starts up to 8u BEHIND the pose so a prop touching
+or sunk into its surface still finds it; clay surfaces excluded) → `StartClimb` on the nearest. Found while testing: a
+just-possessed body can carry a huge body velocity from its first keyframed `Move` (846 u/s), and a keyframed ClimbHold body
+keeps drifting at it (a magnet rose 80u up the fridge, lost it and fell) — so the cling and every entry into ClimbHold now
+zero the body's linear and angular velocity. Verified by script: FridgeAlphabet (3) and (5) and light_switch possessed →
+ClimbHold, 0u drift over 2s.
+
 **Speed scales with the prop (user, 2026-10-29: "small props zoom around way too fast"):** `SizeSpeedScale` =
 clamp(√(size / `SpeedReferenceSize` 64), `MinSpeedScale` 0.35, 1), size = cube root of the move hull's x·y·z. Multiplies
 WalkSpeed/CrouchSpeed (`ReadWish`) and ClimbSpeed (`ScaledClimbSpeed`: WASD, Space/Ctrl, carry, test driver). Size 16 →

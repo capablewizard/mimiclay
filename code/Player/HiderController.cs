@@ -353,6 +353,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		_woken = true; // somebody's wearing it now — see BornScenery
 		_jumpQueued = false;
 		ResetMover(); // scenery was parked by another machine's mover — start this one from rest
+		_clingCheckPending = true; // a released prop left stuck to a wall clings on (see TryClingOnPossess)
 
 		// The claim this machine asked for has landed (we're driving the prop) — the swap keys may read E again
 		// (PawnSwapKeys.LeavePressed stands down while a claim is pending, so the press that took us in can't

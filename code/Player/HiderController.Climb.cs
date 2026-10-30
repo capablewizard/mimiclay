@@ -152,6 +152,72 @@ public sealed partial class HiderController
 		_sinceLetGo = 0f;
 	}
 
+	// Possessed while stuck to a wall or ceiling (user, 2026-10-29): a fridge magnet, a door knob, a light switch or a
+	// hanging lamp is placed in the map against its surface with nothing under it, so the moment it became a body it
+	// fell off. The first controlled tick checks: no floor within a step below, but a wall or ceiling within ClingReach
+	// — start clinging to it, as if climbed there (held still until you move; Shift lets go). Set on creation and on
+	// ResumeControl; cleared after one check.
+	bool _clingCheckPending = true;
+	const float ClingReach = 4f;
+
+	// Hull sweep along `dir` starting a little BEHIND the pose (as the climb's sensing does), so a prop placed touching
+	// or slightly sunk into its surface still finds it. Returns the hit and the gap from the pose itself (negative = sunk in).
+	(SceneTraceResult Tr, float Gap) ProbeToward( Vector3 pos, Rotation rot, Vector3 dir, float reach )
+	{
+		SceneTraceResult tr = default;
+		for ( float back = 1f; back <= 8f; back *= 2f )
+		{
+			tr = HullSweep( pos - dir * back, rot, pos + dir * reach );
+			if ( !tr.StartedSolid )
+				return (tr, tr.Fraction * (back + reach) - back);
+		}
+		return (default, 0f);
+	}
+
+	bool TryClingOnPossess( Vector3 pos, Rotation rot )
+	{
+		_clingCheckPending = false;
+		if ( !AllowClimbing || !_hull.Ready )
+			return false;
+
+		// Something to stand on: an ordinary start.
+		var (down, _) = ProbeToward( pos, rot, Vector3.Down, ScaledStep( StepHeight ) + Skin * 2f );
+		if ( down.Hit && WalkableHit( down ) )
+			return false;
+
+		// The nearest wall or ceiling: world axes and the prop's own (a magnet on an angled face), and straight up.
+		Span<Vector3> dirs = stackalloc Vector3[]
+		{
+			Vector3.Forward, Vector3.Backward, Vector3.Left, Vector3.Right,
+			rot.Forward.WithZ( 0f ).Normal, -rot.Forward.WithZ( 0f ).Normal, rot.Left.WithZ( 0f ).Normal, -rot.Left.WithZ( 0f ).Normal,
+			Vector3.Up,
+		};
+		SceneTraceResult best = default;
+		float bestGap = float.MaxValue;
+		foreach ( var dir in dirs )
+		{
+			if ( dir.IsNearZeroLength )
+				continue;
+			var (tr, gap) = ProbeToward( pos, rot, dir, ClingReach );
+			if ( !tr.Hit || Walkable( tr.Normal ) || IsFloorProp( tr ) || gap >= bestGap )
+				continue;
+			best = tr;
+			bestGap = gap;
+		}
+		if ( !best.Hit )
+			return false;
+
+		// Start from rest: the body's first step as a pawn can carry a huge velocity (computed from wherever it was before).
+		_velocity = Vector3.Zero;
+		if ( Body.PhysicsBody is { } b && b.IsValid() )
+		{
+			b.Velocity = Vector3.Zero;
+			b.AngularVelocity = Vector3.Zero;
+		}
+		StartClimb( best.Normal, best.HitPosition );
+		return _climbing;
+	}
+
 	// Climbing UP off the top of a wall (it ended under us — nothing left to hold): if there's ground just over the lip,
 	// step onto it and hand back to the mover. Without this the outer-edge pull dragged the prop back toward its last
 	// contact, BELOW the lip, so it bobbed at the top of the tablecloth, still climbing, and never got onto the table.
@@ -541,6 +607,8 @@ public sealed partial class HiderController
 			if ( !controlled || _climbStill >= ParkAfterTicks )
 			{
 				SetPhysicsMode( PhysicsMode.ClimbHold );
+				pb.Velocity = Vector3.Zero; // held means held: a keyframed body still drifts at whatever velocity it last had
+				pb.AngularVelocity = Vector3.Zero; // (a just-possessed magnet rose 80u up the fridge at 846 u/s)
 				_climbHoldPos = WorldPosition;
 				_climbHoldHull = _hull.Version;
 				return;

@@ -215,6 +215,10 @@ public sealed partial class HiderController
 		var pos = WorldPosition;
 		var rot = WorldRotation; // whatever the last press left it at (see HiderController.Press)
 
+		// Just possessed, stuck to a wall or ceiling with nothing under it (a fridge magnet): cling instead of falling off.
+		if ( _clingCheckPending && !Scenery && TryClingOnPossess( pos, rot ) )
+			return;
+
 		// Woken by anything that changed under us: a new shape (it may now overlap or float), a teleport.
 		if ( _hull.Version != _hullVersion )
 		{
