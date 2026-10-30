@@ -52,7 +52,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	[Property, Group( "Movement" )] public float CrouchSpeed { get; set; } = 110f;
 
 	/// <summary>Launch speed of a jump (u/s) — the hunter's JumpSpeed, against the same 800 rise gravity, so both
-	/// pawns clear exactly the same height (~56u).</summary>
+	/// pawns clear exactly the same height (~56u) at full size; smaller props jump lower, by the same size factor
+	/// as their walking speed (see SpeedReferenceSize).</summary>
 	[Property, Group( "Movement" )] public float JumpPower { get; set; } = 300f;
 
 	/// <summary>Upward gravity while rising — tuned so the jump arc up feels right. We integrate gravity
@@ -421,9 +422,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	protected override void OnAwake()
 	{
 		Body = GameObject.Components.GetOrCreate<Rigidbody>();
-		Body.Gravity = false; // the mover integrates its own gravity so rise/fall can differ (snappy landings)
+		Body.Gravity = false; // walking integrates its own gravity so rise/fall can differ (snappy landings)
 		Body.RigidbodyFlags = RigidbodyFlags.DisableCollisionSounds; // a prop is silent — no clatter scraping the world
-		Body.MotionEnabled = false; // keyframed from birth: the mover moves it, nothing else may (see SetPhysicsMode)
+		Body.MotionEnabled = false; // keyframed until walking takes it (see SetPhysicsMode)
 
 		// Seed look from however the pawn was spawned, flattened (no starting pitch/roll).
 		EyeAngles = WorldRotation.Angles() with { pitch = 0f, roll = 0f };
@@ -774,7 +775,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	protected override void OnFixedUpdate()
 	{
 		// Proxy: the engine drives this body from the networked transform (see Rigidbody.ShouldSimulatePhysics —
-		// a synced proxy is moved, not simulated). Skip the mover entirely for a body we're not simulating.
+		// a synced proxy is moved, not simulated). Skip movement entirely for a body we're not simulating.
 		if ( IsProxy )
 			return;
 
@@ -823,7 +824,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 
 		// Dropped from a grab: a FREE rigidbody — engine gravity, every axis unlocked, the engine's own sleep.
-		// The mover doesn't run. An in-place sculpt still pins it below.
+		// Walking doesn't run. An in-place sculpt still pins it below.
 		if ( Scenery && PropClaims.IsLoose( this ) && !BeingEdited )
 		{
 			SetPhysicsMode( PhysicsMode.Loose );
@@ -845,56 +846,23 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			}
 		}
 
-		// Pressed into a wall: physics is turning it flush (see HiderController.Press). Only while it's someone's
-		// body under control — anything else hands it straight back to the mover.
-		if ( _pressing )
+		// Being sculpted in place (see BeingEdited) — the host simulates it, PINNED (keyframed, Character mode): it hangs
+		// exactly where the sculptors found it (a converted door knob stays on its door) for as long as anyone is on it.
+		// Normal settling resumes the moment the last editor leaves.
+		if ( Scenery && BeingEdited )
 		{
-			if ( Scenery || !ControlActive )
-			{
-				EndPress();
-			}
-			else
-			{
-				IsCrouching = Input.Down( "duck" );
-				StepPress();
-				return;
-			}
-		}
-
-		SetPhysicsMode( PhysicsMode.Character );
-
-		if ( Scenery )
-		{
-			// Being sculpted in place (see BeingEdited) — the host simulates it, PINNED: it hangs exactly where
-			// the sculptors found it (a converted door knob stays on its door) for as long as anyone is on it.
-			// Normal settling resumes the moment the last editor leaves.
-			if ( BeingEdited )
-			{
-				ResetMover();
-				return;
-			}
-
-			// Released into the level (dormant), and bots: no input — the mover settles it onto the ground and
-			// then PARKS it, after which it costs nothing per tick until its shape or its ground changes.
-			StepMover( controlled: false );
+			SetPhysicsMode( PhysicsMode.Character );
+			ResetMover();
 			return;
 		}
 
-		// No locomotion input when editing (control suspended): the mover still runs, so an editing prop
-		// re-settles onto its shape as soon as a commit rebuilds collision.
-		if ( !ControlActive )
-		{
-			StepMover( controlled: false );
-			return;
-		}
-
-		IsCrouching = Input.Down( "duck" ); // crouch is the slow, fine-positioning speed (a prop's shape never changes)
-		StepMover( controlled: true );
+		// Everyone else WALKS (see HiderController.Walk) — a dynamic body. Released scenery and bots have no input: they
+		// settle and park. So does someone's body while editing or under a control lock (no locomotion input).
+		StepWalk( controlled: !Scenery && ControlActive );
 	}
 
 	// ── Grab / loose physics (see PropClaims.Grab) ─────────────────────────────────────────────────────────
-	// The body runs in one of four modes. CHARACTER is a KEYFRAMED body driven by the mover (see
-	// HiderController.Movement): nothing pushes it. HELD chases the grab's target pose with velocities — all axes
+	// The object modes (see PhysicsMode for all of them): HELD chases the grab's target pose with velocities — all axes
 	// free, no gravity, still colliding on the way. LOOSE is a plain dynamic rigidbody: engine gravity, every axis
 	// free, the engine's own sleep. FROZEN is keyframed too, and simply never moved. Motion is asserted every call
 	// (a compare); everything else only on a change.
@@ -913,10 +881,11 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			Body.MassOverride = mass;
 	}
 
-	// Pressing = a character body pushed into a wall, briefly dynamic so contacts turn it flush (see
-	// HiderController.Press). Climbing = stuck to a wall or ceiling, dynamic with no gravity; ClimbHold = the same,
-	// held still (keyframed) while there's no input (see HiderController.Climb).
-	enum PhysicsMode { Character, Held, Loose, Frozen, Pressing, Climbing, ClimbHold }
+	// Walking = the normal state, a dynamic floating body (see HiderController.Walk). Climbing = stuck to a wall or ceiling,
+	// dynamic with no gravity; ClimbHold = the same, held still (keyframed) while there's no input (see HiderController.Climb).
+	// Character = KEYFRAMED and still: pinned while being sculpted in place, before the move hull exists, and for the one
+	// tick between a climb letting go and walking resuming. Held / Loose / Frozen = an object (see PropClaims.Grab).
+	enum PhysicsMode { Character, Held, Loose, Frozen, Climbing, ClimbHold, Walking }
 	PhysicsMode _physicsMode = PhysicsMode.Character;
 
 	// Hold feel: how hard the prop is pulled toward the target (1/s) and the speed cap that keeps a fast swing
@@ -930,10 +899,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( !Body.IsValid() )
 			return;
 
-		// Dynamic only as an object (held / loose) or while pressed into a wall. Asserted every call, not just on a
-		// change: the field starts at Character, which no change ever announces, and nothing else may leave a
-		// character body dynamic.
-		bool dynamic = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Pressing or PhysicsMode.Climbing;
+		// Dynamic unless pinned (Character), holding on (ClimbHold) or frozen. Asserted every call, not just on a change:
+		// the field starts at Character, which no change ever announces.
+		bool dynamic = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Climbing or PhysicsMode.Walking;
 		if ( Body.MotionEnabled != dynamic )
 		{
 			if ( dynamic )
@@ -956,22 +924,22 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		_physicsMode = mode;
 		if ( mode != PhysicsMode.Held )
 			ReleaseHoldJoint();
-		bool againstSurface = mode is PhysicsMode.Pressing or PhysicsMode.Climbing;
+		bool againstSurface = mode is PhysicsMode.Climbing;
 		if ( mode is not PhysicsMode.Held && !againstSurface )
-			RestoreHeldFriction(); // pressing and climbing slide frictionless like a held prop
+			RestoreHeldFriction(); // climbing slides frictionless like a held prop
 		ApplyPressDamping( againstSurface );
-		UseHullCollision( againstSurface ); // press and climb collide as the mover sweeps (see AlignWithMoveHull)
+		UseHullCollision( againstSurface ); // climbing collides as the move hull (walking attaches its floating cut itself)
 
-		// Pressed or climbing, a body turns only about the vertical — surfaces lay it flush, they never tip it over.
-		Body.Locking = againstSurface ? new PhysicsLock { Pitch = true, Roll = true } : default;
-		Body.Gravity = mode is PhysicsMode.Loose or PhysicsMode.Pressing; // a climber's pull replaces gravity
+		// Walking or climbing, a body turns only about the vertical — it never tips over.
+		Body.Locking = againstSurface || mode == PhysicsMode.Walking ? new PhysicsLock { Pitch = true, Roll = true } : default;
+		Body.Gravity = mode is PhysicsMode.Loose; // walking integrates its own gravity; a climber's pull replaces it
 
 		// Continuous collision while it moves as an OBJECT — carried (the hold can swing it fast) or loose (falling,
 		// tumbling, flung). Without it a step longer than the prop's own thickness passes straight through thin
 		// geometry: a lemon slice falling off a counter tunnelled through shelves. It only costs anything when a
 		// body moves far relative to its size, so it's on for every loose prop rather than gated by size. Off for
 		// a character body (its own steps never move fast enough) and a frozen one (it doesn't move).
-		Body.EnhancedCcd = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Pressing or PhysicsMode.Climbing; // pressed into walls, a body is one bad tick from tunnelling
+		Body.EnhancedCcd = mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Climbing or PhysicsMode.Walking; // a body pushed into walls is one bad tick from tunnelling
 
 		// Persisting-contact events while held or loose: the hold switches to the velocity chase while touching
 		// something, and both squelch when sliding (see HiderController.Impacts).
@@ -981,14 +949,14 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			Body.Sleeping = false;
 
 		// Back to being a character: forget the old ground and settle from wherever the object left it.
-		if ( mode == PhysicsMode.Character )
+		if ( mode is PhysicsMode.Character or PhysicsMode.Walking )
 		{
 			IsGrounded = false;
 			_groundObject = null;
 			Unpark();
 		}
 
-		// The mouse turn is continuous across walking, pressing and climbing (and a climb's hold) — re-seeding there
+		// The mouse turn is continuous across walking and climbing (and a climb's hold) — re-seeding there
 		// ate the turn that woke a held climb. Only an OBJECT mode (held, loose, frozen) starts it afresh.
 		if ( mode is PhysicsMode.Held or PhysicsMode.Loose or PhysicsMode.Frozen )
 			_turnSeeded = false;

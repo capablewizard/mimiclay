@@ -122,6 +122,66 @@ public sealed class PropMoveHull : IDisposable
 	public SceneTraceResult Sweep( SceneTrace trace, in Transform from, in Transform to )
 		=> trace.Sweep( _body, from, to ).Run();
 
+	// The FOOT: a thin slab (0.5u) of the hull's lowest `height` — the part the physics walk's floating shape cuts off
+	// (see AttachTo's floorClearance) — at the hull's base. Swept down from where the floating shape starts, it finds the
+	// ground under exactly that part of the footprint; things the floating shape is already pushing against (above the
+	// cut) don't make it start solid the way the whole hull did. Rebuilt when the hull or the height changes.
+	PhysicsBody _footBody;
+	const float FootInset = 1.5f;
+	int _footVersion = -1;
+	float _footHeight = -1f;
+
+	public SceneTraceResult SweepFoot( SceneTrace trace, in Transform from, in Transform to, float height )
+	{
+		if ( !Ready )
+			return default;
+		if ( _footBody is null || !_footBody.IsValid() || _footVersion != Version || MathF.Abs( _footHeight - height ) > 0.01f )
+		{
+			_footVersion = Version;
+			_footHeight = height;
+			float floor = LocalBounds.Mins.z;
+			float cut = floor + MathF.Max( height, 0.5f );
+			var pts = new List<Vector3>();
+			void Add( Vector3 p ) { pts.Add( p.WithZ( floor ) ); pts.Add( p.WithZ( floor + 0.5f ) ); }
+			foreach ( var v in _verts )
+				if ( v.z <= cut )
+					Add( v );
+			foreach ( var (a, b, c) in _tris ) // where the hull's edges cross the cut: the slab's top outline
+				foreach ( var (p, q) in new[] { (a, b), (b, c), (c, a) } )
+					if ( (p.z - cut) * (q.z - cut) < 0f )
+						Add( Vector3.Lerp( p, q, (cut - p.z) / (q.z - p.z) ) );
+
+			// Inset the slab sideways (toward its centre, like the overlap inset): merely touching a wall must not make it start
+			// solid — landing pressed against one read "no ground" and the prop sank to its floating shape.
+			if ( pts.Count > 0 )
+			{
+				var c = Vector3.Zero;
+				foreach ( var p in pts ) c += p;
+				c /= pts.Count;
+				for ( int i = 0; i < pts.Count; i++ )
+				{
+					var off = (pts[i] - c).WithZ( 0f );
+					float len = off.Length;
+					if ( len > 1e-3f )
+						pts[i] -= off / len * MathF.Min( FootInset, len * 0.5f );
+				}
+			}
+
+			_footBody?.Remove();
+			_footBody = null;
+			if ( pts.Count >= 6 && _world is not null )
+			{
+				_footBody = new PhysicsBody( _world ) { BodyType = PhysicsBodyType.Static, Position = ParkingSpot };
+				if ( _footBody.AddHullShape( Vector3.Zero, Rotation.Identity, pts ) is null )
+				{
+					_footBody.Remove();
+					_footBody = null;
+				}
+			}
+		}
+		return _footBody is not null ? trace.Sweep( _footBody, from, to ).Run() : Sweep( trace, from, to );
+	}
+
 	/// <summary>Is the hull at <paramref name="pose"/> overlapping anything solid? Translation sweeps can't
 	/// answer this — the engine's sweep ignores the end rotation, and a sweep that STARTS in contact with a
 	/// convex body can pass straight through it — so this splits by world body kind, the same split
@@ -203,21 +263,33 @@ public sealed class PropMoveHull : IDisposable
 	PhysicsShape _attached;
 	PhysicsBody _attachedTo;
 	int _attachedVersion = -1;
+	float _attachedClearance;
 
 	/// <summary>The hull shape currently attached to a pawn body (see <see cref="AttachTo"/>), or null.</summary>
 	public PhysicsShape AttachedShape => _attached is not null && _attached.IsValid() ? _attached : null;
 
 	/// <summary>Put this hull on <paramref name="body"/> as a real collision shape (pawn-root space = body space), so
-	/// a DYNAMIC pawn collides exactly as the mover sweeps. Re-attaches when the hull or the body changed.</summary>
-	public PhysicsShape AttachTo( PhysicsBody body )
+	/// a DYNAMIC pawn collides exactly as the hull sweeps. Re-attaches when the hull or the body changed.
+	/// <para><paramref name="floorClearance"/> > 0 cuts the bottom off: every vertex lower than that above the hull's base is
+	/// raised to it, so the shape floats clear of steps and debris that low (the physics walk holds the body up on a spring;
+	/// see HiderController.Walk).</para></summary>
+	public PhysicsShape AttachTo( PhysicsBody body, float floorClearance = 0f )
 	{
 		if ( !Ready || body is null || !body.IsValid() )
 			return null;
-		if ( AttachedShape is not null && _attachedTo == body && _attachedVersion == Version )
+		floorClearance = Math.Clamp( floorClearance, 0f, LocalBounds.Size.z * 0.9f );
+		if ( AttachedShape is not null && _attachedTo == body && _attachedVersion == Version && MathF.Abs( _attachedClearance - floorClearance ) < 0.01f )
 			return _attached;
 
 		Detach();
-		_attached = body.AddHullShape( Vector3.Zero, Rotation.Identity, _verts );
+		var verts = _verts;
+		if ( floorClearance > 0f )
+		{
+			float floor = LocalBounds.Mins.z + floorClearance;
+			verts = _verts.Select( v => v.z < floor ? v.WithZ( floor ) : v ).ToList();
+		}
+		_attached = body.AddHullShape( Vector3.Zero, Rotation.Identity, verts );
+		_attachedClearance = floorClearance;
 		_attachedTo = body;
 		_attachedVersion = Version;
 		return _attached;
@@ -238,6 +310,9 @@ public sealed class PropMoveHull : IDisposable
 			_body.Remove();
 		if ( _insetBody is not null && _insetBody.IsValid() )
 			_insetBody.Remove();
+		if ( _footBody is not null && _footBody.IsValid() )
+			_footBody.Remove();
+		_footBody = null;
 		_body = null;
 		_insetBody = null;
 		_world = null;

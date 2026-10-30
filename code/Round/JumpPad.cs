@@ -92,8 +92,8 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 			return;
 		}
 
-		// Hider/prop: its body is keyframed and moved by its own mover, so the launch goes through the mover
-		// (HiderController.Launch), not the rigidbody. Same IsProxy gate: a proxy is moved, not simulated.
+		// Hider/prop: the launch goes through HiderController.Launch (it also lets go of a climb and keeps the walk's
+		// ground spring off for a moment), not straight onto the rigidbody. Same IsProxy gate: a proxy is moved, not simulated.
 		var hider = root.Components.Get<HiderController>();
 		if ( hider.IsValid() && !hider.IsProxy && TakeCooldown( hider.GameObject ) )
 		{

@@ -2,26 +2,25 @@ using System;
 
 namespace Mimiclay;
 
-// Climbing: the press carried on (see HiderController.Press). The body is DYNAMIC and moved by the real SDF
-// collider's contacts, with engine gravity swapped for a small pull into the surface it's stuck to. The prop
-// stays UPRIGHT throughout — pitch and roll are locked, so physics only ever turns it about the vertical, the same
-// as the press. On a wall it hangs upright against it; on a ceiling it hangs upright beneath it.
+// Climbing: the body is DYNAMIC (as when walking, see HiderController.Walk) and collides as its move hull, with gravity
+// swapped for a small pull into the surface it's stuck to. The prop stays UPRIGHT throughout — pitch and roll are locked,
+// so physics only ever turns it about the vertical. On a wall it hangs upright against it; on a ceiling it hangs upright beneath it.
 //
-// Controls (Meccha Chameleon's scheme): Space while pressing a wall — or held while jumping into a wall or a
-// ceiling — grabs it. Climbing: Space up the surface, Ctrl down it, A/D sideways (camera's left), W/S in depth (forward along
+// Controls (Meccha Chameleon's scheme): Space held (or just pressed) while jumping into a wall or a ceiling grabs it;
+// possessing a prop stuck to one starts it clinging (TryClingOnPossess). Climbing: Space up the surface, Ctrl down it, A/D sideways (camera's left), W/S in depth (forward along
 // a ceiling; into a wall, which mounts the top), the mouse turns it, Shift lets go.
 //
 // Each tick the surface is SENSED with a short trace of the real rigidbody (translation only — all the engine's
 // body traces can do) from a pose backed a little off the surface, toward it. That gives the surface's normal and
 // the contact point:
 //  • inner corner — a trace along the way we're moving hits a different surface: it takes over (a floor ends the
-//    climb and the mover stands on it);
+//    climb and walking stands on it);
 //  • outer edge — the surface is gone: the pull aims at the LAST contact point instead, so the prop swings round the
 //    edge like a magnet until it finds the next face (or lets go after ClimbLoseTime).
 //
 // No input for a few ticks (or edit mode / a control lock) HOLDS it: the body goes keyframed exactly where it is,
 // so a prop hiding on a wall never slides and costs nothing — and can be sculpted in mid-air. Any input lets go of
-// the hold. Letting go of the climb hands the body back to the mover, which falls and parks as normal.
+// the hold. Letting go of the climb hands the body back to walking, which falls and parks as normal.
 public sealed partial class HiderController
 {
 	/// <summary>Props can grab and climb walls and ceilings.</summary>
@@ -46,15 +45,25 @@ public sealed partial class HiderController
 	/// through props (see PropsAsFloor) to the surface they sit on; resting on one, you can be this much further off it.</summary>
 	[Property, Group( "Climbing" )] public float PropClingReach { get; set; } = 24f;
 
-	/// <summary>Climbing up off the top of a wall: how far (u) over the lip the prop looks for ground to step onto.</summary>
-	[Property, Group( "Climbing" )] public float ClimbMantleReach { get; set; } = 16f;
+	/// <summary>Step onto ground over the top of a wall when the climb reaches it (TryMantle). Off: the climb lets go at the
+	/// top and the walk's ground spring has to pick it up (tried 2026-10-30 — it needs the mantle).</summary>
+	[Property, Group( "Climbing" )] public bool ClimbMantle { get; set; } = true;
+
+	/// <summary>The mantle's forward reach over the lip, as a fraction of the prop's narrowest width — just far enough for
+	/// the top to catch it; the walk carries it the rest of the way.</summary>
+	[Property, Group( "Climbing" ), Range( 0.05f, 1f )] public float ClimbMantleFraction { get; set; } = 0.25f;
+
+	/// <summary>The most (u) the mantle moves any prop over the lip.</summary>
+	[Property, Group( "Climbing" )] public float ClimbMantleReach { get; set; } = 6f;
+
+	// The mantle's reach for THIS prop (user, 2026-10-30: a tiny prop reaching a pot's lip was placed a fixed 16u — several
+	// of its own lengths — forward; then "reduce it a lot to prevent it feeling jittery").
+	float MantleReach => _hull.Ready
+		? Math.Clamp( MathF.Min( _hull.LocalBounds.Size.x, _hull.LocalBounds.Size.y ) * ClimbMantleFraction, 1f, ClimbMantleReach )
+		: ClimbMantleReach;
 
 	/// <summary>Seconds without any surface before a climbing prop lets go and falls.</summary>
 	[Property, Group( "Climbing" ), Range( 0.05f, 2f )] public float ClimbLoseTime { get; set; } = 0.35f;
-
-	/// <summary>Seconds after touching a wall or ceiling in the air that it still counts as "the wall I'm at"
-	/// when you aren't steering toward anything.</summary>
-	[Property, Group( "Climbing" ), Range( 0f, 1f )] public float ClimbGrabWindow { get; set; } = 0.3f;
 
 	/// <summary>How far (u) a wall or ceiling can be from the prop in the air and still be grabbed.</summary>
 	[Property, Group( "Climbing" )] public float ClimbGrabReach { get; set; } = 10f;
@@ -85,6 +94,10 @@ public sealed partial class HiderController
 	// surface is dropped (see StepClimb) — otherwise Space (up the wall) and W (toward the wall, on the ceiling) passed
 	// the prop back and forth between wall and ceiling every corner cooldown, never settling on either.
 	Vector3? _cornerLeft;
+
+	// On a ceiling we climbed onto from a wall: the way AWAY from that wall (its normal, flat). Space keeps going this way
+	// there — out along the underside — since a ceiling has no "up the surface"; Ctrl comes back.
+	Vector3 _ceilingOut;
 	Vector3 _cornerMove;
 	float _cornerVertical;
 
@@ -105,10 +118,6 @@ public sealed partial class HiderController
 	// Where the climb went still, and on which shape — a hold re-checks the surface if either changes.
 	Vector3 _climbHoldPos;
 	int _climbHoldHull;
-
-	// The mover's last wall or ceiling contact in the air, for a jump-and-grab.
-	Vector3 _airWallNormal, _airWallPoint;
-	float _sinceAirWall = 999f;
 
 	// Grab intent in the air: this airborne stretch began with our own jump, or Space was pressed just now.
 	bool _airFromJump;
@@ -131,6 +140,7 @@ public sealed partial class HiderController
 		_surfaceGated = 0f;
 		_letGoQueued = false; // a Shift tap from before the grab must not drop us at once
 		_cornerLeft = null;
+		_ceilingOut = Vector3.Zero;
 		_carryDir = null;
 		IsGrounded = false;
 	}
@@ -148,7 +158,6 @@ public sealed partial class HiderController
 		// still flagged as airborne from the jump that got us up there, maybe with Space still held from climbing.
 		// Clear the intent, and for LetGoCooldown only a FRESH Space press grabs again.
 		_airFromJump = false;
-		_sinceAirWall = 999f;
 		_sinceLetGo = 0f;
 	}
 
@@ -218,45 +227,57 @@ public sealed partial class HiderController
 		return _climbing;
 	}
 
-	// Climbing UP off the top of a wall (it ended under us — nothing left to hold): if there's ground just over the lip,
-	// step onto it and hand back to the mover. Without this the outer-edge pull dragged the prop back toward its last
-	// contact, BELOW the lip, so it bobbed at the top of the tablecloth, still climbing, and never got onto the table.
-	bool TryMantle( Vector3 pos, Vector3 n )
+	// Climbing UP to the top of a wall: once the top is within a step of our base, let go and WALK onto it. Checked every tick
+	// we're climbing up or pushing into the wall: from a step up (where the walk's floating shape starts), is the wall gone
+	// a little way in, with ground under it no higher than a step? Then the climb ends with a push over the lip, and the
+	// walk does the rest the way it climbs any step — its floating shape clears the lip, its ground spring lifts us onto
+	// the top. (Before 2026-10-30 this TELEPORTED the prop onto the top: a long teleport looked like a jump for a small
+	// prop, a short one left it balanced on the edge, "stuck to the top of the mantle".) Without a mantle the outer-edge
+	// pull drags the prop back toward its last contact, below the lip, and it bobs there.
+	//
+	// `lost` = the wall has already gone from under us: then a wall a step up behind the lip means a small LEDGE on the
+	// way up (a shelf's lip, a washing machine door's rim), and the edge pull is aimed at that wall so we step in onto it.
+	bool TryMantle( Vector3 pos, Vector3 n, bool lost )
 	{
+		if ( !ClimbMantle )
+			return false;
 		var into = (-n).WithZ( 0f );
 		if ( into.IsNearZeroLength || !_hull.Ready )
 			return false;
 		into = into.Normal;
 		var rot = WorldRotation;
+		float lift = ScaledStep( StepHeight );
+		float reach = MantleReach;
 
-		// Over the lip (as far as nothing blocks), then down onto something we can stand on.
-		var from = pos + Vector3.Up * Skin * 2f;
-		var fwd = HullSweep( from, rot, from + into * ClimbMantleReach );
+		// A step up, a little way in: open (over the top), or still wall?
+		var from = pos + Vector3.Up * lift;
+		var fwd = HullSweep( from, rot, from + into * reach );
 		if ( fwd.StartedSolid )
 			return false;
-
-		// A wall carrying on just behind the lip means this is only a small LEDGE on the way up (a shelf's lip, a washing
-		// machine door's rim), not a top: keep climbing. Aim the outer-edge pull at that wall instead of the last contact
-		// below the lip, so the prop steps in onto it. (Clay props over the lip don't count — they're floor, see PropsAsFloor.)
 		if ( fwd.Hit && !Walkable( fwd.Normal ) && !IsFloorProp( fwd ) )
 		{
-			_climbPoint = fwd.HitPosition;
-			_sinceSurface = 0f; // the wall is right there — don't let go while we step in onto it
+			if ( lost )
+			{
+				_climbPoint = fwd.HitPosition;
+				_sinceSurface = 0f; // the wall is right there — don't let go while we step in onto it
+			}
 			return false;
 		}
-		var over = fwd.Hit ? fwd.EndPosition - into * Skin : from + into * ClimbMantleReach;
-		if ( (over - from).WithZ( 0f ).Length < 2f )
-			return false;
-		var down = HullSweep( over, rot, over - Vector3.Up * (StepHeight + ClimbMantleReach) );
+
+		// The top under that raised pose: ground we can stand on, no more than a step above our base.
+		var over = fwd.Hit ? fwd.EndPosition - into * Skin : from + into * reach;
+		var down = HullSweep( over, rot, over - Vector3.Up * (lift + reach) );
 		if ( down.StartedSolid || !down.Hit || !WalkableHit( down ) )
 			return false;
+		if ( down.EndPosition.z - pos.z > lift )
+			return false; // still more than a step to go — keep climbing
 
+		// Hand over: let go and start the walk's guided carry over the lip (see StepWalk — no gravity, in toward the top and
+		// up to its height until the ground spring has it). Just letting go dropped the prop: it was still beside the wall's
+		// face, nothing under it, so it sank below the lip before it got over — then W + Space re-grabbed the wall, again
+		// and again: "stuck to the top".
 		EndClimb();
-		WorldPosition = down.EndPosition + Vector3.Up * Skin;
-		_velocity = into * MathF.Min( ClimbSpeed, WalkSpeed ) * 0.5f; // a little carry onto the top, then the mover's own control
-		IsGrounded = true;
-		_groundNormal = down.Normal;
-		Unpark();
+		StartMantleCarry( into, down.EndPosition.z + Skin, 0.4f );
 		return true;
 	}
 
@@ -267,17 +288,6 @@ public sealed partial class HiderController
 	// Shift, latched per frame by OnUpdate and consumed by the climb.
 	bool _letGoQueued;
 
-	// Mover, airborne: remember the wall or ceiling the hull just slid along, so Space can grab it.
-	void NoteAirContact( SteepHit steep )
-	{
-		_sinceAirWall += Time.Delta;
-		if ( !steep.Hit || steep.FloorProp ) // floor-like props are never grabbed (see PropsAsFloor)
-			return;
-		_airWallNormal = steep.Normal;
-		_airWallPoint = steep.Point;
-		_sinceAirWall = 0f;
-	}
-
 	// Mover, airborne, controlled: grab a wall or ceiling within reach if the player means to.
 	//
 	// Intent is any of: this airborne stretch began with OUR jump, Space is held, or Space was pressed within
@@ -286,7 +296,7 @@ public sealed partial class HiderController
 	//
 	// The wall is FOUND, not remembered: a short hull sweep toward where we're steering, out to ClimbGrabReach. A
 	// wall is only grabbed if we're steering into it, so jumping alongside a wall never sticks by accident. With
-	// no steering, the wall or ceiling we last slid along in the air counts for ClimbGrabWindow. A ceiling needs
+	// no steering, Space sweeps the way the camera faces (jump straight up at a wall you're looking at). A ceiling needs
 	// Space (held or just pressed) and the prop not already falling away from it.
 	bool TryAirGrab( Vector3 pos, Rotation rot, Vector3 wish )
 	{
@@ -302,8 +312,10 @@ public sealed partial class HiderController
 		if ( !spaceIntent && !_airFromJump )
 			return false;
 
-		// Walls: sweep the hull the way we're steering.
+		// Walls: sweep the hull the way we're steering (with Space and no steering, the way the camera faces).
 		var steer = wish.WithZ( 0f );
+		if ( steer.IsNearZeroLength && spaceIntent )
+			steer = Rotation.FromYaw( MoveYaw ).Forward;
 		if ( !steer.IsNearZeroLength )
 		{
 			var dir = steer.Normal;
@@ -313,8 +325,9 @@ public sealed partial class HiderController
 			{
 				// Only the jump itself (Space long released): don't snatch the side of a ledge we're about to clear
 				// — jumping onto a counter would otherwise stick to its front. The wall must carry on a step above.
-				bool clearingLedge = !spaceIntent && !HullSweep( pos + Vector3.Up * StepHeight, rot,
-					pos + Vector3.Up * StepHeight + dir * ClimbGrabReach ).Hit;
+				float lip = ScaledStep( StepHeight );
+				bool clearingLedge = !spaceIntent && !HullSweep( pos + Vector3.Up * lip, rot,
+					pos + Vector3.Up * lip + dir * ClimbGrabReach ).Hit;
 				if ( !clearingLedge )
 				{
 					StartClimb( tr.Normal, tr.HitPosition );
@@ -334,13 +347,6 @@ public sealed partial class HiderController
 				StartClimb( tr.Normal, tr.HitPosition );
 				return _climbing;
 			}
-		}
-
-		// Not steering: the wall or ceiling we just slid along in the air, if Space says so.
-		if ( spaceIntent && steer.IsNearZeroLength && _sinceAirWall <= ClimbGrabWindow )
-		{
-			StartClimb( _airWallNormal, _airWallPoint );
-			return _climbing;
 		}
 
 		return false;
@@ -372,23 +378,118 @@ public sealed partial class HiderController
 		return move.x * Vector3.Dot( forward, -n );
 	}
 
-	SceneTraceResult ClimbTrace( Vector3 from, Vector3 to, bool throughProps = false )
-		=> (throughProps ? PropFreeTrace : MoveTrace).Body( Body.PhysicsBody, new Transform( from, WorldRotation ), to ).Run();
+	// Grabs and the climb look THROUGH floor-like clay props (see PropsAsFloor — props smaller than us) to the surface they
+	// sit on: a fridge covered in magnets is still a fridge. Each floor prop hit is ignored and the trace re-run (a few
+	// deep); a prop bigger than us is a surface and stops it. Only the corner look-ahead sees small props, to step over them.
+	[ConVar( "mimi_dbg_climb_corners", Help = "Debug: log the climb's corner/bump decisions (and the shallow-overhang rays)." )]
+	public static bool DebugClimbCorners { get; set; }
 
-	// Grabs and the climb look THROUGH clay props (see PropsAsFloor) to the wall they sit on: a fridge covered in magnets
-	// is still a fridge. Only the corner look-ahead sees them, to step over them like bumps.
-	SceneTrace PropFreeTrace => PropsAsFloor ? MoveTrace.WithoutTags( SdfCollider.ClayTag ) : MoveTrace;
-
-	// A grab sweep that stopped on a clay prop: sweep again through props, to the wall behind it.
-	SceneTraceResult GrabSweep( Vector3 from, Rotation rot, Vector3 dir, float reach )
+	// Climbing along a CEILING (the underside of a table top, a worktop overhang) and out past its outer edge: mantle up onto
+	// its TOP. Look for it just back over the edge and above us — the hull swept down from high above — and if there's ground
+	// we can stand on no more than ~1.5 body heights up, hand over to the walk's guided carry (up past the edge, then in over
+	// the top). (Wrapping onto the edge's front face and climbing it relied on the outer-edge pull to lift us beside it; it
+	// dragged the prop into the corner instead.)
+	bool TryMantleFromUnder( Vector3 pos, Vector3 n, Vector3 along )
 	{
-		var tr = HullSweep( from, rot, from + dir * reach );
-		if ( tr.Hit && !tr.StartedSolid && IsFloorProp( tr ) )
-			tr = _hull.Sweep( PropFreeTrace, new Transform( from, rot ), new Transform( from + dir * (reach + PropClingReach), rot ) );
+		if ( !ClimbMantle || n.z > -0.5f || !_hull.Ready )
+			return false;
+		var d = along.WithZ( 0f );
+		d = d.Length > 5f ? d.Normal : _ceilingOut;
+		if ( d.IsNearZeroLength )
+			return false;
+		var rot = WorldRotation;
+		float height = _hull.LocalBounds.Size.z;
+		float reach = MantleReach;
+		float maxRise = height * 1.5f + ScaledStep( StepHeight );
+
+		var above = pos + Vector3.Up * (maxRise + 2f) - d * (reach + 2f); // back over the edge, high
+		var down = HullSweep( above, rot, above - Vector3.Up * (maxRise + 2f) );
+		if ( down.StartedSolid || !down.Hit || !WalkableHit( down ) )
+			return false;
+		float rise = down.EndPosition.z - pos.z;
+		if ( rise < height * 0.5f || rise > maxRise )
+			return false; // not a top over our head (or too far up)
+
+		EndClimb();
+		StartMantleCarry( -d, down.EndPosition.z + Skin, 0.8f );
+		if ( DebugClimbCorners )
+			Log.Info( $"[climb corner] mantle from under a ceiling: up {rise:0} onto {down.GameObject?.Name}" );
+		return true;
+	}
+
+	// Is the downward-facing surface we just met above us on a wall only a shallow LIP — no deeper than a step? Thin rays
+	// straight up from just under it, a step (+1u) out from the wall, across the prop's width: all clear = shallow.
+	bool ShallowOverhang( in SceneTraceResult ahead, Vector3 n )
+	{
+		float step = ScaledStep( StepHeight );
+		var side = Vector3.Cross( n, Vector3.Up );
+		side = side.IsNearZeroLength ? Vector3.Zero : side.Normal;
+		float half = _hull.Ready ? MathF.Min( _hull.LocalBounds.Size.x, _hull.LocalBounds.Size.y ) * 0.4f : 0f;
+		var trace = MoveTrace;
+		foreach ( float s in stackalloc float[] { 0f, -half, half } )
+		{
+			var o = ahead.HitPosition + n * (step + 1f) + side * s - Vector3.Up;
+			var r = trace.Ray( o, o + Vector3.Up * (step + 6f) ).Run();
+			if ( r.Hit )
+			{
+				if ( DebugClimbCorners )
+					Log.Info( $"[climb corner] overhang ray {s:0} hit {r.GameObject?.Name} {r.Distance:0.0}u up (start-solid {r.StartedSolid}) from {o:0}, underside hit at {ahead.HitPosition:0} on {ahead.GameObject?.Name}" );
+				return false;
+			}
+		}
+		return true;
+	}
+
+	SceneTraceResult ClimbTrace( Vector3 from, Vector3 to, bool throughProps = false )
+	{
+		var trace = MoveTrace;
+		var tx = new Transform( from, WorldRotation );
+		var tr = trace.Body( Body.PhysicsBody, tx, to ).Run();
+		for ( int i = 0; throughProps && i < 4 && tr.Hit && IsFloorProp( tr ); i++ )
+		{
+			trace = trace.IgnoreGameObjectHierarchy( tr.Body?.GameObject ?? tr.GameObject );
+			tr = trace.Body( Body.PhysicsBody, tx, to ).Run();
+		}
 		return tr;
 	}
 
-	// In place of the mover while climbing. `controlled` false = edit mode or a control lock: just hold on.
+	// A grab sweep that stopped on a floor-like prop: sweep on past it (and the next), to the surface behind.
+	SceneTraceResult GrabSweep( Vector3 from, Rotation rot, Vector3 dir, float reach )
+	{
+		var tr = HullSweep( from, rot, from + dir * reach );
+		var trace = MoveTrace;
+		for ( int i = 0; i < 4 && tr.Hit && IsFloorProp( tr ); i++ )
+		{
+			trace = trace.IgnoreGameObjectHierarchy( tr.Body?.GameObject ?? tr.GameObject );
+			tr = _hull.Sweep( trace, new Transform( from, rot ), new Transform( from + dir * (reach + PropClingReach), rot ) );
+		}
+		return tr;
+	}
+
+	// Climbing: has the body been genuinely inside something for BuriedHandBackTime? Then it lets go and walks, and the
+	// physics solver pushes it out. Checked only every few ticks — it's a pose test.
+	const float BuriedHandBackTime = 0.3f;
+	float _dynamicBuriedTime;
+	int _dynamicBuriedCheck;
+
+	bool TooLongBuried( Vector3 pos )
+	{
+		if ( ++_dynamicBuriedCheck % 3 != 0 )
+			return false;
+
+		_hull.Refresh( _collider, Scene.PhysicsWorld );
+		if ( _hull.Ready && PoseBlocked( pos, WorldRotation ) )
+			_dynamicBuriedTime += Time.Delta * 3f;
+		else
+			_dynamicBuriedTime = 0f;
+
+		if ( _dynamicBuriedTime < BuriedHandBackTime )
+			return false;
+		_dynamicBuriedTime = 0f;
+		return true;
+	}
+
+	// In place of walking while climbing. `controlled` false = edit mode or a control lock: just hold on.
 	void StepClimb( bool controlled )
 	{
 		var pb = Body.PhysicsBody;
@@ -429,7 +530,7 @@ public sealed partial class HiderController
 		var n = _climbNormal;
 
 		// Genuinely inside something (not just sunk into the surface we're on — that pushes out below) for a while:
-		// let go, and the mover's buried escape takes over (see HiderController.Buried).
+		// let go and walk; the physics solver pushes the body out.
 		if ( TooLongBuried( pos ) )
 		{
 			EndClimb();
@@ -472,7 +573,7 @@ public sealed partial class HiderController
 			// Reading the ground ON TOP of the wall (the body grazes the table as it rises past the tablecloth's lip): step onto
 			// it now. Waiting for the gate below kept a moving prop climbing, unable to get onto the table. A mantle fails
 			// harmlessly while the wall is still in the way (the floor at the foot of a climb).
-			if ( !closeToCurrent && WalkableHit( tr ) && MathF.Abs( _climbNormal.z ) < 0.7f && TryMantle( pos, _climbNormal ) )
+			if ( !closeToCurrent && WalkableHit( tr ) && MathF.Abs( _climbNormal.z ) < 0.7f && TryMantle( pos, _climbNormal, lost: false ) )
 				return;
 			bool moving = perfWish is { IsNearZeroLength: false } || !move.IsNearZeroLength || vertical != 0f;
 			_surfaceGated = closeToCurrent || moving ? 0f : _surfaceGated + Time.Delta;
@@ -498,7 +599,7 @@ public sealed partial class HiderController
 			}
 		}
 
-		// Climbed (or slid) onto something you can stand on: the mover takes it from here.
+		// Climbed (or slid) onto something you can stand on: walking takes it from here.
 		if ( Walkable( _climbNormal ) )
 		{
 			EndClimb();
@@ -533,19 +634,28 @@ public sealed partial class HiderController
 			_carryDir = null;
 		}
 
-		var along = wasd;
 		var up = Vector3.Up - n * Vector3.Dot( Vector3.Up, n );
+		var climbUp = Vector3.Zero; // Space / Ctrl
 		if ( up.Length > 0.2f )
-			along += up.Normal * ScaledClimbSpeed * vertical;
+			climbUp = up.Normal * ScaledClimbSpeed * vertical;
+		else if ( !_ceilingOut.IsNearZeroLength )
+			climbUp = _ceilingOut * ScaledClimbSpeed * vertical; // under a ceiling: Space carries on out from the wall below
 
-		// Just round a corner, same keys still held: don't head back into the surface we left (see _cornerLeft).
+		// Just round a corner, same keys still held: don't head back into the surface we left (see _cornerLeft). Dropped from
+		// WASD and from Space/Ctrl SEPARATELY: on a ceiling reached up a wall, W (toward that wall) and Space (out from it)
+		// cancelled exactly, so dropping "back into the wall" from their sum dropped nothing and W + Space hung there.
 		if ( _cornerLeft is { } left )
 		{
 			if ( vertical != _cornerVertical || (move - _cornerMove).Length > 0.05f )
 				_cornerLeft = null; // new keys: a fresh press back toward it is meant
-			else if ( Vector3.Dot( along, -left ) > 0f )
-				along -= -left * Vector3.Dot( along, -left );
+			else
+			{
+				Vector3 NotBack( Vector3 v ) => Vector3.Dot( v, -left ) > 0f ? v + left * Vector3.Dot( v, -left ) : v;
+				wasd = NotBack( wasd );
+				climbUp = NotBack( climbUp );
+			}
 		}
+		var along = wasd + climbUp;
 
 		// Inner corner: moving into a different surface — it takes over (a floor ends the climb next tick). The look-
 		// ahead starts backed off BOTH the surface we're on and the way we're going: the body is pressed into the
@@ -566,12 +676,19 @@ public sealed partial class HiderController
 				// off the surface: a ceiling or the next wall is still there, a bump is cleared. Bumps are climbed
 				// OVER (see _climbStepOver below), like steps on the floor — switching onto their rounded edges is
 				// what turned "W up the fridge" into up-and-left.
-				var lifted = from + n * StepHeight;
+				var lifted = from + n * ScaledStep( StepHeight ); // a bump is anything this prop could step over
 				var over = ClimbTrace( lifted, lifted + dir * reach );
 				bump = !over.Hit && !over.StartedSolid;
 				// Never turn the corner ONTO a clay prop (see PropsAsFloor): climb over it like a bump instead.
 				bump |= IsFloorProp( ahead );
+				// Climbing UP a wall into the underside of a SHALLOW overhang (a worktop's lip over its cabinet, ~3u): step out
+				// over it like a bump, don't turn onto it as a ceiling. In a nook the lifted body trace above starts touching
+				// the cabinet side and reads "blocked", so the lip won as a ceiling and the climb was passed between wall, side
+				// and underside for ever; rays (see ShallowOverhang) can't be blocked that way.
+				bump |= MathF.Abs( n.z ) < 0.5f && dir.z > 0.5f && ahead.Normal.z < -0.3f && ShallowOverhang( ahead, n );
 			}
+			if ( DebugClimbCorners && ahead.Hit && Vector3.Dot( ahead.Normal, n ) < 0.7f )
+				Log.Info( $"[climb corner] on n={n:0.00} moving {dir:0.00}: ahead {ahead.GameObject?.Name} n={ahead.Normal:0.00} start-solid {ahead.StartedSolid} → {(bump ? "BUMP" : "corner")}" );
 			if ( bump )
 			{
 				_climbStepOver = ClimbStepOverTime;
@@ -590,6 +707,10 @@ public sealed partial class HiderController
 				along = corner * along;
 
 				_cornerLeft = n;
+				if ( MathF.Abs( n.z ) < 0.5f && ahead.Normal.z < -0.5f )
+					_ceilingOut = n.WithZ( 0f ).Normal; // up a wall onto a ceiling: Space now heads out along it
+				else if ( ahead.Normal.z > -0.5f )
+					_ceilingOut = Vector3.Zero;
 				_cornerMove = move;
 				_cornerVertical = vertical;
 				_climbNormal = ahead.Normal;
@@ -619,6 +740,14 @@ public sealed partial class HiderController
 			_climbStill = 0;
 		}
 
+		// Climbing up (or pushing into the wall) and the top is within a step: walk onto it (see TryMantle).
+		if ( (along.z > 1f || into > 0.3f) && MathF.Abs( n.z ) < 0.7f && TryMantle( pos, n, lost: !surface ) )
+			return;
+
+		// Off the outer edge of a ceiling while heading out along it: mantle up onto its top (see TryMantleFromUnder).
+		if ( !surface && n.z < -0.5f && TryMantleFromUnder( pos, n, along ) )
+			return;
+
 		SetPhysicsMode( PhysicsMode.Climbing );
 		ApplyHeldFriction();
 		UseHullCollision( true );
@@ -640,10 +769,6 @@ public sealed partial class HiderController
 		else if ( surface )
 		{
 			velocity = along - n * ClimbStickSpeed;
-		}
-		else if ( (along.z > 1f || into > 0.3f) && MathF.Abs( n.z ) < 0.7f && TryMantle( pos, n ) )
-		{
-			return; // climbed off the top of a wall onto the ground above it
 		}
 		else
 		{

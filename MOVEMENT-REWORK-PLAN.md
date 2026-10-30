@@ -428,3 +428,126 @@ roll. Gate it with climb stamina so hunters cannot camp a ceiling. The surface r
 3. **Props solid to props.** Recommended yes now that nothing fights the solver. Needs a change to the
    `propbody` pair in `Collision.config` and spawners that sweep-place.
 4. **Hunter climb gating.** Stamina (recommended), unlimited, or a pickup.
+
+## Physics-walk PROTOTYPE (2026-10-30)
+
+User: "our prop movement really doesn't work well with other rigid bodies … lots of props are rigid bodies and we'll need
+to navigate around and over them". Toggle `mimi_prop_physics_walk 1` (default off; scenery keeps the swept mover).
+Code: `code/Player/HiderController.PhysicsWalk.cs`, `PropMoveHull.AttachTo(body, floorClearance)` / `SweepFoot`,
+`PhysicsMode.Walking`. Test bed: `mimi_dbg_loose_props` / `mimi_dbg_loose_props_clear` (`code/Debug/LoosePropsTest.cs`;
+boxes, balls, planks, a stack, masses by the clay rule so they compare honestly — the toy train is ~9000).
+
+Design — a "floating" physics controller:
+- One DYNAMIC body while walking (pitch/roll locked; the mouse turns it as when pressing). Collision shape = the move hull
+  with its lowest `ScaledStep` cut off (`floorClearance`), so steps and small debris pass UNDER it.
+- Ground = the cut-off FOOT slab (`SweepFoot`) swept down from the floating shape's base to `RideSnap` (6u) below the
+  hull's base. A ride spring (`RideSpring` 18/s, `RideMaxLift` 400) sets vertical velocity so the visible base sits on the
+  ground → flush, and a step under the footprint just lifts us. Landing needs the base within 1u; staying grounded allows
+  RideSnap below. Start-solid while grounded = hold height (the whole-hull probe once started solid on a box stack, read
+  "no ground", and the train sank 18u into the floor until the floating shape rested on it).
+- Walking = velocity change toward the wish at the mover's GroundControl response, capped at `WalkAccel` (3000) — a
+  force, not a teleport. While contacts eat the command (pushing something), only `WalkPushAccel` (500; sticky 0.25s), so
+  a body heavier than us blocks us. Air: the mover's AirControl, own gravity (FallGravityMult), MaxFallSpeed.
+- Standing on a dynamic body: we ride its velocity only if it's ≥ half our mass (or keyframed); we press our weight into
+  it (capped at 4× its own) and our feet's push scaled by the mass ratio. (Inheriting a light box's velocity while
+  pushing it back was a feedback loop: a 3 kg box flung 680u.)
+- Launch (jump pads) sets the body's velocity. Climbing still grabs from the air (TryAirGrab) and hands back on let-go;
+  the possession cling runs first. NOT ported: pressing into walls, parking/hold-still lock, ground carry of rotation.
+
+Verified by script (toy train on the kitchen floor, lane (-50,-1000) +x — pads at (302,-971) and (-14,-608)):
+flush at rest (base -543.97 vs floor -544), 0→320 u/s smoothly, 0 drift when stopped, jump apex ~60; small boxes (≤22u)
+walked over, balls shouldered aside, nothing flung; a 4-box stack of 20u boxes toppled, train stays grounded (≤5.5u up);
+plank stood on (base +4.4); a box 1.6× our mass head-on: moves 30u on impact, then blocks us; jump-grab a wall → ceiling →
+let go → lands walking; toggling off returns to the swept mover cleanly.
+Open: feel (springy steps? WalkAccel/WalkPushAccel/RideSpring tuning), hold-still on slopes, pressing, networking proxies,
+props smaller than a step (clearance = half height), hidden-in-plain-sight parking.
+
+## Physics walk is THE walk; swept mover, press and buried mode removed (2026-10-30)
+
+User: "this is actually very nice … I don't think we really need pressing as we can rotate with our mouse now. Can we make
+this the default and remove the keyframed pass. Can we add a toggle to stick to other props too? … size based — stick to
+props that are bigger than you but not smaller".
+
+- `HiderController.Walk.cs` (was PhysicsWalk.cs, toggle removed) is the only walk. Dispatch: held / loose / frozen →
+  object modes; climbing → StepClimb; scenery being sculpted in place → `Character` = KEYFRAMED PIN; everything else →
+  `StepWalk(controlled: !Scenery && ControlActive)` — players, bots, released scenery, bodies in edit mode.
+- PARKING added to the walk: grounded on still ground, no input, at rest, at ride height for `ParkAfterTicks` → stop
+  driving the body (velocity zeroed) and let physics sleep it. Woken by input, a new hull (`_parkedHullVersion`), or the
+  body being moved (|v| > 2 or spin) — so parked props can still be pushed.
+- REMOVED: the swept mover (StepMover, Slide, TryStep, SnapToGround, TryUnstick, CarryWithGround, Commit, …), pressing
+  (HiderController.Press.cs; its surface-turn / hull-collision / ease-off parts live on in HiderController.Surface.cs with
+  their old "Press…" property names), buried mode (HiderController.Buried.cs; `TooLongBuried` moved to Climb — a climb
+  stuck in geometry lets go and the solver pushes it out), `PhysicsMode.Pressing`, `PropStepHeight`, `StopSpeed`,
+  `ClimbGrabWindow` + `NoteAirContact` (air-wall memory from the slide). With Space and no steering, the air grab now
+  sweeps the way the camera faces. Climbs start only from the air grab and the possession cling.
+- STICK TO BIGGER PROPS: `StickToBiggerProps` (on) + `StickPropSizeRatio` (1). A clay prop whose size (cube root of its
+  body-bounds volume) exceeds ours × ratio is NOT floor-like: normal walk-angle rules, climbable, grabbable, cling-able.
+  Smaller ones stay floor. The climb's look-through now re-runs the trace ignoring each floor-like prop it hits (up to
+  4 deep, `IgnoreGameObjectHierarchy`) instead of ignoring the clay tag wholesale, so a bigger prop stops it.
+
+Verified by script (the user's gold knob, 64 kg, 17u, speed ×0.49, step 8.3): walk 157 u/s flush; parks + sleeps with 0
+drift; jump ~59; toaster (65u) with StickToBiggerProps on → grabbed, climbed its side to the top (+50), walked across and
+off; off → not grabbed. Loose props: blocked by a 14 500 box and by 262 kg stack boxes (4× its mass), stands on a plank, no
+launches or sinking. Released train scenery: Walking, parked, asleep. NOT verified: multiplayer, a prop pinned while
+sculpted then released, bots. Test-harness gotcha: teleporting a keyframed scene prop back (WorldTransform) sweeps through
+whatever is in the way and shoves it — move test pawns clear first.
+
+Jump scales with size too (user, 2026-10-30): launch speed = JumpPower × √SizeSpeedScale, so the jump HEIGHT scales by
+the same factor as walking speed (the 17u gold knob, ×0.49: ~29u instead of ~59u; props ≥ SpeedReferenceSize unchanged).
+Not tested in play (the user was editing the knob).
+
+Climb distances scale with size (user, 2026-10-30: "a very small prop climbing over the pots — as soon as I reach the lip
+I get teleported forward"): the mantle's forward reach = `MantleReach` = 60% of the prop's narrowest width, clamped to
+2..`ClimbMantleReach` (16 = the cap for big props); its drop onto the top = ScaledStep + reach; the bump lift (corner
+look-ahead's "is it a bump?") and the air grab's "clearing a ledge" check use ScaledStep instead of the flat StepHeight;
+the mantle's carry onto the top uses the scaled climb/walk speed. Not tested in play.
+
+Mantle switched OFF for now (`ClimbMantle`, default false; user, 2026-10-30: "temporarily disable the mantle … see what
+it's like with physics now"). TryMantle returns at once, so the small-ledge retarget is off too; at the top the climb
+loses the wall (edge pull, then let go after ClimbLoseTime) and the walk's ground spring takes over.
+
+Mantle back ON (user: "we definitely need the mantle reach — but reduced a lot to prevent it feeling jittery"):
+`ClimbMantle` true; reach = narrowest width × `ClimbMantleFraction` (0.25), clamped 1..`ClimbMantleReach` (now 6, was 16).
+Just far enough for the top to catch the prop; the walk carries it on. (Train: 6u; a 10u prop: 2.5u.) Side effect: the
+small-ledge check only looks this far behind a lip, so narrower shelves count as tops sooner.
+
+Mantle = PHYSICS HAND-OFF, no teleport (user: "now we're getting stuck to the top of the mantle … smooth as well as
+reliable"). The short teleport left props balanced on the edge — and refused outright when it could move < 2u (small
+props with the new short reach): stuck. Now `TryMantle(pos, n, lost)` runs EVERY climbing tick that's going up or pushing
+in: from a step up (ScaledStep — where the walk's floating shape starts) and MantleReach in, is the wall gone, with
+walkable ground under that pose no more than a step above our base? Then EndClimb and carry on over the lip at climbing
+pace (`_velocity`, which the walk takes when it switches the body over); the walk's floating shape clears the lip and its
+ground spring lifts us onto the top, as for any step. `lost` (the wall already gone) keeps the small-ledge retarget.
+Old triggers: the "walkable top sensed" one stays (lost: false); the outer-edge one is folded into the per-tick check.
+Not tested in play (the user was playing). Test site: kitchen floor (-250,-1250) facing +y — a counter front 73u away,
+top +158 (Cube.013).
+
+Mantle GUIDED CARRY (user: "if I hold W + Space we get stuck to the top"): just letting go dropped the prop — it was still
+beside the wall's face with nothing under it, sank below the lip before it got over, slid down, and W + Space re-grabbed
+the wall after the let-go cooldown: a loop. Now TryMantle starts a carry in the walk (`_mantleDir/_mantleTopZ/_mantleSpeed`,
+`MantleCarryTime` 0.4s): airborne → no gravity, move in at the carry speed and rise toward the top's height at RideSpring;
+grounded → keep adding the carry until it's fully on; no air grab while carrying. Verified on an immovable 120u test block
+(train, Space held): climb → carry from base +97 → grounded on top, 5–10u per 25ms, no teleport.
+Two findings: (1) hot reloads keep a live prop's property VALUES — the user's train still had ClimbMantle=false / reach 16
+from the temporary disable, so their recent climbs had no mantle at all (set to the defaults in their session). (2) Kitchen
+worktops OVERHANG their cabinets by ~3u at about +145, and in nooks (cabinet side + wall + overhang) the climb passes
+between wall, side and the overhang's underside and never reaches the top (both counter sites near x −250 stall the train at
+base +74). Not fixed yet.
+
+Overhangs and ceilings (2026-10-30, "fix overhangs"). CORRECTION: the counter-front stalls blamed on "worktops overhanging
+by ~3u" were test-site error — both sites (x −250) are in a recess UNDER Cube.013, a 16u slab at +142..+158 spanning
+y −930..−1350; the train was climbing into a real ceiling. Open counters ((−50,−1200) facing −x, (−200,−600) facing −y,
+top +158) climb straight on in ~1.3s. What the bad sites exposed, now fixed:
+- Space on a CEILING reached from a wall moves OUT along it (`_ceilingOut` = that wall's flat normal); Ctrl comes back.
+- `_cornerLeft`'s "don't go back into the surface you left" is applied to WASD and Space/Ctrl SEPARATELY: on such a
+  ceiling W (toward the wall) and Space (out) cancelled exactly, so filtering their sum dropped nothing — W + Space hung.
+- `ShallowOverhang` (thin rays up, a step out from the underside hit, across the prop's width): a downward face met
+  climbing up a wall whose edge is within a step is a BUMP (step out over it), not a ceiling corner. A 40u overhang
+  over a cabinet: the prop steps/slides out and climbs the front face, mantles at the top (1.9s).
+- `TryMantleFromUnder`: out past a ceiling's outer edge (surface lost, heading out), sweep the hull down from high above
+  just back over the edge; walkable top 0.5–1.5 body heights (+ step) up → EndClimb + `StartMantleCarry(back in, top,
+  0.8s)`. (A first try wrapped onto the edge's front face via the outer-edge pull — it dragged the prop into the corner.)
+  Test: 100u overhang over a 140u cabinet → climb, ceiling, out, mantle → on the +158 top in 1.8s.
+- Walk ground probe: the foot slab is inset 1.5u sideways (`PropMoveHull.FootInset`), and if it still starts solid a ray
+  from the hull centre stands in — landing pressed against a wall read "no ground" and the train SANK 11u into the floor.
+- `StartMantleCarry(dir, topZ, time)` shared by both mantles; `mimi_dbg_climb_corners` logs corner/bump/overhang decisions.
