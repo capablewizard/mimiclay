@@ -816,6 +816,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			return; // let the teleport land before running movement from the new spot
 		}
 
+		// Someone is carrying OUR body (or just let go of it) — see HiderController.Grabbed.
+		if ( !Scenery && StepGrabbed() )
+			return;
+
 		if ( isHeld )
 		{
 			SetPhysicsMode( PhysicsMode.Held );
@@ -1110,7 +1114,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		Body.AngularVelocity = axis * angle * MathF.Min( HoldTurn, 1f / dt );
 	}
 
-	/// <summary>Host-only, as a loose prop is possessed: stand the ROOT back up (yaw kept) and move the tumble
+	/// <summary>On the simulating machine — the host as a loose prop is possessed, or a wearer getting up after
+	/// being grabbed (see HiderController.Grabbed): stand the ROOT back up (yaw kept) and move the tumble
 	/// onto the Disguise, so the clay stays exactly where it lay — the shape never moves on its own — while the
 	/// body becomes an upright character again; its move hull is re-derived from the new disguise placement on
 	/// the next mover tick (see <see cref="PropMoveHull"/>).</summary>
@@ -1205,6 +1210,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			_pivotOffsetXY = null;
 			_orbit.PivotXYOverride = null;
 		}
+
+		UpdateGrabbedCamera();
 
 		if ( EditMode )
 		{

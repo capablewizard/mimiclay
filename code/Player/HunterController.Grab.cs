@@ -91,9 +91,13 @@ public sealed partial class HunterController
 		if ( held != _grabbed )
 			SeedGrab( held, eye );
 
+		// Someone's body (see PropClaims.Grab, "players' props"): carried and turned only — the shape is theirs to
+		// scale, and a person can't be frozen in place.
+		bool body = PropClaims.IsPlayerBody( held.Components.Get<HiderController>() );
+
 		// LMB: freeze it right where it hangs and let go (the hold ends even with RMB still down — re-grabbing
 		// takes a fresh press, so the freeze can't be undone by accident).
-		if ( Input.Pressed( "Attack1" ) )
+		if ( Input.Pressed( "Attack1" ) && !body )
 		{
 			LastFiredSlot = InteractSlot.Sculpt;
 			SinceFired = 0;
@@ -132,7 +136,7 @@ public sealed partial class HunterController
 			_grabRaw = _grabRelative;
 
 			// The edit mode's R scrub, same rule: mouse right grows, every ScaleHalfDoublePx doubles.
-			if ( Input.Down( "Reload" ) )
+			if ( Input.Down( "Reload" ) && !body )
 			{
 				var next = Math.Clamp( _grabScale * MathF.Pow( 2f, BrushScrub.CapturedDelta.x / BrushScrub.ScaleHalfDoublePx ),
 					PropClaims.MinGrabScale, PropClaims.MaxGrabScale );
@@ -154,7 +158,7 @@ public sealed partial class HunterController
 		var root = ClampedRoot( held, eye, rotation );
 		PropClaims.Current.UpdateGrab( held, root, rotation, _grabScale );
 
-		PublishGrabHover( held, root + rotation * _grabCentre );
+		PublishGrabHover( held, root + rotation * _grabCentre, body );
 		return true;
 	}
 
@@ -339,7 +343,7 @@ public sealed partial class HunterController
 	}
 
 	// The held prop's verbs, as the crosshair's cards (and its outline, through the local hover).
-	void PublishGrabHover( GameObject held, Vector3 at )
+	void PublishGrabHover( GameObject held, Vector3 at, bool body )
 	{
 		var hider = held.Components.Get<HiderController>();
 		var ctx = new InteractContext
@@ -358,7 +362,10 @@ public sealed partial class HunterController
 		}
 
 		_hoverChoices.Clear();
-		_hoverChoices.AddRange( _grabChoices );
+		if ( body )
+			_hoverChoices.Add( _grabChoices[0] ); // a body only turns
+		else
+			_hoverChoices.AddRange( _grabChoices );
 		HoverContext = ctx;
 		Interactions.PublishLocal( ctx, _hoverChoices );
 	}

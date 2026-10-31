@@ -27,8 +27,68 @@ namespace Mimiclay;
 //
 // Scene clay is converted on the first grab exactly as an in-place sculpt converts it (host-owned released
 // scenery), so everything after that only ever deals with prop pawns.
+//
+// PLAYERS' PROPS (GrabPlayersAllowed — creative) can be grabbed too, and those are NOT host-simulated: the body
+// stays its wearer's, simulated on THEIR machine, so their own view of being carried is local physics — no
+// round-trip, no proxy interpolation — and edit mode keeps working on a body they still own. The host only
+// relays the holder's pose to the wearer (RelayGrabTarget → HiderController.ReceiveGrabTarget); the wearer's
+// controller chases it exactly like held scenery. Jumping breaks free (EscapeGrab). No scale (the shape is the
+// wearer's, published from their machine) and no freeze; a drop leaves the body tumbling on its owner's machine
+// until they move or jump (see HiderController.Grabbed). The holder sees the body as everyone else does.
 public sealed partial class PropClaims
 {
+	/// <summary>Is this a prop someone is WEARING right now — a live player's body, not released scenery or a bot?
+	/// Not gated on BornScenery: that [Sync] flag is only cleared on the wearer's own machine (ResumeControl), so a
+	/// once-shared prop someone later possessed still reads born-scenery everywhere else. The released registry
+	/// is the scenery answer.</summary>
+	public static bool IsPlayerBody( HiderController hider )
+		=> hider.IsValid() && !IsReleased( hider ) && hider.Network.Owner is not null
+			&& !RoundManager.IsBotPawn( hider.GameObject );
+
+	/// <summary>Can the grab pick up this sculpture as someone's BODY (see <see cref="IPropClaimHost.GrabPlayersAllowed"/>)?</summary>
+	public bool IsGrabbableBody( SdfSculpture sculpture )
+	{
+		if ( !(Host?.GrabPlayersAllowed ?? false) || !sculpture.IsValid() )
+			return false;
+		if ( sculpture.Components.Get<ClaimBlocker>( FindMode.EverythingInSelfAndAncestors ).IsValid() )
+			return false;
+		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		return IsPlayerBody( hider ) && !IsHeld( hider );
+	}
+
+	/// <summary>The connection holding this prop, if anyone is.</summary>
+	public static Guid? HolderOf( HiderController hider )
+	{
+		if ( !hider.IsValid() || !Current.IsValid() )
+			return null;
+		var id = hider.GameObject.Id;
+		foreach ( var (holder, pawn) in Current.Held )
+		{
+			if ( pawn == id )
+				return holder;
+		}
+		return null;
+	}
+
+	/// <summary>Runtime PhysicsFilters on <paramref name="prop"/> against every body in <paramref name="pawn"/>, so
+	/// the two never collide (see IgnoreHolder). Machine-local: never saved, cloned or networked.</summary>
+	internal static List<PhysicsFilter> FilterAgainst( GameObject prop, GameObject pawn )
+	{
+		var filters = new List<PhysicsFilter>();
+		if ( !prop.IsValid() || !pawn.IsValid() )
+			return filters;
+
+		foreach ( var rb in pawn.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			var filter = prop.Components.Create<PhysicsFilter>( startEnabled: false );
+			filter.Flags |= ComponentFlags.NotSaved | ComponentFlags.NotNetworked | ComponentFlags.NotCloned | ComponentFlags.Hidden;
+			filter.Body = rb.GameObject;
+			filter.Enabled = true;
+			filters.Add( filter );
+		}
+		return filters;
+	}
+
 	const string GrabOption = "claims.grab";
 
 	/// <summary>May props be grabbed right now (claims open AND the host mode allows the grab)?</summary>
@@ -101,16 +161,7 @@ public sealed partial class PropClaims
 		if ( !pawn.IsValid() )
 			return;
 
-		var filters = new List<PhysicsFilter>();
-		foreach ( var rb in pawn.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
-		{
-			var filter = prop.GameObject.Components.Create<PhysicsFilter>( startEnabled: false );
-			filter.Flags |= ComponentFlags.NotSaved | ComponentFlags.NotNetworked | ComponentFlags.NotCloned | ComponentFlags.Hidden;
-			filter.Body = rb.GameObject;
-			filter.Enabled = true;
-			filters.Add( filter );
-		}
-		_holderFilters[prop.GameObject.Id] = filters;
+		_holderFilters[prop.GameObject.Id] = FilterAgainst( prop.GameObject, pawn );
 	}
 
 	void ClearHolderFilters( Guid pawnId )
@@ -165,8 +216,8 @@ public sealed partial class PropClaims
 		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 		{
-			if ( !IsClaimable( hider.DisguiseSculpture ) )
-				return; // someone's body, being sculpted, or already held
+			if ( !IsClaimable( hider.DisguiseSculpture ) && !IsGrabbableBody( hider.DisguiseSculpture ) )
+				return; // someone's body (where the mode says no), being sculpted, or already held
 			prop = hider;
 		}
 		else
@@ -212,7 +263,45 @@ public sealed partial class PropClaims
 			position = pawn.WorldPosition + (position - pawn.WorldPosition).ClampLength( GrabTargetReach );
 
 		_grabTargets[id] = new Transform( position, rotation );
+
+		// Someone's body: its wearer simulates it — pass the pose on. Never scaled (the shape is theirs).
+		var hider = prop.Components.Get<HiderController>();
+		if ( IsPlayerBody( hider ) )
+		{
+			RelayGrabTarget( hider, position, rotation );
+			return;
+		}
+
 		ApplyGrabScale( prop, Math.Clamp( scale, MinGrabScale, MaxGrabScale ) );
+	}
+
+	// Host → the wearer of a held body: the pose to chase. Straight in when the host wears it itself.
+	static void RelayGrabTarget( HiderController hider, Vector3 position, Rotation rotation )
+	{
+		var owner = hider.Network.Owner;
+		if ( owner is null || owner.Id == Connection.Local?.Id )
+		{
+			hider.SetGrabTarget( new Transform( position, rotation ) );
+			return;
+		}
+
+		using ( Rpc.FilterInclude( owner ) )
+		{
+			hider.ReceiveGrabTarget( position, rotation );
+		}
+	}
+
+	/// <summary>The wearer of a held body jumped: break free of whoever is holding it.</summary>
+	[Rpc.Host]
+	public void EscapeGrab( GameObject body )
+	{
+		var c = Rpc.Caller ?? Connection.Local;
+		var hider = body.IsValid() ? body.Components.Get<HiderController>() : null;
+		if ( c is null || !IsPlayerBody( hider ) || hider.Network.Owner?.Id != c.Id )
+			return;
+
+		if ( HolderOf( hider ) is { } holder && Connection.All.FirstOrDefault( x => x.Id == holder ) is { } holderConn )
+			DropFor( holderConn );
 	}
 
 	// ── Shape scaling (host) ─────────────────────────────────────────────────────────────────────────────
@@ -370,6 +459,11 @@ public sealed partial class PropClaims
 
 		PlaySwapPop( PopSpot( go ), DropPopPitch );
 
+		// Someone's body: its wearer's machine takes it from here (it tumbles until they move — see
+		// HiderController.Grabbed). The scenery registries never apply, and a body is never frozen.
+		if ( IsPlayerBody( go.Components.Get<HiderController>() ) )
+			return;
+
 		if ( freeze )
 		{
 			LooseProps.Remove( id );
@@ -405,7 +499,8 @@ public sealed partial class PropClaims
 			var go = Scene.Directory.FindByGuid( pawnId );
 			if ( go.IsValid() )
 			{
-				LooseProps[pawnId] = true;
+				if ( !IsPlayerBody( go.Components.Get<HiderController>() ) )
+					LooseProps[pawnId] = true;
 				PlaySwapPop( PopSpot( go ), DropPopPitch );
 			}
 		}

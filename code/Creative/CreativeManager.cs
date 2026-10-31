@@ -76,6 +76,7 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost, 
 	bool IPropClaimHost.ClaimsAllowed => true; // creative never closes claims — it has no countdowns to guard
 	bool IPropClaimHost.LeasesAllowed => true; // collaborative building: sculpt any released prop in place (F)
 	bool IPropClaimHost.GrabAllowed => true;   // sandbox physics: RMB picks props up, dropped ones tumble
+	bool IPropClaimHost.GrabPlayersAllowed => true; // …other players' props included (they jump to break free)
 
 	GameObject IPropClaimHost.PropPrefab
 		=> RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.PropPrefab : null;

@@ -108,6 +108,14 @@ public sealed class OrbitCameraController : Component
 	/// centre so the camera always orbits the clay itself. Null = off (pivot behaves exactly as before).</summary>
 	public Vector2? PivotXYOverride { get; set; }
 
+	/// <summary>When set (follow mode), the pivot follows this world point instead of the follow target's
+	/// position — offset and pan still apply. The hider uses it while it tumbles as a grabbed object.</summary>
+	public Vector3? FollowPointOverride { get; set; }
+
+	/// <summary>Shift the follow pan by <paramref name="delta"/> (world units) — lets an owner change what the
+	/// pivot follows without the camera jumping.</summary>
+	public void AddPanOffset( Vector3 delta ) => _panOffset += delta;
+
 	/// <summary>Camera orientation. Yaw drives the follow camera's facing (the hider reads this for movement).</summary>
 	public Angles Angles
 	{
@@ -189,7 +197,7 @@ public sealed class OrbitCameraController : Component
 			return;
 
 		if ( FollowTarget.IsValid() )
-			Pivot = FollowTarget.WorldPosition + FollowOffset + _panOffset;
+			Pivot = (FollowPointOverride ?? FollowTarget.WorldPosition) + FollowOffset + _panOffset;
 
 		if ( PivotXYOverride is { } xy )
 			Pivot = new Vector3( xy.x, xy.y, Pivot.z );

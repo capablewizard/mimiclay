@@ -28,6 +28,10 @@ public interface IPropClaimHost
 	/// physics object; see <see cref="PropClaims.RequestGrab"/>)? Creative's sandbox says yes. Default off.</summary>
 	bool GrabAllowed => false;
 
+	/// <summary>May the grab also pick up a prop someone is WEARING (see <see cref="PropClaims.IsGrabbableBody"/>)?
+	/// Only meaningful with <see cref="GrabAllowed"/>. Default off.</summary>
+	bool GrabPlayersAllowed => false;
+
 	/// <summary>The prop-pawn prefab a claimed SCENE prop converts into (read live off scene furniture — a
 	/// NetworkSpawn'd manager's [Property] refs only exist on the host).</summary>
 	GameObject PropPrefab { get; }
@@ -130,7 +134,7 @@ public sealed partial class PropClaims : Component, IInteractable
 			options.Add( new InteractOption( SculptOption, "Sculpt", InteractSlot.Sculpt ) );
 
 		// RMB: pick it up (see RequestGrab). Same clay a claim can take; not mid-lease (RMB deselects there).
-		if ( GrabOpen && IsClaimable( ctx.Sculpture ) && !(ctx.Hunter?.LeaseEditing ?? false) )
+		if ( GrabOpen && (IsClaimable( ctx.Sculpture ) || IsGrabbableBody( ctx.Sculpture )) && !(ctx.Hunter?.LeaseEditing ?? false) )
 			options.Add( new InteractOption( GrabOption, "Grab", InteractSlot.Pickup ) );
 	}
 
