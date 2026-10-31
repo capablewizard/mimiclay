@@ -117,7 +117,11 @@
 	// about where a shot lands.
 	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting;
 
-	protected override void OnUpdate()
+	// PreRender, not OnUpdate: the camera is composed after every OnUpdate (ICameraModifier stage), so the prompt's
+	// projection ran against last frame's camera and trailed mouse-look. It also guarantees HunterController's
+	// hover for this frame is already resolved (OnUpdate order between components is a HashSet). The UI lays out
+	// after the scene tick, so positions set here still land this frame.
+	protected override void OnPreRender()
 	{
 		UpdateCards();
 		_promptAt = _cards.Count > 0 ? ResolvePrompt() : null;

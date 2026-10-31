@@ -1982,13 +1982,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	internal Vector3 ProxyLocalMins => _curProxyMins;
 	internal Vector3 ProxyLocalMaxs => _curProxyMaxs;
 
-	/// <summary>Diagnostics (mimi_dbg_plates): where the surface is ACTUALLY being drawn this frame — the
-	/// placed scene object's world transform and AABB, and whether the scene object is live at all. Lets a
-	/// playtest compare "where the nameplate thinks the body is" against "where the body renders".</summary>
+	/// <summary>Diagnostics: whether the surface's scene object is live and drawing this frame.</summary>
 	internal bool DrawnSceneObjectLive => _so.IsValid() && _so.RenderingEnabled;
-	internal Transform DrawnTransform => _so.IsValid() ? _so.Transform : global::Transform.Zero;
-	internal BBox DrawnBounds => new( _curMins, _curMaxs );
-	internal Vector3 DrawnCenter => _curCenter;
 
 	/// <summary>Build the highlight group's single proxy box in the GROUP's local space — the highlight places
 	/// it by its scene object's transform (one CONVEX box for the whole group — overlapping per-member proxies

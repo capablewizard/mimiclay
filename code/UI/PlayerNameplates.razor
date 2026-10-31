@@ -31,7 +31,8 @@
 	  • Infection — hunter names show to EVERYONE (hunters see each other; a prop sees the hunters), and prop
 	    names never show to anyone — that's the hiding.
 	  • Teams — you see your own team only (hunters see hunters, props see props).
-	No RoundManager (debug scenes, lobby) falls back to the Infection rule.
+	  • Creative (a CreativeManager and no round) — everyone, so a player who possessed a prop wears their name.
+	No RoundManager otherwise (debug scenes, lobby) falls back to the Infection rule.
 
 	Voice indicators live here too, since this is the machine's full-screen player overlay:
 	  • A speaker icon on a plate while that player's voice is playing (PlayerVoice.IsSpeaking — playback-driven,
@@ -66,9 +67,28 @@
 	/// <summary>Extra world-space clearance between the top of the head/disguise bounds and the label.</summary>
 	[Property] public float HeadClearance { get; set; } = 5f;
 
+	/// <summary>Screen gap between a PROP's on-screen outline and its label, in px at 1080p (scales with
+	/// resolution like the rest of the UI) — constant at any distance. Hunters use <see cref="HeadClearance"/>.</summary>
+	[Property] public float PropGap { get; set; } = 28f;
+
 	/// <summary>Uniform scale on the nameplate text. 1 = the base size (<see cref="BaseNameSize"/> px, before the
 	/// ScreenPanel's resolution scaling); 2 = double, etc.</summary>
-	[Property] public float NameplateScale { get; set; } = 2f;
+	[Property] public float NameplateScale { get; set; } = 1f;
+
+	/// <summary>How close to the anchor a line-of-sight hit may land and still count as visible (world units) —
+	/// slack for a ray grazing the target's own surroundings right at the head.</summary>
+	[Property] public float OcclusionTolerance { get; set; } = 8f;
+
+	/// <summary>Plates hide beyond this distance from the camera (world units).</summary>
+	[Property] public float MaxDistance { get; set; } = 750f;
+
+	/// <summary>Plates hide this far from the screen centre, measured in half screen-heights (aspect-corrected, so
+	/// it's a circle): 1 reaches the top/bottom edge, ~1.8 the side edges at 16:9, ~2 the corners.</summary>
+	[Property] public float MaxCenterRadius { get; set; } = 1f;
+
+	/// <summary>Seconds a plate takes to fade fully in or out when it starts or stops passing the distance,
+	/// screen-centre and line-of-sight checks — the checks are hard on/off; only the transition is eased.</summary>
+	[Property] public float FadeTime { get; set; } = 0.15f;
 
 	// The un-scaled label size in panel px. Set here (not the SCSS) so NameplateScale has a base to multiply —
 	// the inline style below always overrides a stylesheet font-size anyway.
@@ -76,27 +96,16 @@
 
 	// One drawn label: which pawn it belongs to (@key, so the razor diff tracks plates across frames), the name,
 	// the projected screen position as viewport fractions (resolution-independent — see PlateStyle), and whether
-	// that player's voice is currently playing (drives the speaker icon).
-	internal readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen, bool Speaking );
+	// that player's voice is currently playing (drives the speaker icon), and its current fade.
+	internal readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen, bool Speaking, float Opacity );
 
 	readonly List<Plate> _plates = new();
 
-	/// <summary>Diagnostics: the plates drawn this frame (see <c>mimi_dbg_plates</c>).</summary>
-	internal IReadOnlyList<Plate> Plates => _plates;
-
-	/// <summary>Diagnostics: the world point a plate for this pawn would hang from — the same anchor the
-	/// overlay projects, so a playtest dump can compare it against where the body actually renders.</summary>
-	internal static Vector3 DebugAnchorFor( GameObject pawn, float headClearance = 5f )
-	{
-		var sculpt = AnchorSculpture( pawn );
-		if ( sculpt.IsValid() && Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
-		{
-			var topLocal = bounds.Center.WithZ( bounds.Maxs.z );
-			return sculpt.WorldTransform.PointToWorld( topLocal ) + Vector3.Up * headClearance;
-		}
-
-		return pawn.WorldPosition + Vector3.Up * 80f;
-	}
+	// Each plate's fade, by pawn — survives frames so a plate eases in and out instead of popping. Entries for
+	// pawns that stop being candidates (or reach 0) are dropped.
+	readonly Dictionary<Guid, float> _fade = new();
+	readonly HashSet<Guid> _seen = new();
+	readonly List<Guid> _dropFade = new();
 
 	// Other players' pawns gathered this frame, before plates are built — the pass that finds them is also the
 	// pass that finds OUR pawn, and TeamVisible needs our role before any plate can be judged.
@@ -116,6 +125,10 @@
 
 	// Settings is [Sync]'d, so this reads correctly on every machine incl. late-joiners.
 	RoundMode Mode => RoundManager.Current.IsValid() ? RoundManager.Current.Settings.Mode : RoundMode.Infection;
+
+	// Creative has no teams and nothing to hide: every player's name shows, including one who possessed a prop
+	// (which the no-round Infection fallback would otherwise hide like a hiding prop).
+	static bool CreativeShowsAll => CreativeManager.Current.IsValid() && !RoundManager.Current.IsValid();
 
 	// There can only be one — the same self-healing PauseMenu uses, in case a stale copy is ever serialised into
 	// an asset again (this component used to live on both pawn prefabs).
@@ -142,7 +155,11 @@
 			Current = null;
 	}
 
-	protected override void OnUpdate()
+	// PreRender, not OnUpdate: the camera is composed AFTER every component's OnUpdate (ICameraModifier stage, where
+	// HunterController also parks the heads), so projecting in OnUpdate placed every plate against last frame's
+	// camera — the names trailed the mouse by a frame and wobbled. By PreRender the camera and the heads are final,
+	// and the UI still lays out after the scene tick, so the new positions land in the same frame.
+	protected override void OnPreRender()
 	{
 		_plates.Clear();
 		_candidates.Clear();
@@ -156,23 +173,54 @@
 		GatherPawns();
 
 		var mode = Mode;
+		var showAll = CreativeShowsAll;
 
 		foreach ( var (pawn, role) in _candidates )
 		{
-			if ( !TeamVisible( role, _ownRole, mode ) )
+			if ( !showAll && !TeamVisible( role, _ownRole, mode ) )
 				continue;
 
 			var name = NameFor( pawn );
 			if ( string.IsNullOrWhiteSpace( name ) )
 				continue;
 
-			var screen = cam.PointToScreenNormal( AnchorFor( pawn ), out var behind );
-			if ( behind || screen.x < -0.05f || screen.x > 1.05f || screen.y < -0.05f || screen.y > 1.05f )
+			var anchor = AnchorFor( pawn );
+			var screen = cam.PointToScreenNormal( anchor, out var behind );
+			if ( behind )
+				continue;
+
+			// Hard on/off: in range, near enough the screen centre, and in line of sight. Cheap gates first — the
+			// ray only runs for plates that pass them.
+			var show = cam.WorldPosition.Distance( anchor ) <= MaxDistance
+				&& CenterRadius( screen ) <= MaxCenterRadius
+				&& !Occluded( cam.WorldPosition, anchor, pawn );
+
+			// Only the transition is eased: the plate's fade walks toward on/off at a fixed rate.
+			_fade.TryGetValue( pawn.Id, out var fade );
+			fade = FadeTime > 0f
+				? MathX.Approach( fade, show ? 1f : 0f, Time.Delta / FadeTime )
+				: (show ? 1f : 0f);
+			_fade[pawn.Id] = fade;
+			_seen.Add( pawn.Id );
+
+			if ( fade <= 0f )
 				continue;
 
 			var voice = pawn.Components.Get<PlayerVoice>();
-			_plates.Add( new Plate( pawn.Id, name, screen, voice.IsValid() && voice.IsSpeaking ) );
+			_plates.Add( new Plate( pawn.Id, name, PlateScreen( pawn, cam, screen ), voice.IsValid() && voice.IsSpeaking, fade ) );
 		}
+
+		// Forget fades for pawns that weren't plate candidates this frame (gone, behind us, off-team) or have
+		// fully faded — they start from invisible if they come back.
+		_dropFade.Clear();
+		foreach ( var (id, fade) in _fade )
+		{
+			if ( !_seen.Contains( id ) || fade <= 0f )
+				_dropFade.Add( id );
+		}
+		foreach ( var id in _dropFade )
+			_fade.Remove( id );
+		_seen.Clear();
 
 		// Stable order so the razor diff matches plates by @key, not by enumeration luck.
 		_plates.Sort( ( a, b ) => a.PawnId.CompareTo( b.PawnId ) );
@@ -275,16 +323,117 @@
 	// on every machine in their OnStart), NEVER from a descendant search: the pawn also carries gun-clone
 	// sculptures now, and a search kept finding the gun and hovering the name over it. A pawn with no resolved
 	// sculpture falls back to a rough standing height above its root.
+	// "Top" is taken from the WORLD bounds: a possessed prop tips and rolls, and its local top can point sideways.
 	Vector3 AnchorFor( GameObject pawn )
 	{
 		var sculpt = AnchorSculpture( pawn );
 		if ( sculpt.IsValid() && Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
 		{
-			var topLocal = bounds.Center.WithZ( bounds.Maxs.z );
-			return sculpt.WorldTransform.PointToWorld( topLocal ) + Vector3.Up * HeadClearance;
+			var world = bounds.Transform( sculpt.WorldTransform );
+			return world.Center.WithZ( world.Maxs.z ) + Vector3.Up * HeadClearance;
 		}
 
 		return pawn.WorldPosition + Vector3.Up * 80f;
+	}
+
+	// How far a viewport point sits from the screen centre, in half screen-heights, aspect-corrected so the limit
+	// is a circle rather than stretching with a wide screen.
+	static float CenterRadius( Vector2 screen )
+	{
+		var aspect = Screen.Height > 0f ? Screen.Width / Screen.Height : 1f;
+		var offset = new Vector2( (screen.x - 0.5f) * aspect, screen.y - 0.5f );
+		return offset.Length * 2f;
+	}
+
+	// The overlay is a screen panel, so it has no depth of its own — without this a name drew through every wall
+	// and prop between us and its owner. One ray from the camera to the anchor: the target's own hierarchy (its
+	// body/disguise) and OUR pawn (a third-person camera looks past our own body) never block, nor do triggers,
+	// water or invisible stage-fence walls. A hit within OcclusionTolerance of the anchor still counts as seen.
+	// (World panels were tried instead, 2026-10-31: they depth-test, but the camera's depth of field blurs them
+	// by the depth behind them, and every layer that skips post-processing also skips the depth test.)
+	// PROPS also try a second ray, to the centre of the body: the anchor floats above the prop, so something
+	// placed over the prop hid its name while the prop itself was in plain view. Either ray clear = seen.
+	// Hunters keep the single anchor ray.
+	bool Occluded( Vector3 from, Vector3 anchor, GameObject pawn )
+	{
+		if ( !Blocked( from, anchor, pawn ) )
+			return false;
+
+		if ( pawn.Components.Get<HunterController>().IsValid() )
+			return true;
+
+		var sculpt = AnchorSculpture( pawn );
+		if ( !sculpt.IsValid() || !Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
+			return true;
+
+		return Blocked( from, sculpt.WorldTransform.PointToWorld( bounds.Center ), pawn );
+	}
+
+	bool Blocked( Vector3 from, Vector3 to, GameObject pawn )
+	{
+		var trace = Scene.Trace.Ray( from, to )
+			.IgnoreGameObjectHierarchy( pawn )
+			.WithoutTags( "trigger", "water", CharadesStageFence.WallTag );
+
+		if ( _ownPawn.IsValid() )
+			trace = trace.IgnoreGameObjectHierarchy( _ownPawn );
+
+		var tr = trace.Run();
+		return tr.Hit && tr.Distance < from.Distance( to ) - OcclusionTolerance;
+	}
+
+	// Where the plate is drawn. HUNTERS: at the projected world top of the head (the anchor) — a head is small and
+	// round, so that always reads as "above the head". PROPS: above the body's ON-SCREEN outline. Seen from above,
+	// the far side of a wide prop projects higher on screen than its top-centre point, so a plate hung there sat
+	// across the prop. The outline comes from the collider's own geometry (SdfCollider.FramePoints — the same
+	// points the crosshair's possess prompt frames with), tight to the clay, so the gap doesn't balloon up close;
+	// and the gap itself is a fixed SCREEN distance (PropGap), so it reads the same near or far. Falls back to the
+	// anchor's projection when there's no sculpture or a point is behind the camera (we're inside the prop).
+	Vector2 PlateScreen( GameObject pawn, CameraComponent cam, Vector2 anchorScreen )
+	{
+		if ( pawn.Components.Get<HunterController>().IsValid() )
+			return anchorScreen;
+
+		var sculpt = AnchorSculpture( pawn );
+		if ( !sculpt.IsValid() )
+			return anchorScreen;
+
+		var tx = sculpt.WorldTransform;
+		var min = new Vector2( float.MaxValue, float.MaxValue );
+		var max = new Vector2( float.MinValue, float.MinValue );
+		var any = false;
+
+		foreach ( var local in FramePoints( sculpt ) )
+		{
+			var screen = cam.PointToScreenNormal( tx.PointToWorld( local ), out var behind );
+			if ( behind )
+				return anchorScreen;
+
+			min = Vector2.Min( min, screen );
+			max = Vector2.Max( max, screen );
+			any = true;
+		}
+
+		if ( !any )
+			return anchorScreen;
+
+		// PropGap is in style px at 1080p; the ScreenPanel scales px by height/1080, so as a viewport fraction
+		// it's simply PropGap / 1080 whatever the resolution.
+		return new Vector2( (min.x + max.x) * 0.5f, min.y - PropGap / 1080f );
+	}
+
+	// The sculpture-local points that outline a prop: the collider's emitted geometry (hull vertices, carved
+	// voxel-box corners). A collider that hasn't built yet falls back to the loose brush-bounds corners for the
+	// frame or two until it has.
+	static IEnumerable<Vector3> FramePoints( SdfSculpture sculpture )
+	{
+		var collider = sculpture.Components.Get<SdfCollider>();
+		if ( collider.IsValid() && collider.FramePoints is { Count: > 0 } frame )
+			return frame;
+
+		return Sdf.TryGetBounds( sculpture.Brushes, out var bounds )
+			? bounds.Corners
+			: Array.Empty<Vector3>();
 	}
 
 	// THE pawn's body sculpture, straight from its controller — the same objects the controllers themselves
@@ -301,9 +450,11 @@
 
 	// left/top as viewport percentages (the overlay root is full-screen), invariant-formatted so the style parses
 	// on any system locale. The SCSS translate pulls the plate back over the point (centred, sitting above it).
+	// Opacity is the distance / screen-centre fade.
 	static string PlateStyle( Plate p )
 		=> $"left: {(p.Screen.x * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
-			$"top: {(p.Screen.y * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%;";
+			$"top: {(p.Screen.y * 100f).ToString( "0.##", CultureInfo.InvariantCulture )}%; " +
+			$"opacity: {p.Opacity.ToString( "0.##", CultureInfo.InvariantCulture )};";
 
 	// The label's font-size, from the scale property. Scaling the FONT (not a panel transform) keeps the SCSS
 	// centring translate intact and lets the plate's layout box grow with the text.
@@ -323,6 +474,7 @@
 			hash.Add( p.Name );
 			hash.Add( p.Screen );
 			hash.Add( p.Speaking );
+			hash.Add( p.Opacity );
 		}
 		return hash.ToHashCode();
 	}

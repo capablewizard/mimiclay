@@ -109,7 +109,10 @@
 	// (false = lingering through its exit shrink).
 	readonly List<(string Text, int Revealed, List<(string Word, int Shown)> Words, Vector2 At, bool Shown)> _draw = new();
 
-	protected override void OnUpdate()
+	// PreRender, not OnUpdate: the camera is composed after every OnUpdate (ICameraModifier stage), so projecting
+	// in OnUpdate placed cards against last frame's camera and they trailed mouse-look. The UI lays out after the
+	// scene tick, so positions set here still land this frame.
+	protected override void OnPreRender()
 	{
 		_draw.Clear();
 		PruneStates();
