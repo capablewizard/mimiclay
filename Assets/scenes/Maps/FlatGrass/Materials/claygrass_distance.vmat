@@ -1,0 +1,39 @@
+// THIS FILE IS AUTO-GENERATED
+
+Layer0
+{
+	shader "shaders/ground_distance_tiling.shader"
+
+	//---- Distance Tiling ----
+	g_flBaseDistance "377.265"
+	g_flMaxOctaves "5.000"
+	g_flOctaveBlendSharpness "0.000"
+	g_vBaseTile "[300.000 450.000]"
+
+	//---- Far Fade ----
+	g_flFarFadeAmount "0.600"
+	g_flFarFadeEnd "20000.000"
+	g_flFarFadeStart "3000.000"
+
+	//---- Fog ----
+	g_bFogEnabled "1"
+
+	//---- Macro Variation ----
+	g_flMacroBrightness "0.150"
+	g_flMacroScale "758.049"
+	g_flMacroTintAmount "0.200"
+	g_vMacroTint "[0.850980 1.000000 0.600000 0.000000]"
+
+	//---- Material ----
+	g_flTintColor "[1.000000 1.000000 1.000000 0.000000]"
+	TextureAmbientOcclusion "scenes/maps/flatgrass/materials/claygrass_geometryambientocclusion.png"
+	TextureColor "scenes/maps/flatgrass/materials/claygrass_basecolor.png"
+	TextureNormal "scenes/maps/flatgrass/materials/claygrass_normal.png"
+	TextureRoughness "scenes/maps/flatgrass/materials/claygrass_specularroughness.png"
+
+	//---- Surface ----
+	g_flMetalnessValue "0.000"
+	g_flAmbientOcclusionAmount "1.000"
+	g_flNormalStrength "1.000"
+	g_flRoughnessScale "1.400"
+}
