@@ -1399,6 +1399,20 @@ public sealed partial class HunterController : Component
 		return eye;
 	}
 
+	// Crouch posture, applied the tick the key goes down. The stock controller's default input now runs a TIMED
+	// duck: it holds IsDucking off for 0.4s (0.2s to stand) while easing its own camera through an internal
+	// fraction we can't read. Our eye/torso read only IsDucking, so that window was pure dead time before the
+	// duck spring even started — crouch felt a beat late. Calling the public UpdateDucking ourselves flips the
+	// posture at once (headroom checks and the mid-air lift still apply), the engine's own pass then finds
+	// nothing to transition, and the duck spring supplies the easing. Same gate as the engine's input pass.
+	protected override void OnFixedUpdate()
+	{
+		if ( !_controller.IsValid() || _controller.IsProxy || !_controller.UseInputControls )
+			return;
+
+		_controller.UpdateDucking( Input.Down( "duck" ) );
+	}
+
 	// Advance the duck spring — ONE value, driving the camera/head drop, the torso squash and (by its absence)
 	// the pivot's standing height, so nothing can drift apart. A plain lerp reads mechanical: it decelerates into
 	// the target and stops dead. This is a damped harmonic spring, so crouching drops with weight and settles
