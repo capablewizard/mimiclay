@@ -3656,13 +3656,13 @@
             "Maxs": "700,700,518.35968"
           },
           "DistanceTexture": {
-            "Id": "c6e1d178-8700-4381-9195-4de2a82b8d20",
-            "Path": "scenes/maps/flatgrass/flatgrass_scene_data/ddgi/ddgi_room_distance_90761139-afac-4b8f-b380-e3dae344f47f_2dff9b40cce34f5eb790ccbd47fa1fc9.vtex"
+            "Id": "8bcae8ad-55c0-47d3-af80-2456755a39f1",
+            "Path": "scenes/maps/flatgrass/flatgrass_scene_data/ddgi/ddgi_room_distance_90761139-afac-4b8f-b380-e3dae344f47f_4f89f53694894072b5ccffab374e871c.vtex"
           },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": {
-            "Id": "c7e2985a-6c6f-413b-b367-b91069235d5f",
-            "Path": "scenes/maps/flatgrass/flatgrass_scene_data/ddgi/ddgi_room_irradiance_90761139-afac-4b8f-b380-e3dae344f47f_2dff9b40cce34f5eb790ccbd47fa1fc9.vtex"
+            "Id": "7bcac52c-045c-4fda-a796-2856f72360d4",
+            "Path": "scenes/maps/flatgrass/flatgrass_scene_data/ddgi/ddgi_room_irradiance_90761139-afac-4b8f-b380-e3dae344f47f_4f89f53694894072b5ccffab374e871c.vtex"
           },
           "NormalBias": 5,
           "OnComponentDestroy": null,
@@ -3673,8 +3673,8 @@
           "OnComponentUpdate": null,
           "ProbeDensity": 32,
           "RelocationTexture": {
-            "Id": "1891f7d0-2833-4e59-b48c-54b848a837d3",
-            "Path": "scenes/maps/flatgrass/flatgrass_scene_data/ddgi/ddgi_room_relocation_90761139-afac-4b8f-b380-e3dae344f47f_2dff9b40cce34f5eb790ccbd47fa1fc9.vtex"
+            "Id": "cad4c4a5-882e-4f95-aca0-64d0067dcb16",
+            "Path": "scenes/maps/flatgrass/flatgrass_scene_data/ddgi/ddgi_room_relocation_90761139-afac-4b8f-b380-e3dae344f47f_4f89f53694894072b5ccffab374e871c.vtex"
           },
           "RenderExcludeTags": "lightfixture",
           "RuntimeContrast": 0.5,
@@ -3913,7 +3913,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "spawns",
-      "Position": "0,0,508.077271",
+      "Position": "0,0,384.769958",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -3930,7 +3930,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "PropSpawn",
-          "Position": "-287.152069,236.306305,-109.778412",
+          "Position": "-287.152069,236.306305,14.377655",
           "Rotation": "0,0,0.991444826,0.130526245",
           "Scale": "1,1,1",
           "Tags": "",
@@ -3962,7 +3962,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "PropSpawn (1)",
-          "Position": "131.677368,77.0959167,-109.778412",
+          "Position": "131.677368,77.0959167,14.377655",
           "Rotation": "0,0,0.601144552,0.799140334",
           "Scale": "1,1,1",
           "Tags": "",
@@ -3994,7 +3994,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "PropSpawn (2)",
-          "Position": "-85.6772232,-205.473297,-109.778412",
+          "Position": "-85.6772232,-205.473297,14.377655",
           "Rotation": "0,0,-0.884554803,0.466436327",
           "Scale": "1,1,1",
           "Tags": "",
@@ -4026,7 +4026,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "PropSpawn (3)",
-          "Position": "260.625946,-197.9263,-109.778412",
+          "Position": "260.625946,-197.9263,14.377655",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -4058,7 +4058,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "PropSpawn (3)",
-          "Position": "74.0388412,-374.770233,-109.778412",
+          "Position": "74.0388412,-374.770233,14.377655",
           "Rotation": "0,0,-0.707106769,0.707106769",
           "Scale": "1,1,1",
           "Tags": "",
@@ -4090,7 +4090,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "PropSpawn (3)",
-          "Position": "280.053406,-12.2433167,-109.778412",
+          "Position": "280.053406,-12.2433167,14.377655",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Tags": "",
@@ -4122,7 +4122,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "PropSpawn (3)",
-          "Position": "323.657623,343.973907,-109.778412",
+          "Position": "323.657623,343.973907,14.377655",
           "Rotation": "0,0,0.60876137,0.793353319",
           "Scale": "1,1,1",
           "Tags": "",
@@ -4173,10 +4173,7 @@
           "__enabled": true,
           "Flags": 0,
           "AutoReimport": true,
-          "BakedGeometry": {
-            "Id": "22f7259c-b35e-49b4-993d-221e1cebbff6",
-            "Path": "models/fbxbaked/prefabs_kitchen_kitchen.fbxbake"
-          },
+          "BakedGeometry": "models/fbxbaked/scenes_maps_flatgrass_grass.fbxbake",
           "BuildCollision": true,
           "CheckInterval": 0.5,
           "DefaultMaterial": {
@@ -4186,7 +4183,7 @@
           "FbxPath": "scenes/maps/flatgrass/grass.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "10 object(s), 19005 tris — 00:21:34",
+          "LastImport": "10 object(s), 19005 tris — 01:32:58",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -5005,7 +5002,7 @@
           "Children": []
         },
         {
-          "__guid": "0b377501-52f0-4318-90d3-8f04063de4da",
+          "__guid": "1e309200-db40-4304-9983-241a9b20a96b",
           "__version": 2,
           "Flags": 0,
           "Name": "exported.005",
@@ -5022,7 +5019,7 @@
           "Components": [
             {
               "__type": "Mimiclay.FbxImportedPiece",
-              "__guid": "7e37f2f8-a8fc-4197-b11b-c90c222b0ce0",
+              "__guid": "e1901bfd-bf15-4848-8bd8-f90007effbe2",
               "__enabled": true,
               "Flags": 0,
               "OnComponentDestroy": null,
@@ -5035,7 +5032,7 @@
             },
             {
               "__type": "Sandbox.ModelRenderer",
-              "__guid": "dc57fd8b-ba5d-4a86-92b0-59167d87912f",
+              "__guid": "7992c676-ae75-43c3-b55f-486b4f7127cd",
               "__enabled": true,
               "Flags": 0,
               "BodyGroups": 18446744073709551615,
@@ -5062,7 +5059,7 @@
             },
             {
               "__type": "Sandbox.ModelCollider",
-              "__guid": "f274fd86-003e-4aaa-bd05-bf3082da43c9",
+              "__guid": "898c19a3-0d96-4e94-bb64-397423595ede",
               "__enabled": true,
               "Flags": 0,
               "ColliderFlags": 0,
@@ -5142,7 +5139,7 @@
           "Flags": 0,
           "Aspect": 2.4,
           "AssignToMap": true,
-          "LastCapture": "ui/banners/maps/kitchen_creative_banner.png (1536x640) 11:56:39",
+          "LastCapture": "ui/banners/maps/flatgrass_banner.png (1536x640) 00:34:41",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -5218,64 +5215,6 @@
       "Children": []
     },
     {
-      "__guid": "8e45826a-ff70-4c5a-b6c4-22c5ac03447c",
-      "__version": 2,
-      "__Prefab": {
-        "Id": "558d0487-c2d2-4708-8d26-29e9d286b334",
-        "Path": "prefabs/props/toys/toy_train_engine.prefab"
-      },
-      "__PrefabInstancePatch": {
-        "AddedObjects": [],
-        "RemovedObjects": [],
-        "PropertyOverrides": [
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "d74165d0-0c79-4e11-a382-7dcda0f09dd1"
-            },
-            "Property": "Position",
-            "Value": "179.394714,177.195557,376.310181"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
-            },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          }
-        ],
-        "MovedObjects": []
-      },
-      "__PrefabIdToInstanceId": {
-        "d74165d0-0c79-4e11-a382-7dcda0f09dd1": "8e45826a-ff70-4c5a-b6c4-22c5ac03447c",
-        "ff36af21-8a91-424a-b713-97d0e1f0571f": "78839fe9-e6dd-42b6-b8ae-2e931bf4332e",
-        "ff777ad1-1889-4494-95fb-d66e93a02951": "f7092bba-ee83-4d5e-a1a3-1965795fa80f",
-        "1d957c60-f050-4e85-89cc-572156f637cc": "b4c20b08-4dd9-4db2-8ae0-be63081d5267",
-        "8e590f5e-388f-4280-bcf6-ac30cee6ebfb": "73f25a50-4782-45f3-8eb4-20b7ce175f5c",
-        "d49ea65e-13b7-418a-adee-9710337fb977": "02053354-085e-47c0-a3a4-4866215ec75d",
-        "e2452b94-854d-4261-b7da-272c4d1d0764": "9833260b-59b6-47dc-ae91-14649a793c13",
-        "221d394b-8948-4ec4-ab09-ffd17cddf10f": "233f7775-135d-432f-a4a3-bae203ef575f",
-        "fe1f1fe9-0dc3-8b54-a4f9-77d9e3188ad1": "c747f1fd-b429-41b4-ad27-6f33bc191256"
-      }
-    },
-    {
       "__guid": "e1531857-69e8-48ef-83fb-d693df25f146",
       "__version": 2,
       "Flags": 0,
@@ -5311,6 +5250,48 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "8e45826a-ff70-4c5a-b6c4-22c5ac03447c",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "558d0487-c2d2-4708-8d26-29e9d286b334",
+        "Path": "prefabs/props/toys/toy_train_engine.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "d74165d0-0c79-4e11-a382-7dcda0f09dd1"
+            },
+            "Property": "Position",
+            "Value": "179.394714,177.195557,376.310181"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
+            },
+            "Property": "__enabled",
+            "Value": true
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "d74165d0-0c79-4e11-a382-7dcda0f09dd1": "8e45826a-ff70-4c5a-b6c4-22c5ac03447c",
+        "ff36af21-8a91-424a-b713-97d0e1f0571f": "78839fe9-e6dd-42b6-b8ae-2e931bf4332e",
+        "ff777ad1-1889-4494-95fb-d66e93a02951": "f7092bba-ee83-4d5e-a1a3-1965795fa80f",
+        "1d957c60-f050-4e85-89cc-572156f637cc": "b4c20b08-4dd9-4db2-8ae0-be63081d5267",
+        "8e590f5e-388f-4280-bcf6-ac30cee6ebfb": "73f25a50-4782-45f3-8eb4-20b7ce175f5c",
+        "d49ea65e-13b7-418a-adee-9710337fb977": "02053354-085e-47c0-a3a4-4866215ec75d",
+        "e2452b94-854d-4261-b7da-272c4d1d0764": "9833260b-59b6-47dc-ae91-14649a793c13",
+        "221d394b-8948-4ec4-ab09-ffd17cddf10f": "233f7775-135d-432f-a4a3-bae203ef575f",
+        "fe1f1fe9-0dc3-8b54-a4f9-77d9e3188ad1": "c747f1fd-b429-41b4-ad27-6f33bc191256"
+      }
     },
     {
       "__guid": "9f0cd387-067d-46a0-9d67-a26b38ec751c",
@@ -6147,22 +6128,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
-            },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6214,22 +6179,6 @@
             },
             "Property": "Rotation",
             "Value": "0,3.32065198E-09,0.99999994,9.9619557E-09"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
-            },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6279,22 +6228,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
-            },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6308,6 +6241,105 @@
         "baada0e7-d12c-4dac-ab53-47f4bb454c3b": "f47478e9-d63c-4ea0-a4b6-a6484e4c85ba",
         "229ef4ab-16bd-4298-8359-92d273b58205": "0eb33c41-352c-4da0-9d28-5026bbf89ba7",
         "977ab654-0b1d-4674-ac3e-aa2f32817982": "625f0b62-7f21-4684-b0f9-e5651c7ad39d"
+      }
+    },
+    {
+      "__guid": "ba7fef4c-f795-4452-bff6-e633406473ab",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "d5ca3694-b5df-4a43-835e-cea9f1bbf625",
+        "Path": "prefabs/props/kitchen/teapot.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0fd08478-dc9c-42c4-8fd9-f13476130a2c"
+            },
+            "Property": "Position",
+            "Value": "-335.601135,369.408203,400.432831"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0fd08478-dc9c-42c4-8fd9-f13476130a2c"
+            },
+            "Property": "Rotation",
+            "Value": "3.1213585E-09,0,-9.36407574E-09,0.99999994"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0fd08478-dc9c-42c4-8fd9-f13476130a2c": "ba7fef4c-f795-4452-bff6-e633406473ab",
+        "13514fd7-4628-4877-8f61-46fe5626d4a2": "842d61e9-8bf8-4867-b812-1ba3f40fbac7",
+        "b0f41ab9-9207-4601-9da0-98556f047712": "275ce600-ab9b-4c75-ac05-a180fb461935",
+        "a5dc336f-3c67-430a-8659-64ca90fbbd9a": "cf530023-ff02-4ac6-8d09-4035d8769489",
+        "785c4b35-16d5-45e4-8dcd-9039e3b36f37": "7a99c217-556c-454a-bc3a-7b0543422663",
+        "856bb140-20e3-48d8-bece-1520dadcf717": "36fefe7e-f686-4319-9d2b-aa62458c559a",
+        "906d98f9-b2cb-4d33-ba2f-16c8a50edc4c": "1fac00fc-d6ea-4827-8d09-c1e1e82bb24b",
+        "c3dd2ce3-8843-4506-a3a0-a04498b3d08f": "4ef490af-f934-4e31-9521-cc6039093657"
+      }
+    },
+    {
+      "__guid": "399a270c-910d-4332-b933-761bbf8f2caf",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "8df773c9-e799-4900-a837-174482147f76",
+        "Path": "prefabs/props/kitchen/pot_pitcher.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8288648a-14da-4706-8341-c7b8a259cae0"
+            },
+            "Property": "Name",
+            "Value": "pot_pitcher (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8288648a-14da-4706-8341-c7b8a259cae0"
+            },
+            "Property": "Position",
+            "Value": "99.2640381,460.301636,395.774475"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
+            },
+            "Property": "__enabled",
+            "Value": false
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "8288648a-14da-4706-8341-c7b8a259cae0": "399a270c-910d-4332-b933-761bbf8f2caf",
+        "f7b2dc59-de37-47c7-a5f1-0f2830fb46c3": "c0c3557a-1121-4107-8ff3-15375790282a",
+        "c0ed3bd6-5786-4cee-b714-b81b3108f448": "dc383f9e-b745-4355-ab01-bf90ffa80ba4",
+        "1722d7a6-f515-47fa-8cef-4efa147f0ce5": "8b9d6e85-5fda-43b7-a7c1-1ecbeb3b2a27",
+        "3d442fb5-4b9b-4a65-b2bf-a6f31c1b60ff": "448d0433-2c62-47df-94ec-75853d309637",
+        "42f6af27-7085-4437-bee2-e69ad2b5abe0": "7722f2b4-f219-4e53-a107-b25a7ca9e1b4",
+        "38c78c40-241f-4270-a20c-16a37d6658a2": "5e5d4eba-c99e-4acb-be37-ba859bf76ed5",
+        "bb6af9c4-3490-49db-9219-39b2b3642daf": "4547180e-f268-4995-8f10-f4f058e777ba",
+        "8aaee0fd-c3be-88db-92e5-55157b42da5c": "c376610e-5a8e-47e5-8607-1c3544e06bea"
       }
     }
   ],

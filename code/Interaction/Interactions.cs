@@ -77,7 +77,7 @@ public static class Interactions
 	/// gun's own ray is map-length (4096u); without this bound every distant prop across the room outlines and offers
 	/// "E to Edit", which reads as noise. ONE value for every scene, tuned in the kitchen lobby — it used to be a
 	/// per-scene knob (LobbyController / MapModeCard) and the maps just drifted apart for no reason.</summary>
-	public const float Reach = 100f;
+	public const float Reach = 200f;
 
 	static readonly List<IInteractable> _sources = new();
 

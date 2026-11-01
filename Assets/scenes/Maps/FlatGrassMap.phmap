@@ -1,0 +1,13 @@
+{
+  "Title": "Flatgrass",
+  "Description": "A wide open field to build anything.",
+  "Preview": "ui/banners/maps/flatgrass_banner.png",
+  "Scene": "scenes/maps/flatgrass/flatgrass.scene",
+  "Hidden": false,
+  "ForPropHunt": false,
+  "ForCreative": true,
+  "ForCharades": false,
+  "DefaultPick": false,
+  "__references": [],
+  "__version": 0
+}

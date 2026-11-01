@@ -369,12 +369,52 @@
           "__guid": "0181cb35-e6e3-40da-933f-e0ad8d3af53f",
           "__enabled": true,
           "Flags": 512,
+          "__version": 1,
+          "AnimationCurve": [
+            {
+              "x": 0,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 0.5,
+              "y": 1,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "AnimationDuration": 2,
+          "AnimationEnabled": false,
+          "AnimationGradient": {
+            "blend": "Linear",
+            "color": [
+              {
+                "t": 0.5,
+                "c": "1,1,1,1"
+              }
+            ],
+            "alpha": []
+          },
+          "AnimationPattern": "Flicker",
+          "AnimationSpeed": 1,
+          "AnimationTimeOffset": 0,
           "BakeLightIndex": -1,
           "ContactShadows": true,
           "Contribution": "Diffuse, Specular, Transmissive",
           "FogMode": "Enabled",
           "FogStrength": 1,
           "IncludeStaticShadowCasters": false,
+          "Intensity": 1,
           "LightColor": "0.94419,0.97767,1,1",
           "MixedShadows": false,
           "OnComponentDestroy": null,
@@ -389,6 +429,7 @@
           "ShadowHardness": 0,
           "Shadows": true,
           "SkyColor": "0.03548,0.04247,0.04651,1",
+          "Temperature": 6500,
           "Visualizer": {}
         }
       ],
@@ -561,7 +602,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "b69e651c-f486-4cfe-816f-74ec8617904a",
+            "Id": "d69b0cf6-596d-464c-a7b2-5f02feccc3c4",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -618,7 +659,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "b69e651c-f486-4cfe-816f-74ec8617904a",
+            "Id": "d69b0cf6-596d-464c-a7b2-5f02feccc3c4",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1191,6 +1232,45 @@
               "__guid": "75f9e04c-6b1f-4bfe-b870-ef898184c54d",
               "__enabled": true,
               "Flags": 0,
+              "__version": 1,
+              "AnimationCurve": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "in": 0,
+                  "out": 0,
+                  "mode": "Mirrored"
+                },
+                {
+                  "x": 0.5,
+                  "y": 1,
+                  "in": 0,
+                  "out": 0,
+                  "mode": "Mirrored"
+                },
+                {
+                  "x": 1,
+                  "y": 0,
+                  "in": 0,
+                  "out": 0,
+                  "mode": "Mirrored"
+                }
+              ],
+              "AnimationDuration": 2,
+              "AnimationEnabled": false,
+              "AnimationGradient": {
+                "blend": "Linear",
+                "color": [
+                  {
+                    "t": 0.5,
+                    "c": "1,1,1,1"
+                  }
+                ],
+                "alpha": []
+              },
+              "AnimationPattern": "Flicker",
+              "AnimationSpeed": 1,
+              "AnimationTimeOffset": 0,
               "Attenuation": 0.1305483,
               "BakeLightIndex": -1,
               "ConeInner": 60.391647,
@@ -1199,6 +1279,7 @@
               "Cookie": null,
               "FogMode": "Enabled",
               "FogStrength": 1,
+              "Intensity": 1,
               "LightColor": "0.91373,0.98039,1,1",
               "MixedShadows": false,
               "OnComponentDestroy": null,
@@ -1210,7 +1291,8 @@
               "Radius": 1000,
               "ShadowBias": 0,
               "ShadowHardness": 0,
-              "Shadows": true
+              "Shadows": true,
+              "Temperature": 6500
             }
           ],
           "Children": []
@@ -1572,7 +1654,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "081b5467-c22f-43f4-a609-f658d03e1f9f",
+                "Id": "54c15e6b-2944-479e-8bbf-ec6e2d0c4568",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1618,7 +1700,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "0c053d13-fc6c-4352-ae84-701adb225cf0",
+                "Id": "852b946e-4248-4147-b9bb-d9fadff4a2e8",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1646,7 +1728,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "0c053d13-fc6c-4352-ae84-701adb225cf0",
+                "Id": "852b946e-4248-4147-b9bb-d9fadff4a2e8",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1693,7 +1775,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "2c6e0e68-41c3-4ce3-ab6a-ab0323d38bd7",
+                "Id": "144beba7-24a8-4f21-b65e-7ab15023bdd1",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1737,7 +1819,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "41ab4607-96cc-4cd3-9f96-3b9280c6bad7",
+                "Id": "e442ab3f-78f2-4171-b9bc-f262d64a5ac9",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2049,7 +2131,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "e2a87c6a-80e3-4b05-b144-6ecd43f3af5e",
+                "Id": "c91d8fdb-6cc9-42e4-bec9-8e93da2f7e1e",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2093,7 +2175,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "7bab3818-904b-4abe-b262-f3da42d382e7",
+                "Id": "f6f429da-e12c-4e62-9045-df14cf62c483",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2137,7 +2219,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "e56b3826-b119-4ef8-ba99-beff4fb0d663",
+                "Id": "325c079e-9515-4d79-a5be-f1b387928f69",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2183,7 +2265,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "83de3ef6-6f7e-45f6-932f-5ae322ab09c4",
+                "Id": "c32cdb51-0c69-483d-9d78-93c0d77cceb6",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2211,7 +2293,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "83de3ef6-6f7e-45f6-932f-5ae322ab09c4",
+                "Id": "c32cdb51-0c69-483d-9d78-93c0d77cceb6",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3321,7 +3403,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
+                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3349,7 +3431,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
+                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3398,7 +3480,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
+                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3426,7 +3508,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "e0b5f852-2420-4491-886e-1fd1e2a25ae1",
+                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3694,6 +3776,45 @@
           "__guid": "d72f561e-cca9-4877-bf26-fa063711074c",
           "__enabled": true,
           "Flags": 512,
+          "__version": 1,
+          "AnimationCurve": [
+            {
+              "x": 0,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 0.5,
+              "y": 1,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "AnimationDuration": 2,
+          "AnimationEnabled": false,
+          "AnimationGradient": {
+            "blend": "Linear",
+            "color": [
+              {
+                "t": 0.5,
+                "c": "1,1,1,1"
+              }
+            ],
+            "alpha": []
+          },
+          "AnimationPattern": "Flicker",
+          "AnimationSpeed": 1,
+          "AnimationTimeOffset": 0,
           "Attenuation": 10,
           "BakeLightIndex": -1,
           "ConeInner": 0,
@@ -3702,6 +3823,7 @@
           "Cookie": null,
           "FogMode": "Enabled",
           "FogStrength": 1,
+          "Intensity": 1,
           "LightColor": "649.4244,696.8024,710.74,1",
           "MixedShadows": false,
           "OnComponentDestroy": null,
@@ -3713,7 +3835,8 @@
           "Radius": 900,
           "ShadowBias": 0,
           "ShadowHardness": 0.3,
-          "Shadows": true
+          "Shadows": true,
+          "Temperature": 6500
         }
       ],
       "Children": [
@@ -4575,14 +4698,7 @@
         "MovedObjects": []
       },
       "__PrefabIdToInstanceId": {
-        "cff861ac-8232-444a-81d2-42b115299d9f": "9332366c-1c9a-4ae3-be62-dcaf326fc509",
-        "f38dcccb-6d8a-4918-b3c6-e43f0309c682": "67dd3110-541b-4041-81e1-085a545c61c6",
-        "504b3663-98cb-4d3c-84d2-d7787e386222": "6efb7519-926e-4503-850e-67d5673fd86d",
-        "f1d17cfd-fb65-4a90-a028-f9c5d0011eff": "bdd1b1d2-6f58-43ef-9cd6-5fb1b92df743",
-        "c9a70ddd-494e-4f09-afb0-8629c1b40da2": "97a99d01-5575-4c8b-8282-dfcb1971c1ea",
-        "92e18a89-c589-49d3-bdda-917eec3e5e35": "c8ecd6bc-16fc-48ea-abe5-d525eba035f2",
-        "92791f7a-874b-4543-ad05-185363569a22": "e6abbc1d-19dd-4302-ad5d-40a92ca37798",
-        "70cfa371-937d-470c-91f7-e17f2dd0263e": "b0437fff-86ba-4b67-aebc-20b9c6dab15a"
+        "52c82cdf-b287-42e1-a552-f69dd866f044": "5ff49ee6-8f8e-8da1-9918-ed04c519cb88"
       }
     },
     {
@@ -5348,7 +5464,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "63 object(s), 67661 tris — 22:01:14",
+          "LastImport": "63 object(s), 67661 tris — 00:39:01",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -11053,24 +11169,8 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11215,24 +11315,8 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11377,24 +11461,8 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11539,24 +11607,8 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11701,24 +11753,8 @@
               "Type": "Component",
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -11850,7 +11886,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -11859,7 +11896,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 0,
+          "LodOverride": null,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -11876,7 +11913,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "On",
+          "RenderType": "ShadowsOnly",
           "Tint": "1,1,1,1"
         },
         {
@@ -11937,7 +11974,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -12123,22 +12159,6 @@
                 "BoundingRadius": 7.99971
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12545,22 +12565,6 @@
                 "BoundingRadius": 7.99971
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12837,22 +12841,6 @@
                 "BoundingRadius": 7.99971
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -12990,7 +12978,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13136,7 +13124,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13282,7 +13270,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13428,7 +13416,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -13574,7 +13562,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -14455,7 +14443,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.2864485
+              "BoundingRadius": 11.336612
             }
           ],
           "BrushObjects": false,
@@ -14469,7 +14457,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -14556,7 +14545,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14703,7 +14691,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -14790,7 +14779,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14923,7 +14911,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.522
+              "BoundingRadius": 10.49235
             }
           ],
           "BrushObjects": false,
@@ -14937,7 +14925,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15024,7 +15013,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15157,7 +15145,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.086889
+              "BoundingRadius": 11.106384
             }
           ],
           "BrushObjects": false,
@@ -15171,7 +15159,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15258,7 +15247,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15405,7 +15393,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15414,7 +15403,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15431,7 +15420,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15492,7 +15481,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15639,7 +15627,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15648,7 +15637,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15665,7 +15654,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15726,7 +15715,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -15859,7 +15847,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.429633
+              "BoundingRadius": 10.479366
             }
           ],
           "BrushObjects": false,
@@ -15873,7 +15861,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -15882,7 +15871,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -15899,7 +15888,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -15960,7 +15949,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16093,7 +16081,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.549745
+              "BoundingRadius": 11.527906
             }
           ],
           "BrushObjects": false,
@@ -16107,7 +16095,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -16194,7 +16183,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16327,7 +16315,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.198455
+              "BoundingRadius": 11.177228
             }
           ],
           "BrushObjects": false,
@@ -16341,7 +16329,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -16350,7 +16339,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -16367,7 +16356,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -16428,7 +16417,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16561,7 +16549,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.025564
+              "BoundingRadius": 10.998136
             }
           ],
           "BrushObjects": false,
@@ -16575,7 +16563,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -16662,7 +16651,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -16795,7 +16783,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 10.677233
+              "BoundingRadius": 10.684394
             }
           ],
           "BrushObjects": false,
@@ -16809,7 +16797,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -16818,7 +16807,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": null,
+          "LodOverride": 0,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -16835,7 +16824,7 @@
             "BloomLayer": false,
             "AfterUILayer": false
           },
-          "RenderType": "ShadowsOnly",
+          "RenderType": "On",
           "Tint": "1,1,1,1"
         },
         {
@@ -16896,7 +16885,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -17029,7 +17017,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.025564
+              "BoundingRadius": 10.998136
             }
           ],
           "BrushObjects": false,
@@ -17043,7 +17031,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ResolutionOverride": null
         },
         {
           "__type": "Sandbox.ModelRenderer",
@@ -17130,7 +17119,6 @@
           "Flags": 0,
           "BuildAsTrigger": false,
           "CarveCollision": false,
-          "FootProbeSpacing": 6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -19109,7 +19097,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 15.328206
+                "BoundingRadius": 15.344992
               },
               {
                 "Id": "1d7b5fad-0d08-4d87-a444-e34aabec2206",
@@ -23148,14 +23136,6 @@
                 "BoundingRadius": 22.18174
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
-            },
-            "Property": "__enabled",
-            "Value": true
           }
         ],
         "MovedObjects": []
@@ -23730,7 +23710,7 @@
               "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -27153,7 +27133,7 @@
               "IdValue": "a347f32f-d129-4f28-a743-ecfe966bbffa"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -30117,7 +30097,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "daf0ee1a-48ae-47a4-a371-4701257b7e06",
+            "Id": "dc76521b-4efd-4c5c-a775-2180aa5e7248",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": false,
@@ -30308,24 +30288,8 @@
               "Type": "Component",
               "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
             },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
-            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -30551,7 +30515,7 @@
               "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {

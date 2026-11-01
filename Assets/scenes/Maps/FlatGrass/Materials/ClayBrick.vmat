@@ -33,7 +33,7 @@ Layer0
 	TextureRoughness "scenes/maps/flatgrass/materials/claybrick_specularroughness.png"
 
 	//---- Texture Coordinates ----
-	g_vTexCoordOffset "[0.190 0.010]"
-	g_vTexCoordScale "[14.000 16.000]"
+	g_vTexCoordOffset "[0.249 0.039]"
+	g_vTexCoordScale "[14.000 16.015]"
 	g_vTexCoordScrollSpeed "[0.000 0.000]"
 }
