@@ -27,7 +27,33 @@ public sealed class SdfStage : IDisposable
 
 	/// <summary>False once the host scene has gone (a scene change tears our GameObject out from under us).
 	/// The owner should drop the stage and build a fresh one.</summary>
-	public bool IsValid => World.IsValid() && _host.IsValid() && _renderer.IsValid();
+	public bool IsValid => World.IsValid() && (_lightingOnly || (_host.IsValid() && _renderer.IsValid()));
+
+	/// <summary>The rig camera's rotation — the pose <see cref="Frame"/> uses when the caller doesn't pass one.</summary>
+	public Angles RigPose => _pose;
+
+	/// <summary>The rig camera's field of view.</summary>
+	public float RigFov => _fov;
+
+	/// <summary>The rig's framing margin.</summary>
+	public float RigMargin => _margin;
+
+	/// <summary>The rig's outline width as an image fraction, before any <see cref="ApplyOutlineOverride"/>.</summary>
+	public float RigOutlineFraction { get; private set; }
+
+	/// <summary>An extra camera-relative turn of the whole lighting rig, on top of the swing <see cref="Frame"/>
+	/// already applies — yaw walks the key round the subject, pitch raises or drops it. Zero = as authored.</summary>
+	public Angles LightOffset { get; set; }
+
+	/// <summary>Multiplies every rig light's authored colour. 1 = as authored.</summary>
+	public float LightScale { get; set; } = 1f;
+
+	/// <summary>Multiplies the rig's ambient fill. 1 = as authored.</summary>
+	public float AmbientScale { get; set; } = 1f;
+
+	// True for a stage built around a world someone else owns and fills (see the SceneWorld constructor): no prop
+	// of our own, and the world isn't ours to delete.
+	readonly bool _lightingOnly;
 
 	GameObject _host;
 	SdfSculpture _sculpt;
@@ -41,6 +67,7 @@ public sealed class SdfStage : IDisposable
 		public Vector3 Position;    // as authored, relative to a ReferenceRadius-sized subject at the origin
 		public Rotation Rotation;   // as authored — matters for spots, harmless for points
 		public float Radius;
+		public Color Color;         // as authored — LightScale multiplies it
 	}
 
 	// A directional light plus its authored rotation, kept so Frame can re-derive the swung direction every
@@ -49,6 +76,7 @@ public sealed class SdfStage : IDisposable
 	{
 		public SceneDirectionalLight Light;
 		public Rotation Rotation;
+		public Color Color;
 	}
 
 	readonly List<SceneLight> _lights = new();
@@ -152,6 +180,54 @@ public sealed class SdfStage : IDisposable
 		}
 	}
 
+	/// <summary>
+	/// A LIGHTING-ONLY stage: the rig's lights, sky and post chain mirrored into <paramref name="world"/>, with no
+	/// prop of our own. For subjects that aren't a brush list — the editor's icon renderer clones a whole prefab
+	/// (models, several sculptures, whatever it holds) into an editor scene and lights that scene's world with
+	/// this. Tell <see cref="Frame"/> what to fit with <see cref="SetSubjectBounds"/>, and push the rig's subject
+	/// settings onto each SDF renderer with <see cref="ConfigureRenderer"/>. Disposing removes only what we added;
+	/// the world stays with its owner.
+	/// </summary>
+	public SdfStage( SceneWorld world, PrefabFile rig = null )
+	{
+		ArgumentNullException.ThrowIfNull( world );
+
+		World = world;
+		_lightingOnly = true;
+
+		BuildLighting( rig ?? LoadDefaultRig() );
+	}
+
+	/// <summary>Frame a subject the stage didn't build (lighting-only stages). Fits the camera to the box —
+	/// the per-brush fit only exists for brushes we staged ourselves.</summary>
+	public void SetSubjectBounds( BBox bounds )
+	{
+		Bounds = bounds;
+		_fitPrimitives.Clear();
+	}
+
+	/// <summary>
+	/// Give someone else's SDF renderer the stage's subject settings — the same quality and LOD overrides our own
+	/// prop gets, so a cloned prefab renders like a thumbnail rather than like a prop judged from wherever the
+	/// editor camera happens to be. Its look (material, displacement, transmission) is left as the prefab
+	/// authored it: that's the thing being portrayed.
+	/// </summary>
+	public void ConfigureRenderer( SdfRaymarchRenderer renderer )
+	{
+		if ( !renderer.IsValid() )
+			return;
+
+		renderer.SdfShadows = _sdfShadows;
+		renderer.ShadowBias = _sdfShadowBias;
+		renderer.MaxStepsOverride = _maxSteps;
+		renderer.EpsilonOverride = _epsilon;
+		renderer.DistanceSwitchingOverride = false;
+		renderer.AdaptiveQualityOverride = false;
+		renderer.UseFieldCache = false;
+		renderer.FieldCacheOnly = false;
+		renderer.ForceRefresh();
+	}
+
 	static PrefabFile LoadDefaultRig()
 	{
 		try { return ResourceLibrary.Get<PrefabFile>( SdfStageRig.DefaultPrefabPath ); }
@@ -243,7 +319,7 @@ public sealed class SdfStage : IDisposable
 
 			ApplyCommon( so, l );
 			_lights.Add( so );
-			_directionals.Add( new PlacedDirectional { Light = so, Rotation = l.WorldRotation } );
+			_directionals.Add( new PlacedDirectional { Light = so, Rotation = l.WorldRotation, Color = l.LightColor } );
 			any = true;
 		}
 
@@ -252,7 +328,7 @@ public sealed class SdfStage : IDisposable
 			var so = new ScenePointLight( World, l.WorldPosition, l.Radius, l.LightColor );
 			ApplyCommon( so, l );
 			_lights.Add( so );
-			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Rotation = l.WorldRotation, Radius = l.Radius } );
+			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Rotation = l.WorldRotation, Radius = l.Radius, Color = l.LightColor } );
 			any = true;
 		}
 
@@ -268,7 +344,7 @@ public sealed class SdfStage : IDisposable
 
 			ApplyCommon( so, l );
 			_lights.Add( so );
-			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Rotation = l.WorldRotation, Radius = l.Radius } );
+			_placed.Add( new PlacedLight { Light = so, Position = l.WorldPosition, Rotation = l.WorldRotation, Radius = l.Radius, Color = l.LightColor } );
 			any = true;
 		}
 
@@ -285,6 +361,7 @@ public sealed class SdfStage : IDisposable
 			BuildFallbackLighting();
 
 		_post.ReadFrom( root );
+		RigOutlineFraction = _post.OutlineWidth;
 		BuildPostPass();
 	}
 
@@ -361,7 +438,7 @@ public sealed class SdfStage : IDisposable
 			ShadowsEnabled = false, // one object on transparency — a cast shadow has nothing to land on
 		};
 		_lights.Add( sun );
-		_directionals.Add( new PlacedDirectional { Light = sun, Rotation = Rotation.From( 35, 150, 0 ) } );
+		_directionals.Add( new PlacedDirectional { Light = sun, Rotation = Rotation.From( 35, 150, 0 ), Color = sun.LightColor } );
 
 		// Key is front-above-LEFT of the camera, so fill goes front-right (into its shadow) and the rim sits
 		// back-left to pick out the silhouette. Keep these in step with thumbnail_stage.prefab.
@@ -373,7 +450,7 @@ public sealed class SdfStage : IDisposable
 	{
 		var so = new ScenePointLight( World, position, radius, colour ) { ShadowsEnabled = false };
 		_lights.Add( so );
-		_placed.Add( new PlacedLight { Light = so, Position = position, Rotation = Rotation.Identity, Radius = radius } );
+		_placed.Add( new PlacedLight { Light = so, Position = position, Rotation = Rotation.Identity, Radius = radius, Color = colour } );
 	}
 
 	void ApplyEnvmap( Texture cube )
@@ -394,7 +471,7 @@ public sealed class SdfStage : IDisposable
 	/// <returns>True when the staged prop actually changed — the caller's cue to re-render.</returns>
 	public bool SetBrushes( List<SdfBrush> brushes )
 	{
-		if ( !IsValid )
+		if ( !IsValid || _lightingOnly )
 			return false;
 
 		if ( brushes is not { Count: > 0 } )
@@ -467,7 +544,9 @@ public sealed class SdfStage : IDisposable
 	/// <param name="pose">Camera orientation. Null uses the rig prefab's camera rotation.</param>
 	/// <param name="fov">Horizontal field of view (SceneCamera's FOV axis). Null uses the rig's camera.</param>
 	/// <param name="margin">Padding around the bounding sphere. Null uses the rig's Margin.</param>
-	public void Frame( SceneCamera camera, Angles? pose = null, float? fov = null, float? margin = null )
+	/// <param name="pan">Slide the subject across the frame, in half-frames: (1, 0) puts its centre on the right
+	/// edge, (0, 1) on the top. Zero = the fitted centre.</param>
+	public void Frame( SceneCamera camera, Angles? pose = null, float? fov = null, float? margin = null, Vector2 pan = default )
 	{
 		if ( !IsValid || camera is null )
 			return;
@@ -574,12 +653,21 @@ public sealed class SdfStage : IDisposable
 		// is unaffected by it.
 		camera.Position = aim - rot.Forward * dist;
 		camera.Rotation = rot;
+
+		// The camera moves opposite to where the subject should go. Measured at the aim point's depth, so a pan of
+		// 1 lands the aim exactly on the frame edge whatever the distance.
+		if ( pan != default )
+		{
+			var halfFrame = dist * MathF.Tan( halfFov );
+			camera.Position -= (rot.Right * pan.x + rot.Up * pan.y) * halfFrame;
+		}
 		// Bracket the box itself, with a subject-sized pad so displacement pushing the silhouette out past the
 		// SDF bounds can't get clipped by the near/far planes.
 		camera.ZNear = MathF.Max( 0.5f, dist + nearest - subjectRadius );
 		camera.ZFar = dist + furthest + subjectRadius * 2f;
 		camera.BackgroundColor = Color.Transparent;
-		camera.AmbientLightColor = _ambient;
+		camera.AmbientLightColor = _ambient * AmbientScale;
+		World.AmbientLightColor = _ambient * AmbientScale;
 
 		// Re-place the local lights for this subject's size. The rig is authored around a ReferenceRadius-sized
 		// prop at the origin, so scaling by the real radius means a tennis ball and a wardrobe get the same
@@ -592,13 +680,16 @@ public sealed class SdfStage : IDisposable
 		// moon. Identity when no pose override is in play, so the stock thumbnails render exactly as before.
 		// Derived fresh from the AUTHORED values every call — swinging the live lights in place would compound.
 		var scale = subjectRadius / _referenceRadius;
-		var swing = rot * _pose.ToRotation().Inverse;
+		// LightOffset slots in between, in the camera's own frame — so its yaw always walks the key round the
+		// subject as seen through the lens, whatever the pose.
+		var swing = rot * LightOffset.ToRotation() * _pose.ToRotation().Inverse;
 
 		foreach ( var p in _placed )
 		{
 			p.Light.Position = centre + swing * p.Position * scale;
 			p.Light.Rotation = swing * p.Rotation;
 			p.Light.Radius = p.Radius * scale;
+			p.Light.LightColor = p.Color * LightScale;
 		}
 
 		// Pack the shadow cascades around the subject. They're fitted from the camera outward, and the default
@@ -610,6 +701,7 @@ public sealed class SdfStage : IDisposable
 		foreach ( var d in _directionals )
 		{
 			d.Light.Rotation = swing * d.Rotation;
+			d.Light.LightColor = d.Color * LightScale;
 			d.Light.SetCascadeDistanceScale( shadowRange );
 		}
 	}
@@ -641,6 +733,14 @@ public sealed class SdfStage : IDisposable
 		_sky = null;
 
 		_env?.Delete();
+
+		// A lighting-only stage borrowed its world: everything we put in it is gone above, the rest is its owner's.
+		if ( _lightingOnly )
+		{
+			World = null;
+			_env = null;
+			return;
+		}
 
 		if ( World.IsValid() )
 		{

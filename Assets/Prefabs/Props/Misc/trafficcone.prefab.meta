@@ -1,3 +1,17 @@
 {
-  "guid": "a43f0e75-3f18-461f-8b29-b25529006772"
+  "guid": "a43f0e75-3f18-461f-8b29-b25529006772",
+  "mimiclay_icon": {
+    "Output": "UI/Icons/trafficcone.png",
+    "Size": 256,
+    "Supersample": 2,
+    "CameraAngles": "5.12665749,337.600006,-21.9599972",
+    "FieldOfView": 32,
+    "Distance": 1,
+    "Pan": "0.0536912754,0.114093952",
+    "LightAngles": "0,0,0",
+    "LightBrightness": 1,
+    "AmbientBrightness": 1,
+    "OutlinePixels": 2.56,
+    "Silhouette": false
+  }
 }

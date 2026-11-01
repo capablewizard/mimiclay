@@ -217,7 +217,7 @@ public static class MapBannerCapture
 	/// didn't fire, so a re-capture left the old banner in memory (the map card, Texture.Load here, AND the asset
 	/// browser thumbnail all kept showing the first capture).
 	/// </summary>
-	static void RefreshLoadedTexture( string path, Bitmap bitmap )
+	internal static void RefreshLoadedTexture( string path, Bitmap bitmap )
 	{
 		var texture = Texture.Load( path, false );
 		if ( texture is null || !texture.IsValid )
