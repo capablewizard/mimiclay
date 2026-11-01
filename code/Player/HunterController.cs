@@ -21,7 +21,7 @@ namespace Mimiclay;
 [Title( "Hunter Controller" )]
 [Category( "Mimiclay" )]
 [Icon( "sports_esports" )]
-public sealed partial class HunterController : Component
+public sealed partial class HunterController : Component, PlayerController.IEvents
 {
 	[Property, Group( "Weapon" )] public float Range { get; set; } = 4096f;
 
@@ -155,6 +155,14 @@ public sealed partial class HunterController : Component
 	/// <summary>Volume of the push-off step played the moment a JUMP leaves the ground (the engine's
 	/// physics-driven landing thump covers the other half of the pair). 0 = silent jumps.</summary>
 	[Property, Group( "Footsteps" ), Range( 0f, 1f )] public float JumpStepVolume { get; set; } = 0.8f;
+
+	/// <summary>A clay splat layered quietly under every walk step (user, 2026-11-01 experiment): clay feet on the
+	/// floor. Null = plain steps.</summary>
+	[Property, Group( "Footsteps" )] public SoundEvent StepSplatSound { get; set; }
+
+	/// <summary>The splat's volume as a fraction of the step's. The step's own speed scaling and the controller's
+	/// FootstepVolume apply on top, so it follows the step: louder running, near-silent creeping.</summary>
+	[Property, Group( "Footsteps" ), Range( 0f, 1f )] public float StepSplatVolume { get; set; } = 0.05f;
 
 	// Footstep emitter state: distance walked since the last step, where we last measured from (invalid until
 	// re-seeded on the first grounded frame), and which foot lands next (alternates left/right sounds).
@@ -371,7 +379,14 @@ public sealed partial class HunterController : Component
 		// EyeAngles still update from the input path, so we can read them to position the camera.
 		_controller.UseCameraControls = false;
 
+		// No sprint key (user, 2026-11-01): hunters always move at RunSpeed, crouch is the slow, careful move, and Shift
+		// is free to let go of a climb. An empty AltMoveButton is never down (Input.Down ignores blank actions), so
+		// RunByDefault always runs. WalkSpeed stays as the low end of the footstep stride / gun bob ranges.
+		_controller.RunByDefault = true;
+		_controller.AltMoveButton = "";
+
 		Components.GetOrCreate<Sandbox.Movement.MoveModeWalk>();
+		Components.GetOrCreate<HunterClimb>(); // walls and ceilings, like props (HunterClimb)
 
 		// Voice chat rides the pawn. Created in OnAwake so the owner has it BEFORE NetworkSpawn — it ships in
 		// the spawn snapshot and proxies receive the same component (the engine's voice RPC needs that shared
@@ -753,6 +768,7 @@ public sealed partial class HunterController : Component
 		UpdateMouth();
 		MatchBodyMaterialToFace();
 		UpdateFootsteps();
+		UpdateScrape();
 		UpdateRunEffect();
 
 		// ONE smoothed live eye per frame, shared by the camera and the head placement below, so the two can
@@ -1362,6 +1378,9 @@ public sealed partial class HunterController : Component
 	// Grounded step smoothing (same as the stock camera path): stepping up moves the body vertically in one
 	// tick, so glide the eye z toward it rather than snapping. Airborne follows raw so jumps/falls stay 1:1.
 	// Advances _eyez and _standZ — call exactly once per frame (OnUpdate does), and use the results everywhere.
+	// Climbing follows raw too: the glide would trail the eye a few units behind a hunter moving up a wall.
+	bool Grounded => !_controller.IsAirborne && !_controller.IsClimbing;
+
 	Vector3 SmoothedEyePosition()
 	{
 		// Height comes from the duck SPRING, not the instantaneous CurrentHeight, so crouching eases down and
@@ -1374,7 +1393,7 @@ public sealed partial class HunterController : Component
 		var eye = _controller.WorldPosition
 			+ Vector3.Up * (height - _controller.EyeDistanceFromTop);
 
-		if ( !_controller.IsAirborne && _eyez != 0f )
+		if ( Grounded && _eyez != 0f )
 			eye.z = _eyez.LerpTo( eye.z, Time.Delta * 50f );
 		_eyez = eye.z;
 
@@ -1392,7 +1411,7 @@ public sealed partial class HunterController : Component
 		float stand = _controller.WorldPosition.z
 			+ (_controller.BodyHeight - _controller.EyeDistanceFromTop);
 
-		if ( !_controller.IsAirborne && _standZ != 0f )
+		if ( Grounded && _standZ != 0f )
 			stand = _standZ.LerpTo( stand, Time.Delta * 50f );
 		_standZ = stand;
 
@@ -1614,7 +1633,11 @@ public sealed partial class HunterController : Component
 	// relative to a full jump" — nothing about our tuning has to match across machines for them to agree.
 	void DetectJumpEvents()
 	{
-		bool airborne = _controller.IsAirborne;
+		// Clinging to a wall counts as still in the air here: grabbing one isn't a landing, and letting go isn't a jump.
+		// The fall speed restarts while clinging, so climbing down onto the floor doesn't land as hard as a fall.
+		bool airborne = _controller.IsAirborne || _controller.IsClimbing;
+		if ( _controller.IsClimbing )
+			_fallSpeed = 0f;
 		float vz = _controller.Velocity.z;
 		float jumpSpeed = MathF.Max( _controller.JumpSpeed, 1f );
 
@@ -2354,6 +2377,20 @@ public sealed partial class HunterController : Component
 
 		_stepFoot = 1 - _stepFoot;
 		_controller.PlayFootstepSound( pos, volume, _stepFoot );
+		PlayStepSplat( pos, volume );
+	}
+
+	// The quiet clay splat under a step (see StepSplatSound): a detached point sound where the foot landed, through the
+	// footstep mixer, scaled like the step itself.
+	void PlayStepSplat( Vector3 pos, float volume )
+	{
+		if ( StepSplatSound is null || StepSplatVolume <= 0f )
+			return;
+		var handle = Sound.Play( StepSplatSound, pos );
+		if ( !handle.IsValid() )
+			return;
+		handle.TargetMixer = _controller.FootstepMixer.GetOrDefault();
+		handle.Volume *= volume * StepSplatVolume * _controller.FootstepVolume;
 	}
 
 	// The jump push-off sound. Mirrors the tail of the engine's PlayFootstepSound (surface sound event →
@@ -2375,6 +2412,16 @@ public sealed partial class HunterController : Component
 		handle.FollowParent = false;
 		handle.TargetMixer = _controller.FootstepMixer.GetOrDefault();
 		handle.Volume *= JumpStepVolume * _controller.FootstepVolume;
+		PlayStepSplat( WorldPosition, JumpStepVolume );
+	}
+
+	// Landing: the engine plays the thump itself (both feet, PlayerController.UpdateFalling) right after posting this,
+	// on every machine. Layer the splat under it at the engine's own landing volume, so it keeps the walk's ratio.
+	void PlayerController.IEvents.OnLanded( float distance, Vector3 impactVelocity )
+	{
+		if ( !EnableFootsteps || Concealed || !_controller.IsValid() || !_controller.EnableFootstepSounds )
+			return;
+		PlayStepSplat( WorldPosition, impactVelocity.Length.Remap( 50f, 800f, 0.5f, 5f ) ); // the engine's landing volume
 	}
 
 	// Run dust: enable the RunPFX emitters only while moving at running speed. Speed is OBSERVED horizontal
@@ -2568,6 +2615,9 @@ public sealed partial class HunterController : Component
 		// host sweep in PropClaims covers the cases where this machine can't ask).
 		if ( _leaseSession.IsValid() || _leaseProp.IsValid() )
 			EndLeaseEdit();
+
+		_scrapeHandle?.Stop();
+		_scrapeHandle = null;
 	}
 
 	/// <summary>The two editable parts the edit HUD's bottom dock switches between.</summary>

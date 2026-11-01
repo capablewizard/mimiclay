@@ -375,34 +375,10 @@ public sealed partial class HiderController
 		return _climbing;
 	}
 
-	// WASD while climbing (user, 2026-10-29): A/D go SIDEWAYS along the surface, by the camera's left; W/S go in DEPTH —
-	// the camera's level forward, kept only as far as the surface faces up or down: all of it on a ceiling (W = forward
-	// along it), none on an upright wall, where W only pushes INTO the wall (ClimbInto — that's what mounts a ledge at the
-	// top). Up and down a wall are Space and Ctrl. Pitch is ignored, so neither wobbles with the look or a bumpy face.
-	Vector3 ClimbAlong( Vector3 move, Vector3 n )
-	{
-		if ( move.IsNearZeroLength )
-			return Vector3.Zero;
-
-		var view = Rotation.FromYaw( _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw );
-		Vector3 Flat( Vector3 v ) => v - n * Vector3.Dot( v, n );
-
-		var depth = Flat( view.Forward ) * MathF.Abs( n.z );
-		var side = Flat( view.Left );
-		side = side.Length >= 0.3f ? side.Normal : side / 0.3f; // looking along the wall: A/D say little, so slow rather than snap
-
-		return (depth * move.x + side * move.y).ClampLength( 1f ) * ScaledClimbSpeed;
-	}
-
-	// How hard W/S push INTO the surface (0..1, S negative). Mounts a ledge. Fully in unless the level look points well away
-	// from the surface: on an upright wall W has no other job (ClimbAlong gives it no depth there), and taking only the look's
-	// share pointing at the wall meant W did nothing at the top while looking along the wall — no mantle (user, 2026-11-01).
-	float ClimbInto( Vector3 move, Vector3 n )
-	{
-		var forward = Rotation.FromYaw( _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw ).Forward;
-		float facing = Vector3.Dot( forward, -n );
-		return move.x * (facing > -0.5f ? 1f : facing);
-	}
+	// WASD while climbing: sideways and in depth by the camera, W into the wall (see ClimbRules, shared with hunters).
+	float ClimbViewYaw => _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw;
+	Vector3 ClimbAlong( Vector3 move, Vector3 n ) => ClimbRules.Along( ClimbViewYaw, move, n, ScaledClimbSpeed );
+	float ClimbInto( Vector3 move, Vector3 n ) => ClimbRules.Into( ClimbViewYaw, move, n );
 
 	// Grabs and the climb look THROUGH floor-like clay props (see PropsAsFloor — props smaller than us) to the surface they
 	// sit on: a fridge covered in magnets is still a fridge. Each floor prop hit is ignored and the trace re-run (a few
@@ -668,12 +644,7 @@ public sealed partial class HiderController
 			_carryDir = null;
 		}
 
-		var up = Vector3.Up - n * Vector3.Dot( Vector3.Up, n );
-		var climbUp = Vector3.Zero; // Space / Ctrl
-		if ( up.Length > 0.2f )
-			climbUp = up.Normal * ScaledClimbSpeed * vertical;
-		else if ( !_ceilingOut.IsNearZeroLength )
-			climbUp = _ceilingOut * ScaledClimbSpeed * vertical; // under a ceiling: Space carries on out from the wall below
+		var climbUp = ClimbRules.Vertical( vertical, n, _ceilingOut, ScaledClimbSpeed ); // Space / Ctrl
 
 		// Just round a corner, same keys still held: don't head back into the surface we left (see _cornerLeft). Dropped from
 		// WASD and from Space/Ctrl SEPARATELY: on a ceiling reached up a wall, W (toward that wall) and Space (out from it)
@@ -684,9 +655,8 @@ public sealed partial class HiderController
 				_cornerLeft = null; // new keys: a fresh press back toward it is meant
 			else
 			{
-				Vector3 NotBack( Vector3 v ) => Vector3.Dot( v, -left ) > 0f ? v + left * Vector3.Dot( v, -left ) : v;
-				wasd = NotBack( wasd );
-				climbUp = NotBack( climbUp );
+				wasd = ClimbRules.NotBack( wasd, left );
+				climbUp = ClimbRules.NotBack( climbUp, left );
 			}
 		}
 		var along = wasd + climbUp;

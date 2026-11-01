@@ -335,7 +335,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d69b0cf6-596d-464c-a7b2-5f02feccc3c4",
+            "Id": "e019c1af-fa60-45fc-b8aa-71dbc7985ba4",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -392,7 +392,7 @@
           "IsStatic": true,
           "MaterialGroup": null,
           "Model": {
-            "Id": "d69b0cf6-596d-464c-a7b2-5f02feccc3c4",
+            "Id": "e019c1af-fa60-45fc-b8aa-71dbc7985ba4",
             "Path": "models/props/trim_sheets/doors/wooden_doors/wooden_door_01c.vmdl"
           },
           "OnComponentDestroy": null,
@@ -1387,7 +1387,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "54c15e6b-2944-479e-8bbf-ec6e2d0c4568",
+                "Id": "8375dffe-c41f-434e-99fa-f9862122afaa",
                 "Path": "models/props/cooker/cooker.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1433,7 +1433,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "852b946e-4248-4147-b9bb-d9fadff4a2e8",
+                "Id": "0c9544c4-4dee-4c59-8aed-f89a23649793",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1461,7 +1461,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "852b946e-4248-4147-b9bb-d9fadff4a2e8",
+                "Id": "0c9544c4-4dee-4c59-8aed-f89a23649793",
                 "Path": "models/props/fridge/fridge.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1508,7 +1508,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "144beba7-24a8-4f21-b65e-7ab15023bdd1",
+                "Id": "20e958bd-dbd9-432e-9040-b7e1d7d0f9d4",
                 "Path": "models/props/washing_machine/washing_machine.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1552,7 +1552,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "e442ab3f-78f2-4171-b9bc-f262d64a5ac9",
+                "Id": "f8b41ba5-769c-46f5-9357-58b60bbf5d18",
                 "Path": "models/props/microwave/microwave.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1864,7 +1864,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "c91d8fdb-6cc9-42e4-bec9-8e93da2f7e1e",
+                "Id": "a3432612-be6b-4024-9d92-8854328831c1",
                 "Path": "models/props/kickstool/kickstool.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1908,7 +1908,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "f6f429da-e12c-4e62-9045-df14cf62c483",
+                "Id": "83e89808-2125-4848-a61a-ed91c7ae5f30",
                 "Path": "models/props/trim_sheets/utility/step_ladder_01.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1952,7 +1952,7 @@
               "IsStatic": true,
               "MaterialGroup": null,
               "Model": {
-                "Id": "325c079e-9515-4d79-a5be-f1b387928f69",
+                "Id": "e4ca46fa-e59a-4bf6-98a6-d6f88704c3f5",
                 "Path": "models/props/toaster/toaster.vmdl"
               },
               "OnComponentDestroy": null,
@@ -1998,7 +1998,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "c32cdb51-0c69-483d-9d78-93c0d77cceb6",
+                "Id": "5ff25358-c7c1-458e-9e81-e5e32fdb94f5",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -2026,7 +2026,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "c32cdb51-0c69-483d-9d78-93c0d77cceb6",
+                "Id": "5ff25358-c7c1-458e-9e81-e5e32fdb94f5",
                 "Path": "models/props/light_bulb_fitting/light_bulb_fitting.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3136,7 +3136,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
+                "Id": "e413f77d-4e0c-49ed-8670-869d0117c8a2",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3164,7 +3164,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
+                "Id": "e413f77d-4e0c-49ed-8670-869d0117c8a2",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3213,7 +3213,7 @@
               "MaterialOverride": null,
               "Materials": null,
               "Model": {
-                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
+                "Id": "e413f77d-4e0c-49ed-8670-869d0117c8a2",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -3241,7 +3241,7 @@
               "Friction": null,
               "IsTrigger": false,
               "Model": {
-                "Id": "16d45adc-5da0-4eb8-935e-dea99e52f885",
+                "Id": "e413f77d-4e0c-49ed-8670-869d0117c8a2",
                 "Path": "models/sbox_props/electrical/switch.vmdl"
               },
               "OnComponentDestroy": null,
@@ -4173,7 +4173,10 @@
           "__enabled": true,
           "Flags": 0,
           "AutoReimport": true,
-          "BakedGeometry": "models/fbxbaked/scenes_maps_flatgrass_grass.fbxbake",
+          "BakedGeometry": {
+            "Id": "a9ef4186-71ef-4c82-b655-5a068fd30d22",
+            "Path": "models/fbxbaked/scenes_maps_flatgrass_grass.fbxbake"
+          },
           "BuildCollision": true,
           "CheckInterval": 0.5,
           "DefaultMaterial": {
@@ -4183,7 +4186,7 @@
           "FbxPath": "scenes/maps/flatgrass/grass.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "10 object(s), 19005 tris — 01:32:58",
+          "LastImport": "10 object(s), 19005 tris — 13:41:39",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -6275,8 +6278,24 @@
               "Type": "Component",
               "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6324,8 +6343,16 @@
               "Type": "Component",
               "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
             },
-            "Property": "__enabled",
-            "Value": false
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -6341,6 +6368,159 @@
         "bb6af9c4-3490-49db-9219-39b2b3642daf": "4547180e-f268-4995-8f10-f4f058e777ba",
         "8aaee0fd-c3be-88db-92e5-55157b42da5c": "c376610e-5a8e-47e5-8607-1c3544e06bea"
       }
+    },
+    {
+      "__guid": "ca1f0d81-a832-438b-9e0c-10f28500d958",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "a43f0e75-3f18-461f-8b29-b25529006772",
+        "Path": "prefabs/props/misc/trafficcone.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Position",
+            "Value": "182.031525,-377.799469,374.028503"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "7e6e16fd-fba4-4f8f-949b-3ac915daf05a": "ca1f0d81-a832-438b-9e0c-10f28500d958",
+        "1e4d5569-6e14-4af0-85bb-2a171bc90f00": "fa240617-01fe-4327-a83f-98cf95ec649f",
+        "baccb9a5-3463-4166-ad57-d7b9beaaed41": "2907ccd1-abc9-4dbd-a94b-b3b8f4d0d52c",
+        "7ade888c-07de-4e43-875b-24bbae44e2d4": "7e669735-794a-4b67-ab6d-b90091129191",
+        "1139bd60-8d27-4d22-ad24-f83d13cbe5b1": "032455dc-d0d6-479a-852f-c8bb79454e6d",
+        "c78b9b71-9b5b-4a96-9f2a-231bb7b01af9": "a0cdf0cf-d7ef-4322-b782-c2059f921d81",
+        "523c5b7b-1dbb-4bdc-8099-dddcca7a98f1": "527921f2-eebb-4575-8df4-ee7c1580cd69",
+        "d2ff1388-0f46-49b2-bb27-4942c6acaa24": "c9098e7b-031f-477e-a12e-b227d4594b6b"
+      }
+    },
+    {
+      "__guid": "c7484146-3370-4e42-84e5-67b14c0b3434",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "a43f0e75-3f18-461f-8b29-b25529006772",
+        "Path": "prefabs/props/misc/trafficcone.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Name",
+            "Value": "trafficcone (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Position",
+            "Value": "275.762268,-377.799469,400.007843"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Rotation",
+            "Value": "0.214113295,0.762483597,0.58781594,0.165064812"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "7e6e16fd-fba4-4f8f-949b-3ac915daf05a": "c7484146-3370-4e42-84e5-67b14c0b3434",
+        "1e4d5569-6e14-4af0-85bb-2a171bc90f00": "c6581a30-2e32-4b24-b2ca-3100c6e3a09e",
+        "baccb9a5-3463-4166-ad57-d7b9beaaed41": "dbf62785-06e6-4d84-b50d-e0949848e851",
+        "7ade888c-07de-4e43-875b-24bbae44e2d4": "59ed2baf-3abf-40e7-8573-285da33da3df",
+        "1139bd60-8d27-4d22-ad24-f83d13cbe5b1": "f6fd58a4-8a9a-4a68-a924-b161d4a73636",
+        "c78b9b71-9b5b-4a96-9f2a-231bb7b01af9": "9ae87087-0186-4db0-b5dd-89789331dc49",
+        "523c5b7b-1dbb-4bdc-8099-dddcca7a98f1": "1f8fad89-ca43-4633-8f82-772e0d2b37c2",
+        "d2ff1388-0f46-49b2-bb27-4942c6acaa24": "314ff469-b925-431a-b0bd-d61640879f69"
+      }
+    },
+    {
+      "__guid": "4e0449a4-da6c-4f6d-ba49-29b372d74387",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "street_amb_01",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SoundPointComponent",
+          "__guid": "f7ddc78c-fc81-4a7f-afda-e7a2880c649b",
+          "__enabled": true,
+          "Flags": 0,
+          "Distance": 512,
+          "DistanceAttenuation": false,
+          "DistanceAttenuationOverride": false,
+          "Falloff": [
+            {
+              "x": 0,
+              "y": 1,
+              "in": 3.1415927,
+              "out": -3.1415927,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "Force2d": true,
+          "MaxRepeatTime": 1,
+          "MinRepeatTime": 1,
+          "OcclusionEnabled": false,
+          "OcclusionOverride": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Pitch": 1,
+          "PlayOnStart": true,
+          "Repeat": false,
+          "ReverbEnabled": false,
+          "ReverbOverride": false,
+          "SoundEvent": {
+            "Id": "b051e82b-3347-48ce-a683-88038b731b5f",
+            "Path": "street_amb_01.sound"
+          },
+          "SoundOverride": true,
+          "StopOnNew": false,
+          "TargetMixer": {
+            "Name": "unknown",
+            "Id": "00000000-0000-0000-0000-000000000000"
+          },
+          "Volume": 1
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -6391,7 +6571,8 @@
     "facepunch.switch#308549",
     "facepunch.toaster#275144",
     "facepunch.washingmachine#279042",
-    "facepunch.wooden_door_01c#275040"
+    "facepunch.wooden_door_01c#275040",
+    "flex.street_amb_01#12741"
   ],
   "__version": 3
 }
