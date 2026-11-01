@@ -4,6 +4,7 @@
 //  because both the menu (via _menu) and the in-game HUD import this sheet.
 //
 //  .paper-card  the cream card surface recipe (fill + ink outline + float shadow)
+//  .toast-card  the jittering capitals banner ("pay attention"), on a .paper-card
 //  .btn         full-weight action tile (a paper card; lifts on hover)
 //  .btn-action  the big raised-orange "clay" headline button (Start / Join)
 //  .btn-jitter  the same clay look, smaller; grows on hover while its WobbleText letters jitter
@@ -40,6 +41,30 @@ label { pointer-events: none; }
 	background-color: $paper-tile;
 	border: 2px solid $card-edge;
 	box-shadow: $shadow-float;
+}
+
+// --- Toast card -----------------------------------------------------------------
+// The chunky "pay attention" banner: header-font capitals on a paper card, optional leading icon, wobbling the
+// stop-motion clay jitter for as long as it's up. The look of the edit HUD's sculpt-validity warning and the
+// crosshair's "E Edit" prompt; the ammo bar's "Final Shot!" uses this kit. Pair with .paper-card for the surface:
+// class="paper-card toast-card". The jitter owns this element's `transform`, so pop it in/out on a WRAPPER.
+.toast-card
+{
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	gap: $space-md;
+	padding: $space-md $space-lg;
+	border-radius: 22px; // match .shape-tile
+	color: $paper-ink;
+	font-family: $header-font;
+	font-size: 30px;
+	font-weight: 800;
+	letter-spacing: 1px;
+	text-transform: uppercase; // house rule: all headers are uppercase
+	white-space: nowrap;
+	pointer-events: none;
+	animation: action-jitter $wobble-duration linear 0s infinite;
 }
 
 // --- Action tile -------------------------------------------------------------

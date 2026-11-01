@@ -26,7 +26,13 @@
 
 @if ( _toastShowing )
 {
-	<WobbleText Text="Final Shot!" LockStep=@true class=@(_toastLeaving ? "final-shot leaving" : "final-shot") />
+	@* The wrapper pops in/out; the card inside jitters (the toast kit owns its transform). *@
+	<div class="final-shot @(_toastLeaving ? "leaving" : "")">
+		<div class="paper-card toast-card">
+			<div class="toast-icon"><div class="ammo-art"></div></div>
+			<span>Final Shot!</span>
+		</div>
+	</div>
 }
 
 @code
@@ -44,7 +50,7 @@
 
 	// A missed shot's icon waits this long before popping out, so the shot lands first and the cost reads as its
 	// consequence rather than part of the trigger pull.
-	const float SpendDelay = 0.3f;
+	const float SpendDelay = 0.75f;
 
 	// How long the toast holds, then how long its pop-out takes before it's removed.
 	const float ToastHold = 1.8f;
