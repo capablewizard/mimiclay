@@ -395,16 +395,22 @@ $clock-col-width: 150px;
 			// earlier cut flattened the lit render with filter contrast(0) here, which killed the outline's
 			// colour along with the fill. Grey level lives in SdfStagePost.SilhouetteGrey. Hidden at scale(0)
 			// and revealed by .hinting with the badge spring; the 0.16s shrink covers its exit.
+			// Two layers, the badge way: .silhouette is the box and owns `transform` for the spring; the SdfIcon
+			// inside (.silhouette-art) is the picture, free to take the wobble on its own `transform`.
 			.silhouette {
 				position: absolute;
 				top: 0; left: 0;
 				width: 100%; height: 100%;
-				background-size: contain;
-				background-repeat: no-repeat;
-				background-position: center;
 
 				transform: scale( 0 );
 				transition: transform 0.16s ease;
+
+				.silhouette-art {
+					width: 100%; height: 100%;
+					background-size: contain;
+					background-repeat: no-repeat;
+					background-position: center;
+				}
 			}
 
 			&.hinting {
@@ -413,6 +419,12 @@ $clock-col-width: 150px;
 				.silhouette {
 					transform: scale( 1 );
 					animation: hud-hand-raise 0.34s ease-out;
+				}
+
+				// While a hint is up (not the lit reveal portrait), it wobbles like a raised-hand badge — the
+				// stop-motion jitter, taking over as the spring lands.
+				.silhouette.quiz .silhouette-art {
+					animation: action-jitter $wobble-duration linear 0.34s infinite;
 				}
 			}
 		}

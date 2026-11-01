@@ -1,24 +1,30 @@
 @import "/UI/_theme.scss";
 @import "/UI/_ammo.scss"; // .ammo-icon + its pop keyframes — shared with the nameplates
+@import "/UI/_button.scss"; // action-jitter — the last shot's wobble
 
-// The local hunter's shots (see AmmoBar.razor). A full-width strip pinned near the bottom of the round HUD, raised
-// clear of the self-mic indicator (PlayerNameplates' .self-mic, 48px up), with the row centred in it and the Final
-// Shot toast stacked above. Pure readout — never takes the mouse.
+// The local hunter's shots (see AmmoBar.razor). A full-width strip pinned near the bottom of the round HUD, with
+// the row centred in it and the Final Shot toast stacked above. Pure readout — never takes the mouse.
 .ammo-bar
 {
 	position: absolute;
 	left: 0;
 	right: 0;
-	bottom: 110px;
+	bottom: 44px; // level with the edit HUD's Head / Weapon part dock (EditHud .part-dock)
 	flex-direction: column-reverse; // row on the bottom, toast above it
 	align-items: center;
 	pointer-events: none;
+
+	// Hidden while the hunter is sculpt-editing — see AmmoBar.Tick.
+	&.editing
+	{
+		opacity: 0;
+	}
 
 	.ammo-row
 	{
 		flex-direction: row;
 		align-items: flex-end;
-		gap: 10px;
+		gap: 0px; // the diagonal rounds' empty box corners already space them
 	}
 
 	// Parked at nothing until it pops in; .full springs it in, .spent bursts it back out and rests there.
@@ -32,10 +38,29 @@
 			animation: ammo-pop-in 0.34s ease-out;
 		}
 
+		// Once it has burst, its slot closes up too, so the shots that are left slide together and the row stays
+		// centred (.ammo-bar centres the row, and the row is only as wide as its slots). The delay holds the slot
+		// open until the 0.22s pop-out has played.
+		// Down to the last shot: it wobbles like a raised-hand badge — the stop-motion jitter on the CHILD, since
+		// the box's own transform belongs to the pop.
+		&.full.last .ammo-art
+		{
+			animation: action-jitter $wobble-duration linear 0s infinite;
+		}
+
+		// Fired, waiting out the spend delay before it pops: the same jitter, run fast so it rattles through
+		// several poses in the 0.3s it has. After .last so it wins on the final shot too.
+		&.full.firing .ammo-art
+		{
+			animation: action-jitter 0.3s linear 0s infinite;
+		}
+
 		&.spent
 		{
 			transform: scale( 0 );
+			width: 0px;
 			animation: ammo-pop-out 0.22s ease-in;
+			transition: width 0.18s ease-out 0.22s;
 		}
 	}
 

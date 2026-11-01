@@ -88,6 +88,7 @@
         "__guid": "40000001-0000-4000-8000-000000000003",
         "__enabled": true,
         "Flags": 0,
+        "Friction": 6,
         "GroundAngle": 55,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,

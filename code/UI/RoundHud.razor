@@ -233,8 +233,11 @@
 										   the quiz never repeats an angle. Revealed: the lit render from the
 										   prop's own edit-exit portrait pose, like any hunter pip. Frozen while
 										   they're mid-edit so live strokes never replay on everyone's HUD, same
-										   as the portraits. *@
-										<SdfIcon Key=@prop.Connection Source=@hintIcon.Sculpture Silhouette=@(!revealed) Pose=@(revealed ? hintIcon.Pose : (Angles?)HintPose( prop.Connection, hintState.Cycle )) Frozen=@hintIcon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="silhouette" />
+										   as the portraits. The wrapper owns the spring in/out; the icon inside owns the
+										   wobble a hint does while it's up (.quiz — not the revealed portrait). *@
+										<div class="silhouette @(revealed ? "" : "quiz")">
+											<SdfIcon Key=@prop.Connection Source=@hintIcon.Sculpture Silhouette=@(!revealed) Pose=@(revealed ? hintIcon.Pose : (Angles?)HintPose( prop.Connection, hintState.Cycle )) Frozen=@hintIcon.Editing OutlineWidth=@PipOutline Supersample=@IconSupersample class="silhouette-art" />
+										</div>
 									}
 
 									<div class="paint-badge @(editing ? "editing" : "")">

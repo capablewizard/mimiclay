@@ -1436,6 +1436,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			return;
 
 		_controller.UpdateDucking( Input.Down( "duck" ) );
+		GripSlipperyGround();
 	}
 
 	// Advance the duck spring — ONE value, driving the camera/head drop, the torso squash and (by its absence)

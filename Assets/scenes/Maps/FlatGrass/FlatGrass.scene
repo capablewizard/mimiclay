@@ -10,7 +10,7 @@
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": true,
+      "Enabled": false,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -63,7 +63,7 @@
       "Flags": 0,
       "Name": "2D Skybox",
       "Position": "533.881836,-1137.20825,-288.130188",
-      "Rotation": "0,0,-0.749211252,0.662331164",
+      "Rotation": "0,0,-0.431387246,0.902166843",
       "Scale": "1,1,1",
       "Tags": "skybox",
       "Enabled": true,
@@ -114,7 +114,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Sun",
-          "Position": "187.172623,-664.27063,-123.048149",
+          "Position": "187.192017,-664.328491,-123.053009",
           "Rotation": "-0.118833482,-0.385033637,0.269903392,-0.874516904",
           "Scale": "1,1,1",
           "Tags": "light_directional,light",
@@ -2930,22 +2930,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3077,7 +3061,7 @@
               "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -3142,7 +3126,7 @@
               "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {

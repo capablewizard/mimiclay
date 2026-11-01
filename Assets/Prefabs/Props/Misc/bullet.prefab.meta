@@ -1,0 +1,17 @@
+{
+  "guid": "a54d9ba4-5385-4cc2-b38f-922002a80a29",
+  "mimiclay_icon": {
+    "Output": "UI/Icons/bullet.png",
+    "Size": 256,
+    "Supersample": 2,
+    "CameraAngles": "9.59994125,181.600342,-37.186676",
+    "FieldOfView": 9.566115,
+    "Distance": 1,
+    "Pan": "0.0604026839,0.0436241589",
+    "LightAngles": "-27.3466549,0,0",
+    "LightBrightness": 1,
+    "AmbientBrightness": 1,
+    "OutlinePixels": 2.56,
+    "Silhouette": false
+  }
+}

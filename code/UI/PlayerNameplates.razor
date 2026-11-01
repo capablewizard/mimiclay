@@ -34,12 +34,11 @@
 	  • Creative (a CreativeManager and no round) — everyone, so a player who possessed a prop wears their name.
 	No RoundManager otherwise (debug scenes, lobby) falls back to the Infection rule.
 
-	Voice indicators live here too, since this is the machine's full-screen player overlay:
-	  • A speaker icon on a plate while that player's voice is playing (PlayerVoice.IsSpeaking — playback-driven,
-	    so it works for any proxy). Icons only ever appear on plates that render at all, so a hidden infection
-	    prop's speech reveals it by EAR (the 3D voice), never by UI.
-	  • A fixed mic icon bottom-centre while OUR OWN mic is transmitting (IsRecording is owner-only truth, read
-	    off our own pawn's voice).
+	Voice indicators live here too, since this is the machine's full-screen player overlay: a speaker icon on a
+	plate while that player's voice is playing (PlayerVoice.IsSpeaking — playback-driven, so it works for any
+	proxy). Icons only ever appear on plates that render at all, so a hidden infection prop's speech reveals it by
+	EAR (the 3D voice), never by UI. Our OWN open mic has no indicator here: s&box draws its own green mic top-right
+	in every game, and ours (bottom-centre) only duplicated it under the ammo bar.
 *@
 
 <root class="player-nameplates">
@@ -60,15 +59,11 @@
 				<div class="ammo-line">
 					@for ( int i = 0; i < p.Ammo; i++ )
 					{
-						<div class="ammo-icon"></div>
+						<div class="ammo-icon"><div class="ammo-art"></div></div>
 					}
 				</div>
 			}
 		</div>
-	}
-	@if ( SelfMicLive )
-	{
-		<i class="self-mic">mic</i>
 	}
 </root>
 
@@ -126,16 +121,9 @@
 	readonly List<(GameObject Pawn, PlayerRole Role)> _candidates = new();
 
 	// OUR pawn this frame — the body we're actually driving, re-resolved every update because pawns respawn,
-	// convert and swap constantly. Sources the local role (team visibility) and the self-mic indicator.
+	// convert and swap constantly. Sources the local role (team visibility).
 	GameObject _ownPawn;
 	PlayerRole _ownRole;
-
-	// OUR pawn's voice, for the self-mic indicator. IsRecording = the mic is genuinely open and capturing right
-	// now (it already folds in push-to-talk state and the user's voip_mode preference — a disabled/undepressed
-	// mic never records). Owner-only truth, and _ownPawn is the one body we own.
-	PlayerVoice OwnVoice => _ownPawn.IsValid() ? _ownPawn.Components.Get<PlayerVoice>() : null;
-
-	bool SelfMicLive => OwnVoice.IsValid() && OwnVoice.IsRecording;
 
 	// Settings is [Sync]'d, so this reads correctly on every machine incl. late-joiners.
 	RoundMode Mode => RoundManager.Current.IsValid() ? RoundManager.Current.Settings.Mode : RoundMode.Infection;
@@ -244,7 +232,7 @@
 	//
 	//   • Somebody else's → a plate candidate. "(IsProxy || IsBotPawn)": another player's pawn is a proxy, and a
 	//     host-held test bot is neither a proxy nor ours (see RoundManager.IsBotPawn).
-	//   • OURS → the local role + the self-mic voice. Resolved through RosterIdOf, which already encodes the
+	//   • OURS → the local role. Resolved through RosterIdOf, which already encodes the
 	//     awkward cases: an un-networked pawn on this machine answers as ours (a concealed infection prop before
 	//     the Hunt), and an ownerless orphan on the wire answers as NOBODY's (a released prop on the host reads
 	//     !IsProxy but is not our body and must never source our role).
@@ -492,7 +480,6 @@
 	{
 		var hash = new HashCode();
 		hash.Add( NameplateScale ); // live-tunable in the editor — re-render when it changes
-		hash.Add( SelfMicLive );
 		foreach ( var p in _plates )
 		{
 			hash.Add( p.PawnId );

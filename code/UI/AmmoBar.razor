@@ -11,8 +11,8 @@
 	  • hidden — not popped in yet (the Hunt just opened and the row is still filling, one by one)
 	  • full   — a shot in the chamber; springs in as it gets there
 	  • spent  — fired; bursts out of existence and stays at nothing
-	The count is RoundManager.LocalAmmo — the shooter's prediction, so an icon pops the moment the trigger is
-	pulled rather than a round trip later.
+	The count is RoundManager.LocalAmmo — the shooter's prediction, so the pop doesn't wait on a round trip —
+	held back SpendDelay on the way down so the icon goes just after the shot lands, not on the trigger pull.
 
 	Down to the last shot, a "Final Shot!" toast pops up over the row with its sting.
 *@
@@ -20,7 +20,7 @@
 <div class="ammo-row">
 	@for ( int i = 0; i < _slots.Length; i++ )
 	{
-		<div class="ammo-icon @SlotClass( _slots[i] )"></div>
+		<div class="ammo-icon @SlotClass( _slots[i] ) @(LastShot( i ) ? "last" : "") @(Firing( i ) ? "firing" : "")"><div class="ammo-art"></div></div>
 	}
 </div>
 
@@ -33,8 +33,18 @@
 {
 	const string FinalShotSound = "sounds/game/sting/finalshot.sound";
 
-	// The fill at the start of the Hunt: one icon per this many seconds, left to right.
-	const float RevealStep = 0.08f;
+	// A shot spent — plays as its icon pops out. A raw file from the mounted kenney pack, like the trigger's
+	// shot-denied blip (error_005), so no sound event.
+	const string SpentSound = "sounds/kenney/ui/error_006.wav";
+
+	// The fill at the start of the Hunt: one icon per this many seconds, left to right — each with the
+	// silhouette hint's pop sound (and its spring: ammo-pop-in is the same curve as hud-hand-raise). Spaced so
+	// every pop is heard on its own.
+	const float RevealStep = 0.16f;
+
+	// A missed shot's icon waits this long before popping out, so the shot lands first and the cost reads as its
+	// consequence rather than part of the trigger pull.
+	const float SpendDelay = 0.3f;
 
 	// How long the toast holds, then how long its pop-out takes before it's removed.
 	const float ToastHold = 1.8f;
@@ -44,9 +54,16 @@
 
 	Slot[] _slots = Array.Empty<Slot>();
 	RealTimeSince _sinceShown;
+	int _revealSounded; // how many fill pops have played their sound
 
 	// The count last frame, for the "down to one" edge. -1 = not counting (row hidden / just shown).
 	int _lastAmmo = -1;
+
+	// The count the row SHOWS — trails the real one down by SpendDelay per shot (rises are immediate). -1 = not
+	// counting yet. _sinceDrop runs from when the real count first fell below it.
+	int _shown = -1;
+	RealTimeSince _sinceDrop;
+	int _real = -1; // the real count as of this frame, for which icons are mid-spend
 
 	RealTimeSince _sinceToast;
 	bool _toastShowing;
@@ -66,23 +83,40 @@
 		{
 			_slots = Array.Empty<Slot>();
 			_lastAmmo = -1;
+			_shown = -1;
 			_toastShowing = false;
 			return;
 		}
+
+		// Sculpt-editing (face / weapon) owns the bottom of the screen. Faded rather than torn down, so the slots
+		// keep their state — a re-mounted row would replay the fill, and lose which slots had already closed up.
+		SetClass( "editing", SculptEditSession.Current?.IsEditing == true );
 
 		var limit = round.Settings.AmmoLimit;
 		if ( _slots.Length != limit )
 		{
 			_slots = new Slot[limit];
 			_sinceShown = 0f;
+			_revealSounded = 0;
 		}
 
-		var ammo = round.LocalAmmo;
+		var ammo = Shown( round.LocalAmmo );
 		var revealed = Math.Min( limit, (int)(_sinceShown / RevealStep) + 1 );
 		var full = Math.Min( ammo, revealed );
 
+		// One pop sound per icon as the fill reaches it — only icons that actually arrive full.
+		if ( full > _revealSounded )
+		{
+			_revealSounded = full;
+			UiSounds.Play( UiSounds.Silhouette );
+		}
+
 		for ( int i = 0; i < _slots.Length; i++ )
 			_slots[i] = i < full ? Slot.Full : _slots[i] == Slot.Hidden ? Slot.Hidden : Slot.Spent;
+
+		// Every shot that's used up. _lastAmmo is -1 on the first visible frame, so opening the Hunt is silent.
+		if ( _lastAmmo >= 0 && ammo < _lastAmmo )
+			UiSounds.Play( SpentSound );
 
 		// Down to the last one — only by shooting there, so a round that hands out a single shot doesn't open
 		// on the warning.
@@ -99,6 +133,29 @@
 			_toastShowing = false;
 	}
 
+	// The real count, held back on the way down: one shot pops out SpendDelay after it was spent, and a quick
+	// double miss pops them one SpendDelay apart rather than together. Everything downstream (icons, sound, the
+	// Final Shot toast) reads this, so they all land on the pop.
+	int Shown( int real )
+	{
+		_real = real;
+
+		if ( _shown < 0 || real >= _shown )
+		{
+			_shown = real;
+			_sinceDrop = 0f;
+			return _shown;
+		}
+
+		if ( _sinceDrop >= SpendDelay )
+		{
+			_shown--;
+			_sinceDrop = 0f;
+		}
+
+		return _shown;
+	}
+
 	// Our own hunter, in a limited Hunt. The roster row is the truth for the role (the pawn swaps on conversion).
 	static bool Visible( RoundManager round )
 	{
@@ -108,6 +165,14 @@
 		var me = Connection.Local?.Id;
 		return me is not null && round.Players.TryGetValue( me.Value, out var row ) && row.Role == PlayerRole.Hunter;
 	}
+
+	// The one shot left, which jiggles (the roster badges' stop-motion wobble) until it's spent. _lastAmmo is the
+	// shown count as of this frame's Tick.
+	bool LastShot( int i ) => _lastAmmo == 1 && i == 0 && _slots[i] == Slot.Full;
+
+	// Spent but still showing — the shot's been fired and its icon is waiting out SpendDelay. It shakes until it
+	// pops. (Several at once after a quick double miss: every icon at or past the real count.)
+	bool Firing( int i ) => _slots[i] == Slot.Full && i >= _real;
 
 	static string SlotClass( Slot slot ) => slot switch
 	{
@@ -121,6 +186,8 @@
 		var hash = new HashCode();
 		hash.Add( _toastShowing );
 		hash.Add( _toastLeaving );
+		hash.Add( _lastAmmo == 1 );
+		hash.Add( _real );
 		foreach ( var s in _slots )
 			hash.Add( s );
 		return hash.ToHashCode();

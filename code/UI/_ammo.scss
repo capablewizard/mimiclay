@@ -2,9 +2,9 @@
 //  Mimiclay ammo kit — the shot icon, shared by every place that counts a
 //  hunter's shots (AmmoBar along the bottom of the HUD, the hunter nameplates).
 //
-//  .ammo-icon      one shot. PLACEHOLDER art: a flat brass round, ink-outlined,
-//                  until the offline icon renders exist. Size it per screen
-//                  (width/height); the shape scales with the box.
+//  .ammo-icon      one shot: the baked bullet render (ui/icons/bullet.png, from
+//                  prefabs/props/misc/bullet.prefab — right-click it → Render
+//                  Icon… to re-bake). Square; size it per screen (width/height).
 //  ammo-pop-in     the spring a shot pops into existence with
 //  ammo-pop-out    the burst a spent shot pops out of existence with
 //
@@ -14,21 +14,30 @@
 @import "/UI/_theme.scss";
 
 // --- The shot ------------------------------------------------------------------
-// A rounded nose over a flat base: the top corners radius at half the width, so it reads as a bullet at any
-// size. The radius is in px because the corners can't follow the box (no arithmetic in s&box SCSS) — screens
-// that change the width retune it alongside.
+// Two layers, like the roster badges: .ammo-icon is the box (and owns `transform` for the pop in/out), the
+// .ammo-art child is the picture (free to wobble on its own `transform` — see the HUD's last-shot jiggle).
+// Markup: <div class="ammo-icon"><div class="ammo-art"></div></div>.
+// The render is square with the round lying on a diagonal, so the box is square too and the image is contained
+// in it — the icon carries its own ink outline, so no border here.
 .ammo-icon
 {
-	width: 16px;
-	height: 38px;
+	width: 96px;
+	height: 96px;
 	flex-shrink: 0;
-	background-color: $craft-yellow;
-	border: 3px solid $paper-edge;
-	border-top-left-radius: 8px;
-	border-top-right-radius: 8px;
-	border-bottom-left-radius: 3px;
-	border-bottom-right-radius: 3px;
-	transform-origin: center;
+}
+
+.ammo-art
+{
+	width: 100%;
+	height: 100%;
+	background-image: url( "/ui/icons/bullet.png" );
+	background-size: contain;
+	background-position: center;
+	background-repeat: no-repeat;
+
+	// Shadows the render's alpha, so it follows the round rather than the box — the same lift the HUD text
+	// gets over the scene (and the crosshair's mouse glyphs, the other alpha-shaped icon).
+	filter: drop-shadow( $scene-shadow );
 }
 
 // --- Pop in / pop out ---------------------------------------------------------------

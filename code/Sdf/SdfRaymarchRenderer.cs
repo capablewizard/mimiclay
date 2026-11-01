@@ -475,6 +475,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// [Property] — it's driven at runtime by the controlling pawn, not authored on the prefab.</summary>
 	public bool RenderHidden { get; set; }
 
+	/// <summary>Drawn as a ghost by an <see cref="SdfGhost"/> instead: the raymarched surface AND the mesh are off in
+	/// every band (no shadows either), but the field keeps baking so the ghost can march it. Set by SdfGhost on its
+	/// members — not a [Property].</summary>
+	public bool Ghosted { get; set; }
+
 	/// <summary>Which render path the raymarched surface draws through — the candidates for a first-person
 	/// viewmodel that can't clip into world geometry. Runtime-driven by the owning pawn (the hunter's gun),
 	/// like <see cref="RenderHidden"/> — not a [Property].</summary>
@@ -523,7 +528,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	// included so this is a strict superset of the old "&& !_fieldOnlyHidden" guard. RenderHidden only forces the
 	// scene object OFF on the legacy path — with SdfShadows the object must keep rendering (into shadow views
 	// only, gated in-shader by SdfShadowOnly + ExcludeGameLayer), or it would cast no shadow at all.
-	bool ForceHidden => (RenderHidden && !MarchedShadowsNow) || _fieldOnlyHidden;
+	bool ForceHidden => (RenderHidden && !MarchedShadowsNow) || _fieldOnlyHidden || Ghosted;
 
 	// Hold marched shadows this long after a shape change: long enough to ride out a live edit's
 	// per-frame churn without flapping, short enough that a settled prop hands off promptly.
@@ -901,8 +906,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 			return;
 
 		// Benchmark control: nothing SDF draws or casts, in any band. Level-driven like the rest, so
-		// clearing the flag restores every renderer on the next frame.
-		if ( HideAll )
+		// clearing the flag restores every renderer on the next frame. A ghosted member is the same, for its SdfGhost.
+		if ( HideAll || Ghosted )
 		{
 			_so.RenderingEnabled = false;
 			if ( MeshRenderer.IsValid() ) MeshRenderer.Enabled = false;
@@ -1975,7 +1980,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// <summary>The highlight follows the surface's own hide flags (a concealed pawn body must not glow).
 	/// Checked against the raw flags, NOT ForceHidden: with SdfShadows a RenderHidden body keeps its scene
 	/// object enabled (shadow-only), but it still must not outline.</summary>
-	internal bool HighlightVisible => !RenderHidden && !_fieldOnlyHidden;
+	internal bool HighlightVisible => !RenderHidden && !_fieldOnlyHidden && !Ghosted;
 
 	/// <summary>Padded local proxy bounds — the highlight unions these (through each member's
 	/// transform) into its single group proxy box.</summary>
