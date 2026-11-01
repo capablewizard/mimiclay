@@ -1,0 +1,53 @@
+// =============================================================================
+//  Mimiclay ammo kit — the shot icon, shared by every place that counts a
+//  hunter's shots (AmmoBar along the bottom of the HUD, the hunter nameplates).
+//
+//  .ammo-icon      one shot. PLACEHOLDER art: a flat brass round, ink-outlined,
+//                  until the offline icon renders exist. Size it per screen
+//                  (width/height); the shape scales with the box.
+//  ammo-pop-in     the spring a shot pops into existence with
+//  ammo-pop-out    the burst a spent shot pops out of existence with
+//
+//  Theme tokens only, like the other kits.
+// =============================================================================
+
+@import "/UI/_theme.scss";
+
+// --- The shot ------------------------------------------------------------------
+// A rounded nose over a flat base: the top corners radius at half the width, so it reads as a bullet at any
+// size. The radius is in px because the corners can't follow the box (no arithmetic in s&box SCSS) — screens
+// that change the width retune it alongside.
+.ammo-icon
+{
+	width: 16px;
+	height: 38px;
+	flex-shrink: 0;
+	background-color: $craft-yellow;
+	border: 3px solid $paper-edge;
+	border-top-left-radius: 8px;
+	border-top-right-radius: 8px;
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 3px;
+	transform-origin: center;
+}
+
+// --- Pop in / pop out ---------------------------------------------------------------
+// The same overshoot spring as the countdown digits and the roster badges (spelled out as poses — the engine has
+// no back/overshoot easing). Out is that spring run the other way: a swell, then gone. A popped-out icon must
+// REST at scale( 0 ) in its own rule, since the animation doesn't hold its last pose.
+// MUST be top-level: s&box doesn't register @keyframes nested inside a selector.
+@keyframes ammo-pop-in
+{
+	0%   { transform: scale( 0 ); }
+	55%  { transform: scale( 1.38 ); }
+	75%  { transform: scale( 0.87 ); }
+	90%  { transform: scale( 1.08 ); }
+	100% { transform: scale( 1 ); }
+}
+
+@keyframes ammo-pop-out
+{
+	0%   { transform: scale( 1 ); }
+	40%  { transform: scale( 1.45 ); }
+	100% { transform: scale( 0 ); }
+}

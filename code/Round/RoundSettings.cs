@@ -39,6 +39,11 @@ public struct RoundSettings
 	/// <summary>How many players are made hunters at round start (the rest are props). Clamped to leave ≥1 prop.</summary>
 	public int HunterCount;
 
+	/// <summary>Shots each hunter gets for the Hunt (Meccha Chameleon's ammo limit). A shot that catches a prop is
+	/// free; anything else spends one, and a hunter at zero can't fire. Every hunter running dry ends the Hunt in the
+	/// props' favour. 0 = None (unlimited, the default); capped at <see cref="MaxAmmo"/>.</summary>
+	public int AmmoLimit;
+
 	/// <summary>The chosen map's <c>ResourcePath</c> (a <see cref="MapResource"/>), or <see cref="MapCatalog.RandomIdent"/>.</summary>
 	public string MapIdent;
 
@@ -56,6 +61,8 @@ public struct RoundSettings
 	public const float DefaultTauntSeconds = 35f;
 	public const float DefaultHintSeconds = 60f;
 	public const int DefaultHunterCount = 1;
+	public const int DefaultAmmoLimit = 0;
+	public const int MaxAmmo = 8;
 
 	/// <summary>Sensible opening values — short hide, longer hunt, brief reveal/consolidation, one hunter.</summary>
 	public static RoundSettings Default => new()
@@ -69,6 +76,7 @@ public struct RoundSettings
 		TauntSeconds = DefaultTauntSeconds,
 		HintSeconds = DefaultHintSeconds,
 		HunterCount = DefaultHunterCount,
+		AmmoLimit = DefaultAmmoLimit,
 		MapIdent = MapCatalog.RandomIdent,
 	};
 
@@ -85,6 +93,7 @@ public struct RoundSettings
 		public const string Taunt = "r.taunt";
 		public const string Hint = "r.hint";
 		public const string Hunters = "r.hn";
+		public const string Ammo = "r.ammo";
 		public const string Map = "r.map";
 	}
 
@@ -106,6 +115,7 @@ public struct RoundSettings
 		Networking.SetData( Keys.Taunt, Str( TauntSeconds ) );
 		Networking.SetData( Keys.Hint, Str( HintSeconds ) );
 		Networking.SetData( Keys.Hunters, HunterCount.ToString( CultureInfo.InvariantCulture ) );
+		Networking.SetData( Keys.Ammo, AmmoLimit.ToString( CultureInfo.InvariantCulture ) );
 		Networking.SetData( Keys.Map, resolvedMapIdent ?? "" );
 	}
 
@@ -130,6 +140,10 @@ public struct RoundSettings
 		var hunters = Networking.GetData( Keys.Hunters );
 		if ( int.TryParse( hunters, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n ) )
 			d.HunterCount = n;
+
+		var ammo = Networking.GetData( Keys.Ammo );
+		if ( int.TryParse( ammo, NumberStyles.Integer, CultureInfo.InvariantCulture, out var a ) )
+			d.AmmoLimit = Math.Clamp( a, 0, MaxAmmo );
 
 		var map = Networking.GetData( Keys.Map );
 		if ( !string.IsNullOrEmpty( map ) )
@@ -161,6 +175,7 @@ public struct RoundSettings
 		Networking.SetData( Keys.Taunt, "" );
 		Networking.SetData( Keys.Hint, "" );
 		Networking.SetData( Keys.Hunters, "" );
+		Networking.SetData( Keys.Ammo, "" );
 		Networking.SetData( Keys.Map, "" );
 		Networking.SetData( RoundManager.HunterIdsKey, "" );
 		Networking.SetData( RoundManager.BotCountKey, "" );

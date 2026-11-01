@@ -181,10 +181,13 @@ public sealed class HunterClimb : MoveMode
 	bool Walkable( Vector3 normal ) => Vector3.GetAngle( Vector3.Up, normal ) <= GroundAngle;
 
 	// Something the hunter may cling to: not a body that moves under physics (loose props, other hunters — they'd just be
-	// shoved away) and never a hider pawn (no riding a disguised player, however it's being simulated right now).
+	// shoved away) and never a pawn: no riding a disguised player, however it's being simulated right now, and no
+	// climbing another hunter (whose clay head carries its own kinematic body, so the Dynamic test alone let it through).
 	static bool Climbable( in SceneTraceResult tr )
 	{
 		if ( !tr.Hit || tr.Body is not { } body || !body.IsValid() || body.BodyType == PhysicsBodyType.Dynamic )
+			return false;
+		if ( ClimbRules.IsHunter( tr.GameObject ) )
 			return false;
 		for ( var g = tr.GameObject; g.IsValid(); g = g.Parent )
 			if ( g.Components.Get<HiderController>().IsValid() )

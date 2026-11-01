@@ -120,6 +120,14 @@
 								<div class="step-btn" @onmousedown=@Press( () => AddHunt( 15f ) )>add</div>
 							</div>
 						</div>
+						<div class="option-row">
+							<div class="option-name">Ammo limit</div>
+							<div class="stepper compact">
+								<div class="step-btn" @onmousedown=@Press( () => AddAmmo( -1 ) )>remove</div>
+								<div class="step-value @Nudge.Class( nameof( AddAmmo ) )">@ShotsOrNone( S.AmmoLimit )</div>
+								<div class="step-btn" @onmousedown=@Press( () => AddAmmo( 1 ) )>add</div>
+							</div>
+						</div>
 					}
 					else if ( G == GameModeKind.Charades )
 					{
@@ -518,6 +526,7 @@
 	void AddTaunt( float d ) => Nudge.Change( nameof( AddTaunt ), MathF.Sign( d ), () => S.TauntSeconds, () => LobbyManager.Current?.SetTauntSeconds( S.TauntSeconds + d ) );
 	void AddHint( float d ) => Nudge.Change( nameof( AddHint ), MathF.Sign( d ), () => S.HintSeconds, () => LobbyManager.Current?.SetHintSeconds( S.HintSeconds + d ) );
 	void AddReveal( float d ) => Nudge.Change( nameof( AddReveal ), MathF.Sign( d ), () => S.RevealSeconds, () => LobbyManager.Current?.SetRevealSeconds( S.RevealSeconds + d ) );
+	void AddAmmo( int d ) => Nudge.Change( nameof( AddAmmo ), MathF.Sign( d ), () => S.AmmoLimit, () => LobbyManager.Current?.SetAmmoLimit( S.AmmoLimit + d ) );
 
 	// Creative's toggle (host-authority enforced by the LobbyManager setter, like everything above).
 	void SetSpawnProps( bool on ) => Nudge.Change( nameof( SetSpawnProps ), on ? -1 : 1, () => C.SpawnProps, () => LobbyManager.Current?.SetSpawnProps( on ) );
@@ -627,6 +636,9 @@
 	// For the repeating timers whose setters collapse below-floor to 0 (taunts, silhouette hints): 0 reads "None".
 	static string SecsOrNone( float seconds ) => seconds <= 0f ? "None" : Secs( seconds );
 
+	// The ammo limit: 0 is unlimited, which reads "None" like the timers above.
+	static string ShotsOrNone( int shots ) => shots <= 0 ? "None" : shots.ToString();
+
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
@@ -634,7 +646,7 @@
 	}
 
 	protected override int BuildHash()
-		=> HashCode.Combine( _open, S.Mode, (int)S.HunterCount,
+		=> HashCode.Combine( _open, S.Mode, HashCode.Combine( S.HunterCount, S.AmmoLimit ),
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
 			HashCode.Combine( G, C.SpawnProps ),
 			HashCode.Combine( Ch.Rounds, Ch.Source, Ch.Topics, Ch.SculptSeconds, Ch.TopicChoices, Ch.WriteSeconds, Ch.WordLengthHints ),

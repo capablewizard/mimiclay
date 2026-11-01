@@ -157,12 +157,16 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	[Property, Group( "Footsteps" ), Range( 0f, 1f )] public float JumpStepVolume { get; set; } = 0.8f;
 
 	/// <summary>A clay splat layered quietly under every walk step (user, 2026-11-01 experiment): clay feet on the
-	/// floor. Null = plain steps.</summary>
+	/// floor. Null = the gun's SplatSound (the same clay splat); StepSplatVolume 0 = plain steps.</summary>
 	[Property, Group( "Footsteps" )] public SoundEvent StepSplatSound { get; set; }
 
 	/// <summary>The splat's volume as a fraction of the step's. The step's own speed scaling and the controller's
 	/// FootstepVolume apply on top, so it follows the step: louder running, near-silent creeping.</summary>
 	[Property, Group( "Footsteps" ), Range( 0f, 1f )] public float StepSplatVolume { get; set; } = 0.05f;
+
+	/// <summary>The splat for squashing down into a crouch and back up (user, 2026-11-01), in step volumes — 1 sounds
+	/// like a full-speed step's splat. Grounded only. 0 = silent crouching.</summary>
+	[Property, Group( "Footsteps" ), Range( 0f, 2f )] public float CrouchSplatVolume { get; set; } = 1f;
 
 	// Footstep emitter state: distance walked since the last step, where we last measured from (invalid until
 	// re-seeded on the first grounded frame), and which foot lands next (alternates left/right sounds).
@@ -841,10 +845,12 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// hider — and the aim is frozen off-camera, so a shot would land somewhere the hidden crosshair
 			// can't show.
 			// (A click an interaction consumed — LMB Sculpt — is not also a shot; nor is the click that just
-			// closed a lease session — see _sinceLeaseEnd.)
+			// closed a lease session — see _sinceLeaseEnd.) Out of ammo (a limited Hunt) gets the same denied blip:
+			// the hunter keeps searching, but the trigger is dead.
 			if ( Input.Pressed( "attack1" ) && !_altOrbiting && !clickTaken && _sinceLeaseEnd > TriggerHoldAfterLease )
 			{
-				if ( !locked && RoundManager.HuntingAllowed )
+				bool hasAmmo = !RoundManager.Current.IsValid() || RoundManager.Current.LocalCanShoot;
+				if ( !locked && RoundManager.HuntingAllowed && hasAmmo )
 				{
 					if ( _nextShot <= 0f )
 						Shoot( eye );
@@ -1460,6 +1466,12 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// there is no reverse case to handle.
 		if ( ducking && !_wasDucking && airborne )
 			_airLift = delta;
+
+		// The clay squashing down or springing back up: a splat at the feet, either way. Read off the synced
+		// IsDucking, so every machine hears it. Not mid-air (that's a tuck, not a squash) or on a wall.
+		if ( ducking != _wasDucking && !airborne && !_controller.IsClimbing && CrouchSplatVolume > 0f
+			&& EnableFootsteps && !Concealed && _controller.EnableFootstepSounds )
+			PlayStepSplat( WorldPosition, CrouchSplatVolume );
 		_wasDucking = ducking;
 
 		// Back on the ground the tuck no longer means anything — the body holds standing height and the chest
@@ -2384,9 +2396,12 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	// footstep mixer, scaled like the step itself.
 	void PlayStepSplat( Vector3 pos, float volume )
 	{
-		if ( StepSplatSound is null || StepSplatVolume <= 0f )
+		// Falls back to the gun's splat: a pawn cloned from a stale in-editor copy of the prefab (edited on disk while
+		// the editor held it) came up with this field null, and the splats silently went (2026-11-01).
+		var sound = StepSplatSound ?? SplatSound;
+		if ( sound is null || StepSplatVolume <= 0f )
 			return;
-		var handle = Sound.Play( StepSplatSound, pos );
+		var handle = Sound.Play( sound, pos );
 		if ( !handle.IsValid() )
 			return;
 		handle.TargetMixer = _controller.FootstepMixer.GetOrDefault();
@@ -2952,7 +2967,17 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				new Angles( -ShotKick, Game.Random.Float( -ShotKickYawJitter, ShotKickYawJitter ) * ShotKick, 0f ),
 				frequency: ShotKickBounce, duration: ShotKickTime, fovAmplitude: ShotKickFov );
 
+		// Every Hunt shot reports exactly once — a prop hit below, or a miss here — because under an ammo limit
+		// the host spends the shots (RoundManager.ReportMiss); the shooter's own count is predicted meanwhile.
 		var tr = traces[0];
+		var hitHider = tr.Hit ? FindHider( tr.GameObject ) : null;
+		if ( RoundManager.Current.IsValid() )
+		{
+			RoundManager.Current.PredictShot( hitHider.IsValid() );
+			if ( !hitHider.IsValid() )
+				RoundManager.Current.ReportMiss();
+		}
+
 		if ( tr.Hit )
 		{
 			// Cosmetic carve on ANY sdf surface the shot lands on (decoys, world props, disguises, faces —
@@ -2964,13 +2989,12 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// reported to the host, which validates the phase + that it's a live prop, then pops it and
 			// converts that player to a hunter. Anything else is just map geometry. [Rpc.Host] routes it.
 			// With no round running, a DebugGameMode scene handles the hit instead (the prop just pops).
-			var hider = FindHider( tr.GameObject );
-			if ( hider.IsValid() )
+			if ( hitHider.IsValid() )
 			{
 				if ( RoundManager.Current.IsValid() )
-					RoundManager.Current.ReportPropHit( hider.GameObject );
+					RoundManager.Current.ReportPropHit( hitHider.GameObject );
 				else if ( DebugGameMode.Current.IsValid() )
-					DebugGameMode.Current.ReportPropHit( hider.GameObject );
+					DebugGameMode.Current.ReportPropHit( hitHider.GameObject );
 			}
 		}
 

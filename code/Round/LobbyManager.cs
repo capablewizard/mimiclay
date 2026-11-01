@@ -467,6 +467,13 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 		var s = Settings; s.HunterCount = Math.Clamp( count, 1, MaxHunters ); Settings = s;
 	}
 
+	// 0 = None (unlimited) up to MaxAmmo, so the stepper walks None → 1 … 8 and back.
+	public void SetAmmoLimit( int shots )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = Settings; s.AmmoLimit = Math.Clamp( shots, 0, RoundSettings.MaxAmmo ); Settings = s;
+	}
+
 	public void SetHideSeconds( float seconds )
 	{
 		if ( !IsHostAuthority ) return;

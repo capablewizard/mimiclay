@@ -1,0 +1,128 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	The local hunter's shots, along the bottom-middle of the screen — only during a Hunt with an ammo limit
+	(RoundSettings.AmmoLimit). One icon per shot of the limit, ALWAYS mounted for the whole Hunt and switched by
+	class, because an icon that's removed can't animate on its way out:
+	  • hidden — not popped in yet (the Hunt just opened and the row is still filling, one by one)
+	  • full   — a shot in the chamber; springs in as it gets there
+	  • spent  — fired; bursts out of existence and stays at nothing
+	The count is RoundManager.LocalAmmo — the shooter's prediction, so an icon pops the moment the trigger is
+	pulled rather than a round trip later.
+
+	Down to the last shot, a "Final Shot!" toast pops up over the row with its sting.
+*@
+
+<div class="ammo-row">
+	@for ( int i = 0; i < _slots.Length; i++ )
+	{
+		<div class="ammo-icon @SlotClass( _slots[i] )"></div>
+	}
+</div>
+
+@if ( _toastShowing )
+{
+	<WobbleText Text="Final Shot!" LockStep=@true class=@(_toastLeaving ? "final-shot leaving" : "final-shot") />
+}
+
+@code
+{
+	const string FinalShotSound = "sounds/game/sting/finalshot.sound";
+
+	// The fill at the start of the Hunt: one icon per this many seconds, left to right.
+	const float RevealStep = 0.08f;
+
+	// How long the toast holds, then how long its pop-out takes before it's removed.
+	const float ToastHold = 1.8f;
+	const float ToastOut = 0.3f;
+
+	enum Slot { Hidden, Full, Spent }
+
+	Slot[] _slots = Array.Empty<Slot>();
+	RealTimeSince _sinceShown;
+
+	// The count last frame, for the "down to one" edge. -1 = not counting (row hidden / just shown).
+	int _lastAmmo = -1;
+
+	RealTimeSince _sinceToast;
+	bool _toastShowing;
+	bool _toastLeaving;
+
+	public AmmoBar()
+	{
+		AddClass( "ammo-bar" );
+	}
+
+	public override void Tick()
+	{
+		base.Tick();
+
+		var round = RoundManager.Current;
+		if ( !Visible( round ) )
+		{
+			_slots = Array.Empty<Slot>();
+			_lastAmmo = -1;
+			_toastShowing = false;
+			return;
+		}
+
+		var limit = round.Settings.AmmoLimit;
+		if ( _slots.Length != limit )
+		{
+			_slots = new Slot[limit];
+			_sinceShown = 0f;
+		}
+
+		var ammo = round.LocalAmmo;
+		var revealed = Math.Min( limit, (int)(_sinceShown / RevealStep) + 1 );
+		var full = Math.Min( ammo, revealed );
+
+		for ( int i = 0; i < _slots.Length; i++ )
+			_slots[i] = i < full ? Slot.Full : _slots[i] == Slot.Hidden ? Slot.Hidden : Slot.Spent;
+
+		// Down to the last one — only by shooting there, so a round that hands out a single shot doesn't open
+		// on the warning.
+		if ( ammo == 1 && _lastAmmo > 1 )
+		{
+			_sinceToast = 0f;
+			_toastShowing = true;
+			UiSounds.PlayEvent( FinalShotSound );
+		}
+		_lastAmmo = ammo;
+
+		_toastLeaving = _toastShowing && _sinceToast > ToastHold;
+		if ( _sinceToast > ToastHold + ToastOut )
+			_toastShowing = false;
+	}
+
+	// Our own hunter, in a limited Hunt. The roster row is the truth for the role (the pawn swaps on conversion).
+	static bool Visible( RoundManager round )
+	{
+		if ( !round.IsValid() || !round.AmmoLimited || round.Phase != RoundPhase.Hunt || LobbyReturn.Active )
+			return false;
+
+		var me = Connection.Local?.Id;
+		return me is not null && round.Players.TryGetValue( me.Value, out var row ) && row.Role == PlayerRole.Hunter;
+	}
+
+	static string SlotClass( Slot slot ) => slot switch
+	{
+		Slot.Full => "full",
+		Slot.Spent => "spent",
+		_ => "",
+	};
+
+	protected override int BuildHash()
+	{
+		var hash = new HashCode();
+		hash.Add( _toastShowing );
+		hash.Add( _toastLeaving );
+		foreach ( var s in _slots )
+			hash.Add( s );
+		return hash.ToHashCode();
+	}
+}

@@ -1,0 +1,66 @@
+@import "/UI/_theme.scss";
+@import "/UI/_ammo.scss"; // .ammo-icon + its pop keyframes — shared with the nameplates
+
+// The local hunter's shots (see AmmoBar.razor). A full-width strip pinned near the bottom of the round HUD, raised
+// clear of the self-mic indicator (PlayerNameplates' .self-mic, 48px up), with the row centred in it and the Final
+// Shot toast stacked above. Pure readout — never takes the mouse.
+.ammo-bar
+{
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 110px;
+	flex-direction: column-reverse; // row on the bottom, toast above it
+	align-items: center;
+	pointer-events: none;
+
+	.ammo-row
+	{
+		flex-direction: row;
+		align-items: flex-end;
+		gap: 10px;
+	}
+
+	// Parked at nothing until it pops in; .full springs it in, .spent bursts it back out and rests there.
+	.ammo-icon
+	{
+		transform: scale( 0 );
+
+		&.full
+		{
+			transform: scale( 1 );
+			animation: ammo-pop-in 0.34s ease-out;
+		}
+
+		&.spent
+		{
+			transform: scale( 0 );
+			animation: ammo-pop-out 0.22s ease-in;
+		}
+	}
+
+	// "Final Shot!" — the countdown digit's embossed clay type (Countdown.razor.scss), smaller, over the scene.
+	.final-shot
+	{
+		margin-bottom: 18px;
+		justify-content: center;
+		font-family: $header-font;
+		font-size: 54px;
+		color: $scene-text;
+		transform-origin: center;
+		animation: ammo-pop-in 0.34s ease-out;
+
+		.letter
+		{
+			text-shadow:
+				8px 10px 3px $emboss-glow,
+				4px 5px 0px $emboss-depth;
+		}
+
+		&.leaving
+		{
+			transform: scale( 0 );
+			animation: ammo-pop-out 0.3s ease-in;
+		}
+	}
+}

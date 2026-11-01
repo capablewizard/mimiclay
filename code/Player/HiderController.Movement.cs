@@ -98,8 +98,13 @@ public sealed partial class HiderController
 	bool WalkableHit( in SceneTraceResult tr ) => Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( tr ));
 
 	// Any clay prop — a sculpture in the map or a released prop pawn — under PropsAsFloor (see there).
+	//
+	// A hunter always counts, whatever PropsAsFloor or its size says: the climb never grips one (grab sweeps pass through
+	// it to whatever's behind), but a prop can still stand on a hunter's head like any floor prop (user, 2026-11-01).
 	bool IsFloorProp( in SceneTraceResult tr )
 	{
+		if ( tr.Hit && ClimbRules.IsHunter( tr.GameObject ) )
+			return true;
 		if ( !PropsAsFloor || !tr.Hit )
 			return false;
 		var go = tr.GameObject;

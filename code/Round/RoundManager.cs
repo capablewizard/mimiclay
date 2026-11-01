@@ -362,6 +362,8 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 				else if ( _huntHadHunters && Hunters == 0 )
 					TransitionTo( RoundPhase.Reveal );         // every hunter left → survivors win now, not after 3
 					                                           // minutes of dead air
+				else if ( HuntersDry )
+					TransitionTo( RoundPhase.Reveal );         // every hunter shot their last → survivors win
 				else if ( PhaseEndsAt <= 0f )
 					TransitionTo( RoundPhase.Reveal );         // time up with survivors → show them off
 				break;
@@ -401,7 +403,7 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		{
 			case RoundPhase.Starting:    PhaseEndsAt = Settings.StartCountdownSeconds; break;
 			case RoundPhase.Hide:        PhaseEndsAt = DebugSoloHide ? 999999f : Settings.HideSeconds; break;
-			case RoundPhase.Hunt:        PhaseEndsAt = Settings.HuntSeconds; _huntHadHunters = Hunters > 0; break;
+			case RoundPhase.Hunt:        PhaseEndsAt = Settings.HuntSeconds; _huntHadHunters = Hunters > 0; LoadHunters(); break;
 			case RoundPhase.Reveal:      PhaseEndsAt = Settings.RevealSeconds; break;
 			case RoundPhase.Consolidation: PhaseEndsAt = Settings.ConsolidationSeconds; break;
 		}
@@ -1286,30 +1288,77 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 	/// as pure ROSTER changes: the prop is marked found, rewarded to the shooter, and flipped to the Hunter role. The
 	/// found player's OWN machine then sees its role change and respawns itself as a hunter where it stood (popping
 	/// the disguise) — the host no longer spawns or destroys pawns. Called from <see cref="HunterController"/> when
-	/// its trace hits a live prop pawn.</summary>
+	/// its trace hits a prop pawn. A catch is free; a hit that doesn't catch (already found, out of range) spends a
+	/// shot like a miss would.</summary>
 	[Rpc.Host]
 	public void ReportPropHit( GameObject propPawn )
 	{
-		// Not while returning to the lobby: the game is frozen, a shot in flight changes nothing.
-		if ( Phase != RoundPhase.Hunt || LobbyReturn.Active || !propPawn.IsValid() )
+		if ( !AcceptShot( Rpc.Caller ) )
 			return;
 
-		var hunter = Rpc.Caller;
+		if ( !TryCatch( propPawn, Rpc.Caller ) )
+			SpendShot( Rpc.Caller );
+	}
 
-		// Validate the SHOOTER, not just the target — this RPC is the trust boundary: the trace, cooldown and range
-		// all run owner-side, so a modified client can call it directly with any pawn. (Alive is deliberately NOT
-		// checked: a converted prop is Role=Hunter with Alive=false and hunts legitimately.) Skipped when there's no
-		// session (solo direct Play has no Rpc.Caller to validate).
+	/// <summary>Client→host: a hunter fired and caught nothing. Only matters under an ammo limit, where it spends
+	/// one of their shots (<see cref="RoundSettings.AmmoLimit"/>). Every Hunt shot reports exactly once — this or
+	/// <see cref="ReportPropHit"/> — so the host's count is the real one; the shooter only predicts it.</summary>
+	[Rpc.Host]
+	public void ReportMiss()
+	{
+		if ( AcceptShot( Rpc.Caller ) )
+			SpendShot( Rpc.Caller );
+	}
+
+	// The checks every shot report passes before it may change anything: the phase, and — this RPC pair being
+	// the trust boundary — the SHOOTER. The trace, cooldown and range all run owner-side, so a modified client
+	// can call either RPC directly. (Alive is deliberately NOT checked: a converted prop is Role=Hunter with
+	// Alive=false and hunts legitimately.) The shooter checks are skipped when there's no session (solo direct
+	// Play has no Rpc.Caller to validate).
+	bool AcceptShot( Connection hunter )
+	{
+		// Not while returning to the lobby: the game is frozen, a shot in flight changes nothing.
+		if ( Phase != RoundPhase.Hunt || LobbyReturn.Active )
+			return false;
+
+		if ( !Networking.IsActive )
+			return true;
+
+		if ( hunter is null || !Players.TryGetValue( hunter.Id, out var shooter ) || shooter.Role != PlayerRole.Hunter )
+			return false;
+
+		// Host-side re-check of the shot cooldown.
+		if ( _shotGate.TryGetValue( hunter.Id, out var gate ) && gate > 0f )
+			return false;
+		_shotGate[hunter.Id] = HostShotCooldown;
+
+		// A dry hunter can't have fired (the trigger is gated owner-side); a report anyway is a modified client.
+		return Settings.AmmoLimit <= 0 || shooter.Ammo > 0;
+	}
+
+	// Host-only: one shot off the shooter's ammo, when the round has a limit. Solo direct Play has no caller, so
+	// the shot is the local player's.
+	void SpendShot( Connection hunter )
+	{
+		if ( Settings.AmmoLimit <= 0 )
+			return;
+
+		var id = hunter?.Id ?? Connection.Local?.Id;
+		if ( id is null || !Players.TryGetValue( id.Value, out var row ) || row.Role != PlayerRole.Hunter )
+			return;
+
+		row.Ammo = Math.Max( 0, row.Ammo - 1 );
+		Players[id.Value] = row;
+	}
+
+	// Host-only: resolve a shot that landed on a prop pawn. True when it caught a live prop.
+	bool TryCatch( GameObject propPawn, Connection hunter )
+	{
+		if ( !propPawn.IsValid() )
+			return false;
+
 		if ( Networking.IsActive )
 		{
-			if ( hunter is null || !Players.TryGetValue( hunter.Id, out var shooter ) || shooter.Role != PlayerRole.Hunter )
-				return;
-
-			// Host-side re-check of the shot cooldown.
-			if ( _shotGate.TryGetValue( hunter.Id, out var gate ) && gate > 0f )
-				return;
-			_shotGate[hunter.Id] = HostShotCooldown;
-
 			// Range sanity: the claimed hit must be within the shooter's weapon reach (+ slack for latency movement).
 			// If the shooter's pawn isn't visible to the host yet (the respawn frame after a conversion), skip this
 			// check rather than reject — the role + rate gates above still hold.
@@ -1319,26 +1368,30 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 				.FirstOrDefault( h => RosterIdOf( h.GameObject ) == hunter.Id );
 			if ( shooterPawn.IsValid()
 				&& shooterPawn.GameObject.WorldPosition.Distance( propPawn.WorldPosition ) > shooterPawn.Range * 1.25f )
-				return;
+				return false;
 		}
 
 		// Whose prop this is — a bot's row for a bot body, the owning connection's for a player's.
 		var ownerId = RosterIdOf( propPawn );
 		if ( ownerId is null || !Players.TryGetValue( ownerId.Value, out var prop ) )
-			return;
+			return false;
 
 		if ( prop.Role != PlayerRole.Prop || !prop.Alive )
-			return; // already found, or not actually a prop
+			return false; // already found, or not actually a prop
 
 		// Mark the prop found (struct: copy-mutate-write back, the NetDictionary setter replicates it). What
 		// happens to the player is the mode's defining rule: INFECTION converts them — the row flips to Hunter
 		// and their machine respawns its own pawn accordingly — while TEAMS benches them: fixed sides, so the
 		// row keeps Role=Prop with Alive=false and their machine retires its pawn and goes spectator
 		// (see EnsureOwnPawn's eliminated branch).
+		// A converted hunter joins the hunt with a full magazine, like everyone did at its start.
 		prop.Alive = false;
 		prop.Found = true;
 		if ( Settings.Mode == RoundMode.Infection )
+		{
 			prop.Role = PlayerRole.Hunter;
+			prop.Ammo = Settings.AmmoLimit;
+		}
 		Players[ownerId.Value] = prop;
 
 		// Reward the shooter.
@@ -1352,6 +1405,7 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		PlayCaughtPuff( propPawn.WorldPosition + Vector3.Up * 20f );
 
 		// All props found ends the round immediately — TickHostPhase picks that up next frame via AliveProps.
+		return true;
 	}
 
 	/// <summary>Host→everyone: play the found-a-prop sound and burst the caught-prop smoke at
@@ -1414,6 +1468,75 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 	// Hunters on the roster. Alive is meaningless for hunters (a converted prop is Role=Hunter, Alive=false), so
 	// this counts rows by role only.
 	public int Hunters => Players.Values.Count( p => p.Role == PlayerRole.Hunter );
+
+	// ── Ammo (RoundSettings.AmmoLimit) ───────────────────────────────────────────────────────────────────────
+	// The count lives on the roster row (PlayerInfo.Ammo), so it's host-authoritative and reaches everyone — the
+	// HUD and the nameplates both read it. The host fills every hunter at the start of the Hunt and spends on
+	// each shot report (ReportMiss, or a ReportPropHit that didn't catch); converts arrive full.
+
+	/// <summary>This round limits shots. Off (0) by default.</summary>
+	public bool AmmoLimited => Settings.AmmoLimit > 0;
+
+	/// <summary>Every human hunter is out of shots, so nobody can catch anything any more. Bot hunters never
+	/// shoot, so they're left out — and a hunt with no human hunter never counts as dry (a solo test with bot
+	/// hunters would otherwise end the moment it began).</summary>
+	public bool HuntersDry => AmmoLimited
+		&& Players.Values.Any( p => p.Role == PlayerRole.Hunter && !p.Bot )
+		&& Players.Values.All( p => p.Role != PlayerRole.Hunter || p.Bot || p.Ammo <= 0 );
+
+	// Host-only, entering the Hunt: a full magazine for every hunter.
+	void LoadHunters()
+	{
+		foreach ( var id in Players.Keys.ToList() )
+		{
+			var row = Players[id];
+			if ( row.Role != PlayerRole.Hunter )
+				continue;
+
+			row.Ammo = Settings.AmmoLimit;
+			Players[id] = row;
+		}
+	}
+
+	// The local hunter's shots as THEY should see them. The roster count trails each shot by a round trip, so the
+	// shooter predicts: a shot spends here at once (PredictShot), and every change the host makes to the row is
+	// adopted as it lands — the host's own spend agrees with the prediction, and anything else it decides (a
+	// catch that turned out not to be one, a refill on conversion) simply overwrites it. Per machine, never synced.
+	int _ammoSeen = int.MinValue;
+	int _ammoPredicted;
+
+	/// <summary>The local player's remaining shots, predicted (see above). Only meaningful while
+	/// <see cref="AmmoLimited"/> and the local player hunts.</summary>
+	public int LocalAmmo
+	{
+		get
+		{
+			var me = Connection.Local?.Id;
+			if ( me is null || !Players.TryGetValue( me.Value, out var row ) )
+				return 0;
+
+			if ( row.Ammo != _ammoSeen )
+			{
+				_ammoSeen = row.Ammo;
+				_ammoPredicted = row.Ammo;
+			}
+
+			return _ammoPredicted;
+		}
+	}
+
+	/// <summary>The local hunter's trigger may fire: always, unless this is a limited Hunt and they're out.</summary>
+	public bool LocalCanShoot => !AmmoLimited || Phase != RoundPhase.Hunt || LocalAmmo > 0;
+
+	/// <summary>Owner-side: the local hunter just fired a Hunt shot. A shot that hit a prop is predicted to catch
+	/// it (free); anything else spends one. The host's report decides for real.</summary>
+	public void PredictShot( bool hitProp )
+	{
+		if ( !AmmoLimited || Phase != RoundPhase.Hunt || hitProp )
+			return;
+
+		_ammoPredicted = Math.Max( 0, LocalAmmo - 1 );
+	}
 
 	/// <summary>The hunter rows in a STABLE order. NetDictionary enumeration order isn't guaranteed, so anything
 	/// drawing one element per hunter has to sort or the row reshuffles between frames (and, for the HUD's

@@ -46,11 +46,24 @@
 	@foreach ( var p in _plates )
 	{
 		<div class="plate" style=@PlateStyle( p ) @key=@p.PawnId>
-			@if ( p.Speaking )
+			<div class="name-line">
+				@if ( p.Speaking )
+				{
+					<i class="speaker" style=@NameStyle()>volume_up</i>
+				}
+				<div class="name" style=@NameStyle()>@p.Name</div>
+			</div>
+			@* A hunter's shots left, under the name (the plate hangs from its bottom edge, so this line lifts the
+			   name rather than covering the head). Same icon as the HUD's AmmoBar. *@
+			@if ( p.Ammo > 0 )
 			{
-				<i class="speaker" style=@NameStyle()>volume_up</i>
+				<div class="ammo-line">
+					@for ( int i = 0; i < p.Ammo; i++ )
+					{
+						<div class="ammo-icon"></div>
+					}
+				</div>
 			}
-			<div class="name" style=@NameStyle()>@p.Name</div>
 		</div>
 	}
 	@if ( SelfMicLive )
@@ -96,8 +109,9 @@
 
 	// One drawn label: which pawn it belongs to (@key, so the razor diff tracks plates across frames), the name,
 	// the projected screen position as viewport fractions (resolution-independent — see PlateStyle), and whether
-	// that player's voice is currently playing (drives the speaker icon), and its current fade.
-	internal readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen, bool Speaking, float Opacity );
+	// that player's voice is currently playing (drives the speaker icon), its current fade, and a hunter's shots
+	// left under an ammo limit (≤ 0 draws no ammo line: -1 = no limit/not a hunter, 0 = dry).
+	internal readonly record struct Plate( Guid PawnId, string Name, Vector2 Screen, bool Speaking, float Opacity, int Ammo );
 
 	readonly List<Plate> _plates = new();
 
@@ -207,7 +221,7 @@
 				continue;
 
 			var voice = pawn.Components.Get<PlayerVoice>();
-			_plates.Add( new Plate( pawn.Id, name, PlateScreen( pawn, cam, screen ), voice.IsValid() && voice.IsSpeaking, fade ) );
+			_plates.Add( new Plate( pawn.Id, name, PlateScreen( pawn, cam, screen ), voice.IsValid() && voice.IsSpeaking, fade, AmmoFor( pawn, role ) ) );
 		}
 
 		// Forget fades for pawns that weren't plate candidates this frame (gone, behind us, off-team) or have
@@ -315,6 +329,17 @@
 		}
 
 		return RoundManager.IsBotPawn( pawn ) ? null : pawn.Network.Owner?.DisplayName;
+	}
+
+	// A hunter's shots left, from the [Sync]'d roster — only during a Hunt with an ammo limit; -1 otherwise.
+	static int AmmoFor( GameObject pawn, PlayerRole role )
+	{
+		var round = RoundManager.Current;
+		if ( role != PlayerRole.Hunter || !round.IsValid() || !round.AmmoLimited || round.Phase != RoundPhase.Hunt )
+			return -1;
+
+		var id = RoundManager.RosterIdOf( pawn );
+		return id is not null && round.Players.TryGetValue( id.Value, out var row ) ? row.Ammo : -1;
 	}
 
 	// Where the plate anchors in the world: the top of the pawn's OWN sculpture bounds — the hunter's Head sits
@@ -475,6 +500,7 @@
 			hash.Add( p.Screen );
 			hash.Add( p.Speaking );
 			hash.Add( p.Opacity );
+			hash.Add( p.Ammo );
 		}
 		return hash.ToHashCode();
 	}

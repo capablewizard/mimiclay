@@ -67,6 +67,11 @@ public struct PlayerInfo
 	/// <summary>True if this player asked to be a hunter in the lobby (nomination). Read at role assignment.</summary>
 	public bool Nominated;
 
+	/// <summary>Shots this hunter has left in the Hunt, under an ammo limit (<see cref="RoundSettings.AmmoLimit"/>;
+	/// meaningless without one). Host-written: filled when the Hunt opens or a prop converts, spent per shot that
+	/// doesn't catch.</summary>
+	public int Ammo;
+
 	/// <summary>Round score. Props accrue points over time scaled by size; hunters earn points per find.</summary>
 	public int Score;
 

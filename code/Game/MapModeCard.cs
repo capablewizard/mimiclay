@@ -76,6 +76,9 @@ public sealed class MapModeCard : Component
 	/// <summary>How many of the seated players hunt (the rest are props). Clamped to leave at least one prop.</summary>
 	[Property, Group( "Round Rules (Override)" )] public int HunterCount { get; set; } = RoundSettings.DefaultHunterCount;
 
+	/// <summary>Shots each hunter gets for the hunt (misses spend, catches are free). 0 = unlimited.</summary>
+	[Property, Group( "Round Rules (Override)" ), Range( 0, RoundSettings.MaxAmmo )] public int AmmoLimit { get; set; } = RoundSettings.DefaultAmmoLimit;
+
 	/// <summary>Frozen "get ready" countdown after the map loads.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float StartCountdownSeconds { get; set; } = RoundSettings.DefaultStartCountdownSeconds;
 
@@ -173,6 +176,7 @@ public sealed class MapModeCard : Component
 		TauntSeconds = TauntSeconds,
 		HintSeconds = HintSeconds,
 		HunterCount = HunterCount,
+		AmmoLimit = AmmoLimit,
 		MapIdent = RoundSettings.Default.MapIdent,
 	};
 

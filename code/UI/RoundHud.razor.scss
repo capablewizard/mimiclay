@@ -117,6 +117,7 @@ $clock-col-width: 150px;
 			// role chip — is centred inside this box and can never widen it, so the rosters either side never
 			// get shoved outward. Its margins are the gap the two groups face each other across.
 			.col-clock {
+				position: relative; // the containing block for .return-countdown — see there
 				width: $clock-col-width;
 				flex-shrink: 0;
 				margin-left: $space-md;
@@ -511,9 +512,11 @@ $clock-col-width: 150px;
 		// The "Returning to Lobby" readout standing in for the round clock (and its caption + role chip). Its
 		// caption is wider than the clock column, so it's an absolute overlay centred on the column's own
 		// centre line — keeping the clock's screen position without widening the column (which would shove
-		// the rosters outward) and without wrapping the caption. Absolute children position against the
-		// parent here (Yoga), so left is the column's half-width minus half of this width: a 400px box
-		// centred on the 150px $clock-col-width column → (150 - 400) / 2. Retune if either width changes.
+		// the rosters outward) and without wrapping the caption. Absolute children position against their
+		// nearest POSITIONED ancestor (browser rules) — without .col-clock's position: relative this resolved
+		// against the screen and sat off the left edge. So left is the column's half-width minus half of this
+		// width: a 400px box centred on the 150px $clock-col-width column → (150 - 400) / 2. Retune if either
+		// width changes.
 		.return-countdown {
 			position: absolute;
 			top: 0;

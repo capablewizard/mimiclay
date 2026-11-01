@@ -60,6 +60,16 @@ public static class ClimbRules
 		return Math.Clamp( (sideways - 0.7f) / (0.94f - 0.7f), 0f, 1f );
 	}
 
+	// Part of a hunter pawn (its capsule, or the clay head's own kinematic body)? Nobody climbs a hunter — not another
+	// hunter, not a prop (user, 2026-11-01).
+	public static bool IsHunter( GameObject go )
+	{
+		for ( var g = go; g.IsValid(); g = g.Parent )
+			if ( g.Components.Get<HunterController>().IsValid() )
+				return true;
+		return false;
+	}
+
 	// Space / Ctrl: up or down the surface. Under a ceiling there's no "up the surface", so Space carries on `ceilingOut`
 	// (out from the wall we came up) and Ctrl comes back.
 	public static Vector3 Vertical( float vertical, Vector3 n, Vector3 ceilingOut, float speed )
