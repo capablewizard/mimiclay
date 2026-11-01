@@ -5,7 +5,7 @@ Layer0
 	shader "shaders/ground_distance_tiling.shader"
 
 	//---- Distance Tiling ----
-	g_flBaseDistance "377.265"
+	g_flBaseDistance "500.000"
 	g_flMaxOctaves "5.000"
 	g_flOctaveBlendSharpness "0.000"
 	g_vBaseTile "[300.000 450.000]"
@@ -32,8 +32,8 @@ Layer0
 	TextureRoughness "scenes/maps/flatgrass/materials/claygrass_specularroughness.png"
 
 	//---- Surface ----
+	g_flAmbientOcclusionAmount "0.500"
 	g_flMetalnessValue "0.000"
-	g_flAmbientOcclusionAmount "1.000"
 	g_flNormalStrength "1.000"
 	g_flRoughnessScale "1.400"
 }

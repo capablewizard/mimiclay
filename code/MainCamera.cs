@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Mimiclay;
 
@@ -26,47 +27,62 @@ public sealed class MainCamera : Component
 
 	/// <summary>The camera's depth-of-field post-process; falls back to one on this GameObject if left unset.
 	/// Don't write its fields directly — set the focus targets below and they blend toward them each frame.
-	/// Don't author the look on it either: author the Authored* properties in this group instead. The
-	/// component's live fields are runtime state (the blur is screen-scaled every frame), and a join
-	/// snapshot ships those live values to new instances — anything seeded from them double-scales the blur
-	/// and can leak the host's edit-session focus onto joiners.</summary>
+	/// Don't author the look on it either: author the Authored* properties in this group (the global default)
+	/// or a <see cref="DofProfile"/> (per map / per game) instead. The component's live fields are runtime
+	/// state, and a join snapshot ships those live values to new instances — anything seeded from them can
+	/// leak the host's edit-session focus onto joiners. Its BlurSize is resolution-independent on its own:
+	/// the engine scales it by viewport height / 1080, so nothing here compensates for resolution.</summary>
 	[Property] public DepthOfField DepthOfField { get; set; }
 
-	/// <summary>Baseline blur strength for normal gameplay. Continuously re-asserted whenever nothing is
-	/// driving the DoF (see <see cref="Dof"/>), so tweaking it in the inspector during play applies live.
-	/// This (not the DepthOfField component) is the place to author the scene's DoF look — these
-	/// properties are never mutated at runtime, so they arrive authored on every machine regardless of
-	/// what live state the join snapshot carried.</summary>
+	/// <summary>The bottom layer of the resting DoF look: on or off. Profiles and drivers layer on top (see
+	/// <see cref="DofProfile"/>). Off eases the blur to zero rather than disabling the component, so a driver
+	/// (the edit session's focus pull) can still rack it in on top.</summary>
+	[Property, Group( "Depth of Field" ), Title( "Authored Enabled" )] public bool AuthoredEnabled { get; set; } = true;
+
+	/// <summary>Baseline blur strength (engine units — relative to 1080p, so the same at any resolution).
+	/// Re-resolved every frame whenever nothing is driving the DoF (see <see cref="Dof"/>), so tweaking it in
+	/// the inspector during play applies live. These properties are never mutated at runtime, so they arrive
+	/// authored on every machine regardless of what live state the join snapshot carried.</summary>
 	[Property, Group( "Depth of Field" )] public float AuthoredBlurSize { get; set; } = 6.33f;
 
-	/// <summary>Baseline focal distance (world units) for normal gameplay, live-tweakable. See <see cref="AuthoredBlurSize"/>.</summary>
+	/// <summary>Baseline focal distance (world units), live-tweakable. See <see cref="AuthoredBlurSize"/>.</summary>
 	[Property, Group( "Depth of Field" )] public float AuthoredFocalDistance { get; set; } = 705f;
 
-	/// <summary>Baseline focus range (world units) for normal gameplay, live-tweakable. See <see cref="AuthoredBlurSize"/>.</summary>
+	/// <summary>Baseline focus range (world units), live-tweakable. See <see cref="AuthoredBlurSize"/>.</summary>
 	[Property, Group( "Depth of Field" )] public float AuthoredFocusRange { get; set; } = 616f;
-
-	/// <summary>Whether to switch the depth-of-field on when this camera awakes. Defaults to true so gameplay
-	/// scenes get the racked-focus look; turn it off on cameras where DoF is a distraction (e.g. the menu).</summary>
-	[Property, Group( "Depth of Field" )] public bool EnableDepthOfFieldOnStart { get; set; } = true;
 
 	/// <summary>How fast the live depth-of-field eases toward its targets, per second (exponential). Higher
 	/// snaps faster; lower is a slower, softer rack.</summary>
 	[Property, Group( "Depth of Field" )] public float FocusLerpSpeed { get; set; } = 6f;
 
-	/// <summary>Viewport height (px) at which the authored <see cref="DepthOfField.BlurSize"/> is taken
-	/// literally. s&amp;box's DOF kernel reach is a fixed pixel count (≈2×BlurSize px), so without this it
-	/// covers a bigger fraction of the screen — looks blurrier — on smaller viewports. The applied blur is
-	/// scaled by Screen.Height / this value so it stays the same fraction of the frame at any resolution.
-	/// Only the blur is scaled; focal distance/range are world-space and already resolution-independent.</summary>
-	[Property, Group( "Depth of Field" ), Range( 240f, 2160f )] public float BlurReferenceHeight { get; set; } = 1080f;
+	// ── Edit-mode look ───────────────────────────────────────────────────────────────────────────────
+	// THE one place the sculpt edit focus pull is tuned (every SculptEditSession reads these off the live camera).
+	// Deliberately independent of the resting layers above: edit mode looks the same on every map and in every
+	// game, whatever the Authored*/DofProfile look is. Live-tweakable while editing.
+
+	/// <summary>Blur strength while editing (engine units, relative to 1080p).</summary>
+	[Property, Group( "Edit Depth of Field" )] public float EditBlurSize { get; set; } = 7f;
+
+	/// <summary>Sharp margin (world units) in front of the sculpt's near surface — how much space toward
+	/// the camera stays in focus before the blur starts.</summary>
+	[Property, Group( "Edit Depth of Field" )] public float EditFrontPadding { get; set; } = 16f;
+
+	/// <summary>Sharp margin (world units) behind the sculpt's far surface — bigger keeps more of the
+	/// backdrop in focus before the background blur ramps in.</summary>
+	[Property, Group( "Edit Depth of Field" )] public float EditBackPadding { get; set; } = 48f;
+
+	/// <summary>How much of the sculpt's bounds radius counts toward the sharp band. 1 = the whole sculpt
+	/// stays in focus no matter how big it gets; 0 = ignore size (only the pads around its centre are sharp).</summary>
+	[Property, Group( "Edit Depth of Field" )] public float EditSizeScale { get; set; } = 1f;
+
+	/// <summary>When the focus distance changes faster than this (units/sec, i.e. zooming) the focus snaps
+	/// instead of lerping, so it doesn't trail the camera. Orbiting changes it slowly, so that still eases.</summary>
+	[Property, Group( "Edit Depth of Field" )] public float EditZoomSnapSpeed { get; set; } = 10f;
 
 	/// <summary>How fast the live field of view eases toward its target, per second (exponential). The ease is
 	/// what makes pawn/mode switches (hunter 90 ↔ orbit 60) read as a smooth zoom instead of a pop.
 	/// 0 = no easing: the FOV snaps to its target the moment a driver asserts it.</summary>
 	[Property, Group( "Field of View" ), Range( 0f, 50f )] public float FovLerpSpeed { get; set; } = 8f;
-
-	// Resolution-aware blur multiplier: keeps the pixel-based DOF the same fraction of the screen everywhere.
-	float ScreenBlurScale => BlurReferenceHeight > 1f ? Screen.Height / BlurReferenceHeight : 1f;
 
 	// Targets the live DepthOfField blends toward every frame. Set them from anywhere (directly, via the
 	// static pass-throughs, or SetFocus) and the rack happens here so it always eases instead of popping.
@@ -264,9 +280,79 @@ public sealed class MainCamera : Component
 		if ( !DepthOfField.IsValid() )
 			return;
 
-		DepthOfField.BlurSize = _targetBlurSize * ScreenBlurScale;
+		DepthOfField.BlurSize = _targetBlurSize;
 		DepthOfField.FocalDistance = _targetFocalDistance;
 		DepthOfField.FocusRange = _targetFocusRange;
+	}
+
+	// ── Resting look: the camera's Authored* values with every matching DofProfile folded on top ──────
+	static readonly List<DofProfile> _layerScratch = new();
+
+	/// <summary>The resolved resting DoF — what the camera eases to whenever no driver is asserting.</summary>
+	public (bool Enabled, float BlurSize, float FocalDistance, float FocusRange) RestingDof
+	{
+		get
+		{
+			bool enabled = AuthoredEnabled;
+			float blur = AuthoredBlurSize, focal = AuthoredFocalDistance, range = AuthoredFocusRange;
+
+			foreach ( var p in ActiveProfiles() )
+			{
+				enabled = p.DofEnabled ?? enabled;
+				blur = p.BlurSize ?? blur;
+				focal = p.FocalDistance ?? focal;
+				range = p.FocusRange ?? range;
+			}
+
+			return (enabled, blur, focal, range);
+		}
+	}
+
+	// Profiles in this camera's scene that match the running game, lowest layer first. Reuses one scratch list —
+	// read it before calling again.
+	List<DofProfile> ActiveProfiles()
+	{
+		_layerScratch.Clear();
+		var game = GameModes.Active;
+		foreach ( var p in DofProfile.All )
+			if ( p.IsValid() && p.Scene == Scene && p.Matches( game ) )
+				_layerScratch.Add( p );
+
+		_layerScratch.Sort( DofProfile.Compare );
+		return _layerScratch;
+	}
+
+	void TargetRestingDof()
+	{
+		var rest = RestingDof;
+		_targetBlurSize = rest.Enabled ? rest.BlurSize : 0f;
+		_targetFocalDistance = rest.FocalDistance;
+		_targetFocusRange = rest.FocusRange;
+	}
+
+	[ConCmd( "mimi_dbg_dof", Help = "Debug: print the camera's DoF layers, the resolved resting look and the live values." )]
+	static void DebugDof()
+	{
+		var cam = Current;
+		if ( !cam.IsValid() || !cam.DepthOfField.IsValid() )
+		{
+			Log.Info( "mimi_dbg_dof: no live MainCamera with a DepthOfField." );
+			return;
+		}
+
+		static string F( float? v ) => v is { } f ? f.ToString( "0.##" ) : "-";
+		static string B( bool? v ) => v is { } b ? (b ? "on" : "off") : "-";
+
+		Log.Info( $"game={GameModes.Active?.ToString() ?? "none"} claimed={cam.DofClaimed}" );
+		Log.Info( $"  camera  enabled={B( cam.AuthoredEnabled )} blur={F( cam.AuthoredBlurSize )} focal={F( cam.AuthoredFocalDistance )} range={F( cam.AuthoredFocusRange )}" );
+		foreach ( var p in cam.ActiveProfiles() )
+			Log.Info( $"  profile '{p.GameObject.Name}' prio={p.Priority} modes=[{string.Join( ",", p.Modes ?? new() )}] enabled={B( p.DofEnabled )} blur={F( p.BlurSize )} focal={F( p.FocalDistance )} range={F( p.FocusRange )}" );
+
+		var r = cam.RestingDof;
+		var d = cam.DepthOfField;
+		Log.Info( $"  resting enabled={B( r.Enabled )} blur={F( r.BlurSize )} focal={F( r.FocalDistance )} range={F( r.FocusRange )}" );
+		Log.Info( $"  target  blur={F( cam._targetBlurSize )} focal={F( cam._targetFocalDistance )} range={F( cam._targetFocusRange )}" );
+		Log.Info( $"  live    blur={F( d.BlurSize )} focal={F( d.FocalDistance )} range={F( d.FocusRange )} (engine scales blur by {Screen.Height / 1080f:0.##} at {Screen.Height}px)" );
 	}
 
 	protected override void OnAwake()
@@ -277,17 +363,14 @@ public sealed class MainCamera : Component
 		// Prefer the inspector-assigned one; fall back to whatever's on this GameObject if it was left unset.
 		DepthOfField ??= GameObject.Components.Get<DepthOfField>();
 
-		// Assert the authored DoF on this machine, ignoring whatever live values the component woke with.
-		// On a joined instance those are the HOST's live values from the scene snapshot — already
-		// screen-scaled once (and possibly mid-lerp or mid-edit-session) — so seeding from them compounds
-		// the blur scale and inherits the host's transient focus.
+		// Assert the resolved resting DoF on this machine, ignoring whatever live values the component woke
+		// with. On a joined instance those are the HOST's live values from the scene snapshot (possibly
+		// mid-lerp or mid-edit-session), so seeding from them inherits the host's transient focus. On/off is
+		// carried by the blur target (0 = off), so the component itself always stays enabled.
 		if ( DepthOfField.IsValid() )
 		{
-			DepthOfField.Enabled = EnableDepthOfFieldOnStart;
-
-			_targetBlurSize = AuthoredBlurSize;
-			_targetFocalDistance = AuthoredFocalDistance;
-			_targetFocusRange = AuthoredFocusRange;
+			DepthOfField.Enabled = true;
+			TargetRestingDof();
 			SnapToTargets();
 		}
 	}
@@ -303,19 +386,16 @@ public sealed class MainCamera : Component
 		if ( !DepthOfField.IsValid() )
 			return;
 
-		// Nothing has claimed the DoF recently → rest on the authored baseline. Re-reading it every frame
-		// is what makes the gameplay DoF live-editable in the inspector.
+		// Nothing has claimed the DoF recently → rest on the resolved camera + profile look. Re-resolving it
+		// every frame is what makes the authored values and profiles live-editable (and lets a profile that
+		// only applies once the game manager arrives take over without a restart).
 		_dofFrame++;
 		if ( !DofClaimed )
-		{
-			_targetBlurSize = AuthoredBlurSize;
-			_targetFocalDistance = AuthoredFocalDistance;
-			_targetFocusRange = AuthoredFocusRange;
-		}
+			TargetRestingDof();
 
 		float t = 1f - MathF.Exp( -FocusLerpSpeed * Time.Delta );
 
-		DepthOfField.BlurSize = MathX.Lerp( DepthOfField.BlurSize, _targetBlurSize * ScreenBlurScale, t );
+		DepthOfField.BlurSize = MathX.Lerp( DepthOfField.BlurSize, _targetBlurSize, t );
 		DepthOfField.FocalDistance = MathX.Lerp( DepthOfField.FocalDistance, _targetFocalDistance, t );
 		DepthOfField.FocusRange = MathX.Lerp( DepthOfField.FocusRange, _targetFocusRange, t );
 	}

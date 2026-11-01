@@ -4,9 +4,6 @@ Layer0
 {
 	shader "shaders/complex.shader"
 
-	//---- Rendering ----
-	F_PARALLAX_OCCLUSION 1
-
 	//---- Ambient Occlusion ----
 	g_flAmbientOcclusionDirectDiffuse "1.000"
 	g_flAmbientOcclusionDirectSpecular "1.000"
@@ -31,19 +28,12 @@ Layer0
 	g_flNormalMapScaleFactor "1.000"
 	TextureNormal "scenes/maps/flatgrass/materials/claybrick_normal.png"
 
-	//---- Parallax ----
-	g_flHeightMapScale "0.050"
-	g_nLODThreshold "4"
-	g_nMaxSamples "32"
-	g_nMinSamples "8"
-	TextureHeight "scenes/maps/flatgrass/materials/claybrick_height.png"
-
 	//---- Roughness ----
 	g_flRoughnessScaleFactor "1.000"
 	TextureRoughness "scenes/maps/flatgrass/materials/claybrick_specularroughness.png"
 
 	//---- Texture Coordinates ----
-	g_vTexCoordOffset "[0.000 0.000]"
-	g_vTexCoordScale "[0.350 0.275]"
+	g_vTexCoordOffset "[0.190 0.010]"
+	g_vTexCoordScale "[14.000 16.000]"
 	g_vTexCoordScrollSpeed "[0.000 0.000]"
 }

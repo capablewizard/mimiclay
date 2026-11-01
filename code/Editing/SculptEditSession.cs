@@ -70,28 +70,10 @@ public sealed partial class SculptEditSession : Component
 
 	/// <summary>While editing, pull the main camera's depth of field onto the edited object (the whole
 	/// sculpt stays sharp, the background blurs). The sharp band is sized from the sculpt's bounds, so it
-	/// grows with the sculpt. On exit the camera eases back to its authored gameplay baseline by itself.
-	/// All of these tune live while editing — they're re-read every frame.</summary>
+	/// grows with the sculpt. On exit the camera eases back to its resting look by itself. The look itself is
+	/// tuned in ONE place — the Edit Depth of Field group on <see cref="MainCamera"/> — so every session
+	/// matches; this only opts a session in or out.</summary>
 	[Property, Group( "Depth of Field" )] public bool EditDepthOfField { get; set; } = true;
-
-	/// <summary>Blur strength applied while editing.</summary>
-	[Property, Group( "Depth of Field" )] public float DofBlurSize { get; set; } = 7f;
-
-	/// <summary>Sharp margin (world units) in front of the sculpt's near surface — how much space toward
-	/// the camera stays in focus before the blur starts.</summary>
-	[Property, Group( "Depth of Field" )] public float DofFrontPadding { get; set; } = 16f;
-
-	/// <summary>Sharp margin (world units) behind the sculpt's far surface — bigger keeps more of the
-	/// backdrop in focus before the background blur ramps in.</summary>
-	[Property, Group( "Depth of Field" )] public float DofBackPadding { get; set; } = 48f;
-
-	/// <summary>How much of the sculpt's bounds radius counts toward the sharp band. 1 = the whole sculpt
-	/// stays in focus no matter how big it gets; 0 = ignore size (only the pads around its centre are sharp).</summary>
-	[Property, Group( "Depth of Field" )] public float DofSizeScale { get; set; } = 1f;
-
-	/// <summary>When the focus distance changes faster than this (units/sec, i.e. zooming) the focus snaps
-	/// instead of lerping, so it doesn't trail the camera. Orbiting changes it slowly, so that still eases.</summary>
-	[Property, Group( "Depth of Field" )] public float DofZoomSnapSpeed { get; set; } = 10f;
 
 	/// <summary>Render the in-world transform gizmo on the selected brush. On by default; turn it off for a
 	/// view-only sculpture (the palette/sliders still anchor to the selection's projected position, so a
@@ -2926,6 +2908,7 @@ public sealed partial class SculptEditSession : Component
 		if ( !EditDepthOfField || !MainCamera.Current.IsValid() )
 			return;
 
+		var cam = MainCamera.Current;
 		var (point, radius) = FocusTarget();
 		float dist = Vector3.DistanceBetween( MainCamera.Position, point );
 
@@ -2934,15 +2917,15 @@ public sealed partial class SculptEditSession : Component
 		float speed = Time.Delta > 0f ? MathF.Abs( dist - _lastFocusDist ) / Time.Delta : 0f;
 		_lastFocusDist = dist;
 
-		// The sharp band spans the sculpt (its radius scaled by DofSizeScale) plus the front/back pads;
+		// The sharp band spans the sculpt (its radius scaled by EditSizeScale) plus the front/back pads;
 		// the focal plane is the band's centre. Solved from the band edges, so the whole sculpt stays in
 		// focus at any size and the pads keep their meaning as it grows.
-		float extent = radius * DofSizeScale;
-		float focal = dist + (DofBackPadding - DofFrontPadding) * 0.5f;
-		float range = 2f * extent + DofFrontPadding + DofBackPadding;
+		float extent = radius * cam.EditSizeScale;
+		float focal = dist + (cam.EditBackPadding - cam.EditFrontPadding) * 0.5f;
+		float range = 2f * extent + cam.EditFrontPadding + cam.EditBackPadding;
 
-		MainCamera.Dof.SetFocal( focal, lerp: speed <= DofZoomSnapSpeed );
-		MainCamera.Dof.SetBlur( DofBlurSize, lerp: true );
+		MainCamera.Dof.SetFocal( focal, lerp: speed <= cam.EditZoomSnapSpeed );
+		MainCamera.Dof.SetBlur( cam.EditBlurSize, lerp: true );
 		MainCamera.Dof.FocusRange = range;
 	}
 

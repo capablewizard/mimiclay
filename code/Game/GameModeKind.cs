@@ -46,6 +46,15 @@ public static class GameModes
 			"", "brush" ),      // plays on the picked map too — the mode key tells the map to run creative
 	};
 
+	/// <summary>The game running in the current scene on THIS machine, read off whichever networked manager is
+	/// live (they replicate to clients, so it's right everywhere), or null outside a game (menu, lobby, a
+	/// DebugGameMode harness, or a client before the manager arrives).</summary>
+	public static GameModeKind? Active =>
+		CreativeManager.Current.IsValid() ? GameModeKind.Creative
+		: CharadesManager.Current.IsValid() ? GameModeKind.Charades
+		: RoundManager.Current.IsValid() ? GameModeKind.PropHunt
+		: null;
+
 	public static GameModeInfo Get( GameModeKind kind )
 	{
 		foreach ( var m in All )
