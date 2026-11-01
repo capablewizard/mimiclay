@@ -559,3 +559,17 @@ points, inscribed in a sphere), but `ClimbTrace` traced the whole rigidbody — 
 which stop colliding while climbing but are still seen by traces. Resting on the hull, the probe found the sphere sunk
 into the wall. Fix: `ClimbTrace` sweeps the move hull itself (when AlignWithMoveHull). Same sphere right after: ClimbHold,
 0 movement over 1s. Flat-faced props were barely affected (hull and collider coincide on faces).
+
+### Held Space carries on up after a mantle (2026-11-01)
+Mantling a ledge with Space held, into a taller wall behind it, stopped on the ledge: the walk only grabs walls while
+airborne, and on the ground Space acts only on a fresh press. `StartMantleCarry` now latches `_climbOnFromMantle` when Space
+is held; until Space is released, `StepWalk` runs `TryGroundGrab` while grounded — a hull sweep from a step up, toward the
+steer (or facing) direction, out to ClimbGrabReach — and starts climbing a wall it finds. It runs mid-carry too (waiting
+for the carry to end was a visible pause of up to 0.4s); a grab ends the carry.
+
+### W mounts whatever the view (2026-11-01)
+Looking along a wall, W at the top didn't mantle: `ClimbInto` took only the level look's share pointing at the wall (≈0), and
+on an upright wall W has no other job (`ClimbAlong` gives it no depth there), so the prop just hung. `ClimbInto` now counts W
+as fully into the surface unless the look points well away from it (facing < −0.5). It only gates the mantle check.
+Script test on a 150u test wall: Space alone mantled at prop yaw 0/45/90 and camera yaw 0/±90/180 — the orientation was
+never the problem.

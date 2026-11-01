@@ -352,6 +352,29 @@ public sealed partial class HiderController
 		return false;
 	}
 
+	// Space held on from a mantle (user, 2026-11-01): climbing over a ledge into a taller wall behind it carried on up only
+	// after Space was released and pressed again — on the ground a held Space does nothing, and the air grab never runs.
+	// Set by StartMantleCarry, cleared when Space is let go; while it holds, StepWalk grabs a wall ahead (on the ground or
+	// still in the carry).
+	bool _climbOnFromMantle;
+
+	// From the ground: a wall the way we're steering (no steering: the way we face), within ClimbGrabReach. Swept from a step
+	// up, so only a wall that rises past a step counts — a kerb we'd just walk over doesn't.
+	bool TryGroundGrab( Vector3 pos, Rotation rot, Vector3 wish )
+	{
+		if ( !AllowClimbing )
+			return false;
+		var steer = wish.WithZ( 0f );
+		var dir = steer.IsNearZeroLength ? Rotation.FromYaw( MoveYaw ).Forward : steer.Normal;
+		var from = pos + Vector3.Up * ScaledStep( StepHeight );
+		var tr = GrabSweep( from, rot, dir, ClimbGrabReach );
+		if ( !tr.Hit || tr.StartedSolid || Walkable( tr.Normal ) || MathF.Abs( tr.Normal.z ) > 0.7f || IsFloorProp( tr )
+			|| Vector3.Dot( dir, -tr.Normal.WithZ( 0f ).Normal ) < 0.3f )
+			return false;
+		StartClimb( tr.Normal, tr.HitPosition );
+		return _climbing;
+	}
+
 	// WASD while climbing (user, 2026-10-29): A/D go SIDEWAYS along the surface, by the camera's left; W/S go in DEPTH —
 	// the camera's level forward, kept only as far as the surface faces up or down: all of it on a ceiling (W = forward
 	// along it), none on an upright wall, where W only pushes INTO the wall (ClimbInto — that's what mounts a ledge at the
@@ -371,11 +394,14 @@ public sealed partial class HiderController
 		return (depth * move.x + side * move.y).ClampLength( 1f ) * ScaledClimbSpeed;
 	}
 
-	// How hard W/S push INTO the surface (0..1, S negative): the level look's share pointing at it. Mounts a ledge.
+	// How hard W/S push INTO the surface (0..1, S negative). Mounts a ledge. Fully in unless the level look points well away
+	// from the surface: on an upright wall W has no other job (ClimbAlong gives it no depth there), and taking only the look's
+	// share pointing at the wall meant W did nothing at the top while looking along the wall — no mantle (user, 2026-11-01).
 	float ClimbInto( Vector3 move, Vector3 n )
 	{
 		var forward = Rotation.FromYaw( _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw ).Forward;
-		return move.x * Vector3.Dot( forward, -n );
+		float facing = Vector3.Dot( forward, -n );
+		return move.x * (facing > -0.5f ? 1f : facing);
 	}
 
 	// Grabs and the climb look THROUGH floor-like clay props (see PropsAsFloor — props smaller than us) to the surface they

@@ -64,6 +64,7 @@ public sealed partial class HiderController
 		_mantleSpeed = MathF.Max( ScaledClimbSpeed, WalkSpeed * SizeSpeedScale * 0.5f );
 		_mantleCarryTime = time;
 		_sinceMantle = 0f;
+		_climbOnFromMantle = Input.Down( "jump" ) || DebugClimbVertical > 0f;
 		_velocity = dir * _mantleSpeed;
 		IsGrounded = false;
 		Unpark();
@@ -234,5 +235,13 @@ public sealed partial class HiderController
 		// Holding Space against a wall or ceiling in the air: grab it (see HiderController.Climb).
 		if ( controlled && !IsGrounded && !MantleCarrying ) // not mid-mantle: that re-grabbed the wall we just left
 			TryAirGrab( pos, rot, wish );
+
+		// Still holding the Space that climbed us over a ledge: a wall going on up behind it grabs at once — mid-carry too.
+		// (Waiting for the carry to end and the ground to take us was a visible pause of up to the carry's 0.4s.) The sweep
+		// runs from a step up, toward the wall ahead, so it can't find the face we just climbed.
+		if ( _climbOnFromMantle && (!controlled || !(Input.Down( "jump" ) || DebugClimbVertical > 0f)) )
+			_climbOnFromMantle = false;
+		if ( _climbOnFromMantle && TryGroundGrab( pos, rot, wish ) )
+			_mantleCarryTime = 0f;
 	}
 }
