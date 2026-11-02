@@ -79,6 +79,9 @@ public sealed class MapModeCard : Component
 	/// <summary>Shots each hunter gets for the hunt (misses spend, catches are free). 0 = unlimited.</summary>
 	[Property, Group( "Round Rules (Override)" ), Range( 0, RoundSettings.MaxAmmo )] public int AmmoLimit { get; set; } = RoundSettings.DefaultAmmoLimit;
 
+	/// <summary>Who can see free-cam ghosts.</summary>
+	[Property, Group( "Round Rules (Override)" )] public GhostAudience Ghosts { get; set; } = RoundSettings.DefaultGhosts;
+
 	/// <summary>Frozen "get ready" countdown after the map loads.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float StartCountdownSeconds { get; set; } = RoundSettings.DefaultStartCountdownSeconds;
 
@@ -177,6 +180,7 @@ public sealed class MapModeCard : Component
 		HintSeconds = HintSeconds,
 		HunterCount = HunterCount,
 		AmmoLimit = AmmoLimit,
+		Ghosts = Ghosts,
 		MapIdent = RoundSettings.Default.MapIdent,
 	};
 

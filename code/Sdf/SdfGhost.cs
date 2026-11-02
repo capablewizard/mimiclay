@@ -20,44 +20,49 @@ public sealed class SdfGhost : Component, Component.ExecuteInEditor
 	public const int MaxTargets = SdfHighlightOutline.MaxTargets;
 
 	/// <summary>Body colour; alpha scales the whole ghost's opacity.</summary>
-	[Property, Group( "Colour" )] public Color BodyColor { get; set; } = new( 0.35f, 0.95f, 0.65f, 1f );
+	[Property, Group( "Colour" )] public Color BodyColor { get; set; } = new( 0.27695f, 0.80465f, 0.5408f, 1f );
 
 	/// <summary>Colour of the fresnel rim and the halo.</summary>
-	[Property, Group( "Colour" )] public Color RimColor { get; set; } = new( 0.75f, 1f, 0.85f, 1f );
+	[Property, Group( "Colour" )] public Color RimColor { get; set; } = new( 0.6093f, 1f, 0.76558f, 1f );
 
 	/// <summary>Emissive multiplier — above 1 feeds bloom.</summary>
 	[Property, Group( "Colour" ), Range( 0f, 8f )] public float Brightness { get; set; } = 1.5f;
 
 	/// <summary>Rim falloff: higher = thinner, sharper edge glow.</summary>
-	[Property, Group( "Rim" ), Range( 0.5f, 8f )] public float RimPower { get; set; } = 2.5f;
+	[Property, Group( "Rim" ), Range( 0.5f, 8f )] public float RimPower { get; set; } = 1.8f;
 
-	[Property, Group( "Rim" ), Range( 0f, 2f )] public float RimStrength { get; set; } = 1f;
+	[Property, Group( "Rim" ), Range( 0f, 2f )] public float RimStrength { get; set; } = 1.5f;
 
 	/// <summary>Opacity floor where the surface faces the camera.</summary>
-	[Property, Group( "Body" ), Range( 0f, 1f )] public float BaseOpacity { get; set; } = 0.08f;
+	[Property, Group( "Body" ), Range( 0f, 1f )] public float BaseOpacity { get; set; } = 0.1f;
 
 	/// <summary>Opacity per world unit of thickness the ray passes through — thick parts read denser.</summary>
-	[Property, Group( "Body" ), Range( 0f, 0.3f )] public float Density { get; set; } = 0.04f;
+	[Property, Group( "Body" ), Range( 0f, 0.3f )] public float Density { get; set; } = 0.02f;
 
 	/// <summary>How far (world units) the aura glows past the silhouette. The proxy box grows to fit it.</summary>
-	[Property, Group( "Halo" ), Range( 0f, 24f )] public float HaloRadius { get; set; } = 6f;
+	[Property, Group( "Halo" ), Range( 0f, 24f )] public float HaloRadius { get; set; } = 4f;
 
-	[Property, Group( "Halo" ), Range( 0f, 1f )] public float HaloStrength { get; set; } = 0.35f;
+	[Property, Group( "Halo" ), Range( 0f, 1f )] public float HaloStrength { get; set; } = 0.4f;
 
 	/// <summary>Smoke noise frequency per world unit — smaller = bigger, softer blobs.</summary>
-	[Property, Group( "Smoke" ), Range( 0.005f, 0.3f )] public float SmokeScale { get; set; } = 0.05f;
+	[Property, Group( "Smoke" ), Range( 0.005f, 0.3f )] public float SmokeScale { get; set; } = 0.1f;
 
 	/// <summary>Upward drift of the smoke through the body, world units per second.</summary>
-	[Property, Group( "Smoke" ), Range( 0f, 40f )] public float SmokeSpeed { get; set; } = 4f;
+	[Property, Group( "Smoke" ), Range( 0f, 40f )] public float SmokeSpeed { get; set; } = 14f;
 
 	/// <summary>How strongly the smoke modulates the ghost's opacity (0 = smooth).</summary>
-	[Property, Group( "Smoke" ), Range( 0f, 1f )] public float SmokeStrength { get; set; } = 0.5f;
+	[Property, Group( "Smoke" ), Range( 0f, 1f )] public float SmokeStrength { get; set; } = 0.75f;
 
 	/// <summary>Fraction of the group's height that fades out at the bottom (0 = no fade).</summary>
-	[Property, Group( "Shape" ), Range( 0f, 1f )] public float FadeHeight { get; set; } = 0.35f;
+	[Property, Group( "Shape" ), Range( 0f, 1f )] public float FadeHeight { get; set; } = 0.65f;
 
 	/// <summary>Opacity where a wall is in front of the ghost (0 = walls hide it).</summary>
 	[Property, Group( "Shape" ), Range( 0f, 1f )] public float ObscuredOpacity { get; set; }
+
+	/// <summary>Runtime hide gate: true = draw nothing, while the members stay ghosted (no clay either). Set per
+	/// machine by whoever owns the visibility rules (<see cref="SpectatorGhost"/>), the same contract as
+	/// <see cref="SdfHighlightOutline.Hidden"/>: never hide a ghost by disabling the component. Not serialized.</summary>
+	public bool Hidden { get; set; }
 
 	SceneObject _so;
 	Material _material;
@@ -132,7 +137,7 @@ public sealed class SdfGhost : Component, Component.ExecuteInEditor
 				_ready.Add( r );
 		}
 
-		if ( _ready.Count == 0 )
+		if ( _ready.Count == 0 || Hidden )
 		{
 			if ( _so.IsValid() )
 				_so.RenderingEnabled = false;

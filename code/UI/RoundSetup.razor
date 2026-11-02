@@ -128,6 +128,17 @@
 								<div class="step-btn" @onmousedown=@Press( () => AddAmmo( 1 ) )>add</div>
 							</div>
 						</div>
+						@* Who sees free-cam ghosts: each group toggles on its own. *@
+						<div class="option-row">
+							<div class="option-name">Ghosts seen by</div>
+							<div class="seg compact">
+								@foreach ( var group in GhostGroups )
+								{
+									var g = group;
+									<div class="pill @(S.Ghosts.HasFlag( g.Group ) ? "on" : "")" @onmousedown=@Press( () => ToggleGhosts( g.Group ) )>@g.Label</div>
+								}
+							</div>
+						</div>
 					}
 					else if ( G == GameModeKind.Charades )
 					{
@@ -639,6 +650,15 @@
 	// The ammo limit: 0 is unlimited, which reads "None" like the timers above.
 	static string ShotsOrNone( int shots ) => shots <= 0 ? "None" : shots.ToString();
 
+	static readonly (GhostAudience Group, string Label)[] GhostGroups =
+	{
+		(GhostAudience.Spectators, "Spectators"),
+		(GhostAudience.Props, "Props"),
+		(GhostAudience.Hunters, "Hunters"),
+	};
+
+	void ToggleGhosts( GhostAudience group ) => LobbyManager.Current?.SetGhostAudience( group, !S.Ghosts.HasFlag( group ) );
+
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
@@ -646,7 +666,7 @@
 	}
 
 	protected override int BuildHash()
-		=> HashCode.Combine( _open, S.Mode, HashCode.Combine( S.HunterCount, S.AmmoLimit ),
+		=> HashCode.Combine( _open, S.Mode, HashCode.Combine( S.HunterCount, S.AmmoLimit, S.Ghosts ),
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
 			HashCode.Combine( G, C.SpawnProps ),
 			HashCode.Combine( Ch.Rounds, Ch.Source, Ch.Topics, Ch.SculptSeconds, Ch.TopicChoices, Ch.WriteSeconds, Ch.WordLengthHints ),

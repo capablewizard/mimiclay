@@ -3,6 +3,19 @@ using System.Globalization;
 
 namespace Mimiclay;
 
+/// <summary>Who may see the ghosts of players flying a free cam (<see cref="SpectatorGhost"/>). Flags: each viewer
+/// group sees ghosts when its bit is set. A viewer counts as a spectator while eliminated, waiting without a role,
+/// or flying a free cam themselves.</summary>
+[Flags]
+public enum GhostAudience
+{
+	None = 0,
+	Spectators = 1,
+	Props = 2,
+	Hunters = 4,
+	Everyone = Spectators | Props | Hunters,
+}
+
 /// <summary>
 /// The host-tunable rules for a round: phase durations, how many hunters, and the chosen map. Lives in two places
 /// that have to agree:
@@ -44,6 +57,10 @@ public struct RoundSettings
 	/// props' favour. 0 = None (unlimited, the default); capped at <see cref="MaxAmmo"/>.</summary>
 	public int AmmoLimit;
 
+	/// <summary>Which players can see a free-cam ghost. Spectators only by default, so ghosts never tip off the
+	/// living.</summary>
+	public GhostAudience Ghosts;
+
 	/// <summary>The chosen map's <c>ResourcePath</c> (a <see cref="MapResource"/>), or <see cref="MapCatalog.RandomIdent"/>.</summary>
 	public string MapIdent;
 
@@ -63,6 +80,7 @@ public struct RoundSettings
 	public const int DefaultHunterCount = 1;
 	public const int DefaultAmmoLimit = 0;
 	public const int MaxAmmo = 8;
+	public const GhostAudience DefaultGhosts = GhostAudience.Spectators;
 
 	/// <summary>Sensible opening values — short hide, longer hunt, brief reveal/consolidation, one hunter.</summary>
 	public static RoundSettings Default => new()
@@ -77,6 +95,7 @@ public struct RoundSettings
 		HintSeconds = DefaultHintSeconds,
 		HunterCount = DefaultHunterCount,
 		AmmoLimit = DefaultAmmoLimit,
+		Ghosts = DefaultGhosts,
 		MapIdent = MapCatalog.RandomIdent,
 	};
 
@@ -94,6 +113,7 @@ public struct RoundSettings
 		public const string Hint = "r.hint";
 		public const string Hunters = "r.hn";
 		public const string Ammo = "r.ammo";
+		public const string Ghosts = "r.ghosts";
 		public const string Map = "r.map";
 	}
 
@@ -116,6 +136,7 @@ public struct RoundSettings
 		Networking.SetData( Keys.Hint, Str( HintSeconds ) );
 		Networking.SetData( Keys.Hunters, HunterCount.ToString( CultureInfo.InvariantCulture ) );
 		Networking.SetData( Keys.Ammo, AmmoLimit.ToString( CultureInfo.InvariantCulture ) );
+		Networking.SetData( Keys.Ghosts, ((int)Ghosts).ToString( CultureInfo.InvariantCulture ) );
 		Networking.SetData( Keys.Map, resolvedMapIdent ?? "" );
 	}
 
@@ -144,6 +165,10 @@ public struct RoundSettings
 		var ammo = Networking.GetData( Keys.Ammo );
 		if ( int.TryParse( ammo, NumberStyles.Integer, CultureInfo.InvariantCulture, out var a ) )
 			d.AmmoLimit = Math.Clamp( a, 0, MaxAmmo );
+
+		var ghosts = Networking.GetData( Keys.Ghosts );
+		if ( int.TryParse( ghosts, NumberStyles.Integer, CultureInfo.InvariantCulture, out var g ) )
+			d.Ghosts = (GhostAudience)g & GhostAudience.Everyone;
 
 		var map = Networking.GetData( Keys.Map );
 		if ( !string.IsNullOrEmpty( map ) )
@@ -176,6 +201,7 @@ public struct RoundSettings
 		Networking.SetData( Keys.Hint, "" );
 		Networking.SetData( Keys.Hunters, "" );
 		Networking.SetData( Keys.Ammo, "" );
+		Networking.SetData( Keys.Ghosts, "" );
 		Networking.SetData( Keys.Map, "" );
 		Networking.SetData( RoundManager.HunterIdsKey, "" );
 		Networking.SetData( RoundManager.BotCountKey, "" );

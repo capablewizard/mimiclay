@@ -10,7 +10,7 @@
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": false,
+      "Enabled": true,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -51,7 +51,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "StartDistance": 0,
+          "StartDistance": 1000,
           "VerticalFalloffExponent": 0
         }
       ],
@@ -63,7 +63,7 @@
       "Flags": 0,
       "Name": "2D Skybox",
       "Position": "533.881836,-1137.20825,-288.130188",
-      "Rotation": "0,0,-0.431387246,0.902166843",
+      "Rotation": "0,0,-0.290047288,0.957012296",
       "Scale": "1,1,1",
       "Tags": "skybox",
       "Enabled": true,
@@ -93,7 +93,7 @@
         },
         {
           "__type": "Mimiclay.SkyboxRotator",
-          "__guid": "61c77928-7568-4b59-b389-37ffde4cd16f",
+          "__guid": "ef171e1c-1fd5-4de4-b4e8-adabc5b27a7d",
           "__enabled": true,
           "Flags": 0,
           "Axis": "0,0,1",
@@ -114,7 +114,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Sun",
-          "Position": "187.192017,-664.328491,-123.053009",
+          "Position": "187.205978,-664.356384,-123.054451",
           "Rotation": "-0.118833482,-0.385033637,0.269903392,-0.874516904",
           "Scale": "1,1,1",
           "Tags": "light_directional,light",
@@ -852,7 +852,7 @@
           "FbxPath": "scenes/maps/flatgrass/grass.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "10 object(s), 19005 tris — 14:55:50",
+          "LastImport": "10 object(s), 19005 tris — 22:30:32",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",

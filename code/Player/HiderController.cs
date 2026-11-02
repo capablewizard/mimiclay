@@ -218,41 +218,26 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	// you can look around, you just can't walk or jump until the round begins. Free cam (see UpdateFreeCam) stops
 	// it the same way: the body just sits/settles wherever it was left while the camera flies off without it.
 	// The charades mimic's phrase pick (CharadesManager.LocalPicking) holds the prop too, until they've chosen.
-	bool ControlActive => !EditMode && !RoundManager.ControlsLocked && !CharadesManager.LocalPicking && !_freeCam;
+	bool ControlActive => !EditMode && !RoundManager.ControlsLocked && !CharadesManager.LocalPicking && !FreeCamming;
 
 	// ── Free cam ──────────────────────────────────────────────────────────────────────────────────────
-	/// <summary>Detaches the camera from the disguise entirely and flies it around the map, noclip-style —
-	/// a scouting/spectating tool, not a movement mode: the body itself is untouched (see <see cref="ControlActive"/>),
-	/// so it's purely a local camera change and needs no networking whatsoever (same reasoning as EditMode's
-	/// camera swap into Maya-nav — nobody else's machine ever sees "your camera"). Toggled with a raw keyboard
-	/// check (<see cref="Input.Keyboard"/>) rather than a named input action, mirroring RoundSetup.razor's "G" —
-	/// this repo has no input-action manifest file to hand-register a new one in (only the s&box Editor's
-	/// Project Settings UI can do that), so a direct key check needs no extra setup.</summary>
-	[Property, Group( "Free Cam" )] public float FreeCamSpeed { get; set; } = 600f;
+	// Detaches the camera from the disguise and flies it around the map — a scouting tool, not a movement mode: the
+	// body itself is untouched (see ControlActive). The flying is the shared SpectatorController (the same free cam
+	// an eliminated player gets), launched with this body as LeftBehind and a ghost; we just stop driving the camera
+	// while it runs. Toggled with SpectatorController.ToggleKey (F in a round, B in creative).
 
-	[Property, Group( "Free Cam" )] public float FreeCamFastMultiplier { get; set; } = 3f;
-
-	/// <summary>Sweep radius for the free-cam collision trace — small enough to thread doorways, big enough
-	/// that the view doesn't poke through thin geometry.</summary>
-	[Property, Group( "Free Cam" )] public float FreeCamCollisionRadius { get; set; } = 8f;
-
-	/// <summary>Movement momentum, in seconds to (mostly) reach or shed full speed — the editor viewport's
-	/// fly-camera feel, where the camera accelerates in and glides to a stop instead of starting/stopping
-	/// dead on the key edge. 0 = the old instant response.</summary>
-	[Property, Group( "Free Cam" ), Range( 0f, 1f )] public float FreeCamSmoothing { get; set; } = 0.3f;
-
-	/// <summary>How fast the FOV eases toward the free cam's wide view (<see cref="GameSettings.SpectateFov"/>,
-	/// the player's FOV preference) on entry and back toward <see cref="GameSettings.PropPlayFov"/> on exit
-	/// (exponential, per second — lower = slower/smoother). Our OWN blend (<see cref="ApplySmoothFov"/>),
-	/// independent of MainCamera's shared <c>FovLerpSpeed</c> (used by every other FOV transition in the game —
-	/// hunter zoom, orbit/hunter swap — so tuning free cam's feel here can't accidentally change those too).</summary>
+	/// <summary>How fast the FOV eases back toward <see cref="GameSettings.PropPlayFov"/> after the free cam (and
+	/// out of edit / the charades pick) — exponential, per second. Our OWN blend (<see cref="ApplySmoothFov"/>),
+	/// independent of MainCamera's shared <c>FovLerpSpeed</c>.</summary>
 	[Property, Group( "Free Cam" )] public float FreeCamFovLerpSpeed { get; set; } = 3f;
 
 	float _fovBlend;       // our own live-eased FOV value, independent of MainCamera's internal target-lerp
 	bool _fovBlendSeeded;  // false until first driven, so the very first frame starts from whatever's live (no pop)
 
-	bool _freeCam;
-	Vector3 _freeCamVelocity; // smoothed fly velocity (momentum) — lives only while free cam is active
+	SpectatorController _freeCam; // our free cam while it runs
+
+	/// <summary>Is this prop's owner flying the free cam (its body left standing)?</summary>
+	public bool FreeCamming => _freeCam.IsValid();
 
 	// Released into the level (see ReleaseControl): the prop keeps simulating but takes no input and no longer owns
 	// the camera, so a freshly-spawned pawn can take over while this one stays as scenery.
@@ -519,6 +504,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	protected override void OnDestroy()
 	{
+		SetFreeCam( false ); // the free cam (and its ghost) leave with the body
 		ReleaseHoldJoint();
 		_scrapeHandle?.Stop();
 		_hull.Dispose();
@@ -564,7 +550,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// Gate LIVE each frame: ownership replicates after OnStart, so a one-shot read would be stale (same reason
 		// HunterController gates live). The streamed disguise shape is applied by SdfNetworkSync, not here.
 		if ( IsProxy )
+		{
+			SetFreeCam( false ); // released / ownership dropped mid-flight: the free cam was ours, it goes too
 			return;
+		}
 
 		// The roster portrait starts from the angle we START as this prop — the camera we came in with, not the
 		// rig's default — until the first edit exit replaces it with the angle the shape was signed off from.
@@ -612,15 +601,14 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// Free cam toggle — blocked while editing (the sculpt rig already owns navigation there) or while a
 		// cursor-owning panel is open (same guard PlayCamera uses, so F doesn't fire behind a menu). Only where
 		// it's part of the game (FreeCamAllowed); dropped on the spot if we stop being in one.
-		if ( _freeCam && !FreeCamAllowed )
+		if ( FreeCamming && !FreeCamAllowed )
 			SetFreeCam( false );
-		else if ( FreeCamAllowed && !EditMode && !PauseMenu.IsOpen && !RoundSetup.IsOpen && !CharadesManager.LocalPicking && Input.Keyboard.Pressed( "F" ) )
-			SetFreeCam( !_freeCam );
+		else if ( FreeCamAllowed && !EditMode && !PauseMenu.IsOpen && !RoundSetup.IsOpen && !CharadesManager.LocalPicking && SpectatorController.TogglePressed )
+			SetFreeCam( !FreeCamming );
 
 		// Always drive the camera (per-frame, for smoothness) — needed during edit mode too, where movement is frozen.
-		if ( _freeCam )
-			UpdateFreeCam();
-		else
+		// Not while the free cam flies: it owns the camera then.
+		if ( !FreeCamming )
 			UpdateCamera();
 
 		// Drawn per frame (not in the fixed step) so it tracks the interpolated body, edit mode included.
@@ -1245,69 +1233,12 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 	}
 
-	// Free cam: detaches the SAME orbit rig from the body (FollowTarget -> null, so Tick treats Pivot as a free
-	// world-space point instead of "body position + offset") and flies that pivot around under raw WASD/mouse-look,
-	// with Distance forced to 0 so the camera sits exactly AT the pivot rather than orbiting it — turning the
-	// rig into a plain noclip flycam for as long as this runs. SetFreeCam below does the actual attach/detach
-	// exactly once, at the toggle edge — not every frame — so this only ever handles movement/look.
-	void UpdateFreeCam()
-	{
-		if ( PauseMenu.IsOpen || RoundSetup.IsOpen )
-			return;
-
-		Mouse.Visibility = MouseVisibility.Hidden;
-
-		_orbit.ApplyLook( Input.AnalogLook );
-
-		var move = Vector3.Zero;
-		if ( Input.Down( "forward" ) ) move += Vector3.Forward;
-		if ( Input.Down( "backward" ) ) move += Vector3.Backward;
-		if ( Input.Down( "left" ) ) move += Vector3.Left;
-		if ( Input.Down( "right" ) ) move += Vector3.Right;
-
-		var speed = FreeCamSpeed * (Input.Down( "run" ) ? FreeCamFastMultiplier : 1f);
-
-		// Horizontal + pitch fly relative to view (look up, fly up); vertical (jump/duck) is world-space on top —
-		// the standard noclip/spectator feel, matching FlyCamera.cs's own Q/E-for-down/up convention.
-		var wish = Vector3.Zero;
-		if ( move.LengthSquared > 0.001f )
-			wish += _orbit.Angles.ToRotation() * move.Normal;
-		if ( Input.Down( "jump" ) ) wish += Vector3.Up;
-		if ( Input.Down( "duck" ) ) wish += Vector3.Down;
-
-		// Momentum: the keys steer a WISH velocity; the actual velocity eases toward it (editor fly-cam
-		// feel — accelerate in, glide to a stop). The time constant is a third of FreeCamSmoothing so the
-		// ramp mostly completes within that many seconds; 0 = instant, exactly the old behaviour.
-		var wishVel = wish * speed;
-		if ( FreeCamSmoothing > 0.001f )
-			_freeCamVelocity = Vector3.Lerp( _freeCamVelocity, wishVel, 1f - MathF.Exp( -Time.Delta * 3f / FreeCamSmoothing ) );
-		else
-			_freeCamVelocity = wishVel;
-
-		var from = _orbit.Pivot;
-		var delta = _freeCamVelocity * Time.Delta;
-
-		_orbit.Pivot = SlideFreeCam( from, delta );
-
-		// Re-derive velocity from the distance actually covered, so a wall bleeds off the blocked component
-		// (the slide keeps the tangential part) instead of momentum silently pressing into geometry.
-		if ( Time.Delta > 0f )
-			_freeCamVelocity = (_orbit.Pivot - from) / Time.Delta;
-
-		_orbit.Tick( handleAltDrag: false );
-
-		// After Tick/Apply, which just asserted GameSettings.EditFov via MainCamera's own target-lerp —
-		// override it with our own independently-smoothed widen to the player's FOV (see ApplySmoothFov).
-		ApplySmoothFov( GameSettings.SpectateFov );
-	}
-
 	// Eases MainCamera's live FOV toward target at our own speed (FreeCamFovLerpSpeed), then snaps the ACTUAL
 	// camera to that pre-eased value (SetFov(..., lerp:false)) rather than handing MainCamera a raw target and
 	// trusting its shared FovLerpSpeed — so free cam's transition speed is tunable without touching every other
-	// FOV change in the game (hunter zoom, orbit/hunter swap) that also rides that shared setting. Called both
-	// entering free cam (target GameSettings.SpectateFov) and leaving it (target GameSettings.PropPlayFov, from UpdateCamera's
-	// normal play branch below), so the widen AND the return glide are both smooth and share one continuous
-	// blend value — no seam at the toggle.
+	// FOV change in the game (hunter zoom, orbit/hunter swap) that also rides that shared setting. The free cam
+	// eases the widen itself (SpectatorController.FovLerpSpeed); this is the return glide to
+	// GameSettings.PropPlayFov from UpdateCamera's play branch, seeded from wherever the free cam left the FOV.
 	void ApplySmoothFov( float target )
 	{
 		if ( !_fovBlendSeeded )
@@ -1322,92 +1253,28 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		MainCamera.SetFov( _fovBlend, lerp: false );
 	}
 
-	// Solid, not noclip, but glides along whatever it hits rather than stopping dead — and, unlike a single
-	// slide pass, keeps re-deflecting off EVERY surface it meets along the way (up to FreeCamSlideIterations
-	// bumps), so a corner (two planes) slides along the second wall too instead of arresting dead the moment
-	// the one-pass version's correction trace also hit something. Mirrors BrushWorldClamp's own multi-bump
-	// slide loop (same shape, plain world-space here instead of sculpture-local). A small skin is held back
-	// from each hit so the NEXT iteration's trace starts clear of the surface instead of immediately
-	// re-reporting the same hit — without it, a shallow corner reads as "no room to slide" and sticks.
-	const int FreeCamSlideIterations = 4;
-	const float FreeCamSlideSkin = 0.25f;
+	/// <summary>Is the free cam part of the game right now? In a prop-hunt round (a live <see cref="RoundManager"/>)
+	/// and in creative — see <see cref="SpectatorController.ToggleKey"/>.</summary>
+	public static bool FreeCamAllowed => SpectatorController.ToggleKey is not null;
 
-	Vector3 SlideFreeCam( Vector3 from, Vector3 delta )
-	{
-		var pos = from;
-		var remaining = delta;
-
-		for ( int i = 0; i < FreeCamSlideIterations && remaining.LengthSquared > 0.0001f; i++ )
-		{
-			var to = pos + remaining;
-			var tr = TraceFreeCam( pos, to );
-
-			if ( !tr.Hit )
-			{
-				pos = to;
-				break;
-			}
-
-			// Advance to just short of the hit (the skin), then project whatever distance was LEFT (the
-			// portion the hit fraction didn't cover) onto the hit plane for the next iteration to attempt.
-			var stepLen = remaining.Length;
-			var keepFrac = stepLen > FreeCamSlideSkin ? MathF.Max( 0f, tr.Fraction - FreeCamSlideSkin / stepLen ) : 0f;
-			pos += remaining * keepFrac;
-
-			var leftover = remaining * (1f - tr.Fraction);
-			remaining = leftover - Vector3.Dot( leftover, tr.Normal ) * tr.Normal;
-		}
-
-		return pos;
-	}
-
-	SceneTraceResult TraceFreeCam( Vector3 from, Vector3 to )
-		=> Scene.Trace.Ray( from, to )
-			.Radius( FreeCamCollisionRadius )
-			.IgnoreGameObjectHierarchy( _body?.GameObject )
-			.Run();
-
-	// The only place _freeCam actually changes — attaches/detaches the orbit rig's FollowTarget exactly once at
-	// the transition (rather than every frame in UpdateFreeCam), and restores the normal boom Distance on the
-	// way out so the next UpdateCamera() frame doesn't open with the camera jammed at zero boom length.
-	/// <summary>Is the scouting free cam part of the game right now? Only in a prop-hunt round (a live
-	/// <see cref="RoundManager"/>) — the lobby, creative and charades have no use for it, and it was just a way to
-	/// fly around the map there.</summary>
-	public static bool FreeCamAllowed => RoundManager.Current.IsValid();
-
+	// The only place the free cam starts or stops. The orbit rig is left exactly as it was — it just isn't ticked
+	// while the free cam owns the camera — so leaving drops straight back into the old view, and the FOV eases back
+	// from wherever the free cam left it (re-seeded from the live camera).
 	void SetFreeCam( bool on )
 	{
-		if ( _freeCam == on )
+		if ( FreeCamming == on )
 			return;
-
-		_freeCam = on;
 
 		if ( on )
 		{
-			// Pivot is the ORBIT pivot (roughly the disguise's body position) — the actual camera sits
-			// Distance units BEHIND it. Forcing Distance to 0 without correcting Pivot first would snap the
-			// view onto the pivot (the prop's own origin) instead of preserving wherever the camera was
-			// actually looking from a moment ago — capture the real camera world position first and take
-			// off from there instead, so there's no jump cut.
-			var cam = Scene.Camera;
-			var takeoff = cam.IsValid() ? cam.WorldPosition : _orbit.Pivot;
-
-			_orbit.FollowTarget = null;
-			_orbit.Pivot = takeoff;
-
-			// CenterPivotOnShape (UpdateCamera) can leave PivotXYOverride set from the last normal-camera
-			// frame — Tick() forcibly rewrites Pivot's X/Y from it EVERY frame regardless of FollowTarget,
-			// which otherwise pins free cam's horizontal position in place and makes WASD look like it does
-			// nothing (only jump/duck's pure-Z movement would have been visible).
-			_orbit.PivotXYOverride = null;
-			_pivotOffsetXY = null;
-			_orbit.Distance = 0f;
-			_freeCamVelocity = Vector3.Zero; // take off from rest — no stale momentum from the last session
+			_freeCam = SpectatorController.Begin( GameObject, ghost: true );
 		}
 		else
 		{
-			_orbit.FollowTarget = _body?.GameObject;
-			_orbit.Distance = CameraDistance;
+			if ( _freeCam.IsValid() )
+				_freeCam.GameObject.Destroy();
+			_freeCam = null;
+			_fovBlendSeeded = false;
 		}
 	}
 

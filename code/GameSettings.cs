@@ -44,6 +44,11 @@ public static class GameSettings
 	/// spawns a fresh pawn) and scene changes.</summary>
 	public static bool HunterThirdPerson { get; set; }
 
+	/// <summary>Free cam (<see cref="SpectatorController"/>) in third person — the hunter's over-the-shoulder boom
+	/// behind your own ghost — instead of first person. Toggled with the "View" action while flying; static, like
+	/// <see cref="HunterThirdPerson"/>, so it survives free cam re-entries and scene changes.</summary>
+	public static bool SpectatorThirdPerson { get; set; }
+
 	/// <summary>
 	/// Orbit-rig distance (reference-FOV units, see <see cref="ReferenceFov"/>) that frames a sphere of
 	/// <paramref name="radius"/> with <paramref name="margin"/> breathing room: r·margin / sin(ref/2). The

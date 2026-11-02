@@ -113,9 +113,9 @@
 
 	// Ownership is gated LIVE, not in OnStart — same reason as HunterController.OnUpdate: a host-spawned pawn
 	// runs OnStart on the owning client before ownership replicates, so an early IsProxy read is stale.
-	// Hidden during a third-person alt-orbit too: the camera is off the aim axis, so a centre dot would lie
+	// Hidden during a third-person alt-orbit too (ours, or our free cam's): the camera is off the aim axis, so a centre dot would lie
 	// about where a shot lands.
-	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting;
+	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting && !SpectatorController.LocalAltOrbiting;
 
 	// PreRender, not OnUpdate: the camera is composed after every OnUpdate (ICameraModifier stage), so the prompt's
 	// projection ran against last frame's camera and trailed mouse-look. It also guarantees HunterController's

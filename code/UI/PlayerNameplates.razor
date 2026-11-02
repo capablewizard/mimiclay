@@ -186,30 +186,22 @@
 			if ( string.IsNullOrWhiteSpace( name ) )
 				continue;
 
-			var anchor = AnchorFor( pawn );
-			var screen = cam.PointToScreenNormal( anchor, out var behind );
-			if ( behind )
-				continue;
-
-			// Hard on/off: in range, near enough the screen centre, and in line of sight. Cheap gates first — the
-			// ray only runs for plates that pass them.
-			var show = cam.WorldPosition.Distance( anchor ) <= MaxDistance
-				&& CenterRadius( screen ) <= MaxCenterRadius
-				&& !Occluded( cam.WorldPosition, anchor, pawn );
-
-			// Only the transition is eased: the plate's fade walks toward on/off at a fixed rate.
-			_fade.TryGetValue( pawn.Id, out var fade );
-			fade = FadeTime > 0f
-				? MathX.Approach( fade, show ? 1f : 0f, Time.Delta / FadeTime )
-				: (show ? 1f : 0f);
-			_fade[pawn.Id] = fade;
-			_seen.Add( pawn.Id );
-
-			if ( fade <= 0f )
-				continue;
-
 			var voice = pawn.Components.Get<PlayerVoice>();
-			_plates.Add( new Plate( pawn.Id, name, PlateScreen( pawn, cam, screen ), voice.IsValid() && voice.IsSpeaking, fade, AmmoFor( pawn, role ) ) );
+			TryAddPlate( pawn, name, AnchorFor( pawn ), cam, voice.IsValid() && voice.IsSpeaking, AmmoFor( pawn, role ) );
+		}
+
+		// Free-cam ghosts: labelled exactly where the ghost itself is drawn on this machine (SpectatorGhost.Shown —
+		// the round's ghost audience, never our own), so a plate can't reveal a ghost its viewer can't see.
+		foreach ( var ghost in Scene.GetAllComponents<SpectatorGhost>() )
+		{
+			if ( !ghost.IsValid() || !ghost.IsProxy || !ghost.Shown ) // never a plate on our own ghost
+				continue;
+
+			var name = GhostName( ghost );
+			if ( string.IsNullOrWhiteSpace( name ) )
+				continue;
+
+			TryAddPlate( ghost.GameObject, name, SculptureTop( ghost.HeadSculpture, ghost.WorldPosition ), cam, false, -1 );
 		}
 
 		// Forget fades for pawns that weren't plate candidates this frame (gone, behind us, off-team) or have
@@ -226,6 +218,46 @@
 
 		// Stable order so the razor diff matches plates by @key, not by enumeration luck.
 		_plates.Sort( ( a, b ) => a.PawnId.CompareTo( b.PawnId ) );
+	}
+
+	// One plate candidate through the shared gates: projected, then hard on/off on range, screen-centre distance and
+	// line of sight (cheap gates first — the ray only runs for plates that pass them), with only the transition eased.
+	void TryAddPlate( GameObject pawn, string name, Vector3 anchor, CameraComponent cam, bool speaking, int ammo )
+	{
+		var screen = cam.PointToScreenNormal( anchor, out var behind );
+		if ( behind )
+			return;
+
+		var show = cam.WorldPosition.Distance( anchor ) <= MaxDistance
+			&& CenterRadius( screen ) <= MaxCenterRadius
+			&& !Occluded( cam.WorldPosition, anchor, pawn );
+
+		_fade.TryGetValue( pawn.Id, out var fade );
+		fade = FadeTime > 0f
+			? MathX.Approach( fade, show ? 1f : 0f, Time.Delta / FadeTime )
+			: (show ? 1f : 0f);
+		_fade[pawn.Id] = fade;
+		_seen.Add( pawn.Id );
+
+		if ( fade <= 0f )
+			return;
+
+		_plates.Add( new Plate( pawn.Id, name, PlateScreen( pawn, cam, screen ), speaking, fade, ammo ) );
+	}
+
+	// A ghost's owner by the round roster (the name the rest of the HUD uses), else their connection's name.
+	static string GhostName( SpectatorGhost ghost )
+	{
+		var owner = ghost.Network.Owner;
+		if ( owner is null )
+			return null;
+
+		if ( RoundManager.Current.IsValid()
+			&& RoundManager.Current.Players.TryGetValue( owner.Id, out var info )
+			&& !string.IsNullOrWhiteSpace( info.Name ) )
+			return info.Name;
+
+		return owner.DisplayName;
 	}
 
 	// One walk over every pawn controller in the scene, sorting each body into exactly one of three bins:
@@ -338,15 +370,18 @@
 	// sculpture falls back to a rough standing height above its root.
 	// "Top" is taken from the WORLD bounds: a possessed prop tips and rolls, and its local top can point sideways.
 	Vector3 AnchorFor( GameObject pawn )
+		=> SculptureTop( AnchorSculpture( pawn ), pawn.WorldPosition + Vector3.Up * 80f );
+
+	// The world top-centre of a sculpture's bounds plus clearance, or the fallback when there's nothing to measure.
+	Vector3 SculptureTop( SdfSculpture sculpt, Vector3 fallback )
 	{
-		var sculpt = AnchorSculpture( pawn );
 		if ( sculpt.IsValid() && Sdf.TryGetBounds( sculpt.Brushes, out var bounds ) )
 		{
 			var world = bounds.Transform( sculpt.WorldTransform );
 			return world.Center.WithZ( world.Maxs.z ) + Vector3.Up * HeadClearance;
 		}
 
-		return pawn.WorldPosition + Vector3.Up * 80f;
+		return fallback;
 	}
 
 	// How far a viewport point sits from the screen centre, in half screen-heights, aspect-corrected so the limit

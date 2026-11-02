@@ -566,7 +566,7 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 			// one. Fly the ghost cam rather than sit on a frozen view. It's local-only, so it reveals nothing, and
 			// the first pass that finds our row below retires it as our pawn spawns.
 			if ( me is not null )
-				EnsureSpectator();
+				EnsureSpectator( ghost: false );
 			return;
 		}
 
@@ -576,7 +576,7 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		if ( IsEliminated( info ) )
 		{
 			RetireOwnPawn();
-			EnsureSpectator();
+			EnsureSpectator( ghost: true );
 			return;
 		}
 
@@ -1056,19 +1056,16 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		_ownPawnRole = PlayerRole.Unassigned;
 	}
 
-	// ── Spectator (the ghost cam — local-only, never networked) ─────────────────────────────────────────────────
+	// ── Spectator (the shared free cam, SpectatorController) ──────────────────────────────────────────────────────
 	// Flown by an eliminated Teams prop, and by anyone without a roster row: everyone while the load gate holds,
-	// and a joiner who arrived too late in the round for one.
-	void EnsureSpectator()
+	// and a joiner who arrived too late in the round for one. Only the eliminated get a ghost — the rest haven't
+	// played yet, and the load gate holds every publish anyway.
+	void EnsureSpectator( bool ghost )
 	{
 		if ( _spectator.IsValid() )
 			return;
 
-		// NotSaved: in-editor play mutates the open scene, and a runtime object without the flag would bake
-		// into the .scene on the next save (the RoundOutlineSystem hover-component lesson).
-		_spectator = new GameObject( true, "Spectator (local)" );
-		_spectator.Flags |= GameObjectFlags.NotSaved;
-		_spectator.Components.Create<SpectatorController>();
+		_spectator = SpectatorController.Begin( leftBehind: null, ghost ).GameObject;
 	}
 
 	void RetireSpectator()

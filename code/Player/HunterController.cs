@@ -195,15 +195,11 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	/// name in <see cref="OnStart"/> when left unset.</summary>
 	[Property, Group( "Run Effect" )] public GameObject RunEffect { get; set; }
 
-	// Run-effect state: the emitters we toggle (cached once — the ParticleEffect itself stays enabled so live
-	// puffs finish their lifetime instead of popping), our own position-delta tracker (separate from the footstep
-	// one, which resets while airborne — a running JUMP must keep the effect on), and the current on/off state
-	// for hysteresis.
-	ParticleEmitter[] _runEmitters;
+	// Run-effect state (shared with the free-cam ghost's wake — see RunPuffs): its own position tracker (separate
+	// from the footstep one, which resets while airborne — a running JUMP must keep the effect on) and the on/off
+	// hysteresis.
+	RunPuffs _runPuffs;
 	ParticleModelRenderer[] _runRenderers;
-	Vector3 _runFrom;
-	bool _runSeeded;
-	bool _runOn;
 
 	/// <summary>The SDF sculpture edited in face-edit mode (the "Head"). Auto-resolved in <see cref="OnStart"/>
 	/// when left unset: a child named "Head" with a sculpture, else the first sculpture in the hierarchy.</summary>
@@ -221,14 +217,28 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	/// — same eye angles — so third person is purely a view change. Shots still LEAVE from the eye, but they aim
 	/// at whatever the crosshair is over (see <see cref="ResolveAim"/>), so the boom offsets below are free to
 	/// be whatever frames best without pulling the pellets off the dot.</summary>
-	[Property, Group( "Third Person" ), Range( 40f, 300f )] public float ThirdPersonDistance { get; set; } = 100f;
+	[Property, Group( "Third Person" ), Range( 40f, 300f )] public float ThirdPersonDistance { get; set; } = ShoulderBoom.DefaultDistance;
 
 	/// <summary>Sideways offset of the boom, positive = over the RIGHT shoulder — so your own head doesn't sit
 	/// exactly on the crosshair line.</summary>
-	[Property, Group( "Third Person" ), Range( -48f, 48f )] public float ThirdPersonShoulder { get; set; } = 20f;
+	[Property, Group( "Third Person" ), Range( -48f, 48f )] public float ThirdPersonShoulder { get; set; } = ShoulderBoom.DefaultShoulder;
 
 	/// <summary>Vertical offset of the boom above the eye.</summary>
-	[Property, Group( "Third Person" ), Range( -32f, 64f )] public float ThirdPersonRise { get; set; } = 8f;
+	[Property, Group( "Third Person" ), Range( -32f, 64f )] public float ThirdPersonRise { get; set; } = ShoulderBoom.DefaultRise;
+
+	/// <summary>How fast the view eases between first and third person (exponential, per second).</summary>
+	[Property, Group( "Third Person" ), Range( 1f, 30f )] public float ThirdPersonBlendSpeed { get; set; } = ShoulderBoom.DefaultBlendSpeed;
+
+	/// <summary>The boom tuning above onto <paramref name="boom"/> — this hunter's own camera, and the free cam
+	/// launched from it (so flying keeps the hunter's framing).</summary>
+	internal void ApplyBoomTuning( ShoulderBoom boom )
+	{
+		boom.Distance = ThirdPersonDistance;
+		boom.Shoulder = ThirdPersonShoulder;
+		boom.Rise = ThirdPersonRise;
+		boom.WorldOnly = BoomWorldOnly;
+		boom.BlendSpeed = ThirdPersonBlendSpeed;
+	}
 
 	/// <summary>Only let WORLD geometry pull the third-person boom in — SDF clay props (everything tagged
 	/// <see cref="SdfCollider.ClayTag"/>) never push the camera, matching the prop's orbit camera
@@ -346,27 +356,27 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	/// forced teardown — and a one-shot write would miss those.</summary>
 	[Sync] public bool NetEditing { get; private set; }
 
-	// Alt-orbit (third person only): while Walk/alt is held the mouse swings the CAMERA boom around the pawn
-	// — aim stays frozen (look controls off), so you can turn around and look at your own hunter — and on
-	// release the view snaps straight back to the aim-locked shoulder boom. Mirrors the hider's alt gesture,
-	// minus the no-snap-back adoption: the hunter's facing IS its aim, so the camera must return to it.
-	Angles _altOrbitAngles;
-	bool _altOrbiting;
+	// The third-person camera — the over-the-shoulder boom, its first↔third ease and the alt-orbit — shared with
+	// the free cam (see ShoulderBoom). Alt-orbit (third person only): while Walk/alt is held the mouse swings the
+	// CAMERA boom around the pawn — aim stays frozen (look controls off), so you can turn around and look at your
+	// own hunter — and on release the view snaps straight back to the aim-locked shoulder boom. Mirrors the
+	// hider's alt gesture, minus the no-snap-back adoption: the hunter's facing IS its aim, so the camera must
+	// return to it.
+	readonly ShoulderBoom _boom = new();
 
-	// Alt-orbit boom overrides, seeded on grab (aim distance, no pan) and discarded on release — the dolly
-	// (alt+RMB) and vertical pan (alt+MMB) only live as long as the inspection gesture, so the snap-back
-	// always returns to the plain shoulder boom.
-	float _altDistance;
-	Vector3 _altPan;
-
-	// Dolly/pan feel, matched to the hider's play camera (OrbitCameraController defaults: ZoomSpeed 0.01,
-	// PanSpeed 1 → distance × 0.001 per pixel). Distance clamps roughly bracket ThirdPersonDistance's range.
-	const float AltZoomSpeed = 0.01f;
-	const float AltMinDistance = 20f, AltMaxDistance = 400f;
+	// Third → first person: the head/gun visual aim hands over to the raw aim across this many seconds instead of
+	// snapping onto it (see ResolveAim). 1 = settled (raw aim, no ease).
+	const float AimSettleTime = 0.3f;
+	float _aimSettle = 1f;
 
 	// Internal: the crosshair HUD hides the dot while alt-orbiting — the screen centre stops meaning "where
 	// the shot goes" the moment the camera leaves the aim axis.
-	internal bool AltOrbiting => _altOrbiting;
+	internal bool AltOrbiting => _boom.AltOrbiting;
+
+	// The view is out on the boom far enough to count as third person — the body shows and the world-model gun
+	// replaces the viewmodel. A threshold, not the setting, so both swap partway through the ease rather than
+	// at the toggle (where the camera is still on the eye, or already well out).
+	bool ThirdPersonView => _boom.Blend > 0.15f;
 
 	protected override void OnAwake()
 	{
@@ -485,6 +495,9 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		if ( Owned )
 			WearSavedHead( GameObject );
 
+		// A fresh pawn comes up already in its view mode — the first↔third ease is for the toggle, not for spawning.
+		_boom.SnapBlend( GameSettings.HunterThirdPerson );
+
 		// Lobby swap continuity: come up looking along the exact camera view we swapped from — pitch included,
 		// which the spawn-rotation seed can't deliver (the engine controller flattens it). First and third
 		// person both read EyeAngles, so this aims either. Owner-only and consumed-once by design; the gate on
@@ -576,15 +589,8 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// still finds them after we've disabled them; they start enabled in the prefab, so force the initial
 		// off state — the pawn spawns standing still.
 		RunEffect ??= GameObject.Children.FirstOrDefault( c => c.Name == "RunPFX" );
-		_runEmitters = RunEffect.IsValid()
-			? RunEffect.Components.GetAll<ParticleEmitter>( FindMode.EverythingInSelfAndDescendants ).ToArray()
-			: Array.Empty<ParticleEmitter>();
-		_runRenderers = RunEffect.IsValid()
-			? RunEffect.Components.GetAll<ParticleModelRenderer>( FindMode.EverythingInSelfAndDescendants ).ToArray()
-			: Array.Empty<ParticleModelRenderer>();
-
-		foreach ( var e in _runEmitters )
-			e.Enabled = false;
+		_runPuffs = new RunPuffs( RunEffect );
+		_runRenderers = _runPuffs.Renderers;
 	}
 
 	// The sculpture face-edit mode targets: the authored Face, else one on an object named "Head", else the first
@@ -680,6 +686,14 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				ToggleEdit();
 		}
 
+		// Free cam (creative only — see SpectatorController.ToggleKey): B detaches the camera and flies it, the body
+		// stays standing. Dropped the moment we start editing or stop being in creative, and never kept by a proxy.
+		if ( FreeCamming && (!Owned || EditMode || LeaseEditing || !CreativeManager.Current.IsValid()) )
+			SetFreeCam( false );
+		else if ( Owned && CreativeManager.Current.IsValid() && !EditMode && !LeaseEditing
+			&& !PauseMenu.IsOpen && !RoundSetup.IsOpen && SpectatorController.TogglePressed )
+			SetFreeCam( !FreeCamming );
+
 		// Tab toggles the brush wireframe overlay, same as the hider's props. Routed to whichever session owns
 		// the screen; the session no-ops this unless it's actually editing, so it's only meaningful in edit mode.
 		if ( Owned && Input.Pressed( "ToggleWireframes" ) )
@@ -716,13 +730,13 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 		if ( _controller.IsValid() )
 		{
-			bool play = Owned && !EditMode;
+			bool play = Owned && !EditMode && !FreeCamming;
 
 			// Alt-orbit runs before the look gate below so grabbing alt freezes the aim the SAME frame the
 			// orbit starts reading the mouse — otherwise one frame of look would leak into both.
 			UpdateAltOrbit( play && !LeaseEditing ); // alt is the HUD-cursor key while sculpting in place
 
-			_controller.UseLookControls = play && !_altOrbiting && !LeaseLookPaused && !GrabLookFrozen;
+			_controller.UseLookControls = play && !AltOrbiting && !LeaseLookPaused && !GrabLookFrozen;
 			// Alt in a sculpt session (cursor free, view frozen) hands the keyboard to the editor: no walking
 			// off while you scrub a slider with S or add a shape with Space.
 			_controller.UseInputControls = play && !locked && !_leaseCursorFree;
@@ -751,7 +765,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// hunter away. Clear the wish + any HORIZONTAL momentum every such frame so the body holds still — but keep
 			// the vertical component so gravity still settles a freshly-spawned pawn onto the floor (zeroing all of it
 			// every frame wipes the fall velocity, leaving it to drift down in slow motion).
-			if ( EditMode || locked || _leaseCursorFree )
+			if ( EditMode || locked || _leaseCursorFree || FreeCamming )
 			{
 				_controller.WishVelocity = Vector3.Zero;
 				if ( _controller.Body.IsValid() )
@@ -780,7 +794,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// interpolated pawn transform); SmoothedEyePosition advances _eyez, so call it exactly once per frame.
 		Vector3 eye = _controller.IsValid() ? SmoothedEyePosition() : WorldPosition;
 
-		if ( Owned && !EditMode && _controller.IsValid() )
+		if ( Owned && !EditMode && !FreeCamming && _controller.IsValid() )
 		{
 			// Re-lock the cursor for first-person look. Edit mode (the orbit camera) frees it for the gizmo and
 			// never re-hides it on exit, so assert it here every play frame — otherwise look can't capture the
@@ -799,7 +813,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// which freezes the aim and swings the camera off it: re-running would converge the pawn onto the
 			// ORBIT's crosshair and drag its head around with the gesture, and zeroing would snap it back to
 			// parallel the instant you grabbed alt. Holding the last values leaves it exactly where it was.
-			if ( !_altOrbiting )
+			if ( !AltOrbiting )
 				ResolveAim( eye );
 
 			// The in-place session's frame, HERE — after the camera has moved and the aim is resolved — so
@@ -847,7 +861,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// (A click an interaction consumed — LMB Sculpt — is not also a shot; nor is the click that just
 			// closed a lease session — see _sinceLeaseEnd.) Out of ammo (a limited Hunt) gets the same denied blip:
 			// the hunter keeps searching, but the trigger is dead.
-			if ( Input.Pressed( "attack1" ) && !_altOrbiting && !clickTaken && _sinceLeaseEnd > TriggerHoldAfterLease )
+			if ( Input.Pressed( "attack1" ) && !AltOrbiting && !clickTaken && _sinceLeaseEnd > TriggerHoldAfterLease )
 			{
 				bool hasAmmo = !RoundManager.Current.IsValid() || RoundManager.Current.LocalCanShoot;
 				if ( !locked && RoundManager.HuntingAllowed && hasAmmo )
@@ -892,7 +906,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 		// Alt in a lease session is the HUD cursor (the view is frozen, the cursor is over panels) — no world
 		// prompts under it.
-		if ( !_altOrbiting && !_leaseCursorFree && _aimDir.LengthSquared > 0.5f )
+		if ( !AltOrbiting && !_leaseCursorFree && _aimDir.LengthSquared > 0.5f )
 		{
 			// The gun's ray, cut to arm's reach (Interactions.Reach — one value in every scene): shortening the
 			// ray rather than range-testing its hit keeps occlusion for free — whatever is first along it still
@@ -1331,7 +1345,9 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				* _duckVisual * (1f - DuckChestFollow)
 				+ HeadOnlyDip;
 
-			_gun.Place( eye, visualAim, Owned && !EditMode && !GameSettings.HunterThirdPerson,
+			// Not first person while the free cam flies: the viewmodel would ride the free camera, so the
+			// world-model gun stays on the arm of the body left standing instead.
+			_gun.Place( eye, visualAim, Owned && !EditMode && !FreeCamming && !ThirdPersonView,
 				Vector3.Up * armLift + armBob );
 		}
 		if ( t0 != 0 ) tGun = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -1738,113 +1754,44 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		_landSquashVelocity = 0f;
 	}
 
-	// Advance the third-person alt-orbit gesture. Seeded from the live aim on the frame alt is grabbed, so
-	// the camera never jumps — it starts exactly where the shoulder boom was and swings from there; the same
-	// seed-from-aim is why release snaps cleanly (DriveCamera just resumes reading the untouched EyeAngles).
-	// Accumulates Input.AnalogLook the same way the orbit rig's ApplyLook does (yaw free, pitch clamped).
-	// Movement stays live during the orbit and keeps steering relative to the FROZEN aim, not the swung
-	// camera — walking while inspecting yourself doesn't re-aim you.
+	// Advance the third-person alt-orbit gesture (ShoulderBoom.UpdateAltOrbit — shared with the free cam). Seeded
+	// from the live aim on the frame alt is grabbed, so the camera never jumps; release snaps cleanly back (DriveCamera
+	// just resumes reading the untouched EyeAngles). Movement stays live during the orbit and keeps steering relative
+	// to the FROZEN aim, not the swung camera — walking while inspecting yourself doesn't re-aim you.
 	void UpdateAltOrbit( bool play )
 	{
-		bool want = play && GameSettings.HunterThirdPerson && Input.Down( "Walk" );
-
-		if ( want && !_altOrbiting )
-		{
-			_altOrbitAngles = _controller.EyeAngles;
-			_altDistance = ThirdPersonDistance;
-			_altPan = Vector3.Zero;
-		}
-		_altOrbiting = want;
-
-		if ( !_altOrbiting )
-			return;
-
-		// Alt+RMB dollies, alt+MMB pans up/down — the hider's exact drag gestures (exponential zoom so it
-		// feels even at any distance; pan scaled by distance, along the swung camera's up). Each is exclusive
-		// with the orbit rotation, mirroring the hider's early-outs, so a drag never also spins the view.
-		if ( Input.Down( "Attack2" ) )
-		{
-			_altDistance = (_altDistance * MathF.Pow( 1f + AltZoomSpeed, Mouse.Delta.y )).Clamp( AltMinDistance, AltMaxDistance );
-			return;
-		}
-
-		if ( Input.Down( "CameraPan" ) )
-		{
-			_altPan += _altOrbitAngles.ToRotation().Up * Mouse.Delta.y * (_altDistance * 0.001f);
-			return;
-		}
-
-		var look = Input.AnalogLook;
-		_altOrbitAngles = new Angles(
-			(_altOrbitAngles.pitch + look.pitch).Clamp( -89f, 89f ),
-			_altOrbitAngles.yaw + look.yaw,
-			0f );
+		ApplyBoomTuning( _boom );
+		_boom.UpdateAltOrbit( play && GameSettings.HunterThirdPerson, _controller.EyeAngles );
 	}
 
-	// Position the shared scene camera — at the eye in first person, or on an over-the-shoulder boom behind
-	// it in third person (GameSettings.HunterThirdPerson). The rotation is the eye angles EITHER WAY: third
-	// person only moves the viewpoint, never the aim, so shots keep leaving from the eye — converged onto the
-	// crosshair, which off the boom is no longer the eye forward (see ResolveAim).
-	// The boom pulls in when geometry blocks it (same trace as the orbit rig's boom) so it can't see through
-	// walls. Transform is written directly; FOV is declared through MainCamera (which owns the ease) and
-	// asserted every frame, so whatever the previous driver left targeted — the orbit rig runs at
-	// GameSettings.EditFov — glides back to hunter FOV (the player's preference) rather than sticking. Still no render-setting
-	// changes: one camera, left clean for the next pawn that drives it.
+	// Position the shared scene camera — at the eye in first person, or on the over-the-shoulder boom behind it in
+	// third person (GameSettings.HunterThirdPerson), easing between the two (ShoulderBoom, shared with the free cam).
+	// The rotation is the eye angles EITHER WAY: third person only moves the viewpoint, never the aim, so shots keep
+	// leaving from the eye — converged onto the crosshair, which off the boom is no longer the eye forward (see
+	// ResolveAim). The boom pulls in when world geometry blocks it, ignoring our own hierarchy (the head trigger + move
+	// capsule live under the pawn). Transform is written directly; FOV is declared through MainCamera (which owns the
+	// ease) and asserted every frame, so whatever the previous driver left targeted — the orbit rig runs at
+	// GameSettings.EditFov — glides back to hunter FOV (the player's preference) rather than sticking. Still no
+	// render-setting changes: one camera, left clean for the next pawn that drives it.
 	void DriveCamera( Vector3 eye )
 	{
 		var cam = Scene.Camera;
 		if ( !cam.IsValid() )
 			return;
 
-		// First person can opt out of the landing dip: the body animation still plays in full, the view just
-		// doesn't ride it. Third person always takes it — there you're watching the character land, and a view
-		// that ignored an impact it can plainly see would read as disconnected. Removed here rather than left out
-		// of the eye entirely, because the eye also places the head and the gun on EVERY machine, and a proxy's
-		// visuals must not depend on whichever camera mode the local player happens to be in.
-		if ( !GameSettings.HunterThirdPerson && !FirstPersonLandDip )
-			eye.z -= EyeDip;
+		// First person can opt out of the landing dip: the body animation still plays in full, the view just doesn't
+		// ride it. Third person always takes it — there you're watching the character land, and a view that ignored an
+		// impact it can plainly see would read as disconnected. Faded with the boom, so the toggle doesn't pop the
+		// view. Removed here rather than left out of the eye entirely, because the eye also places the head and the gun
+		// on EVERY machine, and a proxy's visuals must not depend on whichever camera mode the local player is in.
+		if ( !FirstPersonLandDip )
+			eye.z -= EyeDip * (1f - _boom.Blend);
 
-		// Boom orientation: the aim, unless an alt-orbit has swung the camera off it (third person only —
-		// _altOrbiting can't be true in first person). The camera ROTATION rides the same angles, so the
-		// orbit looks back along the boom at the pawn.
-		var rot = (_altOrbiting ? _altOrbitAngles : _controller.EyeAngles).ToRotation();
-		var pos = eye;
+		ApplyBoomTuning( _boom );
+		var pose = _boom.Place( Scene, eye, _controller.EyeAngles, GameSettings.HunterThirdPerson, GameObject );
 
-		if ( GameSettings.HunterThirdPerson )
-		{
-			// y is LEFT in s&box, so the right-shoulder offset goes in negated. During an alt-orbit the boom
-			// length is the live dolly distance and the anchor carries the pan offset (both discarded on
-			// release — see UpdateAltOrbit). Boom traced from the anchor with a small radius so the near
-			// plane can't peek through a wall the ray barely misses; own hierarchy ignored (the head trigger
-			// + move capsule live under the pawn). Triggers aren't hit by default, so other hunters' head
-			// colliders can't yank the boom in.
-			float dist = _altOrbiting ? _altDistance : ThirdPersonDistance;
-			var anchor = _altOrbiting ? eye + _altPan : eye;
-
-			// During an alt-orbit the shoulder/rise offsets scale WITH the dolly (1 at the seed distance, since
-			// _altDistance seeds from ThirdPersonDistance): the whole boom vector shrinks/grows proportionally,
-			// so zooming moves the camera along a straight ray toward the player instead of sliding past them
-			// beside the fixed shoulder offset. Play mode keeps the authored offsets untouched.
-			float offsetScale = _altOrbiting ? dist / MathF.Max( ThirdPersonDistance, 1f ) : 1f;
-			var desired = anchor + rot * new Vector3( -dist, -ThirdPersonShoulder * offsetScale, ThirdPersonRise * offsetScale );
-			var trace = Scene.Trace.Ray( anchor, desired )
-				.Radius( 8f )
-				.IgnoreGameObjectHierarchy( GameObject )
-				// Booms never collide with the charades stage's invisible fence walls — shared rule with
-				// the prop's orbit boom (FilterBoomTrace): an unseeable obstruction shoving the camera
-				// reads as a glitch.
-				.WithoutTags( CharadesStageFence.WallTag );
-
-			// Same world-only rule as the prop's orbit boom: clay never pushes the camera.
-			if ( BoomWorldOnly )
-				trace = trace.WithoutTags( SdfCollider.ClayTag );
-
-			var tr = trace.Run();
-			pos = tr.Hit ? tr.EndPosition : desired;
-		}
-
-		cam.WorldPosition = pos;
-		cam.WorldRotation = rot;
+		cam.WorldPosition = pose.Position;
+		cam.WorldRotation = pose.Rotation;
 		MainCamera.Fov = GameSettings.HunterFov;
 	}
 
@@ -2188,6 +2135,36 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	// state, NOT by excluding a tag on the shared camera (tag-excluding mutates the shared camera — the bug
 	// we just fixed — and would affect every pawn). Live each frame because ownership resolves after OnStart;
 	// setting a value to its current value is a no-op.
+	// ── Free cam (creative) ───────────────────────────────────────────────────────────────────────────────────
+	SpectatorController _freeCam; // our free cam while it runs
+
+	/// <summary>Is this hunter's owner flying the free cam (the body left standing)? Play input, the camera, the
+	/// aim, shooting and interactions all stand down while it runs (see OnUpdate's play gate).</summary>
+	public bool FreeCamming => _freeCam.IsValid();
+
+	void SetFreeCam( bool on )
+	{
+		if ( FreeCamming == on )
+			return;
+
+		if ( on )
+		{
+			// Nothing of the play state may outlive the hand-off: a held prop is dropped, the hover prompt cleared.
+			if ( _grabbed.IsValid() )
+				LetGo( _grabbed );
+			HoverContext = null;
+			_hoverChoices.Clear();
+
+			_freeCam = SpectatorController.Begin( GameObject, ghost: true );
+		}
+		else
+		{
+			if ( _freeCam.IsValid() )
+				_freeCam.GameObject.Destroy();
+			_freeCam = null;
+		}
+	}
+
 	void HideOwnBody()
 	{
 		// Hidden in first person — but while editing your own face you need to SEE yourself, so show it then,
@@ -2196,7 +2173,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// tutorial character) hides us again: the orbit camera would otherwise stare at our own frozen body
 		// standing beside him — locally only, everyone else still sees us standing there.
 		bool externalEdit = ExternalSession.IsValid() && ExternalSession.IsEditing;
-		var hideOwn = Owned && (externalEdit || (!EditMode && !GameSettings.HunterThirdPerson));
+		var hideOwn = Owned && (externalEdit || (!EditMode && !FreeCamming && !ThirdPersonView));
 
 		// The gun goes with the body during the tutorial (external edit): the world model isn't in the
 		// body renderer sets below, and Place re-asserts its visibility every frame — so it takes its own
@@ -2449,32 +2426,12 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	// the effect switches itself off there with no special casing.
 	void UpdateRunEffect()
 	{
-		if ( _runEmitters is not { Length: > 0 } || !_controller.IsValid() )
+		if ( _runPuffs is null || !_controller.IsValid() )
 			return;
-
-		var pos = _controller.WorldPosition;
-
-		if ( !_runSeeded )
-		{
-			_runFrom = pos;
-			_runSeeded = true;
-			return;
-		}
-
-		float speed = Time.Delta > 0f ? (pos - _runFrom).WithZ( 0f ).Length / Time.Delta : 0f;
-		_runFrom = pos;
 
 		float onAt = _controller.WalkSpeed.LerpTo( _controller.RunSpeed, 0.65f );
 		float offAt = _controller.WalkSpeed.LerpTo( _controller.RunSpeed, 0.45f );
-
-		_runOn = _runOn ? speed > offAt : speed >= onAt;
-
-		// Toggle the EMITTERS, not the effect/GameObject — live puffs keep simulating and fade out naturally.
-		foreach ( var e in _runEmitters )
-		{
-			if ( e.IsValid() )
-				e.Enabled = _runOn;
-		}
+		_runPuffs.Update( _controller.WorldPosition, onAt, offAt );
 	}
 
 	// The session currently owning this pawn's screen (for input routed "to whoever is editing"): the
@@ -2627,6 +2584,8 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 	protected override void OnDestroy()
 	{
+		SetFreeCam( false ); // the free cam (and its ghost) leave with the body
+
 		// Swapped to a prop / respawned / left mid-lease: hand the prop back ourselves where we still can (the
 		// host sweep in PropClaims covers the cases where this machine can't ask).
 		if ( _leaseSession.IsValid() || _leaseProp.IsValid() )
@@ -3043,21 +3002,38 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		var eyeRot = _controller.EyeAngles.ToRotation();
 		var cam = Scene.Camera;
 
-		// Gated so this stays safe wherever it's called from: HunterThirdPerson is a LOCAL setting, so a proxy
+		// Gated so this stays safe wherever it's called from: the camera boom is LOCAL state, so a proxy
 		// pawn on a third-person player's machine must never converge on THAT player's camera — it would swing a
 		// remote hunter's head around with our own view.
-		if ( !Owned || !GameSettings.HunterThirdPerson || !cam.IsValid() )
+		if ( !Owned || !ThirdPersonView || !cam.IsValid() )
 		{
-			// Nothing to converge — and critically, nothing to EASE either. Zeroing the visual aim drops the
-			// head and gun back onto the raw live EyeAngles, exactly as they were before any of this existed;
-			// running them through EaseVisualAim here instead put a ~10/s lag on the first-person viewmodel
-			// (which then fed its own rotation spring on top) and made the gun feel like it was wading.
-			// Zero also re-seeds the ease, so the next third-person frame snaps rather than swinging in — right,
-			// since toggling the view teleports the camera anyway.
+			// Nothing to converge — and, settled, nothing to EASE either. Zeroing the visual aim drops the head and
+			// gun back onto the raw live EyeAngles, exactly as they were before any of this existed; running them
+			// through EaseVisualAim here instead put a ~10/s lag on the first-person viewmodel (which then fed its
+			// own rotation spring on top) and made the gun feel like it was wading. Zero also re-seeds the ease.
+			//
+			// But not the instant the view lands back in first person: the third-person visual aim trails the look
+			// (that's its ease), so a sharp turn leaves it well behind, and zeroing on the spot snapped the gun
+			// across that whole gap. Instead it hands over across AimSettleTime: still easing, blended onto the raw
+			// aim by a smoothstep that reaches it exactly — so it always finishes, even mid-turn, and never leaves
+			// first person with a lagging viewmodel.
 			_aimDir = eyeRot.Forward;
-			_visualAimDir = Vector3.Zero;
+			if ( Owned && _aimSettle < 1f && _visualAimDir.LengthSquared > 0.5f )
+			{
+				_aimSettle = MathF.Min( _aimSettle + MathF.Min( Time.Delta, 0.1f ) / AimSettleTime, 1f ); // capped like EaseVisualAim, so a hitch can't skip it
+				float t = _aimSettle * _aimSettle * (3f - 2f * _aimSettle);
+				var eased = EaseVisualAim( eyeRot.Forward );
+				_visualAimDir = _aimSettle >= 1f ? Vector3.Zero : Vector3.Lerp( eased, eyeRot.Forward, t ).Normal;
+			}
+			else
+			{
+				_aimSettle = 1f;
+				_visualAimDir = Vector3.Zero;
+			}
 			return;
 		}
+
+		_aimSettle = 0f; // third-person view: the next switch back to first person hands over (see above)
 
 		// Read AFTER DriveCamera, which OnUpdate runs immediately before this from the same eye — so it's exactly
 		// the pose the crosshair is about to be drawn over, boom pull-in included.

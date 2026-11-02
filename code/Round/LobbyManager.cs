@@ -474,6 +474,13 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 		var s = Settings; s.AmmoLimit = Math.Clamp( shots, 0, RoundSettings.MaxAmmo ); Settings = s;
 	}
 
+	// One audience group on or off (see GhostAudience).
+	public void SetGhostAudience( GhostAudience group, bool on )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = Settings; s.Ghosts = on ? s.Ghosts | group : s.Ghosts & ~group; Settings = s;
+	}
+
 	public void SetHideSeconds( float seconds )
 	{
 		if ( !IsHostAuthority ) return;

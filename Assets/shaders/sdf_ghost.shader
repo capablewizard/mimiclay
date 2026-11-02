@@ -9,7 +9,7 @@
 //             inside, so thick parts read denser and thin parts (ears, fingers) almost vanish — the X-ray look.
 //  - HALO     the sphere-trace near-miss: rays that pass close to the surface glow with distance falloff, a soft aura
 //             past the silhouette (the proxy box is padded by HaloRadius so it has room).
-//  - SMOKE    domain-warped world-space fBm drifting upward, and a fade toward the bottom of the group (trails off).
+//  - SMOKE    soft Perlin noise drifting up in the ghost's own frame, and a fade toward the bottom of the group (trails off).
 //
 // Translucent (no depth write, no prepass, no shadows). Depth test is OFF and occlusion is resolved in-shader against the
 // scene depth chain, so behind-a-wall pixels can still show at ObscuredOpacity (0 = hidden by walls). Driven by SdfGhost,
@@ -69,55 +69,20 @@ PS
 
 	#include "sdf_field_union.hlsl" // field slots + SdfDistAll (union of the members' baked fields)
 
-	// ── Ghost look (set per-object by SdfGhost) ──
-	float4 g_vBodyColor      < Attribute( "GhostBodyColor" ); Default4( 0.35, 0.95, 0.65, 1.0 ); >; // rgb = colour, a = opacity scale
-	float4 g_vRimColor       < Attribute( "GhostRimColor" );  Default4( 0.75, 1.0, 0.85, 1.0 ); >;
-	float  g_flRimPower      < Attribute( "GhostRimPower" ); Default( 2.5 ); >;
-	float  g_flRimStrength   < Attribute( "GhostRimStrength" ); Default( 1.0 ); >;
-	float  g_flBaseOpacity   < Attribute( "GhostBaseOpacity" ); Default( 0.08 ); >; // flat floor where the surface faces the camera
-	float  g_flDensity       < Attribute( "GhostDensity" ); Default( 0.04 ); >;     // per world unit of thickness
-	float  g_flHaloRadius    < Attribute( "GhostHaloRadius" ); Default( 6.0 ); >;   // world units
-	float  g_flHaloStrength  < Attribute( "GhostHaloStrength" ); Default( 0.35 ); >;
-	float  g_flSmokeScale    < Attribute( "GhostSmokeScale" ); Default( 0.05 ); >;    // per world unit (smaller = bigger blobs)
-	float  g_flSmokeSpeed    < Attribute( "GhostSmokeSpeed" ); Default( 4.0 ); >;     // world units / s, upward
-	float  g_flSmokeStrength < Attribute( "GhostSmokeStrength" ); Default( 0.5 ); >;
+	#include "ghost_look.hlsl" // the shared look: colours, rim, base opacity, smoke (also ghost_mesh.shader)
+
+	// ── SDF-only look (set per-object by SdfGhost) ──
+	float  g_flDensity       < Attribute( "GhostDensity" ); Default( 0.02 ); >;     // per world unit of thickness
+	float  g_flHaloRadius    < Attribute( "GhostHaloRadius" ); Default( 4.0 ); >;   // world units
+	float  g_flHaloStrength  < Attribute( "GhostHaloStrength" ); Default( 0.4 ); >;
 	// The ghost's own frame (SdfGhost's transform): the smoke lives in it, so it rides along with the body
 	// instead of the body sliding through world-fixed noise.
 	float3 g_vGhostOrigin    < Attribute( "GhostOrigin" ); >;
 	float4 g_vGhostRotation  < Attribute( "GhostRotation" ); Default4( 0.0, 0.0, 0.0, 1.0 ); >;
-	float  g_flFadeHeight    < Attribute( "GhostFadeHeight" ); Default( 0.35 ); >;  // fraction of the group height that fades out at the bottom
+	float  g_flFadeHeight    < Attribute( "GhostFadeHeight" ); Default( 0.65 ); >;  // fraction of the group height that fades out at the bottom
 	float  g_flObscured      < Attribute( "GhostObscuredOpacity" ); Default( 0.0 ); >;
-	float  g_flBrightness    < Attribute( "GhostBrightness" ); Default( 1.5 ); >;   // emissive multiplier (feeds bloom)
 
 	#define GHOST_THICK_STEPS 24
-
-	// Random unit-ish gradient per lattice corner, -1..1.
-	float3 Hash33( float3 p )
-	{
-		p = frac( p * float3( 0.1031, 0.1030, 0.0973 ) );
-		p += dot( p, p.yxz + 33.33 );
-		return frac( ( p.xxy + p.yxx ) * p.zyx ) * 2.0 - 1.0;
-	}
-
-	float GradCorner( float3 i, float3 f, float3 o )
-	{
-		return dot( Hash33( i + o ), f - o );
-	}
-
-	// Perlin (gradient) noise, 0..1. Gradient rather than value noise: value noise forms square,
-	// grid-aligned blobs that read as hard edges once the smoke is scaled up.
-	float Noise3( float3 p )
-	{
-		float3 i = floor( p );
-		float3 f = frac( p );
-		float3 u = f * f * f * ( f * ( f * 6.0 - 15.0 ) + 10.0 );
-		float n = lerp(
-			lerp( lerp( GradCorner( i, f, float3( 0, 0, 0 ) ), GradCorner( i, f, float3( 1, 0, 0 ) ), u.x ),
-			      lerp( GradCorner( i, f, float3( 0, 1, 0 ) ), GradCorner( i, f, float3( 1, 1, 0 ) ), u.x ), u.y ),
-			lerp( lerp( GradCorner( i, f, float3( 0, 0, 1 ) ), GradCorner( i, f, float3( 1, 0, 1 ) ), u.x ),
-			      lerp( GradCorner( i, f, float3( 0, 1, 1 ) ), GradCorner( i, f, float3( 1, 1, 1 ) ), u.x ), u.y ), u.z );
-		return saturate( 0.5 + 0.8 * n ); // raw Perlin sits in about ±0.6
-	}
 
 	// Union field gradient (tetrahedral, 4 taps). The baked field is trilinear, so h of about a voxel keeps it smooth.
 	float3 GhostNormal( float3 p )
@@ -197,9 +162,7 @@ PS
 		float alpha;
 		if ( hit )
 		{
-			float3 n = GhostNormal( p );
-			float facing = saturate( dot( n, -rd ) );
-			float rim = pow( 1.0 - facing, g_flRimPower ) * g_flRimStrength;
+			float rim = GhostRim( GhostNormal( p ), -rd );
 
 			// Thickness: fixed steps from the hit to the far side of the bracket, summing the inside length
 			// (soft edge over ~1 unit so the bands don't step). Back parts (an ear behind the head) count too.
@@ -214,8 +177,9 @@ PS
 			}
 			float body = 1.0 - exp( -thick * g_flDensity );
 
-			alpha = saturate( g_flBaseOpacity + body + rim );
-			rgb = lerp( g_vBodyColor.rgb, g_vRimColor.rgb, saturate( rim ) );
+			float4 shade = GhostShade( rim, body );
+			rgb = shade.rgb;
+			alpha = shade.a;
 		}
 		else
 		{
@@ -226,12 +190,8 @@ PS
 			rgb = g_vRimColor.rgb;
 		}
 
-		// Smoke: soft low-frequency noise drifting up through the body — a gentle opacity breathing, not
-		// wisps. Sampled in the ghost's own frame so it travels with the ghost.
-		float3 lp = qrot( float4( -g_vGhostRotation.xyz, g_vGhostRotation.w ), p - g_vGhostOrigin );
-		float3 sp = ( lp - float3( 0, 0, g_flTime * g_flSmokeSpeed ) ) * g_flSmokeScale;
-		float  smoke = Noise3( sp ) * 0.75 + Noise3( sp * 1.9 + 7.3 ) * 0.25;
-		alpha *= lerp( 1.0, 0.35 + 1.0 * smoke, g_flSmokeStrength );
+		// Smoke, sampled in the ghost's own frame so it travels with the ghost.
+		alpha *= GhostSmoke( qrot( float4( -g_vGhostRotation.xyz, g_vGhostRotation.w ), p - g_vGhostOrigin ) );
 
 		// Trail off toward the bottom of the group.
 		float height = max( g_vBoundsMax.z - g_vBoundsMin.z, 1e-3 );
@@ -243,13 +203,13 @@ PS
 		if ( length( sceneWp - ro ) < tRef - 1.0 )
 			alpha *= g_flObscured;
 
-		alpha *= g_vBodyColor.a;
-		if ( alpha <= 0.002 )
+		float4 o = GhostFinish( rgb, alpha );
+		if ( o.a <= 0.002 )
 		{
 			clip( -1 );
 			return 0;
 		}
 
-		return float4( rgb * g_flBrightness, alpha );
+		return o;
 	}
 }
