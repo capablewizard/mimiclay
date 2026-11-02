@@ -30,17 +30,8 @@ public sealed class SpectatorGhost : Component
 	/// and gun have in third person (<see cref="HunterController.AimEaseRate"/>). 0 = locked to the look.</summary>
 	[Property, Range( 0f, 30f )] public float TurnEaseRate { get; set; } = 10f;
 
-	/// <summary>The ghost's wake — the hunter's run puffs worn as ghost (materials/ghostpuff.vmat) — starts trailing
-	/// at this speed (world units/s)…</summary>
-	[Property, Group( "Wake" )] public float PuffOnSpeed { get; set; } = 250f;
-
-	/// <summary>…and stops below this one (hysteresis, so hovering at the threshold doesn't flicker).</summary>
-	[Property, Group( "Wake" )] public float PuffOffSpeed { get; set; } = 150f;
-
 	SdfSculpture _head;
 	Rotation? _turn;             // owner: the eased facing (null until the first Follow, which snaps)
-	RunPuffs _puffs;             // every machine: the wake, run from the movement it sees (lazy — hotload-safe)
-	GameObject _puffSource;      // the "RunPFX" child, kept on the head's centre
 	SdfGhost _look;
 	List<SdfBrush> _base;        // owner: the head before scaling
 	float _appliedScale = float.NaN;
@@ -124,35 +115,9 @@ public sealed class SpectatorGhost : Component
 		if ( !IsProxy && Scale != _appliedScale )
 			ApplyScale();
 
-		var shown = Shown;
 		_look ??= Components.Get<SdfGhost>();
 		if ( _look.IsValid() )
-			_look.Hidden = !shown;
-
-		UpdateWake( shown );
-	}
-
-	// The wake: the same puffs (and on/off logic, RunPuffs) as the hunter's run dust, emitted from the head's centre
-	// while flying fast — climbing and diving included. Every machine runs it from the ghost it sees, so nothing is
-	// networked, and it only emits where the ghost itself is drawn (Shown): never trailing an invisible ghost, never
-	// behind our own first-person camera. Puffs already out finish and fade on their own.
-	void UpdateWake( bool shown )
-	{
-		if ( _puffs is null )
-		{
-			_puffSource = GameObject.Children.FirstOrDefault( c => c.Name == "RunPFX" );
-			_puffs = new RunPuffs( _puffSource );
-		}
-
-		if ( !_puffSource.IsValid() )
-			return;
-
-		// The head's centre in our frame (the Head sits on our origin): the brushes are what every machine has, the
-		// owner's scaled shape included, so this needs nothing from the network.
-		if ( Head.IsValid() && Sdf.TryGetBounds( Head.Brushes, out var bounds ) )
-			_puffSource.LocalPosition = bounds.Center;
-
-		_puffs.Update( _puffSource.WorldPosition, PuffOnSpeed, PuffOffSpeed, horizontal: false, allowed: shown );
+			_look.Hidden = !Shown;
 	}
 
 	/// <summary>May this machine's player see other players' ghosts right now? Their group(s) against the round's

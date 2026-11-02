@@ -59,6 +59,17 @@ public sealed class SdfGhost : Component, Component.ExecuteInEditor
 	/// <summary>Opacity where a wall is in front of the ghost (0 = walls hide it).</summary>
 	[Property, Group( "Shape" ), Range( 0f, 1f )] public float ObscuredOpacity { get; set; }
 
+	/// <summary>How strongly the clay's surface detail — the first member's material normal map, triplanar like the
+	/// clay shader — bends the rim (0 = smooth). The texture is taken from that material; these dials can't be read
+	/// back from it, so they default to the hunter material's (plasticine_hunter.vmat).</summary>
+	[Property, Group( "Surface" ), Range( 0f, 1f )] public float NormalStrength { get; set; } = 0.85f;
+
+	/// <summary>Normal map repeats per metre.</summary>
+	[Property, Group( "Surface" ), Range( 0.05f, 8f )] public float NormalTile { get; set; } = 0.5f;
+
+	/// <summary>Triplanar blend sharpness (higher = crisper seams between the three projections).</summary>
+	[Property, Group( "Surface" ), Range( 1f, 16f )] public float NormalBlend { get; set; } = 6f;
+
 	/// <summary>Runtime hide gate: true = draw nothing, while the members stay ghosted (no clay either). Set per
 	/// machine by whoever owns the visibility rules (<see cref="SpectatorGhost"/>), the same contract as
 	/// <see cref="SdfHighlightOutline.Hidden"/>: never hide a ghost by disabling the component. Not serialized.</summary>
@@ -249,11 +260,43 @@ public sealed class SdfGhost : Component, Component.ExecuteInEditor
 		a.Set( "GhostFadeHeight", FadeHeight );
 		a.Set( "GhostObscuredOpacity", ObscuredOpacity );
 
+		// The first member's clay surface: its material's normal map (strength 0 when it has none — an unbound
+		// texture would read as a garbage normal) and its boil, so the detail re-forms with the clay's ticks. The
+		// boil's LUMPS need nothing here: they're baked into the field we march.
+		var head = _ready[0];
+		var normalTex = NormalMapOf( head );
+		a.Set( "GhostNormalTex", normalTex );
+		a.Set( "GhostNormalStrength", normalTex is null ? 0f : NormalStrength );
+		a.Set( "GhostTriTile", NormalTile );
+		a.Set( "GhostTriBlend", NormalBlend );
+		a.Set( "BoilSeed", SdfRaymarchRenderer.BoilSeedFor( head.GameObject ) );
+		var boil = head.Components.Get<ClayBoil>();
+		if ( boil.IsValid() )
+			boil.Apply( a );
+		else
+			ClayBoil.ApplyOff( a );
+
 		for ( int slot = 0; slot < _ready.Count; slot++ )
 			_ready[slot].ApplyHighlightAttributes( _so, slot );
 		for ( int slot = _ready.Count; slot < MaxTargets; slot++ )
 			a.Set( $"DispGradL{slot}", 0f );
 
 		_so.RenderingEnabled = true;
+	}
+
+	// A member's normal map, from its own material (cached per material — looked up once, not per frame). Null when
+	// it has no material or no normal map bound.
+	Material _normalFrom;
+	Texture _normalTex;
+
+	Texture NormalMapOf( SdfRaymarchRenderer member )
+	{
+		var mat = member.Material;
+		if ( mat != _normalFrom )
+		{
+			_normalFrom = mat;
+			_normalTex = mat?.GetTexture( "g_tNormalTex" ) ?? mat?.GetTexture( "TextureNormal" );
+		}
+		return _normalTex;
 	}
 }

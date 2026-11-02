@@ -82,6 +82,33 @@ PS
 	float  g_flFadeHeight    < Attribute( "GhostFadeHeight" ); Default( 0.65 ); >;  // fraction of the group height that fades out at the bottom
 	float  g_flObscured      < Attribute( "GhostObscuredOpacity" ); Default( 0.0 ); >;
 
+	// The clay's surface detail: the head material's triplanar normal map (SdfGhost binds the texture from the member's
+	// own material), sampled in the head's frame so it sticks to the head — the rim picks the imperfections out.
+	#include "triplanar_normal.hlsl"
+	Texture2D    g_tGhostNormal < Attribute( "GhostNormalTex" ); >;
+	SamplerState g_sGhostRepeat < Filter( ANISOTROPIC ); AddressU( WRAP ); AddressV( WRAP ); >;
+	float g_flGhostNormalStrength < Attribute( "GhostNormalStrength" ); Default( 0.0 ); >; // 0 = off (no texture bound)
+	float g_flGhostTriTile        < Attribute( "GhostTriTile" ); Default( 0.5 ); >;
+	float g_flGhostTriBlend       < Attribute( "GhostTriBlend" ); Default( 6.0 ); >;
+
+	// The head's boil (ClayBoil.Apply writes these; SdfGhost forwards them). The lumps themselves are already baked
+	// into the field per tick — this only re-forms the fine surface detail on each tick, like the clay shader does.
+	float g_flBoilFps       < Attribute( "BoilFps" );       Default( 0.0 ); >;
+	float g_flBoilTick      < Attribute( "BoilTick" );      Default( 0.0 ); >;
+	float g_flBoilTexJitter < Attribute( "BoilTexJitter" ); Default( 0.0 ); >;
+	float g_flBoilSeed      < Attribute( "BoilSeed" );      Default( 0.0 ); >;
+
+	// Offset for the normal map, in head-space inches: a static per-head spread (so every ghost doesn't wear the same
+	// texels) plus a per-tick hop while boiling. Both in texture repeats, converted by the tile like the clay shader's
+	// SeedTexOffset / BoilTexOffset — same idea, our own hash (the clay's lives in sdf_eval.hlsl, which we can't include).
+	float3 GhostTexOffset()
+	{
+		float3 repeats = frac( g_flBoilSeed * float3( 0.8191725134, 0.6710436067, 0.5497004779 ) ) * 16.0;
+		if ( g_flBoilFps > 0.0 && g_flBoilTexJitter > 0.0 )
+			repeats += Hash33( float3( g_flBoilTick + g_flBoilSeed, 307.0, 1.7 ) ) * 0.5 * g_flBoilTexJitter;
+		return repeats * ( 39.3701 / max( g_flGhostTriTile, 0.001 ) );
+	}
+
 	#define GHOST_THICK_STEPS 24
 
 	// Union field gradient (tetrahedral, 4 taps). The baked field is trilinear, so h of about a voxel keeps it smooth.
@@ -94,6 +121,20 @@ PS
 			k.yyx * SdfDistAll( p + k.yyx * h ) +
 			k.yxy * SdfDistAll( p + k.yxy * h ) +
 			k.xxx * SdfDistAll( p + k.xxx * h ) );
+	}
+
+	// The surface normal with the clay's normal map folded in (slot 0 = the head's frame).
+	float3 GhostSurfaceNormal( float3 p )
+	{
+		float3 n = GhostNormal( p );
+		if ( g_flGhostNormalStrength <= 0.0 )
+			return n;
+
+		float4 inv = float4( -g_vModelRot0.xyz, g_vModelRot0.w );
+		float3 lp = qrot( inv, p - g_vModelOrigin0 ) + GhostTexOffset();
+		float3 ln = TriplanarNormal( g_tGhostNormal, g_sGhostRepeat, lp, qrot( inv, n ),
+			g_flGhostTriTile, g_flGhostTriBlend, g_flGhostNormalStrength );
+		return normalize( qrot( g_vModelRot0, ln ) );
 	}
 
 	float4 MainPs( PixelInput i, bool isFrontFace : SV_IsFrontFace ) : SV_Target0
@@ -162,7 +203,7 @@ PS
 		float alpha;
 		if ( hit )
 		{
-			float rim = GhostRim( GhostNormal( p ), -rd );
+			float rim = GhostRim( GhostSurfaceNormal( p ), -rd );
 
 			// Thickness: fixed steps from the hit to the far side of the bracket, summing the inside length
 			// (soft edge over ~1 unit so the bands don't step). Back parts (an ear behind the head) count too.
