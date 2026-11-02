@@ -575,6 +575,95 @@
                                             "Children":  [
 
                                                          ]
+                                        },
+                                        {
+                                            "__guid":  "656217ca-8741-4805-8966-9f3695ab93b6",
+                                            "__version":  2,
+                                            "Flags":  0,
+                                            "Name":  "Light",
+                                            "Position":  "0,0,0",
+                                            "Rotation":  "0,0,0,1",
+                                            "Scale":  "1,1,1",
+                                            "Tags":  "light_point,light",
+                                            "Enabled":  true,
+                                            "NetworkMode":  2,
+                                            "NetworkFlags":  0,
+                                            "NetworkOrphaned":  0,
+                                            "NetworkTransmit":  true,
+                                            "OwnerTransfer":  1,
+                                            "Components":  [
+                                                               {
+                                                                   "__type":  "Sandbox.PointLight",
+                                                                   "__guid":  "5666a99a-3bb6-43bb-9925-41f9aaf2fbf6",
+                                                                   "__enabled":  true,
+                                                                   "Flags":  0,
+                                                                   "__version":  1,
+                                                                   "AnimationCurve":  [
+                                                                                          {
+                                                                                              "x":  0,
+                                                                                              "y":  0,
+                                                                                              "in":  0,
+                                                                                              "out":  0,
+                                                                                              "mode":  "Mirrored"
+                                                                                          },
+                                                                                          {
+                                                                                              "x":  0.5,
+                                                                                              "y":  1,
+                                                                                              "in":  0,
+                                                                                              "out":  0,
+                                                                                              "mode":  "Mirrored"
+                                                                                          },
+                                                                                          {
+                                                                                              "x":  1,
+                                                                                              "y":  0,
+                                                                                              "in":  0,
+                                                                                              "out":  0,
+                                                                                              "mode":  "Mirrored"
+                                                                                          }
+                                                                                      ],
+                                                                   "AnimationDuration":  2,
+                                                                   "AnimationEnabled":  true,
+                                                                   "AnimationGradient":  {
+                                                                                             "blend":  "Linear",
+                                                                                             "color":  [
+                                                                                                           {
+                                                                                                               "t":  0.5,
+                                                                                                               "c":  "1,1,1,1"
+                                                                                                           }
+                                                                                                       ],
+                                                                                             "alpha":  [
+
+                                                                                                       ]
+                                                                                         },
+                                                                   "AnimationPattern":  "GentlePulse",
+                                                                   "AnimationSpeed":  1,
+                                                                   "AnimationTimeOffset":  0,
+                                                                   "Attenuation":  3,
+                                                                   "BakeLightIndex":  -1,
+                                                                   "ConstantAttenuation":  0,
+                                                                   "Contribution":  "Diffuse, Specular, Transmissive",
+                                                                   "FogMode":  "Enabled",
+                                                                   "FogStrength":  1,
+                                                                   "Intensity":  1,
+                                                                   "LightColor":  "0.22791,1,0.6315,1",
+                                                                   "LinearAttenuation":  0,
+                                                                   "MixedShadows":  false,
+                                                                   "OnComponentDestroy":  null,
+                                                                   "OnComponentDisabled":  null,
+                                                                   "OnComponentEnabled":  null,
+                                                                   "OnComponentFixedUpdate":  null,
+                                                                   "OnComponentStart":  null,
+                                                                   "OnComponentUpdate":  null,
+                                                                   "Radius":  100,
+                                                                   "ShadowBias":  0,
+                                                                   "ShadowHardness":  0,
+                                                                   "Shadows":  false,
+                                                                   "Temperature":  6500
+                                                               }
+                                                           ],
+                                            "Children":  [
+
+                                                         ]
                                         }
                                     ],
                        "__variables":  [

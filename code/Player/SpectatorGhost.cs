@@ -37,6 +37,9 @@ public sealed class SpectatorGhost : Component
 	float _appliedScale = float.NaN;
 	float? _transformScale;      // owner: the authored root scale, captured once, then reset to 1
 	Vector3 _headCentre;         // owner: the clay's centre in the head's frame, after scaling
+	PointLight _light;           // the "Light" child's glow (lazy — hotload-safe)
+	float _lightIntensity = -1f; // its authored intensity, captured once (< 0 = not yet)
+	float _lightFade;            // 0..1, eased toward visible here
 
 	float EffectiveScale => Scale * (_transformScale ?? 1f);
 
@@ -118,6 +121,32 @@ public sealed class SpectatorGhost : Component
 		_look ??= Components.Get<SdfGhost>();
 		if ( _look.IsValid() )
 			_look.Hidden = !Shown;
+
+		UpdateLight();
+	}
+
+	// The glow: the prefab's "Light" child, kept on the head's centre. Lit on the owner's machine, and elsewhere only
+	// where the ghost may be seen — a light is seen by everyone, so an unseen ghost's glow would give away where it
+	// is. Faded through the intensity, never .Enabled (it's part of the networked object), and only on proxies: the
+	// owner never touches it, so a spawn snapshot (the owner's live state) always carries the authored value.
+	void UpdateLight()
+	{
+		_light ??= GameObject.Children.FirstOrDefault( c => c.Name == "Light" )?.Components.Get<PointLight>();
+		if ( !_light.IsValid() )
+			return;
+
+		if ( _lightIntensity < 0f )
+			_lightIntensity = _light.Intensity;
+
+		// The head's centre in our frame: from the brushes every machine has (the owner's scaled shape included).
+		if ( Head.IsValid() && Sdf.TryGetBounds( Head.Brushes, out var bounds ) )
+			_light.LocalPosition = bounds.Center;
+
+		if ( !IsProxy )
+			return;
+
+		_lightFade = _lightFade.Approach( LocalMaySee() ? 1f : 0f, 3f * Time.Delta );
+		_light.Intensity = _lightIntensity * _lightFade;
 	}
 
 	/// <summary>May this machine's player see other players' ghosts right now? Their group(s) against the round's
