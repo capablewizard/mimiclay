@@ -520,6 +520,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		UpdateConcealment();
 		UpdateReleasedSolidity();
 		UpdateScrape();
+		UpdateSettlePin(); // other players' props: hold the clay still through their stand-up (see SettleUpright)
 
 		// A granted possession resumes here — before the dormant gate, because a HOST possessing a prop it
 		// released itself still has _dormant latched on its own copy (ResumeControl clears it).
@@ -527,6 +528,16 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		{
 			_possessionPending = false;
 			ResumeControl();
+		}
+
+		// Borrowed from its wearer for a hold (the inspect grab — see PropClaims.BorrowedBodies): this machine moves it,
+		// but it's somebody else's body — no input, no camera, and never our microphone (the engine's Voice records on
+		// any non-proxy copy).
+		if ( PropClaims.IsBorrowedHere( this ) )
+		{
+			if ( Components.Get<PlayerVoice>() is { } voice )
+				voice.Muted = true;
+			return;
 		}
 
 		// Released into the level: no input, no camera — just let OnFixedUpdate keep the physics settling.
@@ -551,6 +562,13 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// HunterController gates live). The streamed disguise shape is applied by SdfNetworkSync, not here.
 		if ( IsProxy )
 		{
+			// Our own body, lent out for a hold (or on its way back): still ours to watch (and to break free of).
+			if ( OwnBodyAway )
+			{
+				UpdateBorrowedView();
+				return;
+			}
+
 			SetFreeCam( false ); // released / ownership dropped mid-flight: the free cam was ours, it goes too
 			return;
 		}
@@ -593,6 +611,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			_jumpQueued = true;
 			_sinceJumpPress = 0f; // also an air-grab request (see HiderController.Climb)
 		}
+		WatchMoveEscape(); // a fresh movement press breaks free of a grab (see HiderController.Grabbed)
 
 		// Shift lets go of a climb — latched here so a quick tap can't fall between fixed ticks.
 		if ( _climbing && ControlActive && Input.Pressed( "run" ) )
@@ -635,7 +654,21 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	/// are hidden from what we're playing (Infection: a fellow prop before the Reveal; Teams: any prop on a
 	/// hunter's machine during prep). Never true for our own pawn — concealment is about what OTHER machines
 	/// perceive.</summary>
-	public bool Concealed => (IsProxy || RoundManager.IsBotPawn( GameObject )) && RoundManager.PropsConcealed;
+	public bool Concealed => (IsProxy || RoundManager.IsBotPawn( GameObject ) || PropClaims.IsBorrowedHere( this ))
+		&& !OwnBodyAway && RoundManager.PropsConcealed;
+
+	// Our own body, lent out for a grab: a proxy here for the hold, but still OURS — never concealed from us.
+	// Not a bot: the host is a lent bot's "wearer", but nobody watches through a bot.
+	bool BorrowedFromUs => IsProxy && !RoundManager.IsBotPawn( GameObject )
+		&& PropClaims.WearerOf( GameObject ) is { } wearer && wearer == Connection.Local?.Id;
+
+	// …and through both EDGES of the lend: the lent registry and the ownership change arrive separately, in either order,
+	// so for a few frames the body can be a proxy the registry doesn't (yet, or any more) call ours — concealment then hid
+	// it (measured on the wearer at the START of a grab: ~17 ms hidden; and at the hand-back). The round's roster is the
+	// truth that doesn't flicker — it names our pawn whoever owns it on the network — and _wasBorrowed covers modes
+	// without one, from the moment we've watched it lent out until StepHandback takes it back.
+	bool OwnBodyAway => BorrowedFromUs
+		|| (IsProxy && (_wasBorrowed || RoundManager.IsLocalRosterPawn( GameObject )));
 
 	// Keep other players' props out of our world until the Reveal. Asserted every frame on every machine and
 	// unconditionally, not on change: GameObject.Enabled is serialized, so a spawn snapshot or a network refresh
@@ -765,7 +798,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// Proxy: the engine drives this body from the networked transform (see Rigidbody.ShouldSimulatePhysics —
 		// a synced proxy is moved, not simulated). Skip movement entirely for a body we're not simulating.
 		if ( IsProxy )
+		{
+			EndLentBody(); // we were the holder of a lent body, and it has gone back (see HiderController.Grabbed)
 			return;
+		}
 
 		WatchMoveJumps();
 
@@ -776,10 +812,17 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// scenery prop that escapes the map should come back too.
 		ApplyClayMass();
 
+		// A lent body just came back to us (or its pose hasn't yet) — see HiderController.Grabbed.
+		if ( StepHandback() )
+			return;
+
 		// Grabbed (creative's pickup — see PropClaims.Grab): chase the holder's pose, free to rotate, no gravity.
 		// Ahead of everything else: a held prop is nobody's body and nobody's sculpt.
+		// A body LENT to us for a hold (the inspect grab — we're the holder) is held exactly like scenery here, from the
+		// target our own hunter computes (PropClaims.SetLocalGrabTarget).
 		Transform held = default;
-		bool isHeld = Scenery && PropClaims.Current.IsValid() && PropClaims.Current.TryGetGrabTarget( this, out held );
+		bool borrowed = PropClaims.IsBorrowedHere( this );
+		bool isHeld = (Scenery || borrowed) && PropClaims.Current.IsValid() && PropClaims.Current.TryGetGrabTarget( this, out held );
 
 		// Frozen from a grab (LMB while holding): exactly where it was let go, with motion OFF — solid, but no
 		// physics at all (no gravity, nothing can push it). Ahead of the fall check and the motion recovery
@@ -805,13 +848,22 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 
 		// Someone is carrying OUR body (or just let go of it) — see HiderController.Grabbed.
-		if ( !Scenery && StepGrabbed() )
+		if ( !Scenery && !borrowed && StepGrabbed() )
 			return;
 
 		if ( isHeld )
 		{
+			if ( borrowed )
+				HoldLentBody();
 			SetPhysicsMode( PhysicsMode.Held );
 			DriveHeld( held );
+			return;
+		}
+
+		// A lent body we've let go of: we keep simulating it until it's at rest, then hand it back.
+		if ( borrowed )
+		{
+			StepLentBody();
 			return;
 		}
 
@@ -1112,16 +1164,72 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		var disguise = _body.IsValid() ? _body.GameObject : null;
 		var keep = disguise.IsValid() ? disguise.WorldTransform : default;
 
+		var before = WorldRotation;
 		WorldRotation = Rotation.FromYaw( WorldRotation.Angles().yaw );
 		if ( disguise.IsValid() )
 			disguise.WorldTransform = keep;
+
+		// One instant change, not an eased one: rendering eases the ROOT's rotation over a frame or two while the
+		// disguise's counter-rotation lands at once, so the clay visibly swung and came back (7–8u and 17° per frame
+		// on the wearer after a tilted hand-back).
+		Transform.ClearInterpolation();
+		if ( disguise.IsValid() )
+			disguise.Transform.ClearInterpolation();
 
 		if ( Body.IsValid() )
 		{
 			Body.Velocity = Vector3.Zero;
 			Body.AngularVelocity = Vector3.Zero;
+
+			// The physics body too, not just the GameObject: left at the old tilt, the next physics step pulled the root
+			// straight back over and the clay lurched until the walk's pitch/roll lock stood it up again (measured on the
+			// wearer: 8u and 17° on each of two frames, right after a tilted hand-back).
+			if ( Body.PhysicsBody is { } pb && pb.IsValid() )
+			{
+				pb.Position = WorldPosition;
+				pb.Rotation = WorldRotation;
+			}
 		}
 		SetPhysicsMode( PhysicsMode.Character );
+
+		// Tell everyone else where the clay is. The root's new rotation reaches them through its transform sync, but the
+		// disguise's counter-rotation doesn't (child transforms don't live-replicate) — so every other machine swung the
+		// clay round with the root: a 24u, 58° snap measured after a tilted hand-back. They pin the clay here instead
+		// until the upright root has arrived (see UpdateSettlePin). Only when the root actually turned.
+		if ( disguise.IsValid() && Networking.IsActive && GameObject.Network.Active
+			&& Rotation.Difference( before, WorldRotation ).Angle() > 0.5f )
+			BroadcastSettled( keep.Position, keep.Rotation, WorldRotation, disguise.LocalPosition, disguise.LocalRotation );
+	}
+
+	// Every other machine: the clay's world placement after a SettleUpright, the root rotation that goes with it, and the
+	// disguise's resulting LOCAL placement on the owner.
+	(Vector3 Position, Rotation Rotation, Rotation Root, Vector3 LocalPosition, Rotation LocalRotation, RealTimeSince Since)? _settlePin;
+
+	[Rpc.Broadcast]
+	void BroadcastSettled( Vector3 clayPosition, Rotation clayRotation, Rotation root, Vector3 localPosition, Rotation localRotation )
+	{
+		if ( !IsProxy )
+			return; // the machine that settled already has it
+		_settlePin = (clayPosition, clayRotation, root, localPosition, localRotation, 0f);
+	}
+
+	// Per frame, on a proxy that's been told about a settle: hold the clay where the owner left it until the root's own
+	// synced rotation catches up (or a second passes), then hand over to the owner's exact LOCAL placement — so the end
+	// state matches the owner's even if the root kept moving meanwhile (a body settling its last bit onto the floor left a
+	// world-pinned clay 1.25u off). The clay doesn't move on any machine.
+	void UpdateSettlePin()
+	{
+		if ( _settlePin is not { } pin || !_body.IsValid() )
+			return;
+		var disguise = _body.GameObject;
+		if ( Rotation.Difference( WorldRotation, pin.Root ).Angle() < 0.5f || pin.Since > 1f )
+		{
+			disguise.LocalPosition = pin.LocalPosition;
+			disguise.LocalRotation = pin.LocalRotation;
+			_settlePin = null;
+			return;
+		}
+		disguise.WorldTransform = new Transform( pin.Position, pin.Rotation, disguise.WorldScale );
 	}
 
 	// The leash rule on one velocity-shaped vector (see LeashCentre). Horizontal only — Z passes straight

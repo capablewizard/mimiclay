@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Mimiclay;
 
@@ -36,7 +37,7 @@ public static class SdfCollisionBuilder
 {
 	// The physics engine SILENTLY drops a convex hull with more than 255 half-edges — about 127 edges once
 	// coplanar faces merge (measured 2026-10-28: a 44-vertex triangulated sphere passes, 45 vanishes).
-	// FlushPending thins any hull over this, so none can disappear.
+	// PreparePending thins any hull over this, so none can disappear.
 	const int HullEdgeLimit = 120;   // a little under the 127 ceiling
 	const int HullThinVertices = 40; // a thinned hull's vertex count — a triangulated 40 has 114 edges
 
@@ -126,11 +127,11 @@ public static class SdfCollisionBuilder
 	public readonly record struct EmittedShape( ShapeKind Kind, int BrushIndex );
 
 	// Every shape a build makes is RECORDED here first (RecordHull / RecordSphere / RecordCapsule — the only
-	// emission points), then FlushPending culls the buried ones and hands the rest to the ModelBuilder in order.
+	// emission points), then PreparePending culls the buried ones and EmitPending hands the rest to the ModelBuilder in order.
 	// The optional captures ride the flush, so they describe exactly the shapes physics gets: _frame as
 	// sculpture-space points (hull vertices, voxel-box corners, points on each sphere/capsule end), _emitted as
 	// kind + source brush (tracked in _brushIndex). Statics rather than parameters threaded through every helper:
-	// Build is main-thread-only (it creates physics shapes) and they live only for the duration of one call.
+	// they live only for the duration of one call (the shape half may run on a worker — see BuildAsync).
 	sealed class PendingShape
 	{
 		public ShapeKind Kind;
@@ -141,10 +142,12 @@ public static class SdfCollisionBuilder
 		public bool Culled;
 	}
 
+	// _pending/_brushIndex are written by ComputeShapes, which BuildAsync runs on a worker while the main thread may be
+	// running a synchronous Build — so they're per-thread. _frame/_emitted are only touched by EmitPending (main thread).
 	static List<Vector3> _frame;
 	static List<EmittedShape> _emitted;
-	static List<PendingShape> _pending;
-	static int _brushIndex;
+	[ThreadStatic] static List<PendingShape> _pending;
+	[ThreadStatic] static int _brushIndex;
 
 	static void RecordHull( List<Vector3> hull, ShapeKind kind = ShapeKind.Hull ) =>
 		_pending.Add( new PendingShape { Kind = kind, Brush = _brushIndex, Hull = hull } );
@@ -155,10 +158,9 @@ public static class SdfCollisionBuilder
 	static void RecordCapsule( Vector3 a, Vector3 b, float r ) =>
 		_pending.Add( new PendingShape { Kind = ShapeKind.Capsule, Brush = _brushIndex, A = a, B = b, R = r } );
 
-	// Thin any hull physics would silently drop, cull the buried shapes, then hand the survivors to the builder in
-	// recording order (the debug view relies on the order) along with their frame points and emitted tags. Thinning
-	// runs FIRST so the cull judges coverage against the hulls physics actually gets. Null when nothing survives.
-	static Model FlushPending( ModelBuilder builder )
+	// Thin any hull physics would silently drop, then cull the buried shapes. Thinning runs FIRST so the cull judges
+	// coverage against the hulls physics actually gets. Pure — part of the worker-safe half (ComputeShapes).
+	static void PreparePending()
 	{
 		foreach ( var p in _pending )
 			if ( p.Hull is { Count: > HullThinVertices } && ConvexHull.EdgeCount( p.Hull ) > HullEdgeLimit )
@@ -166,9 +168,15 @@ public static class SdfCollisionBuilder
 
 		if ( CullBuried )
 			CullBuriedShapes( _pending );
+	}
 
+	// MAIN THREAD: hand the surviving shapes to a fresh builder in recording order (the debug view relies on the
+	// order), along with their frame points and emitted tags. Null when nothing survives.
+	static Model EmitPending( List<PendingShape> pending )
+	{
+		var builder = new ModelBuilder();
 		bool any = false;
-		foreach ( var p in _pending )
+		foreach ( var p in pending )
 		{
 			if ( p.Culled )
 				continue;
@@ -494,34 +502,99 @@ public static class SdfCollisionBuilder
 	static int SettingsHash() => HashCode.Combine( CodeVersion, VoxelTarget, VoxelMaxPerAxis, CarvedHulls, CullBuried,
 		CullTolerance, CarveShallowCells );
 
+	static int CacheKey( List<SdfBrush> flat ) => HashCode.Combine( SdfSculpture.ContentHashPrefix( flat, flat.Count, 0, false ), SettingsHash() );
+
 	static CachedBuild GetOrBuild( List<SdfBrush> flat )
 	{
-		int key = HashCode.Combine( SdfSculpture.ContentHashPrefix( flat, flat.Count, 0, false ), SettingsHash() );
+		int key = CacheKey( flat );
 		if ( _cache.TryGetValue( key, out var hit ) )
 		{
 			CacheHits++;
 			return hit;
 		}
 
-		if ( _cache.Count >= CacheLimit )
-			_cache.Clear();
-
 		var built = new CachedBuild();
-		_frame = built.Frame;
-		_emitted = built.Emitted;
+		var pending = Compute( flat, built.Carved );
+		return Finish( key, built, pending );
+	}
+
+	// The worker-safe half: every shape decided, nothing built. Null when nothing is solid.
+	static List<PendingShape> Compute( List<SdfBrush> flat, List<CarvedCopy> carved )
+	{
 		_pending = new List<PendingShape>( 64 );
 		try
 		{
-			built.Model = BuildInternal( flat, built.Carved );
+			return ComputeShapes( flat, carved ) ? _pending : null;
 		}
 		finally
 		{
-			_frame = null;
-			_emitted = null;
 			_pending = null;
 		}
+	}
+
+	// MAIN THREAD: make the Model and cache the build.
+	static CachedBuild Finish( int key, CachedBuild built, List<PendingShape> pending )
+	{
+		if ( pending is not null )
+		{
+			_frame = built.Frame;
+			_emitted = built.Emitted;
+			try
+			{
+				built.Model = EmitPending( pending );
+			}
+			finally
+			{
+				_frame = null;
+				_emitted = null;
+			}
+		}
+
+		if ( _cache.Count >= CacheLimit )
+			_cache.Clear();
 		_cache[key] = built;
 		return built;
+	}
+
+	/// <summary><see cref="Build"/> with the shape work on a WORKER thread: call on the main thread, and it resumes there
+	/// to make the Model (the only engine call). The brushes are snapshotted before the hop, so the caller may keep
+	/// editing the live list. Same cache as <see cref="Build"/> — a hit returns without leaving the main thread.</summary>
+	public static async Task<Model> BuildAsync( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies = null,
+		List<Vector3> framePoints = null, List<EmittedShape> emitted = null )
+	{
+		carvedCopies?.Clear();
+		framePoints?.Clear();
+		emitted?.Clear();
+		if ( brushes is null || brushes.Count == 0 )
+			return null;
+
+		// Main thread: resolve groups (prefab lookups) and bake any text SDFs the samplers read, then copy.
+		var live = SdfGroups.Flatten( brushes );
+		SdfTextSdf.EnsureBaked( live );
+		var flat = new List<SdfBrush>( live.Count );
+		foreach ( var b in live )
+			flat.Add( b.Copy() );
+
+		int key = CacheKey( flat );
+		if ( !_cache.TryGetValue( key, out var built ) )
+		{
+			var fresh = new CachedBuild();
+			await GameTask.WorkerThread();
+			var pending = Compute( flat, fresh.Carved );
+			await GameTask.MainThread();
+
+			// Another build of the same shape may have finished meanwhile; keep the first.
+			built = _cache.TryGetValue( key, out var raced ) ? raced : Finish( key, fresh, pending );
+		}
+		else
+		{
+			CacheHits++;
+		}
+
+		carvedCopies?.AddRange( built.Carved );
+		framePoints?.AddRange( built.Frame );
+		emitted?.AddRange( built.Emitted );
+		return built.Model;
 	}
 
 	// The clay's solid volume from a fixed grid of field samples over its bounds (~VolumeSamples in all — a few
@@ -557,9 +630,12 @@ public static class SdfCollisionBuilder
 		return solid * cell.x * cell.y * cell.z;
 	}
 
-	static Model BuildInternal( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies )
+	// Decide every shape (records into _pending, thinned + culled) — pure brush maths, no engine calls, so it may run
+	// on a worker (BuildAsync). The helpers still take a ModelBuilder parameter from before the split; nothing on
+	// this path calls into it any more (EmitPending is the only place shapes reach a builder), so it's null here.
+	static bool ComputeShapes( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies )
 	{
-		var builder = new ModelBuilder();
+		ModelBuilder builder = null;
 		bool any = false;
 		Span<Vector3> centres = stackalloc Vector3[8];
 		var pts = new List<Vector3>( 32 );
@@ -668,7 +744,9 @@ public static class SdfCollisionBuilder
 			}
 		}
 
-		return any ? FlushPending( builder ) : null;
+		if ( any )
+			PreparePending();
+		return any;
 	}
 
 	// Five convex kite hulls covering a star-profile brush (per mirror copy): each is the extruded quad

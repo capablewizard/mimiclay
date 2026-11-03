@@ -2943,7 +2943,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// Cosmetic carve on ANY sdf surface the shot lands on (decoys, world props, disguises, faces —
 			// a live prop that's about to pop just doesn't get to enjoy its crater). Before the hit report,
 			// so wrong guesses leave visible evidence in the clay.
-			PelletCarve( from, dir, CarveRadius, tr.Distance );
+			PelletCarve( from, dir, CarveRadius, tr.Distance, central: true );
 
 			// A hit on a prop pawn (its disguise collider belongs to a HiderController up the hierarchy) is
 			// reported to the host, which validates the phase + that it's a live prop, then pops it and
@@ -2960,7 +2960,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 		for ( int i = 1; i < dirs.Length; i++ )
 			if ( traces[i].Hit )
-				PelletCarve( from, dirs[i], radii[i], traces[i].Distance );
+				PelletCarve( from, dirs[i], radii[i], traces[i].Distance, central: false );
 	}
 
 	// UI blip for a trigger pull denied by the round phase (Hide/Reveal). Local feedback only — nothing is
@@ -3162,14 +3162,14 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 	// The carve half of one pellet: re-trace ignoring movement capsules (so a face shot reaches the head's
 	// sculpture collider behind the capsule), bounded to just past wherever the gameplay ray stopped.
-	void PelletCarve( Vector3 from, Vector3 dir, float radius, float blockDistance )
+	void PelletCarve( Vector3 from, Vector3 dir, float radius, float blockDistance, bool central )
 	{
 		var tr = ShotTrace( from, from + dir * Range )
 			.WithoutTags( MoveColliderTag, "trigger", "water", CharadesStageFence.WallTag )
 			.Run();
 
 		if ( tr.Hit && tr.Distance <= blockDistance + CarvePassDepth )
-			TryCarve( tr, dir, radius );
+			TryCarve( tr, dir, radius, central );
 	}
 
 	// ── Shot carving ─────────────────────────────────────────────────────────────────────────────────
@@ -3182,7 +3182,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	// GameObject id on every machine, so the RPC can't reference it directly — it references the NETWORKED
 	// pawn root instead, and each machine re-resolves the pawn's own sculpture locally. Scene-placed
 	// sculptures (decoys, world props) share their scene-file ids on every machine, so they pass directly.
-	void TryCarve( SceneTraceResult tr, Vector3 dir, float radius )
+	void TryCarve( SceneTraceResult tr, Vector3 dir, float radius, bool central )
 	{
 		if ( radius <= 0.1f )
 			return;
@@ -3222,6 +3222,15 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			return;
 		anchor ??= sculpt.GameObject;
 
+		// Prop hunt: only the CENTRAL pellet — the one that catches props — may mark a prop. A scatter pellet that
+		// grazed a living player's disguise used to scar it without catching them, leaving a crater on a player
+		// that read as "already shot, so a decoy". Scatter is visual only on every prop (decoys too, or the
+		// difference would be a tell): it still streaks and splats, it just carves nothing. A prop is marked iff
+		// the catching pellet struck it, and a caught player pops — so a marked prop is always a decoy.
+		// Hunter faces still take scatter (hunters are public, and their craters heal).
+		if ( !central && RoundManager.Current.IsValid() && !anchor.Components.Get<HunterController>().IsValid() )
+			return;
+
 		// Centre pushed a little INTO the surface along the shot for a meatier bite than a surface-tangent
 		// hemisphere. LOCAL space, so pawn interpolation between send and receive can't smear the crater.
 		var local = sculpt.WorldTransform.PointToLocal( tr.EndPosition + dir * ( radius * 0.35f ) );
@@ -3248,19 +3257,27 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// the scene props around it healed: conversion swaps the scene object for a pawn clone whose disguise
 		// carries the round-rule Heals:false, and only the brushes survive the swap. A profile still supplies
 		// its authored timing; bare clay heals on the profile defaults.
+		//
+		// Prop hunt's "Repair props" (RoundSettings.RepairProps) is the round-wide version of the same override:
+		// on, every crater heals — decoys and disguises together, so healing stays tell-free; off, the profile's
+		// authored scar policy stands (round props all scar; RoundRevealLifeSystem flips survivors to healing at
+		// the Reveal).
 		var profile = sculpt.GameObject.Components.Get<DamageProfile>();
 		// Charades joins them now that guessers can possess its map clay (same possessed-prop-scars trap).
 		bool sandbox = CreativeManager.Current.IsValid() || LobbyManager.Current.IsValid() || CharadesManager.Current.IsValid();
-		bool heals = sandbox || (profile.IsValid() && profile.Heals);
+		bool repair = RoundManager.Current.IsValid() && RoundManager.Current.Settings.RepairProps;
+		bool heals = sandbox || repair || (profile.IsValid() && profile.Heals);
 		var healDelay = profile.IsValid() ? profile.HealDelay : DamageProfile.DefaultHealDelay;
 		var healDuration = profile.IsValid() ? profile.HealDuration : DamageProfile.DefaultHealDuration;
 		float delay = heals ? Game.Random.Float( healDelay.x, healDelay.y ) : 0f;
 		float duration = heals ? Game.Random.Float( healDuration.x, healDuration.y ) : 0f;
-		BroadcastCarve( anchor, local, radius, heals, delay, duration );
+		BroadcastCarve( anchor, local, radius, heals, delay, duration, central ? dir : Vector3.Zero );
 	}
 
+	// <paramref name="knock"/>: the shot direction when this is the central pellet (zero for scatter) — the host
+	// hands it to RoundManager.OnPropShot once the crater is in, which knocks the decoy loose or removes it.
 	[Rpc.Broadcast]
-	void BroadcastCarve( GameObject anchor, Vector3 localPos, float radius, bool shrinks, float shrinkDelay, float shrinkDuration )
+	void BroadcastCarve( GameObject anchor, Vector3 localPos, float radius, bool shrinks, float shrinkDelay, float shrinkDuration, Vector3 knock )
 	{
 		var sculpt = ResolveCarveSculpture( anchor );
 		if ( !sculpt.IsValid() || sculpt.Brushes is null )
@@ -3272,9 +3289,20 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 		// Past the packer cap brushes silently don't pack — the raymarch would diverge from mesh/collision
 		// with no warning. A missing crater beats an inconsistent one.
-		if ( sculpt.Brushes.Count >= SdfBrushPacker.MaxBrushes )
-			return;
+		if ( sculpt.Brushes.Count < SdfBrushPacker.MaxBrushes )
+		{
+			RoundManager.Current?.PrepareShotCarve( sculpt ); // before the rebuild: may opt the collider into craters
+			AddCrater( sculpt, localPos, radius, shrinks, shrinkDelay, shrinkDuration );
+		}
 
+		// Prop hunt, host: a decoy the central pellet struck gets knocked loose — or removed, if the shots have
+		// whittled it down too far. After the crater, so the remaining-clay measure counts it.
+		if ( knock != Vector3.Zero && RoundManager.Current.IsValid() )
+			RoundManager.Current.OnPropShot( sculpt,sculpt.WorldTransform.PointToWorld( localPos ), knock );
+	}
+
+	void AddCrater( SdfSculpture sculpt, Vector3 localPos, float radius, bool shrinks, float shrinkDelay, float shrinkDuration )
+	{
 		sculpt.Brushes.Add( new SdfBrush
 		{
 			Shape = SdfShape.Sphere,

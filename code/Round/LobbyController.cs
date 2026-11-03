@@ -55,6 +55,8 @@ public sealed class LobbyController : Component
 	[Property, Group( "Round Defaults" )] public float DefaultHintSeconds { get; set; } = RoundSettings.DefaultHintSeconds;
 	[Property, Group( "Round Defaults" )] public int DefaultHunterCount { get; set; } = 1;
 	[Property, Group( "Round Defaults" ), Range( 0, RoundSettings.MaxAmmo )] public int DefaultAmmoLimit { get; set; } = RoundSettings.DefaultAmmoLimit;
+	[Property, Group( "Round Defaults" )] public bool DefaultRepairProps { get; set; } = RoundSettings.DefaultRepairProps;
+	[Property, Group( "Round Defaults" )] public bool DefaultGrabProps { get; set; } = RoundSettings.DefaultGrabProps;
 
 	/// <summary>Seconds between hitting Start and the scene change, so everyone sees the launch coming.</summary>
 	[Property, Group( "Round Defaults" )] public float LaunchCountdownSeconds { get; set; } = 5f;
@@ -96,6 +98,8 @@ public sealed class LobbyController : Component
 		HunterCount = DefaultHunterCount,
 		AmmoLimit = DefaultAmmoLimit,
 		Ghosts = RoundSettings.DefaultGhostsFor( DefaultRoundMode ),
+		RepairProps = DefaultRepairProps,
+		GrabProps = DefaultGrabProps,
 		MapIdent = MapCatalog.RandomIdent,
 	};
 

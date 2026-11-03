@@ -249,6 +249,10 @@ public sealed class RoundManagerSpawner : Component
 		}
 
 		go.Components.Create<LobbyReturn>(); // the shared "Returning to Lobby" countdown (consolidation → lobby, pause-menu exit)
+
+		// The grab service, for "Grab props" (inspect only — the manager keeps claims closed; see RoundManager.Grab).
+		// Same object, so one NetworkSpawn ships its [Sync] registries too.
+		go.Components.Create<PropClaims>();
 		go.NetworkSpawn(); // host owns it; replicates to every client (and late-joiners) with working [Sync]
 	}
 }

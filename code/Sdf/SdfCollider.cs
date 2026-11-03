@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Mimiclay;
 
@@ -32,8 +33,8 @@ public sealed class SdfCollider : Component
 
 	/// <summary>Let shot craters (<see cref="SdfBrush.Damage"/> brushes) carve the COLLIDER too. Off everywhere
 	/// today: shots are cosmetic, the collider is built from the authored brushes alone, and a crater landing or
-	/// healing never rebuilds physics (see <see cref="Rebuild"/>). The switch exists so a mode can one day make
-	/// shots physically open a prop up — the carve-aware builder already knows how.</summary>
+	/// healing never rebuilds physics (see <see cref="Rebuild"/>). Modes set it at runtime: prop hunt turns it on
+	/// for shot decoys when "Repair props" is off (RoundManager.PrepareShotCarve).</summary>
 	[Property] public bool CarveCollision { get; set; }
 
 	// The brushes the collider is built from: the authored prefix, or everything when craters are opted in.
@@ -49,6 +50,21 @@ public sealed class SdfCollider : Component
 
 	// Key of the build the standing collider came from (authored-brush hash + probe frame) — see Rebuild's skip.
 	int? _builtKey;
+
+	/// <summary>Crater-only rebuilds (<see cref="CarveCollision"/> on, authored shape unchanged) build on a worker
+	/// thread — see <see cref="Rebuild"/>. Off = every build synchronous, as before; kept for A/B-ing.</summary>
+	[ConVar( "mimi_collider_async", Help = "Shot-crater collider rebuilds: 1 = worker thread (latest wins), 0 = synchronous." )]
+	public static bool AsyncCraterBuilds { get; set; } = true;
+
+	// The authored-prefix hash the standing collider was built from: a commit whose authored prefix still matches
+	// only changed the damage tail (a crater, an island cut) — the async candidate.
+	int? _builtAuthoredKey;
+
+	// Async crater builds: one in flight at a time; a crater landing meanwhile marks it dirty and the running build
+	// goes round again on the newest shape (latest wins — sustained fire costs one or two builds, not one per shot).
+	// _buildEpoch is bumped by every synchronous build and by disable: an async result started before one is stale.
+	bool _asyncBusy, _asyncDirty;
+	int _buildEpoch;
 
 	/// <summary>How many collider builds have actually run on this machine (skips excluded). Diagnostics.</summary>
 	public static int BuildCount { get; private set; }
@@ -174,6 +190,8 @@ public sealed class SdfCollider : Component
 			collider.Enabled = false;
 		_builtModel = null; // the next enable's build is a first build again — never a freeze candidate
 		_builtKey = null;   // ...and never a skip candidate
+		_builtAuthoredKey = null;
+		_buildEpoch++;      // an async crater build still in flight lands on nothing
 		_framePoints.Clear();
 		_emitted.Clear();
 	}
@@ -216,9 +234,20 @@ public sealed class SdfCollider : Component
 			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
 			BuildAsTrigger, SdfCollisionBuilder.CodeVersion );
 
-		if ( key == _builtKey && _builtModel is not null
-			&& standing.IsValid() && standing.Enabled && ReferenceEquals( standing.Model, _builtModel ) )
+		bool standingIsOurs = _builtModel is not null && standing.IsValid() && standing.Enabled && ReferenceEquals( standing.Model, _builtModel );
+		if ( key == _builtKey && standingIsOurs )
 			return;
+
+		// Crater-only change on a collider that takes craters (a shot decoy, repair off): build on a WORKER and keep
+		// the standing collider until it lands — a frame or two of the old shape beats a per-crater main-thread
+		// stall on every machine. The gates below don't apply: they guard the AUTHORED shape (bounds, embedding),
+		// which a crater never changes, and a crater only ever removes clay.
+		int authoredKey = AuthoredKey( all );
+		if ( AsyncCraterBuilds && CarveCollision && standingIsOurs && authoredKey == _builtAuthoredKey )
+		{
+			QueueCraterBuild();
+			return;
+		}
 
 		BuildCount++;
 
@@ -252,8 +281,14 @@ public sealed class SdfCollider : Component
 			return;
 
 		// The frame points ride the same build (see FramePoints) — the prop's move hull is derived from them.
+		_buildEpoch++; // supersedes any async crater build still in flight
 		var model = SdfCollisionBuilder.Build( brushes, null, _framePoints, _emitted );
+		Apply( model, key, authoredKey, brushes );
+	}
 
+	void Apply( Model model, int key, int authoredKey, List<SdfBrush> brushes )
+	{
+		var standing = GameObject.Components.Get<ModelCollider>();
 		var collider = standing.IsValid() ? standing : GameObject.Components.GetOrCreate<ModelCollider>();
 		collider.Model = model;
 		collider.Surface = ClaySurface;
@@ -261,10 +296,73 @@ public sealed class SdfCollider : Component
 		collider.Enabled = model is not null;
 		_builtModel = model;
 		_builtKey = key;
+		_builtAuthoredKey = authoredKey;
 		BuildSerial++;
 
-		_volumeBrushes = brushes;
+		// The volume is read lazily, later — off a COPY when the list is the live one (CarveCollision builds from the
+		// whole list), so a crater landing in between can't make ClayVolume build a different shape synchronously.
+		_volumeBrushes = ReferenceEquals( brushes, _sculpture?.Brushes ) ? new List<SdfBrush>( brushes ) : brushes;
 		_clayVolume = null; // re-sampled on the next ClayVolume read
+	}
+
+	int AuthoredKey( List<SdfBrush> all )
+	{
+		int authored = _sculpture.IsValid() && all is not null ? Math.Min( _sculpture.AuthoredBrushCount, all.Count ) : all?.Count ?? 0;
+		return HashCode.Combine( SdfSculpture.ContentHashPrefix( all, authored, 0, false ), BuildAsTrigger );
+	}
+
+	void QueueCraterBuild()
+	{
+		if ( _asyncBusy )
+		{
+			_asyncDirty = true;
+			return;
+		}
+		_ = RunCraterBuilds();
+	}
+
+	async Task RunCraterBuilds()
+	{
+		_asyncBusy = true;
+		try
+		{
+			do
+			{
+				_asyncDirty = false;
+				if ( !this.IsValid() || !_sculpture.IsValid() )
+					return;
+
+				var all = _sculpture.Brushes;
+				var brushes = BuildBrushes( all );
+				int key = HashCode.Combine( SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
+					BuildAsTrigger, SdfCollisionBuilder.CodeVersion );
+				int authoredKey = AuthoredKey( all );
+				if ( key == _builtKey )
+					continue; // already standing (a sync build got there first)
+
+				int epoch = _buildEpoch;
+				var snapshot = new List<SdfBrush>( brushes );
+				var frame = new List<Vector3>();
+				var emitted = new List<SdfCollisionBuilder.EmittedShape>();
+				var model = await SdfCollisionBuilder.BuildAsync( snapshot, null, frame, emitted );
+
+				// Stale: disabled, or a synchronous build (an authored change) landed meanwhile — it's newer.
+				if ( !this.IsValid() || !_sculpture.IsValid() || epoch != _buildEpoch )
+					return;
+
+				BuildCount++;
+				_framePoints.Clear();
+				_framePoints.AddRange( frame );
+				_emitted.Clear();
+				_emitted.AddRange( emitted );
+				Apply( model, key, authoredKey, snapshot );
+			}
+			while ( _asyncDirty );
+		}
+		finally
+		{
+			_asyncBusy = false;
+		}
 	}
 
 	// Editor + runtime collision view (the viewport's Collision panel) — see SdfCollisionDebug.

@@ -92,8 +92,10 @@ public sealed partial class HunterController
 			SeedGrab( held, eye );
 
 		// Someone's body (see PropClaims.Grab, "players' props"): carried and turned only — the shape is theirs to
-		// scale, and a person can't be frozen in place.
-		bool body = PropClaims.IsPlayerBody( held.Components.Get<HiderController>() );
+		// scale, and a person can't be frozen in place. Prop hunt's inspect grab is carry-and-turn for EVERYTHING
+		// (PropClaims.GrabExtras) — the same verbs on a decoy and a player, so the cards can't tell them apart.
+		bool body = PropClaims.IsPlayerBody( held.Components.Get<HiderController>() )
+			|| !(PropClaims.Current?.GrabExtras ?? true);
 
 		// LMB: freeze it right where it hangs and let go (the hold ends even with RMB still down — re-grabbing
 		// takes a fresh press, so the freeze can't be undone by accident).
@@ -156,6 +158,9 @@ public sealed partial class HunterController
 		// target is never somewhere the body can't be.
 		var rotation = yawFrame * _grabRelative;
 		var root = ClampedRoot( held, eye, rotation );
+		// Here first, for whatever this machine simulates of the hold (a body lent to us, a decoy we predict — see
+		// PropClaims.BorrowedBodies / RoundManager.Grab): this frame's target, no round-trip. Then to the host.
+		PropClaims.Current.SetLocalGrabTarget( held, root, rotation );
 		PropClaims.Current.UpdateGrab( held, root, rotation, _grabScale );
 
 		PublishGrabHover( held, root + rotation * _grabCentre, body );

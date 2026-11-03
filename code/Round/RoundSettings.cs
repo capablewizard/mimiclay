@@ -63,6 +63,17 @@ public struct RoundSettings
 	/// them to your own team, Infection to nobody (a prop who saw where others hid would carry it into being infected).</summary>
 	public GhostVisibility Ghosts;
 
+	/// <summary>"Repair props": shot craters heal on EVERY prop — decoys and disguises alike (see
+	/// HunterController.TryCarve). Off (the default) = craters scar for the whole round, so hunters can keep track of
+	/// what they've already shot: only the pellet that catches props carves them, and a caught player pops, so a
+	/// scarred prop is always a decoy. Prop hunt only — the sandbox modes heal every crater regardless.</summary>
+	public bool RepairProps;
+
+	/// <summary>"Grab props": during the Hunt, hunters can pick props up with RMB to inspect them — decoys AND players'
+	/// props (see PropClaims.Grab). Inspect only: holding a player never catches them, and they break free with jump or
+	/// any movement key. No scaling or freezing, unlike creative's grab. Off by default.</summary>
+	public bool GrabProps;
+
 	/// <summary>The chosen map's <c>ResourcePath</c> (a <see cref="MapResource"/>), or <see cref="MapCatalog.RandomIdent"/>.</summary>
 	public string MapIdent;
 
@@ -83,6 +94,8 @@ public struct RoundSettings
 	public const int DefaultAmmoLimit = 0;
 	public const int MaxAmmo = 8;
 	public const GhostVisibility DefaultGhosts = GhostVisibility.None; // DefaultMode is Infection — see DefaultGhostsFor
+	public const bool DefaultRepairProps = false;
+	public const bool DefaultGrabProps = false;
 
 	/// <summary>The "Show ghosts" default for <paramref name="mode"/>: Team in Teams (sides are fixed, nobody can carry
 	/// what they saw across), None in Infection (anyone can be infected).</summary>
@@ -103,6 +116,8 @@ public struct RoundSettings
 		HunterCount = DefaultHunterCount,
 		AmmoLimit = DefaultAmmoLimit,
 		Ghosts = DefaultGhosts,
+		RepairProps = DefaultRepairProps,
+		GrabProps = DefaultGrabProps,
 		MapIdent = MapCatalog.RandomIdent,
 	};
 
@@ -121,6 +136,8 @@ public struct RoundSettings
 		public const string Hunters = "r.hn";
 		public const string Ammo = "r.ammo";
 		public const string Ghosts = "r.ghosts";
+		public const string Repair = "r.repair";
+		public const string Grab = "r.grab";
 		public const string Map = "r.map";
 	}
 
@@ -144,6 +161,8 @@ public struct RoundSettings
 		Networking.SetData( Keys.Hunters, HunterCount.ToString( CultureInfo.InvariantCulture ) );
 		Networking.SetData( Keys.Ammo, AmmoLimit.ToString( CultureInfo.InvariantCulture ) );
 		Networking.SetData( Keys.Ghosts, ((int)Ghosts).ToString( CultureInfo.InvariantCulture ) );
+		Networking.SetData( Keys.Repair, RepairProps ? "1" : "0" );
+		Networking.SetData( Keys.Grab, GrabProps ? "1" : "0" );
 		Networking.SetData( Keys.Map, resolvedMapIdent ?? "" );
 	}
 
@@ -174,6 +193,8 @@ public struct RoundSettings
 			d.AmmoLimit = Math.Clamp( a, 0, MaxAmmo );
 
 		d.Ghosts = ReadGhostsFromLobby() ?? DefaultGhostsFor( d.Mode );
+		d.RepairProps = ReadRepairFromLobby() ?? d.RepairProps;
+		d.GrabProps = ReadGrabFromLobby() ?? d.GrabProps;
 
 		var map = Networking.GetData( Keys.Map );
 		if ( !string.IsNullOrEmpty( map ) )
@@ -190,6 +211,14 @@ public struct RoundSettings
 			? (GhostVisibility)g
 			: null;
 	}
+
+	/// <summary>The lobby's "Repair props" choice, or null when no lobby sent one (a map opened directly).</summary>
+	public static bool? ReadRepairFromLobby()
+		=> Networking.GetData( Keys.Repair ) switch { "1" => true, "0" => false, _ => null };
+
+	/// <summary>The lobby's "Grab props" choice, or null when no lobby sent one (a map opened directly).</summary>
+	public static bool? ReadGrabFromLobby()
+		=> Networking.GetData( Keys.Grab ) switch { "1" => true, "0" => false, _ => null };
 
 	/// <summary>Blank EVERY key a lobby launch writes — the rules above plus the roster couriers
 	/// (<see cref="RoundManager.HunterIdsKey"/>, <see cref="RoundManager.BotCountKey"/>). For a session this
@@ -216,6 +245,8 @@ public struct RoundSettings
 		Networking.SetData( Keys.Hunters, "" );
 		Networking.SetData( Keys.Ammo, "" );
 		Networking.SetData( Keys.Ghosts, "" );
+		Networking.SetData( Keys.Repair, "" );
+		Networking.SetData( Keys.Grab, "" );
 		Networking.SetData( Keys.Map, "" );
 		Networking.SetData( RoundManager.HunterIdsKey, "" );
 		Networking.SetData( RoundManager.BotCountKey, "" );

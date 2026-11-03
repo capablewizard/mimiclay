@@ -189,8 +189,10 @@ public sealed class RoundOutlineSystem : GameObjectSystem
 				editingIt = sculpture.IsValid() && sculpture == editing;
 
 				var hider = outline.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+				// Not a body the host borrowed for a grab either: it's non-proxy here but somebody else's (a host
+				// hunter holding a player's prop must see it exactly like a held decoy).
 				var own = hider.IsValid() && !hider.IsProxy && !PropClaims.IsReleased( hider )
-					&& !RoundManager.IsBotPawn( hider.GameObject );
+					&& !RoundManager.IsBotPawn( hider.GameObject ) && !PropClaims.IsBorrowedHere( hider );
 				outline.Hidden = !(hovered || own || editingIt);
 			}
 

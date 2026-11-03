@@ -137,6 +137,24 @@
 								<div class="step-btn" @onmousedown=@Press( () => StepGhosts( 1 ) )>chevron_right</div>
 							</div>
 						</div>
+						@* Shot craters heal (on) or scar for the round (off) — see RoundSettings.RepairProps. *@
+						<div class="option-row">
+							<div class="option-name">Repair props</div>
+							<div class="stepper compact">
+								<div class="step-btn" @onmousedown=@Press( ToggleRepair )>chevron_left</div>
+								<div class="step-value @Nudge.Class( nameof( ToggleRepair ) )">@(S.RepairProps ? "On" : "Off")</div>
+								<div class="step-btn" @onmousedown=@Press( ToggleRepair )>chevron_right</div>
+							</div>
+						</div>
+						@* Hunters can pick props up to inspect them — see RoundSettings.GrabProps. *@
+						<div class="option-row">
+							<div class="option-name">Grab props</div>
+							<div class="stepper compact">
+								<div class="step-btn" @onmousedown=@Press( ToggleGrab )>chevron_left</div>
+								<div class="step-value @Nudge.Class( nameof( ToggleGrab ) )">@(S.GrabProps ? "On" : "Off")</div>
+								<div class="step-btn" @onmousedown=@Press( ToggleGrab )>chevron_right</div>
+							</div>
+						</div>
 					}
 					else if ( G == GameModeKind.Charades )
 					{
@@ -652,6 +670,13 @@
 	void StepGhosts( int d ) => Nudge.Change( nameof( StepGhosts ), MathF.Sign( d ), () => S.Ghosts,
 		() => LobbyManager.Current?.SetGhostVisibility( (GhostVisibility)Math.Clamp( (int)S.Ghosts + d, (int)GhostVisibility.None, (int)GhostVisibility.All ) ) );
 
+	// "Repair props" is a two-state toggle: either arrow flips it.
+	void ToggleRepair() => Nudge.Change( nameof( ToggleRepair ), 0, () => S.RepairProps,
+		() => LobbyManager.Current?.SetRepairProps( !S.RepairProps ) );
+
+	void ToggleGrab() => Nudge.Change( nameof( ToggleGrab ), 0, () => S.GrabProps,
+		() => LobbyManager.Current?.SetGrabProps( !S.GrabProps ) );
+
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
@@ -659,7 +684,7 @@
 	}
 
 	protected override int BuildHash()
-		=> HashCode.Combine( _open, S.Mode, HashCode.Combine( S.HunterCount, S.AmmoLimit, S.Ghosts ),
+		=> HashCode.Combine( _open, S.Mode, HashCode.Combine( S.HunterCount, S.AmmoLimit, S.Ghosts, S.RepairProps, S.GrabProps ),
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
 			HashCode.Combine( G, C.SpawnProps ),
 			HashCode.Combine( Ch.Rounds, Ch.Source, Ch.Topics, Ch.SculptSeconds, Ch.TopicChoices, Ch.WriteSeconds, Ch.WordLengthHints ),

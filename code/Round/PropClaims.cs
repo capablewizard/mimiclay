@@ -32,6 +32,19 @@ public interface IPropClaimHost
 	/// Only meaningful with <see cref="GrabAllowed"/>. Default off.</summary>
 	bool GrabPlayersAllowed => false;
 
+	/// <summary>Creative's sandbox grab (default): R scales, LMB freezes, grabbed scene clay is CONVERTED into a released
+	/// prop pawn, and a held player body is simulated by its wearer. False = prop hunt's INSPECT grab: carry and turn
+	/// only; scene decoys are held as they are (the host moves their own local body — RoundManager.ShotProps), and a
+	/// held player body is BORROWED by the host for the hold so it moves exactly like a decoy (no extra round-trip
+	/// through its wearer to tell them apart by). See PropClaims.Grab.</summary>
+	bool GrabSandbox => true;
+
+	/// <summary>Inspect grab only: does the host BORROW a held player's body (simulate it itself, so it moves exactly like
+	/// a held decoy) instead of relaying the hold to its wearer the creative way? Default off — the wearer simulates, and
+	/// the drop is smooth (the body never changes hands), at the cost of one extra round-trip of hold lag. See
+	/// PropClaims.BorrowedBodies.</summary>
+	bool GrabBorrowsBodies => false;
+
 	/// <summary>The prop-pawn prefab a claimed SCENE prop converts into (read live off scene furniture — a
 	/// NetworkSpawn'd manager's [Property] refs only exist on the host).</summary>
 	GameObject PropPrefab { get; }
@@ -120,21 +133,22 @@ public sealed partial class PropClaims : Component, IInteractable
 
 	void IInteractable.GetInteractions( in InteractContext ctx, List<InteractOption> options )
 	{
-		if ( !ClaimsOpen )
-			return;
+		if ( ClaimsOpen )
+		{
+			// E: possess — only clay nobody is sculpting right now.
+			if ( IsClaimable( ctx.Sculpture ) )
+				options.Add( new InteractOption( EditOption, "Edit", InteractSlot.Primary ) );
 
-		// E: possess — only clay nobody is sculpting right now.
-		if ( IsClaimable( ctx.Sculpture ) )
-			options.Add( new InteractOption( EditOption, "Edit", InteractSlot.Primary ) );
+			// LMB: sculpt it in place, first person, without becoming it — alongside whoever is already on it
+			// (see RequestEdit). Opens with nothing selected; shapes are picked inside the session. Clicking
+			// away exits.
+			if ( (Host?.LeasesAllowed ?? false) && IsSculptable( ctx.Sculpture ) )
+				options.Add( new InteractOption( SculptOption, "Sculpt", InteractSlot.Sculpt ) );
+		}
 
-		// LMB: sculpt it in place, first person, without becoming it — alongside whoever is already on it
-		// (see RequestEdit). Opens with nothing selected; shapes are picked inside the session. Clicking
-		// away exits.
-		if ( (Host?.LeasesAllowed ?? false) && IsSculptable( ctx.Sculpture ) )
-			options.Add( new InteractOption( SculptOption, "Sculpt", InteractSlot.Sculpt ) );
-
-		// RMB: pick it up (see RequestGrab). Same clay a claim can take; not mid-lease (RMB deselects there).
-		if ( GrabOpen && (IsClaimable( ctx.Sculpture ) || IsGrabbableBody( ctx.Sculpture )) && !(ctx.Hunter?.LeaseEditing ?? false) )
+		// RMB: pick it up (see RequestGrab). Its own gate, not the claims': prop hunt grabs with claims closed.
+		// Not mid-lease (RMB deselects there).
+		if ( GrabOpen && IsGrabbable( ctx.Sculpture ) && !(ctx.Hunter?.LeaseEditing ?? false) )
 			options.Add( new InteractOption( GrabOption, "Grab", InteractSlot.Pickup ) );
 	}
 
@@ -755,8 +769,9 @@ public sealed partial class PropClaims : Component, IInteractable
 		if ( !pawn.IsValid() )
 			return Vector3.Zero;
 
+		// A pawn's disguise, or — a scene decoy held by the inspect grab — the clay on the object itself.
 		var hider = pawn.Components.Get<HiderController>();
-		var clay = hider.IsValid() ? hider.DisguiseSculpture : null;
+		var clay = hider.IsValid() ? hider.DisguiseSculpture : pawn.Components.Get<SdfSculpture>();
 		if ( clay.IsValid() && Sdf.TryGetBounds( clay.Brushes, out var b ) )
 			return clay.WorldTransform.PointToWorld( b.Center );
 

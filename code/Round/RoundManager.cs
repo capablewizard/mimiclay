@@ -41,7 +41,7 @@ namespace Mimiclay;
 [Title( "Round Manager" )]
 [Category( "Mimiclay" )]
 [Icon( "sports_esports" )]
-public sealed class RoundManager : Component, IRoundContext, Component.INetworkListener
+public sealed partial class RoundManager : Component, IRoundContext, Component.INetworkListener
 {
 	/// <summary>The active round manager in this scene (null in the lobby/menu). UI + the hunter's shot read this.</summary>
 	public static RoundManager Current { get; private set; }
@@ -277,6 +277,9 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		// the heal for the engine's mid-load create/destroy drops. See the method for the whole story.
 		ReconcilePawnPresence();
 		WatchRoster();
+
+		// EVERY machine: shot decoys tumbling (the host simulates and streams, clients follow — see ShotProps).
+		TickShotProps();
 
 		if ( !IsHostAuthority )
 			return;
@@ -1094,6 +1097,10 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		if ( bot.IsValid() )
 			return bot.RosterId;
 
+		// A body the host has borrowed for a grab is owned by the host for the hold — it's still its wearer's.
+		if ( PropClaims.WearerOf( pawn ) is { } wearer )
+			return wearer;
+
 		var owner = pawn.Network.Owner?.Id;
 		if ( owner is not null )
 			return owner;
@@ -1102,6 +1109,12 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 		// orphan on the network that belongs to nobody. Network.Active is what tells those apart.
 		return pawn.Network.Active ? null : Connection.Local?.Id;
 	}
+
+	/// <summary>Is this the LOCAL player's pawn, by the round roster? True whoever owns it on the network — a body lent to a
+	/// hunter for a grab is still ours (see PropClaims.BorrowedBodies). False outside a round.</summary>
+	public static bool IsLocalRosterPawn( GameObject pawn )
+		=> pawn.IsValid() && Current.IsValid() && Connection.Local is { } me
+			&& Current.Players.TryGetValue( me.Id, out var row ) && row.PawnId == pawn.Id;
 
 	/// <summary>True if this pawn is a bot's body — nobody is driving it, on any machine. The counterpart to
 	/// "is it a proxy" for code asking "is this someone else's pawn": on the HOST a bot pawn is neither a proxy

@@ -486,6 +486,18 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 		var s = Settings; s.Ghosts = visibility; Settings = s;
 	}
 
+	public void SetRepairProps( bool repair )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = Settings; s.RepairProps = repair; Settings = s;
+	}
+
+	public void SetGrabProps( bool grab )
+	{
+		if ( !IsHostAuthority ) return;
+		var s = Settings; s.GrabProps = grab; Settings = s;
+	}
+
 	public void SetHideSeconds( float seconds )
 	{
 		if ( !IsHostAuthority ) return;

@@ -87,6 +87,22 @@ public sealed class MapModeCard : Component
 	[Property, Group( "Round Rules (Override)" ), ShowIf( nameof( OverrideGhosts ), true )]
 	public GhostVisibility Ghosts { get; set; } = RoundSettings.DefaultGhosts;
 
+	/// <summary>Set "Repair props" explicitly (<see cref="RepairProps"/>); off = the lobby's choice still applies (or,
+	/// on a map opened directly, <see cref="RoundSettings.DefaultRepairProps"/>).</summary>
+	[Property, Group( "Round Rules (Override)" )] public bool OverrideRepairProps { get; set; }
+
+	/// <summary>Shot craters heal on every prop, when <see cref="OverrideRepairProps"/> is on.</summary>
+	[Property, Group( "Round Rules (Override)" ), ShowIf( nameof( OverrideRepairProps ), true )]
+	public bool RepairProps { get; set; } = RoundSettings.DefaultRepairProps;
+
+	/// <summary>Set "Grab props" explicitly (<see cref="GrabProps"/>); off = the lobby's choice still applies (or, on a
+	/// map opened directly, <see cref="RoundSettings.DefaultGrabProps"/>).</summary>
+	[Property, Group( "Round Rules (Override)" )] public bool OverrideGrabProps { get; set; }
+
+	/// <summary>Hunters can pick props up during the Hunt, when <see cref="OverrideGrabProps"/> is on.</summary>
+	[Property, Group( "Round Rules (Override)" ), ShowIf( nameof( OverrideGrabProps ), true )]
+	public bool GrabProps { get; set; } = RoundSettings.DefaultGrabProps;
+
 	/// <summary>Frozen "get ready" countdown after the map loads.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float StartCountdownSeconds { get; set; } = RoundSettings.DefaultStartCountdownSeconds;
 
@@ -186,6 +202,8 @@ public sealed class MapModeCard : Component
 		HunterCount = HunterCount,
 		AmmoLimit = AmmoLimit,
 		Ghosts = OverrideGhosts ? Ghosts : RoundSettings.ReadGhostsFromLobby() ?? RoundSettings.DefaultGhostsFor( Mode ),
+		RepairProps = OverrideRepairProps ? RepairProps : RoundSettings.ReadRepairFromLobby() ?? RoundSettings.DefaultRepairProps,
+		GrabProps = OverrideGrabProps ? GrabProps : RoundSettings.ReadGrabFromLobby() ?? RoundSettings.DefaultGrabProps,
 		MapIdent = RoundSettings.Default.MapIdent,
 	};
 
