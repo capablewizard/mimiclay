@@ -10,9 +10,11 @@ namespace Mimiclay;
 /// <see cref="SpectatorController"/>. The owner moves it (<see cref="Follow"/>) and the networked transform carries
 /// it to everyone else; the head shape rides the prefab's <see cref="SdfNetworkSync"/>.
 ///
-/// Who draws it is decided per machine, every frame: the owner never does (their camera sits inside it), and
-/// everyone else only when the round's <see cref="RoundSettings.Ghosts"/> includes their group (see
-/// <see cref="LocalMaySee"/>). Hidden through <see cref="SdfGhost.Hidden"/>, never by disabling anything.
+/// Who draws it is decided per machine, every frame (<see cref="Visibility"/>): the owner always (from its own third
+/// person), everyone else per <see cref="GhostRules"/> — plus a spawn delay where it could give a body away (a living
+/// prop's ghost appears where its body is, so it gets <see cref="SpawnHideSeconds"/> to get clear), and a fade out
+/// on every machine when the owner leaves the free cam (<see cref="Dismiss"/>). Faded through
+/// <see cref="SdfGhost.Opacity"/> / <see cref="SdfGhost.Hidden"/>, never by disabling anything.
 /// </summary>
 [Title( "Spectator Ghost" )]
 [Category( "Mimiclay" )]
@@ -30,7 +32,34 @@ public sealed class SpectatorGhost : Component
 	/// and gun have in third person (<see cref="HunterController.AimEaseRate"/>). 0 = locked to the look.</summary>
 	[Property, Range( 0f, 30f )] public float TurnEaseRate { get; set; } = 10f;
 
+	/// <summary>How long a living prop's ghost stays invisible to those it's hidden from after it appears
+	/// (<see cref="GhostRules.SpawnDelayed"/>) — time to get away from the body it spawned beside.</summary>
+	[Property, Group( "Visibility" ), Range( 0f, 15f )] public float SpawnHideSeconds { get; set; } = 3f;
+
+	/// <summary>The fade in every ghost gets as it appears, on every machine, when there's no spawn delay (seconds).</summary>
+	[Property, Group( "Visibility" ), Range( 0f, 5f )] public float AppearFadeSeconds { get; set; } = 1f;
+
+	/// <summary>The fade in once that delay is up (seconds).</summary>
+	[Property, Group( "Visibility" ), Range( 0f, 5f )] public float SpawnFadeSeconds { get; set; } = 1f;
+
+	/// <summary>The fade out when its owner leaves the free cam (seconds) — the ghost doesn't pop where they left.</summary>
+	[Property, Group( "Visibility" ), Range( 0f, 3f )] public float ExitFadeSeconds { get; set; } = 0.25f;
+
+	/// <summary>How long the glow takes to come up once the ghost shows (seconds). Going out, it follows the ghost.</summary>
+	[Property, Group( "Visibility" ), Range( 0f, 10f )] public float LightFadeInSeconds { get; set; } = 3f;
+
+	/// <summary>The owner has left the free cam: every machine fades the ghost out, then the owner destroys it.</summary>
+	[Sync] public bool Leaving { get; private set; }
+
+	/// <summary>The glow's full intensity, as authored on the prefab — captured by the owner before it fades anything,
+	/// and synced so a proxy never mistakes a mid-fade spawn snapshot for the real value.</summary>
+	[Sync] public float LightPeak { get; private set; } = -1f;
+
 	SdfSculpture _head;
+	RealTimeSince _sinceAppeared;  // per machine: since this ghost appeared HERE (the spawn delay counts from this)
+	RealTimeSince _sinceLeaving;   // per machine: since we first saw Leaving
+	bool _sawLeaving;
+	float _visibility;             // 0..1, this frame
 	Rotation? _turn;             // owner: the eased facing (null until the first Follow, which snaps)
 	SdfGhost _look;
 	List<SdfBrush> _base;        // owner: the head before scaling
@@ -38,7 +67,6 @@ public sealed class SpectatorGhost : Component
 	float? _transformScale;      // owner: the authored root scale, captured once, then reset to 1
 	Vector3 _headCentre;         // owner: the clay's centre in the head's frame, after scaling
 	PointLight _light;           // the "Light" child's glow (lazy — hotload-safe)
-	float _lightIntensity = -1f; // its authored intensity, captured once (< 0 = not yet)
 	float _lightFade;            // 0..1, eased toward visible here
 
 	float EffectiveScale => Scale * (_transformScale ?? 1f);
@@ -48,19 +76,39 @@ public sealed class SpectatorGhost : Component
 	/// <summary>The ghost's head sculpture (nameplates anchor above it).</summary>
 	public SdfSculpture HeadSculpture => Head;
 
-	/// <summary>Is this ghost drawn on this machine? Someone else's per <see cref="LocalMaySee"/>; our own only while
-	/// our free cam is out in third person (in first person the camera sits inside it).</summary>
-	public bool Shown => IsProxy ? LocalMaySee() : OwnedAndOrbited;
+	/// <summary>How visible this ghost is on this machine this frame, 0..1 (see the class notes).</summary>
+	public float Visibility => _visibility;
+
+	/// <summary>Is this ghost drawn on this machine at all?</summary>
+	public bool Shown => _visibility > 0f;
+
+	/// <summary>The side of the player who owns this ghost (<see cref="GhostRules"/>).</summary>
+	public GhostTeam OwnerTeam => GhostRules.TeamOf( Network.Owner?.Id );
 
 	// Our own ghost, being orbited by our third-person free cam.
 	bool OwnedAndOrbited => SpectatorController.Local is { } cam && cam.Ghost == GameObject && cam.ShowsOwnGhost;
 
+	/// <summary>Owner: the free cam is over — fade out everywhere, then go (<see cref="ExitFadeSeconds"/>).</summary>
+	public void Dismiss()
+	{
+		if ( IsProxy || Leaving )
+			return;
+
+		Leaving = true;
+		_sawLeaving = true;
+		_sinceLeaving = 0f;
+	}
+
 	protected override void OnStart()
 	{
+		_sinceAppeared = 0f;
+
 		// Every machine binds its own copy of the head to the sync (Target is local config, never synced).
 		var sync = Components.Get<SdfNetworkSync>();
 		if ( sync.IsValid() && Head.IsValid() )
 			sync.Target = Head;
+
+		UpdateLight(); // dark from the first frame — the glow fades up from here
 	}
 
 	/// <summary>Owner: (re)apply <see cref="Scale"/> to the head, from its unscaled shape. Called once the head is
@@ -118,58 +166,83 @@ public sealed class SpectatorGhost : Component
 		if ( !IsProxy && Scale != _appliedScale )
 			ApplyScale();
 
+		_visibility = ComputeVisibility();
+
 		_look ??= Components.Get<SdfGhost>();
 		if ( _look.IsValid() )
-			_look.Hidden = !Shown;
+		{
+			_look.Hidden = _visibility <= 0f;
+			_look.Opacity = _visibility;
+		}
 
 		UpdateLight();
+
+		// The owner removes the ghost once everyone has had the exit fade.
+		if ( !IsProxy && Leaving && _sinceLeaving > ExitFadeSeconds )
+			GameObject.Destroy();
 	}
 
-	// The glow: the prefab's "Light" child, kept on the head's centre. Lit on the owner's machine, and elsewhere only
-	// where the ghost may be seen — a light is seen by everyone, so an unseen ghost's glow would give away where it
-	// is. Faded through the intensity, never .Enabled (it's part of the networked object), and only on proxies: the
-	// owner never touches it, so a spawn snapshot (the owner's live state) always carries the authored value.
+	// 1 → 0 over the exit fade once the owner has left (counted from when this machine saw it), else 1.
+	float ExitFade => Leaving ? 1f - Smooth( _sinceLeaving / MathF.Max( ExitFadeSeconds, 0.001f ) ) : 1f;
+
+	float ComputeVisibility()
+	{
+		if ( Leaving && !_sawLeaving )
+		{
+			_sawLeaving = true;
+			_sinceLeaving = 0f;
+		}
+		float exit = ExitFade;
+		float appear = Smooth( _sinceAppeared / MathF.Max( AppearFadeSeconds, 0.001f ) );
+
+		// Our own — always, whatever "Show ghosts" says — but only from our third person (first person sits inside it).
+		if ( !IsProxy )
+			return OwnedAndOrbited ? appear * exit : 0f;
+
+		var owner = OwnerTeam;
+		if ( !GhostRules.MaySee( owner ) )
+			return 0f;
+
+		// A living prop's ghost waits out the spawn delay for anyone who could learn where its body is from it (its own
+		// fade in, after the delay, replaces the short appear fade).
+		float spawn = GhostRules.SpawnDelayed( owner, Network.Owner?.Id )
+			? Smooth( (_sinceAppeared - SpawnHideSeconds) / MathF.Max( SpawnFadeSeconds, 0.001f ) )
+			: appear;
+
+		return spawn * exit;
+	}
+
+	static float Smooth( float t )
+	{
+		t = t.Clamp( 0f, 1f );
+		return t * t * (3f - 2f * t);
+	}
+
+	// The glow: the prefab's "Light" child, kept on the head's centre. Lit on the owner's machine whenever the ghost is
+	// out (even in first person, where the head itself isn't drawn), and elsewhere with the ghost's visibility — a light
+	// is seen by everyone, so an unseen ghost's glow would give away where it is. Comes up over LightFadeInSeconds, goes
+	// out with the ghost. Faded through the intensity, never .Enabled (it's part of the networked object); the authored
+	// value rides LightPeak, since the owner's live intensity — what a spawn snapshot ships — may be mid-fade.
 	void UpdateLight()
 	{
 		_light ??= GameObject.Children.FirstOrDefault( c => c.Name == "Light" )?.Components.Get<PointLight>();
 		if ( !_light.IsValid() )
 			return;
 
-		if ( _lightIntensity < 0f )
-			_lightIntensity = _light.Intensity;
+		// (<= 0, not < 0: a hotload leaves a new field at 0 on a live ghost.)
+		if ( !IsProxy && LightPeak <= 0f )
+			LightPeak = _light.Intensity;
+		if ( LightPeak <= 0f )
+			return;
 
 		// The head's centre in our frame: from the brushes every machine has (the owner's scaled shape included).
 		if ( Head.IsValid() && Sdf.TryGetBounds( Head.Brushes, out var bounds ) )
 			_light.LocalPosition = bounds.Center;
 
-		if ( !IsProxy )
-			return;
-
-		_lightFade = _lightFade.Approach( LocalMaySee() ? 1f : 0f, 3f * Time.Delta );
-		_light.Intensity = _lightIntensity * _lightFade;
-	}
-
-	/// <summary>May this machine's player see other players' ghosts right now? Their group(s) against the round's
-	/// <see cref="RoundSettings.Ghosts"/>. Outside a prop-hunt round (creative, the lobby) everyone can.</summary>
-	public static bool LocalMaySee()
-	{
-		var round = RoundManager.Current;
-		if ( !round.IsValid() )
-			return true;
-
-		var me = GhostAudience.None;
-
-		// Spectating: benched, waiting without a role, or flying a free cam right now (a scouting prop counts both
-		// as a spectator and as a prop).
-		if ( SpectatorController.Flying || RoundManager.LocalEliminated || RoundManager.LocalRole == PlayerRole.Unassigned )
-			me |= GhostAudience.Spectators;
-
-		if ( !RoundManager.LocalEliminated )
-		{
-			if ( RoundManager.LocalRole == PlayerRole.Prop ) me |= GhostAudience.Props;
-			if ( RoundManager.LocalRole == PlayerRole.Hunter ) me |= GhostAudience.Hunters;
-		}
-
-		return (round.Settings.Ghosts & me) != 0;
+		var target = IsProxy ? _visibility : ExitFade;
+		_lightFade = target > _lightFade
+			? _lightFade.Approach( target, Time.Delta / MathF.Max( LightFadeInSeconds, 0.001f ) )
+			: target;
+		_light.Intensity = LightPeak * Smooth( _lightFade );
 	}
 }

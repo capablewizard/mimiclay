@@ -79,8 +79,13 @@ public sealed class MapModeCard : Component
 	/// <summary>Shots each hunter gets for the hunt (misses spend, catches are free). 0 = unlimited.</summary>
 	[Property, Group( "Round Rules (Override)" ), Range( 0, RoundSettings.MaxAmmo )] public int AmmoLimit { get; set; } = RoundSettings.DefaultAmmoLimit;
 
-	/// <summary>Who can see free-cam ghosts.</summary>
-	[Property, Group( "Round Rules (Override)" )] public GhostAudience Ghosts { get; set; } = RoundSettings.DefaultGhosts;
+	/// <summary>Set "Show ghosts" explicitly (<see cref="Ghosts"/>); off = the lobby's choice still applies (or, on a
+	/// map opened directly, the mode's default — <see cref="RoundSettings.DefaultGhostsFor"/>).</summary>
+	[Property, Group( "Round Rules (Override)" )] public bool OverrideGhosts { get; set; }
+
+	/// <summary>Who sees free-cam ghosts, when <see cref="OverrideGhosts"/> is on.</summary>
+	[Property, Group( "Round Rules (Override)" ), ShowIf( nameof( OverrideGhosts ), true )]
+	public GhostVisibility Ghosts { get; set; } = RoundSettings.DefaultGhosts;
 
 	/// <summary>Frozen "get ready" countdown after the map loads.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float StartCountdownSeconds { get; set; } = RoundSettings.DefaultStartCountdownSeconds;
@@ -180,7 +185,7 @@ public sealed class MapModeCard : Component
 		HintSeconds = HintSeconds,
 		HunterCount = HunterCount,
 		AmmoLimit = AmmoLimit,
-		Ghosts = Ghosts,
+		Ghosts = OverrideGhosts ? Ghosts : RoundSettings.ReadGhostsFromLobby() ?? RoundSettings.DefaultGhostsFor( Mode ),
 		MapIdent = RoundSettings.Default.MapIdent,
 	};
 

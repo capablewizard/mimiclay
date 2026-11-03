@@ -75,6 +75,10 @@ public sealed class SdfGhost : Component, Component.ExecuteInEditor
 	/// <see cref="SdfHighlightOutline.Hidden"/>: never hide a ghost by disabling the component. Not serialized.</summary>
 	public bool Hidden { get; set; }
 
+	/// <summary>Runtime fade, 0..1, on top of the authored look — the spawn delay and exit fade
+	/// (<see cref="SpectatorGhost"/>). Same contract as <see cref="Hidden"/>: per machine, not serialized.</summary>
+	public float Opacity { get; set; } = 1f;
+
 	SceneObject _so;
 	Material _material;
 	readonly List<SdfRaymarchRenderer> _targets = new();
@@ -243,7 +247,7 @@ public sealed class SdfGhost : Component, Component.ExecuteInEditor
 		a.Set( "MaxSteps", maxSteps );
 		a.Set( "Epsilon", epsilon );
 
-		a.Set( "GhostBodyColor", BodyColor );
+		a.Set( "GhostBodyColor", BodyColor.WithAlpha( BodyColor.a * Opacity.Clamp( 0f, 1f ) ) ); // alpha = overall opacity
 		a.Set( "GhostRimColor", RimColor );
 		a.Set( "GhostBrightness", Brightness );
 		a.Set( "GhostRimPower", RimPower );

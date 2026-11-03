@@ -11,9 +11,9 @@ namespace Mimiclay;
 /// <item>a living prop's F scouting cam (<see cref="HiderController"/>) and anyone's B spectate in creative
 /// (<see cref="HunterController"/> / HiderController) — their pawn stays put as <see cref="LeftBehind"/>.</item>
 /// </list>
-/// Local only: the camera itself never touches the network. With <see cref="WantsGhost"/> it spawns a networked
-/// <see cref="SpectatorGhost"/> (the player's head, drawn as a ghost) that follows it, and the round's
-/// <see cref="RoundSettings.Ghosts"/> decides which machines draw it.
+/// Local only: the camera itself never touches the network. With <see cref="WantsGhost"/> it spawns a
+/// <see cref="SpectatorGhost"/> (the player's head, drawn as a ghost) that follows it — when, whether it's networked and
+/// which machines draw it are all <see cref="GhostRules"/> (the round's "Show ghosts" option, teams, phase).
 ///
 /// Drives the one shared camera directly (<see cref="MainCamera.Set"/>, transform only, per the shared-camera
 /// rule). It takes off from wherever the camera was, so every hand-off into it is one continuous view, and eases
@@ -66,7 +66,7 @@ public sealed class SpectatorController : Component
 	/// creative player). Ignored by the collision traces, so the camera can take off from inside it.</summary>
 	public GameObject LeftBehind { get; set; }
 
-	/// <summary>Spawn a networked ghost of the player's head that follows this camera. Read once, at start.</summary>
+	/// <summary>Give this free cam a ghost of the player's head (made and networked as <see cref="GhostRules"/> allow).</summary>
 	public bool WantsGhost { get; set; }
 
 	/// <summary>The live ghost, if one was spawned.</summary>
@@ -130,8 +130,15 @@ public sealed class SpectatorController : Component
 
 	protected override void OnDestroy()
 	{
+		// The ghost fades out where we left it (every machine), then removes itself — it doesn't pop.
 		if ( _ghost.IsValid() )
-			_ghost.Destroy();
+		{
+			var ghost = _ghost.Components.Get<SpectatorGhost>();
+			if ( ghost.IsValid() )
+				ghost.Dismiss();
+			else
+				_ghost.Destroy();
+		}
 		_ghost = null;
 	}
 
@@ -143,8 +150,29 @@ public sealed class SpectatorController : Component
 		_angles = MainCamera.Angles with { roll = 0f };
 		_fov = Scene.Camera.IsValid() ? Scene.Camera.FieldOfView : MainCamera.Fov;
 
-		if ( WantsGhost )
+		UpdateGhostLife();
+	}
+
+	// The ghost is always made — we always see our own — but goes on the network only once someone else could see it
+	// (GhostRules.GhostShared — under "Show ghosts: None" not until the Reveal) and its owner's body is networked
+	// (GhostRules.MayNetwork — an Infection prop's Hide-phase ghost stays local). Re-checked every frame, so either can
+	// turn true mid-flight.
+	void UpdateGhostLife()
+	{
+		if ( !WantsGhost )
+			return;
+
+		if ( !_ghost.IsValid() )
 			SpawnGhost();
+
+		if ( _ghost.IsValid() && !_ghost.Network.Active && GhostRules.GhostShared && GhostRules.MayNetwork( LeftBehind ) )
+		{
+			_ghost.NetworkSpawn( new NetworkSpawnOptions
+			{
+				Owner = Connection.Local,
+				OrphanedMode = NetworkOrphaned.Destroy,
+			} );
+		}
 	}
 
 	// The boom, tuned like the hunter we left (or the hunter defaults — a prop or a spectator has no boom of its own).
@@ -158,6 +186,8 @@ public sealed class SpectatorController : Component
 
 	protected override void OnUpdate()
 	{
+		UpdateGhostLife();
+
 		// A cursor overlay owns the mouse — hold the view rather than navigate behind the menu (the same
 		// gate every other camera driver uses).
 		if ( PauseMenu.IsOpen || RoundSetup.IsOpen )
@@ -229,9 +259,10 @@ public sealed class SpectatorController : Component
 	}
 
 	// ── Ghost ──────────────────────────────────────────────────────────────────────────────────────────────────
-	// Cloned DISABLED, dressed in this machine's saved head, then enabled and network-spawned — the same order as
-	// the hunter pawn (RoundManager.SpawnOwnPawn), so the prefab's default head never builds and the spawn snapshot
-	// ships the real one. Owned by this connection and destroyed with it, and with this camera.
+	// Cloned DISABLED, dressed in this machine's saved head, then enabled — the same order as the hunter pawn
+	// (RoundManager.SpawnOwnPawn), so the prefab's default head never builds and the spawn snapshot (when
+	// UpdateGhostLife networks it) ships the real one. Owned by this connection and destroyed with it, and faded out
+	// (SpectatorGhost.Dismiss) when this camera goes.
 	void SpawnGhost()
 	{
 		var file = ResourceLibrary.Get<PrefabFile>( GhostPrefabPath );
@@ -250,17 +281,9 @@ public sealed class SpectatorController : Component
 		HunterController.WearSavedHead( _ghost );
 		_ghost.Components.Get<SpectatorGhost>( FindMode.EverythingInSelf )?.ApplyScale();
 
+		// Local until UpdateGhostLife puts it on the network (offline, for good — still worth having: it's what our own
+		// third person orbits).
 		_ghost.Enabled = true;
-
-		// Offline it stays local — still worth having: it's what our own third person orbits.
-		if ( Networking.IsActive )
-		{
-			_ghost.NetworkSpawn( new NetworkSpawnOptions
-			{
-				Owner = Connection.Local,
-				OrphanedMode = NetworkOrphaned.Destroy,
-			} );
-		}
 	}
 
 	// Multi-bump slide: keep re-deflecting off every surface met along the step so corners glide instead of

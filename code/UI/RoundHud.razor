@@ -258,15 +258,8 @@
 			@* Fixed width, so nothing stacked underneath — a long caption, a role chip — can widen this column
 			   and shove the two rosters outward. That's what keeps the clock nailed to screen centre. *@
 			<div class="hud-col col-clock">
-				@if ( LobbyReturn.Active )
-				{
-					@* Returning to the lobby (results over, or the host ended it): the round clock gives way to the
-					   shared five-second readout — the lobby launch countdown's look, the same in every mode. The
-					   caption is wider than this column, so it's a full-width overlay here (see .return-countdown)
-					   rather than wrapping inside the 150px clock slot. *@
-					<Countdown Title=@LobbyReturn.Caption Remaining=@LobbyReturn.Remaining class="return-countdown" />
-				}
-				else
+				@* The round clock gives way to the return-to-lobby readout (under the rosters, below). *@
+				@if ( !LobbyReturn.Active )
 				{
 					<div class="timer clock-timer">@TimerText</div>
 					<div class="clock-caption">@ClockCaption</div>
@@ -337,6 +330,14 @@
 				</div>
 			</div>
 		</div>
+
+		@if ( LobbyReturn.Active )
+		{
+			@* Returning to the lobby (results over, or the host ended it): the shared five-second readout — the lobby
+			   launch countdown's look, the same in every mode — in its own row UNDER the rosters, centred on the clock
+			   line. Its caption is far wider than the clock column, so drawn in there it covered the icons either side. *@
+			<Countdown Title=@LobbyReturn.Caption Remaining=@LobbyReturn.Remaining class="return-countdown" />
+		}
 		}
 	</div>
 

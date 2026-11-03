@@ -3,17 +3,19 @@ using System.Globalization;
 
 namespace Mimiclay;
 
-/// <summary>Who may see the ghosts of players flying a free cam (<see cref="SpectatorGhost"/>). Flags: each viewer
-/// group sees ghosts when its bit is set. A viewer counts as a spectator while eliminated, waiting without a role,
-/// or flying a free cam themselves.</summary>
-[Flags]
-public enum GhostAudience
+/// <summary>Who sees the ghosts of players flying a free cam (<see cref="SpectatorGhost"/>) — the "Show ghosts" round
+/// option. Teams come from the round roster (see <see cref="GhostRules"/>). Whatever this says, every ghost shows to
+/// everyone once the round reaches the Reveal.</summary>
+public enum GhostVisibility
 {
-	None = 0,
-	Spectators = 1,
-	Props = 2,
-	Hunters = 4,
-	Everyone = Spectators | Props | Hunters,
+	/// <summary>Nobody sees anyone else's ghost (no ghosts are even made).</summary>
+	None,
+	/// <summary>You see the ghosts of your own team — props see props; hunters never see ghosts. In Infection a prop
+	/// who saw where others hid keeps that knowledge after being infected.</summary>
+	Team,
+	/// <summary>Everyone sees everyone's ghosts, hunters included. The other team only sees a living prop's ghost a
+	/// few seconds after it appears, so it can get away from its body first. Casual — inherently unbalanced.</summary>
+	All,
 }
 
 /// <summary>
@@ -57,9 +59,9 @@ public struct RoundSettings
 	/// props' favour. 0 = None (unlimited, the default); capped at <see cref="MaxAmmo"/>.</summary>
 	public int AmmoLimit;
 
-	/// <summary>Which players can see a free-cam ghost. Spectators only by default, so ghosts never tip off the
-	/// living.</summary>
-	public GhostAudience Ghosts;
+	/// <summary>"Show ghosts": who sees free-cam ghosts. Defaults per mode (<see cref="DefaultGhostsFor"/>) — Teams shows
+	/// them to your own team, Infection to nobody (a prop who saw where others hid would carry it into being infected).</summary>
+	public GhostVisibility Ghosts;
 
 	/// <summary>The chosen map's <c>ResourcePath</c> (a <see cref="MapResource"/>), or <see cref="MapCatalog.RandomIdent"/>.</summary>
 	public string MapIdent;
@@ -80,7 +82,12 @@ public struct RoundSettings
 	public const int DefaultHunterCount = 1;
 	public const int DefaultAmmoLimit = 0;
 	public const int MaxAmmo = 8;
-	public const GhostAudience DefaultGhosts = GhostAudience.Spectators;
+	public const GhostVisibility DefaultGhosts = GhostVisibility.None; // DefaultMode is Infection — see DefaultGhostsFor
+
+	/// <summary>The "Show ghosts" default for <paramref name="mode"/>: Team in Teams (sides are fixed, nobody can carry
+	/// what they saw across), None in Infection (anyone can be infected).</summary>
+	public static GhostVisibility DefaultGhostsFor( RoundMode mode )
+		=> mode == RoundMode.Teams ? GhostVisibility.Team : GhostVisibility.None;
 
 	/// <summary>Sensible opening values — short hide, longer hunt, brief reveal/consolidation, one hunter.</summary>
 	public static RoundSettings Default => new()
@@ -166,15 +173,22 @@ public struct RoundSettings
 		if ( int.TryParse( ammo, NumberStyles.Integer, CultureInfo.InvariantCulture, out var a ) )
 			d.AmmoLimit = Math.Clamp( a, 0, MaxAmmo );
 
-		var ghosts = Networking.GetData( Keys.Ghosts );
-		if ( int.TryParse( ghosts, NumberStyles.Integer, CultureInfo.InvariantCulture, out var g ) )
-			d.Ghosts = (GhostAudience)g & GhostAudience.Everyone;
+		d.Ghosts = ReadGhostsFromLobby() ?? DefaultGhostsFor( d.Mode );
 
 		var map = Networking.GetData( Keys.Map );
 		if ( !string.IsNullOrEmpty( map ) )
 			d.MapIdent = map;
 
 		return d;
+	}
+
+	/// <summary>The lobby's "Show ghosts" choice, or null when no lobby sent one (a map opened directly).</summary>
+	public static GhostVisibility? ReadGhostsFromLobby()
+	{
+		var ghosts = Networking.GetData( Keys.Ghosts );
+		return int.TryParse( ghosts, NumberStyles.Integer, CultureInfo.InvariantCulture, out var g ) && Enum.IsDefined( typeof( GhostVisibility ), g )
+			? (GhostVisibility)g
+			: null;
 	}
 
 	/// <summary>Blank EVERY key a lobby launch writes — the rules above plus the roster couriers

@@ -702,7 +702,7 @@ public sealed class RoundManager : Component, IRoundContext, Component.INetworkL
 	// Teams' defining rule, read off a roster row: a found prop is OUT — fixed sides, no conversion. The row
 	// keeps its role (so the team counts stay honest) with Alive=false; the player's own machine retires its
 	// pawn and rides the spectator cam. Never true in Infection, where a found prop converts instead.
-	bool IsEliminated( PlayerInfo info )
+	internal bool IsEliminated( PlayerInfo info )
 		=> Settings.Mode == RoundMode.Teams && info.Role == PlayerRole.Prop && !info.Alive;
 
 	/// <summary>True when the LOCAL player has been eliminated from the round (a Teams prop that's been found:

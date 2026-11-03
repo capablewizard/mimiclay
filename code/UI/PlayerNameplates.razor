@@ -190,11 +190,12 @@
 			TryAddPlate( pawn, name, AnchorFor( pawn ), cam, voice.IsValid() && voice.IsSpeaking, AmmoFor( pawn, role ) );
 		}
 
-		// Free-cam ghosts: labelled exactly where the ghost itself is drawn on this machine (SpectatorGhost.Shown —
-		// the round's ghost audience, never our own), so a plate can't reveal a ghost its viewer can't see.
+		// Free-cam ghosts: labelled only where the ghost itself is (mostly) drawn on this machine — past the half-way
+		// point of its spawn/exit fade — and only for its own team (GhostRules.MayShowName: under "Show ghosts: All"
+		// the other team sees that someone is scouting, not who). Never our own ghost.
 		foreach ( var ghost in Scene.GetAllComponents<SpectatorGhost>() )
 		{
-			if ( !ghost.IsValid() || !ghost.IsProxy || !ghost.Shown ) // never a plate on our own ghost
+			if ( !ghost.IsValid() || !ghost.IsProxy || ghost.Visibility < 0.5f || !GhostRules.MayShowName( ghost.OwnerTeam ) )
 				continue;
 
 			var name = GhostName( ghost );

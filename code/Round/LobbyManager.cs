@@ -452,7 +452,13 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 	public void SetRoundMode( RoundMode mode )
 	{
 		if ( !IsHostAuthority ) return;
-		var s = Settings; s.Mode = mode; Settings = s;
+		var s = Settings;
+		// "Show ghosts" defaults per mode (Team in Teams, None in Infection) — a mode switch lands on the new mode's
+		// default, so picking Infection can never silently keep a Teams-safe choice that isn't safe there.
+		if ( s.Mode != mode )
+			s.Ghosts = RoundSettings.DefaultGhostsFor( mode );
+		s.Mode = mode;
+		Settings = s;
 	}
 
 	public void SetMap( string mapIdent )
@@ -474,11 +480,10 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 		var s = Settings; s.AmmoLimit = Math.Clamp( shots, 0, RoundSettings.MaxAmmo ); Settings = s;
 	}
 
-	// One audience group on or off (see GhostAudience).
-	public void SetGhostAudience( GhostAudience group, bool on )
+	public void SetGhostVisibility( GhostVisibility visibility )
 	{
 		if ( !IsHostAuthority ) return;
-		var s = Settings; s.Ghosts = on ? s.Ghosts | group : s.Ghosts & ~group; Settings = s;
+		var s = Settings; s.Ghosts = visibility; Settings = s;
 	}
 
 	public void SetHideSeconds( float seconds )
