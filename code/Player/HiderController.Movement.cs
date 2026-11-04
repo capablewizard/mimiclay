@@ -101,13 +101,15 @@ public sealed partial class HiderController
 	//
 	// A hunter always counts, whatever PropsAsFloor or its size says: the climb never grips one (grab sweeps pass through
 	// it to whatever's behind), but a prop can still stand on a hunter's head like any floor prop (user, 2026-11-01).
-	bool IsFloorProp( in SceneTraceResult tr )
+	bool IsFloorProp( in SceneTraceResult tr ) => IsFloorProp( tr.Hit, tr.GameObject, tr.Body );
+
+	// The same rule from its parts — a sim trace (HiderController.Sim) carries only the body; SimWorld.SourceOf names its object.
+	bool IsFloorProp( bool hit, GameObject go, PhysicsBody body )
 	{
-		if ( tr.Hit && ClimbRules.IsHunter( tr.GameObject ) )
+		if ( hit && ClimbRules.IsHunter( go ) )
 			return true;
-		if ( !PropsAsFloor || !tr.Hit )
+		if ( !PropsAsFloor || !hit )
 			return false;
-		var go = tr.GameObject;
 		bool clay = false;
 		for ( var g = go; g.IsValid() && !clay; g = g.Parent )
 			clay = g.Tags.Has( SdfCollider.ClayTag ) || g.Components.Get<SdfSculpture>().IsValid() || g.Components.Get<HiderController>().IsValid();
@@ -115,7 +117,7 @@ public sealed partial class HiderController
 			return false;
 
 		// Bigger than us: a surface like any other (StickToBiggerProps).
-		if ( StickToBiggerProps && _hull.Ready && tr.Body is { } b && b.IsValid()
+		if ( StickToBiggerProps && _hull.Ready && body is { } b && b.IsValid()
 			&& SizeOf( b.GetBounds().Size ) > SizeOf( _hull.LocalBounds.Size ) * StickPropSizeRatio )
 			return false;
 		return true;
@@ -219,8 +221,24 @@ public sealed partial class HiderController
 		if ( PerfScenario.DriveProp( GameObject, speed ) is Vector3 perfWish )
 			wish = perfWish;
 
+		// Debug: walk a slowly turning circle (both walks read this — the old one and the sim one — for A/B runs).
+		if ( DebugPropWander )
+			wish = Rotation.FromYaw( RealTime.Now * DebugWanderYawSpeed ) * Vector3.Forward * speed;
+
+		// Debug (set from scripts): walk straight at a point, and keep pressing into whatever's there.
+		if ( DebugGoto is Vector3 to )
+			wish = (to - WorldPosition).WithZ( 0f ).Normal * speed;
+
 		return wish;
 	}
+
+	[ConVar( "mimi_dbg_prop_wander", Help = "Debug: your prop walks a turning circle and jumps every 3 s (no keyboard needed)." )]
+	public static bool DebugPropWander { get; set; }
+	const float DebugWanderYawSpeed = 45f; // deg/s
+
+	/// <summary>Debug, set from scripts (run_csharp): the local prop walks straight at this point while set.</summary>
+	public static Vector3? DebugGoto { get; set; }
+	RealTimeSince _sinceDebugJump;
 
 	// How far the mouse turned the facing this tick (degrees). Deltas only — there is no absolute facing target,
 	// so a blocked turn simply doesn't happen and nothing tries to force it later.

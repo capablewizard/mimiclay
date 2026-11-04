@@ -40,6 +40,13 @@ public sealed partial class SimWorld
 	[ConVar( "mimi_sim_followers", Help = "Sim: copy every moving scene body into the sim as a follower (Phase 1)." )]
 	public static bool UseFollowers { get; set; } = true;
 
+	// OFF by default (2026-11-04): a puppet is a dynamic body steered back to its scene pose every tick at up to
+	// PuppetMaxSpeed — walk into one and it shoves back with huge, solver-dependent force, and followers aren't rolled back,
+	// so the host and every client replay got a different shove: "walking into other props ejects me" (84 corrections in
+	// 5 s, up to 47u). Keyframed followers block (infinitely heavy) but do the same thing in every replay.
+	[ConVar( "mimi_sim_puppets", Help = "Sim: followers of Rigidbody objects are mass-matched dynamic puppets (1) instead of keyframed (0)." )]
+	public static bool UsePuppets { get; set; } = false;
+
 	public int FollowerCount => _followers.Count;
 
 	void RefreshFollowers()
@@ -68,13 +75,14 @@ public sealed partial class SimWorld
 			string tags = TagKeyOf( b );
 			if ( _followers.TryGetValue( b, out var f ) )
 			{
-				if ( f.ShapeCount == b.ShapeCount && f.Version == version && f.TagKey == tags )
+				bool wantPuppet = UsePuppets && go.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndAncestors ).IsValid();
+				if ( f.ShapeCount == b.ShapeCount && f.Version == version && f.TagKey == tags && f.Puppet == wantPuppet )
 					continue;
 				f.Copy.Remove();
 				_followers.Remove( b );
 			}
 
-			bool puppet = go.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndAncestors ).IsValid();
+			bool puppet = UsePuppets && go.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndAncestors ).IsValid();
 			var copy = new PhysicsBody( _world ) { BodyType = puppet ? PhysicsBodyType.Dynamic : PhysicsBodyType.Keyframed };
 			copy.Transform = b.Transform;
 			CopyShapes( b, copy, solidOnly: true );
@@ -86,6 +94,7 @@ public sealed partial class SimWorld
 				copy.Mass = float.IsFinite( mass ) && mass > 0.01f ? mass : 50f;
 			}
 			_followers[b] = new Follower { Source = b, Copy = copy, Puppet = puppet, ShapeCount = b.ShapeCount, Version = version, TagKey = tags };
+			_sourceOf[copy] = go;
 		}
 
 		foreach ( var gone in _followers.Keys.Where( k => !seen.Contains( k ) ).ToList() )
@@ -152,20 +161,75 @@ public sealed partial class SimWorld
 
 	// ── Pushes against anchored bodies (host) ───────────────────────────────────────────────────────────────
 
-	/// <summary>Host, after a tick: something moving pressed sideways into this anchored body, at this horizontal
-	/// velocity — the handler decides whether to release it (see <see cref="SimBodyFlags.Anchored"/>).</summary>
-	public event Action<SimBody, Vector3> AnchoredPushed;
-
 	/// <summary>Sideways speed (u/s) a body must press into an anchored one with to push it — resting against one isn't.</summary>
 	const float PushMinSpeed = 20f;
 
+	/// <summary>Fraction of the pusher's speed a pushed body is given, and the cap (prop hunt's push numbers).</summary>
+	public const float PushTransfer = 0.6f;
+	public const float PushMaxSpeed = 400f;
+
+	/// <summary>A push on a body at this horizontal velocity: an anchored one is released (an upright one also stops
+	/// turning — it slides, as a pushed player's prop does) and given PushTransfer of the push; a moving one is kept at
+	/// least that fast along it. Run identically by the host's ticks, client predictions and replays (the anchored flag
+	/// rolls back with the body); the host also tells everyone about a release, and a client re-anchors a release the host
+	/// never confirms (see ClientTicks).</summary>
+	public void PushBody( SimBody b, Vector3 velocity )
+	{
+		if ( b is null || !b.ShapesReady )
+			return;
+		if ( (b.Spec.Flags & SimBodyFlags.Anchored) != 0 )
+		{
+			var flags = (b.Spec.Flags & ~SimBodyFlags.Anchored) | ((b.Spec.Flags & SimBodyFlags.Upright) != 0 ? SimBodyFlags.NoTurn : 0);
+			ApplyFlags( b, flags );
+			if ( IsAuthority )
+			{
+				if ( Networking.IsActive )
+					BroadcastFlags( b.Id, (byte)flags );
+			}
+			else
+				b.PredictedRelease = Tick;
+			SimStats.Releases++;
+		}
+		var want = velocity.WithZ( 0f ).ClampLength( PushMaxSpeed ) * PushTransfer;
+		if ( want.IsNearZeroLength )
+			return;
+		var v = b.Phys.Velocity;
+		float along = Vector3.Dot( v, want.Normal );
+		if ( along < want.Length )
+		{
+			b.Phys.Sleeping = false;
+			b.Phys.Velocity = v + want.Normal * (want.Length - along);
+		}
+	}
+
+	/// <summary>Host: <see cref="PushBody"/> by key (the scene-intent push path — RoundManager.NoteDecoyPush).</summary>
+	public bool PushBody( Guid key, Vector3 velocity )
+	{
+		if ( !IsAuthority || !_byKey.TryGetValue( key, out var b ) )
+			return false;
+		PushBody( b, velocity );
+		return true;
+	}
+
+	/// <summary>Client: a push THIS machine's hunter is reporting to the host (HiderController.NoteSimPush,
+	/// RoundManager.NoteDecoyPush) — predicted here at the next tick, and again at that tick in every replay, so the body
+	/// moves at once instead of a round trip later when the host's push shows in a snapshot (user: "feels delayed"). A
+	/// hunter is only a follower in the sim, so unlike a sim body's push nothing in a replay would re-make it. The host's own
+	/// push lands a couple of ticks apart from ours at most; a push the host refuses unwinds through the normal replay once
+	/// the record expires (ClientTicks).</summary>
+	public void PredictPush( Guid key, Vector3 velocity )
+	{
+		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) )
+			return;
+		b.PredictedPush = (Tick + 1, velocity); // the next tick stepped (this frame's are done when a collision callback runs)
+		SimStats.PushesPredicted++;
+	}
+
 	// The rules prop hunt's push RPC used (RoundManager.NoteDecoyPush), now run on the sim's own bodies: bounds overlap
 	// (touching, 1u slack); standing on it or under it is a floor/ceiling, not a push; only the part of the motion heading
-	// INTO it counts. Movers: followers (players' props, hunters, held props) and awake sim bodies.
+	// INTO it counts. After every step, on every machine (a client predicts the release; see PushBody).
 	void DetectAnchoredPushes()
 	{
-		if ( AnchoredPushed is null )
-			return;
 		List<SimBody> anchored = null;
 		foreach ( var b in _bodies )
 			if ( (b.Spec.Flags & SimBodyFlags.Anchored) != 0 && b.ShapesReady )
@@ -191,7 +255,7 @@ public sealed partial class SimWorld
 				var toward = (clay.Center - mine.Center).WithZ( 0f );
 				if ( toward.LengthSquared > 0.01f && Vector3.Dot( v, toward.Normal ) < PushMinSpeed )
 					continue;
-				AnchoredPushed( a, v );
+				PushBody( a, v );
 			}
 		}
 
@@ -200,7 +264,7 @@ public sealed partial class SimWorld
 		// that (RoundManager.NoteDecoyPush). Here: sim bodies (a knocked decoy sliding or falling into an anchored one).
 		foreach ( var b in _bodies )
 			if ( b.ShapesReady && (b.Spec.Flags & SimBodyFlags.Anchored) == 0 && !b.Phys.Sleeping )
-				Test( b.Phys, b.Phys.Velocity );
+				Test( b.Phys, b.Intent.IsNearZeroLength ? b.Phys.Velocity : b.Intent ); // a walking pawn: what it is TRYING to do
 	}
 
 	// ── Presentation ────────────────────────────────────────────────────────────────────────────────────────
@@ -267,7 +331,11 @@ public sealed partial class SimWorld
 		sim?.Receive( () =>
 		{
 			if ( sim._byId.TryGetValue( id, out var b ) )
+			{
 				sim.ApplyFlags( b, (SimBodyFlags)flags );
+				if ( ((SimBodyFlags)flags & SimBodyFlags.Anchored) == 0 )
+					b.PredictedRelease = -1; // the host released it too
+			}
 		} );
 	}
 

@@ -13,8 +13,14 @@ public sealed partial class SimWorld
 	// Client
 	bool _synced;
 	int _lastSnap = -1;
+
+	/// <summary>Client: how many ticks ahead of the host's newest snapshot we're predicting (0 on the host).</summary>
+	public int LeadTicks => IsAuthority || _lastSnap < 0 ? 0 : Math.Max( Tick - _lastSnap, 0 );
 	int _slack = TargetSlack;
 	int _clockDebt;
+	float _slackAvg = TargetSlack; // smoothed slack readings (ClockRate)
+	float _leadAvg; // smoothed lead (our tick − the newest snapshot's) — what RemotePose measures its delay from
+	float _alpha; // this frame's place between ticks (VisualPose)
 	RealTimeSince _sinceClockAdjust;
 
 	/// <summary>Client: body states after each predicted tick, indexed by body id (see <see cref="Snapshot"/>).</summary>
@@ -26,6 +32,14 @@ public sealed partial class SimWorld
 	readonly Dictionary<Guid, SimInput> _hostLastInput = new();
 	readonly Dictionary<Guid, int> _hostNewestInput = new();
 
+	/// <summary>
+	/// Where on the frame clock (Time.NowDouble) the tick being run falls — before this frame's time when the accumulator
+	/// had some left over. Input sampled per tick (a mouse turn) reads its value AT this time, not at the frame's: ticks
+	/// and frames don't line up (50 Hz vs 60 fps), and reading the frame's whole delta gave turns of 1.5°, 3°, 1.5°…
+	/// for a steady mouse.
+	/// </summary>
+	public double TickTime { get; private set; }
+
 	void Update()
 	{
 		if ( _world is null || Scene.IsEditor )
@@ -33,11 +47,15 @@ public sealed partial class SimWorld
 
 		// The sim keeps its OWN 50 Hz clock rather than the scene's fixed update: a joining client's scene ran at 16 Hz
 		// when the rig first started (FixedDelta 0.0625), and every machine must tick at exactly the same rate.
-		_clock += Time.Delta;
+		// A client keeps its lead by running the clock a few percent fast or slow (ClockRate) — skipping or doubling
+		// whole ticks to do it was a visible hitch each time (51 of them in 8 s on a live session).
+		float rate = IsAuthority ? 1f : ClockRate();
+		_clock += Time.Delta * rate;
 		int n = 0;
 		while ( _clock >= Dt )
 		{
 			_clock -= Dt;
+			TickTime = Time.NowDouble - _clock / rate;
 			if ( ++n > MaxTicksPerFrame )
 			{
 				_clock = 0;
@@ -58,25 +76,96 @@ public sealed partial class SimWorld
 				RefreshShapes();
 		}
 
+		// Where this frame falls between the last tick and the next: what's left in the accumulator. (Time since the last
+		// tick was wrong — a tick landing reset it to 0 and the pose fell back to the previous tick's, the one the frame
+		// before had already shown: a stalled frame, then a catch-up jump, many times a second.)
+		_alpha = Math.Clamp( (float)(_clock / Dt), 0f, 1f );
+
 		FadeCorrections();
 		PresentBodies();
 		Draw();
 	}
 
+	// Client: how fast the sim clock runs this frame. Slack (how many ticks of input wait at the host) above target = we
+	// run too far ahead = slow down a little; below = speed up. Proportional, from a smoothed slack (each reading is a
+	// round trip old and jittery), within ±6%: about one tick of lead gained or lost per second at the limit.
+	float ClockRate()
+	{
+		if ( !_synced )
+			return 1f;
+		float error = _slackAvg - TargetSlack;
+		return 1f + Math.Clamp( -error * 0.03f, -0.06f, 0.06f );
+	}
+
 	// Drive every body that has a driver (its owner's input; on a client, a guess for other people's), then step.
 	void Step( int tick, SimInput mine, Func<SimBody, SimInput> others )
 	{
+		// Client: our hunter's pushes, at the tick they were made — predictions and replays alike (PredictPush).
+		if ( !IsAuthority )
+			foreach ( var b in _bodies )
+				if ( b.PredictedPush is { } push && push.tick == tick )
+					PushBody( b, push.velocity );
+
 		foreach ( var b in _bodies )
 		{
 			if ( b.Driver is null || b.Spec.Owner == Guid.Empty || !b.ShapesReady )
 				continue;
-			b.Driver.Drive( b, b.Spec.Owner == LocalId ? mine : others( b ), tick );
+			SimInput input;
+			if ( b.Spec.Owner == LocalId )
+				input = IsLocallyControlled( b ) ? mine : SimInput.None; // our own body, or a host bot (no input)
+			else
+				input = others( b );
+			if ( TraceKey != Guid.Empty )
+				TraceStep( tick, b, input, IsAuthority ? "H" : "C" ); // state at the START of the tick + the input it gets
+			b.Driver.Drive( b, input, tick );
 		}
 		DriveFollowers();
 		long t0 = Stopwatch.GetTimestamp();
 		_world.Step( Dt );
+		DetectAnchoredPushes(); // every machine, every step (replays too): releases are predicted
+		TraceSecond( tick );
 		SimStats.StepMs.Add( (float)((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency) );
 		SimStats.Steps++;
+	}
+
+	// ── Debug trace: one body's per-tick input + state, host vs client (set TraceKey from a script) ─────────
+	public static Guid TraceKey { get; set; }
+	public static readonly Dictionary<int, string> TraceLog = new();
+
+	public static Guid TraceKey2 { get; set; }
+	public static readonly Dictionary<int, string> TraceLog2 = new();
+
+	// A second, undriven body (what the first one pushes): its state after each step, first prediction kept on clients.
+	void TraceSecond( int tick )
+	{
+		if ( TraceKey2 == Guid.Empty || !_byKey.TryGetValue( TraceKey2, out var b ) )
+			return;
+		if ( !IsAuthority && TraceLog2.ContainsKey( tick ) )
+			return;
+		TraceLog2[tick] = $"p({b.Phys.Position.x:0.0},{b.Phys.Position.y:0.0},{b.Phys.Position.z:0.0}) v({b.Phys.Velocity.x:0},{b.Phys.Velocity.y:0}) sleep {b.Phys.Sleeping} motion {b.Phys.MotionEnabled} shapes {b.Phys.ShapeCount}";
+	}
+
+	void TraceStep( int tick, SimBody b, in SimInput input, string phase )
+	{
+		if ( b.Key != TraceKey )
+			return;
+		var c = b.Ctrl;
+		if ( !IsAuthority && TraceLog.ContainsKey( tick ) )
+			return; // client: keep the FIRST prediction of each tick (the one made a full lead ahead)
+		TraceLog[tick] = $"{phase} in({input.Wish.x:0},{input.Wish.y:0} b{input.Buttons} t{input.Turn:0.00}) yaw {b.Phys.Rotation.Angles().yaw:0.00} p({b.Phys.Position.x:0.0},{b.Phys.Position.y:0.0}) v({b.Phys.Velocity.x:0},{b.Phys.Velocity.y:0}) push {c.PushLevel} cmd({c.Commanded.x:0},{c.Commanded.y:0}) g {c.Grounded}";
+		if ( TraceLog.Count > 4000 )
+			TraceLog.Clear();
+	}
+
+	bool IsLocallyControlled( SimBody b )
+	{
+		if ( LocalControlled != Guid.Empty )
+			return b.Key == LocalControlled;
+		// No body named: the first driven body we own (the debug rig's single pawn).
+		foreach ( var o in _bodies )
+			if ( o.Driver is not null && o.Spec.Owner == LocalId )
+				return o == b;
+		return false;
 	}
 
 	// ── Host ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -90,7 +179,7 @@ public sealed partial class SimWorld
 		// Rest: a body that just fell asleep tells everyone where, reliably (snapshots stop carrying it soon).
 		foreach ( var b in _bodies )
 		{
-			bool asleep = b.Phys.Sleeping;
+			bool asleep = AtRest( b );
 			if ( asleep && !b.WasSleeping )
 			{
 				b.AsleepTicks = 0;
@@ -105,7 +194,6 @@ public sealed partial class SimWorld
 		}
 
 		AdvanceVisuals();
-		DetectAnchoredPushes();
 		HostWelcomeNewConnections();
 
 		if ( Networking.IsActive && Tick % SnapshotEvery == 0 )
@@ -131,7 +219,13 @@ public sealed partial class SimWorld
 	}
 
 	// Bodies a snapshot carries: awake, or asleep so recently its reliable rest may not have landed yet.
-	bool InSnapshot( SimBody b ) => b.ShapesReady && (b.Spec.Flags & SimBodyFlags.Anchored) == 0 && (!b.Phys.Sleeping || b.AsleepTicks < RestResendTicks);
+	bool InSnapshot( SimBody b ) => b.ShapesReady && (b.Spec.Flags & SimBodyFlags.Anchored) == 0 && (!AtRest( b ) || b.AsleepTicks < RestResendTicks);
+
+	// At rest = asleep and nothing about to move it. A driven body the physics put to sleep but its driver hasn't parked is
+	// NOT at rest: turning in place leaves its velocity at zero, so the solver sleeps it mid-turn — and a rest broadcast
+	// from there snapped the turning client back to that pose ~12 ticks later (measured: 11 rests in 6 s of turning,
+	// each a 20°+ snap back, then the next snapshot rolled it forward again).
+	static bool AtRest( SimBody b ) => b.Phys.Sleeping && (b.Driver is null || b.Ctrl.Parked);
 
 	// ── Client ──────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -143,11 +237,32 @@ public sealed partial class SimWorld
 		// Keep TargetSlack ticks of input queued at the host. Off by more than the deadband: take the WHOLE error as a
 		// debt, paid a tick at a time (an extra tick to get ahead, a skipped one to fall back), then wait a round trip
 		// before judging again — the slack we read is that old.
+		// Only for a BIG error (a hitch, a lag change): small drift is the clock rate's job (ClockRate).
 		float window = ((Connection.Host?.Ping ?? 0f) + 2f * FakeLagMs) / 1000f + 0.1f;
-		if ( _clockDebt == 0 && _sinceClockAdjust > window && (_slack < TargetSlack - 1 || _slack > TargetSlack + 2) )
+		if ( _clockDebt == 0 && _sinceClockAdjust > window && MathF.Abs( _slack - TargetSlack ) > 8 )
 		{
 			_clockDebt = _slack - TargetSlack;
 			if ( _clockDebt > 0 ) SimStats.ClockSlower++; else SimStats.ClockFaster++;
+		}
+
+		// A release we predicted (PushBody) that the host never confirmed — its own push didn't happen (it saw the pusher
+		// elsewhere): anchor it again where it was registered. Anchored bodies never move, so that pose is still theirs.
+		int confirmWindow = (int)(((Connection.Host?.Ping ?? 0f) + 2f * FakeLagMs) / (Dt * 1000f)) + 2 * TargetSlack + 25;
+		foreach ( var b in _bodies )
+		{
+			// A predicted push older than any replay reaches back: done with (the host's own has long since shown, or not).
+			if ( b.PredictedPush is { } push && Tick - push.tick > confirmWindow )
+				b.PredictedPush = null;
+			if ( b.PredictedRelease < 0 || Tick - b.PredictedRelease < confirmWindow )
+				continue;
+			b.PredictedRelease = -1;
+			if ( (b.Spec.Flags & SimBodyFlags.Anchored) != 0 )
+				continue;
+			var before = VisualPose( b );
+			b.Restore( new SimBodyState { P = b.Spec.Pose.Position, R = b.Spec.Pose.Rotation, Anchored = true, AnchorKnown = true } );
+			b.Prev = b.Cur = b.Phys.Transform;
+			b.PosOffset += before.Position - VisualPose( b ).Position;
+			SimStats.Reanchors++;
 		}
 
 		int steps = 1;
@@ -197,6 +312,7 @@ public sealed partial class SimWorld
 			int lead = (int)MathF.Ceiling( ((Connection.Host?.Ping ?? 0f) + 2f * FakeLagMs) / (Dt * 1000f) ) + TargetSlack + 1;
 			for ( int i = 0; i < lead; i++ )
 				PredictTick();
+			_leadAvg = lead;
 			_synced = true;
 			_sinceClockAdjust = 0f;
 			Log.Info( $"SimWorld: synced at host tick {s}, running {lead} ticks ahead, {_bodies.Count} bodies" );
@@ -216,8 +332,10 @@ public sealed partial class SimWorld
 
 		SimStats.Lead.Add( Tick - s );
 		SimStats.Slack.Add( _slack );
+		_leadAvg += (Tick - s - _leadAvg) * 0.05f;
 
 		// How wrong were we at tick s? Bodies in the snapshot against their state; the rest should be asleep at rest.
+		// Someone else's driven body only counts past RemoteSkipEpsilon (its guess is always a little wrong; see there).
 		float err = float.MaxValue;
 		if ( _history.TryGetValue( s, out var guess ) )
 		{
@@ -229,11 +347,13 @@ public sealed partial class SimWorld
 					continue;
 				float e;
 				if ( auth.TryGetValue( b.Id, out var a ) )
-					e = g.Value.P.Distance( a.P );
+					e = MathF.Max( g.Value.P.Distance( a.P ), g.Value.R.Distance( a.R ) * RotErrorArm ); // a wrong facing is wrong too
 				else if ( b.Rest is { } rest )
 					e = g.Value.Sleeping ? 0f : g.Value.P.Distance( rest.P ); // asleep at the host
 				else
 					continue;
+				if ( b.IsRemoteDriven && e <= RemoteSkipEpsilon )
+					e = 0f;
 				err = MathF.Max( err, e );
 				if ( b.IsLocalOwned )
 					SimStats.MispredictMine.Add( e );
@@ -244,9 +364,30 @@ public sealed partial class SimWorld
 		if ( err <= SkipEpsilon )
 		{
 			SimStats.Skipped++;
+			NudgeRemote( s, auth );
 			return;
 		}
 		Rollback( s, auth );
+	}
+
+	// A skipped snapshot still says where everyone ELSE is. Their bodies aren't replayed for small errors (a replay
+	// re-steps OUR body from a restored state — see SkipEpsilon), so left alone they'd drift on their guessed input: put
+	// each one at the host's state carried forward to our tick by its velocity. Only its sim body — what we collide with
+	// — moves; it is drawn from the host's poses regardless (RemotePose).
+	void NudgeRemote( int s, Dictionary<ushort, SimBodyState> auth )
+	{
+		foreach ( var b in _bodies )
+		{
+			if ( !b.IsRemoteDriven || !auth.TryGetValue( b.Id, out var a ) )
+				continue;
+			var st = a;
+			st.P += a.V * (Dt * (Tick - s));
+			if ( b.Phys.Position.Distance( st.P ) <= SkipEpsilon )
+				continue;
+			b.Restore( st );
+			b.Prev = b.Cur = b.Phys.Transform;
+			SimStats.RemoteNudges++;
+		}
 	}
 
 	// Host state for tick s onto the bodies: snapshot ones exactly; ones it left out are asleep at their rest pose.
@@ -275,6 +416,7 @@ public sealed partial class SimWorld
 		ApplyAuthority( auth );
 		_history[s] = CaptureAll();
 
+		_history.TryGetValue( Tick, out var oldNow );
 		Transform[] prevPose = null;
 		for ( int t = s + 1; t <= Tick; t++ )
 		{
@@ -298,6 +440,12 @@ public sealed partial class SimWorld
 			var after = VisualPose( b );
 			var dp = before[i].Position - after.Position;
 			float len = dp.Length;
+			if ( len > 5f && SimStats.BigCorrections.Count < 30 )
+			{
+				var at = auth.TryGetValue( b.Id, out var a ) ? a : (SimBodyState?)null;
+				var guessAt = predicted is not null && b.Id < predicted.Length ? predicted[b.Id] : null;
+				SimStats.BigCorrections.Add( $"t{Tick} s{s} id{b.Id}{(b.IsLocalOwned ? " MINE" : "")}: {len:0.0}u; at s predicted {guessAt?.P:0.0} v {guessAt?.V:0} g {guessAt?.Ctrl.Grounded} / host {at?.P:0.0} v {at?.V:0} g {at?.Ctrl.Grounded} jumpT {at?.Ctrl.SinceJumpTicks}; now was {(oldNow is not null && b.Id < oldNow.Length ? oldNow[b.Id]?.P : null):0.0} yaw {(oldNow is not null && b.Id < oldNow.Length ? oldNow[b.Id]?.R.Angles().yaw : null):0.0} replayed {b.Phys.Position:0.0} yaw {b.Phys.Rotation.Angles().yaw:0.0}; visual before {before[i].Position:0.0} after {after.Position:0.0} alpha {_alpha:0.00}; prev {b.Prev.Position:0.0} cur {b.Cur.Position:0.0} off {b.PosOffset:0.0} rotoff {b.RotOffset.Angles().yaw:0.0}" );
+			}
 			if ( len > 0.001f )
 			{
 				if ( b.IsLocalOwned ) SimStats.CorrectionMine.Add( len );

@@ -38,9 +38,6 @@ public sealed partial class RoundManager
 		if ( !SimDecoys || !IsHostAuthority )
 			return;
 		_simDecoysActive = true;
-		var sim = Sim;
-		sim.AnchoredPushed -= OnAnchoredDecoyPushed;
-		sim.AnchoredPushed += OnAnchoredDecoyPushed;
 		int n = 0;
 		foreach ( var sculpt in Scene.GetAllComponents<SdfSculpture>().ToList() )
 		{
@@ -54,32 +51,12 @@ public sealed partial class RoundManager
 		Log.Info( $"RoundManager: {n} decoys simulated in the sim world" );
 	}
 
-	// Host: a knocked sim decoy slid or fell into an anchored one — that's a push too.
-	void OnAnchoredDecoyPushed( SimBody body, Vector3 velocity )
-	{
-		var go = Scene.Directory.FindByGuid( body.Key );
-		if ( go.IsValid() )
-			PushSimDecoy( go, velocity );
-	}
-
-	/// <summary>Host: a push on a sim decoy (a walk or a hunter's intent, see NoteDecoyPush; or a sim body sliding into
-	/// it). An anchored one is released — still upright, so it slides like a pushed player's prop — and given the push
-	/// (PushTransfer of it, capped); a moving one is kept at least that fast along it. False if it isn't in the sim.</summary>
+	/// <summary>Host: a push reported from the scene side (a hunter's or a legacy walker's INTENT — NoteDecoyPush) on a sim
+	/// decoy: the sim's own push rule (SimWorld.PushBody — release, slide upright, PushTransfer of the push). Pushes from
+	/// sim bodies (a sim-walking prop, a knocked decoy) are found by the sim itself, on every machine. False if it isn't
+	/// in the sim.</summary>
 	bool PushSimDecoy( GameObject go, Vector3 velocity )
-	{
-		if ( !IsHostAuthority || !DecoyInSim( go ) )
-			return false;
-		var sim = Sim;
-		var b = sim.Find( go.Id );
-		if ( (b.Spec.Flags & SimBodyFlags.Anchored) != 0 )
-			sim.SetFlags( go.Id, (b.Spec.Flags & ~SimBodyFlags.Anchored) | ((b.Spec.Flags & SimBodyFlags.Upright) != 0 ? SimBodyFlags.NoTurn : 0) ); // slides without turning, as the old push did
-		var want = velocity.WithZ( 0f ).ClampLength( PushMaxSpeed ) * PushTransfer;
-		var v = b.Phys.Velocity;
-		float along = want.IsNearZeroLength ? 0f : Vector3.Dot( v, want.Normal );
-		if ( along < want.Length )
-			sim.SetMotion( go.Id, v + want.Normal * (want.Length - along), b.Phys.AngularVelocity );
-		return true;
-	}
+		=> IsHostAuthority && DecoyInSim( go ) && Sim.PushBody( go.Id, velocity );
 
 	/// <summary>Host: put one decoy in the sim (no-op if it's there). Its legacy state — a local shot body, the pose
 	/// stream — is dropped: the sim moves it from now on.</summary>

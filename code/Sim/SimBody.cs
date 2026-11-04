@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Mimiclay.Sim;
 
@@ -14,6 +15,38 @@ public enum SimShapeKind : byte
 	/// <summary>Copied from the shapes of the scene object <see cref="SimBodySpec.Source"/> — re-copied whenever that object's
 	/// collider rebuilds (an SdfCollider's BuildSerial changes), on every machine.</summary>
 	FromGameObject = 1,
+	/// <summary>Built by a component on <see cref="SimBodySpec.Source"/> implementing <see cref="ISimShapeSource"/> — a
+	/// prop pawn's floating move hull (HiderController.Sim). Every machine derives it from its own copy of the pawn.</summary>
+	FromSource = 2,
+}
+
+/// <summary>A component that builds its object's sim shapes itself (<see cref="SimShapeKind.FromSource"/>).</summary>
+public interface ISimShapeSource
+{
+	/// <summary>The shape's version: when it changes, the sim rebuilds the shapes.</summary>
+	int SimShapeVersion { get; }
+
+	/// <summary>Add the shapes to <paramref name="body"/> (body space = the source object's space). False if not ready yet.</summary>
+	bool BuildSimShapes( PhysicsBody body );
+}
+
+/// <summary>A driven body's controller state — saved and restored with its physics state on every rollback, and sent in
+/// snapshots. Fixed fields, so it packs small and stays a struct (history keeps one per body per tick).
+/// (Phase 2a: the prop walk's — HiderController.Sim.)</summary>
+public struct SimCtrl
+{
+	public bool Grounded, Parked, AirFromJump;
+	public byte StillTicks;
+	public ushort SinceJumpTicks;
+	/// <summary>How hard the walker is pushing against something, 0..<see cref="PushScale"/> (HiderController.Sim — a
+	/// continuous level, not an on/off switch, so replays don't flip between two accelerations).</summary>
+	public ushort PushLevel;
+	public const ushort PushScale = 1000;
+	/// <summary>The velocity the controller set last tick (what contacts took off it is the push-back).</summary>
+	public Vector3 Commanded;
+
+	public const ushort Long = 9999;
+	public static readonly SimCtrl Initial = new() { SinceJumpTicks = Long };
 }
 
 [Flags]
@@ -38,6 +71,9 @@ public enum SimBodyFlags : byte
 	/// <summary>With <see cref="Upright"/>: doesn't turn about the vertical either — slides without rotating (a pushed
 	/// decoy, as the old push code locked it; measured 43° of spin from a push without it).</summary>
 	NoTurn = 32,
+	/// <summary>Driven, but nobody's input ever reaches it (a host's bot): clients guess NO input for it, not "keeps going
+	/// at its velocity" — that had a bot a player was pushing walk off on its own in every replay (12–41u corrections).</summary>
+	Inert = 64,
 }
 
 /// <summary>Everything every machine needs to create a body the same way. Sent reliably by the host when the body is
@@ -66,6 +102,11 @@ public struct SimInput
 	/// <summary>Horizontal movement the player wants (u/s, world space).</summary>
 	public Vector2 Wish;
 	public byte Buttons;
+	/// <summary>Degrees the player turned their prop about the vertical this tick (mouse).</summary>
+	public float Turn;
+
+	public const byte Jump = 1, Duck = 2;
+	public bool Has( byte button ) => (Buttons & button) != 0;
 
 	public static readonly SimInput None = default;
 }
@@ -78,6 +119,13 @@ public struct SimBodyState
 	public Vector3 V;
 	public Vector3 W;
 	public bool Sleeping;
+	/// <summary>A driven body's controller state (only meaningful when <see cref="HasCtrl"/>).</summary>
+	public SimCtrl Ctrl;
+	public bool HasCtrl;
+	/// <summary>Whether it was ANCHORED (see <see cref="SimBodyFlags.Anchored"/>) — a client predicts releases, so the flag rolls
+	/// back with the body (only meaningful when <see cref="AnchorKnown"/>).</summary>
+	public bool Anchored;
+	public bool AnchorKnown;
 }
 
 /// <summary>Moves a body from its owner's input, the same way on the host and in every client replay. Registered on
@@ -114,6 +162,27 @@ public sealed class SimBody
 	internal SimInput RemoteGuess;
 	internal SimBodyState? Rest;
 
+	// Client: the host's recent poses of a body someone ELSE drives (snapshots and rests, by host tick). It is SHOWN from
+	// these, interpolated a few ticks behind the newest — not from our guess of it (see SimWorld.RemotePose).
+	internal readonly List<(int tick, Vector3 p, Rotation r)> Authority = new();
+
+	// Client: the tick this machine released it by a predicted push, until the host confirms (-1 = none pending).
+	internal int PredictedRelease = -1;
+
+	// Client: a push this machine's hunter made on it (reported to the host), applied at that tick in every replay too
+	// (see SimWorld.PredictPush).
+	internal (int tick, Vector3 velocity)? PredictedPush;
+
+	/// <summary>A driven body's controller state (see <see cref="SimCtrl"/>) — rolled back with the body.</summary>
+	public SimCtrl Ctrl = SimCtrl.Initial;
+
+	/// <summary>What the driver is TRYING to move it at this tick (a walk's command) — a blocked body's velocity is 0, so pushes
+	/// against anchored bodies read this (SimWorld.DetectAnchoredPushes).</summary>
+	public Vector3 Intent;
+
+	/// <summary>Whatever the registrant keeps with it (the walk driver: its HiderController).</summary>
+	public object User;
+
 	// Host: ticks since it fell asleep (snapshots keep sending a body for a while after, until the reliable rest lands).
 	internal int AsleepTicks = int.MaxValue;
 	internal bool WasSleeping;
@@ -127,20 +196,37 @@ public sealed class SimBody
 	public Guid Key => Spec.Key;
 	public bool IsLocalOwned => Spec.Owner != Guid.Empty && Spec.Owner == (Connection.Local?.Id ?? Guid.Empty);
 
+	/// <summary>Driven by someone else's input (another player's prop; the host's bots and released walkers, on a client):
+	/// a body this machine can only guess at.</summary>
+	public bool IsRemoteDriven => Driver is not null && Spec.Owner != Guid.Empty && !IsLocalOwned;
+
 	public SimBodyState Capture()
 	{
 		if ( Phys is null || !Phys.IsValid() )
 			return default;
-		return new SimBodyState { P = Phys.Position, R = Phys.Rotation, V = Phys.Velocity, W = Phys.AngularVelocity, Sleeping = Phys.Sleeping };
+		return new SimBodyState { P = Phys.Position, R = Phys.Rotation, V = Phys.Velocity, W = Phys.AngularVelocity, Sleeping = Phys.Sleeping, Ctrl = Ctrl, HasCtrl = Driver is not null,
+			Anchored = (Spec.Flags & SimBodyFlags.Anchored) != 0, AnchorKnown = true };
 	}
 
 	public void Restore( in SimBodyState s )
 	{
 		if ( Phys is null || !Phys.IsValid() )
 			return;
+		// Anchored first: switching motion off clears the velocity, so it has to come before the velocity is set.
+		if ( s.AnchorKnown && s.Anchored != ((Spec.Flags & SimBodyFlags.Anchored) != 0) )
+		{
+			Spec.Flags = s.Anchored ? Spec.Flags | SimBodyFlags.Anchored : Spec.Flags & ~SimBodyFlags.Anchored;
+			if ( !s.Anchored )
+				Spec.Flags |= (Spec.Flags & SimBodyFlags.Upright) != 0 ? SimBodyFlags.NoTurn : 0; // released by a push
+			Phys.MotionEnabled = ShapesReady && !s.Anchored;
+			Phys.Locking = (Spec.Flags & SimBodyFlags.Upright) == 0 ? default
+				: new PhysicsLock { Pitch = true, Roll = true, Yaw = (Spec.Flags & SimBodyFlags.NoTurn) != 0 };
+		}
 		Phys.Transform = new Transform( s.P, s.R );
 		Phys.Velocity = s.V;
 		Phys.AngularVelocity = s.W;
 		Phys.Sleeping = s.Sleeping;
+		if ( s.HasCtrl )
+			Ctrl = s.Ctrl;
 	}
 }

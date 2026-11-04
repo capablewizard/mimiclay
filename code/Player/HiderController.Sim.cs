@@ -1,0 +1,620 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Mimiclay.Sim;
+
+namespace Mimiclay;
+
+// Phase 2a of the rollback-physics integration (networked-physics-authority memory): a player's prop WALKS in the shared
+// simulation world (SimWorld) — host-authoritative, its owner predicting it from its own input and rolling back on a
+// snapshot that disagrees, everyone else showing it from the sim. The walk is the same floating-body walk as
+// HiderController.Walk, ported to run on the sim body from (input, controller state) alone, so the host and every
+// client replay produce the same motion:
+//
+//  • INPUT (SimInput): the world-space wish, jump and duck, and the mouse turn (degrees this tick) — read by the owner
+//    once per sim tick (ReadSimInput), sent to the host with every tick's.
+//  • STATE (SimCtrl, on the SimBody): grounded, parked, jump / push-back timers in TICKS (wall-clock timers can't replay),
+//    the last commanded velocity. Rolled back with the body; snapshots carry it.
+//  • SHAPE: the move hull with its bottom cut off (the floating shape — PropMoveHull.FloatingVertices), built on every
+//    machine from its own copy of the pawn (ISimShapeSource). The ground probe is the hull's foot slab swept through
+//    the SIM world (a second PropMoveHull whose scratch bodies live there).
+//
+// The scene pawn becomes presentation: keyframed (Character mode), its transform set from the sim every frame
+// (SimBodyFlags.Present — the host also stops the engine syncing it). Gated by mimi_sim_walk (default OFF).
+//
+// NOT in 2a (falls back to nothing while sim-walking): climbing, mantling, the possession cling, the charades leash's
+// pull-in, released scenery, bodies being held (they leave the sim for the old lend path, like decoys).
+public sealed partial class HiderController : ISimShapeSource
+{
+	// Replicated: the host's value is everyone's (only the host's matters — it registers the bodies), so every machine's
+	// readout (DrawSimWalkHud) shows the real setting.
+	[ConVar( "mimi_sim_walk", Flags = ConVarFlags.Replicated, Help = "Phase 2a: players' props walk in the shared sim world (host-authoritative, owner-predicted). Climbing is unavailable while on. Host only." )]
+	public static bool SimWalk { get; set; } = false;
+
+	[ConVar( "mimi_sim_hud", Help = "Show the sim-walk readout (top left) while you control a prop." )]
+	public static bool SimHud { get; set; } = true;
+
+	// Owner, per frame: one line saying what mimi_sim_walk is and whether YOUR prop walks in the sim (and if not, why).
+	void DrawSimWalkHud()
+	{
+		if ( !SimHud || IsProxy || RoundManager.IsBotPawn( GameObject ) || PropClaims.IsReleased( this ) )
+			return;
+		if ( Networking.IsActive && Network.Owner != Connection.Local )
+			return;
+
+		string setting = SimWalk ? "ON" : "off";
+		string state;
+		Color color;
+		if ( SimWalking )
+		{
+			var sim = SimSystem;
+			string lead = sim is not null && !sim.IsAuthority ? $" · predicting {sim.LeadTicks} ticks ahead" : "";
+			state = $"your prop: SIM-WALKING (no climbing){lead}";
+			color = Color.Green;
+		}
+		else
+		{
+			state = $"your prop: old walk{(SimWalk ? $" — {SimWalkBlocker() ?? "not registered yet"}" : "")}";
+			color = SimWalk ? Color.Yellow : Color.Gray;
+		}
+		DebugOverlay.ScreenText( new Vector2( 20, 120 ), $"Sim walk: {setting}  ·  {state}", size: 14, flags: TextFlag.LeftTop, color: color );
+	}
+
+	public const byte SimWalkDriverId = 2;
+
+	// The push level (SimStep): the share of last tick's command the contacts took off that starts counting as a push,
+	// the share that counts as pushing fully, and how long the level takes to fall from full to none. The scene walk's
+	// switch fired at 20% and held 0.25 s — the blend brackets that.
+	const float PushOnset = 0.05f;
+	const float PushFull = 0.3f;
+	const float PushRelease = 0.25f;
+
+	// The move hull again, its scratch bodies (foot slab) in the SIM world — sweeps must run in the world they hit.
+	readonly PropMoveHull _simHull = new();
+
+	SimWorld SimSystem => Scene.GetSystem<SimWorld>();
+
+	/// <summary>This pawn's body in the sim world, if it walks there.</summary>
+	// The host decides (UpdateSimRegistration) — every machine just asks the sim, whatever its own mimi_sim_walk says.
+	internal SimBody SimSelf => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b && b.Spec.Driver == SimWalkDriverId ? b : null;
+
+	/// <summary>Does this pawn walk in the sim world right now (on any machine)?</summary>
+	internal bool SimWalking => SimSelf is not null;
+
+	// ── Shape (every machine) ───────────────────────────────────────────────────────────────────────────────
+
+	void RefreshSceneHull()
+	{
+		if ( _collider.IsValid() )
+			_hull.Refresh( _collider, Scene.PhysicsWorld );
+	}
+
+	int ISimShapeSource.SimShapeVersion
+	{
+		get
+		{
+			RefreshSceneHull();
+			// The ghosting tag rides the shape too (it decides who it passes through), so a tag flip rebuilds it.
+			bool ghost = _body.IsValid() && _body.GameObject.Tags.Has( PropBodyTag );
+			return _hull.Version * 2 + (ghost ? 1 : 0);
+		}
+	}
+
+	bool ISimShapeSource.BuildSimShapes( PhysicsBody body )
+	{
+		RefreshSceneHull();
+		if ( !_hull.Ready )
+			return false;
+		var shape = body.AddHullShape( Vector3.Zero, Rotation.Identity, _hull.FloatingVertices( ScaledStep( StepHeight ) ) );
+		if ( shape is null )
+			return false;
+		shape.Friction = 0f; // slides and turns against walls (see UseHullCollision)
+		if ( _body.IsValid() )
+			shape.Tags.SetFrom( _body.GameObject.Tags ); // the disguise's collision rules — propbody ghosting included
+		return true;
+	}
+
+	// ── Registration (host) ─────────────────────────────────────────────────────────────────────────────────
+
+	// Host, every frame, for every pawn (proxies included — a client's pawn is a proxy here): put it in the sim while it
+	// should walk there, take it out when it shouldn't.
+	void UpdateSimRegistration()
+	{
+		if ( !Networking.IsHost && Networking.IsActive )
+			return;
+		var sim = SimSystem;
+		if ( sim is null )
+			return;
+
+		var existing = sim.Find( GameObject.Id );
+		var owner = Network.Owner?.Id ?? Connection.Local?.Id ?? Guid.Empty;
+		bool walk = SimWalk && SimWalkEligible();
+		bool loose = SimWalk && !walk && SimLooseEligible();
+
+		// Anything about the registration that changed (who drives it, walking vs loose, input or none) means re-registering.
+		if ( existing is not null )
+		{
+			bool same = walk
+				? existing.Spec.Driver == SimWalkDriverId && existing.Spec.Owner == owner && ((existing.Spec.Flags & SimBodyFlags.Inert) != 0) == SimInert
+					&& IsUpright( existing.Phys.Rotation ) // a walker registered tilted (before this fix) is re-made upright
+				: loose && existing.Spec.Driver == 0;
+			if ( same )
+				return;
+			sim.Unregister( GameObject.Id );
+		}
+
+		if ( walk )
+		{
+			// UPRIGHT — yaw only, the root SettleUpright leaves (it folds any tilt into the disguise, which the hull is built
+			// from). Registered at a tilted root (a loose prop lying on its side, possessed), the walker kept that tilt for
+			// good (pitch/roll are locked) while the owner's SettleUpright ALSO counter-rotated the disguise: the clay turned
+			// twice, the move hull lay on its side — the prop sank into the floor and couldn't jump (user report; measured
+			// root roll -148° and disguise roll -148°).
+			sim.Register( new SimBodySpec
+			{
+				Key = GameObject.Id, Source = GameObject.Id, Shape = SimShapeKind.FromSource, Driver = SimWalkDriverId, Owner = owner,
+				Flags = SimBodyFlags.Present | SimBodyFlags.Upright | SimBodyFlags.NoTurn | SimBodyFlags.NoGravity
+					| (SimInert ? SimBodyFlags.Inert : 0),
+				Mass = _collider.IsValid() ? _collider.ClayMass : 0f,
+				Pose = new Transform( WorldPosition, Rotation.FromYaw( WorldRotation.Angles().yaw ) ),
+			} );
+		}
+		else if ( loose )
+		{
+			// A loose prop (dropped from a grab): a plain rigid body in the sim — its real clay collider, free to tumble,
+			// engine gravity — carrying on with whatever motion the scene body had.
+			var rb = Body;
+			bool asleep = !rb.IsValid() || rb.Sleeping;
+			sim.Register( new SimBodySpec
+			{
+				Key = GameObject.Id, Source = GameObject.Id, Shape = SimShapeKind.FromGameObject, Owner = Guid.Empty,
+				Flags = SimBodyFlags.Present | (asleep ? SimBodyFlags.StartAsleep : 0),
+				Mass = _collider.IsValid() ? _collider.ClayMass : 0f, Pose = new Transform( WorldPosition, WorldRotation ),
+			} );
+			if ( !asleep && rb.MotionEnabled )
+				sim.SetMotion( GameObject.Id, rb.Velocity, rb.AngularVelocity );
+		}
+	}
+
+	// Every machine, the moment this pawn's WALKER body appears in the sim (SimWorld.BodyAdded — before anything presents
+	// it): fold the root's tilt into the disguise, as SettleUpright does, so the clay stays exactly where it is while the
+	// root takes the walker's upright pose. Doing it here, on every machine at the same point, keeps the move hull (built
+	// from the disguise's local transform) the same everywhere from the first tick. Left to the owner's SettleUpright and
+	// its broadcast, the host and other clients built the hull from the un-folded disguise for a while: a tilted prop's clay
+	// "stood up" inside the sim, overlapping the floor and its neighbours, which were shoved out hard.
+	void OnSimBodyAdded( SimBody b )
+	{
+		if ( b.Key != GameObject.Id || b.Spec.Driver != SimWalkDriverId || !_body.IsValid() )
+			return;
+		var disguise = _body.GameObject;
+		var keep = disguise.WorldTransform;
+		var pose = b.Spec.Pose;
+		if ( WorldRotation.Distance( pose.Rotation ) < 0.01f )
+			return;
+		WorldTransform = new Transform( WorldPosition, pose.Rotation, WorldScale );
+		disguise.WorldTransform = keep;
+		Transform.ClearInterpolation();
+		disguise.Transform.ClearInterpolation();
+	}
+
+	static bool IsUpright( Rotation r )
+	{
+		var a = r.Angles();
+		return MathF.Abs( a.pitch ) < 1f && MathF.Abs( a.roll ) < 1f;
+	}
+
+	// Released scenery that's LOOSE (dropped from a grab, a rigid body) — the sim's own rigid body (see above). Not
+	// frozen (it never moves: a static obstacle, which its scene body already is) or being sculpted in place.
+	bool SimLooseEligible()
+		=> Network.Active && _body.IsValid() && _collider.IsValid()
+			&& PropClaims.IsReleased( this ) && PropClaims.IsLoose( this ) && !PropClaims.IsFrozen( this ) && !BeingEdited
+			&& !PropClaims.IsLent( GameObject ) && !PropClaims.IsHeldObject( GameObject );
+
+	/// <summary>Is this pawn a plain rigid body in the sim world right now (loose scenery)?</summary>
+	internal bool SimLoose => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b && b.Spec.Driver == 0;
+
+	// A player's or bot's body, on the network, nobody else's hands on it. Bots count even though they read as Scenery
+	// (dormant — no controller): they walk with no input and park, and leaving them as scene bodies made them FOLLOWERS —
+	// moved on the host the moment a sim prop walked into them, seen late on clients, so the two disagreed about the
+	// obstacle (measured: 39u corrections bumping a bot in the kitchen).
+	//
+	// Only REPLICATED state: the host decides for everyone's pawns, and `Scenery` reads the local _dormant flag, which only
+	// the OWNER's machine clears when it takes control — so the host's copy of a prop a client re-possessed in creative
+	// still read dormant, and never qualified. Released (synced) is what says "nobody's body"; an owner says whose.
+	//
+	// RELEASED scenery too, while it's in walking mode (it walks with no input and parks, like a bot) — not loose (a
+	// tumbling rigid body), frozen or being sculpted in place: those are other physics. Left out, a released prop was a
+	// FOLLOWER, and walking into one threw the walker around (user: "walking into other props ejects me"; measured 84
+	// corrections in 5 s, up to 47u).
+	bool SimWalkEligible() => SimWalkBlocker() is null;
+
+	// Is this released scenery in its walking mode (see SimWalkEligible)?
+	bool ReleasedWalking => PropClaims.IsReleased( this ) && !PropClaims.IsLoose( this ) && !PropClaims.IsFrozen( this ) && !BeingEdited;
+
+	// Nobody's input reaches it: a bot, or released scenery.
+	bool SimInert => RoundManager.IsBotPawn( GameObject ) || PropClaims.IsReleased( this );
+
+	// Why this pawn isn't sim-walking (null = it qualifies) — for mimi_sim_status, and the rule itself.
+	string SimWalkBlocker()
+	{
+		if ( !Network.Active ) return "not networked yet (prop hunt keeps hiding props off the network until the Hunt)";
+		if ( !_body.IsValid() || !_collider.IsValid() ) return "no disguise collider yet";
+		if ( PropClaims.IsReleased( this ) && !ReleasedWalking ) return "released scenery that's loose, frozen or being sculpted (other physics)";
+		if ( !PropClaims.IsReleased( this ) && Network.Owner is null && !RoundManager.IsBotPawn( GameObject ) ) return "nobody owns it";
+		if ( PropClaims.IsLent( GameObject ) ) return "lent to a holder for a grab";
+		if ( PropClaims.IsHeldObject( GameObject ) ) return "being held";
+		return null;
+	}
+
+	/// <summary>Is the sim walk on, and which props walk there (and why not)? Run it on the HOST — it decides.</summary>
+	[ConCmd( "mimi_sim_status" )]
+	public static void SimStatusCmd()
+	{
+		var scene = Game.ActiveScene;
+		if ( scene is null )
+			return;
+		var sim = scene.GetSystem<SimWorld>();
+		var sb = new System.Text.StringBuilder();
+		bool host = !Networking.IsActive || Networking.IsHost;
+		sb.AppendLine( $"mimi_sim_walk {(SimWalk ? "ON" : "off")} on this machine ({(host ? "HOST — this one decides" : "client — only the host's setting matters")}); sim world {(sim is { Active: true } ? $"active, {sim.Bodies.Count} bodies" : "not started")}" );
+		foreach ( var h in scene.GetAllComponents<HiderController>() )
+		{
+			var who = h.Network.Owner?.DisplayName ?? "nobody";
+			string state = h.SimWalking ? "SIM-WALKING (climbing unavailable)" : h.SimLoose ? "SIM RIGID BODY (loose)" : $"old walk — {h.SimWalkBlocker() ?? (SimWalk || !host ? "should qualify — not registered yet?" : "mimi_sim_walk is off")}";
+			sb.AppendLine( $"  {h.GameObject.Name} [{who}{(h.IsProxy ? "" : ", simulated here")}]: {state}" );
+		}
+		Log.Info( "\n" + sb );
+	}
+
+	// ── Input (the owner) ───────────────────────────────────────────────────────────────────────────────────
+
+	// Owner, every frame: point the sim's input at this pawn while it sim-walks.
+	void UpdateSimControl()
+	{
+		var sim = SimSystem;
+		if ( sim is null )
+			return;
+		bool mine = !IsProxy && !RoundManager.IsBotPawn( GameObject ) && !Scenery && SimWalking;
+		if ( mine )
+		{
+			sim.LocalInput = ReadSimInput;
+			sim.LocalControlled = GameObject.Id;
+		}
+		else if ( sim.LocalControlled == GameObject.Id )
+		{
+			sim.LocalInput = null;
+			sim.LocalControlled = Guid.Empty;
+		}
+	}
+
+	// One sim tick's input. Called once per predicted tick (possibly twice in a frame when the clock catches up — the
+	// turn is a delta since the last call, and a queued jump is taken once).
+	SimInput ReadSimInput( int tick )
+	{
+		if ( !ControlActive )
+		{
+			_jumpQueued = false;
+			ReadTurn(); // keep the turn baseline current, so control coming back doesn't turn by everything missed
+			_turnSampled = false;
+			return SimInput.None;
+		}
+		IsCrouching = Input.Down( "duck" );
+		var wish = ApplyLeash( ReadWish(), pullIn: false );
+		byte buttons = 0;
+		if ( _jumpQueued )
+			buttons |= SimInput.Jump;
+		if ( IsCrouching )
+			buttons |= SimInput.Duck;
+		_jumpQueued = false;
+		return new SimInput { Wish = new Vector2( wish.x, wish.y ), Buttons = buttons, Turn = ReadSimTurn() };
+	}
+
+	[ConVar( "mimi_sim_feet_lever", ConVarFlags.Replicated, Help = "Sim walk: where our weight/feet push lands on a prop we stand on: 1 = under the foot (tips it), 0 = its centre of mass." )]
+	public static float SimFeetLever { get; set; } = 1f;
+
+	[ConVar( "mimi_sim_feet_push", ConVarFlags.Replicated, Help = "Sim walk: scale on the sideways push our feet give a prop we stand on (1 = scene walk)." )]
+	public static float SimFeetPush { get; set; } = 1f;
+
+	// The facing, unwrapped, at the last two frames that ran a tick; and how much of it the ticks have taken so far.
+	bool _turnSampled;
+	double _turnTimeA, _turnTimeB;
+	float _turnYawA, _turnYawB, _turnTaken;
+
+	// This tick's turn: the facing AT the tick's time (SimWorld.TickTime), interpolated between frame samples, minus what
+	// earlier ticks took. A steady mouse gives a steady turn per tick — reading the frame's whole delta instead gave
+	// 1.5°, 3°, 1.5°… (two frames' worth landing in one tick, 50 Hz against 60 fps), a visible stutter in every turn.
+	float ReadSimTurn()
+	{
+		double now = Time.NowDouble;
+		float delta = ReadTurn(); // facing turned since the last call (0 for a second tick in the same frame)
+		if ( !_turnSampled )
+		{
+			_turnSampled = true;
+			_turnTimeA = _turnTimeB = now;
+			_turnYawA = _turnYawB = _turnTaken = 0f;
+			return 0f;
+		}
+		if ( now != _turnTimeB )
+		{
+			_turnTimeA = _turnTimeB; _turnYawA = _turnYawB;
+			_turnTimeB = now; _turnYawB += delta;
+		}
+		else
+			_turnYawB += delta;
+
+		double t = SimSystem?.TickTime ?? now;
+		float f = _turnTimeB > _turnTimeA ? (float)Math.Clamp( (t - _turnTimeA) / (_turnTimeB - _turnTimeA), 0.0, 1.0 ) : 1f;
+		float yaw = MathX.Lerp( _turnYawA, _turnYawB, f );
+		float turn = yaw - _turnTaken;
+		_turnTaken = yaw;
+		// Keep the numbers small (they only matter relative to each other).
+		if ( MathF.Abs( _turnTaken ) > 3600f )
+		{
+			_turnYawA -= _turnTaken; _turnYawB -= _turnTaken; _turnTaken = 0f;
+		}
+		return turn;
+	}
+
+	// ── The walk, in the sim (every machine: host ticks, client predictions, replays) ───────────────────────
+
+	sealed class SimWalkDriver : ISimDriver
+	{
+		public void Drive( SimBody body, in SimInput input, int tick )
+		{
+			if ( body.User is not HiderController h || !h.IsValid() )
+			{
+				var go = Game.ActiveScene?.Directory.FindByGuid( body.Spec.Source );
+				h = go.IsValid() ? go.Components.Get<HiderController>() : null;
+				body.User = h;
+			}
+			if ( h.IsValid() )
+				h.SimStep( body, input );
+		}
+
+		// Someone else's prop: assume they keep going the way they're going (measured better than their last input).
+		public SimInput Guess( SimBody body, in SimBodyState latest ) => new() { Wish = new Vector2( latest.V.x, latest.V.y ) };
+	}
+
+	internal static void RegisterSimDriver( SimWorld sim ) => sim.RegisterDriver( SimWalkDriverId, new SimWalkDriver() );
+
+	// StepWalk, from (input, body.Ctrl) only — every number it keeps between ticks is in the SimCtrl, so a replay of the
+	// same inputs from the same snapshot comes out the same. See HiderController.Walk for why each piece is there.
+	void SimStep( SimBody body, in SimInput input )
+	{
+		var sim = SimSystem;
+		var pb = body.Phys;
+		if ( sim is null || pb is null || !pb.IsValid() || !_collider.IsValid() )
+			return;
+		_simHull.Refresh( _collider, sim.World );
+		RefreshSceneHull();
+		if ( !_simHull.Ready || !_hull.Ready )
+			return;
+
+		ref var c = ref body.Ctrl;
+		const float dt = SimWorld.Dt;
+		if ( c.SinceJumpTicks < SimCtrl.Long ) c.SinceJumpTicks++;
+		// (PushLevel decays inside the ground branch; in the air nothing pushes back.)
+
+		var pos = pb.Position;
+		var rot = pb.Rotation;
+
+		// Fell out of the world: back to the spawn spot, upright, at rest (as OnFixedUpdate does).
+		if ( FallRespawn.Fell( pos.z, _fallAnchor.Position.z ) )
+		{
+			pb.Transform = new Transform( _fallAnchor.Position, Rotation.FromYaw( rot.Angles().yaw ) );
+			pb.Velocity = 0f;
+			c = SimCtrl.Initial;
+			body.Intent = 0f;
+			return;
+		}
+
+		float clearance = ScaledStep( StepHeight );
+		var wish = new Vector3( input.Wish.x, input.Wish.y, 0f );
+		bool jump = input.Has( SimInput.Jump );
+		float turn = input.Turn;
+
+		bool idle = wish.IsNearZeroLength && !jump && MathF.Abs( turn ) < 0.001f;
+		if ( c.Parked )
+		{
+			if ( idle && pb.Velocity.LengthSquared < 4f )
+			{
+				body.Intent = 0f;
+				return; // left to physics and its sleep
+			}
+			c.Parked = false;
+			c.StillTicks = 0;
+		}
+		if ( pb.Sleeping )
+			pb.Sleeping = false;
+
+		var v = pb.Velocity;
+		var trace = sim.Trace.WithoutTags( MoveIgnoreTags.Append( SimWorld.SelfTag( body ) ).ToArray() );
+
+		// Ground: the hull's foot swept down from where the floating shape starts (HiderController.Walk).
+		var from = pos + Vector3.Up * clearance;
+		var tr = _simHull.SweepFoot( trace, new Transform( from, rot ), new Transform( from - Vector3.Up * (clearance + RideSnap), rot ), clearance );
+		if ( tr.StartedSolid )
+		{
+			var centre = pos + rot * _hull.Centre;
+			var rayFrom = centre.WithZ( pos.z + _hull.LocalBounds.Mins.z + clearance );
+			var ray = trace.Ray( rayFrom, rayFrom - Vector3.Up * (clearance + RideSnap) ).Run();
+			if ( !ray.StartedSolid )
+				tr = ray;
+		}
+		var hitGo = tr.Hit ? sim.SourceOf( tr.Body ) : null;
+		bool walkable = tr.Hit && (Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( true, hitGo, tr.Body )));
+		float gap = tr.Hit ? tr.Distance - clearance : float.MaxValue;
+		bool pastJumpGrace = c.SinceJumpTicks * dt > WalkJumpGrace;
+		bool ground = tr.Hit && !tr.StartedSolid && walkable && pastJumpGrace
+			&& (c.Grounded ? gap <= RideSnap : gap <= 1f && v.z <= 50f);
+		if ( tr.StartedSolid && c.Grounded && pastJumpGrace )
+		{
+			ground = true;
+			gap = 0f;
+		}
+
+		var gb = ground && !tr.StartedSolid && tr.Body is { } b && b.IsValid() && b.BodyType != PhysicsBodyType.Static ? b : null;
+		float myMass = MathF.Max( pb.Mass, 0.01f );
+		float groundMassRatio = gb is null ? 0f : gb.BodyType == PhysicsBodyType.Dynamic ? gb.Mass / myMass : 1f;
+		Vector3 groundVel = gb is not null && groundMassRatio >= 0.5f ? gb.GetVelocityAtPoint( tr.HitPosition ) : Vector3.Zero;
+
+		if ( ground )
+		{
+			c.AirFromJump = false;
+			c.Grounded = true;
+
+			var flat = v.WithZ( 0f );
+			var target = wish + groundVel.WithZ( 0f );
+			var dv = (target - flat) * (1f - MathF.Exp( -GroundControl * dt ));
+			// Pushing against something: how much of last tick's command the contacts took off us, as a LEVEL that rises at
+			// once and falls over PushRelease — and the acceleration cap blends from WalkAccel to WalkPushAccel with it.
+			// The scene walk switches between the two (took > 20% off → push accel for 0.25 s), and an on/off switch is poison
+			// to prediction: a hair's difference in a contact between the host and a client replay flipped it, one side
+			// accelerating 6× harder than the other (measured: predicted 280 u/s vs host 100 while pushing a loose prop).
+			var cmd = c.Commanded.WithZ( 0f );
+			float taken = cmd.Length > 5f ? Math.Clamp( Vector3.Dot( cmd - flat, cmd.Normal ) / cmd.Length, 0f, 1f ) : 0f;
+			float raw = Math.Clamp( (taken - PushOnset) / (PushFull - PushOnset), 0f, 1f );
+			float level = MathF.Max( raw, c.PushLevel / (float)SimCtrl.PushScale - dt / PushRelease );
+			c.PushLevel = (ushort)MathF.Round( Math.Clamp( level, 0f, 1f ) * SimCtrl.PushScale );
+			level = c.PushLevel / (float)SimCtrl.PushScale; // use exactly what's stored (and sent): replays agree to the bit
+			dv = dv.ClampLength( MathX.Lerp( WalkAccel, WalkPushAccel, level ) * dt );
+			flat += dv;
+
+			float vz = groundVel.z + Math.Clamp( -gap * RideSpring, -RideMaxLift, RideMaxLift );
+			if ( jump )
+			{
+				vz = groundVel.z + JumpPower * MathF.Sqrt( SizeSpeedScale );
+				c.Grounded = false;
+				c.SinceJumpTicks = 0;
+				c.AirFromJump = true;
+			}
+
+			if ( gb is not null && gb.BodyType == PhysicsBodyType.Dynamic )
+			{
+				float weight = MathF.Min( myMass, gb.Mass * 4f ) * Gravity * dt;
+				var impulse = -Vector3.Up * weight - dv.WithZ( 0f ) * myMass * MathF.Min( groundMassRatio, 1f ) * SimFeetPush;
+				// Where it lands: SimFeetLever 1 = under our foot (the scene walk), 0 = through the prop's centre of mass.
+				var com = gb.MassCenter;
+				var at = Vector3.Lerp( com, tr.HitPosition, SimFeetLever );
+				gb.ApplyImpulseAt( at, impulse );
+			}
+
+			v = flat.WithZ( vz );
+		}
+		else
+		{
+			c.Grounded = false;
+			c.PushLevel = (ushort)Math.Max( 0, c.PushLevel - (int)(SimCtrl.PushScale * dt / PushRelease) ); // nothing pushes back in the air
+			float t = 1f - MathF.Exp( -AirControl * dt );
+			var flat = Vector3.Lerp( v.WithZ( 0f ), wish, t );
+			float g = Gravity * (v.z < 0f ? FallGravityMult : 1f);
+			v = flat.WithZ( MathF.Max( v.z - g * dt, -MaxFallSpeed ) );
+		}
+
+		pb.Velocity = v;
+		pb.AngularVelocity = 0f;
+		c.Commanded = v;
+		body.Intent = wish.IsNearZeroLength ? Vector3.Zero : v.WithZ( 0f ).Length > wish.Length * 0.5f ? v.WithZ( 0f ) : wish;
+
+		// Park once there's nothing left to do.
+		bool still = c.Grounded && idle && (v - groundVel).Length < 1f && MathF.Abs( gap ) < 0.5f && groundVel.Length < 0.5f;
+		c.StillTicks = still ? (byte)Math.Min( c.StillTicks + 1, 255 ) : (byte)0;
+		if ( c.StillTicks >= ParkAfterTicks )
+		{
+			c.Parked = true;
+			pb.Velocity = Vector3.Zero;
+		}
+
+		// The mouse turn: about the world vertical through the hull's centre, applied to the body directly (its yaw is
+		// locked, so contacts can't turn it). Unlike the scene walk's Turn, not pose-tested against the world: the solver
+		// pushes it back out of anything the turn swings it into. (2a: the pose test needs a sim overlap query.)
+		if ( MathF.Abs( turn ) > 0.001f )
+		{
+			var centre = pos + rot * _hull.Centre;
+			var centreXY = new Vector3( centre.x, centre.y, pos.z );
+			var spin = Rotation.FromAxis( Vector3.Up, turn );
+			pb.Transform = new Transform( centreXY + spin * (pos - centreXY), spin * rot );
+		}
+	}
+
+	// ── The scene pawn while it sim-walks ───────────────────────────────────────────────────────────────────
+
+	// The simulating machine's fixed tick (owner / host): nothing to simulate here any more — the scene body is keyframed
+	// presentation (SimWorld moves it). The rest of the game still reads IsGrounded / Velocity, so mirror them.
+	bool StepSimWalking()
+	{
+		// Loose in the sim (a rigid body there): just presentation here, like a sim walker.
+		if ( SimLoose )
+		{
+			SetPhysicsMode( PhysicsMode.Character );
+			return true;
+		}
+
+		var self = SimSelf;
+		if ( self is null )
+			return false;
+		if ( _climbing )
+			EndClimb();
+		SetPhysicsMode( PhysicsMode.Character );
+		IsGrounded = self.Ctrl.Grounded;
+		_parked = self.Ctrl.Parked;
+		_velocity = self.Phys.IsValid() ? self.Phys.Velocity : Vector3.Zero;
+		return true;
+	}
+
+	// ── Pushes from the scene side: a hunter walking into a pawn the sim owns ───────────────────────────────
+	// While this pawn is in the sim its scene collider is keyframed presentation, and a hunter is only a keyframed FOLLOWER
+	// there: pressing into the pawn, the hunter stops at the surface in both worlds and the sim never sees a push (user,
+	// 2026-11-04: a dropped prop couldn't be pushed — the engine's player controller used to shove it as a loose
+	// Rigidbody). So the hunter's machine reports its INTENT (its velocity against a solid is already 0), exactly as it
+	// does for a prop-hunt decoy (RoundManager.NoteDecoyPush), and the host gives the sim body the push
+	// (SimWorld.PushBody: wake it, PushTransfer of the push, capped) — a loose prop slides or rolls, a walker is shoved
+	// and its walk damps it out, as the old push did.
+
+	// Pusher side: last report per pawn, so a sustained contact sends ten a second, not one per tick.
+	static readonly Dictionary<Guid, RealTimeSince> _simPushSent = new();
+	const float SimPushMinSpeed = 20f;
+
+	/// <summary>On the machine driving a hunter (its collision callback): was that a push into a prop pawn the sim owns?
+	/// Reports it to the host if so. Standing on it or under it isn't a push.</summary>
+	internal static void NoteSimPush( in Collision collision, Vector3 intent )
+	{
+		var other = collision.Other.GameObject;
+		var h = other.IsValid() ? other.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) : null;
+		if ( !h.IsValid() || h.SimSystem is not { Active: true } sim || sim.Find( h.GameObject.Id ) is not { } b || !b.ShapesReady )
+			return;
+		if ( PropClaims.IsLent( h.GameObject ) || PropClaims.IsHeldObject( h.GameObject ) )
+			return;
+		var self = collision.Self.Body;
+		var pb = h.Body.IsValid() ? h.Body.PhysicsBody : null;
+		if ( !self.IsValid() || pb is null || !pb.IsValid() )
+			return;
+
+		// Bounds, not the contact: sustained-contact callbacks carry no contact point or normal (see NoteDecoyPush).
+		var mine = self.GetBounds();
+		var clay = pb.GetBounds();
+		if ( mine.Mins.z >= clay.Maxs.z - 2f || mine.Maxs.z <= clay.Mins.z + 2f )
+			return; // a floor or a ceiling to us
+
+		// Only the part of the intent heading INTO it pushes it.
+		var velocity = intent.WithZ( 0f );
+		var toward = (clay.Center - mine.Center).WithZ( 0f );
+		if ( velocity.Length < SimPushMinSpeed || (toward.LengthSquared > 0.01f && Vector3.Dot( velocity, toward.Normal ) < SimPushMinSpeed) )
+			return;
+
+		var id = h.GameObject.Id;
+		if ( _simPushSent.TryGetValue( id, out var since ) && since < 0.1f )
+			return;
+		_simPushSent[id] = 0f;
+		sim.PredictPush( id, velocity ); // on a client: moves it now, not a round trip later (no-op on the host)
+		h.RequestSimPush( velocity );
+	}
+
+	/// <summary>Any machine → host: a hunter is pushing this pawn at this velocity (see <see cref="NoteSimPush"/>).</summary>
+	[Rpc.Host]
+	void RequestSimPush( Vector3 velocity )
+	{
+		if ( SimSystem is { Active: true } sim )
+			sim.PushBody( GameObject.Id, velocity );
+	}
+}

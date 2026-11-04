@@ -24,21 +24,23 @@ public static class SimStats
 	}
 
 	public static int Steps, Snapshots, SnapshotsStale, Skipped, Replays, Resyncs, ClockFaster, ClockSlower, DroppedTicks;
-	public static int HostInputOnTime, HostInputMissing, RestSnaps, Reshapes, FullStatesSent, FullStatesAsked;
+	public static int HostInputOnTime, HostInputMissing, RestSnaps, Reshapes, FullStatesSent, FullStatesAsked, Releases, Reanchors, RemoteNudges, PushesPredicted;
 	public static long SnapshotBytes, ReliableBytes, InputBytes;
 	public static readonly Series Mispredict = new(), MispredictMine = new();
 	public static readonly Series CorrectionMine = new(), CorrectionOthers = new(), CorrectionLoose = new();
 	public static readonly Series ReplayMs = new(), ReplayTicks = new(), Lead = new(), Slack = new(), SnapshotBodies = new(), StepMs = new();
+	public static readonly List<string> BigCorrections = new();
 	static RealTimeSince _since;
 
 	public static void Reset()
 	{
 		Steps = Snapshots = SnapshotsStale = Skipped = Replays = Resyncs = ClockFaster = ClockSlower = DroppedTicks = 0;
-		HostInputOnTime = HostInputMissing = RestSnaps = Reshapes = FullStatesSent = FullStatesAsked = 0;
+		HostInputOnTime = HostInputMissing = RestSnaps = Reshapes = FullStatesSent = FullStatesAsked = Releases = Reanchors = RemoteNudges = PushesPredicted = 0;
 		SnapshotBytes = ReliableBytes = InputBytes = 0;
 		foreach ( var s in new[] { Mispredict, MispredictMine, CorrectionMine, CorrectionOthers, CorrectionLoose, ReplayMs, ReplayTicks, Lead, Slack, SnapshotBodies, StepMs } )
 			s.Clear();
 		_since = 0f;
+		BigCorrections.Clear();
 	}
 
 	public static string Report()
@@ -49,7 +51,7 @@ public static class SimStats
 		string role = sim is null || !sim.Active ? "inactive" : sim.IsAuthority ? "HOST" : "CLIENT";
 		int awake = sim?.Bodies.Count( b => b.Phys.IsValid() && !b.Phys.Sleeping ) ?? 0;
 		sb.AppendLine( $"sim ({role}) over {secs:0.0}s: {sim?.Bodies.Count ?? 0} bodies ({awake} awake), tick {sim?.Tick}, fakelag {SimWorld.FakeLagMs} ms, ping {Connection.Host?.Ping ?? 0f:0} ms" );
-		sb.AppendLine( $"  steps {Steps} ({Steps / secs:0}/s), dropped ticks {DroppedTicks}, reshapes {Reshapes}; step {StepMs.Text( "ms" )}" );
+		sb.AppendLine( $"  steps {Steps} ({Steps / secs:0}/s), dropped ticks {DroppedTicks}, reshapes {Reshapes}, releases {Releases}, re-anchors {Reanchors}, pushes predicted {PushesPredicted}; step {StepMs.Text( "ms" )}" );
 		sb.AppendLine( $"  bandwidth: snapshots {SnapshotBytes / secs / 1024f:0.0} KB/s, reliable {ReliableBytes / 1024f:0.0} KB total, inputs {InputBytes / secs / 1024f:0.0} KB/s" );
 		if ( sim is not null && sim.IsAuthority )
 		{
@@ -57,7 +59,7 @@ public static class SimStats
 			sb.Append( $"  inputs on time {HostInputOnTime}, missing {HostInputMissing}; full states sent {FullStatesSent}" );
 			return sb.ToString();
 		}
-		sb.AppendLine( $"  snapshots {Snapshots} (stale {SnapshotsStale}), replays {Replays}, skipped {Skipped}, resyncs {Resyncs}, rest snaps {RestSnaps}, clock +{ClockFaster}/-{ClockSlower}, asked for all {FullStatesAsked}" );
+		sb.AppendLine( $"  snapshots {Snapshots} (stale {SnapshotsStale}), replays {Replays}, skipped {Skipped}, resyncs {Resyncs}, rest snaps {RestSnaps}, remote nudges {RemoteNudges}, clock +{ClockFaster}/-{ClockSlower}, asked for all {FullStatesAsked}" );
 		sb.AppendLine( $"  lead ticks    {Lead.Text( "" )}" );
 		sb.AppendLine( $"  slack ticks   {Slack.Text( "" )}" );
 		sb.AppendLine( $"  replay        {ReplayMs.Text( "ms" )}; ticks {ReplayTicks.Text( "" )}" );
@@ -66,6 +68,8 @@ public static class SimStats
 		sb.AppendLine( $"  correction    mine {CorrectionMine.Text( "u" )}" );
 		sb.AppendLine( $"                others' {CorrectionOthers.Text( "u" )}" );
 		sb.Append( $"                loose {CorrectionLoose.Text( "u" )}" );
+		foreach ( var c in BigCorrections )
+			sb.Append( "\n    big: " + c );
 		return sb.ToString();
 	}
 

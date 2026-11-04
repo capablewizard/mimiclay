@@ -103,6 +103,27 @@ public static class SimQuant
 		return new Rotation( c[0], c[1], c[2], c[3] ).Normal;
 	}
 
+	// A driven body's controller state: flags byte, still ticks, two tick counters, the commanded velocity (12 bytes).
+	public static void WriteCtrl( BinaryWriter w, in SimCtrl c )
+	{
+		w.Write( (byte)((c.Grounded ? 1 : 0) | (c.Parked ? 2 : 0) | (c.AirFromJump ? 4 : 0)) );
+		w.Write( c.StillTicks );
+		w.Write( c.SinceJumpTicks );
+		w.Write( c.PushLevel );
+		WriteLinear( w, c.Commanded );
+	}
+
+	public static SimCtrl ReadCtrl( BinaryReader r )
+	{
+		byte f = r.ReadByte();
+		return new SimCtrl
+		{
+			Grounded = (f & 1) != 0, Parked = (f & 2) != 0, AirFromJump = (f & 4) != 0,
+			StillTicks = r.ReadByte(), SinceJumpTicks = r.ReadUInt16(), PushLevel = r.ReadUInt16(),
+			Commanded = ReadLinear( r ),
+		};
+	}
+
 	// Full precision, for reliable messages.
 	public static void WriteFull( BinaryWriter w, Vector3 v ) { w.Write( v.x ); w.Write( v.y ); w.Write( v.z ); }
 	public static Vector3 ReadFull( BinaryReader r ) => new( r.ReadSingle(), r.ReadSingle(), r.ReadSingle() );

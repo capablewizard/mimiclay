@@ -497,6 +497,8 @@ public sealed partial class RoundManager
 		if ( _pushSent.TryGetValue( id, out var since ) && since < (rm.DecoyInSim( sculpt.GameObject ) ? 0.1f : 0.3f) )
 			return;
 		_pushSent[id] = 0f;
+		if ( rm.DecoyInSim( sculpt.GameObject ) )
+			rm.Sim.PredictPush( id, velocity ); // on a client: the sim decoy moves now, not a round trip later (no-op on the host)
 		rm.RequestDecoyPush( sculpt.GameObject, velocity );
 	}
 

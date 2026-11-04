@@ -469,6 +469,10 @@ public static class PlaytestLauncher
 		p.StartInfo.ArgumentList.Add( "+instanceid" );
 		p.StartInfo.ArgumentList.Add( id.ToString() );
 
+		// Expose the instance's MCP endpoint, so an agent can inspect and script a client you launched from here
+		// (`sbox-cli --list` shows it as kind "game"; `--connect <pid> --call run_csharp …`). Local only, idle until used.
+		p.StartInfo.ArgumentList.Add( "-mcp" );
+
 		if ( windowed )
 		{
 			p.StartInfo.ArgumentList.Add( "-sw" );

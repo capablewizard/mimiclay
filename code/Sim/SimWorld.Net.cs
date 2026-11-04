@@ -123,16 +123,24 @@ public sealed partial class SimWorld
 		if ( !FromHost || Networking.IsHost )
 			return;
 		var sim = Current;
-		sim?.Receive( () => sim.OnRest( id, new SimBodyState { P = position, R = rotation, Sleeping = true } ) );
+		sim?.Receive( () => sim.OnRest( tick, id, new SimBodyState { P = position, R = rotation, Sleeping = true } ) );
 	}
 
 	// The host says this body is asleep here. Remembered (rollbacks put bodies a snapshot leaves out at their rest pose);
 	// if ours is also still and somewhere else, it moves there now, the jump fading like any correction.
-	void OnRest( ushort id, SimBodyState rest )
+	void OnRest( int tick, ushort id, SimBodyState rest )
 	{
 		if ( !_byId.TryGetValue( id, out var b ) )
 			return;
 		b.Rest = rest;
+		NoteAuthority( b, tick, rest );
+		// The rest is the host's state at ITS tick, and our input may have moved the body since (turned it, walked it
+		// off): never snap the body we drive to it — snapshots correct that, through a replay of our inputs. And if what
+		// we predicted for that tick is already there, there's nothing to correct.
+		if ( b.Driver is not null && IsLocallyControlled( b ) )
+			return;
+		if ( _history.TryGetValue( tick, out var then ) && b.Id < then.Length && then[b.Id] is { } was && was.P.Distance( rest.P ) <= SkipEpsilon )
+			return;
 		var cur = b.Capture();
 		if ( cur.P.Distance( rest.P ) <= SkipEpsilon || (!cur.Sleeping && cur.V.Length > 1f) )
 			return;
@@ -191,6 +199,10 @@ public sealed partial class SimWorld
 
 	void SendSnapshot()
 	{
+		// Nothing registered: nothing to say (a client with no world asked for everything on every empty snapshot, once a
+		// second, forever).
+		if ( _bodies.Count == 0 )
+			return;
 		var included = _bodies.Where( InSnapshot ).ToList();
 		using var ms = new MemoryStream( 64 + included.Count * SnapshotEntryBytes );
 		using var w = new BinaryWriter( ms );
@@ -210,8 +222,10 @@ public sealed partial class SimWorld
 		{
 			var st = b.Capture();
 			w.Write( b.Id );
-			w.Write( (byte)(st.Sleeping ? 1 : 0) );
+			w.Write( (byte)((st.Sleeping ? 1 : 0) | (st.HasCtrl ? 2 : 0)) );
 			SimQuant.WritePos( w, st.P ); SimQuant.WriteRot( w, st.R ); SimQuant.WriteLinear( w, st.V ); SimQuant.WriteSpin( w, st.W );
+			if ( st.HasCtrl )
+				SimQuant.WriteCtrl( w, st.Ctrl ); // a driven body: its controller state rolls back with it
 
 			// Continue from exactly what the clients will decode, so a restore there lands on our numbers.
 			if ( QuantizeHost && !st.Sleeping )
@@ -262,7 +276,10 @@ public sealed partial class SimWorld
 			var id = new Guid( r.ReadBytes( 16 ) );
 			short slack = r.ReadInt16();
 			if ( id == LocalId )
+			{
 				_slack = slack;
+				_slackAvg += (slack - _slackAvg) * 0.1f;
+			}
 		}
 
 		int n = r.ReadUInt16();
@@ -271,18 +288,26 @@ public sealed partial class SimWorld
 		for ( int i = 0; i < n; i++ )
 		{
 			ushort id = r.ReadUInt16();
-			bool sleeping = r.ReadByte() != 0;
-			var st = new SimBodyState { P = SimQuant.ReadPos( r ), R = SimQuant.ReadRot( r ), V = SimQuant.ReadLinear( r ), W = SimQuant.ReadSpin( r ), Sleeping = sleeping };
+			byte flags = r.ReadByte();
+			var st = new SimBodyState { P = SimQuant.ReadPos( r ), R = SimQuant.ReadRot( r ), V = SimQuant.ReadLinear( r ), W = SimQuant.ReadSpin( r ), Sleeping = (flags & 1) != 0,
+				Anchored = false, AnchorKnown = true }; // snapshots only carry bodies the host has free
+			if ( (flags & 2) != 0 )
+			{
+				st.Ctrl = SimQuant.ReadCtrl( r );
+				st.HasCtrl = true;
+			}
 			if ( !_byId.TryGetValue( id, out var b ) )
 			{
 				unknown = true;
 				continue;
 			}
 			auth[id] = st;
-			if ( sleeping )
+			b.PredictedRelease = -1; // moving on the host: whatever we predicted about releasing it, the host agrees it's free
+			if ( st.Sleeping )
 				b.Rest = st;
+			NoteAuthority( b, s, st );
 			if ( b.Driver is not null && b.Spec.Owner != Guid.Empty && !b.IsLocalOwned )
-				b.RemoteGuess = b.Driver.Guess( b, st );
+				b.RemoteGuess = (b.Spec.Flags & SimBodyFlags.Inert) != 0 ? SimInput.None : b.Driver.Guess( b, st );
 		}
 
 		if ( unknown )
@@ -305,13 +330,13 @@ public sealed partial class SimWorld
 	void SendInputs()
 	{
 		int first = Math.Max( Tick - InputRedundancy + 1, 0 );
-		using var ms = new MemoryStream( 1 + InputRedundancy * 9 );
+		using var ms = new MemoryStream( 1 + InputRedundancy * 13 );
 		using var w = new BinaryWriter( ms );
 		w.Write( (byte)(Tick - first + 1) );
 		for ( int t = first; t <= Tick; t++ )
 		{
 			var i = _myInputs.TryGetValue( t, out var x ) ? x : SimInput.None;
-			w.Write( i.Wish.x ); w.Write( i.Wish.y ); w.Write( i.Buttons );
+			w.Write( i.Wish.x ); w.Write( i.Wish.y ); w.Write( i.Buttons ); w.Write( i.Turn );
 		}
 		w.Flush();
 		var data = ms.ToArray();
@@ -337,7 +362,7 @@ public sealed partial class SimWorld
 			_hostInputs[from] = q = new();
 		for ( int i = 0; i < n; i++ )
 		{
-			var input = new SimInput { Wish = new Vector2( r.ReadSingle(), r.ReadSingle() ), Buttons = r.ReadByte() };
+			var input = new SimInput { Wish = new Vector2( r.ReadSingle(), r.ReadSingle() ), Buttons = r.ReadByte(), Turn = r.ReadSingle() };
 			int t = firstTick + i;
 			if ( t > Tick )
 				q[t] = input; // older ticks are redundant repeats (or too late — counted as missing when needed)

@@ -44,8 +44,32 @@ public sealed partial class SimWorld : GameObjectSystem
 	[ConVar( "mimi_sim_fakelag", Help = "Sim: one-way delay (ms) added to every sim message this machine receives (set on both machines)." )]
 	public static int FakeLagMs { get; set; } = 0;
 
-	[ConVar( "mimi_sim_skip_eps", Help = "Sim: replay only when a snapshot disagrees with the prediction by more than this (u)." )]
-	public static float SkipEpsilon { get; set; } = 0.05f;
+	// 0.5u (was 0.05): a snapshot's quantisation alone reads as ~0.05u (position 1/64u per axis, rotation 0.08° × the 20u
+	// arm, velocity 1/16 u/s), so the old threshold replayed every OTHER snapshot on a prop walking a straight line on a
+	// flat floor (measured 30 replays / 65 snapshots, every error 0.05–0.06u). A replay from the quantised restore is not
+	// the trajectory we had: at a step edge the foot sweep's answer flipped and the replay climbed 24u while the host
+	// didn't (corrections of 9–26u, the clay shown 20u under the floor / 12u above it while they faded — "jittery",
+	// "floating", "through the floor"). Skipping keeps our own prediction, which matched the host within quantisation.
+	[ConVar( "mimi_sim_skip_eps", Help = "Sim: replay only when a snapshot disagrees with the prediction by more than this (u). Keep it well above the ~0.05u a snapshot's quantisation reads as." )]
+	public static float SkipEpsilon { get; set; } = 0.5f;
+
+	// Someone else's driven body (another player's prop) is a GUESS here, wrong by 5–25u whenever its player turns or slides
+	// along something; replaying the world for that re-steps OUR body from a restored state (see SkipEpsilon). So their
+	// errors only count past this, and a skipped snapshot still puts them where the host has them (NudgeRemote) — which is
+	// better than any replay of a guess, so this is high enough that only a teleport-sized error forces one. They are shown
+	// from the host's poses regardless (RemotePose); a loose body one of them pushes still counts at SkipEpsilon.
+	[ConVar( "mimi_sim_skip_eps_remote", Help = "Sim: other players' props only force a replay when the guess of them is off by more than this (u)." )]
+	public static float RemoteSkipEpsilon { get; set; } = 100f;
+
+	// 6 ticks (120 ms; the engine interpolates its proxies 100 ms back): at 3 the display kept catching the newest snapshot
+	// and holding — host ticks come in bursts with its frames, so snapshots land a tick or two apart from even — which
+	// showed as a stutter (a frame at 149 u/s then one at 294 around a steady 224).
+	[ConVar( "mimi_sim_remote_delay", Help = "Sim: other players' props are shown this many host ticks behind the newest snapshot, interpolated between the host's poses." )]
+	public static int RemoteDelayTicks { get; set; } = 6;
+
+	// A rotation error counts as the distance it moves a point this far out (u per degree: 20u arm). Quantized snapshot
+	// rotations are ~0.08° off (0.03u), under SkipEpsilon; a wrong facing used to go unnoticed entirely.
+	const float RotErrorArm = 20f * MathF.PI / 180f;
 
 	[ConVar( "mimi_sim_smooth", Help = "Sim: how fast corrections fade from the visuals (1/s). 0 = show the raw pop." )]
 	public static float SmoothRate { get; set; } = 12f;
@@ -102,6 +126,20 @@ public sealed partial class SimWorld : GameObjectSystem
 
 	/// <summary>This machine's input for a tick (the gameplay code that owns local control sets it).</summary>
 	public Func<int, SimInput> LocalInput { get; set; }
+
+	/// <summary>The body this machine's input drives (its player's prop). Other driven bodies this machine owns — the
+	/// host's bots — get no input. Empty = the first driven body we own (the debug rig's one pawn).</summary>
+	public Guid LocalControlled { get; set; }
+
+	// Which scene object a sim PhysicsBody stands for (a static copy, a follower, a registered body) — a driver's trace
+	// results carry only the body. Stale entries are harmless (a removed body never comes back from a trace) and pruned.
+	readonly Dictionary<PhysicsBody, GameObject> _sourceOf = new();
+
+	/// <summary>The scene object a sim body (from a sim trace) stands for, or null.</summary>
+	public GameObject SourceOf( PhysicsBody body ) => body is not null && _sourceOf.TryGetValue( body, out var go ) ? go : null;
+
+	/// <summary>Sim traces (the drivers' sweeps). In a replay this is the world being replayed — the same one.</summary>
+	public PhysicsTraceBuilder Trace => _world.Trace;
 
 	// ── Registry ────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -168,10 +206,12 @@ public sealed partial class SimWorld : GameObjectSystem
 		body.Prev = body.Cur = p.Transform;
 
 		_byKey[spec.Key] = body;
+		if ( spec.Shape != SimShapeKind.Box && Scene.Directory.FindByGuid( spec.Source ) is { } srcGo )
+			_sourceOf[p] = srcGo;
 		_byId[id] = body;
 		_bodies.Add( body );
 		_maxId = Math.Max( _maxId, id );
-		if ( spec.Shape == SimShapeKind.FromGameObject )
+		if ( spec.Shape != SimShapeKind.Box )
 			ExcludeFromStatics( spec.Source );
 		BodyAdded?.Invoke( body );
 		return body;
@@ -184,7 +224,7 @@ public sealed partial class SimWorld : GameObjectSystem
 		_bodies.Remove( b );
 		if ( b.Phys is not null && b.Phys.IsValid() )
 			b.Phys.Remove();
-		if ( b.Spec.Shape == SimShapeKind.FromGameObject )
+		if ( b.Spec.Shape != SimShapeKind.Box )
 			_excludedStatics.Remove( b.Spec.Source );
 		BodyRemoved?.Invoke( b );
 	}
@@ -249,6 +289,16 @@ public sealed partial class SimWorld : GameObjectSystem
 				body.ShapesReady = src is not null && CopyShapes( src, p ) > 0;
 				body.ShapeVersion = version;
 				break;
+
+			case SimShapeKind.FromSource:
+				p.ClearShapes();
+				var shapeSource = ShapeSourceOf( body.Spec.Source );
+				body.ShapesReady = shapeSource is not null && shapeSource.BuildSimShapes( p ) && p.ShapeCount > 0;
+				body.ShapeVersion = shapeSource?.SimShapeVersion ?? -1;
+				if ( body.ShapesReady )
+					foreach ( var s in p.Shapes )
+						s.Tags.Add( SelfTag( body ) ); // its own sweeps skip it (see SelfTag)
+				break;
 		}
 
 		if ( body.ShapesReady && body.Spec.Mass > 0f )
@@ -256,22 +306,52 @@ public sealed partial class SimWorld : GameObjectSystem
 		// Nothing to collide with yet (a client still building the source's collider): hold it still until it has.
 		p.MotionEnabled = body.ShapesReady && (body.Spec.Flags & SimBodyFlags.Anchored) == 0;
 		// Copied props can be small and fast (a knocked knob): without CCD they tunnelled through the zero-thickness mesh floor.
-		p.EnhancedCcd = body.Spec.Shape == SimShapeKind.FromGameObject;
+		// Walkers too (the scene walk's body has it on): a small prop's hull falling at MaxFallSpeed moves 60u a tick, and
+		// the foot sweep only looks a step and a snap below it.
+		p.EnhancedCcd = body.Spec.Shape != SimShapeKind.Box;
 	}
 
+	ISimShapeSource ShapeSourceOf( Guid source )
+	{
+		var go = Scene.Directory.FindByGuid( source );
+		return go.IsValid() ? go.Components.GetAll<Component>().OfType<ISimShapeSource>().FirstOrDefault() : null;
+	}
+
+	/// <summary>A tag only this body's shapes carry: a driver's own sweeps leave it out (a sim trace can't ignore a body
+	/// any other way).</summary>
+	public static string SelfTag( SimBody b ) => $"simself{b.Id}";
+
 	// The scene body a FromGameObject spec copies, and the collider version it's at (SdfCollider.BuildSerial; 0 otherwise).
+	//
+	// The version covers everything the copy depends on: the collider's build (on the object or a CHILD — a prop pawn's
+	// collider is on its disguise), the shape count, and the collision TAGS. Tags matter: a released prop sheds the
+	// `propbody` tag (live props ignore each other), and a client that copied it a moment too early kept the stale tag
+	// forever — its sim walker then passed straight through the prop, and the host's snapshot dragged it back out:
+	// "walking into props ejects me".
 	PhysicsBody SourceBody( Guid source, out int version )
 	{
 		version = 0;
 		var go = Scene.Directory.FindByGuid( source );
 		if ( !go.IsValid() )
 			return null;
-		var sdf = go.Components.Get<SdfCollider>();
-		if ( sdf.IsValid() )
-			version = sdf.BuildSerial;
 		foreach ( var b in Scene.PhysicsWorld.Bodies )
-			if ( b.IsValid() && b.ShapeCount > 0 && b.GameObject == go )
-				return b;
+		{
+			if ( !b.IsValid() || b.ShapeCount == 0 || b.GameObject != go )
+				continue;
+			var sdf = go.Components.Get<SdfCollider>( FindMode.EverythingInSelfAndDescendants );
+			// ...and where a CHILD collider sits under the object: an origin rebase or a tilt fold moves the disguise and its
+			// shapes on the body without a rebuild, and a copy at the old offset collides where the clay no longer is.
+			int place = 0;
+			if ( sdf.IsValid() && sdf.GameObject != go )
+			{
+				var local = sdf.GameObject.LocalTransform;
+				var ang = local.Rotation.Angles();
+				place = HashCode.Combine( (int)MathF.Round( local.Position.x * 100f ), (int)MathF.Round( local.Position.y * 100f ), (int)MathF.Round( local.Position.z * 100f ),
+					(int)MathF.Round( ang.pitch * 10f ), (int)MathF.Round( ang.yaw * 10f ), (int)MathF.Round( ang.roll * 10f ) );
+			}
+			version = HashCode.Combine( sdf.IsValid() ? sdf.BuildSerial : 0, b.ShapeCount, TagKeyOf( b ), place );
+			return b;
+		}
 		return null;
 	}
 
@@ -314,7 +394,9 @@ public sealed partial class SimWorld : GameObjectSystem
 				made.Surface = s.Surface;
 			n++;
 		}
-		if ( n > 0 && to.BodyType == PhysicsBodyType.Dynamic )
+		// Every body type: shapes were added with rebuildMass off, and a body left with dirty mass trips Box3D's solver
+		// assert ("body->flags & b3_dirtyMass") on the next step — static and keyframed copies included.
+		if ( n > 0 )
 			to.RebuildMass();
 		return n;
 	}
@@ -323,12 +405,20 @@ public sealed partial class SimWorld : GameObjectSystem
 	// and ones still waiting for theirs try again. State is kept.
 	void RefreshShapes()
 	{
+		// Host: a body whose scene object is gone (destroyed without unregistering — a disconnected player's pawn) leaves.
+		if ( IsAuthority )
+			foreach ( var gone in _bodies.Where( b => b.Spec.Shape != SimShapeKind.Box && !Scene.Directory.FindByGuid( b.Spec.Source ).IsValid() ).ToList() )
+				Unregister( gone.Key );
+
 		foreach ( var b in _bodies )
 		{
-			if ( b.Spec.Shape != SimShapeKind.FromGameObject )
+			int version;
+			if ( b.Spec.Shape == SimShapeKind.FromGameObject )
+				SourceBody( b.Spec.Source, out version );
+			else if ( b.Spec.Shape == SimShapeKind.FromSource )
+				version = ShapeSourceOf( b.Spec.Source )?.SimShapeVersion ?? -1;
+			else
 				continue;
-			var go = Scene.Directory.FindByGuid( b.Spec.Source );
-			int version = go.IsValid() && go.Components.Get<SdfCollider>() is { } sdf && sdf.IsValid() ? sdf.BuildSerial : 0;
 			if ( b.ShapesReady && version == b.ShapeVersion )
 				continue;
 			var state = b.Capture();
@@ -382,6 +472,8 @@ public sealed partial class SimWorld : GameObjectSystem
 	{
 		if ( _world is null )
 			return;
+		foreach ( var dead in _sourceOf.Keys.Where( k => !k.IsValid() ).ToList() )
+			_sourceOf.Remove( dead );
 		var seen = new HashSet<PhysicsBody>();
 		foreach ( var b in Scene.PhysicsWorld.Bodies.ToList() )
 		{
@@ -402,6 +494,7 @@ public sealed partial class SimWorld : GameObjectSystem
 			copy.Transform = b.Transform;
 			CopyShapes( b, copy );
 			_staticCopies[b] = (copy, version);
+			_sourceOf[copy] = b.GameObject;
 		}
 		foreach ( var gone in _staticCopies.Keys.Where( k => !seen.Contains( k ) ).ToList() )
 		{
@@ -414,13 +507,54 @@ public sealed partial class SimWorld : GameObjectSystem
 
 	RealTimeSince _sinceTick;
 
-	/// <summary>Where to SHOW a body this frame: between its last two ticks, plus the fading correction.</summary>
+	/// <summary>Where to SHOW a body this frame: between its last two ticks, plus the fading correction. Someone else's
+	/// driven body, on a client: between the host's own poses instead (<see cref="RemotePose"/>).</summary>
 	public Transform VisualPose( SimBody b )
 	{
-		float a = Math.Clamp( _sinceTick / Dt, 0f, 1f );
+		if ( ShownFromAuthority( b ) )
+			return RemotePose( b );
+		float a = _alpha;
 		var pos = Vector3.Lerp( b.Prev.Position, b.Cur.Position, a ) + b.PosOffset;
 		var rot = b.RotOffset * Rotation.Slerp( b.Prev.Rotation, b.Cur.Rotation, a );
 		return new Transform( pos, rot );
+	}
+
+	// Another player's prop (or a bot's) on a client is shown from the host's poses, a few ticks behind the newest snapshot
+	// — the way the engine shows a network proxy — NOT from our prediction of it. Predicting it (keep going at its last
+	// velocity) and correcting it every snapshot made it lurch whenever its player turned, stopped or slid along something
+	// (measured on a straight walk past a prop: shown speed 658 u/s against a real 170, corrections p95 11u max 26u). Its
+	// sim body still predicts and collides (and is kept near the truth by NudgeRemote); only what's drawn comes from here.
+	bool ShownFromAuthority( SimBody b ) => !IsAuthority && b.IsRemoteDriven && b.Authority.Count > 0;
+
+	Transform RemotePose( SimBody b )
+	{
+		var list = b.Authority;
+		// The host tick to show: our tick runs ~_leadAvg ahead of the newest snapshot; stay RemoteDelayTicks behind that,
+		// so the next snapshot has normally landed by the time we reach it (a tick or two of jitter in the lead absorbed).
+		double at = Tick + _alpha - _leadAvg - RemoteDelayTicks;
+		var last = list[^1];
+		if ( list.Count == 1 || at >= last.tick )
+			return new Transform( last.p, last.r ); // nothing newer (a lost snapshot, or it's at rest and left the snapshots): hold
+		int i = list.Count - 2;
+		while ( i > 0 && list[i].tick > at )
+			i--;
+		var a = list[i];
+		var n = list[i + 1];
+		float f = n.tick > a.tick ? (float)Math.Clamp( (at - a.tick) / (n.tick - a.tick), 0.0, 1.0 ) : 1f;
+		return new Transform( Vector3.Lerp( a.p, n.p, f ), Rotation.Slerp( a.r, n.r, f ) );
+	}
+
+	// Client: remember the host's pose of someone else's driven body at a host tick (RemotePose shows from these).
+	void NoteAuthority( SimBody b, int tick, in SimBodyState st )
+	{
+		if ( IsAuthority || !b.IsRemoteDriven )
+			return;
+		var list = b.Authority;
+		if ( list.Count > 0 && tick <= list[^1].tick )
+			return;
+		list.Add( (tick, st.P, st.R) );
+		if ( list.Count > 32 )
+			list.RemoveRange( 0, list.Count - 32 );
 	}
 
 	public bool TryGetVisualPose( Guid key, out Transform pose )

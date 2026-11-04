@@ -431,6 +431,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	protected override void OnStart()
 	{
 		_body = EnsureDisguiseBody();
+		if ( SimSystem is { } sim )
+			RegisterSimDriver( sim ); // every machine knows the walk driver before any sim-walking body arrives
+		if ( SimSystem is { } simForFold )
+			simForFold.BodyAdded += OnSimBodyAdded; // fold a tilt into the disguise when our walker appears (HiderController.Sim)
 
 		// Guarantee the disguise is solid regardless of how the body was made (prefab vs in-code fallback) — the
 		// prefab might not carry an SdfCollider, and forcing a rebuild here doesn't depend on the clone's
@@ -516,6 +520,18 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		ReleaseHoldJoint();
 		_scrapeHandle?.Stop();
 		_hull.Dispose();
+		_simHull.Dispose();
+		if ( SimSystem is { } sim )
+		{
+			if ( sim.LocalControlled == GameObject.Id )
+			{
+				sim.LocalInput = null;
+				sim.LocalControlled = Guid.Empty;
+			}
+			sim.BodyAdded -= OnSimBodyAdded;
+			if ( sim.IsAuthority )
+				sim.Unregister( GameObject.Id ); // a pawn that leaves (its player disconnected) leaves the sim too
+		}
 		if ( _body.IsValid() )
 			_body.Committed -= RecenterOriginOnShape;
 	}
@@ -527,6 +543,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// after this point is owner-only.
 		UpdateConcealment();
 		UpdateReleasedSolidity();
+		UpdateSimRegistration(); // host: does this pawn walk in the sim world (HiderController.Sim)?
+		UpdateSimControl();      // owner: our input drives it there
+		DrawSimWalkHud();        // owner: what mimi_sim_walk is, and whether it applies to us
 		UpdateScrape();
 		UpdateSettlePin(); // other players' props: hold the clay still through their stand-up (see SettleUpright)
 		if ( !IsProxy )
@@ -621,8 +640,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 		UpdateTaunts();
 
-		if ( ControlActive && Input.Pressed( "jump" ) )
+		if ( ControlActive && (Input.Pressed( "jump" ) || (DebugPropWander && _sinceDebugJump > 3f)) )
 		{
+			_sinceDebugJump = 0f;
 			_jumpQueued = true;
 			_sinceJumpPress = 0f; // also an air-grab request (see HiderController.Climb)
 		}
@@ -874,6 +894,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 		// A lent body just came back to us (or its pose hasn't yet) — see HiderController.Grabbed.
 		if ( StepHandback() )
+			return;
+
+		// Walking in the shared sim world (mimi_sim_walk — HiderController.Sim): the sim moves it; nothing to do here.
+		if ( StepSimWalking() )
 			return;
 
 		// Grabbed (creative's pickup — see PropClaims.Grab): chase the holder's pose, free to rotate, no gravity.
