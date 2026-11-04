@@ -20,6 +20,20 @@ public sealed partial class SimWorld
 	int _clockDebt;
 	float _slackAvg = TargetSlack; // smoothed slack readings (ClockRate)
 	float _leadAvg; // smoothed lead (our tick − the newest snapshot's) — what RemotePose measures its delay from
+
+	// The round trip to the host, in ticks, measured by the sim itself — NOT Connection.Ping: under the engine's net_fakelag
+	// (applied to send AND receive: 300 = a 600 ms round trip) Ping reads 0, and every wait that was sized from it (the
+	// first lead, how long to wait after a clock correction before judging the next) collapsed to nothing — the clock
+	// corrected itself every 0.1 s on readings 0.6 s stale, overshooting ±30 ticks each time, so every input landed early
+	// or late ("every tiny movement freaks out" past ~150 ms of fake lag). First a probe (SimPing/SimPong, before the sync),
+	// then each snapshot: lead − slack = (host→us) + (us→host) in ticks.
+	float _rttTicks = -1f;
+	RealTimeSince _sincePing = 999f;
+	bool _pingSent;
+
+	/// <summary>Client: the measured round trip to the host (ms), or the engine's ping while unmeasured.</summary>
+	public float RttMs => _rttTicks >= 0f ? _rttTicks * Dt * 1000f : (Connection.Host?.Ping ?? 0f) + 2f * FakeLagMs;
+	int RttTicks => (int)MathF.Ceiling( RttMs / (Dt * 1000f) );
 	float _alpha; // this frame's place between ticks (VisualPose)
 	RealTimeSince _sinceClockAdjust;
 
@@ -81,6 +95,7 @@ public sealed partial class SimWorld
 		// before had already shown: a stalled frame, then a catch-up jump, many times a second.)
 		_alpha = Math.Clamp( (float)(_clock / Dt), 0f, 1f );
 
+		UpdatePresentationSource();
 		FadeCorrections();
 		PresentBodies();
 		Draw();
@@ -100,11 +115,17 @@ public sealed partial class SimWorld
 	// Drive every body that has a driver (its owner's input; on a client, a guess for other people's), then step.
 	void Step( int tick, SimInput mine, Func<SimBody, SimInput> others )
 	{
-		// Client: our hunter's pushes, at the tick they were made — predictions and replays alike (PredictPush).
+		// Client: our hunter's pushes, at the tick they were made — predictions and replays alike (PredictPush) — and every
+		// change of drive at its tick (a grab, a drop: LogDrive), so a replay across one switches where the original did.
 		if ( !IsAuthority )
 			foreach ( var b in _bodies )
+			{
 				if ( b.PredictedPush is { } push && push.tick == tick )
 					PushBody( b, push.velocity );
+				foreach ( var d in b.DriveLog )
+					if ( d.tick == tick )
+						ApplyRedrive( b, d.driver, d.owner, d.flags );
+			}
 
 		foreach ( var b in _bodies )
 		{
@@ -112,7 +133,7 @@ public sealed partial class SimWorld
 				continue;
 			SimInput input;
 			if ( b.Spec.Owner == LocalId )
-				input = IsLocallyControlled( b ) ? mine : SimInput.None; // our own body, or a host bot (no input)
+				input = b.Spec.Driver == SimHoldDriver.Id || IsLocallyControlled( b ) ? mine : SimInput.None; // our body or a prop we carry; a host bot gets none
 			else
 				input = others( b );
 			if ( TraceKey != Guid.Empty )
@@ -123,9 +144,31 @@ public sealed partial class SimWorld
 		long t0 = Stopwatch.GetTimestamp();
 		_world.Step( Dt );
 		DetectAnchoredPushes(); // every machine, every step (replays too): releases are predicted
+		NoteLocalContacts();
 		TraceSecond( tick );
 		SimStats.StepMs.Add( (float)((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency) );
 		SimStats.Steps++;
+	}
+
+	// Client, after a step: a loose body our own walker or carried prop is against (bounds a hair apart) counts as touched
+	// (ShownFromAuthority) — walking into it or shoving it with what we hold draws it from our prediction from then on.
+	void NoteLocalContacts()
+	{
+		if ( IsAuthority )
+			return;
+		foreach ( var mine in _bodies )
+		{
+			if ( !mine.IsLocalOwned || !mine.ShapesReady || !mine.Phys.IsValid() )
+				continue;
+			var reach = mine.Phys.GetBounds().Grow( 2f );
+			foreach ( var b in _bodies )
+			{
+				if ( b.Driver is not null || b.Spec.Owner != Guid.Empty || b.LocalTouched || !b.ShapesReady || b.Phys.Sleeping )
+					continue;
+				if ( reach.Overlaps( b.Phys.GetBounds() ) )
+					b.LocalTouched = true;
+			}
+		}
 	}
 
 	// ── Debug trace: one body's per-tick input + state, host vs client (set TraceKey from a script) ─────────
@@ -238,7 +281,7 @@ public sealed partial class SimWorld
 		// debt, paid a tick at a time (an extra tick to get ahead, a skipped one to fall back), then wait a round trip
 		// before judging again — the slack we read is that old.
 		// Only for a BIG error (a hitch, a lag change): small drift is the clock rate's job (ClockRate).
-		float window = ((Connection.Host?.Ping ?? 0f) + 2f * FakeLagMs) / 1000f + 0.1f;
+		float window = RttMs / 1000f + 0.1f;
 		if ( _clockDebt == 0 && _sinceClockAdjust > window && MathF.Abs( _slack - TargetSlack ) > 8 )
 		{
 			_clockDebt = _slack - TargetSlack;
@@ -247,12 +290,15 @@ public sealed partial class SimWorld
 
 		// A release we predicted (PushBody) that the host never confirmed — its own push didn't happen (it saw the pusher
 		// elsewhere): anchor it again where it was registered. Anchored bodies never move, so that pose is still theirs.
-		int confirmWindow = (int)(((Connection.Host?.Ping ?? 0f) + 2f * FakeLagMs) / (Dt * 1000f)) + 2 * TargetSlack + 25;
+		int confirmWindow = RttTicks + 2 * TargetSlack + 25;
 		foreach ( var b in _bodies )
 		{
 			// A predicted push older than any replay reaches back: done with (the host's own has long since shown, or not).
 			if ( b.PredictedPush is { } push && Tick - push.tick > confirmWindow )
 				b.PredictedPush = null;
+			// A grab we predicted (PredictHold) that the host never confirmed: back to what it was.
+			if ( b.PredictedDrive is { } drive && Tick - drive.tick > confirmWindow )
+				RevertPredictedHold( b.Key );
 			if ( b.PredictedRelease < 0 || Tick - b.PredictedRelease < confirmWindow )
 				continue;
 			b.PredictedRelease = -1;
@@ -291,6 +337,25 @@ public sealed partial class SimWorld
 		AdvanceVisuals();
 	}
 
+	// A change of drive in effect from a PAST tick (the host's, a lead ago by the time it lands): the states captured since
+	// still say the old drive, and a replay starting from one of them put it back — a prop went loose, flipped back to
+	// "held" two ticks later with nobody holding it, and slid off under the hold driver's gravity on a frictionless body
+	// (traced live on a client). The log only re-applies a change at its own tick, so the history is patched instead.
+	void PatchHistoryDrive( SimBody b, int fromTick, byte driver, Guid owner, SimBodyFlags flags )
+	{
+		for ( int t = fromTick; t <= Tick; t++ )
+		{
+			if ( !_history.TryGetValue( t, out var states ) || b.Id >= states.Length || states[b.Id] is not { } s )
+				continue;
+			s.Driver = driver;
+			s.Owner = owner;
+			s.Flags = flags;
+			s.DriveKnown = true;
+			s.Anchored = (flags & SimBodyFlags.Anchored) != 0;
+			states[b.Id] = s;
+		}
+	}
+
 	SimBodyState?[] CaptureAll()
 	{
 		var s = new SimBodyState?[_maxId + 1];
@@ -309,7 +374,11 @@ public sealed partial class SimWorld
 			foreach ( var b in _bodies ) b.Prev = b.Cur = b.Phys.Transform;
 			Tick = s;
 			_history[s] = CaptureAll();
-			int lead = (int)MathF.Ceiling( ((Connection.Host?.Ping ?? 0f) + 2f * FakeLagMs) / (Dt * 1000f) ) + TargetSlack + 1;
+			// Not before the probe's answer (or a second without one): the first lead must be the real round trip, or the
+			// clock starts tens of ticks out and spends the first second doubling and skipping ticks to get there.
+			if ( _rttTicks < 0f && _pingSent && _sincePing < 1f )
+				return;
+			int lead = RttTicks + TargetSlack + 1;
 			for ( int i = 0; i < lead; i++ )
 				PredictTick();
 			_leadAvg = lead;
@@ -333,6 +402,10 @@ public sealed partial class SimWorld
 		SimStats.Lead.Add( Tick - s );
 		SimStats.Slack.Add( _slack );
 		_leadAvg += (Tick - s - _leadAvg) * 0.05f;
+		// Our lead over this snapshot minus the slack it reports for us = the round trip, in ticks (both legs).
+		float rtt = MathF.Max( Tick - s - _slack, 0f );
+		_rttTicks = _rttTicks < 0f ? rtt : _rttTicks + (rtt - _rttTicks) * 0.05f;
+		SimStats.Rtt.Add( rtt * Dt * 1000f );
 
 		// How wrong were we at tick s? Bodies in the snapshot against their state; the rest should be asleep at rest.
 		// Someone else's driven body only counts past RemoteSkipEpsilon (its guess is always a little wrong; see there).

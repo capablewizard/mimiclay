@@ -49,6 +49,29 @@ public sealed partial class SimWorld
 
 	public int FollowerCount => _followers.Count;
 
+	// Scene objects kept out of the followers on this machine: the hunter carrying a sim-held prop (HiderController.Sim) —
+	// the held body must never collide with the hand holding it (the scene filters those two with PropClaims.FilterAgainst).
+	readonly HashSet<Guid> _excludedFollowers = new();
+
+	/// <summary>Leave this object's scene bodies out of the followers (or let them back in on the next refresh).</summary>
+	public void ExcludeFollower( GameObject go, bool exclude )
+	{
+		if ( !go.IsValid() )
+			return;
+		if ( exclude ? !_excludedFollowers.Add( go.Id ) : !_excludedFollowers.Remove( go.Id ) )
+			return;
+		if ( !exclude )
+			return;
+		foreach ( var (src, f) in _followers.ToList() )
+		{
+			if ( src.IsValid() && src.GameObject.IsValid() && src.GameObject.Id == go.Id )
+			{
+				f.Copy.Remove();
+				_followers.Remove( src );
+			}
+		}
+	}
+
 	void RefreshFollowers()
 	{
 		if ( _world is null )
@@ -65,7 +88,7 @@ public sealed partial class SimWorld
 			if ( !b.IsValid() || b.BodyType == PhysicsBodyType.Static || b.ShapeCount == 0 || !b.Enabled )
 				continue;
 			var go = b.GameObject;
-			if ( !go.IsValid() || _excludedStatics.Contains( go.Id ) || b.Position.z < FarBelow )
+			if ( !go.IsValid() || _excludedStatics.Contains( go.Id ) || _excludedFollowers.Contains( go.Id ) || b.Position.z < FarBelow )
 				continue;
 			if ( !b.Shapes.Any( s => !s.IsTrigger ) )
 				continue;
@@ -222,6 +245,7 @@ public sealed partial class SimWorld
 		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) )
 			return;
 		b.PredictedPush = (Tick + 1, velocity); // the next tick stepped (this frame's are done when a collision callback runs)
+		b.LocalTouched = true;
 		SimStats.PushesPredicted++;
 	}
 
@@ -337,6 +361,121 @@ public sealed partial class SimWorld
 					b.PredictedRelease = -1; // the host released it too
 			}
 		} );
+	}
+
+	// ── Changing a body's driver in place ───────────────────────────────────────────────────────────────────
+	// A grab or a drop changes WHO moves a body (the hold driver and its holder, or nobody), not what it is: the same clay
+	// shapes, the same id, its motion carrying on. Re-registering it instead (remove + add, a new id) restarted it on
+	// every client from the add's state — captured BEFORE the thrown velocity was set, and a lead old by the time it landed
+	// — so a dropped prop stopped dead at the host's older pose and was then yanked onto its real path (measured on a live
+	// client: first correction 90–445u on every drop).
+
+	/// <summary>Host: change a body's driver, owner and flags in place (every machine follows). The body keeps its shapes,
+	/// id and motion; its controller state starts afresh.</summary>
+	public void Redrive( Guid key, byte driver, Guid owner, SimBodyFlags flags )
+	{
+		if ( !IsAuthority || !_byKey.TryGetValue( key, out var b ) )
+			return;
+		if ( b.Spec.Driver == driver && b.Spec.Owner == owner && b.Spec.Flags == flags )
+			return;
+		ApplyRedrive( b, driver, owner, flags );
+		if ( Networking.IsActive )
+			BroadcastRedrive( b.Id, Tick + 1, driver, owner, (byte)flags ); // in effect from the next tick stepped
+	}
+
+	// Client: a change of drive in effect from this tick — applied now when that tick is the next one or already past, and
+	// remembered so a replay crossing it switches there (Step); the body's history before it keeps the old drive (Restore).
+	void LogDrive( SimBody b, int tick, byte driver, Guid owner, SimBodyFlags flags )
+	{
+		var log = b.DriveLog;
+		log.Add( (tick, driver, owner, flags) );
+		if ( log.Count > 64 )
+			log.RemoveRange( 0, log.Count - 64 );
+		if ( tick <= Tick + 1 )
+			ApplyRedrive( b, driver, owner, flags );
+		if ( tick <= Tick )
+			PatchHistoryDrive( b, tick, driver, owner, flags );
+	}
+
+	internal void ApplyRedrive( SimBody b, byte driver, Guid owner, SimBodyFlags flags )
+	{
+		if ( b.Spec.Driver == driver && b.Spec.Owner == owner && b.Spec.Flags == flags )
+			return;
+		bool wasHold = b.Spec.Driver == SimHoldDriver.Id, isHold = driver == SimHoldDriver.Id;
+		b.Spec.Driver = driver;
+		b.Spec.Owner = owner;
+		_drivers.TryGetValue( driver, out b.Driver );
+		b.Ctrl = SimCtrl.Initial;
+		b.Intent = Vector3.Zero;
+		b.RemoteGuess = SimInput.None;
+		b.Rest = null;
+		b.HoldReleased = false;
+		b.LocalTouched = isHold && owner == LocalId; // our own hold (and the throw out of it) is ours to predict; anything else starts untouched
+		ApplyFlags( b, flags );
+		if ( wasHold != isHold && b.ShapesReady && b.Phys.IsValid() )
+		{
+			// Friction follows the driver (a held body has none): the shapes are re-copied, the state kept.
+			var state = b.Capture();
+			BuildShapes( b );
+			b.Restore( state );
+		}
+		if ( b.Phys.IsValid() )
+			b.Phys.Sleeping = false;
+	}
+
+	[Rpc.Broadcast]
+	static void BroadcastRedrive( ushort id, int tick, byte driver, Guid owner, byte flags )
+	{
+		if ( !FromHost || Networking.IsHost )
+			return;
+		var sim = Current;
+		sim?.Receive( () =>
+		{
+			if ( !sim._byId.TryGetValue( id, out var b ) )
+				return;
+			bool same = b.Spec.Driver == driver && b.Spec.Owner == owner && b.Spec.Flags == (SimBodyFlags)flags;
+			bool predicted = b.PredictedDrive is not null;
+			b.PredictedDrive = null;
+			if ( same && predicted )
+				return; // the host confirmed what we did ourselves (PredictHold / PredictRelease), logged at our own tick
+			sim.LogDrive( b, tick, driver, owner, (SimBodyFlags)flags ); // at the HOST's tick: a replay across it switches there
+		} );
+	}
+
+	/// <summary>Client: this machine asked to grab a body the sim has as a LOOSE one — make it ours to hold NOW (the hold
+	/// driver, our input), as the host will when the request lands (<see cref="Redrive"/>), so the grab costs no round trip.
+	/// Flagged until the host's redrive confirms it; an unanswered request reverts (ClientTicks). False if it can't be
+	/// predicted (not here, not loose, no shapes yet).</summary>
+	public bool PredictHold( Guid key )
+	{
+		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) || b.Spec.Driver != 0 || !b.ShapesReady )
+			return false;
+		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags);
+		LogDrive( b, Tick + 1, SimHoldDriver.Id, LocalId, SimBodyFlags.Present | SimBodyFlags.NoGravity ); // from the next tick, where our first target goes
+		SimStats.HoldsPredicted++;
+		return true;
+	}
+
+	/// <summary>Client: this machine let go of a body it holds — make it loose NOW, at the tick its inputs stop carrying a
+	/// target, as the host will at that same tick (the hold driver's release, HoldReleased). The host's redrive confirms it.</summary>
+	public void PredictRelease( Guid key )
+	{
+		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) || b.Spec.Driver != SimHoldDriver.Id || !b.IsLocalOwned )
+			return;
+		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags);
+		LogDrive( b, Tick + 1, 0, Guid.Empty, SimBodyFlags.Present ); // from the next tick, the first with no target
+		b.LocalTouched = true; // our throw: predicted here until it rests
+		SimStats.HoldsPredicted++;
+	}
+
+	/// <summary>Client: undo a <see cref="PredictHold"/> the host never confirmed (or that this machine gave up on).</summary>
+	public void RevertPredictedHold( Guid key )
+	{
+		if ( !_byKey.TryGetValue( key, out var b ) || b.PredictedDrive is not { } was )
+			return;
+		b.PredictedDrive = null;
+		LogDrive( b, Tick + 1, was.driver, was.owner, was.flags );
+		SimStats.HoldsReverted++;
 	}
 
 	static PhysicsLock LockFor( SimBodyFlags flags )

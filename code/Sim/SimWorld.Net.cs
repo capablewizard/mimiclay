@@ -95,7 +95,13 @@ public sealed partial class SimWorld
 
 			if ( _byId.TryGetValue( id, out var clash ) && clash.Key != spec.Key )
 				Remove( clash );
-			if ( !_byKey.TryGetValue( spec.Key, out var body ) )
+			// The same key under a NEW id: a re-registration whose remove hasn't landed yet (or was lost) — replace it.
+			if ( _byKey.TryGetValue( spec.Key, out var body ) && body.Id != id )
+			{
+				Remove( body );
+				body = null;
+			}
+			if ( body is null )
 				body = Create( spec, id );
 			body.Restore( st );
 			if ( st.Sleeping )
@@ -181,6 +187,38 @@ public sealed partial class SimWorld
 	}
 
 	RealTimeSince _sinceAskedForAll = 999f;
+
+	// ── Round-trip probe (client → host → client), before the first sync — see _rttTicks ───────────────────
+
+	void SendSimPing()
+	{
+		if ( IsAuthority || !Networking.IsActive )
+			return;
+		_pingSent = true;
+		_sincePing = 0f;
+		SimPing( RealTime.NowDouble );
+	}
+
+	[Rpc.Host]
+	static void SimPing( double sentAt )
+	{
+		var caller = Rpc.Caller;
+		if ( caller is null )
+			return;
+		using ( Rpc.FilterInclude( caller ) )
+			SimPong( sentAt );
+	}
+
+	[Rpc.Broadcast]
+	static void SimPong( double sentAt )
+	{
+		if ( !FromHost || Networking.IsHost )
+			return;
+		var sim = Current;
+		if ( sim is null || sim._rttTicks >= 0f )
+			return;
+		sim._rttTicks = (float)((RealTime.NowDouble - sentAt) / Dt);
+	}
 
 	/// <summary>Client → host: I'm missing bodies (a snapshot named ids I don't know) — send me everything.</summary>
 	[Rpc.Host]
@@ -330,13 +368,18 @@ public sealed partial class SimWorld
 	void SendInputs()
 	{
 		int first = Math.Max( Tick - InputRedundancy + 1, 0 );
-		using var ms = new MemoryStream( 1 + InputRedundancy * 13 );
+		using var ms = new MemoryStream( 1 + InputRedundancy * 26 );
 		using var w = new BinaryWriter( ms );
 		w.Write( (byte)(Tick - first + 1) );
 		for ( int t = first; t <= Tick; t++ )
 		{
 			var i = _myInputs.TryGetValue( t, out var x ) ? x : SimInput.None;
 			w.Write( i.Wish.x ); w.Write( i.Wish.y ); w.Write( i.Buttons ); w.Write( i.Turn );
+			if ( i.Has( SimInput.Hold ) )
+			{
+				SimQuant.WritePos( w, i.HoldPos ); // a carried prop's target (SimHoldDriver): 13 bytes, only while holding
+				SimQuant.WriteRot( w, i.HoldRot );
+			}
 		}
 		w.Flush();
 		var data = ms.ToArray();
@@ -363,6 +406,11 @@ public sealed partial class SimWorld
 		for ( int i = 0; i < n; i++ )
 		{
 			var input = new SimInput { Wish = new Vector2( r.ReadSingle(), r.ReadSingle() ), Buttons = r.ReadByte(), Turn = r.ReadSingle() };
+			if ( input.Has( SimInput.Hold ) )
+			{
+				input.HoldPos = SimQuant.ReadPos( r );
+				input.HoldRot = SimQuant.ReadRot( r );
+			}
 			int t = firstTick + i;
 			if ( t > Tick )
 				q[t] = input; // older ticks are redundant repeats (or too late — counted as missing when needed)

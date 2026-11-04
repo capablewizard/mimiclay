@@ -58,6 +58,30 @@ public sealed partial class HunterController
 		_grabLetGo = default; // a new request: the next row naming any prop is this grant, not the old hold
 		PropClaims.MarkGrabPending( true );
 		PropClaims.Current.RequestGrab( target );
+
+		// A prop already LOOSE in our sim: hold it now, predicted (SimWorld.PredictHold) — the host's grant becomes the same
+		// registration a round trip later and confirms it. Scene clay (converted on the host first) still waits for the grant.
+		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		if ( hider.IsValid() && HiderController.SimHoldApplies( hider ) && !PropClaims.IsHeldObject( hider.GameObject )
+			&& Scene.GetSystem<Mimiclay.Sim.SimWorld>() is { } sim && sim.PredictHold( hider.GameObject.Id ) )
+		{
+			_grabPredicted = hider.GameObject;
+			_sinceGrabPredicted = 0f;
+		}
+	}
+
+	// The prop we hold on our own say-so until the host's grant names it (see BeginGrab); given up after GrabPredictWindow.
+	GameObject _grabPredicted;
+	RealTimeSince _sinceGrabPredicted = 999f;
+	const float GrabPredictWindow = 1f;
+
+	void EndPredictedGrab( bool revert )
+	{
+		if ( !_grabPredicted.IsValid() )
+			return;
+		if ( revert )
+			Scene.GetSystem<Mimiclay.Sim.SimWorld>()?.RevertPredictedHold( _grabPredicted.Id );
+		_grabPredicted = null;
 	}
 
 	/// <summary>Owner, per frame, before the interaction hover: run the hold. True = the grab owns this frame's
@@ -69,6 +93,20 @@ public sealed partial class HunterController
 			_grabLetGo = default; // the old hold's row is gone (or replaced) — nothing left to ignore
 		else if ( _sinceGrabLetGo < 1f )
 			held = null;
+
+		// A grab we predicted (BeginGrab): hold that prop until the grant names it — or something else, or never.
+		if ( held.IsValid() )
+			EndPredictedGrab( revert: held != _grabPredicted );
+		else if ( _grabPredicted.IsValid() )
+		{
+			if ( _sinceGrabPredicted < GrabPredictWindow )
+				held = _grabPredicted;
+			else
+			{
+				EndPredictedGrab( revert: true );
+				EndSimHold();
+			}
+		}
 
 		if ( !held.IsValid() )
 		{
@@ -168,6 +206,9 @@ public sealed partial class HunterController
 		// target is never somewhere the body can't be.
 		var rotation = yawFrame * _grabRelative;
 		var root = ClampedRoot( held, eye, rotation );
+		// A prop the SIM carries (HiderController.SimHoldApplies): this pose goes out as our sim input every tick, and our own
+		// prediction of the hold answers it at once (SimHoldDriver). The UpdateGrab stream below still carries the scale.
+		SetSimHold( held, new Transform( root, rotation ) );
 		// Here first, for whatever this machine simulates of the hold (a body lent to us, a decoy we predict — see
 		// PropClaims.BorrowedBodies / RoundManager.Grab): this frame's target, no round-trip. Then to the host.
 		PropClaims.Current.SetLocalGrabTarget( held, root, rotation );
@@ -349,11 +390,61 @@ public sealed partial class HunterController
 		return PropClaims.GrabScaleStepAllowed( limits, _grabBase, _grabPivot, _grabScale, factor );
 	}
 
+	// ── The hold as sim input (phase 3 — SimHoldDriver) ───────────────────────────────────────────────────────
+	// While we carry a prop the sim owns, this machine's sim input carries the pose we want it at: the sim predicts the
+	// hold here and the host simulates it from the same input. Letting go simply stops sending it (the driver lets the
+	// body fly on), so a drop or a throw is immediate too.
+	Transform _simHoldTarget;
+	bool _simHolding;
+	Func<int, Mimiclay.Sim.SimInput> _simHoldInput;
+
+	void SetSimHold( GameObject held, Transform target )
+	{
+		_simHoldTarget = target;
+		// Only once OUR sim has the held body: inputs are stamped by tick, so a target sent before the body's add lands here
+		// had the host moving the prop for ticks our prediction never ran (measured: 15 replays, corrections to 65u at
+		// every grab start). Until then the host holds it still (SimHoldDriver, SimCtrl.Holding).
+		var hider = held.Components.Get<HiderController>();
+		bool applies = HiderController.SimHoldApplies( hider ) && hider.SimHeld;
+		if ( applies == _simHolding )
+			return;
+		_simHolding = applies;
+		var sim = Scene.GetSystem<Mimiclay.Sim.SimWorld>();
+		if ( sim is null )
+			return;
+		_simHoldInput ??= ReadSimHoldInput;
+		if ( applies )
+			sim.LocalInput = _simHoldInput;
+		else if ( sim.LocalInput == _simHoldInput )
+			sim.LocalInput = null;
+	}
+
+	Mimiclay.Sim.SimInput ReadSimHoldInput( int tick )
+		=> _simHolding
+			? new Mimiclay.Sim.SimInput { Buttons = Mimiclay.Sim.SimInput.Hold, HoldPos = _simHoldTarget.Position, HoldRot = _simHoldTarget.Rotation }
+			: Mimiclay.Sim.SimInput.None;
+
+	void EndSimHold( GameObject held = null )
+	{
+		if ( !_simHolding )
+			return;
+		_simHolding = false;
+		var sim = Scene.GetSystem<Mimiclay.Sim.SimWorld>();
+		if ( sim is null )
+			return;
+		if ( sim.LocalInput == _simHoldInput )
+			sim.LocalInput = null; // the next ticks carry no target: the prop is let go of, here and on the host
+		if ( held.IsValid() )
+			sim.PredictRelease( held.Id ); // loose here from this tick — the host switches at the same tick of our inputs
+	}
+
 	void LetGo( GameObject held, bool freeze = false )
 	{
 		_grabLetGo = held.Id;
 		_sinceGrabLetGo = 0f;
 		_grabbed = null;
+		EndPredictedGrab( revert: false ); // let go of before the grant: the host's redrive (or its absence) settles it
+		EndSimHold( held );
 		PropClaims.MarkGrabPending( false );
 		PropClaims.Current?.EndLocalGrabScale( held ); // lands a scale we applied ourselves on a lent prop
 		PropClaims.Current?.ClearLocalGrabTarget( held ); // stop holding it here this tick (a throw keeps its swing)

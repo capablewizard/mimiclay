@@ -44,6 +44,10 @@ public struct SimCtrl
 	public const ushort PushScale = 1000;
 	/// <summary>The velocity the controller set last tick (what contacts took off it is the push-back).</summary>
 	public Vector3 Commanded;
+	/// <summary>A held body (SimHoldDriver) has had its holder's first target: from then on an input with no target is
+	/// the holder letting go — before it, it's that input not having arrived yet (the host, half a round trip after the
+	/// grab), and the body waits where it is.</summary>
+	public bool Holding;
 
 	public const ushort Long = 9999;
 	public static readonly SimCtrl Initial = new() { SinceJumpTicks = Long };
@@ -104,8 +108,11 @@ public struct SimInput
 	public byte Buttons;
 	/// <summary>Degrees the player turned their prop about the vertical this tick (mouse).</summary>
 	public float Turn;
+	/// <summary>With <see cref="Hold"/>: the ROOT pose this player wants the prop it's carrying at (<see cref="SimHoldDriver"/>).</summary>
+	public Vector3 HoldPos;
+	public Rotation HoldRot;
 
-	public const byte Jump = 1, Duck = 2;
+	public const byte Jump = 1, Duck = 2, Hold = 4;
 	public bool Has( byte button ) => (Buttons & button) != 0;
 
 	public static readonly SimInput None = default;
@@ -126,6 +133,13 @@ public struct SimBodyState
 	/// back with the body (only meaningful when <see cref="AnchorKnown"/>).</summary>
 	public bool Anchored;
 	public bool AnchorKnown;
+	/// <summary>Its DRIVE — who moves it (driver, owner) and its flags — which a client predicts too (a grab, a drop:
+	/// SimWorld.PredictHold / PredictRelease), so it rolls back with the body (only meaningful when <see cref="DriveKnown"/>;
+	/// history states carry it, snapshots don't).</summary>
+	public byte Driver;
+	public Guid Owner;
+	public SimBodyFlags Flags;
+	public bool DriveKnown;
 }
 
 /// <summary>Moves a body from its owner's input, the same way on the host and in every client replay. Registered on
@@ -162,9 +176,17 @@ public sealed class SimBody
 	internal SimInput RemoteGuess;
 	internal SimBodyState? Rest;
 
-	// Client: the host's recent poses of a body someone ELSE drives (snapshots and rests, by host tick). It is SHOWN from
-	// these, interpolated a few ticks behind the newest — not from our guess of it (see SimWorld.RemotePose).
+	// Client: the host's recent poses of a body we don't drive (snapshots and rests, by host tick). Someone else's prop,
+	// and a loose body nobody here is touching, are SHOWN from these, interpolated a few ticks behind the newest — not from
+	// our prediction of them (see SimWorld.RemotePose / ShownFromAuthority).
 	internal readonly List<(int tick, Vector3 p, Rotation r)> Authority = new();
+
+	// Client: which source this body was drawn from last frame (the switch between the two is blended — see
+	// SimWorld.UpdatePresentationSource), and whether something of OURS has touched it since it last came to rest (our
+	// walker standing on or pushing it, our hunter's push, our hold or throw): a touched loose body is drawn from our
+	// prediction, which answers us at once; an untouched one from the host's poses, which never rubber-band.
+	internal bool ShownFromAuth;
+	internal bool LocalTouched;
 
 	// Client: the tick this machine released it by a predicted push, until the host confirms (-1 = none pending).
 	internal int PredictedRelease = -1;
@@ -172,6 +194,22 @@ public sealed class SimBody
 	// Client: a push this machine's hunter made on it (reported to the host), applied at that tick in every replay too
 	// (see SimWorld.PredictPush).
 	internal (int tick, Vector3 velocity)? PredictedPush;
+
+	// Client: this machine changed the body's driver itself, ahead of the host (a grab predicted — SimWorld.PredictHold):
+	// what it was before, to go back to if the host never confirms.
+	internal (int tick, byte driver, Guid owner, SimBodyFlags flags)? PredictedDrive;
+
+	// A held body whose holder's inputs have stopped carrying a target (SimHoldDriver saw the release tick): the host makes
+	// it loose from here, not from when the drop message arrived — that was a lead earlier than the release the holder
+	// predicted (measured: a 71u correction on every throw).
+	internal bool HoldReleased;
+
+	// Client: every change of drive this body had, by the tick it took effect — re-applied at that tick in a replay, so a
+	// replay reaching back across a drop doesn't re-simulate the swing as a loose body (measured: 121u corrections at every
+	// throw with the switch applied "now" only). See SimWorld.LogDrive.
+	internal readonly List<(int tick, byte driver, Guid owner, SimBodyFlags flags)> DriveLog = new();
+
+	internal SimWorld World;
 
 	/// <summary>A driven body's controller state (see <see cref="SimCtrl"/>) — rolled back with the body.</summary>
 	public SimCtrl Ctrl = SimCtrl.Initial;
@@ -205,13 +243,17 @@ public sealed class SimBody
 		if ( Phys is null || !Phys.IsValid() )
 			return default;
 		return new SimBodyState { P = Phys.Position, R = Phys.Rotation, V = Phys.Velocity, W = Phys.AngularVelocity, Sleeping = Phys.Sleeping, Ctrl = Ctrl, HasCtrl = Driver is not null,
-			Anchored = (Spec.Flags & SimBodyFlags.Anchored) != 0, AnchorKnown = true };
+			Anchored = (Spec.Flags & SimBodyFlags.Anchored) != 0, AnchorKnown = true,
+			Driver = Spec.Driver, Owner = Spec.Owner, Flags = Spec.Flags, DriveKnown = true };
 	}
 
 	public void Restore( in SimBodyState s )
 	{
 		if ( Phys is null || !Phys.IsValid() )
 			return;
+		// The drive first (a history state): who moved it then, with its flags — before the anchored flag and the velocity.
+		if ( s.DriveKnown && World is not null && (s.Driver != Spec.Driver || s.Owner != Spec.Owner || s.Flags != Spec.Flags) )
+			World.ApplyRedrive( this, s.Driver, s.Owner, s.Flags );
 		// Anchored first: switching motion off clears the velocity, so it has to come before the velocity is set.
 		if ( s.AnchorKnown && s.Anchored != ((Spec.Flags & SimBodyFlags.Anchored) != 0) )
 		{

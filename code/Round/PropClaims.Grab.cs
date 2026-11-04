@@ -180,6 +180,8 @@ public sealed partial class PropClaims
 	{
 		if ( !hider.IsValid() || !(Host?.GrabBorrowsBodies ?? false) )
 			return;
+		if ( HiderController.SimHoldApplies( hider ) )
+			return; // the sim carries it, driven by the holder's input — no lend (SimHoldDriver, phase 3)
 
 		Guid wearerId;
 		if ( BorrowedBodies.TryGetValue( hider.GameObject.Id, out var earlier ) )

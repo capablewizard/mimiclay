@@ -94,7 +94,7 @@
         {
           "__type": "Mimiclay.SkyboxRotator",
           "__guid": "ef171e1c-1fd5-4de4-b4e8-adabc5b27a7d",
-          "__enabled": true,
+          "__enabled": false,
           "Flags": 0,
           "Axis": "0,0,1",
           "Offset": 0,
@@ -104,7 +104,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "PreviewInEditor": true,
+          "PreviewInEditor": false,
           "SecondsPerTurn": 2000
         }
       ],
@@ -114,7 +114,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Sun",
-          "Position": "188.549347,-670.651733,-123.511353",
+          "Position": "188.659409,-671.213684,-123.537918",
           "Rotation": "-0.118833482,-0.385033637,0.269903392,-0.874516904",
           "Scale": "1,1,1",
           "Tags": "light_directional,light",
@@ -852,7 +852,7 @@
           "FbxPath": "scenes/maps/flatgrass/grass.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "10 object(s), 19005 tris — 22:19:48",
+          "LastImport": "10 object(s), 19005 tris — 17:42:31",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -1860,7 +1860,6 @@
           "CharadesWordLengthHints": false,
           "CharadesWriteSeconds": 45,
           "ConsolidationSeconds": 12,
-          "CreativeRepairProps": false,
           "DebugSoloHide": false,
           "DirectPlayGame": "Creative",
           "DisableSceneCameras": true,
@@ -1878,7 +1877,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideCharadesRules": false,
-          "OverrideCreativeRepairProps": true,
           "OverrideGhosts": false,
           "OverrideGrabProps": false,
           "OverrideRepairProps": false,
@@ -1969,6 +1967,56 @@
         "e2452b94-854d-4261-b7da-272c4d1d0764": "9833260b-59b6-47dc-ae91-14649a793c13",
         "221d394b-8948-4ec4-ab09-ffd17cddf10f": "233f7775-135d-432f-a4a3-bae203ef575f",
         "fe1f1fe9-0dc3-8b54-a4f9-77d9e3188ad1": "c747f1fd-b429-41b4-ad27-6f33bc191256"
+      }
+    },
+    {
+      "__guid": "8844e375-b16e-4991-93e6-1b0002006ba9",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "558d0487-c2d2-4708-8d26-29e9d286b334",
+        "Path": "prefabs/props/toys/toy_train_engine.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "d74165d0-0c79-4e11-a382-7dcda0f09dd1"
+            },
+            "Property": "Name",
+            "Value": "toy_train_engine (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "d74165d0-0c79-4e11-a382-7dcda0f09dd1"
+            },
+            "Property": "Position",
+            "Value": "270.931305,742.043274,1.03119493"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
+            },
+            "Property": "__enabled",
+            "Value": true
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "d74165d0-0c79-4e11-a382-7dcda0f09dd1": "8844e375-b16e-4991-93e6-1b0002006ba9",
+        "ff36af21-8a91-424a-b713-97d0e1f0571f": "50d401c7-08ec-467f-85ff-2d4863aa9c5a",
+        "ff777ad1-1889-4494-95fb-d66e93a02951": "405e6731-af22-46aa-8ac5-f882e8defe37",
+        "1d957c60-f050-4e85-89cc-572156f637cc": "bcbb485a-b0ca-4e36-a09b-f110e60ec6b6",
+        "8e590f5e-388f-4280-bcf6-ac30cee6ebfb": "b022ea36-ca04-4ee1-a460-0445cc61a46e",
+        "d49ea65e-13b7-418a-adee-9710337fb977": "cf8bf8e2-1d77-4c0b-a476-09da69289b44",
+        "e2452b94-854d-4261-b7da-272c4d1d0764": "ffb4649d-c969-4cbd-aab5-b93ef45e8013",
+        "221d394b-8948-4ec4-ab09-ffd17cddf10f": "78cfa654-d04b-4ef3-bb36-f0cacd0bda0f",
+        "fe1f1fe9-0dc3-8b54-a4f9-77d9e3188ad1": "23a43ebb-c6b3-4a3f-9e1b-b561c578ce86"
       }
     },
     {
@@ -2798,6 +2846,30 @@
                 "BoundingRadius": 4.1074
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
+            },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -2849,6 +2921,22 @@
             },
             "Property": "Rotation",
             "Value": "0,3.32065198E-09,0.99999994,9.9619557E-09"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -2862,6 +2950,55 @@
         "a053b1bb-7309-48e3-8e3b-1a2461f2cadd": "7d8a997c-f042-480f-aabb-ed2ad41e363a",
         "a2799bab-1312-4a0c-9e1d-3f421de9ffe8": "42a4c129-8e94-4e88-8311-64a58eaf4d5d",
         "3dea5f83-d7d0-41b2-a5d7-97bb023d6351": "2528c7d8-15ed-4410-90f6-8c667b974274"
+      }
+    },
+    {
+      "__guid": "82a70980-6c63-458a-a56a-9d6b7d4eefe0",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "a20e3c36-27a2-4708-ac25-339084df6fe3",
+        "Path": "prefabs/saved/football.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8ac32ac4-90b2-461c-8cba-5ca81e906926"
+            },
+            "Property": "Name",
+            "Value": "football (2)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8ac32ac4-90b2-461c-8cba-5ca81e906926"
+            },
+            "Property": "Position",
+            "Value": "226.329559,819.518433,27.6857128"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8ac32ac4-90b2-461c-8cba-5ca81e906926"
+            },
+            "Property": "Rotation",
+            "Value": "0,3.32065198E-09,0.99999994,9.9619557E-09"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "8ac32ac4-90b2-461c-8cba-5ca81e906926": "82a70980-6c63-458a-a56a-9d6b7d4eefe0",
+        "0f70cd85-753d-47a7-8915-24057ff57a0b": "37e9465d-8ca3-41b7-a731-2b1c9cfabbc5",
+        "f12a6fac-b676-491a-a71a-62b919c1787a": "bfdc96a8-5e69-41e4-a8f9-7178dad7b934",
+        "6fc1c8a7-e4f7-42f9-983b-d952bf0e16ed": "dc181199-dc9f-465f-87ec-9ffc2b7444e6",
+        "77995f39-f464-4cc6-b411-a40f6bf10519": "376978b8-fbb1-45dc-b1ee-f8edc3d7bae7",
+        "a053b1bb-7309-48e3-8e3b-1a2461f2cadd": "9162e9e0-e9c5-491a-84a4-8862a9c6088c",
+        "a2799bab-1312-4a0c-9e1d-3f421de9ffe8": "a15cabcc-d5cf-4930-8971-5464e193d863",
+        "3dea5f83-d7d0-41b2-a5d7-97bb023d6351": "e5b91ec5-de6d-4934-8b5c-7989b9cff0ff"
       }
     },
     {
@@ -2898,6 +3035,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -2963,6 +3116,55 @@
       }
     },
     {
+      "__guid": "c66261a0-4337-4c0e-b848-5799fbffe6c1",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "d5ca3694-b5df-4a43-835e-cea9f1bbf625",
+        "Path": "prefabs/props/kitchen/teapot.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0fd08478-dc9c-42c4-8fd9-f13476130a2c"
+            },
+            "Property": "Name",
+            "Value": "teapot (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "0fd08478-dc9c-42c4-8fd9-f13476130a2c"
+            },
+            "Property": "Position",
+            "Value": "136.272583,742.507751,25.7759285"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
+            "Property": "Model",
+            "Value": "sbox_procedural_model.vmdl"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "0fd08478-dc9c-42c4-8fd9-f13476130a2c": "c66261a0-4337-4c0e-b848-5799fbffe6c1",
+        "13514fd7-4628-4877-8f61-46fe5626d4a2": "30ee9d07-131b-4d32-afcf-f9cddff98802",
+        "b0f41ab9-9207-4601-9da0-98556f047712": "4f4e9f86-8efb-4f4d-8106-7ca2ed43ae84",
+        "a5dc336f-3c67-430a-8659-64ca90fbbd9a": "00a290cd-4676-4396-98b7-fcc7791f80a5",
+        "785c4b35-16d5-45e4-8dcd-9039e3b36f37": "e44d951e-5931-4032-9a4e-080f2572d381",
+        "856bb140-20e3-48d8-bece-1520dadcf717": "52ea8aae-ffda-4131-9355-969377a19a7f",
+        "906d98f9-b2cb-4d33-ba2f-16c8a50edc4c": "195ebf7d-1eec-44ac-8515-984b4eaead96",
+        "c3dd2ce3-8843-4506-a3a0-a04498b3d08f": "c04e9f85-657c-4cb3-a385-913827de867a"
+      }
+    },
+    {
       "__guid": "399a270c-910d-4332-b933-761bbf8f2caf",
       "__version": 2,
       "__Prefab": {
@@ -3005,6 +3207,48 @@
       }
     },
     {
+      "__guid": "66435f59-8212-4254-92d0-91b94152e389",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "8df773c9-e799-4900-a837-174482147f76",
+        "Path": "prefabs/props/kitchen/pot_pitcher.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8288648a-14da-4706-8341-c7b8a259cae0"
+            },
+            "Property": "Name",
+            "Value": "pot_pitcher (2)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "8288648a-14da-4706-8341-c7b8a259cae0"
+            },
+            "Property": "Position",
+            "Value": "28.2882576,712.775085,21.1365318"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "8288648a-14da-4706-8341-c7b8a259cae0": "66435f59-8212-4254-92d0-91b94152e389",
+        "f7b2dc59-de37-47c7-a5f1-0f2830fb46c3": "152bda88-d119-4183-8bd0-1a7c4c136341",
+        "c0ed3bd6-5786-4cee-b714-b81b3108f448": "c02cdce4-11ec-4033-993b-0cde66c3d3ed",
+        "1722d7a6-f515-47fa-8cef-4efa147f0ce5": "2895540a-a38e-41a4-b1dd-67b853f6d3b5",
+        "3d442fb5-4b9b-4a65-b2bf-a6f31c1b60ff": "53a80868-0f41-4111-ae19-40615e111fd3",
+        "42f6af27-7085-4437-bee2-e69ad2b5abe0": "9abdef8f-a9ca-47d8-8559-65d2267979f5",
+        "38c78c40-241f-4270-a20c-16a37d6658a2": "b284e366-a054-4835-b522-18a198199ae7",
+        "bb6af9c4-3490-49db-9219-39b2b3642daf": "cf607fca-e549-403f-879f-00e2907a2ef1",
+        "8aaee0fd-c3be-88db-92e5-55157b42da5c": "e4337b3f-bd86-4f6b-b5f7-a404061cab1a"
+      }
+    },
+    {
       "__guid": "ca1f0d81-a832-438b-9e0c-10f28500d958",
       "__version": 2,
       "__Prefab": {
@@ -3022,6 +3266,22 @@
             },
             "Property": "Position",
             "Value": "182.031525,-377.799469,374.028503"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3071,6 +3331,22 @@
             },
             "Property": "Rotation",
             "Value": "0.214113295,0.762483597,0.58781594,0.165064812"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3084,6 +3360,96 @@
         "c78b9b71-9b5b-4a96-9f2a-231bb7b01af9": "9ae87087-0186-4db0-b5dd-89789331dc49",
         "523c5b7b-1dbb-4bdc-8099-dddcca7a98f1": "1f8fad89-ca43-4633-8f82-772e0d2b37c2",
         "d2ff1388-0f46-49b2-bb27-4942c6acaa24": "314ff469-b925-431a-b0bd-d61640879f69"
+      }
+    },
+    {
+      "__guid": "e400b775-0c5a-4598-aeb9-c00a87cd8a2e",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "a43f0e75-3f18-461f-8b29-b25529006772",
+        "Path": "prefabs/props/misc/trafficcone.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Name",
+            "Value": "trafficcone (3)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Position",
+            "Value": "182.031525,884.419067,-1.48570538"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "7e6e16fd-fba4-4f8f-949b-3ac915daf05a": "e400b775-0c5a-4598-aeb9-c00a87cd8a2e",
+        "1e4d5569-6e14-4af0-85bb-2a171bc90f00": "b9eb9c34-ff6f-493e-ae87-faf18bd4d596",
+        "baccb9a5-3463-4166-ad57-d7b9beaaed41": "f14fb11e-40f0-4fa2-9284-8c2949f3aa10",
+        "7ade888c-07de-4e43-875b-24bbae44e2d4": "f1b4256b-b6cd-4e9b-82a3-ae3b31e6d4a6",
+        "1139bd60-8d27-4d22-ad24-f83d13cbe5b1": "4e5a04d8-aebf-4677-88d5-c36b891292d1",
+        "c78b9b71-9b5b-4a96-9f2a-231bb7b01af9": "bebfc381-7bac-41e8-b7f7-b20055dc2c49",
+        "523c5b7b-1dbb-4bdc-8099-dddcca7a98f1": "c19b36f0-d1f3-4ee7-87ab-413405366666",
+        "d2ff1388-0f46-49b2-bb27-4942c6acaa24": "99f0dc05-c7a9-4157-b5a3-96232e910358"
+      }
+    },
+    {
+      "__guid": "4b9f6251-3657-4963-bb55-2927dc5409a1",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "a43f0e75-3f18-461f-8b29-b25529006772",
+        "Path": "prefabs/props/misc/trafficcone.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Name",
+            "Value": "trafficcone (2)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Position",
+            "Value": "275.762268,884.419067,24.4936333"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7e6e16fd-fba4-4f8f-949b-3ac915daf05a"
+            },
+            "Property": "Rotation",
+            "Value": "0.214113295,0.762483597,0.58781594,0.165064812"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "7e6e16fd-fba4-4f8f-949b-3ac915daf05a": "4b9f6251-3657-4963-bb55-2927dc5409a1",
+        "1e4d5569-6e14-4af0-85bb-2a171bc90f00": "5d5ff7af-5897-40da-a61e-94bbb1fff316",
+        "baccb9a5-3463-4166-ad57-d7b9beaaed41": "945d8a92-ec88-41e3-acb0-9150260d4121",
+        "7ade888c-07de-4e43-875b-24bbae44e2d4": "ccb0edcf-1212-4c34-81cc-cb8571ca7c9d",
+        "1139bd60-8d27-4d22-ad24-f83d13cbe5b1": "ccb807ab-4c54-44e5-a054-de7e658bcec8",
+        "c78b9b71-9b5b-4a96-9f2a-231bb7b01af9": "da3c4818-ad6a-4e7b-937a-8c06e0b54594",
+        "523c5b7b-1dbb-4bdc-8099-dddcca7a98f1": "7063de94-b0e8-4065-8e93-25da4a6262a5",
+        "d2ff1388-0f46-49b2-bb27-4942c6acaa24": "da522780-12ec-4b03-84ca-33cc28b51b5d"
       }
     },
     {
@@ -3143,7 +3509,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "bf95e928-3ee0-43c9-a13b-60f1834cb9be",
+            "Id": "f3453255-9bc7-4dad-a918-9a9f9ce75eec",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": true,

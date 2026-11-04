@@ -191,7 +191,7 @@ public sealed partial class SimWorld : GameObjectSystem
 
 	SimBody Create( in SimBodySpec spec, ushort id )
 	{
-		var body = new SimBody { Spec = spec, Id = id };
+		var body = new SimBody { Spec = spec, Id = id, World = this };
 		_drivers.TryGetValue( spec.Driver, out body.Driver );
 
 		var p = new PhysicsBody( _world ) { BodyType = PhysicsBodyType.Dynamic };
@@ -242,6 +242,7 @@ public sealed partial class SimWorld : GameObjectSystem
 		RefreshStatics();
 		RefreshFollowers();
 		SimStats.Reset();
+		SendSimPing(); // client: measure the round trip before the first sync (see _rttTicks)
 		Log.Info( $"SimWorld: world created ({(IsAuthority ? "host" : "client")}), {_staticCopies.Count} static bodies copied" );
 	}
 
@@ -303,6 +304,9 @@ public sealed partial class SimWorld : GameObjectSystem
 
 		if ( body.ShapesReady && body.Spec.Mass > 0f )
 			p.Mass = body.Spec.Mass;
+		if ( body.ShapesReady && body.Spec.Driver == SimHoldDriver.Id )
+			foreach ( var s in p.Shapes )
+				s.Friction = 0f; // a held body slides rather than grips (HeldBodyDriver.HeldFriction)
 		// Nothing to collide with yet (a client still building the source's collider): hold it still until it has.
 		p.MotionEnabled = body.ShapesReady && (body.Spec.Flags & SimBodyFlags.Anchored) == 0;
 		// Copied props can be small and fast (a knocked knob): without CCD they tunnelled through the zero-thickness mesh floor.
@@ -511,12 +515,17 @@ public sealed partial class SimWorld : GameObjectSystem
 	/// driven body, on a client: between the host's own poses instead (<see cref="RemotePose"/>).</summary>
 	public Transform VisualPose( SimBody b )
 	{
-		if ( ShownFromAuthority( b ) )
+		var raw = PoseFrom( b, b.ShownFromAuth );
+		return new Transform( raw.Position + b.PosOffset, b.RotOffset * raw.Rotation );
+	}
+
+	// The body's pose from one of the two sources, before the fading correction.
+	Transform PoseFrom( SimBody b, bool authority )
+	{
+		if ( authority && b.Authority.Count > 0 )
 			return RemotePose( b );
 		float a = _alpha;
-		var pos = Vector3.Lerp( b.Prev.Position, b.Cur.Position, a ) + b.PosOffset;
-		var rot = b.RotOffset * Rotation.Slerp( b.Prev.Rotation, b.Cur.Rotation, a );
-		return new Transform( pos, rot );
+		return new Transform( Vector3.Lerp( b.Prev.Position, b.Cur.Position, a ), Rotation.Slerp( b.Prev.Rotation, b.Cur.Rotation, a ) );
 	}
 
 	// Another player's prop (or a bot's) on a client is shown from the host's poses, a few ticks behind the newest snapshot
@@ -524,7 +533,62 @@ public sealed partial class SimWorld : GameObjectSystem
 	// velocity) and correcting it every snapshot made it lurch whenever its player turned, stopped or slid along something
 	// (measured on a straight walk past a prop: shown speed 658 u/s against a real 170, corrections p95 11u max 26u). Its
 	// sim body still predicts and collides (and is kept near the truth by NudgeRemote); only what's drawn comes from here.
-	bool ShownFromAuthority( SimBody b ) => !IsAuthority && b.IsRemoteDriven && b.Authority.Count > 0;
+	//
+	// So is a LOOSE body nothing of ours has touched since it last rested (LocalTouched): a prop the host throws is a
+	// guess here until the host's snapshots correct it — and the moment it left the host's hands it used to switch from
+	// these poses (a few ticks behind) to our prediction (a lead ahead): a jump of ~0.35 s of its flight, then the
+	// corrections' fades (user: "rubber-banding when the host drops or throws"). Touch it — walk into it, stand on it, push
+	// it with a carried prop, grab it — and it switches to our prediction, which answers at once; the switch is blended
+	// (UpdatePresentationSource), and it goes back to the host's poses once it has come to rest, where both agree.
+	bool ShownFromAuthority( SimBody b )
+		=> !IsAuthority && b.Authority.Count > 0 && (b.IsRemoteDriven || (b.Driver is null && b.Spec.Owner == Guid.Empty && !b.LocalTouched));
+
+	// Every frame: switch a body's drawn source when its situation changed, folding the difference between the two into
+	// the fading correction so nothing jumps. A touched body that has come to rest goes back to the host's poses.
+	void UpdatePresentationSource()
+	{
+		if ( IsAuthority )
+			return;
+		foreach ( var b in _bodies )
+		{
+			if ( b.LocalTouched && b.Phys.IsValid() && b.Phys.Sleeping && b.Driver is null )
+				b.LocalTouched = false;
+			bool auth = ShownFromAuthority( b );
+			if ( auth == b.ShownFromAuth )
+				continue;
+			var before = PoseFrom( b, b.ShownFromAuth );
+			var after = PoseFrom( b, auth );
+			b.ShownFromAuth = auth;
+			var dp = before.Position - after.Position;
+			if ( dp.Length > 80f )
+			{
+				b.PosOffset = Vector3.Zero; // too far to slide: show it where it is
+				b.RotOffset = Rotation.Identity;
+				continue;
+			}
+			b.PosOffset += dp;
+			b.RotOffset = before.Rotation * after.Rotation.Inverse * b.RotOffset;
+			SimStats.SourceSwitches++;
+		}
+	}
+
+	/// <summary>Client: something of ours is touching this body (see <see cref="ShownFromAuthority"/>).</summary>
+	internal void NoteLocalTouch( SimBody b )
+	{
+		if ( b is not null && !IsAuthority )
+			b.LocalTouched = true;
+	}
+
+	/// <summary>The registered body a sim <see cref="PhysicsBody"/> belongs to, or null (a static copy, a follower).</summary>
+	public SimBody BodyOf( PhysicsBody phys )
+	{
+		if ( phys is null )
+			return null;
+		foreach ( var b in _bodies )
+			if ( b.Phys == phys )
+				return b;
+		return null;
+	}
 
 	Transform RemotePose( SimBody b )
 	{
@@ -544,10 +608,10 @@ public sealed partial class SimWorld : GameObjectSystem
 		return new Transform( Vector3.Lerp( a.p, n.p, f ), Rotation.Slerp( a.r, n.r, f ) );
 	}
 
-	// Client: remember the host's pose of someone else's driven body at a host tick (RemotePose shows from these).
+	// Client: remember the host's pose of a body we don't drive at a host tick (RemotePose shows from these).
 	void NoteAuthority( SimBody b, int tick, in SimBodyState st )
 	{
-		if ( IsAuthority || !b.IsRemoteDriven )
+		if ( IsAuthority || b.IsLocalOwned )
 			return;
 		var list = b.Authority;
 		if ( list.Count > 0 && tick <= list[^1].tick )

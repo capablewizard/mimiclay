@@ -106,7 +106,7 @@ public static class SimQuant
 	// A driven body's controller state: flags byte, still ticks, two tick counters, the commanded velocity (12 bytes).
 	public static void WriteCtrl( BinaryWriter w, in SimCtrl c )
 	{
-		w.Write( (byte)((c.Grounded ? 1 : 0) | (c.Parked ? 2 : 0) | (c.AirFromJump ? 4 : 0)) );
+		w.Write( (byte)((c.Grounded ? 1 : 0) | (c.Parked ? 2 : 0) | (c.AirFromJump ? 4 : 0) | (c.Holding ? 8 : 0)) );
 		w.Write( c.StillTicks );
 		w.Write( c.SinceJumpTicks );
 		w.Write( c.PushLevel );
@@ -118,7 +118,7 @@ public static class SimQuant
 		byte f = r.ReadByte();
 		return new SimCtrl
 		{
-			Grounded = (f & 1) != 0, Parked = (f & 2) != 0, AirFromJump = (f & 4) != 0,
+			Grounded = (f & 1) != 0, Parked = (f & 2) != 0, AirFromJump = (f & 4) != 0, Holding = (f & 8) != 0,
 			StillTicks = r.ReadByte(), SinceJumpTicks = r.ReadUInt16(), PushLevel = r.ReadUInt16(),
 			Commanded = ReadLinear( r ),
 		};

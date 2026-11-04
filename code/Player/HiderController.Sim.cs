@@ -128,22 +128,63 @@ public sealed partial class HiderController : ISimShapeSource
 
 		var existing = sim.Find( GameObject.Id );
 		var owner = Network.Owner?.Id ?? Connection.Local?.Id ?? Guid.Empty;
-		bool walk = SimWalk && SimWalkEligible();
-		bool loose = SimWalk && !walk && SimLooseEligible();
+		// Three kinds, in precedence: HELD (in a hunter's hands — the hold driver, owned by the holder; see SimHoldDriver),
+		// a WALKER, a LOOSE rigid body.
+		var holder = PropClaims.HolderOf( this );
+		bool held = holder is { } && SimHoldApplies( this ) && _body.IsValid() && _collider.IsValid();
+		if ( held )
+			_sinceSimHoldRowGone = 0f; // (how long since the Held row went: the loose redrive waits on the release tick, briefly)
+		bool walk = !held && SimWalk && SimWalkEligible();
+		bool loose = !held && !walk && SimWalk && SimLooseEligible();
 
 		// Anything about the registration that changed (who drives it, walking vs loose, input or none) means re-registering.
+		(Vector3 v, Vector3 w)? carry = null;
 		if ( existing is not null )
 		{
-			bool same = walk
-				? existing.Spec.Driver == SimWalkDriverId && existing.Spec.Owner == owner && ((existing.Spec.Flags & SimBodyFlags.Inert) != 0) == SimInert
-					&& IsUpright( existing.Phys.Rotation ) // a walker registered tilted (before this fix) is re-made upright
-				: loose && existing.Spec.Driver == 0;
+			bool same = held
+				? existing.Spec.Driver == SimHoldDriver.Id && existing.Spec.Owner == holder.Value
+				: walk
+					? existing.Spec.Driver == SimWalkDriverId && existing.Spec.Owner == owner && ((existing.Spec.Flags & SimBodyFlags.Inert) != 0) == SimInert
+						&& IsUpright( existing.Phys.Rotation ) // a walker registered tilted (before this fix) is re-made upright
+					: loose && existing.Spec.Driver == 0;
 			if ( same )
 				return;
+			// Held ↔ loose: the same clay body, a different driver — changed IN PLACE (SimWorld.Redrive), so its motion carries
+			// on everywhere (a throw keeps flying) and nothing is re-created or restored from an older state.
+			if ( existing.Spec.Shape == SimShapeKind.FromGameObject && (held || loose) )
+			{
+				if ( held )
+					sim.Redrive( GameObject.Id, SimHoldDriver.Id, holder.Value, SimBodyFlags.Present | SimBodyFlags.NoGravity );
+				else
+				{
+					// Let go of: loose from the holder's RELEASE TICK — the first of its inputs with no target (HoldReleased), which
+					// the holder's own prediction switched at too — not from the drop message, which lands a lead earlier while
+					// its last targets are still on the way (a 71u correction on every throw). Capped: lost inputs, a vanished holder.
+					bool waitForRelease = existing.Spec.Driver == SimHoldDriver.Id && existing.Ctrl.Holding && !existing.HoldReleased;
+					if ( waitForRelease && _sinceSimHoldRowGone < 1f )
+						return;
+					sim.Redrive( GameObject.Id, 0, Guid.Empty, SimBodyFlags.Present );
+				}
+				return;
+			}
+			if ( existing.Spec.Driver == SimHoldDriver.Id && existing.Phys.IsValid() )
+				carry = (existing.Phys.Velocity, existing.Phys.AngularVelocity); // let go of: it keeps the hold's swing (a throw flies)
 			sim.Unregister( GameObject.Id );
 		}
 
-		if ( walk )
+		if ( held )
+		{
+			// Its real clay collider, free to turn, no gravity (the hold carries it); the holder's input drives it.
+			sim.Register( new SimBodySpec
+			{
+				Key = GameObject.Id, Source = GameObject.Id, Shape = SimShapeKind.FromGameObject, Driver = SimHoldDriver.Id, Owner = holder.Value,
+				Flags = SimBodyFlags.Present | SimBodyFlags.NoGravity,
+				Mass = _collider.IsValid() ? _collider.ClayMass : 0f, Pose = new Transform( WorldPosition, WorldRotation ),
+			} );
+			if ( carry is { } keep )
+				sim.SetMotion( GameObject.Id, keep.v, keep.w );
+		}
+		else if ( walk )
 		{
 			// UPRIGHT — yaw only, the root SettleUpright leaves (it folds any tilt into the disguise, which the hull is built
 			// from). Registered at a tilted root (a loose prop lying on its side, possessed), the walker kept that tilt for
@@ -164,16 +205,47 @@ public sealed partial class HiderController : ISimShapeSource
 			// A loose prop (dropped from a grab): a plain rigid body in the sim — its real clay collider, free to tumble,
 			// engine gravity — carrying on with whatever motion the scene body had.
 			var rb = Body;
-			bool asleep = !rb.IsValid() || rb.Sleeping;
+			bool asleep = carry is null && (!rb.IsValid() || rb.Sleeping);
 			sim.Register( new SimBodySpec
 			{
 				Key = GameObject.Id, Source = GameObject.Id, Shape = SimShapeKind.FromGameObject, Owner = Guid.Empty,
 				Flags = SimBodyFlags.Present | (asleep ? SimBodyFlags.StartAsleep : 0),
 				Mass = _collider.IsValid() ? _collider.ClayMass : 0f, Pose = new Transform( WorldPosition, WorldRotation ),
 			} );
-			if ( !asleep && rb.MotionEnabled )
+			if ( carry is { } keep )
+				sim.SetMotion( GameObject.Id, keep.v, keep.w );
+			else if ( !asleep && rb.MotionEnabled )
 				sim.SetMotion( GameObject.Id, rb.Velocity, rb.AngularVelocity );
 		}
+	}
+
+	/// <summary>Is this prop carried BY THE SIM when grabbed (the hold driver, SimHoldDriver) rather than lent to its holder?
+	/// Creative's released scenery while the sim walk is on. Players' bodies and prop-hunt decoys still take the lend
+	/// (phase 3b).</summary>
+	internal static bool SimHoldApplies( HiderController h )
+		=> SimWalk && h.IsValid() && h.Network.Active && PropClaims.IsReleased( h ) && !RoundManager.IsBotPawn( h.GameObject );
+
+	RealTimeSince _sinceSimHoldRowGone = 999f;
+
+	/// <summary>Is this pawn in a hunter's hands in the sim world right now (any machine)?</summary>
+	internal bool SimHeld => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b && b.Spec.Driver == SimHoldDriver.Id;
+
+	// Every machine, every tick: while this pawn is held in the sim, its holder's hunter stays out of the sim's followers,
+	// so the held body never collides with the hand carrying it (the scene filters the two — PropClaims.FilterAgainst).
+	GameObject _simHoldExcluded;
+
+	void UpdateSimHoldFollower( SimWorld sim )
+	{
+		GameObject hunter = null;
+		if ( SimHeld && PropClaims.HolderOf( this ) is { } holder )
+			hunter = Scene.GetAllComponents<HunterController>().FirstOrDefault( x => x.Network.Owner?.Id == holder )?.GameObject;
+		if ( hunter == _simHoldExcluded )
+			return;
+		if ( _simHoldExcluded.IsValid() )
+			sim.ExcludeFollower( _simHoldExcluded, false );
+		_simHoldExcluded = hunter;
+		if ( hunter.IsValid() )
+			sim.ExcludeFollower( hunter, true );
 	}
 
 	// Every machine, the moment this pawn's WALKER body appears in the sim (SimWorld.BodyAdded — before anything presents
@@ -274,6 +346,7 @@ public sealed partial class HiderController : ISimShapeSource
 		var sim = SimSystem;
 		if ( sim is null )
 			return;
+		UpdateSimHoldFollower( sim );
 		bool mine = !IsProxy && !RoundManager.IsBotPawn( GameObject ) && !Scenery && SimWalking;
 		if ( mine )
 		{
@@ -375,7 +448,11 @@ public sealed partial class HiderController : ISimShapeSource
 		public SimInput Guess( SimBody body, in SimBodyState latest ) => new() { Wish = new Vector2( latest.V.x, latest.V.y ) };
 	}
 
-	internal static void RegisterSimDriver( SimWorld sim ) => sim.RegisterDriver( SimWalkDriverId, new SimWalkDriver() );
+	internal static void RegisterSimDriver( SimWorld sim )
+	{
+		sim.RegisterDriver( SimWalkDriverId, new SimWalkDriver() );
+		sim.RegisterDriver( SimHoldDriver.Id, new SimHoldDriver() ); // the grab's hold (phase 3) — every machine runs it
+	}
 
 	// StepWalk, from (input, body.Ctrl) only — every number it keeps between ticks is in the SimCtrl, so a replay of the
 	// same inputs from the same snapshot comes out the same. See HiderController.Walk for why each piece is there.
@@ -454,6 +531,8 @@ public sealed partial class HiderController : ISimShapeSource
 		}
 
 		var gb = ground && !tr.StartedSolid && tr.Body is { } b && b.IsValid() && b.BodyType != PhysicsBodyType.Static ? b : null;
+		if ( gb is not null && body.IsLocalOwned )
+			sim.NoteLocalTouch( sim.BodyOf( gb ) ); // standing on a loose prop: ours to predict (SimWorld.ShownFromAuthority)
 		float myMass = MathF.Max( pb.Mass, 0.01f );
 		float groundMassRatio = gb is null ? 0f : gb.BodyType == PhysicsBodyType.Dynamic ? gb.Mass / myMass : 1f;
 		Vector3 groundVel = gb is not null && groundMassRatio >= 0.5f ? gb.GetVelocityAtPoint( tr.HitPosition ) : Vector3.Zero;
@@ -543,8 +622,8 @@ public sealed partial class HiderController : ISimShapeSource
 	// presentation (SimWorld moves it). The rest of the game still reads IsGrounded / Velocity, so mirror them.
 	bool StepSimWalking()
 	{
-		// Loose in the sim (a rigid body there): just presentation here, like a sim walker.
-		if ( SimLoose )
+		// Loose in the sim (a rigid body there), or in a hunter's hands there: just presentation here, like a sim walker.
+		if ( SimLoose || SimHeld )
 		{
 			SetPhysicsMode( PhysicsMode.Character );
 			return true;
