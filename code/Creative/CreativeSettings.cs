@@ -15,31 +15,21 @@ public struct CreativeSettings
 
 	public const bool DefaultSpawnProps = true;
 
-	/// <summary>Shot craters heal — creative's default, since builds are what it protects. Off = craters stay, and a
-	/// scene prop's COLLIDER takes them too, like prop hunt's "Repair props" off (<see cref="RoundSettings.RepairProps"/>).
-	/// A prop's authored <see cref="DamageProfile"/> that heals still heals (hunter faces).</summary>
-	public bool RepairProps;
-
-	public const bool DefaultRepairProps = true;
-
 	public static CreativeSettings Default => new()
 	{
 		SpawnProps = DefaultSpawnProps,
-		RepairProps = DefaultRepairProps,
 	};
 
 	// Short keys, namespaced like RoundSettings' "r.*" so nothing collides.
 	static class Keys
 	{
 		public const string Props = "c.props";
-		public const string Repair = "c.repair";
 	}
 
 	/// <summary>Host-only: flatten into session data right before the launch's <see cref="Game.ChangeScene"/>.</summary>
 	public readonly void WriteToLobby()
 	{
 		Networking.SetData( Keys.Props, SpawnProps ? "1" : "0" );
-		Networking.SetData( Keys.Repair, RepairProps ? "1" : "0" );
 	}
 
 	/// <summary>Read back in the map scene (any machine). Missing/blank keys fall back to <see cref="Default"/>,
@@ -54,19 +44,8 @@ public struct CreativeSettings
 		else if ( props == "1" )
 			d.SpawnProps = true;
 
-		d.RepairProps = ReadRepairFromLobby() ?? d.RepairProps;
-
 		return d;
 	}
-
-	/// <summary>Just the repair key — null when a lobby didn't send it (direct play), so the map card's override can
-	/// tell "no choice made" from "off".</summary>
-	public static bool? ReadRepairFromLobby() => Networking.GetData( Keys.Repair ) switch
-	{
-		"0" => false,
-		"1" => true,
-		_ => null,
-	};
 
 	/// <summary>Blank every key a creative launch writes — same reason as <see cref="RoundSettings.ClearLobbyData"/>:
 	/// session data is an engine static that survives the editor's Stop→Play, so a self-hosted direct Play must
@@ -75,6 +54,5 @@ public struct CreativeSettings
 	public static void ClearLobbyData()
 	{
 		Networking.SetData( Keys.Props, "" );
-		Networking.SetData( Keys.Repair, "" );
 	}
 }

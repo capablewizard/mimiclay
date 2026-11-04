@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 namespace Mimiclay;
 
 // Shot decoys: the central pellet (the one that catches props) knocks the decoy it strikes LOOSE — a real rigidbody
-// tumble from the shot's impulse — and a decoy the shots have whittled below ShotRemoveFraction of its clay is
-// removed outright. Players never get here: a caught player pops, and scatter pellets don't mark props at all (see
+// tumble from the shot's impulse — and, with "Repair props" off, a decoy the shots have whittled below
+// ShotRemoveFraction of its clay is removed outright. Players never get here: a caught player pops, and scatter pellets don't mark props at all (see
 // HunterController.TryCarve), so this only ever touches scenery.
 //
 // Scene props are Snapshot objects, not network objects, so each machine running its own physics would leave every
@@ -41,7 +41,10 @@ public sealed partial class RoundManager
 			return;
 
 		var go = sculpt.GameObject;
-		QueueShotScan( sculpt ); // removal + island cleanup, off the main thread — lands a frame or two later
+		// Removal + island cleanup, off the main thread — lands a frame or two later. "Repair props" off only: with it
+		// on the craters heal, so nothing is ever shot away for good (no removal, no crumbs, no splits).
+		if ( !Settings.RepairProps )
+			QueueShotScan( sculpt );
 
 		// Lent to a client (held, or settling — RoundManager.Grab): that machine simulates it, so the knock goes there.
 		if ( IsLentDecoy( go ) )
@@ -74,12 +77,9 @@ public sealed partial class RoundManager
 	/// PERF (unmeasured): each crater now rebuilds the decoy's collider on EVERY machine, uncached (every crater makes
 	/// a new shape), and a deeply bitten prop can fall back to voxel boxes — more shapes on a moving body. Check with
 	/// a sustained-fire test before shipping; see the repair-props memory.</summary>
-	internal void PrepareShotCarve( SdfSculpture sculpt ) => PrepareShotCarve( sculpt, Settings.RepairProps );
-
-	/// <summary>The same, for any mode with its own repair setting (creative: <see cref="CreativeSettings.RepairProps"/>).</summary>
-	internal static void PrepareShotCarve( SdfSculpture sculpt, bool repair )
+	internal void PrepareShotCarve( SdfSculpture sculpt )
 	{
-		if ( repair || !IsShotDecoy( sculpt ) )
+		if ( Settings.RepairProps || !IsShotDecoy( sculpt ) )
 			return;
 
 		var collider = sculpt.Components.Get<SdfCollider>();
@@ -98,12 +98,13 @@ public sealed partial class RoundManager
 	// one or two scans, not one per shot. The brushes are copied + flattened on the main thread; the sampling and
 	// flood fill (a few ms) run on a worker; only the verdict comes back to the main thread.
 	//
-	// Verdicts, measured against the decoy's INTACT clay (its authored brushes, sampled once on the first scan):
+	// Only with "Repair props" off — with it on, craters heal and the clay grows back, so nothing is removed, cut or
+	// split (and no scan runs). Verdicts, measured against the decoy's INTACT clay (its authored brushes, sampled once
+	// on the first scan):
 	//  - the main body under ShotRemoveFraction → the whole decoy is removed;
-	//  - "Repair props" off: an island big enough to be a PART (ShotSplitFraction of the intact clay and at least
-	//    ShotSplitMinVolume) BREAKS OFF as its own decoy (see SplitShotProp), one per scan; anything smaller is a
-	//    crumb and is cut away with a subtract box (shape AND collider: the collider takes damage brushes then).
-	//    With repair on, craters heal and the pieces join up again, so nothing is cut or split.
+	//  - an island big enough to be a PART (ShotSplitFraction of the intact clay and at least ShotSplitMinVolume)
+	//    BREAKS OFF as its own decoy (see SplitShotProp), one per scan; anything smaller is a crumb and is cut away
+	//    with a subtract box (shape AND collider: the collider takes damage brushes then).
 
 	/// <summary>Islands at least this fraction of the intact clay break off as their own object (repair off); smaller
 	/// ones are cut away. Low on purpose: handles are small next to their prop — measured 2026-11-03, a mug's handle is
@@ -184,7 +185,7 @@ public sealed partial class RoundManager
 	// Host, main thread.
 	void ApplyShotScan( GameObject go, SdfIslandScan.Result scan, float intact )
 	{
-		if ( intact <= 0f )
+		if ( intact <= 0f || Settings.RepairProps ) // repair turned on mid-scan: nothing goes for good
 			return;
 
 		if ( scan.MainVolume < intact * ShotRemoveFraction )
@@ -196,9 +197,6 @@ public sealed partial class RoundManager
 				RemoveShotProp( go );
 			return;
 		}
-
-		if ( Settings.RepairProps )
-			return;
 
 		List<Vector3> centres = null, halves = null;
 		SdfIslandScan.Island? split = null;

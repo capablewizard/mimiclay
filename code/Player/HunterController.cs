@@ -3264,11 +3264,10 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// the Reveal).
 		var profile = sculpt.GameObject.Components.Get<DamageProfile>();
 		// Charades joins them now that guessers can possess its map clay (same possessed-prop-scars trap).
-		// Creative heals unless its own "Repair props" is off (CreativeSettings.RepairProps) — then it scars like a
-		// prop-hunt round with repair off: everything, possessed props included, so nothing tells.
-		bool sandbox = LobbyManager.Current.IsValid() || CharadesManager.Current.IsValid();
-		bool repair = (RoundManager.Current.IsValid() && RoundManager.Current.Settings.RepairProps)
-			|| (CreativeManager.Current.IsValid() && CreativeManager.Current.Settings.RepairProps);
+		// Creative always heals: props there are edited in place, and permanent craters fight the editor (repair off is a
+		// prop-hunt-only rule, where nobody sculpts the decoys).
+		bool sandbox = CreativeManager.Current.IsValid() || LobbyManager.Current.IsValid() || CharadesManager.Current.IsValid();
+		bool repair = RoundManager.Current.IsValid() && RoundManager.Current.Settings.RepairProps;
 		bool heals = sandbox || repair || (profile.IsValid() && profile.Heals);
 		var healDelay = profile.IsValid() ? profile.HealDelay : DamageProfile.DefaultHealDelay;
 		var healDuration = profile.IsValid() ? profile.HealDuration : DamageProfile.DefaultHealDuration;
@@ -3295,7 +3294,6 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		if ( sculpt.Brushes.Count < SdfBrushPacker.MaxBrushes )
 		{
 			RoundManager.Current?.PrepareShotCarve( sculpt ); // before the rebuild: may opt the collider into craters
-			PropClaims.PrepareCreativeShotCarve( sculpt );
 			AddCrater( sculpt, localPos, radius, shrinks, shrinkDelay, shrinkDuration );
 		}
 

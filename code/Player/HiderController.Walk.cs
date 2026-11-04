@@ -48,6 +48,25 @@ public sealed partial class HiderController
 	RealTimeSince _sinceWalkPushBack = 999f; // pushing sticks for a moment, or a stalled push flips back to full acceleration
 	int _parkedHullVersion; // the hull a park was made with — a new shape wakes it
 
+	// What a park stands on, and where it was: parked, the walk runs no gravity and no ground check (that's the point of
+	// parking), so if the thing under us is picked up, knocked away or replaced nothing else would notice — a prop left
+	// standing on a prop someone grabbed hung in mid-air until its player pressed a key. Any object the foot hit counts,
+	// static ones included: creative replaces untouched scene clay with a pawn the moment it's grabbed.
+	GameObject _parkedOn;
+	Transform _parkedOnPose;
+
+	// Is the ground we parked on still there, where it was? (Nothing recorded = nothing to check.)
+	bool ParkedGroundStill()
+	{
+		if ( _parkedOn is null )
+			return true;
+		if ( !_parkedOn.IsValid() || !_parkedOn.Active )
+			return false;
+		var now = _parkedOn.WorldTransform;
+		return now.Position.Distance( _parkedOnPose.Position ) < 0.25f
+			&& now.Rotation.Distance( _parkedOnPose.Rotation ) < 0.5f;
+	}
+
 	// A mantle's guided carry (see TryMantle, TryMantleFromUnder): for _mantleCarryTime after the climb hands over, until the ground spring finds
 	// the top, move in over it at _mantleSpeed and up to _mantleTopZ (root height resting on it) — no gravity.
 	Vector3 _mantleDir;
@@ -100,7 +119,8 @@ public sealed partial class HiderController
 		bool idle = wish.IsNearZeroLength && !jump && MathF.Abs( turn ) < 0.001f;
 		if ( _parked )
 		{
-			if ( idle && _hull.Version == _parkedHullVersion && pb.Velocity.LengthSquared < 4f && pb.AngularVelocity.LengthSquared < 0.01f )
+			if ( idle && _hull.Version == _parkedHullVersion && pb.Velocity.LengthSquared < 4f && pb.AngularVelocity.LengthSquared < 0.01f
+				&& ParkedGroundStill() )
 				return;
 			Unpark();
 		}
@@ -226,6 +246,8 @@ public sealed partial class HiderController
 		{
 			_parked = true;
 			_parkedHullVersion = _hull.Version;
+			_parkedOn = tr.Hit ? tr.GameObject : null;
+			_parkedOnPose = _parkedOn.IsValid() ? _parkedOn.WorldTransform : default;
 			pb.Velocity = Vector3.Zero;
 			_velocity = Vector3.Zero;
 		}

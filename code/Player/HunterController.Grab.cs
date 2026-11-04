@@ -41,6 +41,11 @@ public sealed partial class HunterController
 	[ConVar( "mimi_dbg_grab_hold", Help = "Debug: grabs hold as if RMB were held down." )]
 	public static bool DebugGrabHold { get; set; }
 
+	/// <summary>Testing: RMB toggles the grab — one press picks up, the next press drops — instead of hold-to-carry.
+	/// Local preference (each player's own feel), saved between sessions.</summary>
+	[ConVar( "mimi_grab_toggle", ConVarFlags.Saved, Help = "Grab toggles on RMB press (press again to drop) instead of holding RMB." )]
+	public static bool GrabToggle { get; set; }
+
 	/// <summary>E or R held over a grabbed prop: the mouse is turning or scaling it, so the view must not move.</summary>
 	internal bool GrabLookFrozen => _grabbed.IsValid() && (Input.Down( "Use" ) || Input.Down( "Reload" ));
 
@@ -82,7 +87,12 @@ public sealed partial class HunterController
 
 		// Hold-to-carry: RMB up = let go. Checked before seeding, so a grant that lands after a quick click
 		// (a client's round-trip) drops straight back where it was instead of jumping into the hand.
-		if ( !Input.Down( "Attack2" ) && !DebugGrabHold )
+		// With mimi_grab_toggle on, a fresh RMB press drops it instead — never the press that picked it up (that one
+		// was this hold's first frame, before it's seeded).
+		bool letGo = GrabToggle
+			? held == _grabbed && Input.Pressed( "Attack2" )
+			: !Input.Down( "Attack2" );
+		if ( letGo && !DebugGrabHold )
 		{
 			LetGo( held );
 			return true;

@@ -214,14 +214,6 @@
 								<div class="pill @(!C.SpawnProps ? $"on {Nudge.Class( nameof( SetSpawnProps ) )}" : "")" @onmousedown=@Press( () => SetSpawnProps( false ) )>No</div>
 							</div>
 						</div>
-						@* Shot craters heal (on) or stay (off) — see CreativeSettings.RepairProps. *@
-						<div class="option-row">
-							<div class="option-name">Repair props</div>
-							<div class="seg compact">
-								<div class="pill @(C.RepairProps ? $"on {Nudge.Class( nameof( SetCreativeRepair ) )}" : "")" @onmousedown=@Press( () => SetCreativeRepair( true ) )>On</div>
-								<div class="pill @(!C.RepairProps ? $"on {Nudge.Class( nameof( SetCreativeRepair ) )}" : "")" @onmousedown=@Press( () => SetCreativeRepair( false ) )>Off</div>
-							</div>
-						</div>
 					}
 
 					@* ── The rest, always open under its own heading: prop hunt's More rules, charades' Topics ── *@
@@ -565,7 +557,6 @@
 
 	// Creative's toggle (host-authority enforced by the LobbyManager setter, like everything above).
 	void SetSpawnProps( bool on ) => Nudge.Change( nameof( SetSpawnProps ), on ? -1 : 1, () => C.SpawnProps, () => LobbyManager.Current?.SetSpawnProps( on ) );
-	void SetCreativeRepair( bool on ) => Nudge.Change( nameof( SetCreativeRepair ), on ? -1 : 1, () => C.RepairProps, () => LobbyManager.Current?.SetCreativeRepairProps( on ) );
 
 	// ── Layout helpers (the concept layout: banner, radios, round rules, More rules, map cards) ─────────────
 	// Short radio-row blurbs (the catalogue descriptions are sentence-long).
@@ -695,7 +686,7 @@
 	protected override int BuildHash()
 		=> HashCode.Combine( _open, S.Mode, HashCode.Combine( S.HunterCount, S.AmmoLimit, S.Ghosts, S.RepairProps, S.GrabProps ),
 			HashCode.Combine( S.HideSeconds, S.HuntSeconds, S.TauntSeconds, S.HintSeconds, S.RevealSeconds ),
-			HashCode.Combine( G, C.SpawnProps, C.RepairProps ),
+			HashCode.Combine( G, C.SpawnProps ),
 			HashCode.Combine( Ch.Rounds, Ch.Source, Ch.Topics, Ch.SculptSeconds, Ch.TopicChoices, Ch.WriteSeconds, Ch.WordLengthHints ),
 			HashCode.Combine( Ch.WorkshopLists, CharadesWorkshop.Added.Count, _workshopView, _picked, Nudge.Version ),
 			LobbyPlayerCount );

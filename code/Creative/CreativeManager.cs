@@ -35,10 +35,6 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost, 
 	/// creative rules apply.</summary>
 	public static CreativeManager Current { get; private set; }
 
-	/// <summary>This session's creative rules, resolved in OnStart on every machine (lobby data, or the map card on a
-	/// direct play) — no [Sync] needed.</summary>
-	public CreativeSettings Settings { get; private set; } = CreativeSettings.Default;
-
 	// The claim service sharing this GameObject (spawned beside us by RoundManagerSpawner, so they replicate
 	// and die together).
 	PropClaims Claims => Components.Get<PropClaims>();
@@ -119,14 +115,6 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost, 
 		// the host's creative rules off session data. Lobby data reaches all members, and what it drives here
 		// is machine-local work, so nothing needs to ride [Sync].
 		var settings = CreativeSettings.ReadFromLobby();
-
-		// A direct play (no lobby sent the key) takes the map card's override. Every machine has the card in its own
-		// copy of the scene, so each resolves the same answer locally.
-		if ( CreativeSettings.ReadRepairFromLobby() is null
-			&& Scene.GetAllComponents<MapModeCard>().FirstOrDefault() is { OverrideCreativeRepairProps: true } card )
-			settings.RepairProps = card.CreativeRepairProps;
-
-		Settings = settings;
 
 		// "Spawn Props" off = blank canvas: delete the map's pre-placed clay. A LOCAL, deterministic sweep on
 		// each machine rather than host broadcasts — scene objects come identical from the scene file, so every

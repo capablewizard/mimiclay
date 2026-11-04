@@ -836,7 +836,7 @@ public sealed partial class PropClaims : Component, IInteractable
 	/// <summary>Host-only: mint a prop pawn wearing <paramref name="brushes"/>, its root at <paramref name="rootT"/> and
 	/// its Disguise at <paramref name="disguiseLocal"/> under it, and network it. <paramref name="sourceOf"/>: the scene
 	/// object it replaces (its prefab becomes the editor's Save target, its carried extras move over) — null for a pawn
-	/// with no scene original (a piece shot off a prop, PropClaims.Shot).</summary>
+	/// with no scene original.</summary>
 	internal GameObject SpawnPropPawn( List<SdfBrush> brushes, Transform rootT, Transform disguiseLocal, string name,
 		Connection owner, bool scenery, GameObject sourceOf = null )
 	{
@@ -874,11 +874,6 @@ public sealed partial class PropClaims : Component, IInteractable
 			disguise.LocalScale = disguiseLocal.Scale;
 			if ( sourceOf.IsValid() )
 				CarryExtras( sourceOf, disguise );
-
-			// Creative with "Repair props" off: craters carve this prop's collider ([Property], so it rides the spawn
-			// snapshot to every machine — see PropClaims.Shot).
-			if ( ShotCarvesColliders && disguise.Components.Get<SdfCollider>( includeDisabled: true ) is { } collider )
-				collider.CarveCollision = true;
 		}
 
 		pawn.Enabled = true;

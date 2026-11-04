@@ -540,12 +540,6 @@ public sealed class LobbyManager : Component, IRoundContext, IPropClaimHost, Com
 		var s = CreativeCfg; s.SpawnProps = on; CreativeCfg = s;
 	}
 
-	public void SetCreativeRepairProps( bool repair )
-	{
-		if ( !IsHostAuthority ) return;
-		var s = CreativeCfg; s.RepairProps = repair; CreativeCfg = s;
-	}
-
 	// ── Charades config (same copy-mutate-write shape again) ──────────────────────────────────────────────────
 	public void SetCharadesRounds( int rounds )
 	{

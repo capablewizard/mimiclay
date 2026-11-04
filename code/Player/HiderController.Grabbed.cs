@@ -27,6 +27,7 @@ public sealed partial class HiderController
 	bool _moveEscapeQueued;     // a movement key went down this frame while held (latched for the fixed step)
 	bool _moveWasDown;          // …edge detection for it: holding W through the grab isn't a press
 	bool _wasBorrowed;          // we watched our body lent out — the first owned tick after is the hand-back
+	bool _escapeJump;           // that escape (while lent out) was SPACE: jump on the hand-back (see EscapeJump)
 	(Vector3 Position, Rotation Rotation, Vector3 Velocity, bool Escaped)? _handback; // the pose it came back at
 	RealTimeSince _sinceOwnedBack; // owned again but no pose yet: how long we've waited for it (see StepHandback)
 	bool _awaitingHandback;
@@ -69,6 +70,9 @@ public sealed partial class HiderController
 			PlaceExactly( back.Position, back.Rotation );
 			RecoverFromGrab();
 			_velocity = back.Velocity;
+			if ( back.Escaped && _escapeJump )
+				EscapeJump();
+			_escapeJump = false;
 			return false;
 		}
 
@@ -193,11 +197,13 @@ public sealed partial class HiderController
 		_wasBorrowed = true;   // the first owned tick after this is the hand-back (StepHandback)
 
 		WatchMoveEscape();
-		bool escape = _moveEscapeQueued || (ControlActive && Input.Pressed( "jump" ));
+		bool jumped = ControlActive && Input.Pressed( "jump" );
+		bool escape = _moveEscapeQueued || jumped;
 		_moveEscapeQueued = false;
 		if ( escape && !_escapeSent )
 		{
 			_escapeSent = true;
+			_escapeJump = jumped; // jumps once the body is ours again (StepHandback)
 			PropClaims.Current?.EscapeGrab( GameObject );
 		}
 
@@ -241,10 +247,13 @@ public sealed partial class HiderController
 			// the reply.
 			if ( escapePressed )
 			{
+				bool jumped = _jumpQueued;
 				_jumpQueued = false;
 				_escapeSent = true;
 				PropClaims.Current?.EscapeGrab( GameObject );
 				RecoverFromGrab();
+				if ( jumped )
+					EscapeJump();
 				return false;
 			}
 
@@ -272,6 +281,19 @@ public sealed partial class HiderController
 
 		SetPhysicsMode( PhysicsMode.Loose );
 		return true;
+	}
+
+	// Space out of a hold: a real jump, launched as if we stood on the floor — the walk's own launch speed, size-scaled
+	// like any jump (HiderController.Walk) — even though we were hanging in someone's hands. Sideways we keep what the
+	// hold was doing. After RecoverFromGrab: the walk picks _velocity up on its next tick, and the jump bookkeeping keeps
+	// its ground spring from pulling us straight back down.
+	void EscapeJump()
+	{
+		_velocity = _velocity.WithZ( JumpPower * System.MathF.Sqrt( SizeSpeedScale ) );
+		IsGrounded = false;
+		_groundObject = null;
+		_sinceWalkJump = 0f;
+		_airFromJump = true; // a jump at a wall grabs it (see HiderController.Climb)
 	}
 
 	// Back to being a character: root upright (tumble folded into the disguise), keeping the speed we had.
