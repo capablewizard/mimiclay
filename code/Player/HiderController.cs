@@ -175,7 +175,14 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	// Internal: the disguise sculpture, for code that needs THE pawn's body explicitly (PlayerNameplates
 	// anchors above it) — resolved on every machine in OnStart, so proxies can read it too.
-	internal SdfSculpture DisguiseSculpture => _body;
+	// Before OnStart (a pawn spawned this frame — a prop a shot just converted) _body isn't wired yet: find it.
+	internal SdfSculpture DisguiseSculpture => _body.IsValid()
+		? _body
+		: GameObject.Children.FirstOrDefault( c => c.Name == "Disguise" )?.Components.Get<SdfSculpture>();
+
+	/// <summary>Is this body a free rigidbody right now (dropped, knocked loose)? A shot's kick waits for it
+	/// (PropClaims.Shot) — kicked while still a character body, the switch to loose would eat it.</summary>
+	internal bool InLoosePhysics => _physicsMode == PhysicsMode.Loose;
 
 	/// <summary>True while this prop's player is in edit mode, on every machine — the roster HUD badges their
 	/// pip with it and holds their icon still until they exit. Mirrored from the session each owner frame
@@ -235,6 +242,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	bool _fovBlendSeeded;  // false until first driven, so the very first frame starts from whatever's live (no pop)
 
 	SpectatorController _freeCam; // our free cam while it runs
+	RealTimeSince _sinceNotOurs;  // a proxy the lent registry doesn't (yet) call ours — see OnUpdate's proxy branch
+	const float NotOursGrace = 0.5f;
 
 	/// <summary>Is this prop's owner flying the free cam (its body left standing)?</summary>
 	public bool FreeCamming => _freeCam.IsValid();
@@ -521,6 +530,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		UpdateReleasedSolidity();
 		UpdateScrape();
 		UpdateSettlePin(); // other players' props: hold the clay still through their stand-up (see SettleUpright)
+		if ( !IsProxy )
+			_sinceNotOurs = 0f; // the grace below counts from the moment we STOP owning it
 
 		// A granted possession resumes here — before the dormant gate, because a HOST possessing a prop it
 		// released itself still has _dormant latched on its own copy (ResumeControl clears it).
@@ -565,11 +576,16 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			// Our own body, lent out for a hold (or on its way back): still ours to watch (and to break free of).
 			if ( OwnBodyAway )
 			{
+				_sinceNotOurs = 0f;
 				UpdateBorrowedView();
 				return;
 			}
 
-			SetFreeCam( false ); // released / ownership dropped mid-flight: the free cam was ours, it goes too
+			// Released / ownership dropped mid-flight: the free cam was ours, it goes too. Not on the first frames,
+			// though: when someone grabs our body the ownership change can land BEFORE the lent registry names it ours
+			// (OwnBodyAway), and a ghost out flying was yanked back to the body the instant it was grabbed.
+			if ( _sinceNotOurs > NotOursGrace )
+				SetFreeCam( false );
 			return;
 		}
 
@@ -710,15 +726,60 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	// that matter happen on OTHER machines (each machine simulates its own dynamic pawn against its local copy
 	// of this prop). Same assert-everywhere shape as UpdateConcealment above. Modes with no claim service never
 	// register a release (bots and DebugGameMode retirees included), so there the tag simply stays on.
+	//
+	// In a prop-hunt ROUND the tag also ends with the need for it. Props pass through each other only because they
+	// can't see each other: through Starting and Hide in every mode, and on THIS machine while it's hiding other props
+	// from us (RoundManager.PropsConcealed — Infection, a prop's machine, until the Reveal). Anywhere else they're
+	// solid to each other, like everything else — and a prop someone is HOLDING is never ghosted (on any machine), so a
+	// hunter pushing a held prop into others gets the same contacts from a player as from a decoy: a ghosting player
+	// prop was a dead giveaway. Outside rounds (creative, lobby, charades) the tag stays on, as before.
 	void UpdateReleasedSolidity()
 	{
 		if ( !_body.IsValid() )
 			return;
 
-		bool isBody = !PropClaims.IsReleased( this );
+		bool ghost = !PropClaims.IsReleased( this ) && GhostsOtherProps();
+
+		// Turning solid while overlapping another prop would have the solver shove the two apart (both their wearers
+		// fly at the Hunt's first frame): stay ghosted until clear. Only on the way OUT — going ghost is always safe.
 		var tags = _body.GameObject.Tags;
-		if ( tags.Has( PropBodyTag ) != isBody )
-			tags.Set( PropBodyTag, isBody );
+		bool tagged = tags.Has( PropBodyTag );
+		if ( tagged && !ghost && OverlapsAnotherProp() )
+			ghost = true;
+
+		if ( tagged != ghost )
+		{
+			tags.Set( PropBodyTag, ghost );
+			_taggedHullShape = null; // the move hull copies the disguise's tags (see AlignWithMoveHull) — re-copy them
+		}
+	}
+
+	// Should this body pass through other players' props right now, on this machine? (See UpdateReleasedSolidity.)
+	bool GhostsOtherProps()
+	{
+		var round = RoundManager.Current;
+		if ( !round.IsValid() )
+			return true; // creative, lobby, charades: unchanged
+		if ( PropClaims.IsHeldObject( GameObject ) )
+			return false; // in someone's hands: solid to everything, exactly like a held decoy
+		return round.Phase is RoundPhase.Starting or RoundPhase.Hide || RoundManager.PropsConcealed;
+	}
+
+	// Is this body's collider currently overlapping another prop body (bounds test — conservative, only consulted while
+	// we're about to stop ghosting)?
+	bool OverlapsAnotherProp()
+	{
+		if ( !Body.IsValid() )
+			return false;
+		var mine = Body.GetWorldBounds();
+		foreach ( var other in Scene.GetAllComponents<HiderController>() )
+		{
+			if ( other == this || !other.Body.IsValid() || !other._body.IsValid() || !other._body.GameObject.Enabled )
+				continue;
+			if ( mine.Overlaps( other.Body.GetWorldBounds() ) )
+				return true;
+		}
+		return false;
 	}
 
 	// ── Taunts ────────────────────────────────────────────────────────────────────────────────────────
@@ -831,6 +892,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( !isHeld && Scenery && PropClaims.IsFrozen( this ) )
 		{
 			SetPhysicsMode( PhysicsMode.Frozen );
+			if ( borrowed )
+				ReportLentFrozen(); // lent to us (creative): frozen is at rest — hand it back now
 			return;
 		}
 
@@ -932,12 +995,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	enum PhysicsMode { Character, Held, Loose, Frozen, Climbing, ClimbHold, Walking }
 	PhysicsMode _physicsMode = PhysicsMode.Character;
 
-	// Hold feel: how hard the prop is pulled toward the target (1/s) and the speed cap that keeps a fast swing
-	// from tunnelling it through a thin wall.
-	const float HoldPull = 18f;
-	const float HoldTurn = 14f;
-	const float HoldMaxSpeed = 1800f;
-
 	void SetPhysicsMode( PhysicsMode mode )
 	{
 		if ( !Body.IsValid() )
@@ -1008,151 +1065,22 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	}
 
 	/// <summary>Hold a grabbed prop with a control joint (the sandbox physgun's way) instead of overwriting its
-	/// velocity every tick. Off = the old velocity chase, kept for A/B-ing the feel.</summary>
+	/// velocity every tick. Off = the old velocity chase, kept for A/B-ing the feel. Shared by every held body
+	/// (see HeldBodyDriver).</summary>
 	[ConVar( "mimi_grab_joint", Help = "Grabbed props: 1 = spring joint hold (sandbox physgun), 0 = velocity chase." )]
 	public static bool GrabJoint { get; set; } = true;
 
-	// The joint hold, as sandbox's PhysicsHold: a keyframed anchor body we teleport to the target each tick, tied
-	// to the prop's mass centre by a control joint with linear + angular springs. The springs are solved INSIDE
-	// the physics step alongside the contacts, so a prop pressed into a wall settles against it instead of the
-	// solver and our per-tick velocity write fighting (the jitter); the force is capped by the prop's mass, so a
-	// heavy one swings with weight; and the stepwise targets a client streams are smoothed by the spring.
-	// Force ≤ mass × this (torque scaled from the inertia). Sandbox uses 700000; that out-pulls the contacts, so
-	// a fast swing dragged a small prop straight through a 2u wall. Measured on that wall: 80000 tunnels, 40000
-	// and 30000 hold — and 30000 still settles a 90° swing in 0.2s, no slower than 700000.
-	const float HoldMaxAccel = 30000f;
-	const float HoldLinearHz = 32f;
-	const float HoldAngularHz = 64f;
-	const float HoldDamping = 4f;
+	// The hold itself lives in HeldBodyDriver, shared with held decoys (RoundManager.Grab) so a player's prop and a decoy
+	// move identically in the hand. These keep the controller's own call sites as they were.
+	readonly HeldBodyDriver _hold = new();
 
-	// The joint is for FREE AIR only. The moment the held prop touches something (a contact event within
-	// HoldContactWindow) it drops the joint and goes back to the velocity chase — which is what lays a prop
-	// FLUSH when pressed into a surface and SLIDES it when dragged. Rewriting the velocity every tick pushes
-	// through the contact solver in a way a capped spring can't copy. Measured (pot tilted 30°, pressed into
-	// the floor): chase → 1°; joint with a soft rotation spring → 0° but dragged props ROLL (knob 41–47° off);
-	// joint with the rotation chase only → stuck at 26°, at any linear stiffness. Free air keeps the joint's
-	// wins: fast swings, no wall tunnelling, the client's stepwise targets smoothed.
-	const float HoldContactWindow = 0.1f;  // seconds since the last contact event that still count as touching
+	void ReleaseHoldJoint() => _hold.ReleaseJoint();
+	void ApplyHeldFriction() => _hold.ApplyFriction( GameObject ); // climbing slides frictionless like a held prop
+	void RestoreHeldFriction() => _hold.RestoreFriction();
 
-	Sandbox.Physics.ControlJoint _holdJoint;
-	PhysicsBody _holdAnchor;
-	PhysicsBody _holdOn;        // the body the joint was made on — a re-made body needs a new joint
-	Vector3 _holdMassCentre;    // its local mass centre then — a scale commit moves it, so the joint is remade
-
-	void ReleaseHoldJoint()
-	{
-		_holdJoint?.Remove();
-		_holdJoint = null;
-		if ( _holdAnchor is not null && _holdAnchor.IsValid() )
-			_holdAnchor.Remove();
-		_holdAnchor = null;
-		_holdOn = null;
-	}
-
-	void DriveHeldJoint( Transform target )
-	{
-		var pb = Body.PhysicsBody;
-		if ( pb is null || !pb.IsValid() )
-			return;
-
-		if ( _holdJoint is null || _holdOn != pb || !_holdMassCentre.AlmostEqual( pb.LocalMassCenter, 0.01f ) )
-		{
-			ReleaseHoldJoint();
-			_holdOn = pb;
-			_holdMassCentre = pb.LocalMassCenter;
-			_holdAnchor = new PhysicsBody( pb.World ) { BodyType = PhysicsBodyType.Keyframed, AutoSleep = false };
-			_holdAnchor.Transform = new Transform( WorldTransform.WithScale( 1f ).PointToWorld( _holdMassCentre ), WorldRotation );
-
-			var inertia = pb.Inertia;
-			float maxForce = pb.Mass * HoldMaxAccel;
-			float maxTorque = HoldMaxAccel * MathF.Sqrt( pb.Mass * MathF.Max( inertia.x, MathF.Max( inertia.y, inertia.z ) ) );
-
-			_holdJoint = Sandbox.Physics.PhysicsJoint.CreateControl(
-				new Sandbox.Physics.PhysicsPoint( _holdAnchor ), new Sandbox.Physics.PhysicsPoint( pb, _holdMassCentre ) );
-			_holdJoint.LinearSpring = new Sandbox.Physics.PhysicsSpring( HoldLinearHz, HoldDamping, maxForce );
-			_holdJoint.AngularSpring = new Sandbox.Physics.PhysicsSpring( HoldAngularHz, HoldDamping, maxTorque );
-		}
-
-		// The target is the ROOT pose; the joint holds the mass centre, so the anchor goes where that lands — at
-		// most HoldMaxSpeed units/s (the old chase's cap) rather than jumping there. A fast swing can put the
-		// target behind a wall the aim sweep never saw (it sweeps along the aim, not along the prop's path); the
-		// joint then pulls the prop at it, and only the HoldMaxAccel cap keeps the contact winning.
-		var dt = MathF.Max( Time.Delta, 0.001f );
-		var want = target.PointToWorld( _holdMassCentre );
-		var from = _holdAnchor.Position;
-		_holdAnchor.Transform = new Transform( from + (want - from).ClampLength( HoldMaxSpeed * dt ), target.Rotation );
-	}
-
-	// A held prop has NO friction: it slides over whatever it's pressed against or dragged across instead of
-	// gripping it. Every collider's own override is remembered and put back when the hold ends (a scale
-	// commit's rebuilt collider is a new component, picked up on the next tick).
-	const float HeldFriction = 0f;
-	readonly Dictionary<Collider, float?> _heldFriction = new();
-
-	void ApplyHeldFriction()
-	{
-		foreach ( var c in Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
-		{
-			if ( _heldFriction.ContainsKey( c ) )
-				continue;
-			_heldFriction[c] = c.Friction;
-			c.Friction = HeldFriction;
-		}
-	}
-
-	void RestoreHeldFriction()
-	{
-		foreach ( var (c, friction) in _heldFriction )
-		{
-			if ( c.IsValid() )
-				c.Friction = friction;
-		}
-		_heldFriction.Clear();
-	}
-
-	// Host (the simulating machine): steer the body toward the holder's pose — through the joint in free air,
-	// with velocities while touching (see HoldContactWindow). Never teleports, so the solver still stops it at
-	// walls and it leaves the hand with whatever motion it had. Leaving contact remakes the joint at the body's
-	// current pose, so the hand-over doesn't kick.
-	void DriveHeld( Transform target )
-	{
-		if ( Body.Sleeping )
-			Body.Sleeping = false;
-
-		ApplyHeldFriction();
-
-		// (No scale here: the grab scales the SHAPE, host-side — see PropClaims.Grab.)
-		if ( GrabJoint && _sinceHeldContact >= HoldContactWindow )
-		{
-			DriveHeldJoint( target );
-			return;
-		}
-		ReleaseHoldJoint();
-
-		var dt = MathF.Max( Time.Delta, 0.001f );
-		var toTarget = target.Position - WorldPosition;
-		Body.Velocity = (toTarget * MathF.Min( HoldPull, 1f / dt )).ClampLength( HoldMaxSpeed );
-		ChaseHeldRotation( target.Rotation, dt );
-	}
-
-	// Turn the body toward the target rotation by writing its angular velocity: shortest arc, at HoldTurn per
-	// second. The velocity hold's rotation, and the joint hold's while touching (see HoldContactWindow).
-	void ChaseHeldRotation( Rotation target, float dt )
-	{
-		var q = target * WorldRotation.Inverse;
-		if ( q.w < 0f )
-			q = new Rotation( -q.x, -q.y, -q.z, -q.w );
-		var sinHalf = MathF.Sqrt( q.x * q.x + q.y * q.y + q.z * q.z );
-		if ( sinHalf < 1e-5f )
-		{
-			Body.AngularVelocity = Vector3.Zero;
-			return;
-		}
-
-		var angle = 2f * MathF.Atan2( sinHalf, q.w );
-		var axis = new Vector3( q.x, q.y, q.z ) / sinHalf;
-		Body.AngularVelocity = axis * angle * MathF.Min( HoldTurn, 1f / dt );
-	}
+	// The simulating machine (the host for scenery, the holder for a lent body, the wearer the creative way): steer the
+	// body toward the holder's pose.
+	void DriveHeld( Transform target ) => _hold.Drive( Body, target, touching: _sinceHeldContact < HeldBodyDriver.ContactWindow );
 
 	/// <summary>On the simulating machine — the host as a loose prop is possessed, or a wearer getting up after
 	/// being grabbed (see HiderController.Grabbed): stand the ROOT back up (yaw kept) and move the tumble

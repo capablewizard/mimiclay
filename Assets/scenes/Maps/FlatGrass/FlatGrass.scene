@@ -63,7 +63,7 @@
       "Flags": 0,
       "Name": "2D Skybox",
       "Position": "533.881836,-1137.20825,-288.130188",
-      "Rotation": "0,0,-0.290047288,0.957012296",
+      "Rotation": "0,0,0.966835022,0.25540179",
       "Scale": "1,1,1",
       "Tags": "skybox",
       "Enabled": true,
@@ -114,7 +114,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Sun",
-          "Position": "187.205978,-664.356384,-123.054451",
+          "Position": "188.549347,-670.651733,-123.511353",
           "Rotation": "-0.118833482,-0.385033637,0.269903392,-0.874516904",
           "Scale": "1,1,1",
           "Tags": "light_directional,light",
@@ -852,7 +852,7 @@
           "FbxPath": "scenes/maps/flatgrass/grass.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "10 object(s), 19005 tris — 22:30:32",
+          "LastImport": "10 object(s), 19005 tris — 22:19:48",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -1860,9 +1860,12 @@
           "CharadesWordLengthHints": false,
           "CharadesWriteSeconds": 45,
           "ConsolidationSeconds": 12,
+          "CreativeRepairProps": false,
           "DebugSoloHide": false,
           "DirectPlayGame": "Creative",
           "DisableSceneCameras": true,
+          "Ghosts": "None",
+          "GrabProps": false,
           "HideSeconds": 90,
           "HintSeconds": 60,
           "HunterCount": 1,
@@ -1875,8 +1878,13 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideCharadesRules": false,
+          "OverrideCreativeRepairProps": true,
+          "OverrideGhosts": false,
+          "OverrideGrabProps": false,
+          "OverrideRepairProps": false,
           "OverrideRules": false,
           "PlayAs": "Auto",
+          "RepairProps": false,
           "RevealSeconds": 30,
           "StartCountdownSeconds": 5,
           "TauntSeconds": 35
@@ -2790,30 +2798,6 @@
                 "BoundingRadius": 4.1074
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
-            },
-            "Property": "__enabled",
-            "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -2865,22 +2849,6 @@
             },
             "Property": "Rotation",
             "Value": "0,3.32065198E-09,0.99999994,9.9619557E-09"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3054,22 +3022,6 @@
             },
             "Property": "Position",
             "Value": "182.031525,-377.799469,374.028503"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3119,22 +3071,6 @@
             },
             "Property": "Rotation",
             "Value": "0.214113295,0.762483597,0.58781594,0.165064812"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3207,7 +3143,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "37eb3056-6dc8-45f3-bdb2-bccea668a9ad",
+            "Id": "bf95e928-3ee0-43c9-a13b-60f1834cb9be",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": true,

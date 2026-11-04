@@ -14,9 +14,8 @@ public enum InteractSlot
 	/// <summary>F ("SecondaryUse") — a second verb beside the main one: the radio's on/off.</summary>
 	Secondary,
 
-	/// <summary>LMB ("Attack1") — sculpt the hovered clay in place, first person (the edit lease; see
-	/// <see cref="PropClaims"/>). The trigger's own press: when a provider offers this slot and it fires, the
-	/// hunter swallows the shot.</summary>
+	/// <summary>C ("Sculpt") — sculpt the hovered clay in place, first person (the edit lease; see
+	/// <see cref="PropClaims"/>). Off the trigger on purpose, so LMB still shoots whatever you're aiming at.</summary>
 	Sculpt,
 
 	/// <summary>RMB ("Attack2") — pick a prop up with the grab (creative; see <see cref="PropClaims"/>'s grab).</summary>
@@ -25,6 +24,10 @@ public enum InteractSlot
 	/// <summary>R ("Reload") — only offered while holding a grabbed prop: scale it. Never a hover verb, because
 	/// R is the hunter ⇄ prop swap everywhere else (see <see cref="PawnSwapKeys"/>).</summary>
 	Scale,
+
+	/// <summary>LMB ("Attack1") — the trigger itself. Only offered where shooting is off anyway (holding a grabbed
+	/// prop: freeze it); when it fires, the hunter swallows the shot.</summary>
+	Fire,
 }
 
 /// <summary>One thing the player can do to what's under the crosshair. <see cref="Id"/> is handed back to the
@@ -95,8 +98,9 @@ public static class Interactions
 	{
 		InteractSlot.Secondary => "SecondaryUse",
 		InteractSlot.Pickup => "Attack2",
-		InteractSlot.Sculpt => "Attack1",
+		InteractSlot.Sculpt => "Sculpt",
 		InteractSlot.Scale => "Reload",
+		InteractSlot.Fire => "Attack1",
 		_ => "Use",
 	};
 
@@ -104,14 +108,14 @@ public static class Interactions
 	/// read as LMB/RMB rather than the engine's origin names.</summary>
 	public static string KeyLabel( InteractSlot slot )
 	{
-		if ( slot == InteractSlot.Sculpt )
+		if ( slot == InteractSlot.Fire )
 			return "LMB";
 		if ( slot == InteractSlot.Pickup )
 			return "RMB";
 
 		var key = Input.GetButtonOrigin( ActionFor( slot ) );
 		if ( string.IsNullOrEmpty( key ) )
-			return slot switch { InteractSlot.Secondary => "F", InteractSlot.Scale => "R", _ => "E" };
+			return slot switch { InteractSlot.Secondary => "F", InteractSlot.Scale => "R", InteractSlot.Sculpt => "C", _ => "E" };
 		return key.ToUpperInvariant();
 	}
 

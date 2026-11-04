@@ -72,7 +72,15 @@ public sealed partial class PropClaims
 	/// <summary>Can the grab pick this sculpture up at all? Sandbox: what a claim could take, or a body. Inspect: a
 	/// scene decoy as it is, or a body.</summary>
 	public bool IsGrabbable( SdfSculpture sculpture )
-		=> IsGrabbableBody( sculpture ) || (Sandbox ? IsClaimable( sculpture ) : IsInspectableDecoy( sculpture ));
+		=> IsGrabbableBody( sculpture ) || (Sandbox ? IsClaimable( sculpture ) || IsSettlingScenery( sculpture ) : IsInspectableDecoy( sculpture ));
+
+	// Creative: released scenery still LENT to the hunter who threw it (settling, nobody holding it) can be caught again —
+	// claims are refused meanwhile (IsTakeable), grabs aren't.
+	static bool IsSettlingScenery( SdfSculpture sculpture )
+	{
+		var hider = sculpture.IsValid() ? sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) : null;
+		return hider.IsValid() && IsReleased( hider ) && IsLent( hider.GameObject ) && !IsHeld( hider );
+	}
 
 	// The host mode's grab flavour (see IPropClaimHost.GrabSandbox).
 	bool Sandbox => Host?.GrabSandbox ?? true;
@@ -117,24 +125,35 @@ public sealed partial class PropClaims
 	// their body with them.
 
 	/// <summary>Bodies lent to their holder for a hold: pawn GameObject id → the WEARER's connection id (the owner before
-	/// the lend — the host, for a bot). While a body is in here its network OWNER is the holder — so anything asking
-	/// "whose body is this?" must ask <see cref="WearerOf"/> (RoundManager.RosterIdOf does), never Network.Owner.</summary>
+	/// the lend — the host, for a bot), or <see cref="Guid.Empty"/> for creative's released scenery (nobody's — it goes
+	/// back to the host). While a body is in here its network OWNER is the holder — so anything asking "whose body is
+	/// this?" must ask <see cref="WearerOf"/> (RoundManager.RosterIdOf does), never Network.Owner.</summary>
 	[Sync] public NetDictionary<Guid, Guid> BorrowedBodies { get; private set; } = new();
 
-	/// <summary>The wearer of a body lent out for a hold, or null when it isn't. Accepts any object in the pawn (a
-	/// disguise child resolves to its pawn).</summary>
+	/// <summary>Is this pawn lent to a holder right now (a body or released scenery)?</summary>
+	public static bool IsLent( GameObject go )
+	{
+		if ( !go.IsValid() || !Current.IsValid() || Current.BorrowedBodies.Count == 0 )
+			return false;
+		var hider = go.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		return hider.IsValid() && Current.BorrowedBodies.ContainsKey( hider.GameObject.Id );
+	}
+
+	/// <summary>The wearer of a body lent out for a hold, or null when it isn't (or when it's lent scenery, which has no
+	/// wearer). Accepts any object in the pawn (a disguise child resolves to its pawn).</summary>
 	public static Guid? WearerOf( GameObject go )
 	{
 		if ( !go.IsValid() || !Current.IsValid() || Current.BorrowedBodies.Count == 0 )
 			return null;
 		var hider = go.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-		return hider.IsValid() && Current.BorrowedBodies.TryGetValue( hider.GameObject.Id, out var wearer ) ? wearer : null;
+		return hider.IsValid() && Current.BorrowedBodies.TryGetValue( hider.GameObject.Id, out var wearer ) && wearer != Guid.Empty
+			? wearer : null;
 	}
 
 	/// <summary>Is this machine simulating a body lent to it by someone else (the holder, mid-hold or letting it settle)?
 	/// Such a body isn't a proxy here, but it isn't ours to drive either — no input, no camera, no voice.</summary>
 	public static bool IsBorrowedHere( HiderController hider )
-		=> hider.IsValid() && !hider.IsProxy && WearerOf( hider.GameObject ) is { } wearer && wearer != Connection.Local?.Id;
+		=> hider.IsValid() && !hider.IsProxy && IsLent( hider.GameObject ) && WearerOf( hider.GameObject ) != Connection.Local?.Id;
 
 	/// <summary>How long a lent body may stay out after its hold ended before the host takes it back regardless (the
 	/// holder never reported it at rest — left, stuck tumbling, a lost RPC).</summary>
@@ -144,12 +163,44 @@ public sealed partial class PropClaims
 	readonly Dictionary<Guid, RealTimeSince> _borrowLetGo = new();
 
 	// Host: lend the body's whole network tree (see NetworkTree — the Disguise is its own network object) to its holder.
-	void BorrowBody( HiderController hider, Connection wearer, Connection holder )
+	// wearerId: who gets it back (Guid.Empty: released scenery — nobody; the host keeps it).
+	void BorrowBody( HiderController hider, Guid wearerId, Connection holder )
 	{
-		BorrowedBodies[hider.GameObject.Id] = wearer.Id;
+		BorrowedBodies[hider.GameObject.Id] = wearerId;
 		_borrowLetGo.Remove( hider.GameObject.Id );
 		foreach ( var net in NetworkTree( hider.GameObject ) )
 			net.Network.AssignOwnership( holder );
+	}
+
+	// Host, at a grab, when the mode lends (IPropClaimHost.GrabBorrowsBodies): give the pawn to its holder for the hold,
+	// unless the holder already simulates it. A player's or bot's body goes back to its wearer; creative's released
+	// scenery (host-simulated, unowned) back to the host. One still settling from an earlier hold keeps its wearer and
+	// just changes hands. A client grabbing scene clay in creative lends the freshly converted pawn the same way.
+	void LendForHold( HiderController hider, Connection holder )
+	{
+		if ( !hider.IsValid() || !(Host?.GrabBorrowsBodies ?? false) )
+			return;
+
+		Guid wearerId;
+		if ( BorrowedBodies.TryGetValue( hider.GameObject.Id, out var earlier ) )
+			wearerId = earlier;
+		else if ( IsReleased( hider ) )
+			wearerId = Guid.Empty;
+		else if ( (IsPlayerBody( hider ) || RoundManager.IsBotPawn( hider.GameObject )) && hider.Network.Owner is { } owner )
+		{
+			if ( hider.NetEditing )
+				return; // sculpting (creative): the shape is mid-edit on the wearer's machine — hold it the creative way
+			wearerId = owner.Id;
+		}
+		else
+			return;
+
+		// Already simulated by the holder: its own body (never grabbable), a bot the host holds, scenery the host holds.
+		var simulator = hider.Network.Owner?.Id ?? Connection.Local?.Id; // unowned = the host simulates it
+		if ( simulator == holder.Id )
+			return;
+
+		BorrowBody( hider, wearerId, holder );
 	}
 
 	/// <summary>Holder → host: the body it was lent has come to rest after the hold, here — hand it back.</summary>
@@ -174,6 +225,16 @@ public sealed partial class PropClaims
 		var hider = Scene.Directory.FindByGuid( pawnId )?.Components.Get<HiderController>();
 		if ( !hider.IsValid() )
 			return;
+
+		// Released scenery (creative): nobody wears it — it goes back to being unowned (the host simulates it), placed
+		// exactly where the holder left it, still loose or frozen as it was put down.
+		if ( wearerId == Guid.Empty )
+		{
+			foreach ( var net in NetworkTree( hider.GameObject ) )
+				net.Network.DropOwnership();
+			hider.TakeBackScenery( position, rotation );
+			return;
+		}
 
 		var wearer = Connection.All.FirstOrDefault( x => x.Id == wearerId );
 		if ( wearer is null )
@@ -226,13 +287,40 @@ public sealed partial class PropClaims
 		}
 	}
 
+	/// <summary>Holder, every frame of a creative hold on a prop LENT to it: the R scale, applied right here — this machine
+	/// owns the prop, so its commit is the one that publishes (the host leaves lent props alone, see UpdateGrab).</summary>
+	internal void ApplyLocalGrabScale( GameObject prop, float scale )
+	{
+		var hider = prop.IsValid() ? prop.Components.Get<HiderController>() : null;
+		if ( Sandbox && IsBorrowedHere( hider ) && !IsPlayerBody( hider ) )
+			ApplyGrabScale( prop, Math.Clamp( scale, MinGrabScale, MaxGrabScale ) );
+	}
+
+	/// <summary>Holder: our hold on this prop ended — land any pending local scale and forget its snapshot.</summary>
+	internal void EndLocalGrabScale( GameObject prop )
+	{
+		if ( prop.IsValid() )
+			EndGrabScale( prop.Id );
+	}
+
 	/// <summary>Any machine: the pose its local holder wants a held prop at, stored the frame it's computed — so the
 	/// machine SIMULATING the hold (the host for scenery; the holder itself for a lent body or a predicted decoy) reads
 	/// it without a round-trip. <see cref="UpdateGrab"/> still ships it to the host for everyone else.</summary>
 	internal void SetLocalGrabTarget( GameObject prop, Vector3 position, Rotation rotation )
 	{
+		if ( !prop.IsValid() )
+			return;
+		_grabTargets[prop.Id] = new Transform( position, rotation );
+		_localFreezes.Remove( prop.Id ); // held again: a freeze we predicted is over (a quick re-grab + throw must fly)
+	}
+
+	/// <summary>Holder, the instant it lets go: forget the local target, so the machine simulating the hold stops holding
+	/// NOW. The host's Held row lingers a round-trip on a client — and while it did, the prop was held still at the last
+	/// target and a swing lost all its momentum (a throw rolled or slid from the host, and stopped dead from a client).</summary>
+	internal void ClearLocalGrabTarget( GameObject prop )
+	{
 		if ( prop.IsValid() )
-			_grabTargets[prop.Id] = new Transform( position, rotation );
+			_grabTargets.Remove( prop.Id );
 	}
 
 	/// <summary>The connection holding this prop, if anyone is.</summary>
@@ -306,9 +394,30 @@ public sealed partial class PropClaims
 	public static bool IsLoose( HiderController hider )
 		=> hider.IsValid() && Current.IsValid() && Current.LooseProps.ContainsKey( hider.GameObject.Id );
 
-	/// <summary>Is this prop frozen in place (see <see cref="FrozenProps"/>)?</summary>
+	/// <summary>Is this prop frozen in place (see <see cref="FrozenProps"/>) — or did THIS machine just freeze it
+	/// (<see cref="MarkLocalFreeze"/>), ahead of the host's row?</summary>
 	public static bool IsFrozen( HiderController hider )
-		=> hider.IsValid() && Current.IsValid() && Current.FrozenProps.ContainsKey( hider.GameObject.Id );
+		=> hider.IsValid() && Current.IsValid()
+			&& (Current.FrozenProps.ContainsKey( hider.GameObject.Id ) || FreezingHere( hider.GameObject.Id ));
+
+	// Holder-side freezes the host hasn't confirmed yet: prop id → when we froze it. A client froze a prop it was
+	// simulating (lent to it) by letting go of the hold, but only learned it was FROZEN a round-trip later, when the
+	// host's FrozenProps row landed — in between it was loose and dropped a little. Trusted for FreezeGrace, by which
+	// time the row is there; a refused freeze just lets it fall after that.
+	static readonly Dictionary<Guid, RealTimeSince> _localFreezes = new();
+	const float FreezeGrace = 1f;
+
+	static bool FreezingHere( Guid id ) => _localFreezes.TryGetValue( id, out var since ) && since < FreezeGrace;
+
+	/// <summary>Holder: we've just frozen this prop (LMB while holding) — treat it as frozen here at once.</summary>
+	internal static void MarkLocalFreeze( GameObject prop )
+	{
+		if ( !prop.IsValid() )
+			return;
+		if ( _localFreezes.Count > 16 )
+			_localFreezes.Clear(); // only ever a handful in flight; never let it grow
+		_localFreezes[prop.Id] = 0f;
+	}
 
 	/// <summary>The prop this machine's player holds (registry answer — the host may have refused or ended it).</summary>
 	public static GameObject LocalHeld
@@ -409,18 +518,6 @@ public sealed partial class PropClaims
 			if ( !IsGrabbable( hider.DisguiseSculpture ) )
 				return; // someone's body (where the mode says no), being sculpted, or already held
 			prop = hider.GameObject;
-
-			// Inspect grab, when the mode lends bodies (see IPropClaimHost.GrabBorrowsBodies): a body — a player's or a
-			// bot's — is LENT to its holder for the hold (see BorrowedBodies), unless the holder already owns it. One
-			// still settling from an earlier hold keeps its wearer and just changes hands. Otherwise: the creative way.
-			if ( !Sandbox && (Host?.GrabBorrowsBodies ?? false) && (IsPlayerBody( hider ) || RoundManager.IsBotPawn( hider.GameObject ))
-				&& hider.Network.Owner is { } owner && owner.Id != c.Id )
-			{
-				var wearer = BorrowedBodies.TryGetValue( hider.GameObject.Id, out var w )
-					? Connection.All.FirstOrDefault( x => x.Id == w ) ?? owner
-					: owner;
-				BorrowBody( hider, wearer, c );
-			}
 		}
 		else if ( !Sandbox )
 		{
@@ -451,6 +548,7 @@ public sealed partial class PropClaims
 
 		DropFor( c ); // one prop per player
 		FrozenProps.Remove( prop.Id ); // picking a frozen prop up unfreezes it
+		LendForHold( prop.Components.Get<HiderController>(), c );
 		Held[c.Id] = prop.Id;
 		_grabTargets[prop.Id] = prop.WorldTransform;
 		IgnoreHolder( c, prop );
@@ -484,7 +582,9 @@ public sealed partial class PropClaims
 			return;
 		}
 
-		if ( Sandbox )
+		// Scale is applied by whoever simulates the prop: the host for its own scenery; a lent prop's holder does it
+		// itself (ApplyLocalGrabScale) — only the owner's commits publish the shape.
+		if ( Sandbox && !BorrowedBodies.ContainsKey( id ) )
 			ApplyGrabScale( prop, Math.Clamp( scale, MinGrabScale, MaxGrabScale ) );
 	}
 
@@ -679,8 +779,9 @@ public sealed partial class PropClaims
 		PlaySwapPop( PopSpot( go ), DropPopPitch );
 
 		// A lent body stays with its holder until it comes to rest, then comes back via FinishBorrow (see BorrowedBodies).
+		// Lent SCENERY still takes its loose/frozen flags below — they're how it behaves once it's back.
 		var hider = go.Components.Get<HiderController>();
-		if ( BorrowedBodies.ContainsKey( id ) )
+		if ( BorrowedBodies.TryGetValue( id, out var lentWearer ) && lentWearer != Guid.Empty )
 			return;
 
 		// Someone's body: its wearer's machine takes it from here (it tumbles until they move — see

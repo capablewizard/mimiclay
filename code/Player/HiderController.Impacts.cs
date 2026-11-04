@@ -32,13 +32,21 @@ public sealed partial class HiderController : Component.ICollisionListener
 		if ( !IsProxy && _physicsMode == PhysicsMode.Held )
 			_sinceHeldContact = 0f;
 		NoteScrape( collision );
+		if ( !IsProxy )
+			RoundManager.NoteDecoyPush( collision, PushIntent ); // pressing into a still decoy pushes it (RoundManager.ShotProps)
 	}
+
+	// How this body is TRYING to move, for pushing decoys: walking, the walk's command (its real velocity is already zero
+	// against a decoy); held or loose, the body's own velocity (a hold's chase re-aims it every tick).
+	Vector3 PushIntent => _physicsMode == PhysicsMode.Walking ? _walkCommanded : Body.IsValid() ? Body.Velocity : Vector3.Zero;
 
 	void Component.ICollisionListener.OnCollisionStart( Collision collision )
 	{
 		if ( !IsProxy && _physicsMode == PhysicsMode.Held )
 			_sinceHeldContact = 0f;
 		NoteScrape( collision );
+		if ( !IsProxy )
+			RoundManager.NoteDecoyPush( collision, PushIntent );
 
 		// The simulating machine only (the host, for every released prop) — it alone sees the real contacts.
 		if ( IsProxy || !ImpactSoundsLive )

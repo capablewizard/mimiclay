@@ -101,7 +101,7 @@ public sealed partial class HunterController
 		// takes a fresh press, so the freeze can't be undone by accident).
 		if ( Input.Pressed( "Attack1" ) && !body )
 		{
-			LastFiredSlot = InteractSlot.Sculpt;
+			LastFiredSlot = InteractSlot.Fire;
 			SinceFired = 0;
 			LetGo( held, freeze: true );
 			return true;
@@ -151,7 +151,7 @@ public sealed partial class HunterController
 		// the new feet (HiderController.RecenterOriginOnShape — root moves, clay counter-shifts, nothing moves in
 		// the world), so a centre cached at grab time would yank the prop by that offset. The host scales about
 		// this same centre, so it never drifts while R is held.
-		_grabCentre = held.WorldTransform.PointToLocal( PropClaims.PopSpot( held ) );
+		_grabCentre = held.WorldTransform.PointToLocal( PropClaims.GrabSpot( held ) );
 
 		// Where we want it: the clay's centre on the aim at the hold distance, turned with our yaw — pulled in to
 		// wherever the prop's own shape would first meet the world on the way out (see ClampedRoot), so the
@@ -161,6 +161,7 @@ public sealed partial class HunterController
 		// Here first, for whatever this machine simulates of the hold (a body lent to us, a decoy we predict — see
 		// PropClaims.BorrowedBodies / RoundManager.Grab): this frame's target, no round-trip. Then to the host.
 		PropClaims.Current.SetLocalGrabTarget( held, root, rotation );
+		PropClaims.Current.ApplyLocalGrabScale( held, _grabScale ); // a prop lent to us scales here (no-op otherwise)
 		PropClaims.Current.UpdateGrab( held, root, rotation, _grabScale );
 
 		PublishGrabHover( held, root + rotation * _grabCentre, body );
@@ -309,7 +310,7 @@ public sealed partial class HunterController
 	{
 		_grabbed = held;
 
-		var centre = PropClaims.PopSpot( held ); // the middle of its clay
+		var centre = PropClaims.GrabSpot( held ); // the middle of its clay (its mass centre)
 		_grabCentre = held.WorldTransform.PointToLocal( centre );
 		_grabScale = 1f;
 
@@ -344,6 +345,10 @@ public sealed partial class HunterController
 		_sinceGrabLetGo = 0f;
 		_grabbed = null;
 		PropClaims.MarkGrabPending( false );
+		PropClaims.Current?.EndLocalGrabScale( held ); // lands a scale we applied ourselves on a lent prop
+		PropClaims.Current?.ClearLocalGrabTarget( held ); // stop holding it here this tick (a throw keeps its swing)
+		if ( freeze )
+			PropClaims.MarkLocalFreeze( held ); // frozen here this tick, not a round-trip later (no little drop)
 		PropClaims.Current?.DropGrab( freeze );
 	}
 
@@ -362,7 +367,7 @@ public sealed partial class HunterController
 		if ( _grabChoices.Count == 0 )
 		{
 			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.rotate", "Rotate", InteractSlot.Primary ) ) );
-			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.freeze", "Freeze", InteractSlot.Sculpt ) ) );
+			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.freeze", "Freeze", InteractSlot.Fire ) ) );
 			_grabChoices.Add( new InteractChoice( GrabHints.Instance, new InteractOption( "grab.scale", "Scale", InteractSlot.Scale ) ) );
 		}
 

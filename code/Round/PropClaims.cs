@@ -39,10 +39,9 @@ public interface IPropClaimHost
 	/// through its wearer to tell them apart by). See PropClaims.Grab.</summary>
 	bool GrabSandbox => true;
 
-	/// <summary>Inspect grab only: does the host BORROW a held player's body (simulate it itself, so it moves exactly like
-	/// a held decoy) instead of relaying the hold to its wearer the creative way? Default off — the wearer simulates, and
-	/// the drop is smooth (the body never changes hands), at the cost of one extra round-trip of hold lag. See
-	/// PropClaims.BorrowedBodies.</summary>
+	/// <summary>Is a held prop LENT to the machine holding it (PropClaims.BorrowedBodies) — a player's or bot's body, and
+	/// in creative the released scenery too — so the holder simulates the hold with no round-trip, instead of the host
+	/// (scenery) or the wearer (bodies) doing it? Prop hunt and creative both say yes (mimi_grab_borrow); default off.</summary>
 	bool GrabBorrowsBodies => false;
 
 	/// <summary>The prop-pawn prefab a claimed SCENE prop converts into (read live off scene furniture — a
@@ -139,7 +138,7 @@ public sealed partial class PropClaims : Component, IInteractable
 			if ( IsClaimable( ctx.Sculpture ) )
 				options.Add( new InteractOption( EditOption, "Edit", InteractSlot.Primary ) );
 
-			// LMB: sculpt it in place, first person, without becoming it — alongside whoever is already on it
+			// C: sculpt it in place, first person, without becoming it — alongside whoever is already on it
 			// (see RequestEdit). Opens with nothing selected; shapes are picked inside the session. Clicking
 			// away exits.
 			if ( (Host?.LeasesAllowed ?? false) && IsSculptable( ctx.Sculpture ) )
@@ -219,7 +218,8 @@ public sealed partial class PropClaims : Component, IInteractable
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 			return IsReleased( hider ) && (joinEdited || !IsBeingEdited( hider )) // a pawn's body: only once released into the world — and, for a claim, not while people are sculpting it in place
-				&& !IsHeld( hider ); // nor while someone is carrying it around
+				&& !IsHeld( hider ) // nor while someone is carrying it around
+				&& !IsLent( hider.GameObject ); // nor while it's lent to a holder settling it (see PropClaims.Grab — ownership is theirs)
 
 		return IsScenery( sculpture ); // scene-placed clay — claimable by conversion
 	}
@@ -305,7 +305,7 @@ public sealed partial class PropClaims : Component, IInteractable
 	public static bool BrushLockedByOther( Guid brushId )
 		=> BrushLockHolder( brushId ) is { } h && h != Connection.Local?.Id;
 
-	/// <summary>Caller starts sculpting the clay under their crosshair in place — the LMB Sculpt card.
+	/// <summary>Caller starts sculpting the clay under their crosshair in place — the C Sculpt card.
 	/// Arbitrated like <see cref="RequestPossess"/>: a released pawn prop is joined as-is; scene clay is
 	/// CONVERTED first (the same clone-and-dress as a claim, but host-owned) and lands straight into released
 	/// scenery, so it persists when the sculptors are done. Same validation as a claim: a hunter, in reach,
@@ -594,9 +594,13 @@ public sealed partial class PropClaims : Component, IInteractable
 	protected override void OnUpdate()
 	{
 		if ( Networking.IsActive && !Networking.IsHost )
+		{
+			SettleGrabScales(); // a holder scaling a prop lent to it commits here (see ApplyLocalGrabScale)
 			return;
+		}
 		SweepEditors();
 		SweepHolders();
+		TickShotKicks(); // creative's shot props (PropClaims.Shot)
 	}
 
 	// Host-only: pawns minted by ConvertSceneProp, by pawn GameObject id. The lobby reads this to tell borrowed
@@ -778,6 +782,26 @@ public sealed partial class PropClaims : Component, IInteractable
 		return pawn.WorldPosition + Vector3.Up * 32f;
 	}
 
+	/// <summary>Where a grab holds this body: its physics MASS CENTRE — the middle of the clay that's really there,
+	/// read off the (carve-aware) collider — else <see cref="PopSpot"/>. Not the brush bounds: those count every
+	/// ADD brush, and a piece shot off a prop still carries all of the original's adds (cut away by subtracts), so
+	/// its bounds centre was the middle of the whole original prop — the piece hung off the aim by its old pivot.
+	/// It's also where the hold's joint pulls (HeldBodyDriver), so the two agree and nothing swings on pickup.</summary>
+	public static Vector3 GrabSpot( GameObject pawn )
+	{
+		if ( !pawn.IsValid() )
+			return Vector3.Zero;
+
+		var hider = pawn.Components.Get<HiderController>();
+		var body = hider.IsValid() ? hider.PhysicsBody : pawn.Components.Get<Rigidbody>();
+		// Body-local, placed by the object's own (interpolated) transform — the world MassCenter is the fixed tick's pose,
+		// and the holder re-reads this every frame against WorldTransform, so mixing the two would jitter the hold.
+		if ( body.IsValid() && body.GameObject == pawn && body.PhysicsBody is { } pb && pb.ShapeCount > 0 )
+			return pawn.WorldTransform.PointToWorld( pb.LocalMassCenter );
+
+		return PopSpot( pawn );
+	}
+
 	// Host-only. Turn a scene-placed sculpture into a live prop pawn: clone the prop prefab dressed in the
 	// scene shape's brushes, positioned so the clay lands EXACTLY where it stood (the pawn root sits upright at
 	// the shape's feet; any tilt/scale the scene object carried moves onto the disguise child — the shape must
@@ -785,8 +809,7 @@ public sealed partial class PropClaims : Component, IInteractable
 	// orphan mode, so the prop outlives a leaver and can be released back into the world.
 	GameObject ConvertSceneProp( SdfSculpture sculpture, Connection owner, bool scenery = false )
 	{
-		var prefab = Host?.PropPrefab;
-		if ( !prefab.IsValid() )
+		if ( Host?.PropPrefab is not { } prefab0 || !prefab0.IsValid() )
 		{
 			Log.Warning( "PropClaims: the host mode supplied no prop prefab — can't convert a scene prop." );
 			return null;
@@ -798,19 +821,42 @@ public sealed partial class PropClaims : Component, IInteractable
 			: sceneT.Position;
 		var rootT = new Transform( feet, Rotation.FromYaw( sceneT.Rotation.Yaw() ) );
 
-		var pawn = prefab.Clone( new CloneConfig( rootT, startEnabled: false, name: owner is not null ? $"Claimed Prop {owner.DisplayName}" : "Shared Prop" ) );
+		var pawn = SpawnPropPawn( sculpture.Brushes, rootT, rootT.ToLocal( sceneT ),
+			owner is not null ? $"Claimed Prop {owner.DisplayName}" : "Shared Prop", owner, scenery,
+			sourceOf: sculpture.GameObject );
+
+		// The clone replaces the original for everyone. Scene objects share ids from the scene file, so the
+		// broadcast resolves the same object on every machine; joiners never see it — they receive the host's
+		// live scene snapshot, where it's already gone.
+		if ( pawn.IsValid() )
+			DestroySceneProp( sculpture.GameObject );
+		return pawn;
+	}
+
+	/// <summary>Host-only: mint a prop pawn wearing <paramref name="brushes"/>, its root at <paramref name="rootT"/> and
+	/// its Disguise at <paramref name="disguiseLocal"/> under it, and network it. <paramref name="sourceOf"/>: the scene
+	/// object it replaces (its prefab becomes the editor's Save target, its carried extras move over) — null for a pawn
+	/// with no scene original (a piece shot off a prop, PropClaims.Shot).</summary>
+	internal GameObject SpawnPropPawn( List<SdfBrush> brushes, Transform rootT, Transform disguiseLocal, string name,
+		Connection owner, bool scenery, GameObject sourceOf = null )
+	{
+		var prefab = Host?.PropPrefab;
+		if ( !prefab.IsValid() )
+			return null;
+
+		var pawn = prefab.Clone( new CloneConfig( rootT, startEnabled: false, name: name ) );
 		if ( !pawn.IsValid() )
 			return null;
 
 		// Dress while disabled (the first build ever started is the right shape), then override WearDisguise's
 		// feet-at-origin lift with the exact composed placement — the lift assumes an upright unscaled shape,
 		// and the scene original may be neither.
-		HiderController.WearDisguise( pawn, sculpture.Brushes );
+		HiderController.WearDisguise( pawn, brushes );
 
 		// Remember which prefab the clay came from so the editor HUD's Prefab "Save" writes back over it (see
 		// HiderController.DisguiseSource). NEAREST instance root, not outermost: a prop nested inside an
 		// arrangement prefab still resolves to the prop's own file, not the arrangement's.
-		var sourceRoot = sculpture.GameObject;
+		var sourceRoot = sourceOf;
 		while ( sourceRoot.IsValid() && !sourceRoot.IsPrefabInstanceRoot )
 			sourceRoot = sourceRoot.Parent;
 		var hider = pawn.Components.Get<HiderController>( includeDisabled: true );
@@ -823,17 +869,17 @@ public sealed partial class PropClaims : Component, IInteractable
 		var disguise = pawn.Children.FirstOrDefault( ch => ch.Name == "Disguise" );
 		if ( disguise.IsValid() )
 		{
-			var local = rootT.ToLocal( sceneT );
-			disguise.LocalPosition = local.Position;
-			disguise.LocalRotation = local.Rotation;
-			disguise.LocalScale = local.Scale;
-			CarryExtras( sculpture.GameObject, disguise );
-		}
+			disguise.LocalPosition = disguiseLocal.Position;
+			disguise.LocalRotation = disguiseLocal.Rotation;
+			disguise.LocalScale = disguiseLocal.Scale;
+			if ( sourceOf.IsValid() )
+				CarryExtras( sourceOf, disguise );
 
-		// The clone replaces the original for everyone. Scene objects share ids from the scene file, so the
-		// broadcast resolves the same object on every machine; joiners never see it — they receive the host's
-		// live scene snapshot, where it's already gone.
-		DestroySceneProp( sculpture.GameObject );
+			// Creative with "Repair props" off: craters carve this prop's collider ([Property], so it rides the spawn
+			// snapshot to every machine — see PropClaims.Shot).
+			if ( ShotCarvesColliders && disguise.Components.Get<SdfCollider>( includeDisabled: true ) is { } collider )
+				collider.CarveCollision = true;
+		}
 
 		pawn.Enabled = true;
 		SetOrphanedModeTree( pawn, NetworkOrphaned.ClearOwner ); // the Disguise too — see NetworkTree

@@ -138,6 +138,22 @@ public sealed partial class HiderController
 		PropClaims.Current?.FinishBorrow( GameObject, WorldPosition, WorldRotation );
 	}
 
+	// Holder: a lent prop put down FROZEN (creative's LMB) is at rest the moment it's let go — report it at once.
+	void ReportLentFrozen()
+	{
+		_simLent = true;
+		if ( _lentReported )
+			return;
+		_lentReported = true;
+		ClearGrabbedFilters();
+		PropClaims.Current?.FinishBorrow( GameObject, WorldPosition, WorldRotation );
+	}
+
+	/// <summary>Host, taking back creative's released scenery from its holder (PropClaims.HandBack): put it exactly where
+	/// the holder left it. It stays an object — loose or frozen, as it was put down (the next fixed step picks the mode
+	/// from the registries) — rather than standing up like a player's body.</summary>
+	internal void TakeBackScenery( Vector3 position, Rotation rotation ) => PlaceExactly( position, rotation );
+
 	// Holder, held: the body never collides with OUR hunter (the host's filter for held scenery, made here because this
 	// is the machine simulating it).
 	void HoldLentBody()

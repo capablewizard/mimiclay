@@ -831,7 +831,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			}
 
 			// Whatever's under the crosshair that offers interactions (see Interactions): hover outlines it and
-			// raises the toast row ("E Edit", "LMB Sculpt", "F Turn off"…), the slot keys run them. Runs on
+			// raises the toast row ("E Edit", "C Sculpt", "F Turn off"…), the slot keys run them. Runs on
 			// the fresh aim, so the prompt and the action agree on what the dot shows. Mid-lease it keeps
 			// running for every OTHER prop (the edited one belongs to the session's own hover), so LMB on the
 			// next prop hands this one back and takes that — "freely in and out of props".
@@ -858,7 +858,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// alt-orbit the trigger is swallowed (no blip): alt+mouse is a camera gesture here — same as the
 			// hider — and the aim is frozen off-camera, so a shot would land somewhere the hidden crosshair
 			// can't show.
-			// (A click an interaction consumed — LMB Sculpt — is not also a shot; nor is the click that just
+			// (A click an interaction consumed — the grab's LMB Freeze — is not also a shot; nor is the click that just
 			// closed a lease session — see _sinceLeaseEnd.) Out of ammo (a limited Hunt) gets the same denied blip:
 			// the hunter keeps searching, but the trigger is dead.
 			if ( Input.Pressed( "attack1" ) && !AltOrbiting && !clickTaken && _sinceLeaseEnd > TriggerHoldAfterLease )
@@ -897,7 +897,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	// Owner-only: resolve what the crosshair is over (the same ray the shot would take), ask every provider what
 	// it offers (Interactions.Collect), publish it, and run whichever option's slot key was pressed. "Use" (E)
 	// can't collide with sculpt-mode's E-scrub because this whole path is inside the !EditMode block.
-	// Returns true when this frame's LMB press ran an interaction (the Sculpt slot) — the caller must not also
+	// Returns true when this frame's LMB press ran an interaction (the Fire slot — a grab's Freeze) — the caller must not also
 	// fire the shot off it.
 	internal bool UpdateInteractHover( Vector3 eye )
 	{
@@ -951,7 +951,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			SinceFired = 0;
 
 			choice.Provider.Interact( at, choice.Option.Id );
-			return choice.Option.Slot == InteractSlot.Sculpt; // one action per frame — a provider may have just swapped our pawn out from under us
+			return choice.Option.Slot == InteractSlot.Fire; // the trigger's press was the interaction — swallow the shot
 		}
 
 		return false;
@@ -3264,8 +3264,11 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// the Reveal).
 		var profile = sculpt.GameObject.Components.Get<DamageProfile>();
 		// Charades joins them now that guessers can possess its map clay (same possessed-prop-scars trap).
-		bool sandbox = CreativeManager.Current.IsValid() || LobbyManager.Current.IsValid() || CharadesManager.Current.IsValid();
-		bool repair = RoundManager.Current.IsValid() && RoundManager.Current.Settings.RepairProps;
+		// Creative heals unless its own "Repair props" is off (CreativeSettings.RepairProps) — then it scars like a
+		// prop-hunt round with repair off: everything, possessed props included, so nothing tells.
+		bool sandbox = LobbyManager.Current.IsValid() || CharadesManager.Current.IsValid();
+		bool repair = (RoundManager.Current.IsValid() && RoundManager.Current.Settings.RepairProps)
+			|| (CreativeManager.Current.IsValid() && CreativeManager.Current.Settings.RepairProps);
 		bool heals = sandbox || repair || (profile.IsValid() && profile.Heals);
 		var healDelay = profile.IsValid() ? profile.HealDelay : DamageProfile.DefaultHealDelay;
 		var healDuration = profile.IsValid() ? profile.HealDuration : DamageProfile.DefaultHealDuration;
@@ -3292,13 +3295,17 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		if ( sculpt.Brushes.Count < SdfBrushPacker.MaxBrushes )
 		{
 			RoundManager.Current?.PrepareShotCarve( sculpt ); // before the rebuild: may opt the collider into craters
+			PropClaims.PrepareCreativeShotCarve( sculpt );
 			AddCrater( sculpt, localPos, radius, shrinks, shrinkDelay, shrinkDuration );
 		}
 
 		// Prop hunt, host: a decoy the central pellet struck gets knocked loose — or removed, if the shots have
 		// whittled it down too far. After the crater, so the remaining-clay measure counts it.
+		// Creative does the same through the claim service (PropClaims.Shot): the prop becomes a real loose prop.
 		if ( knock != Vector3.Zero && RoundManager.Current.IsValid() )
-			RoundManager.Current.OnPropShot( sculpt,sculpt.WorldTransform.PointToWorld( localPos ), knock );
+			RoundManager.Current.OnPropShot( sculpt, sculpt.WorldTransform.PointToWorld( localPos ), knock );
+		else if ( knock != Vector3.Zero && CreativeManager.Current.IsValid() )
+			PropClaims.Current?.OnCreativePropShot( sculpt, sculpt.WorldTransform.PointToWorld( localPos ), knock );
 	}
 
 	void AddCrater( SdfSculpture sculpt, Vector3 localPos, float radius, bool shrinks, float shrinkDelay, float shrinkDuration )

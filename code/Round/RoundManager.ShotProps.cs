@@ -19,10 +19,10 @@ public sealed partial class RoundManager
 {
 	/// <summary>Velocity change (u/s) the central pellet gives the decoy it hits — mass-independent, so a teapot and a
 	/// cherry both visibly jump. Applied at the hit point, so off-centre shots spin it.</summary>
-	const float ShotKnockSpeed = 180f;
+	internal const float ShotKnockSpeed = 180f;
 
 	/// <summary>A decoy left with less than this fraction of its authored clay is removed.</summary>
-	const float ShotRemoveFraction = 0.3f;
+	internal const float ShotRemoveFraction = 0.3f;
 
 	const float ShotPoseInterval = 0.05f; // host → clients while tumbling
 	const float ShotFollowRate = 25f;     // clients ease toward the streamed pose (1/s)
@@ -43,10 +43,20 @@ public sealed partial class RoundManager
 		var go = sculpt.GameObject;
 		QueueShotScan( sculpt ); // removal + island cleanup, off the main thread — lands a frame or two later
 
+		// Lent to a client (held, or settling — RoundManager.Grab): that machine simulates it, so the knock goes there.
+		if ( IsLentDecoy( go ) )
+		{
+			float lentMass = MathF.Max( go.Components.Get<SdfCollider>()?.ClayMass ?? 1f, 1f );
+			ApplyLentImpulse( go, hit, dir.Normal * ShotKnockSpeed * lentMass );
+			return;
+		}
+
 		var body = ShotBody( go, simulate: true );
 		if ( !body.IsValid() )
 			return;
 
+		if ( _pushedDecoys.Remove( go ) )
+			body.Locking = default; // was only pushed (sliding upright): a shot lets it tumble
 		float mass = go.Components.Get<SdfCollider>()?.ClayMass ?? 0f;
 		if ( mass > 0f )
 			body.MassOverride = mass;
@@ -64,9 +74,12 @@ public sealed partial class RoundManager
 	/// PERF (unmeasured): each crater now rebuilds the decoy's collider on EVERY machine, uncached (every crater makes
 	/// a new shape), and a deeply bitten prop can fall back to voxel boxes — more shapes on a moving body. Check with
 	/// a sustained-fire test before shipping; see the repair-props memory.</summary>
-	internal void PrepareShotCarve( SdfSculpture sculpt )
+	internal void PrepareShotCarve( SdfSculpture sculpt ) => PrepareShotCarve( sculpt, Settings.RepairProps );
+
+	/// <summary>The same, for any mode with its own repair setting (creative: <see cref="CreativeSettings.RepairProps"/>).</summary>
+	internal static void PrepareShotCarve( SdfSculpture sculpt, bool repair )
 	{
-		if ( Settings.RepairProps || !IsShotDecoy( sculpt ) )
+		if ( repair || !IsShotDecoy( sculpt ) )
 			return;
 
 		var collider = sculpt.Components.Get<SdfCollider>();
@@ -75,7 +88,7 @@ public sealed partial class RoundManager
 	}
 
 	// Scenery clay with a solid collider: not a pawn (players pop, hunter faces heal), not saved-out runtime clay.
-	static bool IsShotDecoy( SdfSculpture sculpt )
+	internal static bool IsShotDecoy( SdfSculpture sculpt )
 		=> PropClaims.IsScenery( sculpt )
 		&& sculpt.Components.Get<SdfCollider>() is { BuildAsTrigger: false };
 
@@ -96,10 +109,10 @@ public sealed partial class RoundManager
 	/// ones are cut away. Low on purpose: handles are small next to their prop — measured 2026-11-03, a mug's handle is
 	/// 1.9% of its clay, a teapot spout 5%, a frying pan handle 8%, a saucepan handle 18% (and a shot through the root
 	/// leaves the piece smaller still).</summary>
-	const float ShotSplitFraction = 0.015f;
+	internal const float ShotSplitFraction = 0.015f;
 
 	/// <summary>…and at least this much clay (units³, ~a 7-unit cube), so crumbs off a big prop are still just cut.</summary>
-	const float ShotSplitMinVolume = 300f;
+	internal const float ShotSplitMinVolume = 300f;
 
 	readonly HashSet<GameObject> _scanBusy = new();
 	readonly HashSet<GameObject> _scanDirty = new();
@@ -160,7 +173,7 @@ public sealed partial class RoundManager
 		}
 	}
 
-	static List<SdfBrush> Snapshot( List<SdfBrush> brushes )
+	internal static List<SdfBrush> Snapshot( List<SdfBrush> brushes )
 	{
 		var copy = new List<SdfBrush>( brushes.Count );
 		foreach ( var b in brushes )
@@ -235,10 +248,10 @@ public sealed partial class RoundManager
 	// and field bake are the sculpture's own async build.
 
 	/// <summary>Speed (u/s) the two halves of a split get pushed apart, on top of the original's motion.</summary>
-	const float ShotSplitSpeed = 60f;
+	internal const float ShotSplitSpeed = 60f;
 
 	/// <summary>Slack (units) the keep-slabs extend past the shape's bounds, so blends at the edge are covered.</summary>
-	const float ShotSplitPad = 4f;
+	internal const float ShotSplitPad = 4f;
 
 	[Rpc.Broadcast]
 	void BroadcastShotSplit( GameObject go, Guid id, Vector3 keepCentre, Vector3 keepHalf, Vector3 boundsMin, Vector3 boundsMax )
@@ -265,16 +278,7 @@ public sealed partial class RoundManager
 			c.Shrinks = false;
 			chunk.Add( c );
 		}
-		var lo = bounds.Mins - ShotSplitPad;
-		var hi = bounds.Maxs + ShotSplitPad;
-		var kLo = keepCentre - keepHalf;
-		var kHi = keepCentre + keepHalf;
-		AddSlab( chunk, new Vector3( lo.x, lo.y, lo.z ), new Vector3( kLo.x, hi.y, hi.z ) );   // -x
-		AddSlab( chunk, new Vector3( kHi.x, lo.y, lo.z ), new Vector3( hi.x, hi.y, hi.z ) );   // +x
-		AddSlab( chunk, new Vector3( kLo.x, lo.y, lo.z ), new Vector3( kHi.x, kLo.y, hi.z ) ); // -y
-		AddSlab( chunk, new Vector3( kLo.x, kHi.y, lo.z ), new Vector3( kHi.x, hi.y, hi.z ) ); // +y
-		AddSlab( chunk, new Vector3( kLo.x, kLo.y, lo.z ), new Vector3( kHi.x, kHi.y, kLo.z ) ); // -z
-		AddSlab( chunk, new Vector3( kLo.x, kLo.y, kHi.z ), new Vector3( kHi.x, kHi.y, hi.z ) ); // +z
+		AddKeepSlabs( chunk, bounds, keepCentre, keepHalf );
 
 		// Worker: both colliders into the cache. The original builds from its whole list (CarveCollision is on —
 		// splits only happen with repair off); if another crater lands meanwhile its build just misses the cache
@@ -327,7 +331,27 @@ public sealed partial class RoundManager
 		_shotResting.Remove( piece );
 	}
 
-	static void AddSlab( List<SdfBrush> brushes, Vector3 min, Vector3 max )
+	/// <summary>Six subtract slabs that leave only the keep box of a shape with these bounds (a split's chunk). Each slab
+	/// spans the WHOLE bounds on its other two axes, so neighbouring slabs overlap instead of meeting edge to edge: the
+	/// collider clears a voxel only where ONE subtract reaches deep into it (SdfCollisionBuilder.BuildCarved takes the
+	/// deepest carver, not their union), so edge-to-edge slabs left ~1-unit walls standing along every seam — a broken-
+	/// off cone tip carried a cage of slivers the size of the whole cone. Every slab still stays outside the keep box
+	/// on its own axis, so the overlap never bites the chunk.</summary>
+	internal static void AddKeepSlabs( List<SdfBrush> brushes, BBox bounds, Vector3 keepCentre, Vector3 keepHalf )
+	{
+		var lo = bounds.Mins - ShotSplitPad;
+		var hi = bounds.Maxs + ShotSplitPad;
+		var kLo = keepCentre - keepHalf;
+		var kHi = keepCentre + keepHalf;
+		AddSlab( brushes, new Vector3( lo.x, lo.y, lo.z ), new Vector3( kLo.x, hi.y, hi.z ) ); // -x
+		AddSlab( brushes, new Vector3( kHi.x, lo.y, lo.z ), new Vector3( hi.x, hi.y, hi.z ) ); // +x
+		AddSlab( brushes, new Vector3( lo.x, lo.y, lo.z ), new Vector3( hi.x, kLo.y, hi.z ) ); // -y
+		AddSlab( brushes, new Vector3( lo.x, kHi.y, lo.z ), new Vector3( hi.x, hi.y, hi.z ) ); // +y
+		AddSlab( brushes, new Vector3( lo.x, lo.y, lo.z ), new Vector3( hi.x, hi.y, kLo.z ) ); // -z
+		AddSlab( brushes, new Vector3( lo.x, lo.y, kHi.z ), new Vector3( hi.x, hi.y, hi.z ) ); // +z
+	}
+
+	internal static void AddSlab( List<SdfBrush> brushes, Vector3 min, Vector3 max )
 	{
 		var size = max - min;
 		if ( size.x <= 0.01f || size.y <= 0.01f || size.z <= 0.01f )
@@ -335,7 +359,7 @@ public sealed partial class RoundManager
 		brushes.Add( SharpBox( (min + max) * 0.5f, size * 0.5f, damage: false ) );
 	}
 
-	static SdfBrush SharpBox( Vector3 centre, Vector3 half, bool damage ) => new()
+	internal static SdfBrush SharpBox( Vector3 centre, Vector3 half, bool damage ) => new()
 	{
 		Shape = SdfShape.Box,
 		Operation = SdfOperation.Subtract,
@@ -383,6 +407,11 @@ public sealed partial class RoundManager
 			body.Flags |= ComponentFlags.NotNetworked | ComponentFlags.NotSaved;
 			body.RigidbodyFlags |= RigidbodyFlags.DisableCollisionSounds;
 			body.Enabled = true;
+
+			// Whatever this machine simulates of it (held, predicted, loose) can push the still decoys it runs into.
+			var listener = go.Components.Create<DecoyPushListener>( startEnabled: false );
+			listener.Flags |= ComponentFlags.NotNetworked | ComponentFlags.NotSaved | ComponentFlags.Hidden;
+			listener.Enabled = true;
 		}
 
 		body.MotionEnabled = simulate;
@@ -391,38 +420,150 @@ public sealed partial class RoundManager
 		return body;
 	}
 
-	// Every machine, per frame (RoundManager.OnUpdate).
+	// ── Pushable decoys ─────────────────────────────────────────────────────────────────────────────────────
+	// A player's prop is a physics body: shove it (walk into it, push a held prop into it) and it slides. A still decoy
+	// was a static collider that never budged — so pushing things around sorted players from decoys. Now whatever
+	// SIMULATES a moving body — a prop's own machine, a hunter's, the machine running a held or loose decoy — reports
+	// pressing sideways into a still decoy (NoteDecoyPush), and the host wakes that decoy as a physics body moving at
+	// the push, from where its own physics (with every other body's kinematic proxy) keeps pushing it, streamed like
+	// any loose decoy. It slides UPRIGHT — rotation locked, the way a pushed player's prop walks — so a shove doesn't
+	// topple a decoy where it wouldn't topple a player; a shot (OnPropShot) frees it to tumble.
+
+	/// <summary>Sideways speed (u/s) a body must press into a still decoy with to push it — resting against one isn't.</summary>
+	const float PushMinSpeed = 20f;
+
+	/// <summary>Fraction of the pusher's speed the decoy starts with (the host's physics carries the push on from there).</summary>
+	const float PushTransfer = 0.6f;
+	const float PushMaxSpeed = 400f;
+
+	// Pusher side: last report per decoy, so a sustained contact doesn't send one per tick.
+	static readonly Dictionary<Guid, RealTimeSince> _pushSent = new();
+
+	// Host: decoys woken by a push (rotation-locked) rather than a shot.
+	readonly HashSet<GameObject> _pushedDecoys = new();
+
+	/// <summary>On the machine simulating a moving body (its collision callback): was that a push into a still decoy?
+	/// Reports it to the host if so. Standing on or under a decoy isn't a push. <paramref name="intent"/> is how the
+	/// pusher is TRYING to move (a walk's command, a controller's wish, a hold's chase) — never its actual velocity, which
+	/// a static decoy in the way has already zeroed (measured: a blocked hunter read 0 u/s and pushed nothing).</summary>
+	internal static void NoteDecoyPush( in Collision collision, Vector3 intent )
+	{
+		var rm = Current;
+		if ( !rm.IsValid() || rm.Phase == RoundPhase.Lobby )
+			return;
+		var other = collision.Other.GameObject;
+		var sculpt = other.IsValid() ? other.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndAncestors ) : null;
+		if ( !sculpt.IsValid() || !IsShotDecoy( sculpt ) )
+			return;
+
+		// Where the two are, from BOUNDS — not the contact: sustained-contact callbacks carry no contact point or normal
+		// (measured: every OnCollisionUpdate reported a zero normal, so normal-based tests rejected every push).
+		var self = collision.Self.Body;
+		if ( !self.IsValid() || !Sdf.TryGetBounds( sculpt.Brushes, out var b ) )
+			return;
+		var mine = self.GetBounds();
+		var clay = WorldBounds( sculpt.WorldTransform, b );
+
+		// On top of it or underneath it: a floor or a ceiling to us, not something we're pushing — standing on a decoy
+		// mustn't slide it out from under you.
+		if ( mine.Mins.z >= clay.Maxs.z - 2f || mine.Maxs.z <= clay.Mins.z + 2f )
+			return;
+
+		// Only the part of the intent heading INTO the decoy pushes it (sliding past along its side doesn't).
+		var velocity = intent.WithZ( 0f );
+		var toward = (clay.Center - mine.Center).WithZ( 0f );
+		if ( velocity.Length < PushMinSpeed || (toward.LengthSquared > 0.01f && Vector3.Dot( velocity, toward.Normal ) < PushMinSpeed) )
+			return;
+
+		var id = sculpt.GameObject.Id;
+		if ( _pushSent.TryGetValue( id, out var since ) && since < 0.3f )
+			return;
+		_pushSent[id] = 0f;
+		rm.RequestDecoyPush( sculpt.GameObject, velocity );
+	}
+
+	// A sculpture-local box as a world AABB (all eight corners — the decoy may be turned).
+	static BBox WorldBounds( Transform t, BBox local )
+	{
+		var box = BBox.FromPositionAndSize( t.PointToWorld( local.Center ), 0f );
+		for ( int i = 0; i < 8; i++ )
+		{
+			var corner = new Vector3( (i & 1) == 0 ? local.Mins.x : local.Maxs.x, (i & 2) == 0 ? local.Mins.y : local.Maxs.y, (i & 4) == 0 ? local.Mins.z : local.Maxs.z );
+			box = box.AddPoint( t.PointToWorld( corner ) );
+		}
+		return box;
+	}
+
+	/// <summary>Any machine → host: something pushed this still decoy at this velocity — wake it.</summary>
+	[Rpc.Host]
+	void RequestDecoyPush( GameObject go, Vector3 velocity )
+	{
+		var sculpt = go.IsValid() ? go.Components.Get<SdfSculpture>() : null;
+		if ( !IsShotDecoy( sculpt ) || _shotLoose.Contains( go ) || IsLentDecoy( go ) )
+			return; // already a physics body here (or on the client it's lent to): its own contacts push it from now on
+
+		var body = ShotBody( go, simulate: true );
+		if ( !body.IsValid() )
+			return;
+		body.Locking = new PhysicsLock { Pitch = true, Roll = true, Yaw = true };
+		float mass = go.Components.Get<SdfCollider>()?.ClayMass ?? 0f;
+		if ( mass > 0f )
+			body.MassOverride = mass;
+		body.Sleeping = false;
+		body.Velocity = velocity.ClampLength( PushMaxSpeed ) * PushTransfer;
+		_pushedDecoys.Add( go );
+		_shotLoose.Add( go );
+		_shotResting.Remove( go );
+	}
+
+	// Every machine, per frame (RoundManager.OnUpdate): stream what we simulate, follow what others simulate.
 	void TickShotProps()
 	{
-		if ( IsHostAuthority )
+		if ( _sinceShotPose >= ShotPoseInterval )
 		{
-			if ( _shotLoose.Count == 0 || _sinceShotPose < ShotPoseInterval )
-				return;
 			_sinceShotPose = 0f;
-
-			// Loose decoys stay tracked after they settle: a hider shoving one (or another shot) wakes it, and the
-			// stream picks up again. Asleep costs one reliable "rest" pose, then nothing.
-			_shotLoose.RemoveWhere( go => !go.IsValid() );
-			_shotResting.RemoveWhere( go => !go.IsValid() );
-			foreach ( var go in _shotLoose )
-			{
-				var body = go.Components.Get<Rigidbody>();
-				bool asleep = !body.IsValid() || body.Sleeping;
-				if ( asleep && !_shotResting.Add( go ) )
-					continue; // already told everyone where it rests
-				if ( !asleep )
-					_shotResting.Remove( go );
-
-				if ( !Networking.IsActive )
-					continue;
-				if ( asleep )
-					BroadcastShotRest( go, go.WorldPosition, go.WorldRotation ); // reliable: the pose it stays at
-				else
-					BroadcastShotPose( go, go.WorldPosition, go.WorldRotation );
-			}
-			return;
+			if ( IsHostAuthority )
+				StreamHostDecoys();
+			else if ( _simDecoy.IsValid() && Networking.IsActive && !EngineSynced( _simDecoy ) )
+				BroadcastShotPose( _simDecoy, _simDecoy.WorldPosition, _simDecoy.WorldRotation ); // lent snapshot decoy: we stream it
 		}
 
+		FollowStreamedDecoys();
+	}
+
+	// Host: the loose decoys it simulates. Lent ones are streamed by their simulator instead (RoundManager.Grab).
+	void StreamHostDecoys()
+	{
+		if ( _shotLoose.Count == 0 )
+			return;
+
+		// Loose decoys stay tracked after they settle: a hider shoving one (or another shot) wakes it, and the stream
+		// picks up again. Asleep costs one reliable "rest" pose, then nothing.
+		_shotLoose.RemoveWhere( go => !go.IsValid() );
+		_shotResting.RemoveWhere( go => !go.IsValid() );
+		foreach ( var go in _shotLoose )
+		{
+			if ( IsLentDecoy( go ) )
+				continue;
+			var body = go.Components.Get<Rigidbody>();
+			bool asleep = !body.IsValid() || body.Sleeping;
+			if ( asleep && !_shotResting.Add( go ) )
+				continue; // already told everyone where it rests
+			if ( !asleep )
+				_shotResting.Remove( go );
+
+			if ( !Networking.IsActive )
+				continue;
+			if ( asleep )
+				BroadcastShotRest( go, go.WorldPosition, go.WorldRotation ); // reliable: the pose it stays at
+			else
+				BroadcastShotPose( go, go.WorldPosition, go.WorldRotation );
+		}
+	}
+
+	// Every machine: ease the decoys someone ELSE simulates toward their streamed pose (on the host, only lent ones).
+	void FollowStreamedDecoys()
+	{
 		if ( _shotTargets.Count == 0 )
 			return;
 
@@ -435,8 +576,8 @@ public sealed partial class RoundManager
 				(gone ??= new()).Add( go );
 				continue;
 			}
-			if ( go == _predictedDecoy )
-				continue; // in our hands: our own prediction moves it (RoundManager.Grab); this stream resumes on the drop
+			if ( SimulatingLentHere( go ) )
+				continue; // lent to us: our own physics moves it (RoundManager.Grab)
 			go.WorldPosition = Vector3.Lerp( go.WorldPosition, target.Position, t );
 			go.WorldRotation = Rotation.Slerp( go.WorldRotation, target.Rotation, t );
 		}
@@ -449,14 +590,25 @@ public sealed partial class RoundManager
 	[Rpc.Broadcast]
 	void BroadcastShotRest( GameObject go, Vector3 position, Rotation rotation ) => FollowShotPose( go, position, rotation );
 
+	// A pose from whoever simulates the decoy: the host, or the client it's lent to (RoundManager.Grab) — the host follows
+	// those too. Never applied on the machine simulating it, and never from anyone else.
 	void FollowShotPose( GameObject go, Vector3 position, Rotation rotation )
 	{
-		if ( IsHostAuthority || (Rpc.Caller is not null && !Rpc.Caller.IsHost) || !go.IsValid() )
+		if ( !go.IsValid() || SimulatingLentHere( go ) )
 			return;
+		var caller = Rpc.Caller;
+		bool fromSimulator = caller is null
+			? !IsHostAuthority
+			: LentDecoys.TryGetValue( go.Id, out var simulator ) ? simulator == caller.Id : caller.IsHost;
+		if ( !fromSimulator || (IsHostAuthority && !IsLentDecoy( go )) )
+			return; // the host simulates non-lent decoys itself
 
-		if ( go != _predictedDecoy ) // our prediction keeps its simulating body (RoundManager.Grab)
-			ShotBody( go, simulate: false );
-		_shotTargets[go] = new Transform( position, rotation );
+		// A kinematic body here either way (so things collide with it properly). The pose itself only for snapshot-only
+		// decoys: a NETWORKED one is moved by the engine's own transform sync from its owner — easing it here too fought
+		// that sync every frame.
+		ShotBody( go, simulate: false );
+		if ( !EngineSynced( go ) )
+			_shotTargets[go] = new Transform( position, rotation );
 	}
 
 	[Rpc.Broadcast]

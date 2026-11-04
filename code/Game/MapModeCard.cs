@@ -103,6 +103,16 @@ public sealed class MapModeCard : Component
 	[Property, Group( "Round Rules (Override)" ), ShowIf( nameof( OverrideGrabProps ), true )]
 	public bool GrabProps { get; set; } = RoundSettings.DefaultGrabProps;
 
+	// ── Creative rules override ───────────────────────────────────────────────────────────────────────────
+	/// <summary>Set creative's "Repair props" explicitly (<see cref="CreativeRepairProps"/>) when this map is
+	/// direct-played as creative; off = the default (<see cref="CreativeSettings.DefaultRepairProps"/>). A lobby
+	/// launch always plays the lobby's choice.</summary>
+	[Property, Group( "Creative Rules (Override)" )] public bool OverrideCreativeRepairProps { get; set; }
+
+	/// <summary>Shot craters heal in creative, when <see cref="OverrideCreativeRepairProps"/> is on.</summary>
+	[Property, Group( "Creative Rules (Override)" ), ShowIf( nameof( OverrideCreativeRepairProps ), true )]
+	public bool CreativeRepairProps { get; set; } = CreativeSettings.DefaultRepairProps;
+
 	/// <summary>Frozen "get ready" countdown after the map loads.</summary>
 	[Property, Group( "Round Rules (Override)" )] public float StartCountdownSeconds { get; set; } = RoundSettings.DefaultStartCountdownSeconds;
 

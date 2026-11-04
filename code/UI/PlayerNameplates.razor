@@ -301,6 +301,26 @@
 			if ( !h.IsValid() )
 				continue;
 
+			// A body LENT out for a grab (PropClaims.BorrowedBodies) has the HOLDER as its network owner: on the holder's
+			// machine it isn't a proxy, and on its wearer's it is. Ask whose body it is instead — our own stays ours (no
+			// plate) wherever it's being simulated, and someone else's we're holding still gets theirs.
+			if ( PropClaims.WearerOf( h.GameObject ) is { } wearer )
+			{
+				if ( wearer == localId )
+				{
+					if ( !_ownPawn.IsValid() )
+					{
+						_ownPawn = h.GameObject;
+						_ownRole = PlayerRole.Prop;
+					}
+				}
+				else if ( !h.Concealed )
+				{
+					_candidates.Add( (h.GameObject, PlayerRole.Prop) );
+				}
+				continue;
+			}
+
 			if ( h.IsProxy || RoundManager.IsBotPawn( h.GameObject ) )
 			{
 				// Teams props ride the wire from round start and conceal by RENDERING on hunter machines during
@@ -348,6 +368,10 @@
 				&& !string.IsNullOrWhiteSpace( row.Name ) )
 				return row.Name;
 		}
+
+		// The connection's own name next — by its WEARER, not Network.Owner, which is the holder while a body is lent.
+		if ( id is not null && Connection.All.FirstOrDefault( c => c.Id == id.Value ) is { } conn )
+			return conn.DisplayName;
 
 		return RoundManager.IsBotPawn( pawn ) ? null : pawn.Network.Owner?.DisplayName;
 	}
