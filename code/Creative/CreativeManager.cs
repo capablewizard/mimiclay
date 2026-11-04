@@ -13,8 +13,8 @@ namespace Mimiclay;
 ///
 /// The loop: everyone spawns as a HUNTER. R swaps you to a fresh prop pawn to sculpt; R again (or E, on a possessed prop) returns you to a
 /// hunter and the prop is RELEASED — it persists in the world as scenery (<see cref="HiderController.ReleaseControl"/>,
-/// host keeps simulating it). Aiming at a released prop as a hunter outlines it with an "E to Edit" prompt; E
-/// POSSESSES it — your hunter despawns and you take the prop over, landing in edit mode.
+/// host keeps simulating it). Aiming at a released prop as a hunter outlines it with an "E Possess" prompt; E
+/// POSSESSES it — your hunter despawns and you take the prop over (Q opens the editor).
 ///
 /// <b>Claims.</b> The whole hover/claim/convert flow lives in <see cref="PropClaims"/>, the shared service
 /// spawned beside this manager (this manager is its <see cref="IPropClaimHost"/>): the same machinery the lobby

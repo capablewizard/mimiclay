@@ -127,7 +127,7 @@ public sealed class SdfCollider : Component
 	readonly List<Vector3> _framePoints = new();
 
 	/// <summary>Sculpture-local points outlining the ACTUAL emitted collider (empty until the first build) —
-	/// project them to frame the visible clay on screen (the creative-mode "E to Edit" prompt). Anything
+	/// project them to frame the visible clay on screen (the creative-mode "E Possess" prompt). Anything
 	/// derived from the brush list instead cannot know what a subtract carved away.</summary>
 	public IReadOnlyList<Vector3> FramePoints => _framePoints;
 

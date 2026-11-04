@@ -116,7 +116,7 @@ public sealed partial class PropClaims : Component, IInteractable
 	/// hunter's roaming scan reads this every frame.</summary>
 	public bool LeasesOpen => ClaimsOpen && (Host?.LeasesAllowed ?? false);
 
-	// ── The "Edit" interaction (PropClaims is a registered Interactions source) ────────────────────────────
+	// ── The "Possess" interaction (PropClaims is a registered Interactions source) ────────────────────────────
 
 	const string EditOption = "claims.edit";
 	const string SculptOption = "claims.sculpt";
@@ -136,7 +136,7 @@ public sealed partial class PropClaims : Component, IInteractable
 		{
 			// E: possess — only clay nobody is sculpting right now.
 			if ( IsClaimable( ctx.Sculpture ) )
-				options.Add( new InteractOption( EditOption, "Edit", InteractSlot.Primary ) );
+				options.Add( new InteractOption( EditOption, "Possess", InteractSlot.Primary ) );
 
 			// C: sculpt it in place, first person, without becoming it — alongside whoever is already on it
 			// (see RequestEdit). Opens with nothing selected; shapes are picked inside the session. Clicking

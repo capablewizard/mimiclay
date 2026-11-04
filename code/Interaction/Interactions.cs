@@ -78,7 +78,7 @@ public static class Interactions
 	/// <summary>How far a hunter can reach to hover (and so interact with / claim) clay, measured from the eye to the
 	/// point the crosshair ray lands on — NOT to the prop's origin, so a big prop is reachable by its near face. The
 	/// gun's own ray is map-length (4096u); without this bound every distant prop across the room outlines and offers
-	/// "E to Edit", which reads as noise. ONE value for every scene, tuned in the kitchen lobby — it used to be a
+	/// "E Possess", which reads as noise. ONE value for every scene, tuned in the kitchen lobby — it used to be a
 	/// per-scene knob (LobbyController / MapModeCard) and the maps just drifted apart for no reason.</summary>
 	public const float Reach = 200f;
 

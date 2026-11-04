@@ -378,9 +378,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		CaptureIconPose();
 		_iconPoseSeeded = true;
 
-		// Straight into sculpting — the prompt that got us here said "E to Edit".
-		if ( _session.IsValid() && !_session.IsEditing )
-			_session.SetActive( true );
+		// Just possessed — not sculpting: Q opens the editor (the prompt that got us here said "E Possess"). Charades
+		// drops its mimic into edit itself (EnterEditing).
 	}
 
 	/// <summary>Open the sculpt editor on this (owned) pawn's own disguise — the charades manager drops the

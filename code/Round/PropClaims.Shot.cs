@@ -68,7 +68,7 @@ public sealed partial class PropClaims
 		if ( FrozenProps.ContainsKey( id ) )
 			return;
 		LooseProps[id] = true;
-		_shotKicks[id] = new ShotKick { Point = hit, Impulse = dir.Normal * RoundManager.ShotKnockSpeed };
+		_shotKicks[id] = new ShotKick { Point = hit, Impulse = dir.Normal * RoundManager.ShotKnockSpeed, Since = 0f };
 	}
 
 	// ── Kicks: applied once the prop is a free rigidbody (a fresh conversion takes a tick or two) ──────────────

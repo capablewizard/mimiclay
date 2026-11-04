@@ -16,8 +16,10 @@
 
 	@* While dragging a layer OR scrubbing a slider, a full-screen transparent surface keeps a pointer-events:all
 	   region under the cursor so the native drag keeps firing OnDrag/OnDragEnd. Otherwise the thin slider track /
-	   the gaps between floating cards click through to the world, stalling the drag and swallowing the mouse-up. *@
-	@if ( _dragIndex >= 0 || ClaySlider.Dragging || ClayColorPicker.Dragging )
+	   the gaps between floating cards click through to the world, stalling the drag and swallowing the mouse-up.
+	   The shape list's scroll thumb too: without it a fast thumb drag flicked the cursor between the thumb's hand, the
+	   rows' and the world cursor every frame — the suspect behind the editor's 50–200 ms frames during one (profiled). *@
+	@if ( _dragIndex >= 0 || ClaySlider.Dragging || ClayColorPicker.Dragging || (ListThumb?.Dragging ?? false) )
 	{
 		<div class="drag-capture"></div>
 	}
@@ -215,7 +217,14 @@
 		<div class="panel left @EditHudGate.PanelClass( HudSection.Layers )" @ref="LeftPanel">
 			<div class="section-title"><div class="icon">layers</div><span>Shapes</span></div>
 
-			<div class="layers">
+			@* Scrolls once the rows no longer fit (they never squash — see .layer); the thumb rides its right edge
+			   and the bottom fades out while there's more below (LayersClass). *@
+			<div class="layers-wrap">
+			@* The fade mask sits on this wrapper, not the list: a masked panel draws through a layer clipped at its CONTENT box,
+			   so on the padded list it cut off the rows' hover grow and shadow (they live in that padding). This one has no
+			   padding — its content box is the list's whole padded rect. *@
+			<div class="layers-mask" @ref="LayersMaskPanel">
+			<div class="layers" @ref="LayersPanel">
 				@{
 					var brushes = Session.Target?.Brushes;
 					// Only the AUTHORED prefix gets rows — the damage tail (shot craters) is invisible to
@@ -240,6 +249,9 @@
 							RowHover=@HandleRowHover RowUnhover=@HandleRowUnhover />
 					}
 				}
+			</div>
+			</div>
+			<ListScrollThumb List=@LayersPanel @ref="ListThumb" />
 			</div>
 
 			@* The menu customiser's Back button — under the shape list, pinned to the column's bottom by the
@@ -743,6 +755,7 @@
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
+		_listFx.Clear(); // the shape list's cached fade textures
 
 		if ( Current == this )
 			Current = null;
@@ -943,6 +956,55 @@
 	Panel SliderStackPanel { get; set; }
 	Panel PickerPanel { get; set; }
 	Panel LeftPanel { get; set; }
+
+	// The shape list's scroll container (see .layers-wrap). Scrollable = the rows overflow it.
+	Panel LayersPanel { get; set; }
+	bool LayersScrollable => LayersPanel.IsValid() && LayersPanel.HasScrollY && LayersPanel.ScrollSize.y > 0.5f;
+
+	// A shape picked in the 3D view scrolls its row into the shape list's view (StepScrollList.Reveal). Keyed on the
+	// BRUSH, not its index, so a reorder doesn't count as a new pick; a pick made from the HUD itself (clicking a row) is
+	// skipped — that row is under the cursor, and the list mustn't slide out from under it. A brand-new shape's row only
+	// exists a frame or two later, so the reveal waits for it (briefly).
+	SdfBrush _revealSeen;
+	bool _revealPending;
+	RealTimeSince _sinceRevealAsked;
+
+	void RevealSelectedRow()
+	{
+		var sel = Session is { IsEditing: true } s ? s.SelectedBrush : null;
+		if ( !ReferenceEquals( sel, _revealSeen ) )
+		{
+			_revealSeen = sel;
+			_revealPending = sel is not null && !PointerOverPanels;
+			_sinceRevealAsked = 0f;
+		}
+
+		if ( !_revealPending || !LayersPanel.IsValid() )
+			return;
+		if ( _sinceRevealAsked > 1f || Session is null )
+		{
+			_revealPending = false;
+			return;
+		}
+
+		int idx = Session.Selected;
+		foreach ( var child in LayersPanel.Children )
+		{
+			if ( child is LayerRow row && row.Index == idx && row.Box.Rect.Height > 1f )
+			{
+				_listFx.Reveal( LayersPanel, row );
+				_revealPending = false;
+				return;
+			}
+		}
+	}
+
+	ListScrollThumb ListThumb { get; set; }
+	Panel LayersMaskPanel { get; set; } // carries the list's edge-fade mask (see .layers-mask)
+
+	// The shape list's wheel stepping + edge fades (see StepScrollList).
+	readonly StepScrollList _listFx = new();
+
 	Panel RightPanel { get; set; }
 	Panel ShapeDockPanel { get; set; }
 	Panel WorkshopWindowPanel { get; set; }
@@ -1200,6 +1262,41 @@
 		_dragOffsetY = 0f;
 		_stride = stride;
 		_gestureDragged = true; // this gesture is a drag → the trailing click won't select
+		_dragRawOffset = 0f;
+		_dragScrollStart = LayersPanel.IsValid() ? LayersPanel.ScrollOffset.y : 0f;
+	}
+
+	// The drag's cursor offset as the row reported it, and the list's scroll when the drag began: a list that scrolls
+	// mid-drag (the edge auto-scroll below) moves every row's slot under the cursor, so the offset is corrected by it.
+	float _dragRawOffset;
+	float _dragScrollStart;
+
+	// Screen-edge band (style px) of the shape list that scrolls it while a row is dragged there, and the top speed.
+	const float DragScrollBand = 48f;
+	const float DragScrollSpeed = 700f;
+
+	// Per frame while a row is dragged: near the list's top or bottom edge, scroll that way (faster the closer),
+	// so a row can be dragged into the part of the list that's off screen.
+	void UpdateDragAutoScroll()
+	{
+		var list = LayersPanel;
+		if ( _dragIndex < 0 || !LayersScrollable )
+			return;
+
+		float scale = list.ScaleToScreen;
+		float band = DragScrollBand * scale;
+		float y = list.MousePosition.y;
+		float h = list.Box.Rect.Height;
+		float dir = y < band ? -(1f - MathF.Max( y, 0f ) / band) : y > h - band ? (1f - MathF.Max( h - y, 0f ) / band) : 0f;
+		if ( dir == 0f )
+			return;
+
+		float next = Math.Clamp( list.ScrollOffset.y + dir * DragScrollSpeed * scale * Time.Delta, 0f, list.ScrollSize.y );
+		if ( MathF.Abs( next - list.ScrollOffset.y ) < 0.01f )
+			return;
+		_listFx.StopWheel(); // the edge scroll owns the list now
+		list.ScrollTo( new Vector2( list.ScrollOffset.x, next ) );
+		HandleDragMove( _dragRawOffset ); // re-aim the drop slot at the rows now under the cursor
 	}
 
 	// Engine OnDrag: the floating row's offset from where it was grabbed. The drop slot is whichever slot
@@ -1207,6 +1304,10 @@
 	// (offset ≈ 0 → drop back where you started) and always matches the previewed gap.
 	void HandleDragMove( float offsetY )
 	{
+		_dragRawOffset = offsetY;
+		if ( LayersPanel.IsValid() )
+			offsetY += LayersPanel.ScrollOffset.y - _dragScrollStart; // the list scrolled under the cursor since the grab
+
 		int n = Session?.Target?.AuthoredBrushCount ?? 0; // rows cover the authored prefix only
 		if ( n <= 0 || _stride <= 0f )
 		{
@@ -1249,7 +1350,15 @@
 		PointerOverSliders = Over( SliderStackPanel );
 		PointerOverPicker = Over( PickerPanel );
 		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel )
-			|| Over( WorkshopWindowPanel ) || Over( WorkshopPanel ) || Over( PartDockPanel );
+			|| Over( WorkshopWindowPanel ) || Over( WorkshopPanel ) || Over( PartDockPanel )
+			// The shape list's thumb sits OUTSIDE the left panel's rect (so the rows never change width), which Over()
+			// requires — and for the whole of a drag, wherever the cursor wanders. Without it a thumb drag read as the
+			// mouse being over the world: the editor ran its world hover / picking every frame, and a fast drag lagged.
+			|| Over( ListThumb ) || (ListThumb?.Dragging ?? false);
+
+		UpdateDragAutoScroll();
+		_listFx.Update( LayersPanel, LayersMaskPanel ); // the shape list: wheel steps, edge fades, pointer capture (StepScrollList)
+		RevealSelectedRow();
 
 		// Safety net for the layer-row hover highlight: if we're not in an editing session the rows can't be
 		// hovered, so make sure a stale highlight (e.g. the HUD closed mid-hover) can't linger.
@@ -1947,6 +2056,7 @@
 		hc.Add( SliderWidth );           // so inspector tweaks to the slider tunables re-render live
 		hc.Add( BlendCurve );
 		hc.Add( ClaySlider.Dragging );   // raise/drop the drag-capture overlay as a scrub starts/ends
+		hc.Add( ListThumb?.Dragging ?? false ); // …and for a shape-list thumb drag
 		hc.Add( SliderDropFromGizmo );
 		hc.Add( SliderStackHeight );
 		hc.Add( EditTransparency );

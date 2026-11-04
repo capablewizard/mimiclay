@@ -600,14 +600,78 @@
 		&:hover:active { transform: translateY( 0px ); }
 	}
 
+	// The shape list's frame: takes the column's free height (pinning the customiser's Back to the bottom) and holds
+	// the scrolling list plus its thumb. The thumb rides OUTSIDE the row column (see .list-scroll-thumb), so the rows
+	// are the same width scrolling or not — a lane that appeared once the list measured as overflowing made every
+	// row shrink a frame after edit mode opened.
+	.layers-wrap {
+		position: relative;
+		flex-direction: column;
+		flex-grow: 1;
+		flex-shrink: 1;
+		min-height: 0;
+	}
+
+	// The rows. Scrolls once they don't fit (they never squash below their own height — see .layer), with the
+	// engine's own bar off (the HUD draws its own thumb, ListScrollThumb). The padding is room for a row's hover /
+	// drag lift (scale 1.03) and its shadow, which the scroll clip would otherwise cut at the edges.
+	//
+	// The top / bottom fades are a mask texture on .layers-mask (below). Scrollable, the list takes the pointer itself so
+	// a wheel in the gaps between rows scrolls it instead of pushing the selected shape.
 	.layers {
 		flex-direction: column;
 		gap: 10px;
 		flex-grow: 1;
-		// Not scroll/hidden — those would clip the dragged row's scale(1.03) "lift" at the left/right edges
-		// (a transformed child can't escape an ancestor's overflow clip). These sculpts have few shapes, so
-		// the list doesn't need to scroll; if it ever gets long we'd add a scroll wrapper instead.
-		overflow: visible;
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: scroll;
+		scrollbar-width: none;
+		// Sides: the hover spring's peak grow (~8px at 1.05) + the card shadow's 8px blur. Bottom: the shadow's 6px drop +
+		// blur. .layers-mask's matching negative margin keeps the rows exactly where they were.
+		padding: 8px 18px 18px 18px;
+
+		&.scrollable { pointer-events: all; }
+	}
+
+	// The edge-fade mask's carrier (StepScrollList writes its MaskImage): the list's padded rect, stretched out past the
+	// wrapper by the list's padding so the rows sit exactly where they did. Outset with ABSOLUTE insets, never negative
+	// margins: a masked panel draws through a layer sized to its RectOuter (the rect plus margins), so a negative margin
+	// shrank that layer and cut off the rows' hover grow and shadow at the column edge (Panel.Layer.UpdateLayer).
+	.layers-mask {
+		position: absolute;
+		top: -8px;
+		left: -18px;
+		right: -18px;
+		bottom: 0px;
+		flex-direction: column;
+		mask-mode: luminance;
+		mask-size: 100% 100%;
+		mask-repeat: clamp;
+	}
+
+	// The grab-able scroll thumb (ListScrollThumb): a small rounded square just right of the row column, the same
+	// paper-card surface as the rows (class added in code). Its top is set inline from the scroll position, running
+	// from level with the top row to level with the bottom one; hidden until the list overflows.
+	.list-scroll-thumb {
+		position: absolute;
+		right: -32px;
+		width: 22px;
+		height: 22px;
+		border-radius: 7px;
+		pointer-events: none;
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.12s ease, background-color 0.1s ease;
+
+		&.shown { opacity: 1; pointer-events: all; }
+
+		// The rows' hover grow (see .layer), sprung bigger — 3% of a 22px square doesn't read. Order matters like the
+		// rows': the hover-out springs, then hover (a quick re-hover wins), then the held grow while dragged.
+		&.unhover-a { animation: thumb-unhover-a $spring-duration ease-out; }
+		&.unhover-b { animation: thumb-unhover-b $spring-duration ease-out; }
+		&:hover { background-color: #fff; sound-in: $sound-hover; animation: hover-spring-115 $spring-duration ease-out forwards; }
+		&:active { sound-in: $sound-click; }
+		&.dragging { background-color: $craft-orange; cursor: hand_closed; animation: none; transform: scale( 1.15 ); }
 	}
 
 	// The menu customiser's Back button, under the layer stack (the layers' flex-grow pins it to the column's
@@ -643,6 +707,7 @@
 	// itself (.paper-card .stack-row, orange .selected) is the shared card-stack kit in _button.scss.
 	.layer {
 		pointer-events: all;
+		flex-shrink: 0; // never squash: past fitting, the list scrolls instead (.layers)
 		justify-content: space-between; // spread the cells evenly across the row, in order
 		cursor: pointer; // point hand — the grab-hover cursor (drag to reorder); grabbing shows the closed hand
 		// NO transform transition on the base — so the dragged row follows the cursor with zero easing.
@@ -1174,3 +1239,20 @@
 	100% { transform: scale( 1 ); }
 }
 
+
+// The scroll thumb's hover-out spring (ListScrollThumb adds these alternately), from its 1.15 hover grow.
+@keyframes thumb-unhover-a
+{
+	0%   { transform: scale( 1.15 ); }
+	45%  { transform: scale( 0.96 ); }
+	75%  { transform: scale( 1.02 ); }
+	100% { transform: scale( 1 ); }
+}
+
+@keyframes thumb-unhover-b
+{
+	0%   { transform: scale( 1.15 ); }
+	45%  { transform: scale( 0.96 ); }
+	75%  { transform: scale( 1.02 ); }
+	100% { transform: scale( 1 ); }
+}

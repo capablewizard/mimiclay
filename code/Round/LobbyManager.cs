@@ -21,7 +21,7 @@ namespace Mimiclay;
 ///
 /// Lobby scene props are EDITABLE, creative-style: this manager hosts a <see cref="PropClaims"/> service
 /// (spawned beside it by LobbyController) and implements <see cref="IPropClaimHost"/> for it — aim at clay,
-/// "E to Edit", possess, sculpt. A claimed prop is map furniture, so a role swap RELEASES it back into the
+/// "E Possess", then Q to sculpt. A claimed prop is map furniture, so a role swap RELEASES it back into the
 /// world (see <see cref="RequestSwapRole"/>) instead of destroying it like a practice body.
 /// </summary>
 [Title( "Lobby Manager" )]
