@@ -46,6 +46,10 @@ public sealed partial class RoundManager
 		if ( !Settings.RepairProps )
 			QueueShotScan( sculpt );
 
+		// In the sim world (RoundManager.SimDecoys): the knock happens there.
+		if ( KnockSimDecoy( go, hit, dir ) )
+			return;
+
 		// Lent to a client (held, or settling — RoundManager.Grab): that machine simulates it, so the knock goes there.
 		if ( IsLentDecoy( go ) )
 		{
@@ -313,6 +317,20 @@ public sealed partial class RoundManager
 			return;
 
 		// Host: the piece tumbles from where the original was going, both pushed apart along the split.
+		if ( DecoyInSim( go ) )
+		{
+			// In the sim world: so is the piece (it gets its motion once its collider has built).
+			var sim = Sim;
+			var orig = sim.Find( go.Id );
+			var away = go.WorldTransform.NormalToWorld( (keepCentre - bounds.Center).Normal );
+			var v0 = orig.Phys.Velocity;
+			var w0 = orig.Phys.AngularVelocity;
+			if ( RegisterSimDecoy( piece, awake: true, upright: false ) is not null )
+				sim.SetMotion( piece.Id, v0 + away * ShotSplitSpeed, w0 );
+			sim.SetMotion( go.Id, v0 - away * ShotSplitSpeed * 0.5f, w0 );
+			return;
+		}
+
 		var from = go.Components.Get<Rigidbody>();
 		var body = ShotBody( piece, simulate: true );
 		if ( !body.IsValid() )
@@ -474,7 +492,9 @@ public sealed partial class RoundManager
 			return;
 
 		var id = sculpt.GameObject.Id;
-		if ( _pushSent.TryGetValue( id, out var since ) && since < 0.3f )
+		// A sim decoy (RoundManager.SimDecoys) is re-pushed while the contact lasts: the scene collider it shows blocks the
+		// pusher, so the sim never sees the push itself — these reports are what keep it sliding (Phase 2 moves the walk in).
+		if ( _pushSent.TryGetValue( id, out var since ) && since < (rm.DecoyInSim( sculpt.GameObject ) ? 0.1f : 0.3f) )
 			return;
 		_pushSent[id] = 0f;
 		rm.RequestDecoyPush( sculpt.GameObject, velocity );
@@ -497,6 +517,8 @@ public sealed partial class RoundManager
 	void RequestDecoyPush( GameObject go, Vector3 velocity )
 	{
 		var sculpt = go.IsValid() ? go.Components.Get<SdfSculpture>() : null;
+		if ( PushSimDecoy( go, velocity ) )
+			return; // in the sim world (RoundManager.SimDecoys)
 		if ( !IsShotDecoy( sculpt ) || _shotLoose.Contains( go ) || IsLentDecoy( go ) )
 			return; // already a physics body here (or on the client it's lent to): its own contacts push it from now on
 
@@ -541,7 +563,7 @@ public sealed partial class RoundManager
 		_shotResting.RemoveWhere( go => !go.IsValid() );
 		foreach ( var go in _shotLoose )
 		{
-			if ( IsLentDecoy( go ) )
+			if ( IsLentDecoy( go ) || DecoyInSim( go ) )
 				continue;
 			var body = go.Components.Get<Rigidbody>();
 			bool asleep = !body.IsValid() || body.Sleeping;
@@ -592,7 +614,7 @@ public sealed partial class RoundManager
 	// those too. Never applied on the machine simulating it, and never from anyone else.
 	void FollowShotPose( GameObject go, Vector3 position, Rotation rotation )
 	{
-		if ( !go.IsValid() || SimulatingLentHere( go ) )
+		if ( !go.IsValid() || SimulatingLentHere( go ) || DecoyInSim( go ) )
 			return;
 		var caller = Rpc.Caller;
 		bool fromSimulator = caller is null
@@ -631,6 +653,7 @@ public sealed partial class RoundManager
 		SdfCollider.ClaySurface?.PlayCollisionSound( at, 1000f );
 
 		_shotTargets.Remove( go );
+		UnregisterSimDecoy( go );
 		_shotAuthoredVolume.Remove( go );
 		go.Destroy();
 	}

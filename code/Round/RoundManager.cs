@@ -406,7 +406,7 @@ public sealed partial class RoundManager : Component, IRoundContext, Component.I
 		{
 			case RoundPhase.Starting:    PhaseEndsAt = Settings.StartCountdownSeconds; break;
 			case RoundPhase.Hide:        PhaseEndsAt = DebugSoloHide ? 999999f : Settings.HideSeconds; break;
-			case RoundPhase.Hunt:        PhaseEndsAt = Settings.HuntSeconds; _huntHadHunters = Hunters > 0; LoadHunters(); break;
+			case RoundPhase.Hunt:        PhaseEndsAt = Settings.HuntSeconds; _huntHadHunters = Hunters > 0; LoadHunters(); RegisterSimDecoys(); break;
 			case RoundPhase.Reveal:      PhaseEndsAt = Settings.RevealSeconds; break;
 			case RoundPhase.Consolidation: PhaseEndsAt = Settings.ConsolidationSeconds; break;
 		}

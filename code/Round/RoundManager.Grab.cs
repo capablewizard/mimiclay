@@ -122,6 +122,7 @@ public sealed partial class RoundManager : IPropClaimHost
 				var go = Scene.Directory.FindByGuid( id );
 				if ( !go.IsValid() || go.Components.Get<HiderController>().IsValid() )
 					continue; // a pawn (its controller holds itself), or gone
+				UnregisterSimDecoy( go ); // the hold takes over its motion (the lend path below) — it rejoins the sim when put down
 
 				// A client's hand: lend it — its machine simulates it. Our copy just follows.
 				if ( holder != Connection.Local?.Id )
@@ -167,6 +168,8 @@ public sealed partial class RoundManager : IPropClaimHost
 			var body = go.Components.Get<Rigidbody>();
 			if ( body.IsValid() )
 				body.Gravity = true;
+			if ( _simDecoysActive )
+				RegisterSimDecoy( go, awake: true, upright: false ); // back into the sim world, keeping the motion the hold gave it
 			return true;
 		} );
 
@@ -313,6 +316,8 @@ public sealed partial class RoundManager : IPropClaimHost
 		}
 		_shotLoose.Add( go );
 		_shotResting.Remove( go );
+		if ( _simDecoysActive )
+			RegisterSimDecoy( go, awake: false, upright: false ); // back into the sim world, at rest where it was put down
 	}
 
 	/// <summary>Host → the simulator of a lent decoy: something hit it (a shot) — apply this impulse there.</summary>
