@@ -619,6 +619,11 @@ public sealed partial class PropClaims
 		if ( HolderOf( hider ) is { } holder && Connection.All.FirstOrDefault( x => x.Id == holder ) is { } holderConn )
 			DropFor( holderConn );
 
+		// A body the sim carries is simply let go of: it lies down, and its wearer's own input rolls it or flips it back up
+		// (HiderController.UpdateSimRegistration, SimDownDriver) — no lend to hand back.
+		if ( HiderController.SimHoldApplies( hider ) )
+			return;
+
 		// A lent body comes straight back — held or still settling — at the host's latest view of it: breaking free has
 		// to feel instant for the wearer.
 		if ( BorrowedBodies.ContainsKey( body.Id ) )
@@ -795,8 +800,8 @@ public sealed partial class PropClaims
 		// (RoundManager.ShotProps notices it's no longer held). Neither ever freezes.
 		if ( !Sandbox )
 		{
-			if ( hider.IsValid() )
-				hider.SettleUpright();
+			if ( hider.IsValid() && !HiderController.SimHoldApplies( hider ) )
+				hider.SettleUpright(); // (a body the sim carries lies loose until it stands up — UpdateSimRegistration)
 			return;
 		}
 

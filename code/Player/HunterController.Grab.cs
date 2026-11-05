@@ -59,13 +59,16 @@ public sealed partial class HunterController
 		PropClaims.MarkGrabPending( true );
 		PropClaims.Current.RequestGrab( target );
 
-		// A prop already LOOSE in our sim: hold it now, predicted (SimWorld.PredictHold) — the host's grant becomes the same
-		// registration a round trip later and confirms it. Scene clay (converted on the host first) still waits for the grant.
+		// Anything already in our sim — a loose prop, someone's walking body, a bot, a prop-hunt decoy: hold it now, predicted
+		// (SimWorld.PredictHold) — the host's grant becomes the same registration a round trip later and confirms it. Scene
+		// clay in creative (converted on the host first) still waits for the grant.
 		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-		if ( hider.IsValid() && HiderController.SimHoldApplies( hider ) && !PropClaims.IsHeldObject( hider.GameObject )
-			&& Scene.GetSystem<Mimiclay.Sim.SimWorld>() is { } sim && sim.PredictHold( hider.GameObject.Id ) )
+		var sculpture = target.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndAncestors );
+		var simObject = hider.IsValid() ? hider.GameObject : sculpture.IsValid() ? sculpture.GameObject : null;
+		if ( simObject.IsValid() && !PropClaims.IsHeldObject( simObject )
+			&& Scene.GetSystem<Mimiclay.Sim.SimWorld>() is { } sim && sim.PredictHold( simObject.Id ) )
 		{
-			_grabPredicted = hider.GameObject;
+			_grabPredicted = simObject;
 			_sinceGrabPredicted = 0f;
 		}
 	}
@@ -111,6 +114,7 @@ public sealed partial class HunterController
 		if ( !held.IsValid() )
 		{
 			_grabbed = null;
+			EndSimHold(); // the row went without our letting go (its wearer broke free, a sweep): stop sending targets
 			return false;
 		}
 
@@ -401,15 +405,14 @@ public sealed partial class HunterController
 	void SetSimHold( GameObject held, Transform target )
 	{
 		_simHoldTarget = target;
-		// Only once OUR sim has the held body: inputs are stamped by tick, so a target sent before the body's add lands here
-		// had the host moving the prop for ticks our prediction never ran (measured: 15 replays, corrections to 65u at
-		// every grab start). Until then the host holds it still (SimHoldDriver, SimCtrl.Holding).
-		var hider = held.Components.Get<HiderController>();
-		bool applies = HiderController.SimHoldApplies( hider ) && hider.SimHeld;
+		// Only once OUR sim has the body in our hands (a pawn or a decoy — predicted, or the host's grant): inputs are stamped
+		// by tick, so a target sent before that had the host moving the prop for ticks our prediction never ran (measured:
+		// 15 replays, corrections to 65u at every grab start). Until then the host holds it still (SimCtrl.Holding).
+		var sim = Scene.GetSystem<Mimiclay.Sim.SimWorld>();
+		bool applies = sim is { Active: true } && sim.Find( held.Id ) is { } b && b.Spec.Driver == Mimiclay.Sim.SimHoldDriver.Id && b.IsLocalOwned;
 		if ( applies == _simHolding )
 			return;
 		_simHolding = applies;
-		var sim = Scene.GetSystem<Mimiclay.Sim.SimWorld>();
 		if ( sim is null )
 			return;
 		_simHoldInput ??= ReadSimHoldInput;

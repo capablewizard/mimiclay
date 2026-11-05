@@ -28,8 +28,10 @@ public sealed partial class HiderController : ISimShapeSource
 {
 	// Replicated: the host's value is everyone's (only the host's matters — it registers the bodies), so every machine's
 	// readout (DrawSimWalkHud) shows the real setting.
-	[ConVar( "mimi_sim_walk", Flags = ConVarFlags.Replicated, Help = "Phase 2a: players' props walk in the shared sim world (host-authoritative, owner-predicted). Climbing is unavailable while on. Host only." )]
-	public static bool SimWalk { get; set; } = false;
+	// ON by default since 2026-11-05: the sim walk, hold and loose paths are the tested ones (see the networked-physics-authority
+	// notes); off = the old scene-physics walk and the lend-based grab, kept for A/B. Climbing is unavailable while on.
+	[ConVar( "mimi_sim_walk", Flags = ConVarFlags.Replicated, Help = "Players' props, holds and loose props live in the shared sim world (host-authoritative, owner-predicted); 0 = the old scene-physics walk and lend-based grab. Climbing is unavailable while on. Host only." )]
+	public static bool SimWalk { get; set; } = true;
 
 	[ConVar( "mimi_sim_hud", Help = "Show the sim-walk readout (top left) while you control a prop." )]
 	public static bool SimHud { get; set; } = true;
@@ -68,6 +70,7 @@ public sealed partial class HiderController : ISimShapeSource
 	const float PushOnset = 0.05f;
 	const float PushFull = 0.3f;
 	const float PushRelease = 0.25f;
+	const float SlideFriction = 0.8f; // lying down, driven on the ground: the floor friction the frictionless slide stands in for (the clay surface's)
 
 	// The move hull again, its scratch bodies (foot slab) in the SIM world — sweeps must run in the world they hit.
 	readonly PropMoveHull _simHull = new();
@@ -129,60 +132,70 @@ public sealed partial class HiderController : ISimShapeSource
 		var existing = sim.Find( GameObject.Id );
 		var owner = Network.Owner?.Id ?? Connection.Local?.Id ?? Guid.Empty;
 		// Three kinds, in precedence: HELD (in a hunter's hands — the hold driver, owned by the holder; see SimHoldDriver),
-		// a WALKER, a LOOSE rigid body.
+		// LOOSE (a rigid body: dropped scenery, or a player's or bot's body let go of until it stands up), a WALKER.
 		var holder = PropClaims.HolderOf( this );
 		bool held = holder is { } && SimHoldApplies( this ) && _body.IsValid() && _collider.IsValid();
 		if ( held )
+		{
 			_sinceSimHoldRowGone = 0f; // (how long since the Held row went: the loose redrive waits on the release tick, briefly)
-		bool walk = !held && SimWalk && SimWalkEligible();
-		bool loose = !held && !walk && SimWalk && SimLooseEligible();
+		}
+		// A player's or bot's body (not released scenery, which the Loose registry governs) let go of is DOWN (SimDownDriver):
+		// the walk overturned once it has settled (the move keys slide it, the mouse turns it), righted with SPACE — the first
+		// jump is the flip onto its feet; a bot rights itself once it has lain still. Up again (SimDownDriver.Done), it's a walker.
+		if ( !held && existing is { Spec.Driver: SimHoldDriver.Id } && !PropClaims.IsReleased( this ) )
+			_simDown = true;
+		if ( _simDown && existing is { Spec.Driver: SimDownDriver.Id } d && SimDownDriver.Done( d ) )
+			_simDown = false;
+		if ( held || PropClaims.IsReleased( this ) ) // released (unpossessed): a physics item from here, not a bot that rights itself
+			_simDown = false;
+		bool down = !held && SimWalk && _simDown && Network.Active && _body.IsValid() && _collider.IsValid();
+		bool loose = !held && !down && SimWalk && SimLooseEligible();
+		bool walk = !held && !down && !loose && SimWalk && SimWalkEligible();
 
-		// Anything about the registration that changed (who drives it, walking vs loose, input or none) means re-registering.
-		(Vector3 v, Vector3 w)? carry = null;
+		byte driver = held ? SimHoldDriver.Id : down ? SimDownDriver.Id : walk ? SimWalkDriverId : (byte)0;
+		var drvOwner = held ? holder.Value : down || walk ? owner : Guid.Empty;
+		var flags = held ? SimBodyFlags.Present | SimBodyFlags.NoGravity
+			: down ? SimBodyFlags.Present | (SimInert ? SimBodyFlags.Inert : 0)
+			: walk ? SimBodyFlags.Present | SimBodyFlags.Upright | SimBodyFlags.NoTurn | SimBodyFlags.NoGravity | (SimInert ? SimBodyFlags.Inert : 0)
+			: SimBodyFlags.Present;
+		var shape = walk ? SimShapeKind.FromSource : SimShapeKind.FromGameObject;
+
+		// Anything about the registration that changed (who drives it, what it collides as) changes IN PLACE (SimWorld.Redrive):
+		// the same body, its motion carrying on everywhere — a throw keeps flying, a stand-up keeps its speed — nothing is
+		// re-created or restored from an older state.
 		if ( existing is not null )
 		{
-			bool same = held
-				? existing.Spec.Driver == SimHoldDriver.Id && existing.Spec.Owner == holder.Value
-				: walk
-					? existing.Spec.Driver == SimWalkDriverId && existing.Spec.Owner == owner && ((existing.Spec.Flags & SimBodyFlags.Inert) != 0) == SimInert
-						&& IsUpright( existing.Phys.Rotation ) // a walker registered tilted (before this fix) is re-made upright
-					: loose && existing.Spec.Driver == 0;
-			if ( same )
-				return;
-			// Held ↔ loose: the same clay body, a different driver — changed IN PLACE (SimWorld.Redrive), so its motion carries
-			// on everywhere (a throw keeps flying) and nothing is re-created or restored from an older state.
-			if ( existing.Spec.Shape == SimShapeKind.FromGameObject && (held || loose) )
+			if ( !held && !down && !walk && !loose )
 			{
-				if ( held )
-					sim.Redrive( GameObject.Id, SimHoldDriver.Id, holder.Value, SimBodyFlags.Present | SimBodyFlags.NoGravity );
-				else
-				{
-					// Let go of: loose from the holder's RELEASE TICK — the first of its inputs with no target (HoldReleased), which
-					// the holder's own prediction switched at too — not from the drop message, which lands a lead earlier while
-					// its last targets are still on the way (a 71u correction on every throw). Capped: lost inputs, a vanished holder.
-					bool waitForRelease = existing.Spec.Driver == SimHoldDriver.Id && existing.Ctrl.Holding && !existing.HoldReleased;
-					if ( waitForRelease && _sinceSimHoldRowGone < 1f )
-						return;
-					sim.Redrive( GameObject.Id, 0, Guid.Empty, SimBodyFlags.Present );
-				}
+				sim.Unregister( GameObject.Id );
 				return;
 			}
-			if ( existing.Spec.Driver == SimHoldDriver.Id && existing.Phys.IsValid() )
-				carry = (existing.Phys.Velocity, existing.Phys.AngularVelocity); // let go of: it keeps the hold's swing (a throw flies)
-			sim.Unregister( GameObject.Id );
+			bool same = existing.Spec.Driver == driver && existing.Spec.Owner == drvOwner && (existing.Spec.Flags & ~SimBodyFlags.StartAsleep) == flags
+				&& existing.Spec.Shape == shape && (!walk || IsUpright( existing.Phys.Rotation )); // a tilted walker is re-made upright
+			if ( same )
+				return;
+			if ( existing.Spec.Driver == SimHoldDriver.Id && !held )
+			{
+				// Let go of: from the holder's RELEASE TICK — the first of its inputs with no target (HoldReleased), which the
+				// holder's own prediction switched at too — not from the drop message, which lands a lead earlier while its
+				// last targets are still on the way (a 71u correction on every throw). Capped: lost inputs, a vanished holder.
+				bool waitForRelease = existing.Ctrl.Holding && !existing.HoldReleased;
+				if ( waitForRelease && _sinceSimHoldRowGone < 1f )
+					return;
+			}
+			sim.Redrive( GameObject.Id, driver, drvOwner, flags, shape );
+			return;
 		}
 
-		if ( held )
+		if ( held || down )
 		{
-			// Its real clay collider, free to turn, no gravity (the hold carries it); the holder's input drives it.
+			// Its real clay collider, free to turn: held (no gravity — the hold carries it; the holder's input drives it) or
+			// down (gravity on; the wearer's input moves it, overturned, and rights it — SimStepDown).
 			sim.Register( new SimBodySpec
 			{
-				Key = GameObject.Id, Source = GameObject.Id, Shape = SimShapeKind.FromGameObject, Driver = SimHoldDriver.Id, Owner = holder.Value,
-				Flags = SimBodyFlags.Present | SimBodyFlags.NoGravity,
-				Mass = _collider.IsValid() ? _collider.ClayMass : 0f, Pose = new Transform( WorldPosition, WorldRotation ),
+				Key = GameObject.Id, Source = GameObject.Id, Shape = SimShapeKind.FromGameObject, Driver = driver, Owner = drvOwner,
+				Flags = flags, Mass = _collider.IsValid() ? _collider.ClayMass : 0f, Pose = new Transform( WorldPosition, WorldRotation ),
 			} );
-			if ( carry is { } keep )
-				sim.SetMotion( GameObject.Id, keep.v, keep.w );
 		}
 		else if ( walk )
 		{
@@ -205,25 +218,33 @@ public sealed partial class HiderController : ISimShapeSource
 			// A loose prop (dropped from a grab): a plain rigid body in the sim — its real clay collider, free to tumble,
 			// engine gravity — carrying on with whatever motion the scene body had.
 			var rb = Body;
-			bool asleep = carry is null && (!rb.IsValid() || rb.Sleeping);
+			bool asleep = !rb.IsValid() || rb.Sleeping;
 			sim.Register( new SimBodySpec
 			{
 				Key = GameObject.Id, Source = GameObject.Id, Shape = SimShapeKind.FromGameObject, Owner = Guid.Empty,
 				Flags = SimBodyFlags.Present | (asleep ? SimBodyFlags.StartAsleep : 0),
 				Mass = _collider.IsValid() ? _collider.ClayMass : 0f, Pose = new Transform( WorldPosition, WorldRotation ),
 			} );
-			if ( carry is { } keep )
-				sim.SetMotion( GameObject.Id, keep.v, keep.w );
-			else if ( !asleep && rb.MotionEnabled )
+			if ( !asleep && rb.MotionEnabled )
 				sim.SetMotion( GameObject.Id, rb.Velocity, rb.AngularVelocity );
 		}
 	}
 
-	/// <summary>Is this prop carried BY THE SIM when grabbed (the hold driver, SimHoldDriver) rather than lent to its holder?
-	/// Creative's released scenery while the sim walk is on. Players' bodies and prop-hunt decoys still take the lend
-	/// (phase 3b).</summary>
+	// Host: a player's or bot's body let go of lies DOWN (SimDownDriver — its wearer's own input rolls it and rights it with
+	// Space) until the driver reports it upright (see UpdateSimRegistration); then it's a walker again.
+	bool _simDown;
+
+	/// <summary>Is this pawn lying down (or righting itself) in the sim world right now (any machine)?</summary>
+	internal bool SimDown => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b && b.Spec.Driver == SimDownDriver.Id;
+
+	/// <summary>The launch speed of this prop's jump (HiderController.Walk): the flip's hop (SimDownDriver).</summary>
+	internal float SimHopSpeed => JumpPower * MathF.Sqrt( SizeSpeedScale );
+
+	/// <summary>Is this pawn carried BY THE SIM when grabbed (the hold driver, SimHoldDriver) rather than lent to its holder?
+	/// Every pawn while the sim walk is on — released scenery, players' bodies, bots — except one whose shape is mid-edit on
+	/// its wearer's machine (the lend never took those either).</summary>
 	internal static bool SimHoldApplies( HiderController h )
-		=> SimWalk && h.IsValid() && h.Network.Active && PropClaims.IsReleased( h ) && !RoundManager.IsBotPawn( h.GameObject );
+		=> SimWalk && h.IsValid() && h.Network.Active && !h.NetEditing;
 
 	RealTimeSince _sinceSimHoldRowGone = 999f;
 
@@ -347,7 +368,7 @@ public sealed partial class HiderController : ISimShapeSource
 		if ( sim is null )
 			return;
 		UpdateSimHoldFollower( sim );
-		bool mine = !IsProxy && !RoundManager.IsBotPawn( GameObject ) && !Scenery && SimWalking;
+		bool mine = !IsProxy && !RoundManager.IsBotPawn( GameObject ) && !Scenery && (SimWalking || SimDown); // walking, or lying down (rolling / the flip)
 		if ( mine )
 		{
 			sim.LocalInput = ReadSimInput;
@@ -448,10 +469,14 @@ public sealed partial class HiderController : ISimShapeSource
 		public SimInput Guess( SimBody body, in SimBodyState latest ) => new() { Wish = new Vector2( latest.V.x, latest.V.y ) };
 	}
 
+	/// <summary>The walk driver the sim resolves by id (SimWorld.DriverFor) — current code, whatever was registered before.</summary>
+	internal static readonly ISimDriver WalkDriver = new SimWalkDriver();
+
 	internal static void RegisterSimDriver( SimWorld sim )
 	{
 		sim.RegisterDriver( SimWalkDriverId, new SimWalkDriver() );
 		sim.RegisterDriver( SimHoldDriver.Id, new SimHoldDriver() ); // the grab's hold (phase 3) — every machine runs it
+		sim.RegisterDriver( SimDownDriver.Id, new SimDownDriver() ); // lying down: the walk overturned, righted by Space
 	}
 
 	// StepWalk, from (input, body.Ctrl) only — every number it keeps between ticks is in the SimCtrl, so a replay of the
@@ -616,22 +641,244 @@ public sealed partial class HiderController : ISimShapeSource
 		}
 	}
 
+	// ── Lying DOWN (SimDownDriver): the walk, overturned ────────────────────────────────────────────────────
+	// Let go of by a hunter it TUMBLES (the physics, the move keys adding to its velocity) until it is calm a moment; SETTLED, it's the walk in
+	// whatever pose it came to rest in — the move keys slide it at the walk's speed and acceleration, the mouse turns it
+	// about the vertical, its rotation held (locked, its spin zeroed, as the walker's is) — until SPACE: the hop and a
+	// righting spin toward upright, the host making it a walker once SimDownDriver.Done (the first jump IS the flip onto
+	// its feet). Engine gravity throughout (the spec): it falls, lands and weighs on things as a body; what the walk does
+	// with its ride spring and hand gravity, the contacts do here. No step-up (its real collider lies on the floor).
+	// SimCtrl: Grounded = settled, PushLevel = ticks lain still (tumbling) or settled (a bot), AirFromJump = rising,
+	// StillTicks = ticks off the ground / the park counter / the rise ticks, Parked and Commanded as the walk's.
+	internal void SimStepDown( SimBody body, in SimInput input )
+	{
+		var sim = SimSystem;
+		var pb = body.Phys;
+		if ( sim is null || pb is null || !pb.IsValid() || !_collider.IsValid() )
+			return;
+		ref var c = ref body.Ctrl;
+		const float dt = SimWorld.Dt;
+		bool inert = (body.Spec.Flags & SimBodyFlags.Inert) != 0;
+		var pos = pb.Position;
+		var rot = pb.Rotation;
+		var wish = new Vector3( input.Wish.x, input.Wish.y, 0f );
+
+		// Fell out of the world: back to the spawn spot, upright, at rest (as the walk does) — it settles there.
+		if ( FallRespawn.Fell( pos.z, _fallAnchor.Position.z ) )
+		{
+			SimDownDriver.Settle( body, pb, false );
+			pb.Transform = new Transform( _fallAnchor.Position, Rotation.FromYaw( rot.Angles().yaw ) );
+			pb.Velocity = 0f;
+			pb.AngularVelocity = 0f;
+			c = SimCtrl.Initial;
+			body.Intent = 0f;
+			return;
+		}
+
+		// Rising (the flip): the righting spin, the walk's air control on the way up.
+		if ( c.AirFromJump )
+		{
+			SimDownDriver.Settle( body, pb, false );
+			if ( pb.Sleeping )
+				pb.Sleeping = false;
+			if ( c.StillTicks < 255 )
+				c.StillTicks++;
+			var v = pb.Velocity;
+			pb.Velocity = Vector3.Lerp( v.WithZ( 0f ), wish, 1f - MathF.Exp( -AirControl * dt ) ).WithZ( v.z );
+			SimDownDriver.Right( pb );
+			body.Intent = 0f;
+			return;
+		}
+
+		// Tumbling: the physics has it, the move keys ADDED to it (user, 2026-11-05: "move before we settle, keeping the
+		// velocity but adding our own inputs") — on the ground, the velocity along the keys is brought to the walk's speed
+		// (up at the walk's acceleration; down, and across the keys, at what floor friction would take off a sliding body —
+		// the shapes are FRICTIONLESS while the keys are held, so this stands in for it: without it a thrown ball slid at
+		// the throw's speed for as long as a key was held, "extremely quickly while rolling"); in the air only the push,
+		// never braking. The push adds SLIDE only: frictionless, the spin stays what the throw gave it (a ball keeps rolling
+		// at its own pace and slides along under the keys; a kettle slides on whatever it's lying on), the floor's friction
+		// coupling the two again as soon as the keys are let go. SPACE on the ground is the flip from here too, the tumble's
+		// spin dropped (not inherited — the righting spin starts clean). Calm for a moment — no spin, not falling, not
+		// faster than the walk — it's settled where it lies, moving or not (a spinning ball never is).
+		if ( !c.Grounded )
+		{
+			bool driving = !wish.IsNearZeroLength;
+			bool flip = !inert && input.Has( SimInput.Jump );
+			SimDownDriver.Settle( body, pb, false, frictionless: driving );
+			body.Intent = wish;
+			bool onGround = (driving || flip) && OnGround();
+			if ( flip && onGround )
+			{
+				c.AirFromJump = true;
+				c.StillTicks = 0;
+				SimDownDriver.Settle( body, pb, false );
+				if ( pb.Sleeping )
+					pb.Sleeping = false;
+				pb.AngularVelocity = 0f;
+				pb.Velocity = pb.Velocity.WithZ( MathF.Max( pb.Velocity.z, SimHopSpeed ) );
+				body.Intent = 0f;
+				return;
+			}
+			if ( driving )
+			{
+				if ( pb.Sleeping )
+					pb.Sleeping = false;
+				var v = pb.Velocity;
+				var dir = wish.Normal;
+				float along = Vector3.Dot( v, dir );
+				if ( onGround )
+				{
+					float slide = SlideFriction * Gravity * dt; // what the floor's friction would take off the slide this tick
+					var across = (v.WithZ( 0f ) - dir * along).ClampLength( MathF.Max( 0f, (v.WithZ( 0f ) - dir * along).Length - slide ) );
+					along = along > wish.Length ? MathF.Max( wish.Length, along - slide ) : MathF.Min( wish.Length, along + WalkAccel * dt );
+					pb.Velocity = (dir * along + across).WithZ( v.z );
+				}
+				else if ( along < wish.Length )
+					pb.Velocity += dir * MathF.Min( WalkAccel * dt, wish.Length - along );
+			}
+			float walkMax = WalkSpeed * SizeSpeedScale + 10f;
+			bool calm = pb.AngularVelocity.Length < 0.5f && MathF.Abs( pb.Velocity.z ) < 20f && pb.Velocity.WithZ( 0f ).Length <= walkMax;
+			c.PushLevel = calm ? (ushort)Math.Min( c.PushLevel + 1, ushort.MaxValue ) : (ushort)0;
+			if ( c.PushLevel < SimDownDriver.SettleTicks )
+				return;
+			c.Grounded = true;
+			c.Parked = false;
+			c.StillTicks = 0;
+			c.Commanded = 0f;
+		}
+
+		// On the ground? The whole hull IN THIS POSE, swept down from a step above where it is (the walk's foot sweep is the
+		// upright hull's base). Started solid (pressed into the floor, or against something) counts as on it.
+		bool OnGround()
+		{
+			_simHull.Refresh( _collider, sim.World );
+			RefreshSceneHull();
+			if ( !_simHull.Ready || !_hull.Ready )
+				return false;
+			float clearance = ScaledStep( StepHeight );
+			var trace = sim.Trace.WithoutTags( MoveIgnoreTags.Append( SimWorld.SelfTag( body ) ).ToArray() );
+			var from = pb.Position + Vector3.Up * clearance;
+			var tr = _simHull.Sweep( trace, new Transform( from, pb.Rotation ), new Transform( from - Vector3.Up * (clearance + RideSnap), pb.Rotation ) );
+			bool walkable = tr.Hit && (Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( true, sim.SourceOf( tr.Body ), tr.Body )));
+			return tr.StartedSolid || (walkable && tr.Distance - clearance <= RideSnap);
+		}
+
+		// Settled.
+		SimDownDriver.Settle( body, pb, true );
+		if ( inert )
+		{
+			// A bot: lies there, then rights itself where it lies (no hop).
+			pb.AngularVelocity = 0f;
+			body.Intent = 0f;
+			c.PushLevel = (ushort)Math.Min( c.PushLevel + 1, ushort.MaxValue );
+			if ( c.PushLevel >= SimDownDriver.InertRestTicks )
+			{
+				c.AirFromJump = true;
+				c.StillTicks = 0;
+				SimDownDriver.Settle( body, pb, false );
+				if ( pb.Sleeping )
+					pb.Sleeping = false;
+			}
+			return;
+		}
+
+		bool jump = input.Has( SimInput.Jump );
+		float turn = input.Turn;
+		bool idle = wish.IsNearZeroLength && !jump && MathF.Abs( turn ) < 0.001f;
+		if ( c.Parked )
+		{
+			if ( idle && pb.Velocity.LengthSquared < 4f )
+			{
+				body.Intent = 0f;
+				return; // left to physics and its sleep
+			}
+			c.Parked = false;
+			c.StillTicks = 0;
+		}
+		if ( pb.Sleeping )
+			pb.Sleeping = false;
+
+		bool ground = OnGround();
+
+		var vel = pb.Velocity;
+		if ( !ground )
+		{
+			// Off the ground (slid off an edge, a steep slope): the walk's air control, gravity's fall. Off it for a while,
+			// it's a body again — to land and tumble, not stay balanced on whatever corner it left in.
+			c.StillTicks = (byte)Math.Min( c.StillTicks + 1, 255 );
+			if ( c.StillTicks >= SimDownDriver.UnsettleTicks )
+			{
+				c.Grounded = false;
+				c.PushLevel = 0;
+				SimDownDriver.Settle( body, pb, false );
+			}
+			pb.Velocity = Vector3.Lerp( vel.WithZ( 0f ), wish, 1f - MathF.Exp( -AirControl * dt ) ).WithZ( vel.z );
+			pb.AngularVelocity = 0f;
+			c.Commanded = pb.Velocity;
+			body.Intent = wish;
+			return;
+		}
+
+		// On the ground: the walk's chase of the wish (GroundControl, capped at WalkAccel); the vertical is the contacts'.
+		var flat = vel.WithZ( 0f );
+		var dv = (wish - flat) * (1f - MathF.Exp( -GroundControl * dt ));
+		flat += dv.ClampLength( WalkAccel * dt );
+		float vz = vel.z;
+		if ( jump )
+		{
+			// Up we go: the flip is a jump (the prop's own hop); upright, the host makes it a walker.
+			c.AirFromJump = true;
+			c.StillTicks = 0;
+			SimDownDriver.Settle( body, pb, false );
+			vz = MathF.Max( vz, SimHopSpeed );
+		}
+		pb.Velocity = flat.WithZ( vz );
+		pb.AngularVelocity = 0f;
+		c.Commanded = pb.Velocity;
+		body.Intent = wish.IsNearZeroLength ? Vector3.Zero : flat.Length > wish.Length * 0.5f ? flat : wish;
+		if ( jump )
+			return;
+
+		// Park once there's nothing left to do.
+		bool still = idle && flat.Length < 1f;
+		c.StillTicks = still ? (byte)Math.Min( c.StillTicks + 1, 255 ) : (byte)0;
+		if ( c.StillTicks >= ParkAfterTicks )
+		{
+			c.Parked = true;
+			pb.Velocity = Vector3.Zero;
+		}
+
+		// The mouse turn: about the world vertical through the hull's centre, applied to the body directly (as the walk's).
+		if ( MathF.Abs( turn ) > 0.001f )
+		{
+			var centre = pos + rot * _hull.Centre;
+			var centreXY = new Vector3( centre.x, centre.y, pos.z );
+			var spin = Rotation.FromAxis( Vector3.Up, turn );
+			pb.Transform = new Transform( centreXY + spin * (pos - centreXY), spin * rot );
+		}
+	}
+
 	// ── The scene pawn while it sim-walks ───────────────────────────────────────────────────────────────────
 
 	// The simulating machine's fixed tick (owner / host): nothing to simulate here any more — the scene body is keyframed
 	// presentation (SimWorld moves it). The rest of the game still reads IsGrounded / Velocity, so mirror them.
 	bool StepSimWalking()
 	{
-		// Loose in the sim (a rigid body there), or in a hunter's hands there: just presentation here, like a sim walker.
-		if ( SimLoose || SimHeld )
+		// Loose in the sim (a rigid body there), or in a hunter's hands there: just presentation here, like a sim walker. Our
+		// OWN body as an object: the camera follows the clay, and a move or jump key breaks free / stands it up.
+		if ( SimLoose || SimHeld || SimDown )
 		{
 			SetPhysicsMode( PhysicsMode.Character );
+			if ( !Scenery && !IsProxy && !RoundManager.IsBotPawn( GameObject ) )
+				WatchSimObjectEscape();
 			return true;
 		}
 
 		var self = SimSelf;
 		if ( self is null )
 			return false;
+		if ( _grabbedObject )
+			RecoverFromSimObject(); // back on our feet (the host stood us up): the mouse turns us from where we face now
 		if ( _climbing )
 			EndClimb();
 		SetPhysicsMode( PhysicsMode.Character );
@@ -639,6 +886,56 @@ public sealed partial class HiderController : ISimShapeSource
 		_parked = self.Ctrl.Parked;
 		_velocity = self.Phys.IsValid() ? self.Phys.Velocity : Vector3.Zero;
 		return true;
+	}
+
+	// ── Our own body carried or lying loose in the sim (the wearer's machine) ───────────────────────────────
+	// The body stays ours on the network; only its sim body is driven by the holder (or by nobody). We watch it from the
+	// host's poses (SimWorld.RemotePose), keep the camera on the clay (UpdateGrabbedCamera), and a jump or a fresh movement
+	// key breaks free of a hold (PropClaims.EscapeGrab — the host drops us); lying down, our own sim input moves and rights us (SimDownDriver).
+	RealTimeSince _sinceSimEscape = 999f;
+
+	void WatchSimObjectEscape()
+	{
+		if ( !_grabbedObject )
+		{
+			// Just grabbed (or dropped): a key already DOWN doesn't count — only a press made after this breaks free. The
+			// baseline WatchMoveEscape compares against is only kept while we're an object, so a prop grabbed mid-walk read
+			// the key it was walking with as a fresh press on its first held tick and escaped at once (user: "the first grab
+			// fails after moving").
+			_grabbedObject = true;
+			_moveWasDown = !Input.AnalogMove.IsNearZeroLength;
+			_moveEscapeQueued = false;
+			_jumpQueued = false;
+			return;
+		}
+		if ( !SimHeld )
+		{
+			// Down: nothing to ask for — our own sim input moves it (the walk, overturned) and rights it (Space), see SimDownDriver.
+			_escapeSent = false;
+			return;
+		}
+		// Held: a move key or Space breaks free (the host drops us — we're DOWN from there). A Space press is left queued,
+		// so the first input once we're down carries the jump: the flip onto our feet.
+		WatchMoveEscape();
+		bool jumped = _jumpQueued, moved = _moveEscapeQueued;
+		_moveEscapeQueued = false;
+		if ( !jumped )
+			_jumpQueued = false;
+		if ( _escapeSent || (!jumped && !moved) || _sinceSimEscape < 0.3f )
+			return;
+		_sinceSimEscape = 0f;
+		_escapeSent = true;
+		PropClaims.Current?.EscapeGrab( GameObject );
+	}
+
+	// Back to a walker after being an object: face where the body points now, and re-seed the mouse turn from it (the walk
+	// turns by the facing's CHANGE since its last tick — frozen from before the grab, that read as one big spin).
+	void RecoverFromSimObject()
+	{
+		_grabbedObject = false;
+		_grabbedTarget = null;
+		_bodyYaw = WorldRotation.Angles().yaw;
+		_turnSeeded = false;
 	}
 
 	// ── Pushes from the scene side: a hunter walking into a pawn the sim owns ───────────────────────────────

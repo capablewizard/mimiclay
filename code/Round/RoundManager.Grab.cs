@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Mimiclay.Sim;
 
 namespace Mimiclay;
 
@@ -59,6 +60,7 @@ public sealed partial class RoundManager : IPropClaimHost
 	readonly HashSet<GameObject> _heldDecoys = new();                       // host: decoys it holds and simulates itself
 	readonly Dictionary<GameObject, HeldBodyDriver> _decoyHolds = new();      // any machine: the hold per decoy it drives
 	readonly Dictionary<Guid, RealTimeSince> _lentLetGo = new();              // host: when each lent decoy's hold ended
+	readonly Dictionary<Guid, RealTimeSince> _simDecoyLetGo = new();          // host: when each SIM-held decoy's Held row went
 
 	// Simulator side (a client): the decoy we were lent, how long it's been still since the drop, whether we've reported
 	// it, and the filter that keeps it off our own pawn.
@@ -122,6 +124,13 @@ public sealed partial class RoundManager : IPropClaimHost
 				var go = Scene.Directory.FindByGuid( id );
 				if ( !go.IsValid() || go.Components.Get<HiderController>().IsValid() )
 					continue; // a pawn (its controller holds itself), or gone
+				if ( DecoyInSim( go ) )
+				{
+					// A sim decoy is held IN the sim: the hold driver, driven by its holder's input (SimHoldDriver, phase 3b) —
+					// no lend, no pose stream. Free to turn in the hand; loose again, free to tumble, when put down (below).
+					Sim.Redrive( id, SimHoldDriver.Id, holder, SimBodyFlags.Present | SimBodyFlags.NoGravity );
+					continue;
+				}
 				UnregisterSimDecoy( go ); // the hold takes over its motion (the lend path below) — it rejoins the sim when put down
 
 				// A client's hand: lend it — its machine simulates it. Our copy just follows.
@@ -154,6 +163,27 @@ public sealed partial class RoundManager : IPropClaimHost
 				_shotLoose.Add( go ); // streamed to clients like any loose decoy
 				_shotResting.Remove( go );
 				DriveDecoyHold( go, target );
+			}
+		}
+
+		// Sim decoys nobody holds any more: loose again — from the holder's release tick (HoldReleased, as a pawn's drop:
+		// HiderController.UpdateSimRegistration), free to tumble like a shot one.
+		if ( Sim is { Active: true } sim )
+		{
+			foreach ( var b in sim.Bodies.ToList() )
+			{
+				if ( b.Spec.Driver != SimHoldDriver.Id || b.Spec.Shape != SimShapeKind.FromGameObject )
+					continue;
+				var go = Scene.Directory.FindByGuid( b.Spec.Source );
+				if ( !go.IsValid() || go.Components.Get<HiderController>().IsValid() || PropClaims.IsHeldObject( go ) )
+					continue;
+				if ( !_simDecoyLetGo.TryGetValue( go.Id, out var since ) )
+					_simDecoyLetGo[go.Id] = since = 0f;
+				if ( b.Ctrl.Holding && !b.HoldReleased && since < 1f )
+					continue;
+				_simDecoyLetGo.Remove( go.Id );
+				_pushedDecoys.Remove( go );
+				sim.Redrive( go.Id, 0, Guid.Empty, SimBodyFlags.Present );
 			}
 		}
 

@@ -27,8 +27,9 @@ public sealed partial class HiderController
 	[Property, Group( "Movement" )] public float MaxFallSpeed { get; set; } = 3000f;
 
 	/// <summary>The most a step of walking can change our velocity (u/s²) — the push we can put on
-	/// things. Higher = snappier starts and stops, and heavier props get shoved.</summary>
-	[Property, Group( "Walk" )] public float WalkAccel { get; set; } = 3000f;
+	/// things. Higher = snappier starts and stops, and heavier props get shoved. 1400 (was 3000: full speed in 0.1 s, which
+	/// read as instant beside the physics everything else now has — user, 2026-11-05): ~0.2 s to walking speed.</summary>
+	[Property, Group( "Walk" )] public float WalkAccel { get; set; } = 1400f;
 
 	/// <summary>The acceleration (u/s²) we keep up while something is pushing BACK (a box we're shoving) — our
 	/// push force is this × our mass. A light prop moves easily; one heavier than us, sitting on the floor, barely does.</summary>

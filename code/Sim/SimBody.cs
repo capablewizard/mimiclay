@@ -139,6 +139,7 @@ public struct SimBodyState
 	public byte Driver;
 	public Guid Owner;
 	public SimBodyFlags Flags;
+	public SimShapeKind Shape;
 	public bool DriveKnown;
 }
 
@@ -197,17 +198,24 @@ public sealed class SimBody
 
 	// Client: this machine changed the body's driver itself, ahead of the host (a grab predicted — SimWorld.PredictHold):
 	// what it was before, to go back to if the host never confirms.
-	internal (int tick, byte driver, Guid owner, SimBodyFlags flags)? PredictedDrive;
+	internal (int tick, byte driver, Guid owner, SimBodyFlags flags, SimShapeKind shape)? PredictedDrive;
 
 	// A held body whose holder's inputs have stopped carrying a target (SimHoldDriver saw the release tick): the host makes
 	// it loose from here, not from when the drop message arrived — that was a lead earlier than the release the holder
 	// predicted (measured: a 71u correction on every throw).
 	internal bool HoldReleased;
 
+	/// <summary>Lying down and DRIVEN by its wearer (SimDownDriver): its shapes' friction is lowered so a flat-based prop slides
+	/// instead of tipping; what they had, to put back once it rests (per shape, for the shape build it was taken from).</summary>
+	internal float[] SavedFriction;
+	internal Surface[] SavedSurface;
+	internal int SavedFrictionVersion = -1;
+	internal bool LowFriction;
+
 	// Client: every change of drive this body had, by the tick it took effect — re-applied at that tick in a replay, so a
 	// replay reaching back across a drop doesn't re-simulate the swing as a loose body (measured: 121u corrections at every
 	// throw with the switch applied "now" only). See SimWorld.LogDrive.
-	internal readonly List<(int tick, byte driver, Guid owner, SimBodyFlags flags)> DriveLog = new();
+	internal readonly List<(int tick, byte driver, Guid owner, SimBodyFlags flags, SimShapeKind shape)> DriveLog = new();
 
 	internal SimWorld World;
 
@@ -244,7 +252,7 @@ public sealed class SimBody
 			return default;
 		return new SimBodyState { P = Phys.Position, R = Phys.Rotation, V = Phys.Velocity, W = Phys.AngularVelocity, Sleeping = Phys.Sleeping, Ctrl = Ctrl, HasCtrl = Driver is not null,
 			Anchored = (Spec.Flags & SimBodyFlags.Anchored) != 0, AnchorKnown = true,
-			Driver = Spec.Driver, Owner = Spec.Owner, Flags = Spec.Flags, DriveKnown = true };
+			Driver = Spec.Driver, Owner = Spec.Owner, Flags = Spec.Flags, Shape = Spec.Shape, DriveKnown = true };
 	}
 
 	public void Restore( in SimBodyState s )
@@ -252,8 +260,8 @@ public sealed class SimBody
 		if ( Phys is null || !Phys.IsValid() )
 			return;
 		// The drive first (a history state): who moved it then, with its flags — before the anchored flag and the velocity.
-		if ( s.DriveKnown && World is not null && (s.Driver != Spec.Driver || s.Owner != Spec.Owner || s.Flags != Spec.Flags) )
-			World.ApplyRedrive( this, s.Driver, s.Owner, s.Flags );
+		if ( s.DriveKnown && World is not null && (s.Driver != Spec.Driver || s.Owner != Spec.Owner || s.Flags != Spec.Flags || s.Shape != Spec.Shape) )
+			World.ApplyRedrive( this, s.Driver, s.Owner, s.Flags, s.Shape );
 		// Anchored first: switching motion off clears the velocity, so it has to come before the velocity is set.
 		if ( s.AnchorKnown && s.Anchored != ((Spec.Flags & SimBodyFlags.Anchored) != 0) )
 		{

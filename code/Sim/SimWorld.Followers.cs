@@ -370,51 +370,100 @@ public sealed partial class SimWorld
 	// — so a dropped prop stopped dead at the host's older pose and was then yanked onto its real path (measured on a live
 	// client: first correction 90–445u on every drop).
 
-	/// <summary>Host: change a body's driver, owner and flags in place (every machine follows). The body keeps its shapes,
-	/// id and motion; its controller state starts afresh.</summary>
+	/// <summary>Host: change a body's driver, owner and flags in place (every machine follows), keeping its shape kind. The
+	/// body keeps its id and motion; its controller state starts afresh.</summary>
 	public void Redrive( Guid key, byte driver, Guid owner, SimBodyFlags flags )
+	{
+		if ( _byKey.TryGetValue( key, out var b ) )
+			Redrive( key, driver, owner, flags, b.Spec.Shape );
+	}
+
+	/// <summary>Host: change a body's driver, owner, flags AND shape kind in place — a walker (its move hull) picked up
+	/// becomes a held clay body, a dropped body a loose one, and back to a walker (upright again, its tilt folded into the
+	/// disguise by BodyAdded's listeners) when it stands up. Same id, motion carried over.</summary>
+	public void Redrive( Guid key, byte driver, Guid owner, SimBodyFlags flags, SimShapeKind shape )
 	{
 		if ( !IsAuthority || !_byKey.TryGetValue( key, out var b ) )
 			return;
-		if ( b.Spec.Driver == driver && b.Spec.Owner == owner && b.Spec.Flags == flags )
+		if ( !RedriveChanges( b, driver, owner, flags, shape ) )
 			return;
-		ApplyRedrive( b, driver, owner, flags );
+		ApplyRedrive( b, driver, owner, flags, shape );
 		if ( Networking.IsActive )
-			BroadcastRedrive( b.Id, Tick + 1, driver, owner, (byte)flags ); // in effect from the next tick stepped
+			BroadcastRedrive( b.Id, Tick + 1, driver, owner, (byte)flags, (byte)shape ); // in effect from the next tick stepped
+	}
+
+	// Would this redrive change anything? (A walker that isn't upright counts: the redrive stands it up.)
+	static bool RedriveChanges( SimBody b, byte driver, Guid owner, SimBodyFlags flags, SimShapeKind shape )
+		=> b.Spec.Driver != driver || b.Spec.Owner != owner || b.Spec.Flags != flags || b.Spec.Shape != shape
+			|| (driver == HiderController.SimWalkDriverId && b.Phys.IsValid() && !IsUprightRotation( b.Phys.Rotation ));
+
+	static bool IsUprightRotation( Rotation r )
+	{
+		var a = r.Angles();
+		return MathF.Abs( a.pitch ) < 1f && MathF.Abs( a.roll ) < 1f;
 	}
 
 	// Client: a change of drive in effect from this tick — applied now when that tick is the next one or already past, and
 	// remembered so a replay crossing it switches there (Step); the body's history before it keeps the old drive (Restore).
-	void LogDrive( SimBody b, int tick, byte driver, Guid owner, SimBodyFlags flags )
+	void LogDrive( SimBody b, int tick, byte driver, Guid owner, SimBodyFlags flags, SimShapeKind shape )
 	{
 		var log = b.DriveLog;
-		log.Add( (tick, driver, owner, flags) );
+		log.Add( (tick, driver, owner, flags, shape) );
 		if ( log.Count > 64 )
 			log.RemoveRange( 0, log.Count - 64 );
 		if ( tick <= Tick + 1 )
-			ApplyRedrive( b, driver, owner, flags );
+			ApplyRedrive( b, driver, owner, flags, shape );
 		if ( tick <= Tick )
-			PatchHistoryDrive( b, tick, driver, owner, flags );
+			PatchHistoryDrive( b, tick, driver, owner, flags, shape );
 	}
 
-	internal void ApplyRedrive( SimBody b, byte driver, Guid owner, SimBodyFlags flags )
+	internal void ApplyRedrive( SimBody b, byte driver, Guid owner, SimBodyFlags flags, SimShapeKind shape )
 	{
-		if ( b.Spec.Driver == driver && b.Spec.Owner == owner && b.Spec.Flags == flags )
+		if ( !RedriveChanges( b, driver, owner, flags, shape ) )
 			return;
+		if ( b.Spec.Driver == SimDownDriver.Id && driver != SimDownDriver.Id && b.Phys.IsValid() )
+			SimDownDriver.Settle( b, b.Phys, false ); // leaving the down state: its own friction and lock back (a settled body had none / all)
 		bool wasHold = b.Spec.Driver == SimHoldDriver.Id, isHold = driver == SimHoldDriver.Id;
+		bool toWalker = driver == HiderController.SimWalkDriverId;
+		bool rebuild = wasHold != isHold || shape != b.Spec.Shape;
 		b.Spec.Driver = driver;
 		b.Spec.Owner = owner;
-		_drivers.TryGetValue( driver, out b.Driver );
+		b.Spec.Shape = shape;
+		b.Driver = DriverFor( driver );
 		b.Ctrl = SimCtrl.Initial;
 		b.Intent = Vector3.Zero;
 		b.RemoteGuess = SimInput.None;
 		b.Rest = null;
 		b.HoldReleased = false;
 		b.LocalTouched = isHold && owner == LocalId; // our own hold (and the throw out of it) is ours to predict; anything else starts untouched
+		// The host's poses we had for it are from before this change — and none were kept while it was OURS to drive (our
+		// own walking prop). Drawn from those the moment someone grabs our prop, it teleported to where it last lay loose
+		// for the two ticks until the next snapshot (measured: a 183u pop on the wearer's screen). Fresh poses only.
+		b.Authority.Clear();
 		ApplyFlags( b, flags );
-		if ( wasHold != isHold && b.ShapesReady && b.Phys.IsValid() )
+		if ( toWalker && b.Phys.IsValid() )
 		{
-			// Friction follows the driver (a held body has none): the shapes are re-copied, the state kept.
+			// A walker stands UPRIGHT (yaw only — pitch and roll are locked from here): the root snaps up, and every machine
+			// folds the tilt it had into the disguise so the clay doesn't move (HiderController.OnSimBodyAdded, before the
+			// hull is built from that disguise below).
+			// The fold starts from the scene object AT THE SIM'S pose (not whatever each machine was drawing — the host's
+			// poses lag a few ticks on a client), so every machine folds the same tilt and builds the same hull.
+			if ( (flags & SimBodyFlags.Present) != 0 && Scene.Directory.FindByGuid( b.Spec.Source ) is { } go && go.IsValid() )
+			{
+				go.WorldPosition = b.Phys.Position;
+				go.WorldRotation = b.Phys.Rotation;
+				go.Transform.ClearInterpolation();
+			}
+			var yaw = Rotation.FromYaw( b.Phys.Rotation.Angles().yaw );
+			b.Phys.Rotation = yaw;
+			b.Phys.AngularVelocity = Vector3.Zero;
+			b.Spec.Pose = new Transform( b.Phys.Position, yaw );
+			b.Prev = b.Cur = b.Phys.Transform;
+			BodyAdded?.Invoke( b );
+		}
+		if ( rebuild && b.Phys.IsValid() )
+		{
+			// The shapes follow the kind and the driver (a held body has no friction): re-copied, the state kept.
 			var state = b.Capture();
 			BuildShapes( b );
 			b.Restore( state );
@@ -424,7 +473,7 @@ public sealed partial class SimWorld
 	}
 
 	[Rpc.Broadcast]
-	static void BroadcastRedrive( ushort id, int tick, byte driver, Guid owner, byte flags )
+	static void BroadcastRedrive( ushort id, int tick, byte driver, Guid owner, byte flags, byte shape )
 	{
 		if ( !FromHost || Networking.IsHost )
 			return;
@@ -433,12 +482,12 @@ public sealed partial class SimWorld
 		{
 			if ( !sim._byId.TryGetValue( id, out var b ) )
 				return;
-			bool same = b.Spec.Driver == driver && b.Spec.Owner == owner && b.Spec.Flags == (SimBodyFlags)flags;
+			bool same = !RedriveChanges( b, driver, owner, (SimBodyFlags)flags, (SimShapeKind)shape );
 			bool predicted = b.PredictedDrive is not null;
 			b.PredictedDrive = null;
 			if ( same && predicted )
 				return; // the host confirmed what we did ourselves (PredictHold / PredictRelease), logged at our own tick
-			sim.LogDrive( b, tick, driver, owner, (SimBodyFlags)flags ); // at the HOST's tick: a replay across it switches there
+			sim.LogDrive( b, tick, driver, owner, (SimBodyFlags)flags, (SimShapeKind)shape ); // at the HOST's tick: a replay across it switches there
 		} );
 	}
 
@@ -448,10 +497,12 @@ public sealed partial class SimWorld
 	/// predicted (not here, not loose, no shapes yet).</summary>
 	public bool PredictHold( Guid key )
 	{
-		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) || b.Spec.Driver != 0 || !b.ShapesReady )
+		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) || !b.ShapesReady || b.IsLocalOwned )
 			return false;
-		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags);
-		LogDrive( b, Tick + 1, SimHoldDriver.Id, LocalId, SimBodyFlags.Present | SimBodyFlags.NoGravity ); // from the next tick, where our first target goes
+		if ( b.Spec.Driver != 0 && b.Spec.Driver != HiderController.SimWalkDriverId && b.Spec.Driver != SimDownDriver.Id )
+			return false; // loose, someone's walker, or a body lying down (a player's or a bot's); not something already in a hand
+		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags, b.Spec.Shape);
+		LogDrive( b, Tick + 1, SimHoldDriver.Id, LocalId, SimBodyFlags.Present | SimBodyFlags.NoGravity, SimShapeKind.FromGameObject ); // from the next tick, where our first target goes
 		SimStats.HoldsPredicted++;
 		return true;
 	}
@@ -462,8 +513,8 @@ public sealed partial class SimWorld
 	{
 		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) || b.Spec.Driver != SimHoldDriver.Id || !b.IsLocalOwned )
 			return;
-		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags);
-		LogDrive( b, Tick + 1, 0, Guid.Empty, SimBodyFlags.Present ); // from the next tick, the first with no target
+		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags, b.Spec.Shape);
+		LogDrive( b, Tick + 1, 0, Guid.Empty, SimBodyFlags.Present, SimShapeKind.FromGameObject ); // from the next tick, the first with no target
 		b.LocalTouched = true; // our throw: predicted here until it rests
 		SimStats.HoldsPredicted++;
 	}
@@ -474,7 +525,7 @@ public sealed partial class SimWorld
 		if ( !_byKey.TryGetValue( key, out var b ) || b.PredictedDrive is not { } was )
 			return;
 		b.PredictedDrive = null;
-		LogDrive( b, Tick + 1, was.driver, was.owner, was.flags );
+		LogDrive( b, Tick + 1, was.driver, was.owner, was.flags, was.shape );
 		SimStats.HoldsReverted++;
 	}
 

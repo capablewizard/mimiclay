@@ -15,6 +15,7 @@ namespace Mimiclay.Sim;
 public sealed class SimHoldDriver : ISimDriver
 {
 	public const byte Id = 3;
+	public static readonly SimHoldDriver Instance = new();
 
 	// HeldBodyDriver's chase: pull toward the target (1/s), turn rate, and the speed cap that keeps a fast swing from
 	// tunnelling the body through a thin wall. 1/Dt = 50 > Pull, so the per-frame minimum there never applies here.

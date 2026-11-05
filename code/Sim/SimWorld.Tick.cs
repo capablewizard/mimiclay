@@ -124,11 +124,12 @@ public sealed partial class SimWorld
 					PushBody( b, push.velocity );
 				foreach ( var d in b.DriveLog )
 					if ( d.tick == tick )
-						ApplyRedrive( b, d.driver, d.owner, d.flags );
+						ApplyRedrive( b, d.driver, d.owner, d.flags, d.shape );
 			}
 
 		foreach ( var b in _bodies )
 		{
+			b.Driver = DriverFor( b.Spec.Driver ); // from the current code, every tick (a hotload may have replaced it)
 			if ( b.Driver is null || b.Spec.Owner == Guid.Empty || !b.ShapesReady )
 				continue;
 			SimInput input;
@@ -341,7 +342,7 @@ public sealed partial class SimWorld
 	// still say the old drive, and a replay starting from one of them put it back — a prop went loose, flipped back to
 	// "held" two ticks later with nobody holding it, and slid off under the hold driver's gravity on a frictionless body
 	// (traced live on a client). The log only re-applies a change at its own tick, so the history is patched instead.
-	void PatchHistoryDrive( SimBody b, int fromTick, byte driver, Guid owner, SimBodyFlags flags )
+	void PatchHistoryDrive( SimBody b, int fromTick, byte driver, Guid owner, SimBodyFlags flags, SimShapeKind shape )
 	{
 		for ( int t = fromTick; t <= Tick; t++ )
 		{
@@ -350,6 +351,7 @@ public sealed partial class SimWorld
 			s.Driver = driver;
 			s.Owner = owner;
 			s.Flags = flags;
+			s.Shape = shape;
 			s.DriveKnown = true;
 			s.Anchored = (flags & SimBodyFlags.Anchored) != 0;
 			states[b.Id] = s;

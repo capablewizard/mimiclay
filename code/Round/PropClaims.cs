@@ -982,6 +982,11 @@ public sealed partial class PropClaims : Component, IInteractable
 		}
 		PossessedProps.Remove( hider.GameObject.Id );
 		ReleasedProps[hider.GameObject.Id] = true;
+		// Creative: an unpossessed prop is a PHYSICS ITEM from here — loose, a free rigid body (in the sim: driver 0) — not a
+		// walker standing where it was left, and not a lying one that rights itself as a bot would (user, 2026-11-05: "once a
+		// prop is unpossessed it should just go back to being a physics item"). A round's props keep the round's rules.
+		if ( Sandbox && !FrozenProps.ContainsKey( hider.GameObject.Id ) )
+			LooseProps[hider.GameObject.Id] = true;
 	}
 
 	/// <summary>Where a hunter appears when its player releases a prop in place: stepped back from the prop

@@ -124,6 +124,19 @@ public sealed partial class SimWorld : GameObjectSystem
 				b.Driver = driver;
 	}
 
+	// The game's own drivers, resolved from the CURRENT code every time: this system outlives a hotload, and a driver
+	// registered once (from a pawn's OnStart) kept running the class it was before — the host sat on a deleted driver's
+	// old instance for a whole test (a body that never rolled or rose while every client did). Anything else (a debug
+	// rig's) comes from the registry.
+	ISimDriver DriverFor( byte id ) => id switch
+	{
+		0 => null,
+		HiderController.SimWalkDriverId => HiderController.WalkDriver,
+		SimHoldDriver.Id => SimHoldDriver.Instance,
+		SimDownDriver.Id => SimDownDriver.Instance,
+		_ => _drivers.TryGetValue( id, out var d ) ? d : null,
+	};
+
 	/// <summary>This machine's input for a tick (the gameplay code that owns local control sets it).</summary>
 	public Func<int, SimInput> LocalInput { get; set; }
 
@@ -191,8 +204,7 @@ public sealed partial class SimWorld : GameObjectSystem
 
 	SimBody Create( in SimBodySpec spec, ushort id )
 	{
-		var body = new SimBody { Spec = spec, Id = id, World = this };
-		_drivers.TryGetValue( spec.Driver, out body.Driver );
+		var body = new SimBody { Spec = spec, Id = id, World = this, Driver = DriverFor( spec.Driver ) };
 
 		var p = new PhysicsBody( _world ) { BodyType = PhysicsBodyType.Dynamic };
 		body.Phys = p;

@@ -115,7 +115,7 @@
           "Flags": 0,
           "Name": "Sun",
           "Position": "188.659409,-671.213684,-123.537918",
-          "Rotation": "-0.118833482,-0.385033637,0.269903392,-0.874516904",
+          "Rotation": "0.118833505,0.385033607,-0.269903481,0.874516964",
           "Scale": "1,1,1",
           "Tags": "light_directional,light",
           "Enabled": true,
@@ -852,7 +852,7 @@
           "FbxPath": "scenes/maps/flatgrass/grass.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "10 object(s), 19005 tris — 17:42:31",
+          "LastImport": "10 object(s), 19005 tris — 15:38:50",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -2854,22 +2854,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
-            },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -2921,22 +2905,6 @@
             },
             "Property": "Rotation",
             "Value": "0,3.32065198E-09,0.99999994,9.9619557E-09"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3035,22 +3003,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3266,22 +3218,6 @@
             },
             "Property": "Position",
             "Value": "182.031525,-377.799469,374.028503"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3331,22 +3267,6 @@
             },
             "Property": "Rotation",
             "Value": "0.214113295,0.762483597,0.58781594,0.165064812"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3509,7 +3429,7 @@
           "ReverbEnabled": false,
           "ReverbOverride": false,
           "SoundEvent": {
-            "Id": "f3453255-9bc7-4dad-a918-9a9f9ce75eec",
+            "Id": "16e1d540-45ce-4fb9-8f4c-2f6c928405c0",
             "Path": "street_amb_01.sound"
           },
           "SoundOverride": true,
