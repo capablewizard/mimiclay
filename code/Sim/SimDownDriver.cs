@@ -20,9 +20,15 @@ public sealed class SimDownDriver : ISimDriver
 	public const byte Id = 4;
 	public static readonly SimDownDriver Instance = new();
 
+	/// <summary>Debug: every Space input the down driver consumed, and what became of it (taken as the flip, or lost — the
+	/// body not on the ground that tick). Read by test scripts; on while <see cref="LogJumps"/>.</summary>
+	public static readonly System.Collections.Generic.List<string> JumpLog = new();
+	public static bool LogJumps { get; set; }
+
 	internal const int SettleTicks = 8;      // calm this long (0.16 s: no spin, not falling, not faster than the walk) → settled: the overturned walk takes over
 	internal const int UnsettleTicks = 10;   // settled but off the ground this long (a fall) → tumbling again, to land as a body
 	internal const int InertRestTicks = 25;  // a bot, settled this long, rights itself
+	internal const int JumpBufferTicks = 10; // a Space press waits this long (0.2 s) for the body to be on the ground (HiderController.SimStepDown)
 	const float Rate = 8f;                   // 1/s: righting spin = tilt × Rate…
 	const float MaxSpin = 10f;               // …capped (rad/s)
 	const float YawDamp = 6f;                // 1/s: the spin about the vertical dies out while rising
@@ -39,7 +45,7 @@ public sealed class SimDownDriver : ISimDriver
 			body.User = h;
 		}
 		if ( h.IsValid() )
-			h.SimStepDown( body, input );
+			h.SimStepDown( body, input, tick );
 	}
 
 	/// <summary>Rising: spin toward upright, the tumble damped out (the host makes it a walker once <see cref="Done"/>).</summary>

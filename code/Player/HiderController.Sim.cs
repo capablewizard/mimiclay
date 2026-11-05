@@ -70,6 +70,7 @@ public sealed partial class HiderController : ISimShapeSource
 	const float PushOnset = 0.05f;
 	const float PushFull = 0.3f;
 	const float PushRelease = 0.25f;
+	float _lastGap; bool _lastSolid; // (debug: the last OnGround sweep, for SimDownDriver.JumpLog)
 	const float SlideFriction = 0.8f; // lying down, driven on the ground: the floor friction the frictionless slide stands in for (the clay surface's)
 
 	// The move hull again, its scratch bodies (foot slab) in the SIM world — sweeps must run in the world they hit.
@@ -462,7 +463,7 @@ public sealed partial class HiderController : ISimShapeSource
 				body.User = h;
 			}
 			if ( h.IsValid() )
-				h.SimStep( body, input );
+				h.SimStep( body, input, tick );
 		}
 
 		// Someone else's prop: assume they keep going the way they're going (measured better than their last input).
@@ -481,7 +482,23 @@ public sealed partial class HiderController : ISimShapeSource
 
 	// StepWalk, from (input, body.Ctrl) only — every number it keeps between ticks is in the SimCtrl, so a replay of the
 	// same inputs from the same snapshot comes out the same. See HiderController.Walk for why each piece is there.
-	void SimStep( SimBody body, in SimInput input )
+	const int ParkCheckTicks = 5; // a parked body re-checks its ground this often (0.1 s)
+
+	// Is there still a floor under a PARKED walker? The walk's foot sweep (and its started-solid fallback): ground within
+	// RideSnap of the hull's foot, walkable. A hunter carrying off the prop it stood on makes this false → it unparks and falls.
+	bool ParkedGroundHolds( SimBody body, SimWorld sim, Vector3 pos, Rotation rot )
+	{
+		float clearance = ScaledStep( StepHeight );
+		var trace = sim.Trace.WithoutTags( MoveIgnoreTags.Append( SimWorld.SelfTag( body ) ).ToArray() );
+		var from = pos + Vector3.Up * clearance;
+		var tr = _simHull.SweepFoot( trace, new Transform( from, rot ), new Transform( from - Vector3.Up * (clearance + RideSnap), rot ), clearance );
+		if ( tr.StartedSolid )
+			return true; // pressed into something: still supported (the walk's own rule for a grounded walker)
+		bool walkable = tr.Hit && (Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( true, sim.SourceOf( tr.Body ), tr.Body )));
+		return walkable && tr.Distance - clearance <= RideSnap;
+	}
+
+	void SimStep( SimBody body, in SimInput input, int tick )
 	{
 		var sim = SimSystem;
 		var pb = body.Phys;
@@ -520,8 +537,14 @@ public sealed partial class HiderController : ISimShapeSource
 		{
 			if ( idle && pb.Velocity.LengthSquared < 4f )
 			{
-				body.Intent = 0f;
-				return; // left to physics and its sleep
+				// Still parked — unless the ground has gone: a prop we stood on carried off by a hunter left us floating until
+				// a key woke us (user, 2026-11-05: "I don't fall until I move — a big giveaway"). Checked every ParkCheckTicks
+				// (parked walkers are most of the sim; the sweep is the walk's own foot sweep).
+				if ( tick % ParkCheckTicks != 0 || ParkedGroundHolds( body, sim, pos, rot ) )
+				{
+					body.Intent = 0f;
+					return; // left to physics and its sleep
+				}
 			}
 			c.Parked = false;
 			c.StillTicks = 0;
@@ -650,7 +673,7 @@ public sealed partial class HiderController : ISimShapeSource
 	// with its ride spring and hand gravity, the contacts do here. No step-up (its real collider lies on the floor).
 	// SimCtrl: Grounded = settled, PushLevel = ticks lain still (tumbling) or settled (a bot), AirFromJump = rising,
 	// StillTicks = ticks off the ground / the park counter / the rise ticks, Parked and Commanded as the walk's.
-	internal void SimStepDown( SimBody body, in SimInput input )
+	internal void SimStepDown( SimBody body, in SimInput input, int tick )
 	{
 		var sim = SimSystem;
 		var pb = body.Phys;
@@ -690,6 +713,16 @@ public sealed partial class HiderController : ISimShapeSource
 			return;
 		}
 
+		// A Space press is BUFFERED (SinceJumpTicks, free in the down state: ticks since the press): the flip takes it on the
+		// first tick the body is on the ground within JumpBufferTicks. Taken on its own tick only, a press that landed while
+		// a tumbling prop was bouncing (z ±30u while rolling, measured) was consumed and lost (user, 2026-11-05: "occasionally
+		// the jump was missed").
+		if ( input.Has( SimInput.Jump ) )
+			c.SinceJumpTicks = 0;
+		else if ( c.SinceJumpTicks < SimCtrl.Long )
+			c.SinceJumpTicks++;
+		bool jumpPending = c.SinceJumpTicks <= SimDownDriver.JumpBufferTicks;
+
 		// Tumbling: the physics has it, the move keys ADDED to it (user, 2026-11-05: "move before we settle, keeping the
 		// velocity but adding our own inputs") — on the ground, the velocity along the keys is brought to the walk's speed
 		// (up at the walk's acceleration; down, and across the keys, at what floor friction would take off a sliding body —
@@ -703,14 +736,17 @@ public sealed partial class HiderController : ISimShapeSource
 		if ( !c.Grounded )
 		{
 			bool driving = !wish.IsNearZeroLength;
-			bool flip = !inert && input.Has( SimInput.Jump );
+			bool flip = !inert && jumpPending;
 			SimDownDriver.Settle( body, pb, false, frictionless: driving );
 			body.Intent = wish;
 			bool onGround = (driving || flip) && OnGround();
+			if ( flip && SimDownDriver.LogJumps )
+				SimDownDriver.JumpLog.Add( $"tumble: Space {(onGround ? "TAKEN" : "WAITING (not on ground)")} since press {c.SinceJumpTicks} gap {_lastGap:0.0} solid {_lastSolid} z {pb.Position.z:0.0} vz {pb.Velocity.z:0} spin {pb.AngularVelocity.Length:0.00} host {Networking.IsHost}" );
 			if ( flip && onGround )
 			{
 				c.AirFromJump = true;
 				c.StillTicks = 0;
+				c.SinceJumpTicks = SimCtrl.Long; // the buffered press is spent
 				SimDownDriver.Settle( body, pb, false );
 				if ( pb.Sleeping )
 					pb.Sleeping = false;
@@ -760,6 +796,8 @@ public sealed partial class HiderController : ISimShapeSource
 			var from = pb.Position + Vector3.Up * clearance;
 			var tr = _simHull.Sweep( trace, new Transform( from, pb.Rotation ), new Transform( from - Vector3.Up * (clearance + RideSnap), pb.Rotation ) );
 			bool walkable = tr.Hit && (Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( true, sim.SourceOf( tr.Body ), tr.Body )));
+			_lastGap = tr.Hit ? tr.Distance - clearance : float.NaN;
+			_lastSolid = tr.StartedSolid;
 			return tr.StartedSolid || (walkable && tr.Distance - clearance <= RideSnap);
 		}
 
@@ -782,15 +820,19 @@ public sealed partial class HiderController : ISimShapeSource
 			return;
 		}
 
-		bool jump = input.Has( SimInput.Jump );
+		bool jump = jumpPending;
 		float turn = input.Turn;
 		bool idle = wish.IsNearZeroLength && !jump && MathF.Abs( turn ) < 0.001f;
 		if ( c.Parked )
 		{
 			if ( idle && pb.Velocity.LengthSquared < 4f )
 			{
-				body.Intent = 0f;
-				return; // left to physics and its sleep
+				// Still parked — unless the ground has gone (see SimStep's park: a lying prop carried off from under us, too).
+				if ( tick % ParkCheckTicks != 0 || OnGround() )
+				{
+					body.Intent = 0f;
+					return; // left to physics and its sleep
+				}
 			}
 			c.Parked = false;
 			c.StillTicks = 0;
@@ -799,6 +841,8 @@ public sealed partial class HiderController : ISimShapeSource
 			pb.Sleeping = false;
 
 		bool ground = OnGround();
+		if ( jump && SimDownDriver.LogJumps )
+			SimDownDriver.JumpLog.Add( $"settled: Space {(ground ? "TAKEN" : "WAITING (not on ground)")} since press {c.SinceJumpTicks} gap {_lastGap:0.0} solid {_lastSolid} z {pb.Position.z:0.0} vz {pb.Velocity.z:0} parked {c.Parked} host {Networking.IsHost}" );
 
 		var vel = pb.Velocity;
 		if ( !ground )
@@ -829,6 +873,7 @@ public sealed partial class HiderController : ISimShapeSource
 			// Up we go: the flip is a jump (the prop's own hop); upright, the host makes it a walker.
 			c.AirFromJump = true;
 			c.StillTicks = 0;
+			c.SinceJumpTicks = SimCtrl.Long; // the buffered press is spent
 			SimDownDriver.Settle( body, pb, false );
 			vz = MathF.Max( vz, SimHopSpeed );
 		}
