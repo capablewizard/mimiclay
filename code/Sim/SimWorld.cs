@@ -31,15 +31,21 @@ namespace Mimiclay.Sim;
 /// </summary>
 public sealed partial class SimWorld : GameObjectSystem
 {
-	public const float Dt = 1f / 50f;           // project TickRate 50 — the sim keeps its own clock (see RunTicks)
-	public const int SnapshotEvery = 2;         // 25 Hz
-	const int InputRedundancy = 8;
-	const int HistoryTicks = 256;
-	const int RestResendTicks = 25;             // keep sending a newly asleep body this long (its reliable rest may still be in flight)
-	const int StaticRefreshTicks = 50;          // re-check the scene's static collision once a second
-	const int ShapeRefreshTicks = 10;           // re-check FromGameObject sources for collider rebuilds
-	const int MaxTicksPerFrame = 5;
-	const int TargetSlack = 2;
+	// The sim's own clock (see RunTicks), independent of the project tick rate. Every tick count below is DERIVED from
+	// seconds so the rate can change: 50 → 100 Hz on 2026-11-05 (Rocket League: smaller steps = smaller penetrations and
+	// corrections; at 50 Hz a walking prop moved 6.4u per tick, the size of the walker-vs-walker slop and the landing overshoot).
+	public const int TickRate = 100;
+	public const float Dt = 1f / TickRate;
+	/// <summary>Seconds → ticks at <see cref="TickRate"/> (a constant expression for the tick-count constants).</summary>
+	public const float T = TickRate;
+	public const int SnapshotEvery = TickRate / 50; // 50 Hz (was 25: every snapshot interval of staleness is ~6u of another player's prop at walk speed, folded into its drawn pose when their input changes)
+	const int InputRedundancy = (int)(0.16f * T + 0.5f);
+	const int HistoryTicks = (int)(5f * T);
+	const int RestResendTicks = (int)(0.5f * T);   // keep sending a newly asleep body this long (its reliable rest may still be in flight)
+	const int StaticRefreshTicks = (int)(1f * T);  // re-check the scene's static collision once a second
+	const int ShapeRefreshTicks = (int)(0.2f * T); // re-check FromGameObject sources for collider rebuilds
+	const int MaxTicksPerFrame = (int)(0.1f * T);
+	const int TargetSlack = (int)(0.04f * T + 0.5f);
 
 	[ConVar( "mimi_sim_fakelag", Help = "Sim: one-way delay (ms) added to every sim message this machine receives (set on both machines)." )]
 	public static int FakeLagMs { get; set; } = 0;
@@ -65,7 +71,10 @@ public sealed partial class SimWorld : GameObjectSystem
 	// and holding — host ticks come in bursts with its frames, so snapshots land a tick or two apart from even — which
 	// showed as a stutter (a frame at 149 u/s then one at 294 around a steady 224).
 	[ConVar( "mimi_sim_remote_delay", Help = "Sim: other players' props are shown this many host ticks behind the newest snapshot, interpolated between the host's poses." )]
-	public static int RemoteDelayTicks { get; set; } = 6;
+	public static int RemoteDelayTicks { get; set; } = (int)(0.12f * T + 0.5f);
+
+	// The walk's gravity (HiderController.Gravity's default), for carrying another player's airborne prop forward (NudgeRemote).
+	const float WalkGravity = 800f;
 
 	// A rotation error counts as the distance it moves a point this far out (u per degree: 20u arm). Quantized snapshot
 	// rotations are ~0.08° off (0.03u), under SkipEpsilon; a wrong facing used to go unnoticed entirely.
@@ -73,6 +82,23 @@ public sealed partial class SimWorld : GameObjectSystem
 
 	[ConVar( "mimi_sim_smooth", Help = "Sim: how fast corrections fade from the visuals (1/s). 0 = show the raw pop." )]
 	public static float SmoothRate { get; set; } = 12f;
+
+	// Other players' props are drawn from our prediction and nudged toward each snapshot with the nudge folded into this fade
+	// (NudgeRemote); at the walk's own 12/s a 25u nudge still overlapped a prop it was against by 15u for ~100 ms (measured) —
+	// faster here, still a slide (a 25u nudge at 30/s crosses in ~70 ms, under walking speed).
+	[ConVar( "mimi_sim_smooth_remote", Help = "Sim: how fast other players' props slide onto each snapshot's nudge (1/s)." )]
+	public static float RemoteSmoothRate { get; set; } = 30f;
+
+	// Other players' WALKERS are drawn through a critically damped tracker of their copy instead (natural frequency, 1/s):
+	// replaying a 14 s observer trace offline, 25/s took the pusher's drawn-velocity jerks over 400 u/s from 14 to 0 (9 of
+	// them over 1000 — a copy restored to a stopped host stops dead; a position fade can't smooth a velocity step) for a
+	// mean lag of 15u behind the copy (max 48u). 40/s left 9 jerks at 9u lag; 15/s none at 25u lag.
+	[ConVar( "mimi_sim_remote_track", Help = "Sim: how stiffly other players' walking props are drawn toward their predicted copy (1/s; 0 = the plain fade)." )]
+	public static float RemoteTrackRate { get; set; } = 25f;
+	// A critically damped tracker trails a constant-velocity target by 2v/ω (22u at walk speed at 25/s): fine for a bystander,
+	// but the prop PUSHING our own body would be drawn that far short of the contact — so one in real contact with us tracks stiffer.
+	[ConVar( "mimi_sim_remote_track_touched", Help = "Sim: the tracker stiffness (1/s) for another player's walker in contact with our own body." )]
+	public static float RemoteTrackRateTouched { get; set; } = 60f;
 
 	// Off by default: A/B 2026-11-04 (lobby rig, 200 ms RTT) showed no gain — own pawn correction p95 1.4u on vs 0.55u
 	// off, boxes ~equal — and re-placing every awake body each snapshot is one more thing that disturbs contacts.
@@ -552,8 +578,28 @@ public sealed partial class SimWorld : GameObjectSystem
 	// corrections' fades (user: "rubber-banding when the host drops or throws"). Touch it — walk into it, stand on it, push
 	// it with a carried prop, grab it — and it switches to our prediction, which answers at once; the switch is blended
 	// (UpdatePresentationSource), and it goes back to the host's poses once it has come to rest, where both agree.
+	// Another player's WALKER is drawn from our prediction of it (its copy here: the host's state carried forward on its guessed
+	// input, nudged toward each snapshot with the nudge folded into the fade — NudgeRemote), never from the host's delayed
+	// poses: our own body reacts to that copy, so drawing the walker anywhere else put the contact out of time (a pusher drawn
+	// 100u behind the copy that was already moving us; user 2026-11-05) and switching sources at contact popped it 80–100u.
+	// Their held and lying bodies (hold / down drivers) stay on the host's poses: those guesses are weak.
+	// Our OWN body lying down is drawn from the host's poses while it TUMBLES (no input of ours shapes that but the additive
+	// tumble push; the RISE is ours — started by our Space — and drawn from the copy: on the host's poses the hop showed a round
+	// trip late, a hitch at every flip): a hunter's throw of us switched from the host-drawn hold to our copy at the release, and the copy
+	// was a guessed swing 139u ahead — a one-frame pop at 8000 u/s (user, 2026-11-06). Settled, it is the walk and ours to
+	// predict (the switch happens at rest, a small fold); the flip switches back at the hop (slow), and the walker comes
+	// back to the copy when upright.
 	bool ShownFromAuthority( SimBody b )
-		=> !IsAuthority && b.Authority.Count > 0 && (b.IsRemoteDriven || (b.Driver is null && b.Spec.Owner == Guid.Empty && !b.LocalTouched));
+		=> !IsAuthority && b.Authority.Count > 0 && ((b.IsRemoteDriven && b.Spec.Driver != HiderController.SimWalkDriverId) || (b.Driver is null && b.Spec.Owner == Guid.Empty && !b.LocalTouched)
+			|| (b.IsLocalOwned && b.Spec.Driver == SimDownDriver.Id && !b.Ctrl.Grounded && !b.Ctrl.AirFromJump));
+
+	// Another player's walker our body has been against within the last TouchShowTicks (SimBody.TouchedTick) — one we push, or one pushing us:
+	// drawn from our prediction and left un-nudged, so a prop we push moves under our push now rather than a round trip plus
+	// the display delay later; meanwhile its copy counts in full in the mispredict check (SkipEpsilon, not RemoteSkipEpsilon),
+	// so replays keep it on the host's track. Left to the 100u remote guard it drifted on its guess and popped when the hold
+	// ended (user 2026-11-05: "big desyncs" when two props that had just collided came near).
+	const int TouchShowTicks = (int)(0.24f * T + 0.5f);
+	bool RecentlyTouched( SimBody b ) => b.TouchedTick > -1_000_000 && Tick - b.TouchedTick <= TouchShowTicks;
 
 	// Every frame: switch a body's drawn source when its situation changed, folding the difference between the two into
 	// the fading correction so nothing jumps. A touched body that has come to rest goes back to the host's poses.
@@ -572,6 +618,7 @@ public sealed partial class SimWorld : GameObjectSystem
 			var after = PoseFrom( b, auth );
 			b.ShownFromAuth = auth;
 			var dp = before.Position - after.Position;
+			TraceSwitch( b, auth, dp.Length );
 			if ( dp.Length > 80f )
 			{
 				b.PosOffset = Vector3.Zero; // too far to slide: show it where it is
@@ -623,8 +670,8 @@ public sealed partial class SimWorld : GameObjectSystem
 	// Client: remember the host's pose of a body we don't drive at a host tick (RemotePose shows from these).
 	void NoteAuthority( SimBody b, int tick, in SimBodyState st )
 	{
-		if ( IsAuthority || b.IsLocalOwned )
-			return;
+		if ( IsAuthority || (b.IsLocalOwned && b.Spec.Driver != SimDownDriver.Id) )
+			return; // (our own body DOWN keeps the host's poses too: thrown or flipping, it is drawn from them — ShownFromAuthority)
 		var list = b.Authority;
 		if ( list.Count > 0 && tick <= list[^1].tick )
 			return;
@@ -654,9 +701,39 @@ public sealed partial class SimWorld : GameObjectSystem
 
 	void FadeCorrections()
 	{
-		float k = SmoothRate > 0f ? MathF.Exp( -SmoothRate * Time.Delta ) : 0f;
+		float kOwn = SmoothRate > 0f ? MathF.Exp( -SmoothRate * Time.Delta ) : 0f;
+		float kRemote = RemoteSmoothRate > 0f ? MathF.Exp( -RemoteSmoothRate * Time.Delta ) : 0f;
 		foreach ( var b in _bodies )
 		{
+			float k = b.IsRemoteDriven ? kRemote : kOwn;
+			if ( RemoteTrackRate > 0f && !IsAuthority && b.IsRemoteDriven && b.Spec.Driver == HiderController.SimWalkDriverId && !b.ShownFromAuth && b.Phys.IsValid() )
+			{
+				// The tracker: the drawn position is a spring-damper after the copy's raw pose; PosOffset carries the difference
+				// so the rest of the pipeline draws raw + offset as before. (A jump over 120u is a teleport: start there.)
+				var raw = PoseFrom( b, false ).Position;
+				if ( !b.Tracking || (raw - b.TrackPos).Length > 120f )
+				{
+					b.TrackPos = raw;
+					b.TrackVel = Vector3.Zero;
+					b.Tracking = true;
+				}
+				else
+				{
+					float w = RecentlyTouched( b ) ? RemoteTrackRateTouched : RemoteTrackRate;
+					int steps = (int)(Time.Delta / 0.004f) + 1;
+					float h = Time.Delta / steps;
+					for ( int i = 0; i < steps; i++ )
+					{
+						var acc = (raw - b.TrackPos) * (w * w) - b.TrackVel * (2f * w);
+						b.TrackVel += acc * h;
+						b.TrackPos += b.TrackVel * h;
+					}
+				}
+				b.PosOffset = b.TrackPos - raw;
+				b.RotOffset = Rotation.Slerp( Rotation.Identity, b.RotOffset, k );
+				continue;
+			}
+			b.Tracking = false;
 			if ( b.PosOffset.IsNearZeroLength && b.RotOffset == Rotation.Identity )
 				continue;
 			b.PosOffset *= k;

@@ -36,6 +36,15 @@ public interface ISimShapeSource
 public struct SimCtrl
 {
 	public bool Grounded, Parked, AirFromJump;
+	/// <summary>The walker had a move wish last tick. What a remote copy GUESSES from: driving, it keeps commanding what it
+	/// commanded; not driving, it wants to stand — however fast something is shoving it (guessing from the velocity drove a
+	/// shoved standing prop along at the push speed, up to 52u ahead of the host, and the pusher's own prediction followed
+	/// that copy right into the prop's drawn body: 49u of visual penetration measured, user 2026-11-05).</summary>
+	public bool Driving;
+	/// <summary>The walker's move wish last tick (u/s, world) — its real last INPUT, carried in snapshots so a remote copy repeats it
+	/// (Rocket League's "run physics using previous player input"): guessing from the COMMANDED velocity instead under-pushed —
+	/// against a contact the command is already what the contact left, not what the player is pressing.</summary>
+	public Vector2 Wish;
 	public byte StillTicks;
 	public ushort SinceJumpTicks;
 	/// <summary>How hard the walker is pushing against something, 0..<see cref="PushScale"/> (HiderController.Sim — a
@@ -171,6 +180,11 @@ public sealed class SimBody
 	// Presentation: the poses at the last two ticks and the fading correction (see SimWorld.VisualPose).
 	internal Transform Prev, Cur;
 	internal Vector3 PosOffset;
+	/// <summary>Another player's walker is DRAWN through a critically damped tracker of its copy's pose (SimWorld.FadeCorrections):
+	/// position and velocity stay continuous across the copy's nudges and restores, which the position-only fade could
+	/// not do (a copy restored to a stopped host stops dead: 3000 u/s drawn-speed spikes in the trace; the tracker: none).</summary>
+	internal Vector3 TrackPos, TrackVel;
+	internal bool Tracking;
 	internal Rotation RotOffset = Rotation.Identity;
 
 	// Client: the guessed input for someone else's body, and the newest rest pose the host sent.
@@ -188,6 +202,11 @@ public sealed class SimBody
 	// prediction, which answers us at once; an untouched one from the host's poses, which never rubber-band.
 	internal bool ShownFromAuth;
 	internal bool LocalTouched;
+	/// <summary>Client: the last tick something of ours was against this OTHER player's walker (SimWorld.NoteLocalContacts).
+	/// Recently touched, it is drawn from our prediction and not nudged to the host's poses (SimWorld.ShownFromAuthority):
+	/// a prop we push moves under our push at once, instead of its drawn body trailing our copy of it by the round trip
+	/// plus the remote display delay (42u measured — our own prop drawn 45u INTO it, user 2026-11-05).</summary>
+	internal int TouchedTick = -1_000_000; // (NOT int.MinValue: "Tick - TouchedTick" overflowed negative and read as "just touched" for every untouched walker)
 
 	// Client: the tick this machine released it by a predicted push, until the host confirms (-1 = none pending).
 	internal int PredictedRelease = -1;

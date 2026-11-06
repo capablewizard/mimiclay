@@ -106,11 +106,13 @@ public static class SimQuant
 	// A driven body's controller state: flags byte, still ticks, two tick counters, the commanded velocity (12 bytes).
 	public static void WriteCtrl( BinaryWriter w, in SimCtrl c )
 	{
-		w.Write( (byte)((c.Grounded ? 1 : 0) | (c.Parked ? 2 : 0) | (c.AirFromJump ? 4 : 0) | (c.Holding ? 8 : 0)) );
+		w.Write( (byte)((c.Grounded ? 1 : 0) | (c.Parked ? 2 : 0) | (c.AirFromJump ? 4 : 0) | (c.Holding ? 8 : 0) | (c.Driving ? 16 : 0)) );
 		w.Write( c.StillTicks );
 		w.Write( c.SinceJumpTicks );
 		w.Write( c.PushLevel );
 		WriteLinear( w, c.Commanded );
+		w.Write( (short)Math.Clamp( c.Wish.x * 8f, short.MinValue, short.MaxValue ) ); // the real last wish, 1/8 u/s
+		w.Write( (short)Math.Clamp( c.Wish.y * 8f, short.MinValue, short.MaxValue ) );
 	}
 
 	public static SimCtrl ReadCtrl( BinaryReader r )
@@ -118,9 +120,10 @@ public static class SimQuant
 		byte f = r.ReadByte();
 		return new SimCtrl
 		{
-			Grounded = (f & 1) != 0, Parked = (f & 2) != 0, AirFromJump = (f & 4) != 0, Holding = (f & 8) != 0,
+			Grounded = (f & 1) != 0, Parked = (f & 2) != 0, AirFromJump = (f & 4) != 0, Holding = (f & 8) != 0, Driving = (f & 16) != 0,
 			StillTicks = r.ReadByte(), SinceJumpTicks = r.ReadUInt16(), PushLevel = r.ReadUInt16(),
 			Commanded = ReadLinear( r ),
+			Wish = new Vector2( r.ReadInt16() / 8f, r.ReadInt16() / 8f ),
 		};
 	}
 

@@ -98,6 +98,7 @@ public sealed partial class SimWorld
 		UpdatePresentationSource();
 		FadeCorrections();
 		PresentBodies();
+		TraceFrame();
 		Draw();
 	}
 
@@ -164,10 +165,31 @@ public sealed partial class SimWorld
 			var reach = mine.Phys.GetBounds().Grow( 2f );
 			foreach ( var b in _bodies )
 			{
+				if ( b.IsRemoteDriven && b.Spec.Driver == HiderController.SimWalkDriverId && b.ShapesReady && reach.Overlaps( b.Phys.GetBounds() ) && mine.Phys.CheckOverlap( b.Phys ) )
+					b.TouchedTick = Tick; // (a REAL shape overlap, not the box test the loose case uses: boxes of two round props overlap 20u+ before the shapes touch, and a prop merely passing near was drawn from the guess — user: "they don't even touch me") // another player's walker our body is against — pushing it or pushed by it: drawn from our prediction for a moment (ShownFromAuthority), since that copy is what our body reacts to. Drawn from the host's delayed poses, a pusher was still 1.8 s away when our body already moved (user 2026-11-05: "the moved prop moves before the pusher has even touched them")
 				if ( b.Driver is not null || b.Spec.Owner != Guid.Empty || b.LocalTouched || !b.ShapesReady || b.Phys.Sleeping )
 					continue;
 				if ( reach.Overlaps( b.Phys.GetBounds() ) )
 					b.LocalTouched = true;
+			}
+		}
+		// Two OTHER players' walkers against each other: both count as touched too — no per-body nudge (each restores to the
+		// host's state carried forward on its own, the pair's contact ignored, and the solver then shoves them apart: 25 Hz
+		// jitter on both, watched from a third machine), the tight mispredict epsilon instead, so a replay re-simulates the
+		// pair together from the host's state.
+		for ( int i = 0; i < _bodies.Count; i++ )
+		{
+			var p = _bodies[i];
+			if ( !p.IsRemoteDriven || p.Spec.Driver != HiderController.SimWalkDriverId || !p.ShapesReady || !p.Phys.IsValid() )
+				continue;
+			var pb = p.Phys.GetBounds().Grow( 2f );
+			for ( int j = i + 1; j < _bodies.Count; j++ )
+			{
+				var q = _bodies[j];
+				if ( !q.IsRemoteDriven || q.Spec.Driver != HiderController.SimWalkDriverId || !q.ShapesReady || !q.Phys.IsValid() )
+					continue;
+				if ( pb.Overlaps( q.Phys.GetBounds() ) && p.Phys.CheckOverlap( q.Phys ) )
+					p.TouchedTick = q.TouchedTick = Tick;
 			}
 		}
 	}
@@ -237,6 +259,7 @@ public sealed partial class SimWorld
 			b.WasSleeping = asleep;
 		}
 
+		TraceHostTick();
 		AdvanceVisuals();
 		HostWelcomeNewConnections();
 
@@ -291,7 +314,7 @@ public sealed partial class SimWorld
 
 		// A release we predicted (PushBody) that the host never confirmed — its own push didn't happen (it saw the pusher
 		// elsewhere): anchor it again where it was registered. Anchored bodies never move, so that pose is still theirs.
-		int confirmWindow = RttTicks + 2 * TargetSlack + 25;
+		int confirmWindow = RttTicks + 2 * TargetSlack + (int)(0.5f * T);
 		foreach ( var b in _bodies )
 		{
 			// A predicted push older than any replay reaches back: done with (the host's own has long since shown, or not).
@@ -427,8 +450,8 @@ public sealed partial class SimWorld
 					e = g.Value.Sleeping ? 0f : g.Value.P.Distance( rest.P ); // asleep at the host
 				else
 					continue;
-				if ( b.IsRemoteDriven && e <= RemoteSkipEpsilon )
-					e = 0f;
+				if ( b.IsRemoteDriven && !RecentlyTouched( b ) && e <= RemoteSkipEpsilon )
+					e = 0f; // (one we're pushing is drawn from our prediction and not nudged — it counts in full, so a replay keeps it on the host's track)
 				err = MathF.Max( err, e );
 				if ( b.IsLocalOwned )
 					SimStats.MispredictMine.Add( e );
@@ -453,15 +476,58 @@ public sealed partial class SimWorld
 	{
 		foreach ( var b in _bodies )
 		{
-			if ( !b.IsRemoteDriven || !auth.TryGetValue( b.Id, out var a ) )
-				continue;
+			if ( !b.IsRemoteDriven || RecentlyTouched( b ) || !auth.TryGetValue( b.Id, out var a ) )
+				continue; // (a walker we're pushing is left to our prediction — a nudge every snapshot would saw it back and forth)
 			var st = a;
-			st.P += a.V * (Dt * (Tick - s));
+			int n = Tick - s;
+			if ( n > 0 && b.Phys.IsValid() )
+			{
+				// Carry the host's state forward to our tick the way the body would actually move, not along a straight line:
+				// gravity while it's airborne, and its shapes swept along the path so it stops at the floor or at another prop.
+				// The straight line put a jumping prop's copy UNDER the floor (its velocity points down for the second half)
+				// and a walking one INSIDE whatever it was walking into, and the physics then shoved it back out — "they fall
+				// through the floor briefly / penetrate each other before springing back" (user, 2026-11-05).
+				float t = Dt * n;
+				bool airborne = a.HasCtrl && !a.Ctrl.Grounded;
+				var vel = a.V;
+				var to = a.P + vel * t;
+				if ( airborne )
+				{
+					to += Vector3.Down * (0.5f * WalkGravity * t * t);
+					st.V = vel + Vector3.Down * (WalkGravity * t);
+				}
+				// Its shapes along the path (another prop in the way), AND its root's own path: a walker's sim shape is the floating hull,
+				// whose bottom sits a step above the root, so the shape sweep alone let the root sink up to that step below the floor
+				// (measured 9u under, 39 frames, on a landing).
+				var sweep = Trace.WithoutTags( SelfTag( b ) ).Sweep( b.Phys, new Transform( a.P, a.R ), new Transform( to, a.R ) ).Run();
+				var ray = Trace.WithoutTags( SelfTag( b ) ).Ray( a.P, to ).Run();
+				float f = 1f; Vector3 normal = Vector3.Up; bool hit = false;
+				if ( sweep.Hit ) { f = sweep.Fraction; normal = sweep.Normal; hit = true; }
+				if ( ray.Hit && ray.Fraction < f ) { f = ray.Fraction; normal = ray.Normal; hit = true; }
+				st.P = hit ? Vector3.Lerp( a.P, to, MathF.Max( 0f, f - 0.01f ) ) : to;
+				if ( hit && airborne && normal.z > 0.5f )
+					st.V = st.V.WithZ( 0f ); // landed on the way
+			}
 			if ( b.Phys.Position.Distance( st.P ) <= SkipEpsilon )
 				continue;
+			var before = PoseFrom( b, false ); // where it was drawn (a walker is drawn from this copy — ShownFromAuthority)
 			b.Restore( st );
 			b.Prev = b.Cur = b.Phys.Transform;
 			SimStats.RemoteNudges++;
+			TraceNudge( b, s, before.Position, b.Phys.Position, st.V );
+			if ( b.ShownFromAuth )
+				continue;
+			// Drawn from the copy: the nudge slides out through the fading offset (as our own corrections do) instead of snapping.
+			var after = PoseFrom( b, false );
+			var dp = before.Position - after.Position;
+			if ( dp.Length > 80f )
+			{
+				b.PosOffset = Vector3.Zero; // a teleport: show it where it is
+				b.RotOffset = Rotation.Identity;
+				continue;
+			}
+			b.PosOffset += dp;
+			b.RotOffset = before.Rotation * after.Rotation.Inverse * b.RotOffset;
 		}
 	}
 
@@ -515,6 +581,7 @@ public sealed partial class SimWorld
 			var after = VisualPose( b );
 			var dp = before[i].Position - after.Position;
 			float len = dp.Length;
+			TraceReplay( b, s, len, predicted is not null && b.Id < predicted.Length && predicted[b.Id] is { } pg ? pg.P : Vector3.Zero, auth.TryGetValue( b.Id, out var ha ) ? ha.P : Vector3.Zero );
 			if ( len > 5f && SimStats.BigCorrections.Count < 30 )
 			{
 				var at = auth.TryGetValue( b.Id, out var a ) ? a : (SimBodyState?)null;

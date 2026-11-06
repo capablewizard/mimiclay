@@ -29,11 +29,15 @@ public sealed partial class HiderController
 	/// <summary>The most a step of walking can change our velocity (u/s²) — the push we can put on
 	/// things. Higher = snappier starts and stops, and heavier props get shoved. 1400 (was 3000: full speed in 0.1 s, which
 	/// read as instant beside the physics everything else now has — user, 2026-11-05): ~0.2 s to walking speed.</summary>
-	[Property, Group( "Walk" )] public float WalkAccel { get; set; } = 1400f;
+	[Property, Group( "Walk" )] public float WalkAccel { get; set; } = 800f; // 1400 until 2026-11-06: over the ~260 ms another player predicts us, a start or stop errs by ½·a·t² — 47u at 1400, 27u at 800 (turns at speed are unaffected)
 
 	/// <summary>The acceleration (u/s²) we keep up while something is pushing BACK (a box we're shoving) — our
 	/// push force is this × our mass. A light prop moves easily; one heavier than us, sitting on the floor, barely does.</summary>
 	[Property, Group( "Walk" )] public float WalkPushAccel { get; set; } = 500f;
+	/// <summary>The sim walk's deceleration with NO move wish (u/s²) — lower than <see cref="WalkAccel"/> so a stop is a short coast: other
+	/// players see a prop that stops from a repeated "still walking" guess, and the gentler the real stop, the smaller their
+	/// correction (user, 2026-11-06: "reduce the acceleration to help with that").
+	[Property, Group( "Walk" )] public float BrakeAccel { get; set; } = 500f;
 
 	/// <summary>How fast the ride spring closes the gap to the ground (1/s).</summary>
 	[Property, Group( "Walk" )] public float RideSpring { get; set; } = 18f;

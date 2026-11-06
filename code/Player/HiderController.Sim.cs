@@ -466,8 +466,14 @@ public sealed partial class HiderController : ISimShapeSource
 				h.SimStep( body, input, tick );
 		}
 
-		// Someone else's prop: assume they keep going the way they're going (measured better than their last input).
-		public SimInput Guess( SimBody body, in SimBodyState latest ) => new() { Wish = new Vector2( latest.V.x, latest.V.y ) };
+		// Someone else's prop: assume they keep doing what they were doing — COMMANDING what they commanded if they were driving,
+		// standing if they weren't (SimCtrl.Driving), whatever a shove has done to their velocity. (Guessing from the velocity
+		// drove a shoved standing prop along at the push speed, far ahead of the host's — see SimCtrl.Driving.) A snapshot without
+		// controller state falls back to the velocity.
+		public SimInput Guess( SimBody body, in SimBodyState latest ) => new()
+		{
+			Wish = latest.HasCtrl ? latest.Ctrl.Wish : new Vector2( latest.V.x, latest.V.y ), // their real last input, repeated (SimCtrl.Wish)
+		};
 	}
 
 	/// <summary>The walk driver the sim resolves by id (SimWorld.DriverFor) — current code, whatever was registered before.</summary>
@@ -482,7 +488,8 @@ public sealed partial class HiderController : ISimShapeSource
 
 	// StepWalk, from (input, body.Ctrl) only — every number it keeps between ticks is in the SimCtrl, so a replay of the
 	// same inputs from the same snapshot comes out the same. See HiderController.Walk for why each piece is there.
-	const int ParkCheckTicks = 5; // a parked body re-checks its ground this often (0.1 s)
+	const int ParkCheckTicks = (int)(0.1f * SimWorld.T + 0.5f); // a parked body re-checks its ground this often (0.1 s)
+	const int SimParkAfterTicks = (int)(0.12f * SimWorld.T + 0.5f); // the sim walk parks after this long still (ParkAfterTicks is the scene walk's, at the scene tick rate)
 
 	// Is there still a floor under a PARKED walker? The walk's foot sweep (and its started-solid fallback): ground within
 	// RideSnap of the hull's foot, walkable. A hunter carrying off the prop it stood on makes this false → it unparks and falls.
@@ -604,7 +611,7 @@ public sealed partial class HiderController : ISimShapeSource
 			float level = MathF.Max( raw, c.PushLevel / (float)SimCtrl.PushScale - dt / PushRelease );
 			c.PushLevel = (ushort)MathF.Round( Math.Clamp( level, 0f, 1f ) * SimCtrl.PushScale );
 			level = c.PushLevel / (float)SimCtrl.PushScale; // use exactly what's stored (and sent): replays agree to the bit
-			dv = dv.ClampLength( MathX.Lerp( WalkAccel, WalkPushAccel, level ) * dt );
+			dv = dv.ClampLength( MathX.Lerp( wish.IsNearZeroLength ? BrakeAccel : WalkAccel, WalkPushAccel, level ) * dt ); // (BrakeAccel: a stop is a short coast)
 			flat += dv;
 
 			float vz = groundVel.z + Math.Clamp( -gap * RideSpring, -RideMaxLift, RideMaxLift );
@@ -641,12 +648,14 @@ public sealed partial class HiderController : ISimShapeSource
 		pb.Velocity = v;
 		pb.AngularVelocity = 0f;
 		c.Commanded = v;
+		c.Driving = !wish.IsNearZeroLength;
+		c.Wish = new Vector2( wish.x, wish.y ); // what a remote copy repeats (SimCtrl.Wish)
 		body.Intent = wish.IsNearZeroLength ? Vector3.Zero : v.WithZ( 0f ).Length > wish.Length * 0.5f ? v.WithZ( 0f ) : wish;
 
 		// Park once there's nothing left to do.
 		bool still = c.Grounded && idle && (v - groundVel).Length < 1f && MathF.Abs( gap ) < 0.5f && groundVel.Length < 0.5f;
 		c.StillTicks = still ? (byte)Math.Min( c.StillTicks + 1, 255 ) : (byte)0;
-		if ( c.StillTicks >= ParkAfterTicks )
+		if ( c.StillTicks >= SimParkAfterTicks )
 		{
 			c.Parked = true;
 			pb.Velocity = Vector3.Zero;
@@ -887,7 +896,7 @@ public sealed partial class HiderController : ISimShapeSource
 		// Park once there's nothing left to do.
 		bool still = idle && flat.Length < 1f;
 		c.StillTicks = still ? (byte)Math.Min( c.StillTicks + 1, 255 ) : (byte)0;
-		if ( c.StillTicks >= ParkAfterTicks )
+		if ( c.StillTicks >= SimParkAfterTicks )
 		{
 			c.Parked = true;
 			pb.Velocity = Vector3.Zero;

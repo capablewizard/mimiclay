@@ -86,8 +86,8 @@
           "OnComponentUpdate": null,
           "SkyIndirectLighting": true,
           "SkyMaterial": {
-            "Id": "d7c6c4c4-338b-47d9-8a8c-8e67b5e3915f",
-            "Path": "sky/kloofendal_48d_partly_cloudy_puresky_2k.vmat"
+            "Id": "5bddfc34-3241-4c80-a978-fe0488782afa",
+            "Path": "sky/clay_puffy_sky_v3_4k.vmat"
           },
           "Tint": "2,2,2,1"
         },
@@ -115,7 +115,7 @@
           "Flags": 0,
           "Name": "Sun",
           "Position": "188.659409,-671.213684,-123.537918",
-          "Rotation": "0.118833505,0.385033607,-0.269903481,0.874516964",
+          "Rotation": "0.11683663,0.376258016,-0.272568345,0.877773106",
           "Scale": "1,1,1",
           "Tags": "light_directional,light",
           "Enabled": true,
@@ -206,16 +206,16 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PeakLuminance": 50.534813,
-              "ScannedTexture": "(generated) (cube, mip 0, 512x512)",
+              "PeakLuminance": 19.633587,
+              "ScannedTexture": "(generated) (cube, mip 1, 512x512)",
               "Skybox": {
                 "_type": "component",
                 "component_id": "98f27286-d5a5-4e6b-953c-d38f67983de6",
                 "go": "c73ce1c4-5969-44fc-a9a5-adb933a1fcb8",
                 "component_type": "SkyBox2D"
               },
-              "SunElevation": 47.526012,
-              "SunYaw": 145.69626
+              "SunElevation": 46.40485,
+              "SunYaw": 145.4985
             }
           ],
           "Children": []
@@ -2954,6 +2954,22 @@
             },
             "Property": "Rotation",
             "Value": "0,3.32065198E-09,0.99999994,9.9619557E-09"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3184,6 +3200,22 @@
             },
             "Property": "Position",
             "Value": "28.2882576,712.775085,21.1365318"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3308,6 +3340,22 @@
             },
             "Property": "Position",
             "Value": "182.031525,884.419067,-1.48570538"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -3357,6 +3405,22 @@
             },
             "Property": "Rotation",
             "Value": "0.214113295,0.762483597,0.58781594,0.165064812"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "baccb9a5-3463-4166-ad57-d7b9beaaed41"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []

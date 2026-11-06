@@ -751,7 +751,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	// from us (RoundManager.PropsConcealed — Infection, a prop's machine, until the Reveal). Anywhere else they're
 	// solid to each other, like everything else — and a prop someone is HOLDING is never ghosted (on any machine), so a
 	// hunter pushing a held prop into others gets the same contacts from a player as from a decoy: a ghosting player
-	// prop was a dead giveaway. Outside rounds (creative, lobby, charades) the tag stays on, as before.
+	// prop was a dead giveaway. Outside rounds (creative, lobby, charades) the tag is OFF too: possessed props are solid to
+	// each other there (they ghosted "as before" until 2026-11-05 — the user wanted them to collide).
 	void UpdateReleasedSolidity()
 	{
 		if ( !_body.IsValid() )
@@ -778,7 +779,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	{
 		var round = RoundManager.Current;
 		if ( !round.IsValid() )
-			return true; // creative, lobby, charades: unchanged
+			return false; // creative, lobby, charades: solid to each other, like everything else (user, 2026-11-05: "possessed props don't collide with each other when they should")
 		if ( PropClaims.IsHeldObject( GameObject ) )
 			return false; // in someone's hands: solid to everything, exactly like a held decoy
 		return round.Phase is RoundPhase.Starting or RoundPhase.Hide || RoundManager.PropsConcealed;

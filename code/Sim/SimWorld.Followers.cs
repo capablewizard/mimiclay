@@ -21,7 +21,7 @@ namespace Mimiclay.Sim;
 // static collider moves with the object.
 public sealed partial class SimWorld
 {
-	const int FollowerRefreshTicks = 10;
+	const int FollowerRefreshTicks = (int)(0.2f * SimWorld.T);
 	const float FarBelow = -50000f; // the move-hull scratch bodies park down here (PropMoveHull) — never follow those
 	const float PuppetMaxSpeed = 4000f;
 
@@ -423,6 +423,7 @@ public sealed partial class SimWorld
 			return;
 		if ( b.Spec.Driver == SimDownDriver.Id && driver != SimDownDriver.Id && b.Phys.IsValid() )
 			SimDownDriver.Settle( b, b.Phys, false ); // leaving the down state: its own friction and lock back (a settled body had none / all)
+		bool wasOurs = b.IsLocalOwned;
 		bool wasHold = b.Spec.Driver == SimHoldDriver.Id, isHold = driver == SimHoldDriver.Id;
 		bool toWalker = driver == HiderController.SimWalkDriverId;
 		bool rebuild = wasHold != isHold || shape != b.Spec.Shape;
@@ -439,7 +440,8 @@ public sealed partial class SimWorld
 		// The host's poses we had for it are from before this change — and none were kept while it was OURS to drive (our
 		// own walking prop). Drawn from those the moment someone grabs our prop, it teleported to where it last lay loose
 		// for the two ticks until the next snapshot (measured: a 183u pop on the wearer's screen). Fresh poses only.
-		b.Authority.Clear();
+		if ( wasOurs )
+			b.Authority.Clear(); // (another player's body changing hands keeps its poses: clearing them emptied the buffer for a snapshot or two, and the drawn source flipped to the copy and back — a hitch on every throw watched from a third machine, user 2026-11-06)
 		ApplyFlags( b, flags );
 		if ( toWalker && b.Phys.IsValid() )
 		{
