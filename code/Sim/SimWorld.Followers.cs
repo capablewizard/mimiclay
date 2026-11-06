@@ -424,6 +424,7 @@ public sealed partial class SimWorld
 		if ( b.Spec.Driver == SimDownDriver.Id && driver != SimDownDriver.Id && b.Phys.IsValid() )
 			SimDownDriver.Settle( b, b.Phys, false ); // leaving the down state: its own friction and lock back (a settled body had none / all)
 		bool wasOurs = b.IsLocalOwned;
+		bool posesKept = b.Spec.Driver == SimDownDriver.Id; // (our own body lying down kept the host's poses all along - NoteAuthority)
 		bool wasHold = b.Spec.Driver == SimHoldDriver.Id, isHold = driver == SimHoldDriver.Id;
 		bool toWalker = driver == HiderController.SimWalkDriverId;
 		bool rebuild = wasHold != isHold || shape != b.Spec.Shape;
@@ -436,11 +437,23 @@ public sealed partial class SimWorld
 		b.RemoteGuess = SimInput.None;
 		b.Rest = null;
 		b.HoldReleased = false;
-		b.LocalTouched = isHold && owner == LocalId; // our own hold (and the throw out of it) is ours to predict; anything else starts untouched
+		// The DRAWING state below (touched, our throw, the host's poses kept) changes on the live switch only. A rollback re-applies
+		// the drives it crosses (a history state's drive on Restore, then the drive log in Step): replaying across our own let-go,
+		// it put the hold back for a moment - which cleared ThrownHere and the host's poses - and the throw we were drawing from
+		// our prediction went over to the host's poses mid-flight, a 110-158u fold at 500-700 u/s on most bot throws (measured
+		// 2026-11-06 with the wearer walking; hunter_release_flags.cs).
+		if ( !_replaying )
+		{
+			b.LocalTouched = isHold && owner == LocalId; // our own hold (and the throw out of it) is ours to predict; anything else starts untouched
+			if ( isHold || toWalker )
+				b.ThrownHere = false; // (a throw of ours ends when it is held again or stands up as a walker - drawn from the copy anyway)
+		}
 		// The host's poses we had for it are from before this change — and none were kept while it was OURS to drive (our
 		// own walking prop). Drawn from those the moment someone grabs our prop, it teleported to where it last lay loose
 		// for the two ticks until the next snapshot (measured: a 183u pop on the wearer's screen). Fresh poses only.
-		if ( wasOurs )
+		// (Not when they were kept: a lying wearer regrabbed lost its live poses, fell back to its own copy for two frames and
+		// back - a 103-129u jump at every regrab at 200 ms+, measured. Clearing is for poses NOT kept while ours: stale ones.)
+		if ( wasOurs && !posesKept && !_replaying )
 			b.Authority.Clear(); // (another player's body changing hands keeps its poses: clearing them emptied the buffer for a snapshot or two, and the drawn source flipped to the copy and back — a hitch on every throw watched from a third machine, user 2026-11-06)
 		ApplyFlags( b, flags );
 		if ( toWalker && b.Phys.IsValid() )
@@ -484,12 +497,18 @@ public sealed partial class SimWorld
 		{
 			if ( !sim._byId.TryGetValue( id, out var b ) )
 				return;
-			bool same = !RedriveChanges( b, driver, owner, (SimBodyFlags)flags, (SimShapeKind)shape );
-			bool predicted = b.PredictedDrive is not null;
-			b.PredictedDrive = null;
-			if ( same && predicted )
-				return; // the host confirmed what we did ourselves (PredictHold / PredictRelease), logged at our own tick
-			sim.LogDrive( b, tick, driver, owner, (SimBodyFlags)flags, (SimShapeKind)shape ); // at the HOST's tick: a replay across it switches there
+			// The host's word on this body's drive replaces anything we predicted for it (PredictHold / PredictRelease /
+			// PredictEscape): the predicted entry (logged at OUR tick, a lead ahead of the host's) comes out of the log. Left in,
+			// it outlived the host's confirmation — and when the host's NEXT change (the escape's flip making us a walker) was
+			// logged at a host tick EARLIER than our predicted one, every replay crossing both ended on the stale predicted
+			// drive: a client lying down on its copy while the host walked it (user, 2026-11-06: "when I jump after being
+			// grabbed I sometimes don't end up with simwalk on as a client"; measured as a 4→2→4 flicker that never recovered).
+			if ( b.PredictedDrive is { } was )
+			{
+				b.DriveLog.RemoveAll( d => d.tick == was.tick + 1 );
+				b.PredictedDrive = null;
+			}
+			sim.LogDrive( b, tick, driver, owner, (SimBodyFlags)flags, (SimShapeKind)shape ); // at the HOST's tick: a replay across it switches there (a no-op in place when it's what we already run)
 		} );
 	}
 
@@ -518,6 +537,22 @@ public sealed partial class SimWorld
 		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags, b.Spec.Shape);
 		LogDrive( b, Tick + 1, 0, Guid.Empty, SimBodyFlags.Present, SimShapeKind.FromGameObject ); // from the next tick, the first with no target
 		b.LocalTouched = true; // our throw: predicted here until it rests
+		b.ThrownHere = true;   // …and kept on our prediction when the host hands it to its wearer (ThrownHere, ShownFromAuthority)
+		b.ThrownTick = Tick;
+		SimStats.HoldsPredicted++;
+	}
+
+
+	/// <summary>Client: the WEARER broke free of another player's hold (Space or a move key — HiderController.WatchSimObjectEscape):
+	/// make the body ours and DOWN now, as the host will when the escape lands (PropClaims.EscapeGrab → the drop →
+	/// UpdateSimRegistration), so the flip starts at the press instead of a round trip plus the display delay later (user,
+	/// 2026-11-06: "a big delay on our jump/detach after we've been picked up"). The host's own redrive confirms it.</summary>
+	public void PredictEscape( Guid key )
+	{
+		if ( IsAuthority || !_byKey.TryGetValue( key, out var b ) || b.Spec.Driver != SimHoldDriver.Id || b.IsLocalOwned )
+			return;
+		b.PredictedDrive = (Tick, b.Spec.Driver, b.Spec.Owner, b.Spec.Flags, b.Spec.Shape);
+		LogDrive( b, Tick + 1, SimDownDriver.Id, LocalId, SimBodyFlags.Present, SimShapeKind.FromGameObject );
 		SimStats.HoldsPredicted++;
 	}
 

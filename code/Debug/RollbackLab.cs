@@ -374,9 +374,9 @@ public static class RollbackLab
 		return sb.ToString();
 	}
 
-	// ⚠ INVALID (found 2026-11-04): PhysicsBody.AddCloneShape is a no-op stub in the retail engine, so every body this
-	// cloned had NO shapes and the 0.14 ms/tick it reported measured empty bodies. Real numbers (SimWorld + SimMirrorProbe,
-	// 66 lobby clay props / 626 real hulls, ~40 tumbling): 0.43 ms/step. Kept only for the history.
+	// Shapes are copied with SimWorld.CopyShapes (2026-11-06). Before that it used PhysicsBody.AddCloneShape, an obsolete
+	// no-op stub in the retail engine, so the old 0.14 ms/tick figure measured empty bodies. Reference numbers from
+	// SimWorld + SimMirrorProbe (66 lobby clay props / 626 real hulls, ~40 tumbling): 0.43 ms/step.
 	/// <summary>What one tick of a REAL map costs in a private world: every body in the active scene's physics world
 	/// cloned in (statics static, everything else dynamic — the clay props as if all loose), then stepped. Also the cost
 	/// of capturing + restoring every dynamic body (what each rollback pays on top of the steps).</summary>
@@ -400,11 +400,8 @@ public static class RollbackLab
 				bool isStatic = b.BodyType == PhysicsBodyType.Static && !clay;
 				var copy = new PhysicsBody( world ) { BodyType = isStatic ? PhysicsBodyType.Static : PhysicsBodyType.Dynamic };
 				copy.Transform = b.Transform;
-				foreach ( var s in b.Shapes )
-				{
-					try { copy.AddCloneShape( s ); shapes++; }
-					catch { failed++; }
-				}
+				try { shapes += Mimiclay.Sim.SimWorld.CopyShapes( b, copy, solidOnly: false ); }
+				catch { failed++; }
 				if ( isStatic ) statics++;
 				else
 				{

@@ -450,7 +450,7 @@ public sealed partial class SimWorld
 					e = g.Value.Sleeping ? 0f : g.Value.P.Distance( rest.P ); // asleep at the host
 				else
 					continue;
-				if ( b.IsRemoteDriven && !RecentlyTouched( b ) && e <= RemoteSkipEpsilon )
+				if ( b.IsRemoteDriven && !RecentlyTouched( b ) && !b.ThrownHere && e <= RemoteSkipEpsilon ) // (our throw is drawn from our copy too)
 					e = 0f; // (one we're pushing is drawn from our prediction and not nudged — it counts in full, so a replay keeps it on the host's track)
 				err = MathF.Max( err, e );
 				if ( b.IsLocalOwned )
@@ -476,7 +476,7 @@ public sealed partial class SimWorld
 	{
 		foreach ( var b in _bodies )
 		{
-			if ( !b.IsRemoteDriven || RecentlyTouched( b ) || !auth.TryGetValue( b.Id, out var a ) )
+			if ( !b.IsRemoteDriven || RecentlyTouched( b ) || b.ThrownHere || !auth.TryGetValue( b.Id, out var a ) )
 				continue; // (a walker we're pushing is left to our prediction — a nudge every snapshot would saw it back and forth)
 			var st = a;
 			int n = Tick - s;
@@ -520,9 +520,10 @@ public sealed partial class SimWorld
 			// Drawn from the copy: the nudge slides out through the fading offset (as our own corrections do) instead of snapping.
 			var after = PoseFrom( b, false );
 			var dp = before.Position - after.Position;
-			if ( dp.Length > 80f )
+			if ( dp.Length > CorrectionSnapDistance() )
 			{
 				b.PosOffset = Vector3.Zero; // a teleport: show it where it is
+				b.OffVel = Vector3.Zero;
 				b.RotOffset = Rotation.Identity;
 				continue;
 			}
@@ -543,11 +544,16 @@ public sealed partial class SimWorld
 		}
 	}
 
+	// True while a rollback re-simulates (Rollback): the drive changes it re-applies (a history state's drive, the drive log)
+	// already happened live once - ApplyRedrive leaves the drawing state alone for them (see there).
+	bool _replaying;
+
 	void Rollback( int s, Dictionary<ushort, SimBodyState> auth )
 	{
 		var before = _bodies.Select( VisualPose ).ToList();
 
 		var sw = Stopwatch.StartNew();
+		_replaying = true; // (cleared right after the re-simulation below; UpdatePresentationSource clears it too, should a step throw)
 		// Start from what we predicted for s (bodies the host didn't mention, e.g. ones it hasn't heard about yet,
 		// keep that), then overwrite with the host's state.
 		if ( _history.TryGetValue( s, out var predicted ) )
@@ -566,6 +572,7 @@ public sealed partial class SimWorld
 			Step( t, _myInputs.TryGetValue( t, out var w ) ? w : SimInput.None, b => b.RemoteGuess );
 			_history[t] = CaptureAll();
 		}
+		_replaying = false;
 		sw.Stop();
 		SimStats.Replays++;
 		SimStats.ReplayMs.Add( (float)sw.Elapsed.TotalMilliseconds );
@@ -594,14 +601,17 @@ public sealed partial class SimWorld
 				else if ( b.Spec.Owner != Guid.Empty ) SimStats.CorrectionOthers.Add( len );
 				else SimStats.CorrectionLoose.Add( len );
 			}
-			if ( SmoothRate <= 0f || len > 80f )
+			if ( SmoothRate <= 0f || len > CorrectionSnapDistance() )
 			{
 				b.PosOffset = 0f;
+				b.OffVel = 0f;
 				b.RotOffset = Rotation.Identity;
 				continue;
 			}
 			// after already includes the old offset, so the new one is the old plus the jump.
 			b.PosOffset += dp;
+			if ( len > BigCorrection )
+				SoftenFade( b );
 			b.RotOffset = before[i].Rotation * after.Rotation.Inverse * b.RotOffset;
 		}
 	}

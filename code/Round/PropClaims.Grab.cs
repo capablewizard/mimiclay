@@ -470,6 +470,11 @@ public sealed partial class PropClaims
 		}
 	}
 
+	/// <summary>For this long after a grab the wearer can't break free, even with Space (user, 2026-11-06) — enforced here
+	/// (EscapeGrab) and mirrored on the wearer's machine (HiderController.EscapeGraceActive).</summary>
+	public const float EscapeHoldGrace = 1f;
+	readonly Dictionary<Guid, RealTimeSince> _heldSince = new(); // host: per held body, time since the grab
+
 	// Host-side per-caller rate gate on RequestGrab (see GrabFor).
 	const float GrabCooldown = 0.1f;
 	readonly Dictionary<Guid, RealTimeUntil> _grabGate = new();
@@ -552,6 +557,7 @@ public sealed partial class PropClaims
 		FrozenProps.Remove( prop.Id ); // picking a frozen prop up unfreezes it
 		LendForHold( prop.Components.Get<HiderController>(), c );
 		Held[c.Id] = prop.Id;
+		_heldSince[prop.Id] = 0f;
 		_grabTargets[prop.Id] = prop.WorldTransform;
 		IgnoreHolder( c, prop );
 		PlaySwapPop( PopSpot( prop ) );
@@ -606,18 +612,26 @@ public sealed partial class PropClaims
 		}
 	}
 
-	/// <summary>The wearer of a held body jumped or pressed a movement key: break free of whoever is holding it.</summary>
+	/// <summary>The wearer of a held body jumped: break free of whoever is holding it (not within EscapeHoldGrace of the grab).</summary>
 	[Rpc.Host]
-	public void EscapeGrab( GameObject body )
+	public void EscapeGrab( GameObject body, bool jump = false )
 	{
 		var c = Rpc.Caller ?? Connection.Local;
 		var hider = body.IsValid() ? body.Components.Get<HiderController>() : null;
 		// The wearer — of a lent body too, whose network owner is the holder for the hold.
 		if ( c is null || !IsPlayerBody( hider ) || (WearerOf( hider.GameObject ) ?? hider.Network.Owner?.Id) != c.Id )
 			return;
+		if ( _heldSince.TryGetValue( body.Id, out var heldFor ) && heldFor < EscapeHoldGrace )
+			return; // too soon after the grab: the hold stands
 
 		if ( HolderOf( hider ) is { } holder && Connection.All.FirstOrDefault( x => x.Id == holder ) is { } holderConn )
 			DropFor( holderConn );
+
+		// The wearer broke free: the sim lets go of it NOW (not at the holder's release tick, which is a holder round trip away —
+		// the "big delay on our jump/detach", user 2026-11-06), and a Space escape is a jump out of the hands: the flip starts on
+		// the first lying tick (the press itself was spent while the hold still drove the body). HiderController.UpdateSimRegistration.
+		hider.SimEscaped = true;
+		hider.SimEscapeJump = jump;
 
 		// A body the sim carries is simply let go of: it lies down, and its wearer's own input rolls it or flips it back up
 		// (HiderController.UpdateSimRegistration, SimDownDriver) — no lend to hand back.
@@ -776,6 +790,7 @@ public sealed partial class PropClaims
 			return;
 
 		Held.Remove( c.Id );
+		_heldSince.Remove( id );
 		_grabTargets.Remove( id );
 		EndGrabScale( id );
 		ClearHolderFilters( id );

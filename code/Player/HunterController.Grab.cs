@@ -378,6 +378,8 @@ public sealed partial class HunterController
 			_grabPivot = SdfScaling.SymmetricPivot( _grabBase, bounds.Center );
 		}
 		_grabDistance = Math.Clamp( eye.Distance( centre ), GrabMinDistance, GrabMaxDistance );
+		if ( DebugGrabHold ) // the chase bot holds its catch out at arm's length rather than wherever it closed in to
+			_grabDistance = Math.Clamp( DebugChaseHoldDistance, GrabMinDistance, GrabMaxDistance );
 		_grabRelative = Rotation.FromYaw( _controller.EyeAngles.yaw ).Inverse * held.WorldRotation;
 		_grabRaw = _grabRelative;
 	}
@@ -441,7 +443,7 @@ public sealed partial class HunterController
 			sim.PredictRelease( held.Id ); // loose here from this tick — the host switches at the same tick of our inputs
 	}
 
-	void LetGo( GameObject held, bool freeze = false )
+	internal void LetGo( GameObject held, bool freeze = false ) // (internal: the chase bot lets go too — HunterChaseBot)
 	{
 		_grabLetGo = held.Id;
 		_sinceGrabLetGo = 0f;

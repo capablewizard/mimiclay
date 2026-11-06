@@ -646,7 +646,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			_jumpQueued = true;
 			_sinceJumpPress = 0f; // also an air-grab request (see HiderController.Climb)
 		}
-		WatchMoveEscape(); // a fresh movement press breaks free of a grab (see HiderController.Grabbed)
+		TrackHold(); // when a hold on us began (the no-escape window, HiderController.Grabbed)
 
 		// Shift lets go of a climb — latched here so a quick tap can't fall between fixed ticks.
 		if ( _climbing && ControlActive && Input.Pressed( "run" ) )

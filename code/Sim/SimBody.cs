@@ -180,6 +180,18 @@ public sealed class SimBody
 	// Presentation: the poses at the last two ticks and the fading correction (see SimWorld.VisualPose).
 	internal Transform Prev, Cur;
 	internal Vector3 PosOffset;
+	// The offset's own velocity: corrections fade as a critically damped spring (SimWorld.FadeCorrections), so a fold moves the
+	// drawn pose by position only and its speed stays continuous - no one-frame lurch at the start of every fade.
+	internal Vector3 OffVel;
+	// Source-switch bookkeeping (SimWorld.UpdatePresentationSource): since when the other source has been wanted (-1 = not),
+	// and until when the offset fades on the gentler switch spring.
+	internal float WantSwitchSince = -1f;
+	internal float SoftFadeUntil;
+	// The drive last seen by UpdatePresentationSource, and when it changed: a switch that follows a change of drive is real, not
+	// a flicker, and is taken at once.
+	internal byte SeenDriver;
+	internal Guid SeenOwner;
+	internal float DriveChangedAt = -999f;
 	/// <summary>Another player's walker is DRAWN through a critically damped tracker of its copy's pose (SimWorld.FadeCorrections):
 	/// position and velocity stay continuous across the copy's nudges and restores, which the position-only fade could
 	/// not do (a copy restored to a stopped host stops dead: 3000 u/s drawn-speed spikes in the trace; the tracker: none).</summary>
@@ -202,6 +214,12 @@ public sealed class SimBody
 	// prediction, which answers us at once; an untouched one from the host's poses, which never rubber-band.
 	internal bool ShownFromAuth;
 	internal bool LocalTouched;
+	// Client: WE let go of this body (PredictRelease) — our throw, drawn from our own prediction until it is calm and agrees
+	// with the host's poses (SimWorld.UpdatePresentationSource), whoever drives it now. ThrownTick: the release tick.
+	internal bool ThrownHere;
+	internal int ThrownTick;
+	// Client: the host's latest state of this body says its driver is steering it (SimCtrl.Driving) - SimWorld.NoteAuthority.
+	internal bool HostDriving;
 	/// <summary>Client: the last tick something of ours was against this OTHER player's walker (SimWorld.NoteLocalContacts).
 	/// Recently touched, it is drawn from our prediction and not nudged to the host's poses (SimWorld.ShownFromAuthority):
 	/// a prop we push moves under our push at once, instead of its drawn body trailing our copy of it by the round trip

@@ -24,8 +24,6 @@ public sealed partial class HiderController
 	Transform? _grabbedTarget;  // the latest pose the holder asked for (null until the first lands)
 	bool _grabbedObject;        // held, or tumbling since a holder let go — an object, not a character
 	bool _escapeSent;           // we jumped free; the host's Held row lingers a round-trip
-	bool _moveEscapeQueued;     // a movement key went down this frame while held (latched for the fixed step)
-	bool _moveWasDown;          // …edge detection for it: holding W through the grab isn't a press
 	bool _wasBorrowed;          // we watched our body lent out — the first owned tick after is the hand-back
 	bool _escapeJump;           // that escape (while lent out) was SPACE: jump on the hand-back (see EscapeJump)
 	(Vector3 Position, Rotation Rotation, Vector3 Velocity, bool Escaped)? _handback; // the pose it came back at
@@ -180,26 +178,33 @@ public sealed partial class HiderController
 		SetPhysicsMode( PhysicsMode.Character );
 	}
 
-	// Per frame, wherever we read our own keys (owner, or watching our borrowed body): latch a FRESH movement press.
-	void WatchMoveEscape()
+	// Held by another player: for the first moment after the grab nothing breaks free (user, 2026-11-06: "a short window after
+	// being grabbed where you can't escape even by pressing jump"); the host enforces the same window (PropClaims.EscapeGrab).
+	// Only Space breaks free — the move keys never do (user, 2026-11-06).
+	System.Guid? _lastHolder;
+	RealTimeSince _sinceHeld = 999f;
+
+	// Owner, every frame (HiderController.OnUpdate): the moment a hold starts — a new holder, or the same hunter again after a
+	// gap (tracked every frame, not only while held, or a regrab by the same hunter had no edge and no window: measured).
+	void TrackHold()
 	{
-		bool down = !Input.AnalogMove.IsNearZeroLength;
-		if ( down && !_moveWasDown && ControlActive )
-			_moveEscapeQueued = true;
-		_moveWasDown = down;
+		var holder = PropClaims.HolderOf( this );
+		if ( holder is { } && holder != _lastHolder )
+			_sinceHeld = 0f;
+		_lastHolder = holder;
 	}
 
-	// Our body, borrowed by the host for a hold (we're a proxy of it): keep the camera on it, and break free on jump or
-	// a movement key.
+	bool EscapeGraceActive() => PropClaims.HolderOf( this ) is { } && _sinceHeld < PropClaims.EscapeHoldGrace;
+
+	// Our body, borrowed by the host for a hold (we're a proxy of it): keep the camera on it, and break free on jump.
 	void UpdateBorrowedView()
 	{
 		_grabbedObject = true; // the camera follows the clay centre while we're an object (UpdateGrabbedCamera)
 		_wasBorrowed = true;   // the first owned tick after this is the hand-back (StepHandback)
 
-		WatchMoveEscape();
-		bool jumped = ControlActive && Input.Pressed( "jump" );
-		bool escape = _moveEscapeQueued || jumped;
-		_moveEscapeQueued = false;
+		bool grace = EscapeGraceActive();
+		bool jumped = ControlActive && Input.Pressed( "jump" ) && !grace;
+		bool escape = jumped;
 		if ( escape && !_escapeSent )
 		{
 			_escapeSent = true;
@@ -238,12 +243,13 @@ public sealed partial class HiderController
 			_grabbedTarget = null;
 		}
 
-		bool escapePressed = _jumpQueued || _moveEscapeQueued;
-		_moveEscapeQueued = false;
+		if ( EscapeGraceActive() )
+			_jumpQueued = false; // (a press inside the no-escape window is simply lost)
+		bool escapePressed = _jumpQueued;
 
 		if ( holder is { } h && !_escapeSent )
 		{
-			// Jump or a movement key breaks free: ask the host to end the hold and stand up right away — no waiting on
+			// Jump breaks free: ask the host to end the hold and stand up right away — no waiting on
 			// the reply.
 			if ( escapePressed )
 			{

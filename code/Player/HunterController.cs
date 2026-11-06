@@ -276,6 +276,15 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	/// Optional — leave unset to skip.</summary>
 	[Property, Group( "Debug" )] public GameObject Eyes { get; set; }
 
+	/// <summary>Debug: walk toward this point and face it (a scripted hunter; see the chase override in UpdateControl). Null = off.</summary>
+	public static Vector3? DebugChase { get; set; }
+	public static float DebugChaseSpeed { get; set; } = 250f;
+	public static float DebugChaseStop { get; set; } = 90f;
+	public static float DebugChasePitch { get; set; } = 12f;
+	public static float DebugChaseTurnRate { get; set; } = 420f;   // deg/s cap on the chase turn: a flick, never an instant 180 (user, 2026-11-06)
+	public static float DebugChaseHoldPitch { get; set; } = -5f;    // aim while holding: a touch UP, so the catch hangs raised off the ground
+	public static float DebugChaseHoldDistance { get; set; } = 150f; // eye → clay centre while the bot holds (further out than a close grab)
+
 	/// <summary>How far below the eye the head object is parked. The Head's origin is its rotation pivot and sits
 	/// at the NECK (the sculpture's brushes are authored +16 above the origin), so the head pitches around the neck
 	/// rather than its centre. This drop keeps the neck fixed at eye − 16 while the camera eye stays untouched.</summary>
@@ -758,6 +767,28 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				_controller.UseInputControls = false;
 				_controller.UseLookControls = false;
 				PerfScenario.DriveHunter( _controller, GameObject );
+			}
+			else if ( DebugChase is { } chase && play && !locked )
+			{
+				// Debug chase (a scripted hunter — the "bot that chases me and throws me", 2026-11-06): walk toward a point and
+				// face it, the same override shape as wander. DebugChaseStop: stand this close. DebugChaseSpeed 0 = off.
+				_controller.UseInputControls = false;
+				_controller.UseLookControls = false;
+				var flat = (chase - WorldPosition).WithZ( 0f );
+				var a = _controller.EyeAngles;
+				if ( flat.Length > 1f )
+				{
+					// Turn like a player: quick toward the target (a flick, eased as it closes) but never a snap — capped at
+					// DebugChaseTurnRate deg/s, and never slower than a steady 90 deg/s so it always arrives.
+					float delta = MathX.DeltaDegrees( a.yaw, flat.EulerAngles.yaw );
+					float step = MathF.Min( MathF.Abs( delta ), MathF.Min( DebugChaseTurnRate, MathF.Max( 90f, MathF.Abs( delta ) * 6f ) ) * Time.Delta );
+					a.yaw += MathF.CopySign( step, delta );
+				}
+				a.pitch = DebugGrabHold ? DebugChaseHoldPitch : DebugChasePitch;
+				_controller.EyeAngles = a;
+				// Walk toward it, but not at full tilt while still facing away (a player strafes, not sprints, at a target behind them).
+				float facing = flat.Length > 1f ? MathF.Max( 0.35f, Vector3.Dot( Rotation.FromYaw( a.yaw ).Forward, flat.Normal ) ) : 1f;
+				_controller.WishVelocity = flat.Length > DebugChaseStop ? flat.Normal * DebugChaseSpeed * facing : Vector3.Zero;
 			}
 
 			// UseInputControls=false stops the controller READING input, but the last WishVelocity stays latched

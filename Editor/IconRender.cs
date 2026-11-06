@@ -552,7 +552,7 @@ sealed class IconPreview : PixmapView
 		_window.OnPreviewEdited( true );
 	}
 
-	protected override void OnWheel( WheelEvent e )
+	protected override void OnMouseWheel( WheelEvent e )
 	{
 		var s = _window.Settings;
 		s.Distance = Math.Clamp( s.Distance * MathF.Exp( -e.Delta * 0.001f ), 0.3f, 3f );

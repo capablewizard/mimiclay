@@ -138,6 +138,7 @@ public sealed partial class HiderController : ISimShapeSource
 		bool held = holder is { } && SimHoldApplies( this ) && _body.IsValid() && _collider.IsValid();
 		if ( held )
 		{
+			SimEscaped = SimEscapeJump = false; // (a fresh hold: any escape noted before it was for an earlier one)
 			_sinceSimHoldRowGone = 0f; // (how long since the Held row went: the loose redrive waits on the release tick, briefly)
 		}
 		// A player's or bot's body (not released scenery, which the Loose registry governs) let go of is DOWN (SimDownDriver):
@@ -180,11 +181,15 @@ public sealed partial class HiderController : ISimShapeSource
 				// Let go of: from the holder's RELEASE TICK — the first of its inputs with no target (HoldReleased), which the
 				// holder's own prediction switched at too — not from the drop message, which lands a lead earlier while its
 				// last targets are still on the way (a 71u correction on every throw). Capped: lost inputs, a vanished holder.
-				bool waitForRelease = existing.Ctrl.Holding && !existing.HoldReleased;
+				bool waitForRelease = existing.Ctrl.Holding && !existing.HoldReleased && !SimEscaped; // (an escape: the wearer let go, not the holder)
 				if ( waitForRelease && _sinceSimHoldRowGone < 1f )
 					return;
 			}
+			bool escapeJump = SimEscaped && SimEscapeJump && existing.Spec.Driver == SimHoldDriver.Id && driver == SimDownDriver.Id;
+			SimEscaped = SimEscapeJump = false;
 			sim.Redrive( GameObject.Id, driver, drvOwner, flags, shape );
+			if ( escapeJump && sim.Find( GameObject.Id ) is { Spec.Driver: SimDownDriver.Id } e )
+				e.Ctrl.SinceJumpTicks = 0; // the Space that broke free, buffered as a press on the first lying tick (SimStepDown flips fresh from a hold even in the air)
 			return;
 		}
 
@@ -234,6 +239,9 @@ public sealed partial class HiderController : ISimShapeSource
 	// Host: a player's or bot's body let go of lies DOWN (SimDownDriver — its wearer's own input rolls it and rights it with
 	// Space) until the driver reports it upright (see UpdateSimRegistration); then it's a walker again.
 	bool _simDown;
+	// Host: set by PropClaims.EscapeGrab — this body broke free of its holder (don't wait for the holder's release tick), and
+	// whether that escape was a Space press (the flip is seeded on the first lying tick). Consumed at the redrive.
+	internal bool SimEscaped, SimEscapeJump;
 
 	/// <summary>Is this pawn lying down (or righting itself) in the sim world right now (any machine)?</summary>
 	internal bool SimDown => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b && b.Spec.Driver == SimDownDriver.Id;
@@ -694,6 +702,11 @@ public sealed partial class HiderController : ISimShapeSource
 		var pos = pb.Position;
 		var rot = pb.Rotation;
 		var wish = new Vector3( input.Wish.x, input.Wish.y, 0f );
+		// Steering, as the walk records it (SimCtrl.Driving / Wish): what a remote copy repeats (SimDownDriver.Guess), and how a
+		// thrower knows its throw has stopped being ballistic (SimWorld.ThrowSettledHere). Never set here before - the down guess
+		// repeated a wish that was always zero.
+		c.Driving = !wish.IsNearZeroLength;
+		c.Wish = new Vector2( wish.x, wish.y );
 
 		// Fell out of the world: back to the spawn spot, upright, at rest (as the walk does) — it settles there.
 		if ( FallRespawn.Fell( pos.z, _fallAnchor.Position.z ) )
@@ -748,7 +761,14 @@ public sealed partial class HiderController : ISimShapeSource
 			bool flip = !inert && jumpPending;
 			SimDownDriver.Settle( body, pb, false, frictionless: driving );
 			body.Intent = wish;
+			// Fresh from a hold (let go of, thrown, or escaped) the flip may start IN THE AIR for a moment: an escape is a jump
+			// out of the hunter's hands, not a wait for the floor (StillTicks counts the tumble here; settling resets it).
+			if ( c.StillTicks < 255 )
+				c.StillTicks++;
+			bool freshDown = c.StillTicks <= SimDownDriver.AirFlipTicks;
 			bool onGround = (driving || flip) && OnGround();
+			if ( flip && !onGround && freshDown )
+				onGround = true; // (taken as the flip below)
 			if ( flip && SimDownDriver.LogJumps )
 				SimDownDriver.JumpLog.Add( $"tumble: Space {(onGround ? "TAKEN" : "WAITING (not on ground)")} since press {c.SinceJumpTicks} gap {_lastGap:0.0} solid {_lastSolid} z {pb.Position.z:0.0} vz {pb.Velocity.z:0} spin {pb.AngularVelocity.Length:0.00} host {Networking.IsHost}" );
 			if ( flip && onGround )
@@ -944,21 +964,16 @@ public sealed partial class HiderController : ISimShapeSource
 
 	// ── Our own body carried or lying loose in the sim (the wearer's machine) ───────────────────────────────
 	// The body stays ours on the network; only its sim body is driven by the holder (or by nobody). We watch it from the
-	// host's poses (SimWorld.RemotePose), keep the camera on the clay (UpdateGrabbedCamera), and a jump or a fresh movement
-	// key breaks free of a hold (PropClaims.EscapeGrab — the host drops us); lying down, our own sim input moves and rights us (SimDownDriver).
+	// host's poses (SimWorld.RemotePose), keep the camera on the clay (UpdateGrabbedCamera), and a jump (after the no-escape
+	// window, EscapeGraceActive) breaks free of a hold (PropClaims.EscapeGrab — the host drops us); lying down, our own sim input moves and rights us (SimDownDriver).
 	RealTimeSince _sinceSimEscape = 999f;
 
 	void WatchSimObjectEscape()
 	{
 		if ( !_grabbedObject )
 		{
-			// Just grabbed (or dropped): a key already DOWN doesn't count — only a press made after this breaks free. The
-			// baseline WatchMoveEscape compares against is only kept while we're an object, so a prop grabbed mid-walk read
-			// the key it was walking with as a fresh press on its first held tick and escaped at once (user: "the first grab
-			// fails after moving").
+			// Just grabbed (or dropped): a Space already queued doesn't count — only a press made after this breaks free.
 			_grabbedObject = true;
-			_moveWasDown = !Input.AnalogMove.IsNearZeroLength;
-			_moveEscapeQueued = false;
 			_jumpQueued = false;
 			return;
 		}
@@ -968,18 +983,21 @@ public sealed partial class HiderController : ISimShapeSource
 			_escapeSent = false;
 			return;
 		}
-		// Held: a move key or Space breaks free (the host drops us — we're DOWN from there). A Space press is left queued,
-		// so the first input once we're down carries the jump: the flip onto our feet.
-		WatchMoveEscape();
-		bool jumped = _jumpQueued, moved = _moveEscapeQueued;
-		_moveEscapeQueued = false;
-		if ( !jumped )
+		// Held: Space breaks free (the host drops us — we're DOWN from there), never the move keys, and not inside the
+		// no-escape window just after the grab (a press then is lost, not banked). The press is left queued, so the first input
+		// once we're down carries the jump: the flip onto our feet.
+		if ( EscapeGraceActive() )
+		{
 			_jumpQueued = false;
-		if ( _escapeSent || (!jumped && !moved) || _sinceSimEscape < 0.3f )
+			return;
+		}
+		bool jumped = _jumpQueued;
+		if ( _escapeSent || !jumped || _sinceSimEscape < 0.3f )
 			return;
 		_sinceSimEscape = 0f;
 		_escapeSent = true;
-		PropClaims.Current?.EscapeGrab( GameObject );
+		SimSystem?.PredictEscape( GameObject.Id ); // our body is down HERE from the next tick (the flip starts at the press — SimWorld.PredictEscape)
+		PropClaims.Current?.EscapeGrab( GameObject, jumped );
 	}
 
 	// Back to a walker after being an object: face where the body points now, and re-seed the mouse turn from it (the walk

@@ -28,7 +28,8 @@ public sealed class SimDownDriver : ISimDriver
 	internal const int SettleTicks = (int)(0.16f * SimWorld.T + 0.5f);      // calm this long (0.16 s: no spin, not falling, not faster than the walk) → settled: the overturned walk takes over
 	internal const int UnsettleTicks = (int)(0.2f * SimWorld.T + 0.5f);   // settled but off the ground this long (0.2 s) (a fall) → tumbling again, to land as a body
 	internal const int InertRestTicks = (int)(0.5f * SimWorld.T + 0.5f);  // a bot, settled this long (0.5 s), rights itself
-	internal const int JumpBufferTicks = (int)(0.2f * SimWorld.T + 0.5f); // a Space press waits this long (0.2 s) for the body to be on the ground (HiderController.SimStepDown)
+	internal const int JumpBufferTicks = (int)(0.2f * SimWorld.T + 0.5f); // a Space press waits this long (0.2 s)
+	internal const int AirFlipTicks = (int)(0.6f * SimWorld.T + 0.5f);    // fresh from a hold, Space flips even in the air for this long (an escape is a jump out of the hands) for the body to be on the ground (HiderController.SimStepDown)
 	const float Rate = 8f;                   // 1/s: righting spin = tilt × Rate…
 	const float MaxSpin = 10f;               // …capped (rad/s)
 	const float YawDamp = 6f;                // 1/s: the spin about the vertical dies out while rising
@@ -124,5 +125,7 @@ public sealed class SimDownDriver : ISimDriver
 	}
 
 	// Someone else's: it lies there (its sim copy here is nudged to the host's state each snapshot anyway).
-	public SimInput Guess( SimBody body, in SimBodyState latest ) => SimInput.None;
+	// …but repeats its wearer's last move keys (SimCtrl.Wish, written by SimStepDown), as the walker's guess does: a copy we
+	// draw (our own throw of it, SimBody.ThrownHere) then slides with them instead of braking and being corrected every snapshot.
+	public SimInput Guess( SimBody body, in SimBodyState latest ) => latest.HasCtrl ? new SimInput { Wish = latest.Ctrl.Wish } : SimInput.None;
 }
