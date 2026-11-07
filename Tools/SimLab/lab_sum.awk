@@ -8,8 +8,10 @@
 # A run whose host recording missed the motion (host A travel < 80% of A's own) is dropped as invalid.
 function num(s, key,   r) { if (match(s, key " -?[0-9.]+")) { r = substr(s, RSTART + length(key) + 1, RLENGTH - length(key) - 1); return r + 0 } return "" }
 /^##### / { scen = $2; run[scen]++; key = scen SUBSEP run[scen]; order[scen] = order[scen] ? order[scen] : ++nscen; names[nscen] = names[nscen] ? names[nscen] : scen; next }
+/^    jump: / { if (njd[scen, role] < 6) { njd[scen, role]++; jd[scen, role] = jd[scen, role] "\n      " role ": " substr($0, 11) }; next }
 /^(A|B|H|HOST) +\|/ {
 	role = $1; line = $0
+	if (match(line, /jumps [0-9]+ \(setup [0-9]+\)/)) { t = substr(line, RSTART + 6, RLENGTH - 6); split(t, jp, " "); js[scen, role] += jp[1] + 0; jset[scen, role] += substr(jp[3], 1, length(jp[3]) - 1) + 0; hasj[scen] = 1 }
 	if (match(line, /climb [AH] [0-9]+% faces [0-9]+ \[[^\]]*\] maxz -?[0-9]+/)) { t = substr(line, RSTART + 8, RLENGTH - 8); sub(/ faces /, " ", t); cl[scen, role] = cl[scen, role] (cl[scen, role] != "" ? " / " : "") t; hascl[scen] = 1 }
 	c[key, role] = num(line, "centre"); d[key, role] = num(line, "depth"); v[key, role] = num(line, "vgap")
 	ra[key, role] = num(line, "react-arrive"); ga[key, role] = num(line, "gap@react")
@@ -51,5 +53,16 @@ END {
 		printf "  %-8s", sc; split("A B H HOST", rr, " ")
 		for (i = 1; i <= 4; i++) if ((sc, rr[i]) in cl) printf " | %s: %s", rr[i], cl[sc, rr[i]]
 		printf "\n"
+	}
+	# jump watch (SimLabJumpWatch): drawn frames over 1500 u/s or 60° on any prop or hunter, any time (between scenarios too —
+	# counted at the next run), outside the lab's own setup teleports. Each screen's count, then its first few details.
+	hdr = 0
+	for (k = 1; k <= nscen; k++) { sc = names[k]; if (!hasj[sc]) continue
+		split("A B H HOST", rr, " ")
+		tot = 0; for (i = 1; i <= 4; i++) tot += js[sc, rr[i]]
+		if (!hdr) { print ""; print "jump watch (frames >1500 u/s or >60 deg on any prop/hunter, outside the lab's setup teleports; per screen: jumps / setup teleports):"; hdr = 1 }
+		printf "  %-12s", sc; for (i = 1; i <= 4; i++) printf " | %s %d / %d", rr[i], js[sc, rr[i]], jset[sc, rr[i]]
+		printf "\n"
+		if (tot > 0) for (i = 1; i <= 4; i++) if (jd[sc, rr[i]] != "") printf "%s\n", substr(jd[sc, rr[i]], 2)
 	}
 }

@@ -23,14 +23,14 @@ namespace Mimiclay;
 // (SimBodyFlags.Present — the host also stops the engine syncing it). Gated by mimi_sim_walk (default OFF).
 //
 // NOT in 2a (falls back to nothing while sim-walking): climbing, mantling, the possession cling, the charades leash's
-// pull-in, released scenery, bodies being held (they leave the sim for the old lend path, like decoys).
+// pull-in, released scenery, bodies being held (later phases brought loose scenery, holds and climbing in).
 public sealed partial class HiderController : ISimShapeSource
 {
 	// Replicated: the host's value is everyone's (only the host's matters — it registers the bodies), so every machine's
 	// readout (DrawSimWalkHud) shows the real setting.
 	// ON by default since 2026-11-05: the sim walk, hold and loose paths are the tested ones (see the networked-physics-authority
-	// notes); off = the old scene-physics walk and the lend-based grab, kept for A/B.
-	[ConVar( "mimi_sim_walk", Flags = ConVarFlags.Replicated, Help = "Players' props, holds and loose props live in the shared sim world (host-authoritative, owner-predicted); 0 = the old scene-physics walk and lend-based grab. Host only." )]
+	// notes); off = the old scene-physics walk and the host-/wearer-simulated grab, kept for A/B.
+	[ConVar( "mimi_sim_walk", Flags = ConVarFlags.Replicated, Help = "Players' props, holds and loose props live in the shared sim world (host-authoritative, owner-predicted); 0 = the old scene-physics walk and host/wearer-simulated grab. Host only." )]
 	public static bool SimWalk { get; set; } = true;
 
 	[ConVar( "mimi_sim_hud", Help = "Show the sim-walk readout (top left) while you control a prop." )]
@@ -253,9 +253,9 @@ public sealed partial class HiderController : ISimShapeSource
 	/// <summary>The launch speed of this prop's jump (HiderController.Walk): the flip's hop (SimDownDriver).</summary>
 	internal float SimHopSpeed => JumpPower * MathF.Sqrt( SizeSpeedScale );
 
-	/// <summary>Is this pawn carried BY THE SIM when grabbed (the hold driver, SimHoldDriver) rather than lent to its holder?
+	/// <summary>Is this pawn carried BY THE SIM when grabbed (the hold driver, SimHoldDriver) rather than the fallback hold (PropClaims.Grab)?
 	/// Every pawn while the sim walk is on — released scenery, players' bodies, bots — except one whose shape is mid-edit on
-	/// its wearer's machine (the lend never took those either).</summary>
+	/// its wearer's machine (the wearer holds those itself).</summary>
 	internal static bool SimHoldApplies( HiderController h )
 		=> SimWalk && h.IsValid() && h.Network.Active && !h.NetEditing;
 
@@ -314,7 +314,7 @@ public sealed partial class HiderController : ISimShapeSource
 	bool SimLooseEligible()
 		=> Network.Active && _body.IsValid() && _collider.IsValid()
 			&& PropClaims.IsReleased( this ) && PropClaims.IsLoose( this ) && !PropClaims.IsFrozen( this ) && !BeingEdited
-			&& !PropClaims.IsLent( GameObject ) && !PropClaims.IsHeldObject( GameObject );
+			&& !PropClaims.IsHeldObject( GameObject );
 
 	/// <summary>Is this pawn a plain rigid body in the sim world right now (loose scenery)?</summary>
 	internal bool SimLoose => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b && b.Spec.Driver == 0;
@@ -347,7 +347,6 @@ public sealed partial class HiderController : ISimShapeSource
 		if ( !_body.IsValid() || !_collider.IsValid() ) return "no disguise collider yet";
 		if ( PropClaims.IsReleased( this ) && !ReleasedWalking ) return "released scenery that's loose, frozen or being sculpted (other physics)";
 		if ( !PropClaims.IsReleased( this ) && Network.Owner is null && !RoundManager.IsBotPawn( GameObject ) ) return "nobody owns it";
-		if ( PropClaims.IsLent( GameObject ) ) return "lent to a holder for a grab";
 		if ( PropClaims.IsHeldObject( GameObject ) ) return "being held";
 		return null;
 	}
@@ -1091,7 +1090,7 @@ public sealed partial class HiderController : ISimShapeSource
 		var h = other.IsValid() ? other.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ) : null;
 		if ( !h.IsValid() || h.SimSystem is not { Active: true } sim || sim.Find( h.GameObject.Id ) is not { } b || !b.ShapesReady )
 			return;
-		if ( PropClaims.IsLent( h.GameObject ) || PropClaims.IsHeldObject( h.GameObject ) )
+		if ( PropClaims.IsHeldObject( h.GameObject ) )
 			return;
 		var self = collision.Self.Body;
 		var pb = h.Body.IsValid() ? h.Body.PhysicsBody : null;

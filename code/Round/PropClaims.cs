@@ -33,16 +33,9 @@ public interface IPropClaimHost
 	bool GrabPlayersAllowed => false;
 
 	/// <summary>Creative's sandbox grab (default): R scales, LMB freezes, grabbed scene clay is CONVERTED into a released
-	/// prop pawn, and a held player body is simulated by its wearer. False = prop hunt's INSPECT grab: carry and turn
-	/// only; scene decoys are held as they are (the host moves their own local body — RoundManager.ShotProps), and a
-	/// held player body is BORROWED by the host for the hold so it moves exactly like a decoy (no extra round-trip
-	/// through its wearer to tell them apart by). See PropClaims.Grab.</summary>
+	/// prop pawn. False = prop hunt's INSPECT grab: carry and turn only; scene decoys are held as they are (RoundManager.Grab).
+	/// See PropClaims.Grab.</summary>
 	bool GrabSandbox => true;
-
-	/// <summary>Is a held prop LENT to the machine holding it (PropClaims.BorrowedBodies) — a player's or bot's body, and
-	/// in creative the released scenery too — so the holder simulates the hold with no round-trip, instead of the host
-	/// (scenery) or the wearer (bodies) doing it? Prop hunt and creative both say yes (mimi_grab_borrow); default off.</summary>
-	bool GrabBorrowsBodies => false;
 
 	/// <summary>The prop-pawn prefab a claimed SCENE prop converts into (read live off scene furniture — a
 	/// NetworkSpawn'd manager's [Property] refs only exist on the host).</summary>
@@ -218,8 +211,7 @@ public sealed partial class PropClaims : Component, IInteractable
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 			return IsReleased( hider ) && (joinEdited || !IsBeingEdited( hider )) // a pawn's body: only once released into the world — and, for a claim, not while people are sculpting it in place
-				&& !IsHeld( hider ) // nor while someone is carrying it around
-				&& !IsLent( hider.GameObject ); // nor while it's lent to a holder settling it (see PropClaims.Grab — ownership is theirs)
+				&& !IsHeld( hider ); // nor while someone is carrying it around
 
 		return IsScenery( sculpture ); // scene-placed clay — claimable by conversion
 	}
@@ -594,10 +586,7 @@ public sealed partial class PropClaims : Component, IInteractable
 	protected override void OnUpdate()
 	{
 		if ( Networking.IsActive && !Networking.IsHost )
-		{
-			SettleGrabScales(); // a holder scaling a prop lent to it commits here (see ApplyLocalGrabScale)
 			return;
-		}
 		SweepEditors();
 		SweepHolders();
 		TickShotKicks(); // creative's shot props (PropClaims.Shot)

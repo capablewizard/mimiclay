@@ -71,6 +71,8 @@ run)
 	LOG="${LABLOG:-$OUT/run_$(date +%Y%m%d_%H%M%S).log}"; echo "# lab run $(date) N=$N dump=$DUMP: $*" > "$LOG"
 	for SCEN in "$@"; do for r in $(seq 1 $N); do
 		echo "##### $SCEN" | tee -a "$LOG"
+		# Every machine's jump watch: the teleports coming up are the lab's own (SimLabJumpWatch counts them apart).
+		PH=""; for p in $HOST $A $B $H; do ( cs $p 20 "return Mimiclay.SimLab.NotePhase(\"setup $SCEN\");" > /dev/null ) & PH="$PH $!"; done; wait $PH
 		OB=$(obs_pid); [ -n "$OB" ] && ( cs $OB 20 "return await Mimiclay.SimLab.Observe(\"$SCEN\");" > /dev/null ) &   # (the observer flies over)
 		echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$( case $SCEN in held|swing|throw|throwplayer) echo park;; *) echo $SCEN;; esac )\", \"$NB\");" | tail -1)" | tee -a "$LOG"
 		echo "  $(cs $HOST 30 "return await Mimiclay.SimLab.Setup(\"$SCEN\", \"$NA\", \"$NB\");" | tail -1)" | tee -a "$LOG"
@@ -81,7 +83,7 @@ run)
 		( cs $B 90 "return await Mimiclay.SimLab.Run(\"$SCEN\", \"B\", \"$NA\", \"$NB\", 6f, $DUMP);" > "$OUT/_o_B.txt" ) &
 		( cs $H 90 "return await Mimiclay.SimLab.Run(\"$SCEN\", \"H\", \"$NA\", \"$NB\", 6f, $DUMP);" > "$OUT/_o_H.txt" ) &
 		wait
-		for R in A B H HOST; do cat "$OUT/_o_$R.txt" >> "$LOG"; head -1 "$OUT/_o_$R.txt" | cut -c1-260; done
+		for R in A B H HOST; do cat "$OUT/_o_$R.txt" >> "$LOG"; head -1 "$OUT/_o_$R.txt" | cut -c1-260; grep "^    jump:" "$OUT/_o_$R.txt" | sed "s/^    /  $R /"; done
 	done; done
 	echo "log: $LOG" ;;
 sum)

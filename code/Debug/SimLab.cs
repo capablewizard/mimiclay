@@ -264,6 +264,7 @@ public static class SimLab
 		var sim = Sim;
 		if ( sim is null || Station( scen ) is null )
 			return $"{role,-4} no sim / no station '{scen}'";
+		SimLabJumpWatch.SetPhase( $"run {scen}" );
 		if ( ClimbScen( scen ) )
 			seconds = role == "HOST" ? 13f : 10f; // (the host starts first and records longer — see lab.sh)
 		var hA = PropOf( nameA ); var hB = PropOf( nameB ); var hL = LooseOf( scen );
@@ -397,7 +398,14 @@ public static class SimLab
 			HunterClimb.DebugVertical = 0f; HunterClimb.DebugMove = null;
 		}
 		SetStatus( $"SimLab · {scen} done\n{RoleName( role )}: waiting for the next scenario" );
-		return Analyse( role, scen, fr, names, ia, ib, pairB, statBox, dump );
+		SimLabJumpWatch.SetPhase( $"idle after {scen}" );
+		// The jump watch's count since the last run joins this line; its detail lines go last (see SimLabJumpWatch).
+		var result = Analyse( role, scen, fr, names, ia, ib, pairB, statBox, dump );
+		var jumps = SimLabJumpWatch.TakeReport();
+		int cut = jumps.IndexOf( '\n' );
+		string head = cut < 0 ? jumps : jumps[..cut], details = cut < 0 ? "" : jumps[cut..];
+		int nl = result.IndexOf( '\n' );
+		return (nl < 0 ? result + head : result[..nl] + head + result[nl..]) + details;
 
 		// What this machine is doing right now, for the on-screen status.
 		string Doing( double t )
@@ -543,6 +551,9 @@ public static class SimLab
 
 	/// <summary>The fake lag lab.sh last set on this client (ms), for the on-screen conditions; null = not set by the lab.
 	/// Compare it with the measured round trip next to it: in one editor session net_fakelag silently stopped applying.</summary>
+	/// <summary>lab.sh, on every machine: what the lab is doing now (the jump watch counts "setup …" teleports apart).</summary>
+	public static string NotePhase( string phase ) { SimLabJumpWatch.SetPhase( phase ); return $"phase {phase}"; }
+
 	public static string FakeLagNote { get; private set; }
 	public static string NoteFakeLag( string ms ) { FakeLagNote = ms; return $"noted fake lag {ms} ms"; }
 

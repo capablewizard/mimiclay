@@ -12,8 +12,7 @@ namespace Mimiclay;
 //
 //  • Registered asleep and UPRIGHT (a push slides it without toppling it, as a pushed player's prop walks). A shot
 //    frees the rotation for good and knocks it in the sim.
-//  • A grabbed decoy LEAVES the sim for the hold (the existing lend path, RoundManager.Grab — Phase 3 brings the hold
-//    in) and comes back where it's put down, carrying its motion.
+//  • A grabbed decoy is carried by the sim's hold driver (RoundManager.Grab, SimHoldDriver) and loose again when put down.
 //  • A split-off piece joins with the motion it breaks off with; a decoy shot away leaves.
 //
 // mimi_sim_decoys 0 = the old behaviour (on-demand shot bodies, pose stream, push RPC), for A/B. Read once per decoy —
@@ -25,14 +24,14 @@ public sealed partial class RoundManager
 
 	SimWorld Sim => Scene.GetSystem<SimWorld>();
 
-	// Host: decoys went into the sim this round (so ones a grab borrowed go back in when put down).
+	// Host: decoys went into the sim this round (so a host-held one outside it joins when put down).
 	bool _simDecoysActive;
 
 	/// <summary>Any machine: is this decoy currently simulated in the sim world?</summary>
 	internal bool DecoyInSim( GameObject go )
 		=> go.IsValid() && Sim is { Active: true } sim && sim.Find( go.Id ) is { } b && b.Spec.Shape == SimShapeKind.FromGameObject;
 
-	// Host, as the Hunt starts: every decoy that isn't busy (held, lent) joins, asleep where it stands.
+	// Host, as the Hunt starts: every decoy that isn't busy (held) joins, asleep where it stands.
 	void RegisterSimDecoys()
 	{
 		if ( !SimDecoys || !IsHostAuthority )
@@ -41,7 +40,7 @@ public sealed partial class RoundManager
 		int n = 0;
 		foreach ( var sculpt in Scene.GetAllComponents<SdfSculpture>().ToList() )
 		{
-			if ( !IsShotDecoy( sculpt ) || IsLentDecoy( sculpt.GameObject ) || PropClaims.IsHeldObject( sculpt.GameObject ) )
+			if ( !IsShotDecoy( sculpt ) || PropClaims.IsHeldObject( sculpt.GameObject ) )
 				continue;
 			// ANCHORED, as decoys always were until something moved them: a magnet on the fridge, a knob on a cabinet door
 			// stays put until it's shot or pushed (without it, 35 of devprophunt's 70 fell off at the first disturbance).

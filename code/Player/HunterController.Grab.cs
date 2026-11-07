@@ -213,11 +213,7 @@ public sealed partial class HunterController
 		// A prop the SIM carries (HiderController.SimHoldApplies): this pose goes out as our sim input every tick, and our own
 		// prediction of the hold answers it at once (SimHoldDriver). The UpdateGrab stream below still carries the scale.
 		SetSimHold( held, new Transform( root, rotation ) );
-		// Here first, for whatever this machine simulates of the hold (a body lent to us, a decoy we predict — see
-		// PropClaims.BorrowedBodies / RoundManager.Grab): this frame's target, no round-trip. Then to the host.
-		PropClaims.Current.SetLocalGrabTarget( held, root, rotation );
-		PropClaims.Current.ApplyLocalGrabScale( held, _grabScale ); // a prop lent to us scales here (no-op otherwise)
-		PropClaims.Current.UpdateGrab( held, root, rotation, _grabScale );
+		PropClaims.Current.UpdateGrab( held, root, rotation, _grabScale ); // the fallback hold's target, and the scale (host)
 
 		PublishGrabHover( held, root + rotation * _grabCentre, body );
 		return true;
@@ -451,10 +447,6 @@ public sealed partial class HunterController
 		EndPredictedGrab( revert: false ); // let go of before the grant: the host's redrive (or its absence) settles it
 		EndSimHold( held );
 		PropClaims.MarkGrabPending( false );
-		PropClaims.Current?.EndLocalGrabScale( held ); // lands a scale we applied ourselves on a lent prop
-		PropClaims.Current?.ClearLocalGrabTarget( held ); // stop holding it here this tick (a throw keeps its swing)
-		if ( freeze )
-			PropClaims.MarkLocalFreeze( held ); // frozen here this tick, not a round-trip later (no little drop)
 		PropClaims.Current?.DropGrab( freeze );
 	}
 

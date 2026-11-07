@@ -50,14 +50,6 @@ public sealed partial class RoundManager
 		if ( KnockSimDecoy( go, hit, dir ) )
 			return;
 
-		// Lent to a client (held, or settling — RoundManager.Grab): that machine simulates it, so the knock goes there.
-		if ( IsLentDecoy( go ) )
-		{
-			float lentMass = MathF.Max( go.Components.Get<SdfCollider>()?.ClayMass ?? 1f, 1f );
-			ApplyLentImpulse( go, hit, dir.Normal * ShotKnockSpeed * lentMass );
-			return;
-		}
-
 		var body = ShotBody( go, simulate: true );
 		if ( !body.IsValid() )
 			return;
@@ -521,8 +513,8 @@ public sealed partial class RoundManager
 		var sculpt = go.IsValid() ? go.Components.Get<SdfSculpture>() : null;
 		if ( PushSimDecoy( go, velocity ) )
 			return; // in the sim world (RoundManager.SimDecoys)
-		if ( !IsShotDecoy( sculpt ) || _shotLoose.Contains( go ) || IsLentDecoy( go ) )
-			return; // already a physics body here (or on the client it's lent to): its own contacts push it from now on
+		if ( !IsShotDecoy( sculpt ) || _shotLoose.Contains( go ) )
+			return; // already a physics body here: its own contacts push it from now on
 
 		var body = ShotBody( go, simulate: true );
 		if ( !body.IsValid() )
@@ -546,14 +538,12 @@ public sealed partial class RoundManager
 			_sinceShotPose = 0f;
 			if ( IsHostAuthority )
 				StreamHostDecoys();
-			else if ( _simDecoy.IsValid() && Networking.IsActive && !EngineSynced( _simDecoy ) )
-				BroadcastShotPose( _simDecoy, _simDecoy.WorldPosition, _simDecoy.WorldRotation ); // lent snapshot decoy: we stream it
 		}
 
 		FollowStreamedDecoys();
 	}
 
-	// Host: the loose decoys it simulates. Lent ones are streamed by their simulator instead (RoundManager.Grab).
+	// Host: the loose decoys it simulates (not the sim's: every machine simulates those).
 	void StreamHostDecoys()
 	{
 		if ( _shotLoose.Count == 0 )
@@ -565,7 +555,7 @@ public sealed partial class RoundManager
 		_shotResting.RemoveWhere( go => !go.IsValid() );
 		foreach ( var go in _shotLoose )
 		{
-			if ( IsLentDecoy( go ) || DecoyInSim( go ) )
+			if ( DecoyInSim( go ) )
 				continue;
 			var body = go.Components.Get<Rigidbody>();
 			bool asleep = !body.IsValid() || body.Sleeping;
@@ -583,7 +573,7 @@ public sealed partial class RoundManager
 		}
 	}
 
-	// Every machine: ease the decoys someone ELSE simulates toward their streamed pose (on the host, only lent ones).
+	// Clients: ease the decoys the host simulates toward their streamed pose.
 	void FollowStreamedDecoys()
 	{
 		if ( _shotTargets.Count == 0 )
@@ -598,8 +588,6 @@ public sealed partial class RoundManager
 				(gone ??= new()).Add( go );
 				continue;
 			}
-			if ( SimulatingLentHere( go ) )
-				continue; // lent to us: our own physics moves it (RoundManager.Grab)
 			go.WorldPosition = Vector3.Lerp( go.WorldPosition, target.Position, t );
 			go.WorldRotation = Rotation.Slerp( go.WorldRotation, target.Rotation, t );
 		}
@@ -612,18 +600,13 @@ public sealed partial class RoundManager
 	[Rpc.Broadcast]
 	void BroadcastShotRest( GameObject go, Vector3 position, Rotation rotation ) => FollowShotPose( go, position, rotation );
 
-	// A pose from whoever simulates the decoy: the host, or the client it's lent to (RoundManager.Grab) — the host follows
-	// those too. Never applied on the machine simulating it, and never from anyone else.
+	// A pose from the host, which simulates the decoy — applied on clients only, and never from anyone else.
 	void FollowShotPose( GameObject go, Vector3 position, Rotation rotation )
 	{
-		if ( !go.IsValid() || SimulatingLentHere( go ) || DecoyInSim( go ) )
+		if ( !go.IsValid() || DecoyInSim( go ) || IsHostAuthority )
 			return;
-		var caller = Rpc.Caller;
-		bool fromSimulator = caller is null
-			? !IsHostAuthority
-			: LentDecoys.TryGetValue( go.Id, out var simulator ) ? simulator == caller.Id : caller.IsHost;
-		if ( !fromSimulator || (IsHostAuthority && !IsLentDecoy( go )) )
-			return; // the host simulates non-lent decoys itself
+		if ( Rpc.Caller is { } caller && !caller.IsHost )
+			return;
 
 		// A kinematic body here either way (so things collide with it properly). The pose itself only for snapshot-only
 		// decoys: a NETWORKED one is moved by the engine's own transform sync from its owner — easing it here too fought

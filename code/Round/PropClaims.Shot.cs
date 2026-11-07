@@ -14,7 +14,7 @@ namespace Mimiclay;
 // the CONVERSION a grab does (ConvertSceneProp → host-owned released scenery, LooseProps = a free rigidbody) — so a
 // shot just does that: the prop becomes released scenery the moment it's hit, and from there the engine's network
 // sync moves it. Possessed props and hunters are never knocked; a frozen prop stays put, and a prop someone's holding
-// (lent to them) or sculpting is left alone.
+// or sculpting is left alone.
 public sealed partial class PropClaims
 {
 	// The released scenery pawn this clay is the disguise of — nobody wearing it — or null.
@@ -24,10 +24,10 @@ public sealed partial class PropClaims
 		return hider.IsValid() && IsReleased( hider ) && hider.DisguiseSculpture == sculpt ? hider : null;
 	}
 
-	// Free to knock: released, and nobody holding, borrowing or sculpting it.
+	// Free to knock: released, and nobody holding or sculpting it.
 	bool ShotFree( HiderController hider )
 	{
-		if ( !hider.IsValid() || !IsReleased( hider ) || IsLent( hider.GameObject ) )
+		if ( !hider.IsValid() || !IsReleased( hider ) )
 			return false;
 		var id = hider.GameObject.Id;
 		return !Held.Values.Contains( id ) && !Editing.Values.Contains( id );
