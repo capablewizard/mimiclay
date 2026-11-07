@@ -29,8 +29,8 @@ public sealed partial class HiderController : ISimShapeSource
 	// Replicated: the host's value is everyone's (only the host's matters — it registers the bodies), so every machine's
 	// readout (DrawSimWalkHud) shows the real setting.
 	// ON by default since 2026-11-05: the sim walk, hold and loose paths are the tested ones (see the networked-physics-authority
-	// notes); off = the old scene-physics walk and the lend-based grab, kept for A/B. Climbing is unavailable while on.
-	[ConVar( "mimi_sim_walk", Flags = ConVarFlags.Replicated, Help = "Players' props, holds and loose props live in the shared sim world (host-authoritative, owner-predicted); 0 = the old scene-physics walk and lend-based grab. Climbing is unavailable while on. Host only." )]
+	// notes); off = the old scene-physics walk and the lend-based grab, kept for A/B.
+	[ConVar( "mimi_sim_walk", Flags = ConVarFlags.Replicated, Help = "Players' props, holds and loose props live in the shared sim world (host-authoritative, owner-predicted); 0 = the old scene-physics walk and lend-based grab. Host only." )]
 	public static bool SimWalk { get; set; } = true;
 
 	[ConVar( "mimi_sim_hud", Help = "Show the sim-walk readout (top left) while you control a prop." )]
@@ -51,7 +51,7 @@ public sealed partial class HiderController : ISimShapeSource
 		{
 			var sim = SimSystem;
 			string lead = sim is not null && !sim.IsAuthority ? $" · predicting {sim.LeadTicks} ticks ahead" : "";
-			state = $"your prop: SIM-WALKING (no climbing){lead}";
+			state = $"your prop: SIM-WALKING{(SimClimbing ? " · CLIMBING" : "")}{lead}";
 			color = Color.Green;
 		}
 		else
@@ -366,7 +366,7 @@ public sealed partial class HiderController : ISimShapeSource
 		foreach ( var h in scene.GetAllComponents<HiderController>() )
 		{
 			var who = h.Network.Owner?.DisplayName ?? "nobody";
-			string state = h.SimWalking ? "SIM-WALKING (climbing unavailable)" : h.SimLoose ? "SIM RIGID BODY (loose)" : $"old walk — {h.SimWalkBlocker() ?? (SimWalk || !host ? "should qualify — not registered yet?" : "mimi_sim_walk is off")}";
+			string state = h.SimWalking ? "SIM-WALKING" : h.SimLoose ? "SIM RIGID BODY (loose)" : $"old walk — {h.SimWalkBlocker() ?? (SimWalk || !host ? "should qualify — not registered yet?" : "mimi_sim_walk is off")}";
 			sb.AppendLine( $"  {h.GameObject.Name} [{who}{(h.IsProxy ? "" : ", simulated here")}]: {state}" );
 		}
 		Log.Info( "\n" + sb );
@@ -410,11 +410,26 @@ public sealed partial class HiderController : ISimShapeSource
 		byte buttons = 0;
 		if ( _jumpQueued )
 			buttons |= SimInput.Jump;
-		if ( IsCrouching )
+		if ( IsCrouching || DebugClimbVertical < 0f )
 			buttons |= SimInput.Duck;
+		if ( Input.Down( "jump" ) || DebugClimbVertical > 0f )
+			buttons |= SimInput.JumpHeld; // the climb's "up", and an air grab's intent (SimClimb)
+		if ( _letGoQueued )
+			buttons |= SimInput.LetGo; // Shift, latched per frame (OnUpdate) — taken by the first tick that reads it
 		_jumpQueued = false;
-		return new SimInput { Wish = new Vector2( wish.x, wish.y ), Buttons = buttons, Turn = ReadSimTurn() };
+		_letGoQueued = false;
+		var move = DebugClimbMove != Vector2.Zero ? DebugClimbMove : new Vector2( Input.AnalogMove.x, Input.AnalogMove.y );
+		move = move.Length > 1f ? move.Normal : move;
+		return new SimInput
+		{
+			Wish = new Vector2( wish.x, wish.y ), Buttons = buttons, Turn = ReadSimTurn(),
+			Move = new Vector2( SimInput.QuantMove( move.x ), SimInput.QuantMove( move.y ) ),
+			ViewYaw = SimInput.QuantYaw( ClimbViewYaw ),
+		};
 	}
+
+	/// <summary>Test harness: the move keys a sim CLIMB reads (x forward, y left), in place of the real ones. Scripts can't hold keys.</summary>
+	public static Vector2 DebugClimbMove { get; set; }
 
 	[ConVar( "mimi_sim_feet_lever", ConVarFlags.Replicated, Help = "Sim walk: where our weight/feet push lands on a prop we stand on: 1 = under the foot (tips it), 0 = its centre of mass." )]
 	public static float SimFeetLever { get; set; } = 1f;
@@ -482,10 +497,24 @@ public sealed partial class HiderController : ISimShapeSource
 		// standing if they weren't (SimCtrl.Driving), whatever a shove has done to their velocity. (Guessing from the velocity
 		// drove a shoved standing prop along at the push speed, far ahead of the host's — see SimCtrl.Driving.) A snapshot without
 		// controller state falls back to the velocity.
-		public SimInput Guess( SimBody body, in SimBodyState latest ) => new()
+		// Climbing: their last keys, view and Space/Ctrl (SimStepClimb keeps them in the Ctrl), repeated.
+		public SimInput Guess( SimBody body, in SimBodyState latest )
 		{
-			Wish = latest.HasCtrl ? latest.Ctrl.Wish : new Vector2( latest.V.x, latest.V.y ), // their real last input, repeated (SimCtrl.Wish)
-		};
+			if ( latest.HasCtrl && latest.Ctrl.Climbing )
+			{
+				var c = latest.Ctrl;
+				return new SimInput
+				{
+					Move = new Vector2( MathF.Round( c.Wish.x ) / 127f, MathF.Round( c.Wish.y ) / 127f ),
+					ViewYaw = c.ClimbYaw,
+					Buttons = (byte)((c.ClimbVertical > 0 ? SimInput.JumpHeld : 0) | (c.ClimbVertical < 0 ? SimInput.Duck : 0)),
+				};
+			}
+			return new()
+			{
+				Wish = latest.HasCtrl ? latest.Ctrl.Wish : new Vector2( latest.V.x, latest.V.y ), // their real last input, repeated (SimCtrl.Wish)
+			};
+		}
 	}
 
 	/// <summary>The walk driver the sim resolves by id (SimWorld.DriverFor) — current code, whatever was registered before.</summary>
@@ -543,6 +572,14 @@ public sealed partial class HiderController : ISimShapeSource
 			pb.Velocity = 0f;
 			c = SimCtrl.Initial;
 			body.Intent = 0f;
+			return;
+		}
+
+		// Climbing (HiderController.SimClimb): the climb runs in place of the walk.
+		SimClimbClock( ref c, input, Ticks( ClimbGrabBuffer ) );
+		if ( c.Climbing )
+		{
+			SimStepClimb( body, sim, ref c, input, tick );
 			return;
 		}
 
@@ -611,6 +648,14 @@ public sealed partial class HiderController : ISimShapeSource
 
 			var flat = v.WithZ( 0f );
 			var target = wish + groundVel.WithZ( 0f );
+			if ( c.MantleTicks > 0 )
+			{
+				// A mantle's carry (SimClimb): finish getting onto the top, whatever the keys say.
+				var md = new Vector3( c.MantleDir.x, c.MantleDir.y, 0f );
+				float ms = SimMantleSpeed, onto = Vector3.Dot( wish, md );
+				if ( onto < ms )
+					target += md * (ms - MathF.Max( onto, 0f ));
+			}
 			var dv = (target - flat) * (1f - MathF.Exp( -GroundControl * dt ));
 			// Pushing against something: how much of last tick's command the contacts took off us, as a LEVEL that rises at
 			// once and falls over PushRelease — and the acceleration cap blends from WalkAccel to WalkPushAccel with it.
@@ -651,10 +696,20 @@ public sealed partial class HiderController : ISimShapeSource
 		{
 			c.Grounded = false;
 			c.PushLevel = (ushort)Math.Max( 0, c.PushLevel - (int)(SimCtrl.PushScale * dt / PushRelease) ); // nothing pushes back in the air
-			float t = 1f - MathF.Exp( -AirControl * dt );
-			var flat = Vector3.Lerp( v.WithZ( 0f ), wish, t );
-			float g = Gravity * (v.z < 0f ? FallGravityMult : 1f);
-			v = flat.WithZ( MathF.Max( v.z - g * dt, -MaxFallSpeed ) );
+			if ( c.MantleTicks > 0 )
+			{
+				// A mantle's carry over the lip (SimClimb): no gravity, in over the top and up to its height until the ground has us.
+				var md = new Vector3( c.MantleDir.x, c.MantleDir.y, 0f );
+				float up = Math.Clamp( (c.MantleZ - pos.z) * RideSpring, 0f, RideMaxLift );
+				v = (md * SimMantleSpeed).WithZ( up );
+			}
+			else
+			{
+				float t = 1f - MathF.Exp( -AirControl * dt );
+				var flat = Vector3.Lerp( v.WithZ( 0f ), wish, t );
+				float g = Gravity * (v.z < 0f ? FallGravityMult : 1f);
+				v = flat.WithZ( MathF.Max( v.z - g * dt, -MaxFallSpeed ) );
+			}
 		}
 
 		pb.Velocity = v;
@@ -673,16 +728,17 @@ public sealed partial class HiderController : ISimShapeSource
 			pb.Velocity = Vector3.Zero;
 		}
 
+		// Climbing (SimClimb): grab a wall or ceiling in the air if the player means to — not mid-mantle (that re-grabbed the
+		// wall just left); Space held on from a mantle grabs a wall ahead, on the ground or still in the carry.
+		if ( !c.Grounded && c.MantleTicks == 0 && SimTryAirGrab( sim, trace, ref c, input, pos, rot, wish, v ) )
+			ClimbLog( body, $"grab (air) n {c.ClimbN:0.00}" );
+		else if ( c.ClimbOn && SimTryGroundGrab( sim, trace, ref c, input, pos, rot, wish ) )
+			ClimbLog( body, $"grab (on from the mantle) n {c.ClimbN:0.00}" );
+
 		// The mouse turn: about the world vertical through the hull's centre, applied to the body directly (its yaw is
 		// locked, so contacts can't turn it). Unlike the scene walk's Turn, not pose-tested against the world: the solver
 		// pushes it back out of anything the turn swings it into. (2a: the pose test needs a sim overlap query.)
-		if ( MathF.Abs( turn ) > 0.001f )
-		{
-			var centre = pos + rot * _hull.Centre;
-			var centreXY = new Vector3( centre.x, centre.y, pos.z );
-			var spin = Rotation.FromAxis( Vector3.Up, turn );
-			pb.Transform = new Transform( centreXY + spin * (pos - centreXY), spin * rot );
-		}
+		SimTurn( pb, pos, rot, turn );
 	}
 
 	// ── Lying DOWN (SimDownDriver): the walk, overturned ────────────────────────────────────────────────────

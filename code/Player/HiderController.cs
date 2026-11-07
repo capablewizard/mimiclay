@@ -649,7 +649,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		TrackHold(); // when a hold on us began (the no-escape window, HiderController.Grabbed)
 
 		// Shift lets go of a climb — latched here so a quick tap can't fall between fixed ticks.
-		if ( _climbing && ControlActive && Input.Pressed( "run" ) )
+		if ( (_climbing || SimClimbing) && ControlActive && Input.Pressed( "run" ) )
 			_letGoQueued = true;
 
 		// Free cam toggle — blocked while editing (the sculpt rig already owns navigation there) or while a

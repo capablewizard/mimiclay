@@ -58,6 +58,34 @@ public struct SimCtrl
 	/// grab), and the body waits where it is.</summary>
 	public bool Holding;
 
+	// ── Climbing (HiderController.SimClimb) — a mode of the walk: every number the climb keeps between ticks ──
+	/// <summary>Stuck to a wall or ceiling (the climb runs in place of the walk).</summary>
+	public bool Climbing;
+	/// <summary>The surface's smoothed normal (away from it), and the last point it was touched (an outer edge pulls toward it).</summary>
+	public Vector3 ClimbN, ClimbP;
+	/// <summary>Ticks without any surface; ticks left of stepping over a bump; ticks a gated reading has lasted; corner cooldown ticks left.</summary>
+	public byte LostTicks, StepOverTicks, GateTicks, CornerCool;
+	/// <summary>The surface the last inner corner took us off (zero = none) and the keys held then (Move ×127, vertical).</summary>
+	public Vector3 CornerLeft;
+	public sbyte CornerMoveX, CornerMoveY, CornerVertical;
+	/// <summary>Under a ceiling reached up a wall: the way out from that wall (Space goes this way). Zero = none.</summary>
+	public Vector3 CeilingOut;
+	/// <summary>Corner carry: the travel direction turned over the last corner (zero = none), the surface we left, the keys held then.</summary>
+	public Vector3 CarryDir, CarryFrom;
+	public sbyte CarryMoveX, CarryMoveY;
+	/// <summary>The climber's last view yaw and Space/Ctrl (what a remote copy repeats while climbing; its move keys ride in
+	/// <see cref="Wish"/>, ×127).</summary>
+	public float ClimbYaw;
+	public sbyte ClimbVertical;
+	/// <summary>Ticks left of the Space press buffer (an air grab wants it), and of the let-go cooldown (only a fresh press grabs).</summary>
+	public byte SpaceBuffer, LetGoCool;
+	/// <summary>A mantle's guided carry over the lip: ticks left, the way in, the root height on top; ClimbOn = Space held on
+	/// from it (a wall ahead is grabbed straight away).</summary>
+	public byte MantleTicks;
+	public Vector2 MantleDir;
+	public float MantleZ;
+	public bool ClimbOn;
+
 	public const ushort Long = 9999;
 	public static readonly SimCtrl Initial = new() { SinceJumpTicks = Long };
 }
@@ -121,7 +149,22 @@ public struct SimInput
 	public Vector3 HoldPos;
 	public Rotation HoldRot;
 
-	public const byte Jump = 1, Duck = 2, Hold = 4;
+	/// <summary>The raw move keys (x forward, y left, -1..1, in steps of 1/127) — the climb maps them by the view.</summary>
+	public Vector2 Move;
+	/// <summary>The camera's yaw (degrees, steps of 0.01) — what the climb's keys and an air grab without steering go by.</summary>
+	public float ViewYaw;
+
+	/// <summary>Jump = Space PRESSED this tick; JumpHeld = held (the climb's "up", a grab's intent); Duck = Ctrl held; LetGo = Shift
+	/// pressed (lets go of a climb).</summary>
+	public const byte Jump = 1, Duck = 2, Hold = 4, JumpHeld = 8, LetGo = 16;
+
+	/// <summary>The wire's precision, applied where the input is made, so the owner predicts from exactly what the host gets.</summary>
+	public static float QuantMove( float v ) => MathF.Round( Math.Clamp( v, -1f, 1f ) * 127f ) / 127f;
+	public static float QuantYaw( float yaw )
+	{
+		yaw = (yaw % 360f + 540f) % 360f - 180f;
+		return MathF.Round( yaw * 100f ) / 100f;
+	}
 	public bool Has( byte button ) => (Buttons & button) != 0;
 
 	public static readonly SimInput None = default;

@@ -368,13 +368,15 @@ public sealed partial class SimWorld
 	void SendInputs()
 	{
 		int first = Math.Max( Tick - InputRedundancy + 1, 0 );
-		using var ms = new MemoryStream( 1 + InputRedundancy * 26 );
+		using var ms = new MemoryStream( 1 + InputRedundancy * 30 );
 		using var w = new BinaryWriter( ms );
 		w.Write( (byte)(Tick - first + 1) );
 		for ( int t = first; t <= Tick; t++ )
 		{
 			var i = _myInputs.TryGetValue( t, out var x ) ? x : SimInput.None;
 			w.Write( i.Wish.x ); w.Write( i.Wish.y ); w.Write( i.Buttons ); w.Write( i.Turn );
+			w.Write( (sbyte)MathF.Round( i.Move.x * 127f ) ); w.Write( (sbyte)MathF.Round( i.Move.y * 127f ) ); // (already on these steps: SimInput.QuantMove)
+			w.Write( (short)MathF.Round( i.ViewYaw * 100f ) );
 			if ( i.Has( SimInput.Hold ) )
 			{
 				SimQuant.WritePos( w, i.HoldPos ); // a carried prop's target (SimHoldDriver): 13 bytes, only while holding
@@ -406,6 +408,8 @@ public sealed partial class SimWorld
 		for ( int i = 0; i < n; i++ )
 		{
 			var input = new SimInput { Wish = new Vector2( r.ReadSingle(), r.ReadSingle() ), Buttons = r.ReadByte(), Turn = r.ReadSingle() };
+			input.Move = new Vector2( r.ReadSByte() / 127f, r.ReadSByte() / 127f );
+			input.ViewYaw = r.ReadInt16() / 100f;
 			if ( input.Has( SimInput.Hold ) )
 			{
 				input.HoldPos = SimQuant.ReadPos( r );

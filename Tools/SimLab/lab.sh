@@ -15,12 +15,17 @@ HERE="$(cd "$(dirname "$0")" && pwd)"; HERE_W="$(cygpath -m "$HERE")"
 OUT="$HERE/out"; OUT_W="$HERE_W/out"; mkdir -p "$OUT"
 STATE="$OUT/state.txt"
 SBOX="${SBOX_DIR:-D:/SteamLibrary/steamapps/common/sbox}"; CLI="$SBOX/bin/managed/sbox-cli.exe"
-ALL="loose static push headon held swing throw jump lying wall ledge pushwall twopush throwplayer"
+ALL="loose static push headon held swing throw jump lying wall ledge pushwall twopush throwplayer climb corner inner hcorner"
 
 host_pid() { "$CLI" --list 2>&1 | tr -d '\r' | awk '/"pid"/{gsub(/[^0-9]/,"",$0); pid=$0} /"kind": "editor"/{print pid; exit}'; }
 # run C# in an instance: cs PID TIMEOUT 'code' → the script's return value (all lines)
 cs() { local f="$OUT/_cs_$1_$RANDOM.cs"; printf '%s\n' "$3" > "$f"; "$CLI" --connect $1 --request-timeout $2 --call run_csharp "{\"path\":\"$(cygpath -m "$f")\"}" 2>&1 | tr -d '\r' | grep -v '^$'; rm -f "$f"; }
 load_state() { [ -f "$STATE" ] || { echo "no cast yet: run '$0 cast'"; exit 1; }; source "$STATE"; HOST=$(host_pid); }
+# GAME clients only (kind "game"), never the editor: listing pids of every kind once picked up the editor as a client (it
+# was missing from the list while it hotloaded), and the next cast or close would have force-killed the editor.
+game_pids() { "$CLI" --list 2>&1 | tr -d '\r' | awk '/"pid"/{gsub(/[^0-9]/,"",$0); pid=$0} /"kind": "game"/{print pid}'; }
+# Kill a test client: only if that pid is a running sbox.exe (a game client) - never the editor (sbox-dev.exe) or anything else.
+kill_client() { [ -n "${1:-}" ] && tasklist //FI "PID eq $1" //FI "IMAGENAME eq sbox.exe" 2>/dev/null | grep -q " $1 " && taskkill //PID $1 //F > /dev/null 2>&1; }
 OBSF="$OUT/observer.txt"   # the observer client's pid (lab.sh watch), if one is running
 obs_pid() { [ -f "$OBSF" ] && cat "$OBSF"; }
 
@@ -33,10 +38,10 @@ open)
 	for i in $(seq 1 30); do sleep 3; st=$(cs $HOST 20 'return $"scene {Game.ActiveScene?.Name} net {Networking.IsActive} host {Networking.IsHost} stations {Game.ActiveScene?.GetAllObjects(true).Count(g => g.Name.StartsWith("SimLab."))}";'); echo "$st" | grep -q "net True" && break; done
 	echo "host: $st" ;;
 cast)
-	[ -f "$STATE" ] && { source "$STATE"; for p in ${A:-} ${B:-} ${H:-}; do taskkill //PID $p //F > /dev/null 2>&1; done; sleep 3; }
-	before=" $("$CLI" --list 2>&1 | tr -d '\r' | grep '"pid"' | grep -oE '[0-9]+' | tr '\n' ' ') "
+	[ -f "$STATE" ] && { source "$STATE"; for p in ${A:-} ${B:-} ${H:-}; do kill_client $p; done; sleep 3; }
+	before=" $(game_pids | tr '\n' ' ') "
 	for id in 97 98 99; do powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','$id','-sw','-720','-mcp' -WorkingDirectory '$SBOX'"; sleep 2; done
-	new=""; for i in $(seq 1 80); do sleep 3; new=""; for p in $("$CLI" --list 2>&1 | tr -d '\r' | grep '"pid"' | grep -oE '[0-9]+'); do case "$before" in *" $p "*) ;; *) new="$new $p";; esac; done; [ $(echo $new | wc -w) -ge 3 ] && break; done
+	new=""; for i in $(seq 1 80); do sleep 3; new=""; for p in $(game_pids); do case "$before" in *" $p "*) ;; *) new="$new $p";; esac; done; [ $(echo $new | wc -w) -ge 3 ] && break; done
 	set -- $new; A=$1; B=$2; H=$3
 	for i in $(seq 1 80); do ok=0; for p in $A $B $H; do cs $p 15 'return $"hunters {Game.ActiveScene?.GetAllComponents<Mimiclay.HunterController>().Count()} net {Networking.IsActive}";' | grep -q "hunters [1-9] net True" && ok=$((ok+1)); done; [ $ok -eq 3 ] && break; sleep 5; done
 	sleep 5
@@ -82,15 +87,15 @@ run)
 sum)
 	LOG="${2:-$(ls -t "$OUT"/run_*.log 2>/dev/null | head -1)}"; awk -f "$HERE/lab_sum.awk" "$LOG" ;;
 close)
-	OB=$(obs_pid); [ -n "$OB" ] && taskkill //PID $OB //F > /dev/null 2>&1; rm -f "$OBSF"
-	load_state; for p in $A $B $H; do taskkill //PID $p //F > /dev/null 2>&1; done; rm -f "$STATE"; echo "closed" ;;
+	OB=$(obs_pid); [ -n "$OB" ] && kill_client $OB; rm -f "$OBSF"
+	load_state; for p in $A $B $H; do kill_client $p; done; rm -f "$STATE"; echo "closed" ;;
 watch)
 	# An OBSERVER: a fourth client (not an actor; nothing it sees is recorded) whose free cam - the creative ghost - flies
 	# to each scenario's station as the run reaches it. Start it any time, even during a run; 'close' closes it too.
-	OB=$(obs_pid); [ -n "$OB" ] && { taskkill //PID $OB //F > /dev/null 2>&1; sleep 2; }
-	before=" $("$CLI" --list 2>&1 | tr -d '\r' | grep '"pid"' | grep -oE '[0-9]+' | tr '\n' ' ') "
+	OB=$(obs_pid); [ -n "$OB" ] && { kill_client $OB; sleep 2; }
+	before=" $(game_pids | tr '\n' ' ') "
 	powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','96','-sw','-720','-mcp' -WorkingDirectory '$SBOX'"
-	OB=""; for i in $(seq 1 80); do sleep 3; for p in $("$CLI" --list 2>&1 | tr -d '\r' | grep '"pid"' | grep -oE '[0-9]+'); do case "$before" in *" $p "*) ;; *) OB=$p;; esac; done; [ -n "$OB" ] && break; done
+	OB=""; for i in $(seq 1 80); do sleep 3; for p in $(game_pids); do case "$before" in *" $p "*) ;; *) OB=$p;; esac; done; [ -n "$OB" ] && break; done
 	[ -z "$OB" ] && { echo "observer never started"; exit 1; }
 	for i in $(seq 1 80); do cs $OB 15 'return $"hunters {Game.ActiveScene?.GetAllComponents<Mimiclay.HunterController>().Count()} net {Networking.IsActive}";' | grep -q "hunters [1-9] net True" && break; sleep 5; done
 	echo $OB > "$OBSF"

@@ -69,6 +69,22 @@ public sealed class HunterClimb : MoveMode
 	/// machines read <see cref="ClingingNet"/>.</summary>
 	public bool IsClinging => _climbing;
 
+	/// <summary>Test harness (SimLab): the move keys while climbing (x forward, y left), in place of the real ones.</summary>
+	public static Vector3? DebugMove { get; set; }
+
+	// SimLab: the surface's normal, and a grab of the wall the hunter faces from where it stands (no jump needed).
+	internal Vector3 LabNormal => _n;
+	internal bool LabGrab()
+	{
+		var dir = Rotation.FromYaw( Controller.EyeAngles.yaw ).Forward;
+		var pos = WorldPosition + Vector3.Up * 4f;
+		var tr = Sweep( pos - dir * BackOff, pos + dir * 64f );
+		if ( !tr.Hit || tr.StartedSolid || Walkable( tr.Normal ) || Ceiling( tr.Normal ) || !Climbable( tr ) )
+			return false;
+		StartClimb( tr.Normal, tr.HitPosition, "lab", gap: MathF.Max( tr.Distance - BackOff, 0f ) );
+		return true;
+	}
+
 	/// <summary>IsClinging as every machine sees it (the owner writes it each tick): the climb scrape sound runs on all.</summary>
 	[Sync] public bool ClingingNet { get; private set; }
 
@@ -104,6 +120,14 @@ public sealed class HunterClimb : MoveMode
 	Vector3 _cornerMove;
 	float _cornerVertical;
 	RealTimeSince _sinceCorner = 999f;
+
+	// Outer corners (new, user 2026-11-07): round the end of a wall onto the face beyond it (TryWrapOuterCorner), the travel
+	// turned over the edge and CARRIED while the same keys stay held — on the new face the look no longer runs along it (you
+	// were looking along the old one, which is now straight away from the new one: W read as "pull away" and let go).
+	Vector3? _carryDir;
+	Vector3 _carryMove;
+	Vector3 _carryFrom;
+	const float WrapReach = 18f;
 	float _stepOver;
 	float _blockedUp; // seconds climbing up but held back by something overhead (see StepOutUnder)
 
@@ -325,6 +349,7 @@ public sealed class HunterClimb : MoveMode
 		_sinceSurface = 0f;
 		_gated = 0f;
 		_cornerLeft = null;
+		_carryDir = null;
 		_stepOver = 0f;
 		_pullAway = 0f;
 		_letGoQueued = false;
@@ -355,13 +380,28 @@ public sealed class HunterClimb : MoveMode
 		if ( !_climbing || _mantling )
 			return Vector3.Zero;
 
-		var move = input.ClampLength( 1f );
+		var move = (DebugMove ?? input).ClampLength( 1f );
 		float yaw = eyes.Angles().yaw;
 		float vertical = (Input.Down( "jump" ) ? 1f : 0f) - (Input.Down( "duck" ) ? 1f : 0f);
 		if ( DebugVertical != 0f )
 			vertical = Math.Clamp( DebugVertical, -1f, 1f );
 
 		var wasd = ClimbRules.Along( yaw, move, _n, ClimbSpeed, lookAlong: true ); // look down the wall, W walks along it
+		bool carrying = false;
+		if ( _carryDir is { } carry )
+		{
+			if ( !move.IsNearZeroLength && Vector3.Dot( move.Normal, _carryMove.Normal ) > 0.95f && Vector3.Dot( _n, _carryFrom ) <= 0.97f )
+			{
+				var flat = carry - _n * Vector3.Dot( carry, _n );
+				if ( !flat.IsNearZeroLength )
+				{
+					wasd = flat.Normal * ClimbSpeed * MathF.Min( move.Length, 1f );
+					carrying = true;
+				}
+			}
+			else
+				_carryDir = null; // new keys (or back on a face like the one we left): the look has W/S again
+		}
 		var climbUp = ClimbRules.Vertical( vertical, _n, Vector3.Zero, ClimbSpeed );
 
 		if ( _cornerLeft is { } left )
@@ -380,6 +420,8 @@ public sealed class HunterClimb : MoveMode
 		// the wall, or W with your back to it. Looking along the wall they just walk along it (user, 2026-11-01).
 		var flatN = _n.WithZ( 0f );
 		_away = flatN.IsNearZeroLength ? 0f : move.x * Vector3.Dot( Rotation.FromYaw( yaw ).Forward, flatN.Normal );
+		if ( carrying )
+			_away = 0f; // (the carried keys go round the corner, not away from the new face)
 		_vertical = vertical;
 		_cornerMove = move;
 		_along = wasd + climbUp;
@@ -535,6 +577,29 @@ public sealed class HunterClimb : MoveMode
 			}
 		}
 
+		// Still nothing, going sideways: round an outer corner onto the face beyond the wall's end.
+		if ( !tr.Hit && !_embedded && _sinceCorner >= CornerCooldown && MathF.Abs( _n.z ) < 0.7f && TryWrapOuterCorner( pos, out var face ) )
+		{
+			var turnOver = Rotation.FromToRotation( _n, face.Normal );
+			var flatAlong = (_along - _n * Vector3.Dot( _along, _n )).WithZ( 0f );
+			if ( !_cornerMove.IsNearZeroLength && !flatAlong.IsNearZeroLength )
+			{
+				_carryDir = turnOver * flatAlong.Normal;
+				_carryMove = _cornerMove;
+				_carryFrom = _n;
+			}
+			if ( DebugClimb )
+				Log.Info( $"[hunter climb] outer corner {_n:0.00} → {face.Normal:0.00} on {face.GameObject?.Name}" );
+			_cornerLeft = null;
+			_n = face.Normal;
+			_point = face.HitPosition;
+			_gap = 0f;
+			_surface = false; // swung round by the edge pull until the new face is under us
+			_sinceSurface = 0f;
+			_sinceCorner = 0f;
+			return;
+		}
+
 		_surface = (tr.Hit && Climbable( tr )) || _embedded;
 		if ( tr.Hit && Climbable( tr ) )
 		{
@@ -566,6 +631,27 @@ public sealed class HunterClimb : MoveMode
 			EndClimb( "surface became ground" );
 		else if ( Ceiling( _n ) )
 			EndClimb( "surface became a ceiling" ); // e.g. wrapped round an outer edge onto an underside
+	}
+
+	// Going sideways along a wall (normal _n, the travel's level part d) that has ended: the face beyond its end that turns
+	// away — facing roughly d. The body is placed a little past the end and half its width deeper than the old face (so
+	// it overlaps the new face's depth however narrow — a thin panel's end too), then swept BACK along -d.
+	bool TryWrapOuterCorner( Vector3 pos, out SceneTraceResult face )
+	{
+		face = default;
+		var d = (_along - _n * Vector3.Dot( _along, _n )).WithZ( 0f );
+		if ( d.Length < 5f )
+			return false;
+		d = d.Normal;
+		float depth = Controller.BodyRadius * 0.5f + 2f; // (BodyRadius is the body's full width)
+		var probe = pos + d * 2f - _n * depth;
+		var tr = SenseSweep( probe, probe - d * (2f + WrapReach) );
+		if ( !tr.Hit || tr.StartedSolid || !Climbable( tr ) || Walkable( tr.Normal ) || MathF.Abs( tr.Normal.z ) > 0.7f )
+			return false;
+		if ( Vector3.Dot( tr.Normal, d ) < 0.5f || Vector3.Dot( tr.Normal, _n ) > 0.7f )
+			return false;
+		face = tr;
+		return true;
 	}
 
 	// Inner corners: moving into a different surface — it takes over (ground ends the climb), or it's a bump we step over.

@@ -10,6 +10,7 @@ function num(s, key,   r) { if (match(s, key " -?[0-9.]+")) { r = substr(s, RSTA
 /^##### / { scen = $2; run[scen]++; key = scen SUBSEP run[scen]; order[scen] = order[scen] ? order[scen] : ++nscen; names[nscen] = names[nscen] ? names[nscen] : scen; next }
 /^(A|B|H|HOST) +\|/ {
 	role = $1; line = $0
+	if (match(line, /climb [AH] [0-9]+% faces [0-9]+ \[[^\]]*\] maxz -?[0-9]+/)) { t = substr(line, RSTART + 8, RLENGTH - 8); sub(/ faces /, " ", t); cl[scen, role] = cl[scen, role] (cl[scen, role] != "" ? " / " : "") t; hascl[scen] = 1 }
 	c[key, role] = num(line, "centre"); d[key, role] = num(line, "depth"); v[key, role] = num(line, "vgap")
 	ra[key, role] = num(line, "react-arrive"); ga[key, role] = num(line, "gap@react")
 	if (match(line, / A mv +[0-9]+/)) { t = substr(line, RSTART, RLENGTH); gsub(/[^0-9]/, "", t); mv[key, role] = t + 0 }
@@ -42,5 +43,13 @@ END {
 			rr_ = ran[sc, r] ? sprintf("%5.0f/%4.0f", rasum[sc, r] / ran[sc, r], gasum[sc, r] / (gan[sc, r] ? gan[sc, r] : 1)) : "    -"
 			printf " | %5.1f/%5.1f %6.1f %s %5d %2d %s", dmax[sc, r], (cnt[sc, r] ? dsum[sc, r] / cnt[sc, r] : 0), cmax[sc, r], vg, dv[sc, r], bl[sc, r], rr_ }
 		printf " | %5d %s  %d (%d invalid)\n", dv[sc, "HOST"], (ran[sc, "HOST"] ? sprintf("%5.0f", rasum[sc, "HOST"] / ran[sc, "HOST"]) : "    -"), run[sc], bad[sc]
+	}
+	# climbing: per screen, each run's "A|H <climbing %> <faces> [faces in order] maxz <highest>" (the host's line is the truth)
+	hdr = 0
+	for (k = 1; k <= nscen; k++) { sc = names[k]; if (!hascl[sc]) continue
+		if (!hdr) { print ""; print "climbing (per run: who climbs, % of frames climbing, faces climbed [in order], highest z):"; hdr = 1 }
+		printf "  %-8s", sc; split("A B H HOST", rr, " ")
+		for (i = 1; i <= 4; i++) if ((sc, rr[i]) in cl) printf " | %s: %s", rr[i], cl[sc, rr[i]]
+		printf "\n"
 	}
 }

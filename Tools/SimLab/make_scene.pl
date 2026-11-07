@@ -69,6 +69,12 @@ my @stations = (
 	[ pushwall    => { L => [0, 0], A => [0, -280], 'A.to' => [0, 600] }, [ [ 'box', 'Wall', [300, 20, 120], [0, 260, 60] ] ] ],
 	[ twopush     => { L => [0, 0], A => [0, -250], 'A.to' => [0, 400], B => [0, 250], 'B.to' => [0, -400] }, [] ],
 	[ throwplayer => { H => [0, 250], B => [0, 110], A => [88, -10] }, [] ],
+	# climbing (2026-11-07): a wall to climb and mantle, a pillar to climb round (outer corners), an L of walls (inner), a pillar for the hunter.
+	# An optional 4th element is the station's origin (the grid's last row is where the park's strays go).
+	[ climb       => { A => [0, -150], 'A.to' => [0, 150] }, [ [ 'box', 'Wall', [300, 60, 110], [0, 150, 55] ] ] ],
+	[ corner      => { A => [0, -220], 'A.to' => [0, 0] }, [ [ 'box', 'Pillar', [100, 100, 260], [0, 0, 130] ] ], [-1350, 2700] ],
+	[ inner       => { A => [0, -120], 'A.to' => [0, 150] }, [ [ 'box', 'WallA', [300, 30, 220], [0, 150, 110] ], [ 'box', 'WallB', [30, 330, 220], [165, 0, 110] ] ], [-450, 2700] ],
+	[ hcorner     => { H => [0, -100] }, [ [ 'box', 'Pillar', [120, 120, 300], [0, 0, 150] ] ], [450, 2700] ],
 );
 
 my @gos;
@@ -89,8 +95,8 @@ push @gos, $spawns;
 
 my $i = 0;
 for my $st (@stations) {
-	my ($name, $markers, $statics) = @$st;
-	my ($ox, $oy) = ($grid_x[$i % 4], $grid_y[int($i / 4)]); $i++;
+	my ($name, $markers, $statics, $origin) = @$st;
+	my ($ox, $oy) = $origin ? @$origin : ($grid_x[$i % 4], $grid_y[int($i / 4)]); $i++;
 	my $sgo = empty_go("SimLab.$name", $ox, $oy, 0);
 	$markers->{Hobs} //= [300, -100];
 	for my $m (sort keys %$markers) { push @{$sgo->{Children}}, empty_go($m, @{$markers->{$m}}, 0); }

@@ -45,7 +45,8 @@ and 1200u in y; the centre of the floor is the spawn:
 | −1800 | loose | static | push | headon |
 | −600 | held | swing | throw | jump |
 | 600 | lying | wall | ledge | pushwall |
-| 1800 | twopush | throwplayer | | |
+| 1800 | twopush | throwplayer | climb | |
+| 2700 | corner | inner | hcorner | |
 
 **From Git Bash:**
 
@@ -86,6 +87,10 @@ run skips a scenario that fails and stops after three failures in a row).
 | `pushwall` | A pushes a football into a wall and keeps pressing | A–L |
 | `twopush` | A and B push one football from opposite sides | A–L |
 | `throwplayer` | H grabs B and throws B at A | B–A (+ hit timeline) |
+| `climb` | A jumps at a wall, climbs it (Space) and mantles onto the top | A–wall (+ climb) |
+| `corner` | A grabs a pillar, climbs up, then sideways (D) round its OUTER corners | A–pillar (+ climb) |
+| `inner` | A grabs a wall, climbs up, then sideways into an INNER corner and on along the other wall | A–wall (+ climb) |
+| `hcorner` | H (a hunter) grabs a pillar, climbs up, then sideways round its outer corners | (+ climb, on H only) |
 
 ## Reading the summary
 
@@ -96,6 +101,7 @@ Per scenario and screen (A, B, H), each against the host's line of the same run:
 - **vgap+** — landings only: how much lower the screen draws the lander on what it landed on.
 - **dv / blips** — the worst frame-to-frame velocity jump of any watched body (u/s), and frames over 1500 u/s.
 - **r-a / gap** — throws: the target's drawn reaction minus the projectile's drawn arrival (ms; negative = it reacts first), and the drawn box gap between them at that reaction (u; negative = still apart). The raw log also has the tick-stamped timeline per screen: release seen, copy hit, drawn reaction, drawn arrival.
+- **climb** — climbing scenarios: per screen and run, who climbs, the share of frames it was climbing, how many faces it climbed and which (by the way each faces: -y, +x, ...), and the highest point reached. The host's line is the truth; a client that shows fewer faces drew its climb differently.
 
 Walker hulls float ~19u above the feet, so absolute vertical gaps carry that offset — compare with the host, never read them alone.
 A run whose host recording missed the motion (the editor ran the script late) is dropped as invalid.
@@ -115,3 +121,14 @@ Known limits:
 - **Remote throws at high ping**: the target predicts the hit at the right tick, but learns of the release a lead late. At ~115 ms the released prop now switches to the prediction straight away (`mimi_sim_release_predict`) and arrives within ~30u of the target when it reacts (it was ~80u). At ~310 ms the release arrives about when the prop lands, so it stays ~130–200u short.
 - **Throws**: one or two frames around 1700 u/s on the target when it is knocked.
 - **loose** at ~310 ms: onlookers draw the pushed football ~25u further ahead of A than the host has it (apart, not overlapping).
+
+## Climbing results (2026-11-07)
+
+At ~115, ~190 and ~290 ms round trip, every screen draws the climber within 2u of the host (`climb`, `corner`, `inner`):
+- `climb`: grabs on the jump, climbs and mantles onto the top on every screen.
+- `corner`: the host and the climber's own screen go a full lap round the pillar (-y, +x, +y, -x, -y) in 8 s.
+- `inner`: turns the inner corner onto the second wall, then wraps round that wall's 30u end onto its back.
+- `hcorner`: the hunter climbs 10 faces (more than two laps) in 9 s.
+
+Onlookers' copies of a climber switch faces back and forth internally (9–19 "faces" in the report) but are drawn on the host's track.
+At ~190 ms onlookers used to draw a mantle up to ~20–30u above the top for a moment. The cause was the snapshot nudge (SimWorld.NudgeRemote), which carried a climber straight up past the top at climb speed × the lead. Since the fix (SimWorld.ClimbCarry: height only, never past the surface; a mantle's carry stops at its MantleZ), every screen tops out at the host's 109: 3/3 runs at ~190 ms and 9/10 at ~290 ms, with one run at 124. Limiting the sideways carry as well caused 28000 u/s snaps in `inner` (the copy waited at the panel end while the host wrapped), so only the height is limited.

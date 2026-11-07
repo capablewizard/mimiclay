@@ -506,7 +506,8 @@ public sealed partial class SimWorld
 				// and a walking one INSIDE whatever it was walking into, and the physics then shoved it back out — "they fall
 				// through the floor briefly / penetrate each other before springing back" (user, 2026-11-05).
 				float t = Dt * n;
-				bool airborne = a.HasCtrl && !a.Ctrl.Grounded;
+				bool climbing = a.HasCtrl && a.Ctrl.Climbing, mantling = a.HasCtrl && a.Ctrl.MantleTicks > 0;
+				bool airborne = a.HasCtrl && !a.Ctrl.Grounded && !climbing && !mantling; // (a climber has no gravity: carried on along its climb; nor has a mantle's carry)
 				var vel = a.V;
 				var to = a.P + vel * t;
 				if ( airborne )
@@ -514,6 +515,14 @@ public sealed partial class SimWorld
 					to += Vector3.Down * (0.5f * WalkGravity * t * t);
 					st.V = vel + Vector3.Down * (WalkGravity * t);
 				}
+				if ( mantling && to.z > a.Ctrl.MantleZ )
+				{
+					// The mantle's carry rises to the top it found and no further (HiderController.SimStep's air branch).
+					to.z = MathF.Max( a.P.z, a.Ctrl.MantleZ );
+					st.V = st.V.WithZ( 0f );
+				}
+				if ( climbing )
+					to = ClimbCarry( b, a, to );
 				// Its shapes along the path (another prop in the way), AND its root's own path: a walker's sim shape is the floating hull,
 				// whose bottom sits a step above the root, so the shape sweep alone let the root sink up to that step below the floor
 				// (measured 9u under, 39 frames, on a landing).
@@ -550,6 +559,40 @@ public sealed partial class SimWorld
 		}
 	}
 
+	// A climber is carried UP its climb only while there's still something to climb beside it: past the top it stops at the
+	// highest point that has some, and the copy's own climb takes it from there (mantles over). Carried straight on, it rose
+	// climb speed × our lead past the top: onlookers saw a mantling prop drawn up to 23u above the wall (SimLab climb, ~190 ms).
+	// Only the height is held back: holding a sideways carry at the end of a wall too left the copy at the edge while the host
+	// wrapped round it, and the next snapshot snapped it round the corner (28000 u/s jumps, SimLab inner at ~290 ms).
+	const float ClimbProbe = 16f; // how far toward the surface a carried climber looks for it (u)
+	Vector3 ClimbCarry( SimBody b, in SimBodyState a, Vector3 to )
+	{
+		if ( to.z <= a.P.z )
+			return to;
+		var n = a.Ctrl.ClimbN;
+		var rot = a.R;
+		var trace = Trace.WithoutTags( SelfTag( b ) );
+		var phys = b.Phys;
+		bool OnSurface( Vector3 p )
+		{
+			var tr = trace.Sweep( phys, new Transform( p + n * 2f, rot ), new Transform( p - n * ClimbProbe, rot ) ).Run();
+			return tr.Hit || tr.StartedSolid;
+		}
+		if ( OnSurface( to ) )
+			return to; // still beside the surface
+		if ( !OnSurface( a.P ) )
+			return to.WithZ( a.P.z ); // already off it at the host (past the top, about to mantle or let go): no higher
+		if ( !OnSurface( to.WithZ( a.P.z ) ) )
+			return to; // off its side (rounding a corner): the carry is left as it was
+		float lo = a.P.z, hi = to.z;
+		for ( int i = 0; i < 4; i++ )
+		{
+			float mid = (lo + hi) * 0.5f;
+			if ( OnSurface( to.WithZ( mid ) ) ) lo = mid; else hi = mid;
+		}
+		return to.WithZ( lo );
+	}
+
 	// Host state for tick s onto the bodies: snapshot ones exactly; ones it left out are asleep at their rest pose.
 	void ApplyAuthority( Dictionary<ushort, SimBodyState> auth )
 	{
@@ -565,6 +608,8 @@ public sealed partial class SimWorld
 	// True while a rollback re-simulates (Rollback): the drive changes it re-applies (a history state's drive, the drive log)
 	// already happened live once - ApplyRedrive leaves the drawing state alone for them (see there).
 	bool _replaying;
+	/// <summary>Inside a rollback replay (debug logs skip these — the same ticks again).</summary>
+	public bool Replaying => _replaying;
 
 	void Rollback( int s, Dictionary<ushort, SimBodyState> auth )
 	{

@@ -376,7 +376,10 @@ public sealed partial class HiderController
 	}
 
 	// WASD while climbing: sideways and in depth by the camera, W into the wall (see ClimbRules, shared with hunters).
-	float ClimbViewYaw => _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw;
+	float ClimbViewYaw => DebugClimbYaw ?? (_orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw);
+
+	/// <summary>Test harness: the camera yaw the climb maps its keys by (sim climb input), in place of the camera's.</summary>
+	public static float? DebugClimbYaw { get; set; }
 	Vector3 ClimbAlong( Vector3 move, Vector3 n ) => ClimbRules.Along( ClimbViewYaw, move, n, ScaledClimbSpeed );
 	float ClimbInto( Vector3 move, Vector3 n ) => ClimbRules.Into( ClimbViewYaw, move, n );
 

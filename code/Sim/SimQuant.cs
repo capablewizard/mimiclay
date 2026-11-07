@@ -104,28 +104,104 @@ public static class SimQuant
 	}
 
 	// A driven body's controller state: flags byte, still ticks, two tick counters, the commanded velocity (12 bytes).
+	// (+2 bytes: the grab buffer and let-go cooldown; a climbing body adds its climb block, ~30–60 bytes; a mantle 9.)
 	public static void WriteCtrl( BinaryWriter w, in SimCtrl c )
 	{
-		w.Write( (byte)((c.Grounded ? 1 : 0) | (c.Parked ? 2 : 0) | (c.AirFromJump ? 4 : 0) | (c.Holding ? 8 : 0) | (c.Driving ? 16 : 0)) );
+		w.Write( (byte)((c.Grounded ? 1 : 0) | (c.Parked ? 2 : 0) | (c.AirFromJump ? 4 : 0) | (c.Holding ? 8 : 0) | (c.Driving ? 16 : 0)
+			| (c.Climbing ? 32 : 0) | (c.MantleTicks > 0 ? 64 : 0) | (c.ClimbOn ? 128 : 0)) );
 		w.Write( c.StillTicks );
 		w.Write( c.SinceJumpTicks );
 		w.Write( c.PushLevel );
 		WriteLinear( w, c.Commanded );
 		w.Write( (short)Math.Clamp( c.Wish.x * 8f, short.MinValue, short.MaxValue ) ); // the real last wish, 1/8 u/s
 		w.Write( (short)Math.Clamp( c.Wish.y * 8f, short.MinValue, short.MaxValue ) );
+		w.Write( c.SpaceBuffer );
+		w.Write( c.LetGoCool );
+		if ( c.Climbing )
+		{
+			WriteUnit( w, c.ClimbN );
+			WritePos( w, c.ClimbP );
+			w.Write( c.LostTicks ); w.Write( c.StepOverTicks ); w.Write( c.GateTicks ); w.Write( c.CornerCool );
+			bool left = c.CornerLeft != Vector3.Zero, ceil = c.CeilingOut != Vector3.Zero, carry = c.CarryDir != Vector3.Zero;
+			w.Write( (byte)((left ? 1 : 0) | (ceil ? 2 : 0) | (carry ? 4 : 0)) );
+			w.Write( (short)MathF.Round( QuantYawOf( c.ClimbYaw ) * 100f ) );
+			w.Write( c.ClimbVertical );
+			if ( left )
+			{
+				WriteUnit( w, c.CornerLeft );
+				w.Write( c.CornerMoveX ); w.Write( c.CornerMoveY ); w.Write( c.CornerVertical );
+			}
+			if ( ceil )
+				WriteUnit( w, c.CeilingOut );
+			if ( carry )
+			{
+				WriteUnit( w, c.CarryDir ); WriteUnit( w, c.CarryFrom );
+				w.Write( c.CarryMoveX ); w.Write( c.CarryMoveY );
+			}
+		}
+		if ( c.MantleTicks > 0 )
+		{
+			w.Write( c.MantleTicks );
+			w.Write( (short)MathF.Round( Math.Clamp( c.MantleDir.x, -1f, 1f ) * 32767f ) );
+			w.Write( (short)MathF.Round( Math.Clamp( c.MantleDir.y, -1f, 1f ) * 32767f ) );
+			w.Write( c.MantleZ );
+		}
 	}
 
 	public static SimCtrl ReadCtrl( BinaryReader r )
 	{
 		byte f = r.ReadByte();
-		return new SimCtrl
+		var c = new SimCtrl
 		{
 			Grounded = (f & 1) != 0, Parked = (f & 2) != 0, AirFromJump = (f & 4) != 0, Holding = (f & 8) != 0, Driving = (f & 16) != 0,
+			Climbing = (f & 32) != 0, ClimbOn = (f & 128) != 0,
 			StillTicks = r.ReadByte(), SinceJumpTicks = r.ReadUInt16(), PushLevel = r.ReadUInt16(),
 			Commanded = ReadLinear( r ),
 			Wish = new Vector2( r.ReadInt16() / 8f, r.ReadInt16() / 8f ),
+			SpaceBuffer = r.ReadByte(), LetGoCool = r.ReadByte(),
 		};
+		if ( c.Climbing )
+		{
+			c.ClimbN = ReadUnit( r );
+			c.ClimbP = ReadPos( r );
+			c.LostTicks = r.ReadByte(); c.StepOverTicks = r.ReadByte(); c.GateTicks = r.ReadByte(); c.CornerCool = r.ReadByte();
+			byte sub = r.ReadByte();
+			c.ClimbYaw = r.ReadInt16() / 100f;
+			c.ClimbVertical = r.ReadSByte();
+			if ( (sub & 1) != 0 )
+			{
+				c.CornerLeft = ReadUnit( r );
+				c.CornerMoveX = r.ReadSByte(); c.CornerMoveY = r.ReadSByte(); c.CornerVertical = r.ReadSByte();
+			}
+			if ( (sub & 2) != 0 )
+				c.CeilingOut = ReadUnit( r );
+			if ( (sub & 4) != 0 )
+			{
+				c.CarryDir = ReadUnit( r ); c.CarryFrom = ReadUnit( r );
+				c.CarryMoveX = r.ReadSByte(); c.CarryMoveY = r.ReadSByte();
+			}
+		}
+		if ( (f & 64) != 0 )
+		{
+			c.MantleTicks = r.ReadByte();
+			c.MantleDir = new Vector2( r.ReadInt16() / 32767f, r.ReadInt16() / 32767f );
+			c.MantleZ = r.ReadSingle();
+		}
+		return c;
 	}
+
+	static float QuantYawOf( float yaw ) => SimInput.QuantYaw( yaw );
+
+	// A unit-ish vector (a normal, a direction): three shorts, ~0.003° steps. Not renormalised on read — the host continues
+	// from the same decoded numbers (RoundTrip), so both sides agree to the bit.
+	static void WriteUnit( BinaryWriter w, Vector3 v )
+	{
+		w.Write( (short)MathF.Round( Math.Clamp( v.x, -1f, 1f ) * 32767f ) );
+		w.Write( (short)MathF.Round( Math.Clamp( v.y, -1f, 1f ) * 32767f ) );
+		w.Write( (short)MathF.Round( Math.Clamp( v.z, -1f, 1f ) * 32767f ) );
+	}
+
+	static Vector3 ReadUnit( BinaryReader r ) => new( r.ReadInt16() / 32767f, r.ReadInt16() / 32767f, r.ReadInt16() / 32767f );
 
 	// Full precision, for reliable messages.
 	public static void WriteFull( BinaryWriter w, Vector3 v ) { w.Write( v.x ); w.Write( v.y ); w.Write( v.z ); }
@@ -140,9 +216,17 @@ public static class SimQuant
 		using var ms = new MemoryStream( 32 );
 		using var w = new BinaryWriter( ms );
 		WritePos( w, s.P ); WriteRot( w, s.R ); WriteLinear( w, s.V ); WriteSpin( w, s.W );
+		if ( s.HasCtrl )
+			WriteCtrl( w, s.Ctrl ); // the controller state too: a climb's normal and points decode coarser than the host keeps them
 		w.Flush();
 		ms.Position = 0;
 		using var r = new BinaryReader( ms );
-		return new SimBodyState { P = ReadPos( r ), R = ReadRot( r ), V = ReadLinear( r ), W = ReadSpin( r ), Sleeping = s.Sleeping };
+		var o = new SimBodyState { P = ReadPos( r ), R = ReadRot( r ), V = ReadLinear( r ), W = ReadSpin( r ), Sleeping = s.Sleeping };
+		if ( s.HasCtrl )
+		{
+			o.Ctrl = ReadCtrl( r );
+			o.HasCtrl = true;
+		}
+		return o;
 	}
 }

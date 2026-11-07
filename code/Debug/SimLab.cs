@@ -24,7 +24,11 @@ namespace Mimiclay;
 /// </summary>
 public static class SimLab
 {
-	public static readonly string[] Scenarios = { "loose", "static", "push", "headon", "held", "swing", "throw", "jump", "lying", "wall", "ledge", "pushwall", "twopush", "throwplayer" };
+	public static readonly string[] Scenarios = { "loose", "static", "push", "headon", "held", "swing", "throw", "jump", "lying", "wall", "ledge", "pushwall", "twopush", "throwplayer", "climb", "corner", "inner", "hcorner" };
+
+	// Climbing (2026-11-07): A climbs a wall and mantles onto it, climbs round a pillar (outer corners), along into an inner
+	// corner; H (a hunter) climbs round a pillar. Longer runs, and the report adds the faces climbed (ClimbReport).
+	static bool ClimbScen( string scen ) => scen is "climb" or "corner" or "inner" or "hcorner";
 
 	// ── Scene access ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -71,6 +75,8 @@ public static class SimLab
 		if ( b is not null && b.Phys.IsValid() )
 		{
 			b.Phys.Position = p; b.Phys.Rotation = r; b.Phys.Velocity = 0; b.Phys.AngularVelocity = 0; b.Phys.Sleeping = false;
+			if ( b.Ctrl.Climbing )
+				b.Ctrl = SimCtrl.Initial; // (left stuck to the last climb station: moved, it starts on its feet)
 		}
 		g.WorldPosition = p; g.WorldRotation = r; g.Transform.ClearInterpolation();
 	}
@@ -168,6 +174,13 @@ public static class SimLab
 		HunterController.DebugGrabHold = false;
 		await GameTask.Delay( 300 );
 		var a = ctl.EyeAngles;
+		if ( scen == "hcorner" )
+		{
+			// The climb test: face the pillar from its H marker (Run grabs it and climbs round).
+			me.WorldPosition = Marker( scen, "H" ).Value + Vector3.Up * 2f; me.GameObject.Transform.ClearInterpolation();
+			a.yaw = 90f; a.pitch = 0f; ctl.EyeAngles = a;
+			return $"H at the pillar of {scen}";
+		}
 		if ( !HunterHolds( scen ) )
 		{
 			var spot = Marker( scen, "Hobs" ) ?? Marker( "park", "H" ).Value;
@@ -215,6 +228,7 @@ public static class SimLab
 		("A", "ledge") => new[] { (0.5, 2.0, "Ledge") }, // (to the ledge's centre and stop there: it jumps on at 165u and lands on top)
 		("A", "pushwall") => new[] { (0.5, 3.2, "A.to") },
 		("A", "twopush") => new[] { (0.5, 2.5, "A.to") },
+		("A", "climb" or "corner" or "inner") => new[] { (0.5, 10.0, "A.to") }, // (to the wall; Act jumps at it and climbs)
 		("B", "headon") => new[] { (0.5, 2.0, "B.to") },
 		("B", "twopush") => new[] { (0.5, 2.5, "B.to") },
 		_ => Array.Empty<(double, double, string)>(),
@@ -229,6 +243,9 @@ public static class SimLab
 		"static" => ("A", "Cone"),
 		"wall" => ("A", "Wall"),
 		"ledge" => ("A", "Ledge"),
+		"climb" => ("A", "Wall"),
+		"corner" => ("A", "Pillar"),
+		"inner" => ("A", "WallA"),
 		_ => ("A", "B"),
 	};
 
@@ -237,6 +254,7 @@ public static class SimLab
 		public double T; public int Tick;
 		public bool[] Ok; public Vector3[] P; public BBox[] Box; public Vector3[] CopyP; public BBox[] CopyBox; public Vector3[] CopyV;
 		public bool[] Auth; public Vector3[] Off; public bool[] Touched; public bool[] Tracking; public int[] Drv;
+		public bool AClimb; public Vector3 AN; public bool HClimb; public Vector3 HN; public Vector3 HP; // (climbing: A's sim climb on this machine; H's own climb, on H)
 	}
 
 	/// <summary>Every screen (role A, B, H or HOST): act the role's part of <paramref name="scen"/> for <paramref name="seconds"/>
@@ -246,6 +264,8 @@ public static class SimLab
 		var sim = Sim;
 		if ( sim is null || Station( scen ) is null )
 			return $"{role,-4} no sim / no station '{scen}'";
+		if ( ClimbScen( scen ) )
+			seconds = role == "HOST" ? 13f : 10f; // (the host starts first and records longer — see lab.sh)
 		var hA = PropOf( nameA ); var hB = PropOf( nameB ); var hL = LooseOf( scen );
 		var names = new[] { "A", "B", "L" };
 		var keys = new[] { hA?.GameObject.Id ?? Guid.Empty, hB?.GameObject.Id ?? Guid.Empty, hL?.GameObject.Id ?? Guid.Empty };
@@ -256,8 +276,44 @@ public static class SimLab
 		var meProp = role is "A" ? hA : role is "B" ? hB : null;
 		var me = role == "H" ? S.GetAllComponents<HunterController>().FirstOrDefault( x => !x.IsProxy ) : null;
 		var ctl = me?.Components.Get<PlayerController>();
-		bool jumped = false, thrown = false;
+		bool jumped = false, thrown = false, hGrabbed = false;
+		double climbT = -1;
+		var hClimb = me?.Components.Get<HunterClimb>();
 		var walks = Walks( scen, role );
+
+		// A's climb: jump at the wall (Space held from the jump — the grab's intent), then by scenario: up and over the top
+		// (climb), or up 0.8 s and then sideways — D, looking at the wall — for the rest (corner, inner).
+		void ActClimb( double t )
+		{
+			var wall = StaticOf( scen, scen == "climb" ? "Wall" : scen == "inner" ? "WallA" : "Pillar" );
+			if ( wall is null || hA is null )
+				return;
+			float face = wall.GetBounds().Mins.y;
+			bool climbing = hA.SimClimbing;
+			if ( climbing && climbT < 0 )
+				climbT = t;
+			if ( !jumped && t > 0.5 && face - hA.WorldPosition.y < 90f )
+			{
+				hA.LabJump();
+				jumped = true;
+				HiderController.DebugClimbVertical = 1f;
+			}
+			if ( climbT < 0 )
+				return;
+			if ( scen == "climb" )
+			{
+				if ( !climbing )
+					HiderController.DebugClimbVertical = 0f; // mantled: walk on over the top to A.to
+				return;
+			}
+			HiderController.DebugGoto = null;
+			if ( t - climbT > 0.8 )
+			{
+				HiderController.DebugClimbVertical = 0f;
+				HiderController.DebugClimbYaw = 90f;
+				HiderController.DebugClimbMove = new Vector2( 0f, -1f );
+			}
+		}
 
 		void Act( double t )
 		{
@@ -272,6 +328,14 @@ public static class SimLab
 				{ hA.LabJump(); jumped = true; }
 				if ( role == "A" && !jumped && scen == "ledge" && Marker( scen, "Ledge" ) is { } lg && hA.WorldPosition.WithZ( 0 ).Distance( lg.WithZ( 0 ) ) < 165f )
 				{ hA.LabJump(); jumped = true; }
+				if ( role == "A" && ClimbScen( scen ) )
+					ActClimb( t );
+			}
+			if ( role == "H" && scen == "hcorner" && hClimb is not null )
+			{
+				// Grab the pillar, climb up a second, then sideways (D) for the rest — round its corners.
+				if ( !hGrabbed && t > 0.3 ) { hGrabbed = true; hClimb.LabGrab(); HunterClimb.DebugVertical = 1f; }
+				if ( hGrabbed && t > 1.3 ) { HunterClimb.DebugVertical = 0f; HunterClimb.DebugMove = new Vector3( 0f, -1f, 0f ); }
 			}
 			if ( role != "H" || ctl is null || !HunterHolds( scen ) )
 				return;
@@ -315,10 +379,23 @@ public static class SimLab
 				s.Auth[i] = b.ShownFromAuth; s.Off[i] = b.PosOffset; s.Tracking[i] = b.Tracking; s.Drv[i] = b.Spec.Driver;
 				s.Touched[i] = b.LocalTouched || sim.Tick - b.TouchedTick <= 24;
 			}
+			if ( keys[0] != Guid.Empty && sim.Find( keys[0] ) is { } ab )
+			{
+				s.AClimb = ab.Ctrl.Climbing; s.AN = ab.Ctrl.ClimbN;
+			}
+			if ( hClimb is not null )
+			{
+				s.HClimb = hClimb.IsClinging; s.HN = hClimb.LabNormal; s.HP = me.WorldPosition;
+			}
 			fr.Add( s );
 		}
 		if ( meProp is not null )
 			HiderController.DebugGoto = null;
+		if ( ClimbScen( scen ) )
+		{
+			HiderController.DebugClimbVertical = 0f; HiderController.DebugClimbMove = Vector2.Zero; HiderController.DebugClimbYaw = null;
+			HunterClimb.DebugVertical = 0f; HunterClimb.DebugMove = null;
+		}
 		SetStatus( $"SimLab · {scen} done\n{RoleName( role )}: waiting for the next scenario" );
 		return Analyse( role, scen, fr, names, ia, ib, pairB, statBox, dump );
 
@@ -326,6 +403,10 @@ public static class SimLab
 		string Doing( double t )
 		{
 			if ( role == "HOST" ) return "recording the truth";
+			if ( role == "H" && scen == "hcorner" )
+				return !hGrabbed ? "facing the pillar" : t < 1.3 ? "grabbed - climbing up" : hClimb?.IsClinging == true ? "climbing sideways (D) round the pillar" : "fell off";
+			if ( role == "A" && ClimbScen( scen ) && climbT >= 0 )
+				return !hA.SimClimbing ? (scen == "climb" ? "mantled - walking onto the top" : "not climbing (fell off?)") : scen == "climb" ? "climbing up (Space)" : t - climbT < 0.8 ? "climbing up" : "climbing sideways (D)";
 			if ( role == "H" )
 				return !HunterHolds( scen ) ? "watching" : scen == "held" ? "holding still" : scen == "swing" ? (t < 1.5 ? "holding" : t < 2.1 ? "swinging" : "held out after the swing")
 					: thrown ? "thrown - watching it land" : t < 1.0 ? "holding, about to throw" : "throwing";
@@ -409,6 +490,9 @@ public static class SimLab
 			sb.Append( $" | hit: release@tick {(kRel >= 0 ? fr[kRel].Tick : -1)} copyhit {Ms( kCopy )} react {Ms( kReact )} arrive {Ms( kArrive )} react-arrive {lead}ms gap@react {gapAtReact:0}u" );
 		}
 
+		if ( ClimbScen( scen ) )
+			sb.Append( ClimbReport( fr, scen == "hcorner", Station( scen )?.WorldPosition ?? Vector3.Zero ) );
+
 		if ( dump && kDeep >= 0 )
 		{
 			sb.AppendLine();
@@ -421,6 +505,33 @@ public static class SimLab
 			}
 		}
 		return sb.ToString();
+	}
+
+	// The climb on this machine: the share of frames climbing, the faces climbed in order (a new face = a normal more than
+	// ~45° from the last), the highest and final drawn position (station-local). A: its sim body (own prediction, a copy,
+	// or the host's); H: its own climb, on its own machine only.
+	static string ClimbReport( List<Sample> fr, bool hunter, Vector3 origin )
+	{
+		int n = 0, climbing = 0; var faces = new List<Vector3>(); float maxZ = float.MinValue; Vector3 last = default;
+		foreach ( var f in fr )
+		{
+			if ( hunter ? f.HP == Vector3.Zero : !f.Ok[0] )
+				continue;
+			var p = hunter ? f.HP : f.P[0];
+			n++; last = p; maxZ = MathF.Max( maxZ, p.z );
+			bool c = hunter ? f.HClimb : f.AClimb;
+			var nn = hunter ? f.HN : f.AN;
+			if ( !c || nn.IsNearZeroLength )
+				continue;
+			climbing++;
+			if ( faces.Count == 0 || Vector3.Dot( faces[^1], nn ) < 0.7f )
+				faces.Add( nn );
+		}
+		if ( n == 0 )
+			return $" | climb {(hunter ? "H" : "A")} -";
+		static string Dir( Vector3 v ) => MathF.Abs( v.z ) > 0.7f ? (v.z > 0 ? "up" : "down") : MathF.Abs( v.x ) > MathF.Abs( v.y ) ? (v.x > 0 ? "+x" : "-x") : (v.y > 0 ? "+y" : "-y");
+		var e = last - origin;
+		return $" | climb {(hunter ? "H" : "A")} {100 * climbing / n}% faces {faces.Count} [{string.Join( ",", faces.Select( Dir ) )}] maxz {maxZ - origin.z:0} end {e.x:0},{e.y:0},{e.z:0}";
 	}
 
 	// ── On-screen status (every lab machine: SimLabOverlay draws it) ──
