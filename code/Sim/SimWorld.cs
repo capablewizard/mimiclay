@@ -99,6 +99,8 @@ public sealed partial class SimWorld : GameObjectSystem
 	// but the prop PUSHING our own body would be drawn that far short of the contact — so one in real contact with us tracks stiffer.
 	[ConVar( "mimi_sim_remote_track_touched", Help = "Sim: the tracker stiffness (1/s) for another player's walker in contact with our own body." )]
 	public static float RemoteTrackRateTouched { get; set; } = 60f;
+	[ConVar( "mimi_sim_remote_track_rise", Help = "Sim: how fast the drawn walker of another player follows its copy UPWARD (1/s) - a late-known jump." )]
+	public static float RemoteTrackRateRise { get; set; } = 70f;
 
 	// Off by default: A/B 2026-11-04 (lobby rig, 200 ms RTT) showed no gain — own pawn correction p95 1.4u on vs 0.55u
 	// off, boxes ~equal — and re-placing every awake body each snapshot is one more thing that disturbs contacts.
@@ -596,7 +598,7 @@ public sealed partial class SimWorld : GameObjectSystem
 	// release a prop from the hunter's point of view"). Its wearer's late input (a push, the flip) reaches the copy through the
 	// replays and fades in; it goes over to the host's poses once both agree (UpdatePresentationSource).
 	bool ShownFromAuthority( SimBody b )
-		=> !IsAuthority && !b.ThrownHere && b.Authority.Count > 0 && ((b.IsRemoteDriven && b.Spec.Driver != HiderController.SimWalkDriverId) || (b.Driver is null && b.Spec.Owner == Guid.Empty && !b.LocalTouched)
+		=> !IsAuthority && !b.ThrownHere && b.Authority.Count > 0 && ((b.IsRemoteDriven && b.Spec.Driver != HiderController.SimWalkDriverId && !(b.Spec.Driver == SimDownDriver.Id && RecentlyTouched( b ))) || (b.Driver is null && b.Spec.Owner == Guid.Empty && !b.LocalTouched && !RecentlyTouched( b ))
 			|| (b.IsLocalOwned && b.Spec.Driver == SimDownDriver.Id && !b.Ctrl.Grounded && !b.Ctrl.AirFromJump));
 
 	// Another player's walker our body has been against within the last TouchShowTicks (SimBody.TouchedTick) — one we push, or one pushing us:
@@ -605,12 +607,24 @@ public sealed partial class SimWorld : GameObjectSystem
 	// so replays keep it on the host's track. Left to the 100u remote guard it drifted on its guess and popped when the hold
 	// ended (user 2026-11-05: "big desyncs" when two props that had just collided came near).
 	const int TouchShowTicks = (int)(0.24f * T + 0.5f);
-	bool RecentlyTouched( SimBody b ) => b.TouchedTick > -1_000_000 && Tick - b.TouchedTick <= TouchShowTicks;
+	// The window covers our LEAD too: the host states a nudge or replay starts from are a lead old, so a contact that ended on
+	// our clock is still going on in them. Ending after TouchShowTicks alone (0.24 s, shorter than a 0.35 s lead), a pushed
+	// walker went back to per-body nudges while the host state they carried forward still had the pusher pushing it - carried
+	// on alone, it ended up 40u inside the pusher's copy and stayed there until a replay (measured 2026-11-06, col_run.sh push
+	// at 310 ms: 45u extra depth on the pusher's screen in every run).
+	bool RecentlyTouched( SimBody b ) => b.TouchedTick > -1_000_000 && Tick - b.TouchedTick <= TouchShowTicks + (int)MathF.Ceiling( _leadAvg );
 
 	// Drawing-source switches (UpdatePresentationSource): how long the other source must be wanted, how far a switch may fold
 	// before it is shown as a jump, and how long its offset fades on the switch spring (SwitchSpring, gentler than corrections').
 	const float SwitchSettleTime = 0.08f;
 	const float DriveChangeWindow = 0.3f;
+	const float TouchSwitchMaxFold = 60f;
+	[ConVar( "mimi_sim_release_predict", Help = "Sim: draw a prop another player lets go of from our prediction straight away (1), or from the host's delayed poses (0)." )]
+	public static bool ReleasePredict { get; set; } = true;
+	// A remote release's switch: the quick spring it fades on, and the largest fold it takes (past it - a high ping, where the
+	// release arrives about when the prop lands anyway - it stays on the host's poses).
+	const float ReleaseSpring = 25f; // (15 left 14-38u of the catch-up when the target was hit, 0.2 s after the release was known)
+	const float ReleaseMaxFold = 180f;
 	const float SwitchSnapDistance = 250f;
 	const float SoftFadeTime = 0.6f;
 	[ConVar( "mimi_sim_switch_spring", Help = "Sim: stiffness (1/s) of the fade after a drawing-source switch when mimi_sim_switch_catchup is 0. Lower = a slower, gentler catch-up." )]
@@ -628,6 +642,12 @@ public sealed partial class SimWorld : GameObjectSystem
 	/// <summary>Seconds between the copy and the host pose shown on this client (its lead plus the display delay).</summary>
 	float DisplayGap => MathF.Max( (_leadAvg + RemoteDelayTicks) * Dt, 0.05f );
 
+	/// <summary>Client, for debug HUDs (SimLabOverlay): the measured sim round trip (ms; -1 until measured), how far our
+	/// prediction runs ahead of the newest snapshot (ms), and how far behind the host's poses are drawn (ms).</summary>
+	public float RoundTripMs => _rttTicks < 0f ? -1f : _rttTicks * Dt * 1000f;
+	public float LeadMs => _leadAvg * Dt * 1000f;
+	public float DisplayGapMs => DisplayGap * 1000f;
+
 	// A replay's correction grows with the lead as a switch's fold does (a mispredict is the body's unexpected speed times how far
 	// ahead we run): past a fixed 80u, every correction at 300 ms was a snap. Shown as a jump only past CorrectionSnapSpeed x the
 	// gap (80u at most pings, more at high ones); a big one fades on the switch spring rather than the corrections' stiff one.
@@ -636,7 +656,11 @@ public sealed partial class SimWorld : GameObjectSystem
 	float CorrectionSnapDistance() => Math.Clamp( CorrectionSnapSpeed * DisplayGap, 80f, SwitchSnapDistance );
 
 	/// <summary>Fade this body's offset on the gentle switch spring for the next while (the whole fade at the current stiffness).</summary>
-	void SoftenFade( SimBody b ) => b.SoftFadeUntil = RealTime.Now + MathF.Max( SoftFadeTime, 5f / SwitchStiffness() );
+	void SoftenFade( SimBody b )
+	{
+		b.SoftSpring = 0f;
+		b.SoftFadeUntil = RealTime.Now + MathF.Max( SoftFadeTime, 5f / SwitchStiffness() );
+	}
 
 	/// <summary>The switch spring's stiffness on this client now (1/s) - see <see cref="SwitchCatchup"/>.</summary>
 	public float SwitchStiffness()
@@ -690,6 +714,18 @@ public sealed partial class SimWorld : GameObjectSystem
 			b.WantSwitchSince = -1f;
 			var before = PoseFrom( b, b.ShownFromAuth );
 			var after = PoseFrom( b, auth );
+			if ( b.RemoteRelease && !auth && (before.Position - after.Position).Length > ReleaseMaxFold )
+			{
+				b.RemoteRelease = b.ThrownHere = false; // (too far to catch up smoothly: stays on the host's poses)
+				continue;
+			}
+			// A TOUCH switch (a loose prop or a lying body something drawn from prediction is against) is for things being pushed:
+			// they start at rest, where both sources agree. A fast one - a thrown prop hitting a player - is a lead plus the display
+			// delay apart on its own flight (285u at 310 ms): past the slide limit it snapped (17000 u/s, measured 2026-11-06,
+			// col_run.sh throw). It stays on the host's poses through the hit and switches once it has slowed.
+			if ( !auth && (before.Position - after.Position).Length > TouchSwitchMaxFold && !b.ThrownHere && RealTime.Now - b.DriveChangedAt >= DriveChangeWindow
+				&& (b.Driver is null || (b.IsRemoteDriven && b.Spec.Driver == SimDownDriver.Id)) )
+				continue;
 			b.ShownFromAuth = auth;
 			var dp = before.Position - after.Position;
 			TraceSwitch( b, auth, dp.Length );
@@ -703,7 +739,14 @@ public sealed partial class SimWorld : GameObjectSystem
 				continue;
 			}
 			b.PosOffset += dp;
-			SoftenFade( b ); // (the whole fade, however slow, on the switch spring)
+			if ( b.RemoteRelease && !auth )
+			{
+				b.RemoteRelease = false;
+				b.SoftSpring = ReleaseSpring; // (quick: caught up before it lands)
+				b.SoftFadeUntil = RealTime.Now + 5f / ReleaseSpring;
+			}
+			else
+				SoftenFade( b ); // (the whole fade, however slow, on the switch spring)
 			b.RotOffset = before.Rotation * after.Rotation.Inverse * b.RotOffset;
 			SimStats.SourceSwitches++;
 		}
@@ -726,6 +769,82 @@ public sealed partial class SimWorld : GameObjectSystem
 		if ( Tick - b.ThrownTick < ThrownMinTicks || b.Authority.Count == 0 || b.Phys.Velocity.Length > 40f )
 			return false;
 		return (PoseFrom( b, false ).Position - RemotePose( b ).Position).Length < 6f;
+	}
+
+	// ── Drawn contacts ──
+	// Each body's correction offset fades on its own (FadeCorrections), blind to what it is against: two props in contact in
+	// the copy (their physics apart by the contact distance) were DRAWN up to 20u inside each other while one carried a fading
+	// correction toward the other - a head-on push at 310 ms: copies 39-48u apart (host 43u), drawn 22u (measured 2026-11-06,
+	// col_hunt.sh headon). For a pair in contact now or within TouchShowTicks, an offset may not draw them closer than their
+	// physics poses are: the part of each offset pointing into the other is taken out, at most ContactPushSpeed (no snap).
+	const float ContactPushSpeed = 1200f; // (800 took 4 frames to undo a 57u fold after a head-on push resolved: a visible 29u overlap, Tools/SimLab headon)
+	readonly Dictionary<(int, int), (SimBody p, SimBody q, int tick)> _contacts = new();
+
+	void NoteContact( SimBody p, SimBody q )
+	{
+		var key = p.Id < q.Id ? (p.Id, q.Id) : (q.Id, p.Id);
+		_contacts[key] = (p, q, Tick);
+	}
+
+	void AgeContacts()
+	{
+		if ( _contacts.Count == 0 )
+			return;
+		List<(int, int)> old = null;
+		foreach ( var (k, c) in _contacts )
+			if ( Tick - c.tick > TouchShowTicks || !_bodies.Contains( c.p ) || !_bodies.Contains( c.q ) )
+				(old ??= new()).Add( k );
+		if ( old is not null )
+			foreach ( var k in old )
+				_contacts.Remove( k );
+	}
+
+	void ConstrainContacts()
+	{
+		if ( IsAuthority || _contacts.Count == 0 )
+			return;
+		float budget = ContactPushSpeed * Time.Delta;
+		foreach ( var (_, c) in _contacts )
+		{
+			var p = c.p; var q = c.q;
+			if ( !p.Phys.IsValid() || !q.Phys.IsValid() )
+				continue;
+			var srcP = PoseFrom( p, p.ShownFromAuth ).Position;
+			var srcQ = PoseFrom( q, q.ShownFromAuth ).Position;
+			var d = srcQ - srcP;
+			if ( d.Length < 1f )
+				continue;
+			var n = d.Normal;
+			float deficit = Vector3.Dot( d, n ) - Vector3.Dot( srcQ + q.PosOffset - srcP - p.PosOffset, n );
+			if ( deficit <= 0.25f )
+				continue; // (offsets are not drawing them into each other)
+			float inP = MathF.Max( 0f, Vector3.Dot( p.PosOffset, n ) );  // P drawn shifted toward Q
+			float inQ = MathF.Max( 0f, -Vector3.Dot( q.PosOffset, n ) ); // Q drawn shifted toward P
+			float total = inP + inQ;
+			if ( total <= 0f )
+				continue;
+			float take = MathF.Min( MathF.Min( deficit, total ), budget ) / total;
+			ShiftOffset( p, -n * (inP * take), n );
+			ShiftOffset( q, n * (inQ * take), -n );
+		}
+	}
+
+	// Move a body's drawn offset (and the tracker's position, for a tracked walker), dropping any offset speed into the partner.
+	static void ShiftOffset( SimBody b, Vector3 delta, Vector3 towardPartner )
+	{
+		if ( delta.IsNearZeroLength )
+			return;
+		b.PosOffset += delta;
+		float vin = Vector3.Dot( b.OffVel, towardPartner );
+		if ( vin > 0f )
+			b.OffVel -= towardPartner * vin;
+		if ( b.Tracking )
+		{
+			b.TrackPos += delta;
+			float tin = Vector3.Dot( b.TrackVel - (b.Phys.IsValid() ? b.Phys.Velocity : Vector3.Zero), towardPartner );
+			if ( tin > 0f )
+				b.TrackVel -= towardPartner * tin;
+		}
 	}
 
 	/// <summary>Client: something of ours is touching this body (see <see cref="ShownFromAuthority"/>).</summary>
@@ -830,7 +949,12 @@ public sealed partial class SimWorld : GameObjectSystem
 					float h = Time.Delta / steps;
 					for ( int i = 0; i < steps; i++ )
 					{
-						var acc = (raw - b.TrackPos) * (w * w) - b.TrackVel * (2f * w);
+						// Upward the spring is much stiffer: another player's jump reaches our copy late, as one replay that puts it
+						// straight into mid-air (29u up in a frame, measured); trailing it at the walk's rate, the drawn walker crossed
+						// onto a ledge still below the top - sunk 10-12u into it on onlookers' screens at 310 ms (Tools/SimLab ledge).
+						var d = raw - b.TrackPos;
+						float wz = d.z > 0f ? MathF.Max( w, RemoteTrackRateRise ) : w;
+						var acc = new Vector3( d.x * (w * w) - b.TrackVel.x * (2f * w), d.y * (w * w) - b.TrackVel.y * (2f * w), d.z * (wz * wz) - b.TrackVel.z * (2f * wz) );
 						b.TrackVel += acc * h;
 						b.TrackPos += b.TrackVel * h;
 					}
@@ -854,7 +978,7 @@ public sealed partial class SimWorld : GameObjectSystem
 				// drawn speed is continuous and the catch-up eases in - an exponential fade started at its fastest, a one-frame
 				// lurch of offset x rate on every correction and switch (user, 2026-11-06: blips at the switchover). Stiffness ~1.5x the
 				// old rate settles in about the same time; the gentler SwitchSpring right after a source switch.
-				float w = RealTime.Now < b.SoftFadeUntil ? SwitchStiffness() : 1.5f * (b.IsRemoteDriven ? RemoteSmoothRate : SmoothRate);
+				float w = RealTime.Now < b.SoftFadeUntil ? (b.SoftSpring > 0f ? b.SoftSpring : SwitchStiffness()) : 1.5f * (b.IsRemoteDriven ? RemoteSmoothRate : SmoothRate);
 				int steps = (int)(Time.Delta / 0.004f) + 1;
 				float h = Time.Delta / steps;
 				for ( int i = 0; i < steps; i++ )

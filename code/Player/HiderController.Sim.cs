@@ -239,6 +239,10 @@ public sealed partial class HiderController : ISimShapeSource
 	// Host: a player's or bot's body let go of lies DOWN (SimDownDriver — its wearer's own input rolls it and rights it with
 	// Space) until the driver reports it upright (see UpdateSimRegistration); then it's a walker again.
 	bool _simDown;
+	/// <summary>SimLab (host): lay this player down / stand it up from a test (code/Debug/SimLab.cs).</summary>
+	internal bool LabDown { get => _simDown; set => _simDown = value; }
+	/// <summary>SimLab (owner): press Space once, as the key would.</summary>
+	internal void LabJump() => _jumpQueued = true;
 	// Host: set by PropClaims.EscapeGrab — this body broke free of its holder (don't wait for the holder's release tick), and
 	// whether that escape was a Space press (the flip is seeded on the first lying tick). Consumed at the redrive.
 	internal bool SimEscaped, SimEscapeJump;

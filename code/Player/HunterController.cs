@@ -2172,6 +2172,8 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	/// <summary>Is this hunter's owner flying the free cam (the body left standing)? Play input, the camera, the
 	/// aim, shooting and interactions all stand down while it runs (see OnUpdate's play gate).</summary>
 	public bool FreeCamming => _freeCam.IsValid();
+	/// <summary>SimLab's observer client turns the free cam on/off from code (code/Debug/SimLab.cs).</summary>
+	internal void LabSetFreeCam( bool on ) => SetFreeCam( on );
 
 	void SetFreeCam( bool on )
 	{

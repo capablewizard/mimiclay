@@ -442,6 +442,16 @@ public sealed partial class SimWorld
 		// it put the hold back for a moment - which cleared ThrownHere and the host's poses - and the throw we were drawing from
 		// our prediction went over to the host's poses mid-flight, a 110-158u fold at 500-700 u/s on most bot throws (measured
 		// 2026-11-06 with the wearer walking; hunter_release_flags.cs).
+		if ( !_replaying && !IsAuthority && SimWorld.ReleasePredict && wasHold && !isHold && !wasOurs && b.Phys.IsValid() ) // (our own body thrown by a hunter too: its switch now folds and fades, where the first cut of the thrown-wearer fix popped)
+		{
+			// Another player let go of it (a throw, a drop): from here it is a body in flight, as predictable as any - drawn from
+			// our copy at once instead of the host's poses, which are a lead plus the display delay behind. Left on those, a thrown
+			// prop reached the player it hit half a second after that player was knocked, on the target's own screen (the target
+			// predicts the hit at the right tick; measured 2026-11-07, Tools/SimLab throw: react-arrive -433 ms at 115 ms round trip).
+			b.ThrownHere = true;
+			b.ThrownTick = Tick;
+			b.RemoteRelease = true;
+		}
 		if ( !_replaying )
 		{
 			b.LocalTouched = isHold && owner == LocalId; // our own hold (and the throw out of it) is ours to predict; anything else starts untouched

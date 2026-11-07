@@ -220,6 +220,11 @@ public sealed class SimBody
 	internal int ThrownTick;
 	// Client: the host's latest state of this body says its driver is steering it (SimCtrl.Driving) - SimWorld.NoteAuthority.
 	internal bool HostDriving;
+	// Client: drawn from the copy since ANOTHER player let go of it (SimWorld.ApplyRedrive, ReleasePredict) - its switch fades
+	// on the quick ReleaseSpring so it has caught up before it lands. SoftSpring: the stiffness the soft window uses (0 = the
+	// lead-scaled switch spring).
+	internal bool RemoteRelease;
+	internal float SoftSpring;
 	/// <summary>Client: the last tick something of ours was against this OTHER player's walker (SimWorld.NoteLocalContacts).
 	/// Recently touched, it is drawn from our prediction and not nudged to the host's poses (SimWorld.ShownFromAuthority):
 	/// a prop we push moves under our push at once, instead of its drawn body trailing our copy of it by the round trip

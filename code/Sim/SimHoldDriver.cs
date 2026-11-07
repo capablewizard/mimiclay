@@ -35,6 +35,7 @@ public sealed class SimHoldDriver : ISimDriver
 		if ( input.Has( SimInput.Hold ) )
 		{
 			c.Holding = true;
+			c.Commanded = input.HoldPos - pb.Position; // (the gap to the holder's REAL target - what another machine's copy aims at: Guess)
 			pb.Velocity = ((input.HoldPos - pb.Position) * Pull).ClampLength( MaxSpeed );
 			pb.AngularVelocity = HeldBodyDriver.TurnToward( pb.Rotation, input.HoldRot ) * Turn;
 			body.Intent = pb.Velocity.WithZ( 0f ); // a carried prop shoved into an anchored decoy pushes it (DetectAnchoredPushes)
@@ -63,5 +64,20 @@ public sealed class SimHoldDriver : ISimDriver
 	// reproduces that velocity (Pull × the gap). Parking it at the last pose instead left it hovering for the half round
 	// trip after its holder let go while the real prop flew on. (Its sim copy here is nudged to the host's state every
 	// snapshot anyway — SimWorld.NudgeRemote — and drawn from the host's poses.)
-	public SimInput Guess( SimBody body, in SimBodyState latest ) => new() { Buttons = SimInput.Hold, HoldPos = latest.P + latest.V / Pull, HoldRot = latest.R };
+	//
+	// The target is the holder's REAL one as of the snapshot (P + the gap the host stored, SimCtrl.Commanded) - not P + V / Pull,
+	// which equals it only while the prop is freely chasing its target. Pressed on (a player walking into a held prop), the
+	// prop's velocity is the contact's back-and-forth, and a copy aiming along it drifted the wrong way for a whole round
+	// trip: the player pushing it was corrected every snapshot - their camera shook, so the held prop looked like it was
+	// jittering (user, 2026-11-07, Tools/SimLab held: the pusher's worst-1% speed changes 3-4x the host's).
+	// Only while the prop is held nearly still, though: in a swing or a throw the target keeps moving, and P + V / Pull carries
+	// that motion on where the snapshot's target stops dead - aimed at it, a thrown player launched ~23u off on every other
+	// machine (Tools/SimLab throwplayer). Slow = being held or pressed on; fast = carried along.
+	const float SlowHold = 150f;
+	public SimInput Guess( SimBody body, in SimBodyState latest ) => new()
+	{
+		Buttons = SimInput.Hold,
+		HoldPos = latest.HasCtrl && latest.Ctrl.Holding && latest.V.Length < SlowHold ? latest.P + latest.Ctrl.Commanded : latest.P + latest.V / Pull,
+		HoldRot = latest.R,
+	};
 }

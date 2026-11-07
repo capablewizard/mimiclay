@@ -97,6 +97,7 @@ public sealed partial class SimWorld
 
 		UpdatePresentationSource();
 		FadeCorrections();
+		ConstrainContacts(); // (after the fade: offsets that would draw a pair in contact into each other are taken back)
 		PresentBodies();
 		TraceFrame();
 		Draw();
@@ -158,6 +159,7 @@ public sealed partial class SimWorld
 	{
 		if ( IsAuthority )
 			return;
+		AgeContacts();
 		foreach ( var mine in _bodies )
 		{
 			if ( !mine.IsLocalOwned || !mine.ShapesReady || !mine.Phys.IsValid() )
@@ -165,7 +167,9 @@ public sealed partial class SimWorld
 			var reach = mine.Phys.GetBounds().Grow( 2f );
 			foreach ( var b in _bodies )
 			{
-				if ( b.IsRemoteDriven && b.Spec.Driver == HiderController.SimWalkDriverId && b.ShapesReady && reach.Overlaps( b.Phys.GetBounds() ) && mine.Phys.CheckOverlap( b.Phys ) )
+				if ( b != mine && b.ShapesReady && b.Phys.IsValid() && reach.Overlaps( b.Phys.GetBounds() ) && (b.IsRemoteDriven || (b.Driver is null && b.Spec.Owner == Guid.Empty)) && mine.Phys.CheckOverlap( b.Phys ) )
+					NoteContact( mine, b ); // (any body ours is really against: the drawn pair is kept apart - ConstrainContacts)
+				if ( b.IsRemoteDriven && (b.Spec.Driver == HiderController.SimWalkDriverId || b.Spec.Driver == SimDownDriver.Id) && b.ShapesReady && reach.Overlaps( b.Phys.GetBounds() ) && mine.Phys.CheckOverlap( b.Phys ) )
 					b.TouchedTick = Tick; // (a REAL shape overlap, not the box test the loose case uses: boxes of two round props overlap 20u+ before the shapes touch, and a prop merely passing near was drawn from the guess — user: "they don't even touch me") // another player's walker our body is against — pushing it or pushed by it: drawn from our prediction for a moment (ShownFromAuthority), since that copy is what our body reacts to. Drawn from the host's delayed poses, a pusher was still 1.8 s away when our body already moved (user 2026-11-05: "the moved prop moves before the pusher has even touched them")
 				if ( b.Driver is not null || b.Spec.Owner != Guid.Empty || b.LocalTouched || !b.ShapesReady || b.Phys.Sleeping )
 					continue;
@@ -177,19 +181,33 @@ public sealed partial class SimWorld
 		// host's state carried forward on its own, the pair's contact ignored, and the solver then shoves them apart: 25 Hz
 		// jitter on both, watched from a third machine), the tight mispredict epsilon instead, so a replay re-simulates the
 		// pair together from the host's state.
+		// The same for another player's walker against a LYING body or a LOOSE prop: the walker is drawn from our prediction, so
+		// what it pushes must be too - drawn from the host's poses (a lead plus the display delay behind), the pushed body was
+		// still where the walker already stood: a third machine drew a walker 20u inside the loose prop it pushed, and a lying
+		// body pushed by us was drawn 71u inside our own body at 310 ms (measured 2026-11-06, col_run.sh).
 		for ( int i = 0; i < _bodies.Count; i++ )
 		{
 			var p = _bodies[i];
 			if ( !p.IsRemoteDriven || p.Spec.Driver != HiderController.SimWalkDriverId || !p.ShapesReady || !p.Phys.IsValid() )
 				continue;
 			var pb = p.Phys.GetBounds().Grow( 2f );
-			for ( int j = i + 1; j < _bodies.Count; j++ )
+			for ( int j = 0; j < _bodies.Count; j++ )
 			{
 				var q = _bodies[j];
-				if ( !q.IsRemoteDriven || q.Spec.Driver != HiderController.SimWalkDriverId || !q.ShapesReady || !q.Phys.IsValid() )
+				if ( q == p || !q.ShapesReady || !q.Phys.IsValid() )
+					continue;
+				bool walker = q.IsRemoteDriven && q.Spec.Driver == HiderController.SimWalkDriverId;
+				if ( walker && j < i )
+					continue; // (each walker pair once)
+				bool lying = q.IsRemoteDriven && q.Spec.Driver == SimDownDriver.Id;
+				bool loose = q.Driver is null && q.Spec.Owner == Guid.Empty && (q.Spec.Flags & SimBodyFlags.Anchored) == 0;
+				if ( !walker && !lying && !loose )
 					continue;
 				if ( pb.Overlaps( q.Phys.GetBounds() ) && p.Phys.CheckOverlap( q.Phys ) )
+				{
 					p.TouchedTick = q.TouchedTick = Tick;
+					NoteContact( p, q );
+				}
 			}
 		}
 	}
