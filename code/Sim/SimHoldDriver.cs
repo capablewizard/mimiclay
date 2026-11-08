@@ -35,6 +35,7 @@ public sealed class SimHoldDriver : ISimDriver
 		if ( input.Has( SimInput.Hold ) )
 		{
 			c.Holding = true;
+			c.Parked = false; // (held again: no longer frozen in place)
 			c.Commanded = input.HoldPos - pb.Position; // (the gap to the holder's REAL target - what another machine's copy aims at: Guess)
 			pb.Velocity = ((input.HoldPos - pb.Position) * Pull).ClampLength( MaxSpeed );
 			pb.AngularVelocity = HeldBodyDriver.TurnToward( pb.Rotation, input.HoldRot ) * Turn;
@@ -48,6 +49,19 @@ public sealed class SimHoldDriver : ISimDriver
 		// every grab start.
 		if ( !c.Holding )
 		{
+			pb.Velocity = Vector3.Zero;
+			pb.AngularVelocity = Vector3.Zero;
+			return;
+		}
+
+		// Let go FROZEN (LMB — the release tick's input carries Freeze): parked exactly where it is, from that tick on, here and
+		// on the host, until the host takes it out of the sim as frozen scenery (HiderController.UpdateSimRegistration waits for
+		// this tick). Before, the holder's prediction let it go loose and it fell for the round trip until the freeze landed.
+		if ( input.Has( SimInput.Freeze ) )
+			c.Parked = true;
+		if ( c.Parked )
+		{
+			body.HoldReleased = true;
 			pb.Velocity = Vector3.Zero;
 			pb.AngularVelocity = Vector3.Zero;
 			return;
@@ -74,7 +88,7 @@ public sealed class SimHoldDriver : ISimDriver
 	// that motion on where the snapshot's target stops dead - aimed at it, a thrown player launched ~23u off on every other
 	// machine (Tools/SimLab throwplayer). Slow = being held or pressed on; fast = carried along.
 	const float SlowHold = 150f;
-	public SimInput Guess( SimBody body, in SimBodyState latest ) => new()
+	public SimInput Guess( SimBody body, in SimBodyState latest ) => latest.HasCtrl && latest.Ctrl.Parked ? SimInput.None : new()
 	{
 		Buttons = SimInput.Hold,
 		HoldPos = latest.HasCtrl && latest.Ctrl.Holding && latest.V.Length < SlowHold ? latest.P + latest.Ctrl.Commanded : latest.P + latest.V / Pull,

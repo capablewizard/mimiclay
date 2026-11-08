@@ -166,7 +166,7 @@ public struct SimInput
 
 	/// <summary>Jump = Space PRESSED this tick; JumpHeld = held (the climb's "up", a grab's intent); Duck = Ctrl held; LetGo = Shift
 	/// pressed (lets go of a climb).</summary>
-	public const byte Jump = 1, Duck = 2, Hold = 4, JumpHeld = 8, LetGo = 16, LabGrab = 32;
+	public const byte Jump = 1, Duck = 2, Hold = 4, JumpHeld = 8, LetGo = 16, LabGrab = 32, Freeze = 64;
 
 	/// <summary>The wire's precision, applied where the input is made, so the owner predicts from exactly what the host gets.</summary>
 	public static float QuantMove( float v ) => MathF.Round( Math.Clamp( v, -1f, 1f ) * 127f ) / 127f;

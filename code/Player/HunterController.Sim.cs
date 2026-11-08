@@ -232,7 +232,7 @@ public sealed partial class HunterController : ISimShapeSource
 			return;
 		_simInputFn ??= ReadHunterSimInput;
 		bool walking = Owned && SimWalking;
-		bool mine = walking || _simHolding;
+		bool mine = walking || _simHolding || _simFreezeQueued; // (a frozen drop's let-go tick still has to go out)
 		if ( mine )
 		{
 			sim.LocalInput = _simInputFn;
@@ -255,6 +255,11 @@ public sealed partial class HunterController : ISimShapeSource
 			input.Buttons |= SimInput.Hold;
 			input.HoldPos = _simHoldTarget.Position;
 			input.HoldRot = _simHoldTarget.Rotation;
+		}
+		else if ( _simFreezeQueued )
+		{
+			input.Buttons |= SimInput.Freeze; // the let-go tick of a frozen drop (EndSimHold)
+			_simFreezeQueued = false;
 		}
 		if ( !SimWalking || !_controller.IsValid() )
 			return input;
@@ -832,6 +837,7 @@ public sealed partial class HunterController : ISimShapeSource
 	// — the host's orphan sweep only catches it a while later, and meanwhile this machine's sim input still pointed here.
 	void LeaveSimOnDestroy()
 	{
+		EndScalePreview(); // (a scale preview mid-hold: the prop's copy takes the host's frames again)
 		foreach ( var j in _holdFilters.Values )
 			if ( j.IsValid() )
 				j.Remove();

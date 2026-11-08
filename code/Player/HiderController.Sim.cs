@@ -169,6 +169,11 @@ public sealed partial class HiderController : ISimShapeSource
 		{
 			if ( !held && !down && !walk && !loose )
 			{
+				// Let go frozen (LMB): out of the sim from the holder's RELEASE TICK, where the hold driver parked it on that tick
+				// (SimInput.Freeze) — here and in the holder's own prediction, so it freezes where they saw it. Taken out on the drop
+				// message instead, it froze wherever the host had it then, while the holder's copy had already fallen loose.
+				if ( existing.Spec.Driver == SimHoldDriver.Id && existing.Ctrl.Holding && !existing.HoldReleased && _sinceSimHoldRowGone < 1f )
+					return;
 				sim.Unregister( GameObject.Id );
 				return;
 			}

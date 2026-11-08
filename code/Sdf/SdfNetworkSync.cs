@@ -371,6 +371,9 @@ public sealed class SdfNetworkSync : Component
 	// (the lists are re-keyed by id, and this machine is itself an author; its own field stays crisp).
 	void Adopt( List<SdfBrush> incoming, bool full )
 	{
+		if ( LocalPreview && !full )
+			return; // (the holder previews its own scale: live frames carry older factors — see LocalPreview)
+
 		var shared = SculptEditSession.SharedSessionOn( Target );
 		if ( shared is not null )
 			incoming = shared.MergeIncoming( incoming );
@@ -479,6 +482,22 @@ public sealed class SdfNetworkSync : Component
 			_lerpTo = null;
 		}
 	}
+
+	/// <summary>A holder scaling this prop previews the scale itself (HunterController.Grab, PreviewGrabScale): the same brushes
+	/// the host will apply, at once, instead of a round trip later. Meanwhile the host's LIVE frames are not applied here —
+	/// they carry the factors the host has caught up to, behind ours, and would drag the preview back; its full commits still
+	/// are (the same shape, settled).</summary>
+	public bool LocalPreview { get; private set; }
+
+	public void BeginLocalPreview()
+	{
+		if ( LocalPreview )
+			return;
+		StopInterpolation();
+		LocalPreview = true;
+	}
+
+	public void EndLocalPreview() => LocalPreview = false;
 
 	void StopInterpolation()
 	{
