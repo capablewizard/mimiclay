@@ -598,8 +598,8 @@ public sealed partial class PropClaims
 				var hider = go.Components.Get<HiderController>();
 				if ( Sandbox && !IsPlayerBody( hider ) )
 					LooseProps[pawnId] = true;
-				else if ( !Sandbox && hider.IsValid() && !IsPlayerBody( hider ) )
-					hider.SettleUpright();
+				else if ( !Sandbox && hider.IsValid() && !IsPlayerBody( hider ) && !hider.InSim )
+					hider.SettleUpright(); // (not a sim body: the sim stands it up — see HandOver)
 				PlaySwapPop( PopSpot( go ), DropPopPitch );
 			}
 		}

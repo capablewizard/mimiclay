@@ -264,6 +264,12 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	/// (which also say so) have arrived. Cleared machine-locally by <see cref="ResumeControl"/> (a later
 	/// possession IS someone wearing it).</summary>
 	[Sync] public bool BornScenery { get; set; }
+
+	/// <summary>The prop's OWN upright: the Disguise's local rotation when the pawn was made (PropClaims.SpawnPropPawn — a
+	/// converted prop's clay as it stood in the map; identity for a fresh prop). A walker folds any tilt into the Disguise
+	/// (OnSimBodyAdded); leaving the walk hands that tilt back to the root (OnSimBodyLeftWalk), so standing up again rights the
+	/// clay to THIS, not to whatever pose it was walked in (user, 2026-11-08: "it should come from the prop itself").</summary>
+	[Sync] public Rotation UprightLocal { get; set; } = Rotation.Identity;
 	bool _woken; // ResumeControl ran on this machine — BornScenery no longer gates
 
 	// Is this body SCENERY on this machine — driven by nobody here, whatever ownership says? The single gate
@@ -433,6 +439,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			RegisterSimDriver( sim ); // every machine knows the walk driver before any sim-walking body arrives
 		if ( SimSystem is { } simForFold )
 			simForFold.BodyAdded += OnSimBodyAdded; // fold a tilt into the disguise when our walker appears (HiderController.Sim)
+		if ( SimSystem is { } simForUnfold )
+			simForUnfold.BodyLeftWalk += OnSimBodyLeftWalk; // …and hand it back to the root when it stops walking (HiderController.Sim)
 
 		// Guarantee the disguise is solid regardless of how the body was made (prefab vs in-code fallback) — the
 		// prefab might not carry an SdfCollider, and forcing a rebuild here doesn't depend on the clone's
@@ -527,6 +535,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 				sim.LocalControlled = Guid.Empty;
 			}
 			sim.BodyAdded -= OnSimBodyAdded;
+			sim.BodyLeftWalk -= OnSimBodyLeftWalk;
 			if ( sim.IsAuthority )
 				sim.Unregister( GameObject.Id ); // a pawn that leaves (its player disconnected) leaves the sim too
 		}

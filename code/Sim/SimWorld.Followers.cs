@@ -437,6 +437,7 @@ public sealed partial class SimWorld
 		bool wasOurs = b.IsLocalOwned;
 		bool posesKept = b.Spec.Driver == SimDownDriver.Id; // (our own body lying down kept the host's poses all along - NoteAuthority)
 		bool wasHold = b.Spec.Driver == SimHoldDriver.Id, isHold = driver == SimHoldDriver.Id;
+		bool wasWalker = b.Spec.Driver == HiderController.SimWalkDriverId;
 		bool toWalker = driver == HiderController.SimWalkDriverId;
 		bool rebuild = wasHold != isHold || shape != b.Spec.Shape;
 		b.Spec.Driver = driver;
@@ -497,6 +498,11 @@ public sealed partial class SimWorld
 			b.Prev = b.Cur = b.Phys.Transform;
 			BodyAdded?.Invoke( b );
 		}
+		// Leaving the walk (let go of, knocked down, made loose): every machine hands the tilt folded into the Disguise back to
+		// the root (HiderController.OnSimBodyLeftWalk) before the shapes are rebuilt from it, so standing up again rights the
+		// clay to the prop's own upright.
+		if ( wasWalker && !toWalker && b.Phys.IsValid() )
+			BodyLeftWalk?.Invoke( b );
 		if ( rebuild && b.Phys.IsValid() )
 		{
 			// The shapes follow the kind and the driver (a held body has no friction): re-copied, the state kept.

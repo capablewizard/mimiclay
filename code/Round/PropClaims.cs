@@ -704,7 +704,15 @@ public sealed partial class PropClaims : Component, IInteractable
 		// with any tilt folded into the Disguise, so the shape stays exactly where it lay (see SettleUpright).
 		bool wasLoose = LooseProps.Remove( prop.GameObject.Id );
 		bool wasFrozen = FrozenProps.Remove( prop.GameObject.Id );
-		if ( wasLoose || wasFrozen )
+		// The sim walk on: NOT SettleUpright — for a body in the sim its scene object is presentation, and the walker switch
+		// folds the tilt itself on every machine (SimWorld.ApplyRedrive → HiderController.OnSimBodyAdded); settled here as well,
+		// the tilt was folded TWICE — the clay turned 170° at the possession of a prop lying on its side (measured 2026-11-08),
+		// and its new move hull shoved whatever it was stacked with (user: "fires the rest of the objects off"). Instead it
+		// lies DOWN as it is until Space flips it onto ITS OWN upright (HiderController.NoteStandOnPossess) — a fresh scene
+		// conversion too, whose root carries the tilt (ConvertSceneProp); nothing moves at the possession itself.
+		if ( HiderController.SimWalk && prop.Network.Active )
+			prop.NoteStandOnPossess();
+		else if ( wasLoose || wasFrozen || Vector3.GetAngle( prop.WorldRotation.Up, Vector3.Up ) > 0.5f )
 			prop.SettleUpright();
 
 		Host.OnClaimGranted( c, hunterPawn, prop );
@@ -809,8 +817,19 @@ public sealed partial class PropClaims : Component, IInteractable
 			? sceneT.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) )
 			: sceneT.Position;
 		var rootT = new Transform( feet, Rotation.FromYaw( sceneT.Rotation.Yaw() ) );
+		var disguiseLocal = rootT.ToLocal( sceneT );
+		if ( HiderController.SimWalk )
+		{
+			// The sim walk on: the ROOT carries the tilt and the clay sits at its own upright under it (UprightLocal = identity),
+			// so a prop knocked over in a stack is possessed lying as it is and Space flips it onto ITS feet. Folded into the
+			// Disguise instead, the tumbled pose became the prop's "upright" for good (user, 2026-11-08). The clay lands exactly
+			// where it stood either way; standing up again, the root comes back to the feet (the offset is the upright one).
+			var rootRot = sceneT.Rotation;
+			rootT = new Transform( sceneT.Position - rootRot * disguiseLocal.Position, rootRot );
+			disguiseLocal = new Transform( disguiseLocal.Position, Rotation.Identity, disguiseLocal.Scale );
+		}
 
-		var pawn = SpawnPropPawn( sculpture.Brushes, rootT, rootT.ToLocal( sceneT ),
+		var pawn = SpawnPropPawn( sculpture.Brushes, rootT, disguiseLocal,
 			owner is not null ? $"Claimed Prop {owner.DisplayName}" : "Shared Prop", owner, scenery,
 			sourceOf: sculpture.GameObject );
 
@@ -853,6 +872,7 @@ public sealed partial class PropClaims : Component, IInteractable
 		{
 			hider.DisguiseSource = sourceRoot.IsValid() ? sourceRoot.PrefabInstanceSource : null;
 			hider.BornScenery = scenery; // pre-spawn, so it ships in the snapshot — see HiderController.BornScenery
+			hider.UprightLocal = disguiseLocal.Rotation; // the clay as it stood: its own upright (HiderController.UprightLocal)
 		}
 
 		var disguise = pawn.Children.FirstOrDefault( ch => ch.Name == "Disguise" );

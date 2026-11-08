@@ -144,6 +144,8 @@ public sealed partial class SimWorld : GameObjectSystem
 	public static bool IsWalker( byte driver ) => driver == HiderController.SimWalkDriverId || driver == HunterController.SimHunterDriverId;
 
 	public event Action<SimBody> BodyAdded;
+	/// <summary>A body stopped being a walker (SimWorld.ApplyRedrive) — every machine, before its shapes are rebuilt.</summary>
+	public event Action<SimBody> BodyLeftWalk;
 	public event Action<SimBody> BodyRemoved;
 
 	// Drivers by id — registered by whatever owns them (the same id on every machine).

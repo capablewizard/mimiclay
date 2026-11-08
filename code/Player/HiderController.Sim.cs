@@ -141,6 +141,15 @@ public sealed partial class HiderController : ISimShapeSource
 			SimEscaped = SimEscapeJump = false; // (a fresh hold: any escape noted before it was for an earlier one)
 			_sinceSimHoldRowGone = 0f; // (how long since the Held row went: the loose redrive waits on the release tick, briefly)
 		}
+		// Possessed (NoteStandOnPossess): tilted at all from its OWN upright (the root carries that tilt: OnSimBodyLeftWalk), it
+		// lies DOWN as it lies until Space.
+		if ( _possessStandPending && !held )
+		{
+			_possessStandPending = false;
+			var standRot = existing?.Phys is { } ep && ep.IsValid() ? ep.Rotation : WorldRotation;
+			if ( Vector3.GetAngle( standRot.Up, Vector3.Up ) > SimDownDriver.UprightDeg )
+				_simDown = true;
+		}
 		// A player's or bot's body (not released scenery, which the Loose registry governs) let go of is DOWN (SimDownDriver):
 		// the walk overturned once it has settled (the move keys slide it, the mouse turns it), righted with SPACE — the first
 		// jump is the flip onto its feet; a bot rights itself once it has lain still. Up again (SimDownDriver.Done), it's a walker.
@@ -252,11 +261,15 @@ public sealed partial class HiderController : ISimShapeSource
 	// whether that escape was a Space press (the flip is seeded on the first lying tick). Consumed at the redrive.
 	internal bool SimEscaped, SimEscapeJump;
 
+	/// <summary>Does the sim world have this pawn as a body right now, in any state (any machine)?</summary>
+	internal bool InSim => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is not null;
+
 	/// <summary>Is this pawn lying down (or righting itself) in the sim world right now (any machine)?</summary>
 	internal bool SimDown => SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b && b.Spec.Driver == SimDownDriver.Id;
 
 	/// <summary>The launch speed of this prop's jump (HiderController.Walk): the flip's hop (SimDownDriver).</summary>
 	internal float SimHopSpeed => JumpPower * MathF.Sqrt( SizeSpeedScale );
+	const float FlipReach = 4f; // a lying prop's Space finds something to jump off this much further down than the walk's ride snap
 
 	/// <summary>Is this pawn carried BY THE SIM when grabbed (the hold driver, SimHoldDriver) rather than the fallback hold (PropClaims.Grab)?
 	/// Every pawn while the sim walk is on — released scenery, players' bodies, bots — except one whose shape is mid-edit on
@@ -307,6 +320,40 @@ public sealed partial class HiderController : ISimShapeSource
 		Transform.ClearInterpolation();
 		disguise.Transform.ClearInterpolation();
 	}
+
+	// Every machine, the moment this pawn's body STOPS walking (SimWorld.ApplyRedrive — let go of into a hand, knocked down,
+	// made loose): the fold undone. The root takes back whatever tilt the walk kept in the Disguise, so the Disguise is at
+	// the prop's own upright again (UprightLocal) and the clay stays exactly where it is. From then on the root's tilt IS the
+	// clay's tilt from its own upright: standing up (SimDownDriver's righting) rights the clay to how the prop stands — before,
+	// it went back to the pose it had been possessed in (user, 2026-11-08: "jumping will reset it to the initial grab
+	// position instead of the prop's upright position"). From the scene object AT THE SIM'S pose, as the fold does, so every
+	// machine unfolds the same; the sim body takes the new root pose before its shapes are rebuilt from the Disguise.
+	void OnSimBodyLeftWalk( SimBody b )
+	{
+		if ( b.Key != GameObject.Id || !_body.IsValid() || b.Phys is not { } pb || !pb.IsValid() )
+			return;
+		var disguise = _body.GameObject;
+		WorldTransform = new Transform( pb.Position, pb.Rotation, WorldScale );
+		var keep = disguise.WorldTransform;
+		var rootRot = keep.Rotation * UprightLocal.Inverse;
+		if ( rootRot.Distance( pb.Rotation ) < 0.05f )
+			return;
+		var rootPos = keep.Position - rootRot * (disguise.LocalPosition * WorldScale);
+		WorldTransform = new Transform( rootPos, rootRot, WorldScale );
+		disguise.WorldTransform = keep;
+		Transform.ClearInterpolation();
+		disguise.Transform.ClearInterpolation();
+		pb.Position = rootPos;
+		pb.Rotation = rootRot;
+		b.Prev = b.Cur = pb.Transform; // (drawn from here: interpolating the root from its old pose would swing the clay)
+	}
+
+	// Host: possessed (PropClaims.HandOver, the sim walk on) — tilted at all, it starts lying DOWN as it is, and Space flips it
+	// up to ITS upright (as after a throw). Nothing moves at the possession itself — the old instant fold of the tilt into the
+	// Disguise made the lying pose the prop's "upright" for good (user, 2026-11-08: "it should come from the prop itself";
+	// "stay in the same orientation until we press jump" — no auto-rise for small tilts either).
+	internal void NoteStandOnPossess() => _possessStandPending = true;
+	bool _possessStandPending;
 
 	static bool IsUpright( Rotation r )
 	{
@@ -619,7 +666,8 @@ public sealed partial class HiderController : ISimShapeSource
 		// Ground: the hull's foot swept down from where the floating shape starts (HiderController.Walk).
 		var from = pos + Vector3.Up * clearance;
 		var tr = _simHull.SweepFoot( trace, new Transform( from, rot ), new Transform( from - Vector3.Up * (clearance + RideSnap), rot ), clearance );
-		if ( tr.StartedSolid )
+		bool footSolid = tr.StartedSolid;
+		if ( footSolid )
 		{
 			var centre = pos + rot * _hull.Centre;
 			var rayFrom = centre.WithZ( pos.z + _hull.LocalBounds.Mins.z + clearance );
@@ -627,9 +675,25 @@ public sealed partial class HiderController : ISimShapeSource
 			if ( !ray.StartedSolid )
 				tr = ray;
 		}
+		float? sunkGap = null;
+		if ( footSolid && (tr.StartedSolid || !tr.Hit) )
+		{
+			// SUNK below the ride: the floor is inside the foot (the floating step under the hull), so the foot sweep starts in it
+			// and the ray above starts under its surface — nothing was ground, ever again, and the prop sat on its hull 18u low,
+			// unable to jump (SimLab 2026-11-08: a walker landing in a jostled stack of loose props). A ray from the hull's middle
+			// finds the surface; walkable, it's the ground at a NEGATIVE gap and the ride spring lifts us back onto it.
+			var mid = pos + rot * _hull.Centre;
+			var deep = trace.Ray( mid, mid.WithZ( pos.z ) ).Run();
+			if ( deep.Hit && !deep.StartedSolid && deep.HitPosition.z > pos.z
+				&& (Walkable( deep.Normal ) || (deep.Normal.z > PropFloorMinZ && IsFloorProp( true, sim.SourceOf( deep.Body ), deep.Body ))) )
+			{
+				tr = deep;
+				sunkGap = pos.z - deep.HitPosition.z;
+			}
+		}
 		var hitGo = tr.Hit ? sim.SourceOf( tr.Body ) : null;
 		bool walkable = tr.Hit && (Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( true, hitGo, tr.Body )));
-		float gap = tr.Hit ? tr.Distance - clearance : float.MaxValue;
+		float gap = sunkGap ?? (tr.Hit ? tr.Distance - clearance : float.MaxValue);
 		bool pastJumpGrace = c.SinceJumpTicks * dt > WalkJumpGrace;
 		bool ground = tr.Hit && !tr.StartedSolid && walkable && pastJumpGrace
 			&& (c.Grounded ? gap <= RideSnap : gap <= 1f && v.z <= 50f);
@@ -845,7 +909,7 @@ public sealed partial class HiderController : ISimShapeSource
 			if ( c.StillTicks < 255 )
 				c.StillTicks++;
 			bool freshDown = c.StillTicks <= SimDownDriver.AirFlipTicks;
-			bool onGround = (driving || flip) && OnGround();
+			bool onGround = (driving || flip) && OnGround( forFlip: flip );
 			if ( flip && !onGround && freshDown )
 				onGround = true; // (taken as the flip below)
 			if ( flip && SimDownDriver.LogJumps )
@@ -893,7 +957,12 @@ public sealed partial class HiderController : ISimShapeSource
 
 		// On the ground? The whole hull IN THIS POSE, swept down from a step above where it is (the walk's foot sweep is the
 		// upright hull's base). Started solid (pressed into the floor, or against something) counts as on it.
-		bool OnGround()
+		// forFlip: is there anything to jump OFF — any surface under it facing up at all, whatever it is and however big, a
+		// little further down too. The walk's footing rules (walkable slope, props bigger than us are walls) left a prop lying
+		// on a pile of loose props "not on the ground": the press waited, was lost, and the flip came only once it reached the
+		// floor — and the owner's copy, a hair different, often flipped at once and was pulled back (user, 2026-11-08: "the
+		// flip only happens when we land instead of as soon as we press jump").
+		bool OnGround( bool forFlip = false )
 		{
 			_simHull.Refresh( _collider, sim.World );
 			RefreshSceneHull();
@@ -903,10 +972,11 @@ public sealed partial class HiderController : ISimShapeSource
 			var trace = sim.Trace.WithoutTags( MoveIgnoreTags.Append( SimWorld.SelfTag( body ) ).ToArray() );
 			var from = pb.Position + Vector3.Up * clearance;
 			var tr = _simHull.Sweep( trace, new Transform( from, pb.Rotation ), new Transform( from - Vector3.Up * (clearance + RideSnap), pb.Rotation ) );
-			bool walkable = tr.Hit && (Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( true, sim.SourceOf( tr.Body ), tr.Body )));
+			bool walkable = tr.Hit && (forFlip ? tr.Normal.z > PropFloorMinZ
+				: Walkable( tr.Normal ) || (tr.Normal.z > PropFloorMinZ && IsFloorProp( true, sim.SourceOf( tr.Body ), tr.Body )));
 			_lastGap = tr.Hit ? tr.Distance - clearance : float.NaN;
 			_lastSolid = tr.StartedSolid;
-			return tr.StartedSolid || (walkable && tr.Distance - clearance <= RideSnap);
+			return tr.StartedSolid || (walkable && tr.Distance - clearance <= RideSnap + (forFlip ? FlipReach : 0f));
 		}
 
 		// Settled.
@@ -948,7 +1018,7 @@ public sealed partial class HiderController : ISimShapeSource
 		if ( pb.Sleeping )
 			pb.Sleeping = false;
 
-		bool ground = OnGround();
+		bool ground = OnGround( forFlip: jump );
 		if ( jump && SimDownDriver.LogJumps )
 			SimDownDriver.JumpLog.Add( $"settled: Space {(ground ? "TAKEN" : "WAITING (not on ground)")} since press {c.SinceJumpTicks} gap {_lastGap:0.0} solid {_lastSolid} z {pb.Position.z:0.0} vz {pb.Velocity.z:0} parked {c.Parked} host {Networking.IsHost}" );
 
