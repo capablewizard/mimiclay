@@ -133,6 +133,35 @@ Every screen's hunter-to-B gap matches the host's within 4u.
 - **Lab:** HunterClimb's debug move only applies while clinging, as in the engine. A failed grab had the hunter walk sideways for the whole run, shoving the parked props off the lab floor.
 - **Seen in passing (not hunter work):** a released loose prop pushed off the floor edge falls forever. There's no fall respawn for loose sim props, and the jump watch fills with it until the lab reopens.
 
+**H4 built 2026-11-08 (uncommitted).**
+
+Fixed:
+- **Jump pads** were dead to anything the sim walks, hunters and walking props alike: the pad wrote a launch onto the scene body, which is only where the pawn is drawn.
+  - Now both sim walks test their body against the pads' trigger volumes every tick (`JumpPad.SimPadAt`) and launch from inside the sim. The debounce is `SimCtrl.PadCool`, on the wire. The host broadcasts the boing.
+  - The owner's prediction launches on the host's tick: hunter 886 u/s, apex 450u, 0 replays; prop A rose 511u, 0 replays.
+  - The scene trigger skips pawns the sim walks.
+- **Walking on a prop:** the sim walk scaled acceleration and braking by the ground's friction, and a prop's move hull has none, so a hunter on a prop could neither go nor stop.
+  - Ground friction is now floored at the clay's 0.8, as the engine path's `GripSlipperyGround` does.
+  - Result: 175 u/s after 8 ticks, stops within 0.6u, stays on top.
+- **Landing volume:** the engine body's velocity reads zero in sim mode, so every landing played at its quietest. The landing splat now uses the sim body's fastest descent (`TakeSimFallSpeed`), and the engine thump gets its proper volume added.
+- **Destroy cleanup:** a destroyed hunter (a swap to a prop, a respawn) now leaves the sim at once (`LeaveSimOnDestroy`): input handed back, hold filters removed, host unregisters.
+  - Swap to a prop and back: the body leaves, the prop walks, the new hunter sim-walks and pads work.
+
+Checked, no change needed:
+- teleports (the round's return-to-spawn uses `Teleport` → `PlaceInSim`)
+- spawns (registered at the current pose when the pawn goes on the network)
+- the debug drivers (the wish override), the chase bot (hold input)
+- jump and landing events and footsteps (ground transitions on the drawn pose; `MoveVelocity`)
+- the gun bob (`MoveVelocity`)
+- free cam, edit mode, round lock (input gated)
+- there's no knockback in the game
+
+Lab pass of the hunter scenarios, sim hunters on: all pass, `hcorner` 9 faces. The jump watch's only new lines are single 2000 u/s frames of A on B's screen, at A's start marker: the lab's setup teleport arriving after the run began.
+
+Left as-is:
+- Pads don't launch held, loose or lying sim bodies (the old scene launch didn't reach those in the sim either).
+- Edit mode and the round lock stop a sim hunter by friction (about 0.3 s) rather than zeroing its velocity at once.
+
 **Known cost (the full walk's):** a player's prop walking into a standing hunter shoves it (152u). The hunter's own screen learns of the walk late and is corrected: 58–83u, faded in, peak 304 u/s, no snaps. Look at it in H5's latency pass.
 
 ## Phases

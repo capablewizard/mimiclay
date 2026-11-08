@@ -118,6 +118,7 @@ public static class SimQuant
 		w.Write( c.SpaceBuffer );
 		w.Write( c.LetGoCool );
 		w.Write( (byte)(c.Ducked ? 1 : 0) ); // the second flags byte (hunters)
+		w.Write( c.PadCool );
 		if ( c.Climbing )
 		{
 			WriteUnit( w, c.ClimbN );
@@ -164,6 +165,7 @@ public static class SimQuant
 		};
 		byte f2 = r.ReadByte();
 		c.Ducked = (f2 & 1) != 0;
+		c.PadCool = r.ReadByte();
 		if ( c.Climbing )
 		{
 			c.ClimbN = ReadUnit( r );

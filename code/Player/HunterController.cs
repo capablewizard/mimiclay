@@ -2464,9 +2464,20 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	// on every machine. Layer the splat under it at the engine's own landing volume, so it keeps the walk's ratio.
 	void PlayerController.IEvents.OnLanded( float distance, Vector3 impactVelocity )
 	{
+		// Walking in the sim, the controller's body is only placed where the hunter is drawn: its velocity reads zero, so the
+		// landing came through at its quietest. The sim body's fastest descent stands in (SimFallSpeed), and the engine's own
+		// thump — already played at that quietest — gets its proper volume added.
+		bool sim = SimWalking;
+		float speed = sim ? TakeSimFallSpeed() : impactVelocity.Length;
 		if ( !EnableFootsteps || Concealed || !_controller.IsValid() || !_controller.EnableFootstepSounds )
 			return;
-		PlayStepSplat( WorldPosition, impactVelocity.Length.Remap( 50f, 800f, 0.5f, 5f ) ); // the engine's landing volume
+		float volume = speed.Remap( 50f, 800f, 0.5f, 5f ); // the engine's landing volume
+		PlayStepSplat( WorldPosition, volume );
+		if ( sim && volume > 0.6f )
+		{
+			_controller.PlayFootstepSound( WorldPosition, volume, 0 );
+			_controller.PlayFootstepSound( WorldPosition, volume, 1 );
+		}
 	}
 
 	// Run dust: enable the RunPFX emitters only while moving at running speed. Speed is OBSERVED horizontal
@@ -2645,6 +2656,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 		_scrapeHandle?.Stop();
 		_scrapeHandle = null;
+		LeaveSimOnDestroy(); // (HunterController.Sim)
 	}
 
 	/// <summary>The two editable parts the edit HUD's bottom dock switches between.</summary>

@@ -93,6 +93,8 @@ public struct SimCtrl
 	/// <summary>Climbing: how far the body is off the surface (u) — a wall grabbed from further off (climbing on from a mantle) is
 	/// sensed this much further and closed in on.</summary>
 	public float ClimbGap;
+	/// <summary>Ticks before a jump pad may launch this walker again (JumpPad.SimPadAt — the pad's debounce, rolled back with the body).</summary>
+	public byte PadCool;
 
 	public const ushort Long = 9999;
 	public static readonly SimCtrl Initial = new() { SinceJumpTicks = Long };

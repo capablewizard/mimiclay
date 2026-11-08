@@ -374,10 +374,14 @@ public sealed partial class HunterController : ISimShapeSource
 	static Vector3 GroundVelocityOf( in PhysicsTraceResult tr, Vector3 at )
 		=> tr.Hit && tr.Body is { } gb && gb.IsValid() && gb.BodyType != PhysicsBodyType.Static ? gb.GetVelocityAtPoint( at ) : Vector3.Zero;
 
+	// Floored at the clay surface's friction, as the engine walk's ground is (HunterController.PropGround — GripSlipperyGround):
+	// a walking prop's move hull has none at all, and the friction scales the walk's acceleration and braking — on a prop a
+	// hunter could neither get going nor stop.
 	static float GroundFrictionOf( in PhysicsTraceResult tr )
 	{
 		float f = tr.Shape is { } s && s.IsValid() ? s.Friction : -1f;
-		return f >= 0f ? f : tr.Surface?.Friction ?? 1f;
+		f = f >= 0f ? f : tr.Surface?.Friction ?? 1f;
+		return MathF.Max( f, MinPropGroundFriction );
 	}
 
 	static float SurfaceFriction( float friction ) => MathF.Min( friction * 1.25f, 1f );
@@ -506,6 +510,7 @@ public sealed partial class HunterController : ISimShapeSource
 		// Climbing (HunterController.SimClimb): the grabs — Space held on from a mantle, a lab grab, the air grab (the engine's
 		// FixedUpdate pass, while the walk is the mode) — and, on a wall, the climb in place of the walk.
 		SimClimbClock( ref c, input );
+		if ( c.PadCool > 0 ) c.PadCool--;
 		if ( !c.Climbing )
 		{
 			var grabWish = SimWish( input, c.Ducked );
@@ -620,6 +625,18 @@ public sealed partial class HunterController : ISimShapeSource
 			v /= 1f + MathF.Max( _controller.AirFriction, 0f ) * dt;
 		else if ( StepUp > 0f )
 			SimTryStep( trace, ref pos, ref v, groundVel, c.Ducked );
+
+		// A jump pad underfoot (JumpPad.SimPadAt): launched from inside the sim, so the owner's prediction leaves the pad when the
+		// host does. Off the ground at once (the jump's rules: no regrounding, rising past the ground check).
+		if ( c.PadCool == 0 && JumpPad.SimPadAt( Scene, pb.GetBounds() ) is { } pad )
+		{
+			v = pad.SimLaunchVelocity( v );
+			grounded = false;
+			c.SinceJumpTicks = 0;
+			c.PadCool = ClimbTicks( pad.Cooldown );
+			if ( sim.IsAuthority )
+				pad.SimLaunched();
+		}
 
 		// Walking into a prop pushes it — prop hunt's push (SimWorld.PushBody), now inside the sim: run the same on the host,
 		// in our prediction and in every replay, so no report, no round trip.
@@ -811,6 +828,24 @@ public sealed partial class HunterController : ISimShapeSource
 		v = (v - groundVel).WithZ( 0f ) + groundVel;
 	}
 
+	// Destroyed (swapped to a prop, respawned, left): out of the sim at once, as a prop pawn leaves (HiderController.OnDestroy)
+	// — the host's orphan sweep only catches it a while later, and meanwhile this machine's sim input still pointed here.
+	void LeaveSimOnDestroy()
+	{
+		foreach ( var j in _holdFilters.Values )
+			if ( j.IsValid() )
+				j.Remove();
+		_holdFilters.Clear();
+		if ( HunterSim is not { } sim )
+			return;
+		if ( _simInputFn is not null && sim.LocalInput == _simInputFn )
+			sim.LocalInput = null;
+		if ( sim.LocalControlled == GameObject.Id )
+			sim.LocalControlled = Guid.Empty;
+		if ( sim.IsAuthority && sim.Find( GameObject.Id ) is { Spec.Driver: SimHunterDriverId } )
+			sim.Unregister( GameObject.Id );
+	}
+
 	// ── Teleports ───────────────────────────────────────────────────────────────────────────────────────────
 
 	/// <summary>Move this hunter's sim body (a spawn, a respawn, a lab placement): the host places it at once; any other
@@ -842,10 +877,25 @@ public sealed partial class HunterController : ISimShapeSource
 
 	// Every machine, every frame while sim-walking: the posture the sim has (the owner's prediction; others follow the synced
 	// IsDucking) onto the stock controller, which sizes the colliders bullets hit and the eye from it.
+	float _simFallSpeed;
+
+	/// <summary>The sim body's fastest descent since the last landing (u/s), and reset — the landing event's impact speed.</summary>
+	float TakeSimFallSpeed()
+	{
+		float s = _simFallSpeed;
+		_simFallSpeed = 0f;
+		return s;
+	}
+
 	void SyncSimPosture()
 	{
 		if ( SimSelf is not { } b || !_controller.IsValid() )
 			return;
+		// The fall the landing event will want (OnLanded): the sim body's fastest descent while airborne, every machine.
+		if ( !_controller.IsOnGround && !b.Ctrl.Climbing )
+			_simFallSpeed = MathF.Max( _simFallSpeed, -b.Phys.Velocity.z );
+		else if ( b.Ctrl.Climbing )
+			_simFallSpeed = 0f;
 		// Clinging, on every machine (IsAirborne reads it: the eye, the duck spring, the landing event — and HunterSimMode's
 		// controller is never in HunterClimb's mode to set it).
 		if ( _controller.IsClimbing != b.Ctrl.Climbing )

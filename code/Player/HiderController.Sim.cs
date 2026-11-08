@@ -576,6 +576,7 @@ public sealed partial class HiderController : ISimShapeSource
 
 		// Climbing (HiderController.SimClimb): the climb runs in place of the walk.
 		SimClimbClock( ref c, input, Ticks( ClimbGrabBuffer ) );
+		if ( c.PadCool > 0 ) c.PadCool--;
 		if ( c.Climbing )
 		{
 			SimStepClimb( body, sim, ref c, input, tick );
@@ -709,6 +710,20 @@ public sealed partial class HiderController : ISimShapeSource
 				float g = Gravity * (v.z < 0f ? FallGravityMult : 1f);
 				v = flat.WithZ( MathF.Max( v.z - g * dt, -MaxFallSpeed ) );
 			}
+		}
+
+		// A jump pad underfoot (JumpPad.SimPadAt): launched from inside the sim — the scene launch can't move a sim walker.
+		if ( c.PadCool == 0 && JumpPad.SimPadAt( Scene, pb.GetBounds() ) is { } pad )
+		{
+			v = pad.SimLaunchVelocity( v );
+			c.Grounded = false;
+			c.SinceJumpTicks = 0;
+			c.AirFromJump = true;
+			c.Parked = false;
+			c.StillTicks = 0;
+			c.PadCool = Ticks( pad.Cooldown );
+			if ( sim.IsAuthority )
+				pad.SimLaunched();
 		}
 
 		pb.Velocity = v;
