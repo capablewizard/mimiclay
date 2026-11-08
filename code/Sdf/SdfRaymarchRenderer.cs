@@ -1553,6 +1553,18 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "DispAmp", DispAmp );
 		_so.Attributes.Set( "DispFreq", DispFreq );
 		_so.Attributes.Set( "DispShadows", DisplaceShadows ? 1 : 0 );
+		// Sun exposure from IndoorVolume (1 outdoors, fading to 0 indoors): scales the sun's transmission,
+		// and at 0 the shaders skip the sun entirely — transmission, direct lighting and casting into its
+		// shadow cascades. Pushed every frame (props move between rooms), onto the sibling mesh too: it is
+		// usually the prop's shadow caster and shares clay_shading's direct lighting.
+		// Only for renderers drawing into the scene's OWN world: a TargetWorld renderer (prop icons, the
+		// roster's render-to-texture) still sits somewhere in this scene's space — often inside a big
+		// IndoorVolume — but is lit by its own world's sun, which an indoor reading would switch off.
+		float sunExposure = TargetWorld is null ? IndoorVolume.SunExposure( Scene, _curCenter ) : 1f;
+		_so.Attributes.Set( "SdfSunExposure", sunExposure );
+		var sunMeshSo = MeshRenderer?.SceneObject;
+		if ( sunMeshSo.IsValid() )
+			sunMeshSo.Attributes.Set( "SdfSunExposure", sunExposure );
 
 		// Claymation boil — OPT-IN per prop: only a GameObject carrying an enabled, ACTIVE ClayBoil
 		// boils (a WhileDamaged boil with no shrinking crater is treated exactly like no component).

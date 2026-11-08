@@ -15,6 +15,45 @@
 bool  g_bReceiveDecals < Default( 1 ); UiGroup( "Surface,10/97" ); >;
 int   g_nSdfNoDecals   < Attribute( "SdfNoDecals" ); Default( 0 ); >;
 
+// Per-OBJECT sun exposure from IndoorVolume (SdfRaymarchRenderer pushes it onto the raymarch scene object
+// AND its sibling mesh): 1 = outdoors, fading to 0 inside a volume. At exactly 0 the sun's direct lighting
+// is skipped below (cascade PCF + screen-space shadow fetch + cascade blend), as is its transmission in
+// sdf_raymarch and its shadow-cascade casting in both VSs (they mirror this declaration).
+float g_flSdfSunExposure < Attribute( "SdfSunExposure" ); Default( 1.0 ); >;
+
+// ComputeDirectLighting( o, f, nClusterIndex, vTransmissiveStart ) from vr_lighting.fxc, line for line, apart
+// from the per-object gate on the directional light. Keep it in step with the engine's copy when that changes.
+void ClayDirectLighting( inout LightingTerms_t o, const FinalCombinerInput_t f )
+{
+	o.vDiffuse 		= float3( 0.0, 0.0, 0.0 );
+	o.vSpecular 	= float3( 0.0, 0.0, 0.0 );
+	o.vTransmissive = float3( 0.0, 0.0, 0.0 );
+
+	const float3 vReceiverNormalWs = ComputeShadowReceiverNormal( f.vPositionWithOffsetWs.xyz );
+
+	// Indoors (exposure 0) the roof already shadows the sun to zero, so this only skips work. The one
+	// visible difference: a prop inside a volume but standing in a window's sunbeam gets no direct sun.
+	[branch]
+	if ( g_flSdfSunExposure > 0.0 && !LightmappedLight::UsesLightmaps() && !ProbeLight::UsesProbes() )
+		ComputeDirectionalLight( f, vReceiverNormalWs, o.vDiffuse.rgb, o.vSpecular.rgb, o.vTransmissive.rgb );
+
+	if ( DirectionalLightDebug > 0 && g_DirectionalLightCascadeCount > 0 )
+	{
+		float3 debugColor = DirectionalLightShadow::GetDebugColor( f.vPositionWs.xyz );
+		o.vDiffuse.rgb += debugColor;
+	}
+
+	ClusterRange lightRange = Cluster::Query( ClusterItemType_Light, Cluster::Index( f.vPositionSs ) );
+
+	if ( !WaveActiveAnyTrue( lightRange.Count > 0 ) )
+		return;
+
+	uint features = Cluster::WaveFeatures( lightRange ) & ( LightModulators::Active() ? ClusterFeature_LightModulators : 0 );
+
+	ClusterForEach( lightRange )
+		ComputeDirectLightingForLight( f, vReceiverNormalWs, DynamicLightConstantByIndex( lightRange.Item ), o.vDiffuse.rgb, o.vSpecular.rgb, o.vTransmissive.rgb, false, features != 0 );
+}
+
 float4 ClayShade( PixelInput i, Material m )
 {
 	m.WorldPositionWithOffset = i.vPositionWithOffsetWs;
@@ -33,7 +72,7 @@ float4 ClayShade( PixelInput i, Material m )
 
 	// Calculate lighting
 	{
-		ComputeDirectLighting( lightingTerms, combinerInput );
+		ClayDirectLighting( lightingTerms, combinerInput );
 		CalculateIndirectLighting( lightingTerms, combinerInput );
 	}
 

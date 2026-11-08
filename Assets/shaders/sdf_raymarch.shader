@@ -49,6 +49,8 @@ VS
 	// VS and PS are separate programs). Scale = tan(cameraHalfFov)/tan(viewmodelHalfFov), 1 = off.
 	int   g_nSdfViewmodel   < Attribute( "SdfViewmodel" );  Default( 0 ); >;
 	float g_flSdfVmFovScale < Attribute( "SdfVmFovScale" ); Default( 1.0 ); >;
+	// Mirror of clay_shading.hlsl's per-object sun exposure (IndoorVolume).
+	float g_flSdfSunExposure < Attribute( "SdfSunExposure" ); Default( 1.0 ); >;
 
 	PixelInput MainVs( VertexInput i )
 	{
@@ -72,7 +74,17 @@ VS
 			o.vPositionPs = Position3WsToPs( warped );
 		}
 
-		return FinalizeVertex( o );
+		o = FinalizeVertex( o );
+
+		// Fully indoors: don't cast into the SUN's shadow cascades — under a roof that shadow can never be
+		// seen. Detected like the PS's IsOrthoView() && IsShadowView(): an ortho projection whose camera
+		// isn't the frame's game camera. Every vertex goes to one point outside the clip volume, so the
+		// proxy rasterises nothing and the shadow march never runs. Spot/point shadows are untouched.
+		if ( g_flSdfSunExposure <= 0.0
+			&& abs( g_matWorldToProjection[3].x ) + abs( g_matWorldToProjection[3].y ) + abs( g_matWorldToProjection[3].z ) < 1e-6
+			&& length( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) > 0.5 )
+			o.vPositionPs = float4( 2.0, 2.0, 2.0, 1.0 );
+		return o;
 	}
 }
 
@@ -257,6 +269,11 @@ PS
 	float  g_flTransProbe     < Default( 2.0 );  Range( 0.1, 32.0 ); UiGroup( "Transmission,11/60" ); >; // inward-tap depth
 	float  g_flTransMaxDist   < Default( 16.0 ); Range( 1.0, 64.0 ); UiGroup( "Transmission,11/70" ); >; // thickness-march reach
 	float  g_flTransFalloff   < Default( 8.0 );  Range( 0.5, 64.0 ); UiGroup( "Transmission,11/80" ); >; // absorption distance
+	// The sun's shadow for transmission is sampled just past the prop's whole bounding sphere along the sun
+	// direction, so the prop can never shadow its own sample. This is the gap (inches) beyond that sphere:
+	// a few shadow texels of slop. Larger = more leak for props right behind a wall/fence.
+	float  g_flTransSunMargin < Default( 4.0 ); Range( 0.0, 32.0 ); UiGroup( "Transmission,11/90" ); >;
+	// (Per-prop sun exposure g_flSdfSunExposure, from IndoorVolume, is declared in clay_shading.hlsl.)
 
 	// Displacement look — ATTRIBUTES pushed by SdfRaymarchRenderer (its DispAmp/DispFreq properties),
 	// NOT material params like the transmission look. They used to be: but the lumps are baked into
@@ -806,31 +823,42 @@ PS
 
 		float tapThick = SdfThicknessTap( p, geoN );
 
-		// Key light (sun). Owns the ambient fill so it's added once, not once per light.
-		if ( g_DirectionalLightEnabled )
+		// Key light (sun). Owns the ambient fill so it's added once, not once per light — scaled by the
+		// prop's indoor mask, whose remainder moves to the cluster lights below.
+		// g_flSdfSunExposure is per-draw (uniform), so inside an IndoorVolume this whole block — the cascade
+		// sample and the thickness march — is skipped for the price of one branch.
+		float sunMask = g_DirectionalLightEnabled ? saturate( g_flSdfSunExposure ) : 0.0;
+		if ( sunMask > 0.001 )
 		{
 			float3 L = -normalize( g_DirectionalLightDirection.xyz );
-			// Cascade-only sun visibility (NOT GetVisibility): the engine's GetVisibility now also
-			// composites the screen-space contact-shadow mask (bindless + MSAA gather), and inlining
-			// that here CRASHES DXC on the heavy D_TRANSMISSION combo variants — no diagnostic, the
-			// compiler just dies at ~90% of the sweep. The cascade PCF sample is the part that matters
-			// for dimming transmission in shadow; a contact mask on a soft back-scatter term is noise.
+			// Sun visibility sampled TOWARD THE SUN, past the prop, not at this face. A back-lit face is always
+			// inside the body's own sun shadow (sampling here zeroed the glow and drew 0.2<->1.0 bands at the
+			// terminator — the cluster-light self-shadow bug again); out beyond the body only things between
+			// the prop and the sun can shadow it — a roof, a wall, a fence.
+			// HOW FAR: to the plane tangent to the prop's bounding sphere on the sun side (+ margin). Every
+			// point of the prop lies behind that plane, so no texel of the prop's own shadow — including the
+			// PCF kernel's lateral neighbours — can be in front of the sample. A FIXED offset (10in, the first
+			// cut) landed inside thick bodies or behind hollow ones (a toy train's cab, a cone's far wall) and
+			// drew the prop's own shadow-map texels across its glow as blocks. Pure ALU.
+			// Normal = L so the engine's normal offset pushes further out.
+			// Cascade-only (NOT GetVisibility): the screen-space contact mask is meaningless at an
+			// off-surface point, and inlining it CRASHES DXC on the heavy D_TRANSMISSION variants. This
+			// REPLACES the old at-face sample (it was used for the fill only), so the cost is unchanged.
+			// Beyond the last cascade there's nothing to read -> vis 1 (distant interiors leak; the
+			// IndoorVolume mask covers that).
 			float vis = 1.0;
 			if ( g_DirectionalLightCascadeCount > 0 )
 			{
+				float tPast = dot( g_vBoundsCenter - m.WorldPosition, L ) + g_flBoundsRadius + g_flTransSunMargin;
+				float3 posWs = m.WorldPosition + L * max( tPast, g_flTransSunMargin );
 				float3 posLs;
-				int cascade = FindCascade( m.WorldPosition, posLs );
+				int cascade = FindCascade( posWs, posLs );
 				if ( cascade >= 0 )
-					vis = DirectionalLightShadow::SampleCascade( cascade, m.WorldPosition, m.ScreenPosition.xy );
+					vis = DirectionalLightShadow::SampleCascade( cascade, posWs, L, m.ScreenPosition.xy );
 			}
-			// That visibility masks the AMBIENT FILL ONLY (floored so shadowed props keep a little fill,
-			// like foliage.shader's sun term). It must not touch the back-scatter: it's sampled at this
-			// face, and a back-lit face is always inside the body's own sun shadow — the same self-shadow
-			// bug fixed for cluster lights below. With it on the back-scatter the sun's transmission sat
-			// at the 0.2 floor everywhere it should have been full, with 0.2<->1.0 bands wherever the
-			// cascade depth test was borderline near the terminator. Kept on the fill because the fill is
-			// what would otherwise light a roofed interior's props with a sun they can't see.
-			ApplyTransLight( m, transColor, p, geoN, L, g_DirectionalLightColor.rgb, 1.0, lerp( 0.2, 1.0, vis ), tapThick, g_flTransAmbient, viewDir );
+			// Back-scatter gets vis directly (a fence shadow kills the glow). The fill keeps its floor so
+			// shadowed props keep a little fill, like foliage.shader's sun term.
+			ApplyTransLight( m, transColor, p, geoN, L, g_DirectionalLightColor.rgb, vis * sunMask, lerp( 0.2, 1.0, vis ) * sunMask, tapThick, g_flTransAmbient, viewDir );
 		}
 
 		// Cluster (point/spot) lights affecting this screen tile — the same gated march as the sun via
@@ -845,12 +873,13 @@ PS
 		// grazing rays through the boil-displaced surface — the accumulating 6-step march is stable there.
 		// KNOWN LIMITATION: a wall between a spot and a back-lit prop does not block the prop's glow.
 		//
-		// Ambient fill: the sun owns it when present. With no sun (spot-lit interiors, the common case)
+		// Ambient fill: the sun owns it when present and the prop isn't indoors. With no sun (spot-lit interiors)
 		// the fill moves to the cluster lights under a shared budget, so overlapping spots can't stack it
 		// past g_flTransAmbient. Any directional light is skipped (the sun is handled above).
 		// Explicit receiver normal: the overload without one derives it from screen-space derivatives,
 		// which the engine documents as invalid inside a per-light loop (non-uniform control flow).
-		float ambientBudget = g_DirectionalLightEnabled ? 0.0 : g_flTransAmbient;
+		// Indoors (sunMask 0) behaves exactly like the no-sun case.
+		float ambientBudget = g_flTransAmbient * ( 1.0 - sunMask );
 		uint lightCount = Light::Count( m.ScreenPosition );
 		[loop]
 		for ( uint li = 0; li < lightCount; li++ )

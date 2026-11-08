@@ -54,6 +54,11 @@ public sealed class SyncedMusic : Component
 	/// event clean. Empty = the event's mixer.</summary>
 	[Property, Group( "Playback" )] public Sandbox.Audio.MixerHandle MixerOverride { get; set; }
 
+	/// <summary>Doppler pitch shift strength (engine SoundHandle.DopplerScale: 1 = physical, 0 = off). Kept low:
+	/// the listener is the camera, whose boom swings fast, and every shift also nudges playback off the shared
+	/// clock, which the drift check then corrects with an audible seek. Ignored when <see cref="Global"/>.</summary>
+	[Property, Group( "Playback" ), Range( 0, 1 )] public float DopplerScale { get; set; } = 0.15f;
+
 	/// <summary>Seconds after this component enables before the music may start (on top of the load settle).
 	/// The shared clock still decides the song position, so a delay never breaks sync.</summary>
 	[Property, Group( "Playback" )] public float StartDelay { get; set; }
@@ -392,6 +397,7 @@ public sealed class SyncedMusic : Component
 		h.Distance = ev.Distance;
 		h.Falloff = ev.Falloff;
 		h.TargetMixer = string.IsNullOrEmpty( MixerOverride.Name ) ? ev.DefaultMixer.Get() : MixerOverride.Get();
+		h.DopplerScale = Global || ev.UI ? 0f : DopplerScale;
 		if ( Global )
 		{
 			h.ListenLocal = true;

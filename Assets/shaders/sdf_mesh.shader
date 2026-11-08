@@ -65,6 +65,8 @@ VS
 
 	// World units to push each vertex out along its normal (see MainVs). Runtime uniform, not a combo.
 	float g_flSdfMeshInflate < Attribute( "SdfMeshInflate" ); Default( 0.0 ); >;
+	// Mirror of clay_shading.hlsl's per-object sun exposure (IndoorVolume).
+	float g_flSdfSunExposure < Attribute( "SdfSunExposure" ); Default( 1.0 ); >;
 
 	PixelInput MainVs( VertexInput i )
 	{
@@ -103,7 +105,15 @@ VS
 		o.vObjToWorld0 = matObjectToWorld[0].xyz;
 		o.vObjToWorld1 = matObjectToWorld[1].xyz;
 		o.vObjToWorld2 = matObjectToWorld[2].xyz;
-		return FinalizeVertex( o );
+		o = FinalizeVertex( o );
+
+		// Fully indoors: skip the SUN's shadow cascades (this mesh is usually the prop's shadow caster).
+		// Same test and cull as sdf_raymarch's MainVs — see there.
+		if ( g_flSdfSunExposure <= 0.0
+			&& abs( g_matWorldToProjection[3].x ) + abs( g_matWorldToProjection[3].y ) + abs( g_matWorldToProjection[3].z ) < 1e-6
+			&& length( g_vHighPrecisionLightingOffsetWs.xyz - g_vCameraPositionWs ) > 0.5 )
+			o.vPositionPs = float4( 2.0, 2.0, 2.0, 1.0 );
+		return o;
 	}
 }
 
