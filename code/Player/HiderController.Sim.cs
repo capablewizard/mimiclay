@@ -20,7 +20,7 @@ namespace Mimiclay;
 //    the SIM world (a second PropMoveHull whose scratch bodies live there).
 //
 // The scene pawn becomes presentation: keyframed (Character mode), its transform set from the sim every frame
-// (SimBodyFlags.Present — the host also stops the engine syncing it). Gated by mimi_sim_walk (default OFF).
+// (SimBodyFlags.Present — the host also stops the engine syncing it). Gated by mimi_sim_walk (default ON).
 //
 // NOT in 2a (falls back to nothing while sim-walking): climbing, mantling, the possession cling, the charades leash's
 // pull-in, released scenery, bodies being held (later phases brought loose scenery, holds and climbing in).
