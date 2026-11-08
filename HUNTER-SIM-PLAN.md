@@ -162,6 +162,48 @@ Left as-is:
 - Pads don't launch held, loose or lying sim bodies (the old scene launch didn't reach those in the sim either).
 - Edit mode and the round lock stop a sim hunter by friction (about 0.3 s) rather than zeroing its velocity at once.
 
+**H5 testing 2026-11-08 (uncommitted).** Five SimLab hunter scenarios, at the props' stations (`SimLab.Base`):
+`hpush`, `hloose`, `hpushed`, `hride` and `hclimb`. The hunter is now recorded as a fourth body on every screen: from the
+sim, or from its transform on the engine walk.
+
+Extra drawn depth against the host (u), worst of each screen:
+
+| | engine walk, no lag | sim, no lag | sim, fakelag 40 (~165 ms) | sim, fakelag 90 (~265 ms) |
+|---|---|---|---|---|
+| `hpush` | 5–11 | ≤0.3 | ≤0.0 (1 run dropped, see below) | ≤0.0 |
+| `hloose` | 14–15 | ≤0.8 | ≤−0.1 | ≤−0.8 |
+| `hpushed` | ≤0 | ≤0.1 | ≤0.3 | ≤0.1 |
+| `hride` | 3.6 (vgap 8.7) | 0.1 | 0.1 | 0.1 |
+
+- **`hclimb`:** tops out at 110 every run at every lag. The engine climb can't be scripted, since its grab needs the input pass the debug walk turns off.
+- **`hcorner`:** 9 faces every run at 40 and 90.
+- **`hpushed`:** this is the prop-walks-into-hunter case, the hunter's correction cost from H2. It's within 0.5u now at every lag.
+
+**Open (not fixed):**
+- **Holder's view at ~265 ms:** in `held`, with sim hunters on, the holder sees A pressing into the held ball a little worse. In 5 runs: one 390u single-frame snap and one 1585 u/s frame. Depth is 7.5u, against −1.0 with the flag off. Likely A's walk now shoves the hunter's real body, so its screen and its hold get corrected.
+- **Onlookers at ~265 ms:** they draw a remote hunter stopping with one 1800 u/s frame. The guess keeps walking for the lead, then folds back. Props' walkers have the same; for props it was softened with BrakeAccel, but hunters keep the engine's instant stop.
+- **Seen, not new:** at 40 and 90 a thrown ball is drawn up to 19u under the floor on onlookers' screens. That's the late-throw item in held-prop-prediction-todo.
+
+**Follow-up the same day (user's picks).**
+
+1. **Tried, then REVERTED: a heavy hunter** (20,000 kg in the sim, so props couldn't shove it).
+   - In the lab, the host's hunter moved 1u in `hpushed`.
+   - It didn't stop the holder's glitch in `held`: a 1650 u/s frame of A in 2 of 5 runs, about 0.3 s after A stops against the held ball. So the shove was never its main cause.
+   - The user found it far too heavy by hand. Climbing onto props was too disruptive, so the hunter is back at BodyMass (500 kg).
+   - Both open items stand: a prop walking into a hunter corrects the hunter's screen, and the holder's glitch.
+2. **Floatier hunter walk, between the old hunter and props.** On the prefab's walk component (the engine walk and the sim walk both read it): Friction 6 → 3.5, GroundAcceleration 10 → 6.
+
+   | | before | now | props |
+   |---|---|---|---|
+   | time to 270 u/s | 0.15 s | 0.24 s | ~0.4 s |
+   | stop from 280 | 38u in 0.35 s | 64u in 0.59 s | ~102u in 0.64 s |
+
+   Sim and engine walks match. Onlookers' stop overshoot at ~265 ms (`hloose`) is down from 1800–1970 to 1500–1600 u/s, about at the watch's threshold.
+
+**Lab fixes:**
+- The summary drops a hunter run whose host recording missed the hunter's motion. One `hpush` run at 40 read 116u against a host line where nothing moved.
+- SimLab's hunter jump uses the controller's public `Jump`. The s&box whitelist rejects reflection in game code, and that compile failure silently left the editor and the clients on the old SimLab while `dotnet build` passed.
+
 **Known cost (the full walk's):** a player's prop walking into a standing hunter shoves it (152u). The hunter's own screen learns of the walk late and is corrected: 58–83u, faded in, peak 304 u/s, no snaps. Look at it in H5's latency pass.
 
 ## Phases

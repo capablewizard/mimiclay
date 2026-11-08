@@ -16,19 +16,23 @@ function num(s, key,   r) { if (match(s, key " -?[0-9.]+")) { r = substr(s, RSTA
 	c[key, role] = num(line, "centre"); d[key, role] = num(line, "depth"); v[key, role] = num(line, "vgap")
 	ra[key, role] = num(line, "react-arrive"); ga[key, role] = num(line, "gap@react")
 	if (match(line, / A mv +[0-9]+/)) { t = substr(line, RSTART, RLENGTH); gsub(/[^0-9]/, "", t); mv[key, role] = t + 0 }
+	if (match(line, / H mv +[0-9]+/)) { t = substr(line, RSTART, RLENGTH); gsub(/[^0-9]/, "", t); mvh[key, role] = t + 0 }
 	mx = 0; nb = 0; s = line
 	while (match(s, /max +[0-9]+@/)) { t = substr(s, RSTART, RLENGTH); gsub(/[^0-9]/, "", t); if (t + 0 > mx) mx = t + 0; s = substr(s, RSTART + RLENGTH) }
 	s = line; while (match(s, />1500:[0-9]+/)) { t = substr(s, RSTART + 6, RLENGTH - 6); nb += t; s = substr(s, RSTART + RLENGTH) }
 	if (mx > dv[scen, role]) dv[scen, role] = mx; bl[scen, role] += nb
 	if (role != "HOST") next
 	if (mv[key, "A"] > 100 && mv[key, "HOST"] < 0.8 * mv[key, "A"]) { bad[scen]++; next }
+	# the hunter scenarios: the same test on the HUNTER's travel (A waits in the park there, so a host that missed the motion
+	# went unnoticed: one hpush run at fakelag 40 read 116u "extra depth" against a host line where nothing had moved)
+	if (scen ~ /^h(push|loose|pushed|ride|climb)$/ && mvh[key, "H"] > 100 && mvh[key, "HOST"] < 0.8 * mvh[key, "H"]) { bad[scen]++; next }
 	if (mx > dv[scen, "HOST"]) dv[scen, "HOST"] = mx
 	n = split("A B H", rr, " ")
 	for (i = 1; i <= n; i++) {
 		r = rr[i]; if (!((key, r) in d)) continue
 		ex = d[key, r] - d[key, "HOST"]; if (!((scen, r) in dmax) || ex > dmax[scen, r]) dmax[scen, r] = ex; dsum[scen, r] += ex
 		ex = c[key, "HOST"] - c[key, r]; if (!((scen, r) in cmax) || ex > cmax[scen, r]) cmax[scen, r] = ex
-		if ((scen == "jump" || scen == "ledge") && v[key, "HOST"] != 999 && v[key, r] != 999 && v[key, "HOST"] != "" && v[key, r] != "") { ex = v[key, "HOST"] - v[key, r]; if (!((scen, r) in vmax) || ex > vmax[scen, r]) vmax[scen, r] = ex }
+		if ((scen == "jump" || scen == "ledge" || scen == "hride") && v[key, "HOST"] != 999 && v[key, r] != 999 && v[key, "HOST"] != "" && v[key, r] != "") { ex = v[key, "HOST"] - v[key, r]; if (!((scen, r) in vmax) || ex > vmax[scen, r]) vmax[scen, r] = ex }
 		if (ra[key, r] != "") { rasum[scen, r] += ra[key, r]; ran[scen, r]++ }
 		if (ga[key, r] != "") { gasum[scen, r] += ga[key, r]; gan[scen, r]++ }
 		cnt[scen, r]++

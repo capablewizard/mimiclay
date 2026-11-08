@@ -91,6 +91,15 @@ run skips a scenario that fails and stops after three failures in a row).
 | `corner` | A grabs a pillar, climbs up, then sideways (D) round its OUTER corners | A–pillar (+ climb) |
 | `inner` | A grabs a wall, climbs up, then sideways into an INNER corner and on along the other wall | A–wall (+ climb) |
 | `hcorner` | H (a hunter) grabs a pillar, climbs up, then sideways round its outer corners | (+ climb, on H only) |
+| `hpush` | H walks into a standing B (the push station) | H–B |
+| `hloose` | H walks into the loose football (the loose station) | H–L |
+| `hpushed` | A walks into H standing on B's marker (the push station) | A–H |
+| `hride` | H stands on B while B walks (the push station) | H–B (+ vertical gap) |
+| `hclimb` | H walks at the wall with Space held, jumps, grabs, climbs and mantles (the climb station) | H–Wall (+ climb, on H only) |
+
+The hunter scenarios (HUNTER-SIM-PLAN.md, H5) run at the props' stations (`SimLab.Base` maps them), with the actors they
+don't use in the park. H is recorded as a fourth body on every screen: from the sim with `mimi_sim_hunter` on, from its
+scene transform on the engine walk — so the same runs compare the two. H walks with the debug chase (a wish, either walk).
 
 ## Reading the summary
 

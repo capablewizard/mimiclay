@@ -24,18 +24,24 @@ namespace Mimiclay;
 /// </summary>
 public static class SimLab
 {
-	public static readonly string[] Scenarios = { "loose", "static", "push", "headon", "held", "swing", "throw", "jump", "lying", "wall", "ledge", "pushwall", "twopush", "throwplayer", "climb", "corner", "inner", "hcorner" };
+	public static readonly string[] Scenarios = { "loose", "static", "push", "headon", "held", "swing", "throw", "jump", "lying", "wall", "ledge", "pushwall", "twopush", "throwplayer", "climb", "corner", "inner", "hcorner", "hpush", "hloose", "hpushed", "hride", "hclimb" };
 
 	// Climbing (2026-11-07): A climbs a wall and mantles onto it, climbs round a pillar (outer corners), along into an inner
 	// corner; H (a hunter) climbs round a pillar. Longer runs, and the report adds the faces climbed (ClimbReport).
-	static bool ClimbScen( string scen ) => scen is "climb" or "corner" or "inner" or "hcorner";
+	static bool ClimbScen( string scen ) => scen is "climb" or "corner" or "inner" or "hcorner" or "hclimb";
+
+	// Hunter scenarios (HUNTER-SIM-PLAN.md H5) run at the props' stations — their markers, statics and loose prop — so the
+	// generated scene stays as it is: hpush (H walks into a standing B), hloose (H walks into the loose football), hpushed
+	// (A walks into a standing H), hride (H stands on B while B walks), hclimb (H jumps at the wall, Space held, climbs, mantles).
+	static string Base( string scen ) => scen switch { "hpush" or "hpushed" or "hride" => "push", "hloose" => "loose", "hclimb" => "climb", _ => scen };
+	static bool HScen( string scen ) => scen is "hpush" or "hloose" or "hpushed" or "hride" or "hclimb";
 
 	// ── Scene access ────────────────────────────────────────────────────────────────────────────────────────
 
 	static Scene S => Game.ActiveScene;
 	static SimWorld Sim => S?.GetSystem<SimWorld>();
 
-	static GameObject Station( string scen ) => S.GetAllObjects( true ).FirstOrDefault( g => g.Name == "SimLab." + scen );
+	static GameObject Station( string scen ) => S.GetAllObjects( true ).FirstOrDefault( g => g.Name == "SimLab." + Base( scen ) );
 
 	static Vector3? Marker( string scen, string name )
 	{
@@ -45,7 +51,7 @@ public static class SimLab
 
 	static GameObject StaticOf( string scen, string name )
 		=> Station( scen )?.Children.FirstOrDefault( x => x.Name == name && x.Components.Get<Collider>() is not null ) // (the box, not the marker of the same name)
-			?? S.GetAllObjects( true ).FirstOrDefault( g => g.Name == $"SimLab.{scen}.{name}" );
+			?? S.GetAllObjects( true ).FirstOrDefault( g => g.Name == $"SimLab.{Base( scen )}.{name}" );
 
 	// A player by CONNECTION ID (what lab.sh cast records), or by display name as a fallback. Names aren't unique: two
 	// test clients once both came up as "Ned", and every lookup found the same body for A and B.
@@ -104,24 +110,26 @@ public static class SimLab
 		}
 		a.LabDown = false;
 		b.LabDown = scen == "lying";
-		Put( a.GameObject, (Marker( scen, scen == "swing" ? "A.wait" : "A" ) ?? Marker( "park", "A" ).Value) + up, Rotation.FromYaw( 90f ) );
-		Put( b.GameObject, (Marker( scen, "B" ) ?? Marker( "park", "B" ).Value) + up, Rotation.FromYaw( -90f ) );
+		// (Hunter scenarios: an actor the scenario doesn't use waits in the park — hpushed is A walking into H at B's marker.)
+		bool parkA = scen is "hpush" or "hloose" or "hride" or "hclimb", parkB = scen is "hpushed" or "hloose" or "hclimb";
+		Put( a.GameObject, ((parkA ? null : Marker( scen, scen == "swing" ? "A.wait" : "A" )) ?? Marker( "park", "A" ).Value) + up, Rotation.FromYaw( 90f ) );
+		Put( b.GameObject, ((parkB ? null : Marker( scen, "B" )) ?? Marker( "park", "B" ).Value) + up, Rotation.FromYaw( -90f ) );
 		string loose = "";
 		var pcs = PropClaims.Current;
 		bool Converted( HiderController h ) => h is not null && PropClaims.IsReleased( h ) && pcs.IsConverted( h.GameObject ); // (scenery made loose, never a released PLAYER prop)
 		if ( Marker( scen, "L" ) is { } lm )
 		{
-			if ( !_loose.TryGetValue( scen, out var id ) || !S.Directory.FindByGuid( id ).IsValid() )
+			if ( !_loose.TryGetValue( Base( scen ), out var id ) || !S.Directory.FindByGuid( id ).IsValid() )
 			{
 				// Made in an earlier run (a hotload clears _loose): its tag, else the converted prop nearest the marker; else
 				// convert the station's football; else (its football converted and flung off before tagging) a stray one.
-				var tagged = S.GetAllObjects( true ).FirstOrDefault( g => g.Name == $"SimLab.{scen}.loose" )?.Components.Get<HiderController>();
+				var tagged = S.GetAllObjects( true ).FirstOrDefault( g => g.Name == $"SimLab.{Base( scen )}.loose" )?.Components.Get<HiderController>();
 				var pawn = (Converted( tagged ) ? tagged : null)?.GameObject
 					?? S.GetAllComponents<HiderController>().Where( x => Converted( x ) && !x.GameObject.Name.StartsWith( "SimLab." ) && x.WorldPosition.WithZ( 0 ).Distance( lm.WithZ( 0 ) ) < 450f )
 						.OrderBy( x => x.WorldPosition.Distance( lm ) ).FirstOrDefault()?.GameObject;
 				if ( pawn is null )
 				{
-					var src = S.GetAllObjects( true ).FirstOrDefault( g => g.Name == $"SimLab.{scen}.L" );
+					var src = S.GetAllObjects( true ).FirstOrDefault( g => g.Name == $"SimLab.{Base( scen )}.L" );
 					pawn = pcs.LabMakeLoose( src?.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndDescendants ) );
 					if ( pawn is not null )
 						await GameTask.Delay( 500 ); // (registered in the sim as a loose body first)
@@ -130,8 +138,8 @@ public static class SimLab
 					.OrderBy( x => x.WorldPosition.Distance( lm ) ).FirstOrDefault()?.GameObject;
 				if ( pawn is null )
 					return $"could not make the loose prop for {scen}";
-				pawn.Name = $"SimLab.{scen}.loose"; // (host-side tag: found again wherever a test left it)
-				_loose[scen] = id = pawn.Id;
+				pawn.Name = $"SimLab.{Base( scen )}.loose"; // (host-side tag: found again wherever a test left it)
+				_loose[Base( scen )] = id = pawn.Id;
 			}
 			Put( S.Directory.FindByGuid( id ), lm + Vector3.Up * 6f, Rotation.Identity );
 			loose = $" L {lm:0}";
@@ -139,7 +147,7 @@ public static class SimLab
 		// Strays (released props left in this station by earlier tests or by closed clients) go to the park row.
 		{
 			var centre = Station( scen ).WorldPosition;
-			_loose.TryGetValue( scen, out var mine );
+			_loose.TryGetValue( Base( scen ), out var mine );
 			foreach ( var x in S.GetAllComponents<HiderController>().Where( x => PropClaims.IsReleased( x ) && x.GameObject.Id != mine && x.WorldPosition.WithZ( 0 ).Distance( centre.WithZ( 0 ) ) < 500f ).ToList() )
 			{
 				int slot = _parked++;
@@ -193,6 +201,39 @@ public static class SimLab
 			a.yaw = 90f; a.pitch = 0f; ctl.EyeAngles = a;
 			return $"H at the pillar of {scen}";
 		}
+		if ( HScen( scen ) )
+		{
+			HunterClimb.DebugVertical = 0f;
+			HunterController.DebugChase = null;
+			Vector3 spot, lookAt;
+			if ( scen == "hride" )
+			{
+				// On top of B, once the host has B on its marker (lab.sh calls this again after the setup); until then, the park.
+				var b = PropOf( nameB );
+				var bm = Marker( scen, "B" ).Value;
+				if ( b is null || b.WorldPosition.WithZ( 0 ).Distance( bm.WithZ( 0 ) ) > 40f )
+				{
+					PlaceHunter( me, Marker( "park", "H" ).Value + Vector3.Up * 2f );
+					return "H waiting in the park for B (hride)";
+				}
+				spot = b.WorldPosition.WithZ( b.GameObject.GetBounds().Maxs.z + 4f );
+				lookAt = Marker( scen, "A.to" ).Value;
+			}
+			else if ( scen == "hpushed" )
+			{
+				spot = Marker( scen, "B" ).Value + Vector3.Up * 2f;
+				lookAt = Marker( scen, "A" ).Value;
+			}
+			else
+			{
+				spot = Marker( scen, "A" ).Value + Vector3.Up * 2f;
+				lookAt = Marker( scen, "A.to" ).Value;
+			}
+			PlaceHunter( me, spot );
+			a.yaw = (lookAt - spot).WithZ( 0f ).EulerAngles.yaw; a.pitch = 0f; ctl.EyeAngles = a;
+			await GameTask.Delay( 600 );
+			return $"H at {spot:0} for {scen}";
+		}
 		if ( !HunterHolds( scen ) )
 		{
 			var spot = Marker( scen, "Hobs" ) ?? Marker( "park", "H" ).Value;
@@ -243,6 +284,8 @@ public static class SimLab
 		("A", "climb" or "corner" or "inner") => new[] { (0.5, 10.0, "A.to") }, // (to the wall; Act jumps at it and climbs)
 		("B", "headon") => new[] { (0.5, 2.0, "B.to") },
 		("B", "twopush") => new[] { (0.5, 2.5, "B.to") },
+		("A", "hpushed") => new[] { (0.5, 2.3, "A.to") }, // (into the hunter standing on B's marker)
+		("B", "hride") => new[] { (0.5, 2.5, "A.to") },   // (carrying the hunter standing on it)
 		_ => Array.Empty<(double, double, string)>(),
 	};
 
@@ -258,6 +301,10 @@ public static class SimLab
 		"climb" => ("A", "Wall"),
 		"corner" => ("A", "Pillar"),
 		"inner" => ("A", "WallA"),
+		"hpush" or "hride" => ("H", "B"),
+		"hloose" => ("H", "L"),
+		"hpushed" => ("A", "H"),
+		"hclimb" => ("H", "Wall"),
 		_ => ("A", "B"),
 	};
 
@@ -280,8 +327,11 @@ public static class SimLab
 		if ( ClimbScen( scen ) )
 			seconds = role == "HOST" ? 13f : 10f; // (the host starts first and records longer — see lab.sh)
 		var hA = PropOf( nameA ); var hB = PropOf( nameB ); var hL = LooseOf( scen );
-		var names = new[] { "A", "B", "L" };
-		var keys = new[] { hA?.GameObject.Id ?? Guid.Empty, hB?.GameObject.Id ?? Guid.Empty, hL?.GameObject.Id ?? Guid.Empty };
+		// H: the test client's hunter (the one no host owns) — a sim body with mimi_sim_hunter on, else drawn from its scene
+		// transform (the engine walk), so the hunter scenarios compare old and new alike.
+		var hH = S.GetAllComponents<HunterController>().FirstOrDefault( x => x.Network.Owner is { } o && !o.IsHost && !x.Bot );
+		var names = new[] { "A", "B", "L", "H" };
+		var keys = new[] { hA?.GameObject.Id ?? Guid.Empty, hB?.GameObject.Id ?? Guid.Empty, hL?.GameObject.Id ?? Guid.Empty, hH?.GameObject.Id ?? Guid.Empty };
 		var (pairA, pairB) = PairOf( scen );
 		int ia = Array.IndexOf( names, pairA ), ib = Array.IndexOf( names, pairB ); // ib -1 = a static thing
 		var stat = ib < 0 ? StaticOf( scen, pairB ) : null;
@@ -328,6 +378,46 @@ public static class SimLab
 			}
 		}
 
+		// The hunter scenarios' hunter: walks with the debug chase (a wish, either walk — HunterController), jumps as Space
+		// would (the sim walk's DebugSimJump; the engine walk's own jump request) and holds Space for the climb.
+		void WalkH( Vector3? to )
+		{
+			HunterController.DebugChaseSpeed = 280f; HunterController.DebugChaseStop = 0f; HunterController.DebugChasePitch = 0f;
+			HunterController.DebugChase = to;
+		}
+
+		void JumpH()
+		{
+			if ( me.SimWalking )
+				HunterController.DebugSimJump = true;
+			else if ( me.Components.Get<PlayerController>() is { } pc )
+				pc.Jump( Vector3.Up * pc.JumpSpeed ); // (the engine walk: its public launch — game code may not reflect into the walk's own jump)
+		}
+
+		void ActHunter( double t )
+		{
+			if ( scen is "hpush" or "hloose" )
+				WalkH( t >= 0.5 && t < 2.3 ? Marker( scen, "A.to" ) : null );
+			else if ( scen == "hclimb" )
+			{
+				var wall = StaticOf( scen, "Wall" );
+				if ( wall is null )
+					return;
+				bool on = me.Clinging;
+				if ( on && climbT < 0 )
+					climbT = t;
+				WalkH( t >= 0.5 && climbT < 0 ? Marker( scen, "A.to" ) : null ); // at the wall until it grabs
+				if ( !jumped && t > 0.5 && wall.GetBounds().Mins.y - me.WorldPosition.y < 90f )
+				{
+					JumpH();
+					jumped = true;
+					HunterClimb.DebugVertical = 1f; // Space held from the jump: the grab's intent, then the climb's "up"
+				}
+				if ( climbT >= 0 && !on )
+					HunterClimb.DebugVertical = 0f; // mantled onto the top (or let go)
+			}
+		}
+
 		void Act( double t )
 		{
 			if ( meProp is not null )
@@ -350,6 +440,8 @@ public static class SimLab
 				if ( !hGrabbed && t > 0.3 ) { hGrabbed = true; if ( me.SimWalking ) me.LabSimGrab(); else hClimb.LabGrab(); HunterClimb.DebugVertical = 1f; }
 				if ( hGrabbed && t > 1.3 ) { HunterClimb.DebugVertical = 0f; HunterClimb.DebugMove = new Vector3( 0f, -1f, 0f ); }
 			}
+			if ( role == "H" && HScen( scen ) && me is not null )
+				ActHunter( t );
 			if ( role != "H" || ctl is null || !HunterHolds( scen ) )
 				return;
 			var a = ctl.EyeAngles;
@@ -379,12 +471,20 @@ public static class SimLab
 			SetStatus( $"SimLab · {scen}\n{RoleName( role )}: {Doing( t )}\n{t:0.0} / {seconds:0} s" );
 			var s = new Sample
 			{
-				T = t, Tick = sim.Tick, Ok = new bool[3], P = new Vector3[3], Box = new BBox[3], CopyP = new Vector3[3], CopyBox = new BBox[3], CopyV = new Vector3[3],
-				Auth = new bool[3], Off = new Vector3[3], Touched = new bool[3], Tracking = new bool[3], Drv = new int[3],
+				T = t, Tick = sim.Tick, Ok = new bool[4], P = new Vector3[4], Box = new BBox[4], CopyP = new Vector3[4], CopyBox = new BBox[4], CopyV = new Vector3[4],
+				Auth = new bool[4], Off = new Vector3[4], Touched = new bool[4], Tracking = new bool[4], Drv = new int[4],
 			};
-			for ( int i = 0; i < 3; i++ )
+			for ( int i = 0; i < 4; i++ )
 			{
 				var b = keys[i] == Guid.Empty ? null : sim.Bodies.FirstOrDefault( x => x.Key == keys[i] );
+				if ( i == 3 && b is null && hH.IsValid() )
+				{
+					// The engine walk's hunter: drawn where its transform is, its box the controller's (BodyRadius square, BodyHeight).
+					var hp = hH.WorldPosition;
+					var hb = new BBox( hp + new Vector3( -15f, -15f, 0f ), hp + new Vector3( 15f, 15f, 96f ) );
+					s.Ok[i] = true; s.P[i] = s.CopyP[i] = hp; s.Box[i] = s.CopyBox[i] = hb;
+					continue;
+				}
 				if ( b is null || !b.Phys.IsValid() || !sim.TryGetVisualPose( keys[i], out var vp ) )
 					continue;
 				s.Ok[i] = true; s.P[i] = vp.Position; s.CopyP[i] = b.Phys.Position; s.CopyV[i] = b.Phys.Velocity;
@@ -409,6 +509,12 @@ public static class SimLab
 			HiderController.DebugClimbVertical = 0f; HiderController.DebugClimbMove = Vector2.Zero; HiderController.DebugClimbYaw = null;
 			HunterClimb.DebugVertical = 0f; HunterClimb.DebugMove = null;
 		}
+		if ( role == "H" && HScen( scen ) )
+		{
+			HunterController.DebugChase = null;
+			HunterClimb.DebugVertical = 0f;
+			HunterController.DebugChaseSpeed = 250f; HunterController.DebugChaseStop = 90f; HunterController.DebugChasePitch = 12f; // (the chase bot's)
+		}
 		SetStatus( $"SimLab · {scen} done\n{RoleName( role )}: waiting for the next scenario" );
 		SimLabJumpWatch.SetPhase( $"idle after {scen}" );
 		// The jump watch's count since the last run joins this line; its detail lines go last (see SimLabJumpWatch).
@@ -427,6 +533,12 @@ public static class SimLab
 				return !hGrabbed ? "facing the pillar" : t < 1.3 ? "grabbed - climbing up" : me?.Clinging == true ? "climbing sideways (D) round the pillar" : "fell off";
 			if ( role == "A" && ClimbScen( scen ) && climbT >= 0 )
 				return !hA.SimClimbing ? (scen == "climb" ? "mantled - walking onto the top" : "not climbing (fell off?)") : scen == "climb" ? "climbing up (Space)" : t - climbT < 0.8 ? "climbing up" : "climbing sideways (D)";
+			if ( role == "H" && HScen( scen ) )
+				return scen switch
+				{
+					"hpush" => "walking into B", "hloose" => "walking into the football", "hpushed" => "standing (A walks into us)",
+					"hride" => "standing on B (B walks)", _ => climbT < 0 ? "walking at the wall, Space held" : me?.Clinging == true ? "climbing up (Space)" : "mantled",
+				};
 			if ( role == "H" )
 				return !HunterHolds( scen ) ? "watching" : scen == "held" ? "holding still" : scen == "swing" ? (t < 1.5 ? "holding" : t < 2.1 ? "swinging" : "held out after the swing")
 					: thrown ? "thrown - watching it land" : t < 1.0 ? "holding, about to throw" : "throwing";
@@ -452,7 +564,7 @@ public static class SimLab
 	{
 		var sb = new StringBuilder();
 		sb.Append( $"{role,-4}" );
-		for ( int i = 0; i < 3; i++ )
+		for ( int i = 0; i < names.Length; i++ )
 		{
 			var dvs = new List<float>(); float maxDv = 0, maxOff = 0; double tMax = 0; int sw = 0;
 			for ( int k = 2; k < fr.Count; k++ )
@@ -511,7 +623,7 @@ public static class SimLab
 		}
 
 		if ( ClimbScen( scen ) )
-			sb.Append( ClimbReport( fr, scen == "hcorner", Station( scen )?.WorldPosition ?? Vector3.Zero ) );
+			sb.Append( ClimbReport( fr, scen is "hcorner" or "hclimb", Station( scen )?.WorldPosition ?? Vector3.Zero ) );
 
 		if ( dump && kDeep >= 0 )
 		{

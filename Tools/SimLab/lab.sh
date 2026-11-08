@@ -15,7 +15,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"; HERE_W="$(cygpath -m "$HERE")"
 OUT="$HERE/out"; OUT_W="$HERE_W/out"; mkdir -p "$OUT"
 STATE="$OUT/state.txt"
 SBOX="${SBOX_DIR:-D:/SteamLibrary/steamapps/common/sbox}"; CLI="$SBOX/bin/managed/sbox-cli.exe"
-ALL="loose static push headon held swing throw jump lying wall ledge pushwall twopush throwplayer climb corner inner hcorner"
+ALL="loose static push headon held swing throw jump lying wall ledge pushwall twopush throwplayer climb corner inner hcorner hpush hloose hpushed hride hclimb"
 
 host_pid() { "$CLI" --list 2>&1 | tr -d '\r' | awk '/"pid"/{gsub(/[^0-9]/,"",$0); pid=$0} /"kind": "editor"/{print pid; exit}'; }
 # run C# in an instance: cs PID TIMEOUT 'code' → the script's return value (all lines)
@@ -74,9 +74,9 @@ run)
 		# Every machine's jump watch: the teleports coming up are the lab's own (SimLabJumpWatch counts them apart).
 		PH=""; for p in $HOST $A $B $H; do ( cs $p 20 "return Mimiclay.SimLab.NotePhase(\"setup $SCEN\");" > /dev/null ) & PH="$PH $!"; done; wait $PH
 		OB=$(obs_pid); [ -n "$OB" ] && ( cs $OB 20 "return await Mimiclay.SimLab.Observe(\"$SCEN\");" > /dev/null ) &   # (the observer flies over)
-		echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$( case $SCEN in held|swing|throw|throwplayer) echo park;; *) echo $SCEN;; esac )\", \"$NB\");" | tail -1)" | tee -a "$LOG"
+		echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$( case $SCEN in held|swing|throw|throwplayer|hride) echo park;; *) echo $SCEN;; esac )\", \"$NB\");" | tail -1)" | tee -a "$LOG"
 		echo "  $(cs $HOST 30 "return await Mimiclay.SimLab.Setup(\"$SCEN\", \"$NA\", \"$NB\");" | tail -1)" | tee -a "$LOG"
-		case $SCEN in held|swing|throw|throwplayer) echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$SCEN\", \"$NB\");" | tail -1)" | tee -a "$LOG"; cs $HOST 30 "return await Mimiclay.SimLab.Setup(\"$SCEN\", \"$NA\", \"$NB\", 2);" > /dev/null;; esac
+		case $SCEN in held|swing|throw|throwplayer|hride) echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$SCEN\", \"$NB\");" | tail -1)" | tee -a "$LOG"; cs $HOST 30 "return await Mimiclay.SimLab.Setup(\"$SCEN\", \"$NA\", \"$NB\", 2);" > /dev/null;; esac
 		sleep 1.5
 		( cs $HOST 90 "return await Mimiclay.SimLab.Run(\"$SCEN\", \"HOST\", \"$NA\", \"$NB\", 9f, $DUMP);" > "$OUT/_o_HOST.txt" ) & sleep 0.5
 		( cs $A 90 "return await Mimiclay.SimLab.Run(\"$SCEN\", \"A\", \"$NA\", \"$NB\", 6f, $DUMP);" > "$OUT/_o_A.txt" ) &

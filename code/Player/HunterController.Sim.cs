@@ -47,7 +47,7 @@ public sealed partial class HunterController : ISimShapeSource
 	public bool SimWalking => SimSelf is not null;
 
 	// ── Engine numbers (the prefab's PlayerController + MoveModeWalk; the walk mode's own defaults where the prefab has none) ──
-	const float StopSpeed = 100f, GroundAccel = 10f, AirAccel = 10f, AirSpeedCap = 30f, MaxVelocity = 3500f;
+	const float AirAccel = 10f, AirSpeedCap = 30f, MaxVelocity = 3500f;
 	const float NonJumpVelocity = 140f; // rising faster than this (off the ground's plane) isn't on the ground
 	const float Skin = 0.095f;          // the engine's skin: steps land this far above what they find
 	// The feet box starts this far above the root (the engine lifts it ~1u while standing on static ground, so the box never
@@ -57,6 +57,8 @@ public sealed partial class HunterController : ISimShapeSource
 	MoveModeWalk _walkMode;
 	MoveModeWalk WalkMode => _walkMode.IsValid() ? _walkMode : (_walkMode = Components.Get<MoveModeWalk>());
 	float WalkFriction => WalkMode.IsValid() ? WalkMode.Friction : 4f;
+	float GroundAccel => WalkMode.IsValid() ? WalkMode.GroundAcceleration : 10f;
+	float StopSpeed => WalkMode.IsValid() ? WalkMode.StopSpeed : 100f;
 	float GroundAngle => WalkMode.IsValid() ? WalkMode.GroundAngle : 45f;
 	float StepUp => WalkMode.IsValid() ? WalkMode.StepUpHeight : 18f;
 	float StepDown => WalkMode.IsValid() ? WalkMode.StepDownHeight : 18f;
@@ -391,12 +393,12 @@ public sealed partial class HunterController : ISimShapeSource
 
 	static float SurfaceFriction( float friction ) => MathF.Min( friction * 1.25f, 1f );
 
-	static Vector3 ApplyFriction( Vector3 v, float friction, float surface, float dt )
+	static Vector3 ApplyFriction( Vector3 v, float friction, float stopSpeed, float surface, float dt )
 	{
 		float len = v.Length;
 		if ( len < 0.1f )
 			return v;
-		float drop = (len < StopSpeed ? StopSpeed : len) * friction * surface * dt;
+		float drop = (len < stopSpeed ? stopSpeed : len) * friction * surface * dt;
 		float to = MathF.Max( len - drop, 0f );
 		return to != len ? v * (to / len) : v;
 	}
@@ -573,7 +575,7 @@ public sealed partial class HunterController : ISimShapeSource
 		{
 			var gb = ground.Body;
 			gb.Sleeping = false;
-			gb.ApplyImpulseAt( ground.HitPosition, -Vector3.Up * MathF.Min( pb.Mass, gb.Mass * 4f ) * g * dt );
+			gb.ApplyImpulseAt( ground.HitPosition, -Vector3.Up * MathF.Min( _controller.BodyMass, gb.Mass * 4f ) * g * dt );
 			sim.NotePushContact( body, under );
 		}
 
@@ -610,7 +612,7 @@ public sealed partial class HunterController : ISimShapeSource
 									 // walking prop slide out from under a hunter standing on it — measured 2026-11-08)
 			else
 			{
-				flat = ApplyFriction( flat, MathF.Max( WalkFriction * _controller.BrakePower, 0f ), surface, dt );
+				flat = ApplyFriction( flat, MathF.Max( WalkFriction * _controller.BrakePower, 0f ), StopSpeed, surface, dt );
 				flat = Accelerate( flat, dir, wishSpeed, GroundAccel, surface, dt );
 			}
 			if ( flat.Length < 1f )
