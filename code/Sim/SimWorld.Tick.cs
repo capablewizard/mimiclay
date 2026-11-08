@@ -146,6 +146,9 @@ public sealed partial class SimWorld
 		DriveFollowers();
 		long t0 = Stopwatch.GetTimestamp();
 		_world.Step( Dt );
+		foreach ( var b in _bodies )
+			if ( b.Driver is ISimPostStep post && b.Spec.Owner != Guid.Empty && b.ShapesReady )
+				post.PostStep( b, tick ); // (the hunter walk's second half: gravity, sticking to the ground, categorising it)
 		DetectAnchoredPushes(); // every machine, every step (replays too): releases are predicted
 		NoteLocalContacts();
 		TraceSecond( tick );
@@ -169,7 +172,7 @@ public sealed partial class SimWorld
 			{
 				if ( b != mine && b.ShapesReady && b.Phys.IsValid() && reach.Overlaps( b.Phys.GetBounds() ) && (b.IsRemoteDriven || (b.Driver is null && b.Spec.Owner == Guid.Empty)) && mine.Phys.CheckOverlap( b.Phys ) )
 					NoteContact( mine, b ); // (any body ours is really against: the drawn pair is kept apart - ConstrainContacts)
-				if ( b.IsRemoteDriven && (b.Spec.Driver == HiderController.SimWalkDriverId || b.Spec.Driver == SimDownDriver.Id) && b.ShapesReady && reach.Overlaps( b.Phys.GetBounds() ) && mine.Phys.CheckOverlap( b.Phys ) )
+				if ( b.IsRemoteDriven && (IsWalker( b.Spec.Driver ) || b.Spec.Driver == SimDownDriver.Id) && b.ShapesReady && reach.Overlaps( b.Phys.GetBounds() ) && mine.Phys.CheckOverlap( b.Phys ) )
 					b.TouchedTick = Tick; // (a REAL shape overlap, not the box test the loose case uses: boxes of two round props overlap 20u+ before the shapes touch, and a prop merely passing near was drawn from the guess — user: "they don't even touch me") // another player's walker our body is against — pushing it or pushed by it: drawn from our prediction for a moment (ShownFromAuthority), since that copy is what our body reacts to. Drawn from the host's delayed poses, a pusher was still 1.8 s away when our body already moved (user 2026-11-05: "the moved prop moves before the pusher has even touched them")
 				if ( b.Driver is not null || b.Spec.Owner != Guid.Empty || b.LocalTouched || !b.ShapesReady || b.Phys.Sleeping )
 					continue;
@@ -188,7 +191,7 @@ public sealed partial class SimWorld
 		for ( int i = 0; i < _bodies.Count; i++ )
 		{
 			var p = _bodies[i];
-			if ( !p.IsRemoteDriven || p.Spec.Driver != HiderController.SimWalkDriverId || !p.ShapesReady || !p.Phys.IsValid() )
+			if ( !p.IsRemoteDriven || !IsWalker( p.Spec.Driver ) || !p.ShapesReady || !p.Phys.IsValid() )
 				continue;
 			var pb = p.Phys.GetBounds().Grow( 2f );
 			for ( int j = 0; j < _bodies.Count; j++ )
@@ -196,7 +199,7 @@ public sealed partial class SimWorld
 				var q = _bodies[j];
 				if ( q == p || !q.ShapesReady || !q.Phys.IsValid() )
 					continue;
-				bool walker = q.IsRemoteDriven && q.Spec.Driver == HiderController.SimWalkDriverId;
+				bool walker = q.IsRemoteDriven && IsWalker( q.Spec.Driver );
 				if ( walker && j < i )
 					continue; // (each walker pair once)
 				bool lying = q.IsRemoteDriven && q.Spec.Driver == SimDownDriver.Id;

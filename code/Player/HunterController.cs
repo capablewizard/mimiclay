@@ -410,6 +410,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 		Components.GetOrCreate<Sandbox.Movement.MoveModeWalk>();
 		Components.GetOrCreate<HunterClimb>(); // walls and ceilings, like props (HunterClimb)
+		Components.GetOrCreate<HunterSimMode>(); // moves nothing while the hunter walks in the sim (HunterController.Sim)
 
 		// Voice chat rides the pawn. Created in OnAwake so the owner has it BEFORE NetworkSpawn — it ships in
 		// the spawn snapshot and proxies receive the same component (the engine's voice RPC needs that shared
@@ -669,7 +670,9 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// Teleport (not a raw transform write) so a mid-edit fall carries the face-edit camera across the
 		// jump; EyeAngles are untouched, so the view direction survives either way. !IsProxy rather than
 		// Owned: the host simulates its bots' bodies too, so it must also be the one to rescue them.
-		if ( !IsProxy && FallRespawn.Fell( WorldPosition.z, _fallAnchor.Position.z ) )
+		// (Walking in the sim, the sim's walk does this itself — HunterController.Sim.)
+		UpdateHunterSimRegistration();
+		if ( !IsProxy && !SimWalking && FallRespawn.Fell( WorldPosition.z, _fallAnchor.Position.z ) )
 		{
 			if ( _controller.IsValid() && _controller.Body.IsValid() )
 				_controller.Body.Velocity = Vector3.Zero;
@@ -749,6 +752,8 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			// Alt in a sculpt session (cursor free, view frozen) hands the keyboard to the editor: no walking
 			// off while you scrub a slider with S or add a shape with Space.
 			_controller.UseInputControls = play && !locked && !_leaseCursorFree;
+			_simKeysAllowed = _controller.UseInputControls; // (the sim walk's input reads the keys under the same gates)
+			_simWishOverride = null;
 
 			// Diagnostics: wander mode drives the aim and the walk itself (PawnPerfProbe) so hunters move
 			// with nobody at the keyboard. Replaces input entirely while on.
@@ -760,6 +765,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				a.yaw += Time.Delta * PawnPerfProbe.WanderYawSpeed;
 				_controller.EyeAngles = a;
 				_controller.WishVelocity = Rotation.FromYaw( a.yaw ) * Vector3.Forward * PawnPerfProbe.WanderSpeed;
+				_simWishOverride = _controller.WishVelocity;
 			}
 			else if ( PerfScenario.DrivingHunter && play && !locked )
 			{
@@ -767,6 +773,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				_controller.UseInputControls = false;
 				_controller.UseLookControls = false;
 				PerfScenario.DriveHunter( _controller, GameObject );
+				_simWishOverride = _controller.WishVelocity;
 			}
 			else if ( DebugChase is { } chase && play && !locked )
 			{
@@ -789,6 +796,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				// Walk toward it, but not at full tilt while still facing away (a player strafes, not sprints, at a target behind them).
 				float facing = flat.Length > 1f ? MathF.Max( 0.35f, Vector3.Dot( Rotation.FromYaw( a.yaw ).Forward, flat.Normal ) ) : 1f;
 				_controller.WishVelocity = flat.Length > DebugChaseStop ? flat.Normal * DebugChaseSpeed * facing : Vector3.Zero;
+				_simWishOverride = _controller.WishVelocity;
 			}
 
 			// UseInputControls=false stops the controller READING input, but the last WishVelocity stays latched
@@ -801,8 +809,19 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 				_controller.WishVelocity = Vector3.Zero;
 				if ( _controller.Body.IsValid() )
 					_controller.Body.Velocity = _controller.Body.Velocity.WithX( 0f ).WithY( 0f );
+				_simWishOverride = null;
+			}
+
+			// Walking in the sim: the sim's walk reads the input (ReadHunterSimInput); the stock controller's own input pass
+			// stays off, or its jump and duck would move the presented body (HunterSimMode).
+			if ( SimWalking )
+			{
+				_controller.UseInputControls = false;
+				_controller.WishVelocity = Vector3.Zero;
 			}
 		}
+		UpdateHunterSimControl();
+		SyncSimPosture();
 
 		// Advance the springs FIRST — the head drop, the pivot height and the torso squash all read them this
 		// frame, so they have to be current before any of them run.
@@ -1607,7 +1626,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			return;
 
 		float dt = MathF.Min( Time.Delta, 0.05f );
-		float speed = _controller.Velocity.WithZ( 0f ).Length;
+		float speed = MoveVelocity.WithZ( 0f ).Length;
 		float run = MathF.Max( _controller.RunSpeed, 1f );
 
 		float target = _controller.IsOnGround ? MathF.Min( speed / run, 1f ) : 0f;
@@ -1698,7 +1717,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		bool airborne = _controller.IsAirborne || _controller.IsClimbing;
 		if ( _controller.IsClimbing )
 			_fallSpeed = 0f;
-		float vz = _controller.Velocity.z;
+		float vz = MoveVelocity.z;
 		float jumpSpeed = MathF.Max( _controller.JumpSpeed, 1f );
 
 		// Publish only when the pawn actually HAS a network identity. During Hide the round system deliberately
@@ -2775,6 +2794,8 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 		WorldPosition = position;
 		WorldRotation = rotation;
+		if ( SimWalking )
+			PlaceInSim( position ); // the body is the host's: it moves it there (HunterController.Sim)
 
 		if ( view is { } v )
 		{

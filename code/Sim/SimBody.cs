@@ -86,6 +86,11 @@ public struct SimCtrl
 	public float MantleZ;
 	public bool ClimbOn;
 
+	// ── Hunters (HunterController.Sim — the engine walk ported; the walk's fields above mean the same there: Grounded,
+	// SinceJumpTicks, Wish, Driving, Commanded) ──
+	/// <summary>Crouched (the shorter body: HunterController builds its shapes from this).</summary>
+	public bool Ducked;
+
 	public const ushort Long = 9999;
 	public static readonly SimCtrl Initial = new() { SinceJumpTicks = Long };
 }
@@ -205,6 +210,13 @@ public interface ISimDriver
 	/// <summary>Client side: the input to assume for someone ELSE's body we can't see the input of, given its newest
 	/// authoritative state.</summary>
 	SimInput Guess( SimBody body, in SimBodyState latest );
+}
+
+/// <summary>A driver that also works on its body AFTER the physics step (the hunter walk: the second half of its gravity,
+/// sticking to the ground, categorising it) — host ticks, predictions and replays alike, in the same order.</summary>
+public interface ISimPostStep
+{
+	void PostStep( SimBody body, int tick );
 }
 
 /// <summary>A body in the simulation world.</summary>

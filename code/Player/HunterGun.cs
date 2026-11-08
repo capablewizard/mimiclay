@@ -741,7 +741,7 @@ public sealed class HunterGun : Component
 		// speed. Amplitude blends smoothly with movement and fades while airborne — a jump glides, it
 		// doesn't drum. (Airborne time resets the footstep accumulator but not the bob phase, so the
 		// phase RELATIONSHIP can shift across a jump — the shared cadence is what the ear locks onto.)
-		float speed = _controller.IsValid() ? _controller.Velocity.WithZ( 0f ).Length : 0f;
+		float speed = _hunter.IsValid() ? _hunter.MoveVelocity.WithZ( 0f ).Length : _controller.IsValid() ? _controller.Velocity.WithZ( 0f ).Length : 0f;
 		bool grounded = !_controller.IsValid() || _controller.IsOnGround;
 		float walk = _controller.IsValid() ? _controller.WalkSpeed : 110f;
 		float run = _controller.IsValid() ? MathF.Max( _controller.RunSpeed, 1f ) : 320f;

@@ -117,6 +117,7 @@ public static class SimQuant
 		w.Write( (short)Math.Clamp( c.Wish.y * 8f, short.MinValue, short.MaxValue ) );
 		w.Write( c.SpaceBuffer );
 		w.Write( c.LetGoCool );
+		w.Write( (byte)(c.Ducked ? 1 : 0) ); // the second flags byte (hunters)
 		if ( c.Climbing )
 		{
 			WriteUnit( w, c.ClimbN );
@@ -160,6 +161,8 @@ public static class SimQuant
 			Wish = new Vector2( r.ReadInt16() / 8f, r.ReadInt16() / 8f ),
 			SpaceBuffer = r.ReadByte(), LetGoCool = r.ReadByte(),
 		};
+		byte f2 = r.ReadByte();
+		c.Ducked = (f2 & 1) != 0;
 		if ( c.Climbing )
 		{
 			c.ClimbN = ReadUnit( r );

@@ -398,7 +398,6 @@ public sealed partial class HunterController
 	// body fly on), so a drop or a throw is immediate too.
 	Transform _simHoldTarget;
 	bool _simHolding;
-	Func<int, Mimiclay.Sim.SimInput> _simHoldInput;
 
 	void SetSimHold( GameObject held, Transform target )
 	{
@@ -411,19 +410,8 @@ public sealed partial class HunterController
 		if ( applies == _simHolding )
 			return;
 		_simHolding = applies;
-		if ( sim is null )
-			return;
-		_simHoldInput ??= ReadSimHoldInput;
-		if ( applies )
-			sim.LocalInput = _simHoldInput;
-		else if ( sim.LocalInput == _simHoldInput )
-			sim.LocalInput = null;
+		HookSimInput( sim ); // the hold target rides this machine's input (ReadHunterSimInput, with the walk's while the hunter walks in the sim)
 	}
-
-	Mimiclay.Sim.SimInput ReadSimHoldInput( int tick )
-		=> _simHolding
-			? new Mimiclay.Sim.SimInput { Buttons = Mimiclay.Sim.SimInput.Hold, HoldPos = _simHoldTarget.Position, HoldRot = _simHoldTarget.Rotation }
-			: Mimiclay.Sim.SimInput.None;
 
 	void EndSimHold( GameObject held = null )
 	{
@@ -433,8 +421,7 @@ public sealed partial class HunterController
 		var sim = Scene.GetSystem<Mimiclay.Sim.SimWorld>();
 		if ( sim is null )
 			return;
-		if ( sim.LocalInput == _simHoldInput )
-			sim.LocalInput = null; // the next ticks carry no target: the prop is let go of, here and on the host
+		HookSimInput( sim ); // the next ticks carry no target: the prop is let go of, here and on the host
 		if ( held.IsValid() )
 			sim.PredictRelease( held.Id ); // loose here from this tick — the host switches at the same tick of our inputs
 	}

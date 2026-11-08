@@ -161,6 +161,18 @@ public static class SimLab
 
 	/// <summary>H: let go of anything; then grab what the scenario holds (turning slowly to its start aim), or stand at the
 	/// station's watch spot.</summary>
+	// The lab's hunter onto a spot: a sim body (mimi_sim_hunter) is the host's to move — Teleport asks it (HunterController.PlaceInSim).
+	static void PlaceHunter( HunterController me, Vector3 p )
+	{
+		if ( me.SimWalking )
+			me.Teleport( p, Rotation.Identity );
+		else
+		{
+			me.WorldPosition = p;
+			me.GameObject.Transform.ClearInterpolation();
+		}
+	}
+
 	public static async Task<string> HunterPrepare( string scen, string nameB )
 	{
 		SetStatus( $"SimLab · {scen}\nH: getting ready" + (HunterHolds( scen ) ? " (grabbing what it holds)" : " (going to the watch spot)") );
@@ -177,19 +189,19 @@ public static class SimLab
 		if ( scen == "hcorner" )
 		{
 			// The climb test: face the pillar from its H marker (Run grabs it and climbs round).
-			me.WorldPosition = Marker( scen, "H" ).Value + Vector3.Up * 2f; me.GameObject.Transform.ClearInterpolation();
+			PlaceHunter( me, Marker( scen, "H" ).Value + Vector3.Up * 2f );
 			a.yaw = 90f; a.pitch = 0f; ctl.EyeAngles = a;
 			return $"H at the pillar of {scen}";
 		}
 		if ( !HunterHolds( scen ) )
 		{
 			var spot = Marker( scen, "Hobs" ) ?? Marker( "park", "H" ).Value;
-			me.WorldPosition = spot + Vector3.Up * 2f; me.GameObject.Transform.ClearInterpolation();
+			PlaceHunter( me, spot + Vector3.Up * 2f );
 			var look = (Station( scen )?.WorldPosition ?? spot) - spot;
 			a.yaw = look.EulerAngles.yaw; a.pitch = 10f; ctl.EyeAngles = a;
 			return $"H watching {scen} from {spot:0}";
 		}
-		me.WorldPosition = Marker( scen, "H" ).Value + Vector3.Up * 2f; me.GameObject.Transform.ClearInterpolation();
+		PlaceHunter( me, Marker( scen, "H" ).Value + Vector3.Up * 2f );
 		a.yaw = -90f; a.pitch = 25f; ctl.EyeAngles = a;
 		await GameTask.Delay( 400 );
 		var target = scen == "throwplayer" ? PropOf( nameB )?.GameObject : LooseOf( scen )?.GameObject;

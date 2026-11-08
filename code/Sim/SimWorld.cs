@@ -139,6 +139,10 @@ public sealed partial class SimWorld : GameObjectSystem
 	public IReadOnlyList<SimBody> Bodies => _bodies;
 	public SimBody Find( Guid key ) => _byKey.TryGetValue( key, out var b ) ? b : null;
 
+	/// <summary>A player WALKING — a prop's walk or a hunter's (HunterController.Sim): drawn from the prediction on other
+	/// machines, carried forward with nudges, tracked, paired with what it touches — the same treatment either way.</summary>
+	public static bool IsWalker( byte driver ) => driver == HiderController.SimWalkDriverId || driver == HunterController.SimHunterDriverId;
+
 	public event Action<SimBody> BodyAdded;
 	public event Action<SimBody> BodyRemoved;
 
@@ -160,6 +164,7 @@ public sealed partial class SimWorld : GameObjectSystem
 	{
 		0 => null,
 		HiderController.SimWalkDriverId => HiderController.WalkDriver,
+		HunterController.SimHunterDriverId => HunterController.SimDriver,
 		SimHoldDriver.Id => SimHoldDriver.Instance,
 		SimDownDriver.Id => SimDownDriver.Instance,
 		_ => _drivers.TryGetValue( id, out var d ) ? d : null,
@@ -598,7 +603,7 @@ public sealed partial class SimWorld : GameObjectSystem
 	// release a prop from the hunter's point of view"). Its wearer's late input (a push, the flip) reaches the copy through the
 	// replays and fades in; it goes over to the host's poses once both agree (UpdatePresentationSource).
 	bool ShownFromAuthority( SimBody b )
-		=> !IsAuthority && !b.ThrownHere && b.Authority.Count > 0 && ((b.IsRemoteDriven && b.Spec.Driver != HiderController.SimWalkDriverId && !(b.Spec.Driver == SimDownDriver.Id && RecentlyTouched( b ))) || (b.Driver is null && b.Spec.Owner == Guid.Empty && !b.LocalTouched && !RecentlyTouched( b ))
+		=> !IsAuthority && !b.ThrownHere && b.Authority.Count > 0 && ((b.IsRemoteDriven && !IsWalker( b.Spec.Driver ) && !(b.Spec.Driver == SimDownDriver.Id && RecentlyTouched( b ))) || (b.Driver is null && b.Spec.Owner == Guid.Empty && !b.LocalTouched && !RecentlyTouched( b ))
 			|| (b.IsLocalOwned && b.Spec.Driver == SimDownDriver.Id && !b.Ctrl.Grounded && !b.Ctrl.AirFromJump));
 
 	// Another player's walker our body has been against within the last TouchShowTicks (SimBody.TouchedTick) — one we push, or one pushing us:
@@ -854,6 +859,26 @@ public sealed partial class SimWorld : GameObjectSystem
 			b.LocalTouched = true;
 	}
 
+	/// <summary>Client: a walker (a hunter — HunterController.Sim) is pushing or standing on <paramref name="q"/> this tick. The
+	/// pusher stops a hair short of what it pushes (it follows the push), so the shape-overlap passes (NoteLocalContacts) never
+	/// see the pair: it is noted here instead — ours pushing: the pushed body drawn from our prediction; two others': both
+	/// drawn from the prediction and replayed together (no per-body nudges carrying each forward alone); either way the pair
+	/// kept apart in the drawing (ConstrainContacts).</summary>
+	internal void NotePushContact( SimBody p, SimBody q )
+	{
+		if ( IsAuthority || p is null || q is null )
+			return;
+		NoteContact( p, q );
+		if ( p.IsLocalOwned )
+		{
+			if ( q.Driver is null && q.Spec.Owner == Guid.Empty )
+				q.LocalTouched = true;
+			q.TouchedTick = Tick;
+		}
+		else if ( p.IsRemoteDriven )
+			p.TouchedTick = q.TouchedTick = Tick;
+	}
+
 	/// <summary>The registered body a sim <see cref="PhysicsBody"/> belongs to, or null (a static copy, a follower).</summary>
 	public SimBody BodyOf( PhysicsBody phys )
 	{
@@ -923,7 +948,7 @@ public sealed partial class SimWorld : GameObjectSystem
 		foreach ( var b in _bodies )
 		{
 			float k = b.IsRemoteDriven ? kRemote : kOwn;
-			if ( RemoteTrackRate > 0f && !IsAuthority && b.IsRemoteDriven && b.Spec.Driver == HiderController.SimWalkDriverId && !b.ShownFromAuth && b.Phys.IsValid() )
+			if ( RemoteTrackRate > 0f && !IsAuthority && b.IsRemoteDriven && IsWalker( b.Spec.Driver ) && !b.ShownFromAuth && b.Phys.IsValid() )
 			{
 				// The tracker: the drawn position is a spring-damper after the copy's raw pose; PosOffset carries the difference
 				// so the rest of the pipeline draws raw + offset as before. (A jump over 120u is a teleport: start there.)

@@ -603,4 +603,20 @@ public sealed partial class SimWorld
 		b.Phys.Velocity = velocity;
 		b.Phys.AngularVelocity = angular;
 	}
+
+	/// <summary>Host: TELEPORT a driven body (a hunter's spawn, a respawn, a lab placement) — at rest, its controller state
+	/// reset, drawn there at once. Everyone else gets it from the next snapshot (their correction is past the snap distance).</summary>
+	public void Place( Guid key, Vector3 position, Rotation rotation )
+	{
+		if ( !IsAuthority || !_byKey.TryGetValue( key, out var b ) || b.Phys is not { } p || !p.IsValid() )
+			return;
+		p.Transform = new Transform( position, rotation );
+		p.Velocity = 0f;
+		p.AngularVelocity = 0f;
+		p.Sleeping = false;
+		b.Ctrl = SimCtrl.Initial with { Ducked = b.Ctrl.Ducked };
+		b.Prev = b.Cur = p.Transform;
+		b.PosOffset = 0f;
+		b.OffVel = 0f;
+	}
 }
