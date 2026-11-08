@@ -7,7 +7,7 @@ namespace Mimiclay;
 
 // Hunters in the sim world, phase H1 (HUNTER-SIM-PLAN.md): the hunter WALKS in the shared simulation — host-authoritative,
 // its owner predicting it from its own input and rolling back when a snapshot disagrees, every other machine drawing it from
-// the sim — like a player's prop (HiderController.Sim). Behind mimi_sim_hunter (default OFF) until H5.
+// the sim — like a player's prop (HiderController.Sim). Behind mimi_sim_hunter — ON by default since 2026-11-08 (the user hand-tested it: "looks solid").
 //
 // The walk is the RETAIL engine PlayerController's (decompiled 2026-11-07; the public source is an older, different
 // controller), ported to run from (input, SimCtrl) alone so the host and every replay produce the same motion:
@@ -30,8 +30,9 @@ namespace Mimiclay;
 public sealed partial class HunterController : ISimShapeSource
 {
 	// Replicated: only the host's value decides (it registers the bodies); every machine's readout shows the real setting.
+	// ON by default since 2026-11-08; 0 = the engine's PlayerController walk, kept for A/B (as mimi_sim_walk keeps the old prop walk).
 	[ConVar( "mimi_sim_hunter", Flags = ConVarFlags.Replicated, Help = "Hunters walk in the shared sim world (host-authoritative, owner-predicted); 0 = the engine's PlayerController walk. Host only." )]
-	public static bool SimHunter { get; set; } = false;
+	public static bool SimHunter { get; set; } = true;
 
 	public const byte SimHunterDriverId = 5;
 

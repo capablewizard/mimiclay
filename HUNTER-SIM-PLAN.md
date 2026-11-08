@@ -41,6 +41,8 @@ the floor. Gravity is applied by hand, half before the step and half after (`Sta
 
 ## Status
 
+**Default ON since 2026-11-08** (`mimi_sim_hunter`, after the user's hand-test: "looks solid"). `0` keeps the engine walk for A/B. The follower and push-report paths it needs stay until the old walk is retired.
+
 **H1 built 2026-11-07 (uncommitted), behind `mimi_sim_hunter` (default off).** The code is in:
 - `code/Player/HunterController.Sim.cs`
 - `code/Player/HunterSimMode.cs`
