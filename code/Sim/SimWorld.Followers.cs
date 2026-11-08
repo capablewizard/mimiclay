@@ -72,6 +72,17 @@ public sealed partial class SimWorld
 		}
 	}
 
+	// Not a follower: a sim body's own object or anything under it (a hunter's clay head has its own kinematic Rigidbody — as a
+	// follower it sat in front of the hunter's sim body, drawn where that body was drawn, and the body walked into it: a hunter
+	// climbing along the wall it faced stopped dead, its own head in the way; SimLab hcorner 2026-11-08), or one left out.
+	bool ExcludedFromFollowers( GameObject go )
+	{
+		for ( var g = go; g.IsValid(); g = g.Parent )
+			if ( _excludedStatics.Contains( g.Id ) || _excludedFollowers.Contains( g.Id ) )
+				return true;
+		return false;
+	}
+
 	void RefreshFollowers()
 	{
 		if ( _world is null )
@@ -88,7 +99,7 @@ public sealed partial class SimWorld
 			if ( !b.IsValid() || b.BodyType == PhysicsBodyType.Static || b.ShapeCount == 0 || !b.Enabled )
 				continue;
 			var go = b.GameObject;
-			if ( !go.IsValid() || _excludedStatics.Contains( go.Id ) || _excludedFollowers.Contains( go.Id ) || b.Position.z < FarBelow )
+			if ( !go.IsValid() || ExcludedFromFollowers( go ) || b.Position.z < FarBelow )
 				continue;
 			if ( !b.Shapes.Any( s => !s.IsTrigger ) )
 				continue;

@@ -90,6 +90,9 @@ public struct SimCtrl
 	// SinceJumpTicks, Wish, Driving, Commanded) ──
 	/// <summary>Crouched (the shorter body: HunterController builds its shapes from this).</summary>
 	public bool Ducked;
+	/// <summary>Climbing: how far the body is off the surface (u) — a wall grabbed from further off (climbing on from a mantle) is
+	/// sensed this much further and closed in on.</summary>
+	public float ClimbGap;
 
 	public const ushort Long = 9999;
 	public static readonly SimCtrl Initial = new() { SinceJumpTicks = Long };
@@ -161,7 +164,7 @@ public struct SimInput
 
 	/// <summary>Jump = Space PRESSED this tick; JumpHeld = held (the climb's "up", a grab's intent); Duck = Ctrl held; LetGo = Shift
 	/// pressed (lets go of a climb).</summary>
-	public const byte Jump = 1, Duck = 2, Hold = 4, JumpHeld = 8, LetGo = 16;
+	public const byte Jump = 1, Duck = 2, Hold = 4, JumpHeld = 8, LetGo = 16, LabGrab = 32;
 
 	/// <summary>The wire's precision, applied where the input is made, so the owner predicts from exactly what the host gets.</summary>
 	public static float QuantMove( float v ) => MathF.Round( Math.Clamp( v, -1f, 1f ) * 127f ) / 127f;

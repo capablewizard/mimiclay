@@ -127,6 +127,7 @@ public static class SimQuant
 			w.Write( (byte)((left ? 1 : 0) | (ceil ? 2 : 0) | (carry ? 4 : 0)) );
 			w.Write( (short)MathF.Round( QuantYawOf( c.ClimbYaw ) * 100f ) );
 			w.Write( c.ClimbVertical );
+			w.Write( (short)MathF.Round( Math.Clamp( c.ClimbGap, -1000f, 1000f ) * 16f ) ); // (hunters: the gap to the surface, 1/16 u)
 			if ( left )
 			{
 				WriteUnit( w, c.CornerLeft );
@@ -171,6 +172,7 @@ public static class SimQuant
 			byte sub = r.ReadByte();
 			c.ClimbYaw = r.ReadInt16() / 100f;
 			c.ClimbVertical = r.ReadSByte();
+			c.ClimbGap = r.ReadInt16() / 16f;
 			if ( (sub & 1) != 0 )
 			{
 				c.CornerLeft = ReadUnit( r );

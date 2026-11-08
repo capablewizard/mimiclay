@@ -358,6 +358,22 @@ public sealed partial class SimWorld : GameObjectSystem
 		// Walkers too (the scene walk's body has it on): a small prop's hull falling at MaxFallSpeed moves 60u a tick, and
 		// the foot sweep only looks a step and a snap below it.
 		p.EnhancedCcd = body.Spec.Shape != SimShapeKind.Box;
+		HookContacts( body );
+	}
+
+	// Host: a registered body touching something in a step (start = a new contact, else a held one) goes to the prop it is
+	// (HiderController.SimContact) — the sim's own collision events, for what a scene Rigidbody's collision listeners used
+	// to hear (a held or loose prop's splats and scrapes: its scene body is keyframed presentation now, which never gets a
+	// contact). The host only: it never replays, so every event is a real one, once; a client's replays would re-run old
+	// contacts.
+	void HookContacts( SimBody body )
+	{
+		if ( !IsAuthority || !body.ShapesReady || body.Spec.Shape == SimShapeKind.Box || body.Phys is not { } p )
+			return;
+		p.EnableTouch = true;
+		p.EnableTouchPersists = true;
+		p.OnIntersectionStart = c => HiderController.SimContact( body, c, true );
+		p.OnIntersectionUpdate = c => HiderController.SimContact( body, c, false );
 	}
 
 	ISimShapeSource ShapeSourceOf( Guid source )

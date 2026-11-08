@@ -170,7 +170,10 @@ public sealed partial class HunterController : ISimShapeSource
 	// ── Input (the owner) ───────────────────────────────────────────────────────────────────────────────────
 
 	// Latched per frame (OnUpdate), taken by the next tick that reads it.
-	bool _simJumpQueued;
+	bool _simJumpQueued, _simLetGoQueued, _simLabGrabQueued;
+
+	/// <summary>SimLab: grab the wall this hunter faces, from where it stands (sent as an input button — HunterController.SimClimb).</summary>
+	public void LabSimGrab() => _simLabGrabQueued = true;
 
 	/// <summary>Test harness (SimLab, scripts): the move keys (x forward, y left, at the view's yaw), a Space press (taken by the
 	/// next tick) and Ctrl held, in place of the real keys — on the machine whose hunter walks in the sim.</summary>
@@ -179,6 +182,7 @@ public sealed partial class HunterController : ISimShapeSource
 	public static bool DebugSimDuck { get; set; }
 	public static bool DebugSimTrace { get; set; }
 	public static string SimDebugGround { get; set; }
+	public static readonly System.Collections.Generic.List<string> SimClimbLog = new();
 	// What the keys may do this frame (the same gates the engine's input pass had), and a scripted wish replacing them (wander,
 	// the benchmark route, the debug chase — they write the controller's WishVelocity).
 	bool _simKeysAllowed;
@@ -205,6 +209,7 @@ public sealed partial class HunterController : ISimShapeSource
 			if ( _controller.IsValid() && _controller.Body.IsValid() )
 			{
 				_controller.Body.MotionEnabled = true;
+				_controller.IsClimbing = false;
 				_controller.Body.Velocity = Vector3.Zero;
 			}
 		}
@@ -212,9 +217,11 @@ public sealed partial class HunterController : ISimShapeSource
 		{
 			if ( Input.Pressed( "jump" ) && _simKeysAllowed )
 				_simJumpQueued = true;
+			if ( Input.Pressed( "run" ) && _simKeysAllowed )
+				_simLetGoQueued = true;
 		}
 		else
-			_simJumpQueued = false;
+			_simJumpQueued = _simLetGoQueued = _simLabGrabQueued = false;
 		HookSimInput( sim );
 	}
 
@@ -262,9 +269,32 @@ public sealed partial class HunterController : ISimShapeSource
 		}
 		if ( DebugSimDuck )
 			input.Buttons |= SimInput.Duck;
+		// The climb's harness keys (HunterClimb's — SimLab's hcorner): Space or Ctrl held, a grab of the wall faced, the move keys —
+		// the keys only while clinging, as HunterClimb read them (a grab that didn't take had the hunter WALK sideways for the rest
+		// of the run, shoving the parked props off the lab floor).
+		bool onWall = SimSelf is { } me && me.Ctrl.Climbing;
+		if ( HunterClimb.DebugVertical > 0f )
+			input.Buttons |= SimInput.JumpHeld;
+		else if ( HunterClimb.DebugVertical < 0f )
+			input.Buttons |= SimInput.Duck;
+		if ( _simLabGrabQueued )
+		{
+			input.Buttons |= SimInput.LabGrab;
+			_simLabGrabQueued = false;
+		}
+		if ( _simLetGoQueued )
+		{
+			input.Buttons |= SimInput.LetGo; // Shift, latched per frame (UpdateHunterSimControl): lets go of a climb
+			_simLetGoQueued = false;
+		}
 		if ( DebugSimMove is { } dm )
 		{
 			input.Move = new Vector2( SimInput.QuantMove( dm.x ), SimInput.QuantMove( dm.y ) );
+			return input;
+		}
+		if ( onWall && HunterClimb.DebugMove is { } cm )
+		{
+			input.Move = new Vector2( SimInput.QuantMove( cm.x ), SimInput.QuantMove( cm.y ) );
 			return input;
 		}
 		if ( _simWishOverride is { } w )
@@ -276,6 +306,8 @@ public sealed partial class HunterController : ISimShapeSource
 			return input;
 		if ( Input.Down( "duck" ) )
 			input.Buttons |= SimInput.Duck;
+		if ( Input.Down( "jump" ) )
+			input.Buttons |= SimInput.JumpHeld; // (the climb's "up", and a grab's intent)
 		var move = new Vector2( Input.AnalogMove.x, Input.AnalogMove.y );
 		move = move.Length > 1f ? move.Normal : move;
 		input.Move = new Vector2( SimInput.QuantMove( move.x ), SimInput.QuantMove( move.y ) );
@@ -299,12 +331,26 @@ public sealed partial class HunterController : ISimShapeSource
 		public void Drive( SimBody body, in SimInput input, int tick ) => Of( body )?.SimHunterStep( body, input, tick );
 		public void PostStep( SimBody body, int tick ) => Of( body )?.SimHunterPostStep( body, tick );
 
-		// Someone else's hunter: their last wish repeated (SimCtrl.Wish), crouched if they were.
-		public SimInput Guess( SimBody body, in SimBodyState latest ) => new()
+		// Someone else's hunter: their last wish repeated (SimCtrl.Wish), crouched if they were; on a wall, their last climb keys,
+		// view and Space/Ctrl (the climb keeps them in the Ctrl — HunterController.SimClimb).
+		public SimInput Guess( SimBody body, in SimBodyState latest )
 		{
-			Wish = latest.HasCtrl ? latest.Ctrl.Wish : new Vector2( latest.V.x, latest.V.y ),
-			Buttons = latest.HasCtrl && latest.Ctrl.Ducked ? SimInput.Duck : (byte)0,
-		};
+			if ( latest.HasCtrl && latest.Ctrl.Climbing )
+			{
+				var c = latest.Ctrl;
+				return new SimInput
+				{
+					Move = new Vector2( MathF.Round( c.Wish.x ) / 127f, MathF.Round( c.Wish.y ) / 127f ),
+					ViewYaw = c.ClimbYaw,
+					Buttons = (byte)((c.ClimbVertical > 0 ? SimInput.JumpHeld : 0) | (c.ClimbVertical < 0 ? SimInput.Duck : 0)),
+				};
+			}
+			return new()
+			{
+				Wish = latest.HasCtrl ? latest.Ctrl.Wish : new Vector2( latest.V.x, latest.V.y ),
+				Buttons = latest.HasCtrl && latest.Ctrl.Ducked ? SimInput.Duck : (byte)0,
+			};
+		}
 	}
 
 	PhysicsTraceBuilder SimHunterTrace( SimWorld sim, SimBody body )
@@ -436,7 +482,7 @@ public sealed partial class HunterController : ISimShapeSource
 			pb.Sleeping = false;
 		if ( _simCcdOff != pb )
 		{
-			pb.EnhancedCcd = false; // (the engine's body has it off — PlayerController.UpdateBody)
+			pb.EnhancedCcd = false; // (the engine's body has it off — PlayerController.UpdateBody; its ContactRecycling off too, which game code can't set)
 			_simCcdOff = pb;
 		}
 
@@ -456,6 +502,23 @@ public sealed partial class HunterController : ISimShapeSource
 
 		var trace = SimHunterTrace( sim, body );
 		SyncHoldFilters( sim, body );
+
+		// Climbing (HunterController.SimClimb): the grabs — Space held on from a mantle, a lab grab, the air grab (the engine's
+		// FixedUpdate pass, while the walk is the mode) — and, on a wall, the climb in place of the walk.
+		SimClimbClock( ref c, input );
+		if ( !c.Climbing )
+		{
+			var grabWish = SimWish( input, c.Ducked );
+			_ = (c.ClimbOn && input.Has( SimInput.JumpHeld ) && SimHunterTryClimbOn( sim, trace, pb, ref c, pos, grabWish ))
+				|| (input.Has( SimInput.LabGrab ) && SimHunterLabGrab( sim, trace, pb, ref c, input, pos ))
+				|| SimHunterTryGrab( sim, trace, pb, ref c, input, pos, v, grabWish );
+		}
+		if ( c.Climbing )
+		{
+			if ( SimHunterClimbStep( sim, body, trace, ref c, input ) )
+				return;
+			v = pb.Velocity; // (let go this tick: the walk carries on from the climb's leaving velocity)
+		}
 
 		// Duck: at once. Crouching mid-air tucks the feet up (the root rises by the difference, the head holds still); standing
 		// needs the room for the full body — mid-air it lowers the feet back down instead.
@@ -565,6 +628,7 @@ public sealed partial class HunterController : ISimShapeSource
 		pb.Position = pos;
 		pb.Velocity = v;
 		pb.AngularVelocity = 0f;
+		c.StillTicks = grounded ? (byte)0 : (byte)Math.Min( c.StillTicks + 1, 255 ); // (ticks off the ground: the climb grab's MinAirTime)
 		c.Grounded = grounded;
 		c.Wish = new Vector2( wish.x, wish.y ); // what a remote copy repeats (SimCtrl.Wish)
 		c.Driving = wishSpeed > 0f;
@@ -584,6 +648,8 @@ public sealed partial class HunterController : ISimShapeSource
 		var trace = SimHunterTrace( sim, body );
 		var pos = pb.Position;
 		var v = pb.Velocity;
+		if ( c.Climbing )
+			return; // (on a wall the climb set the velocity outright; no gravity, no ground)
 		bool wasGrounded = c.Grounded;
 		bool jumped = c.SinceJumpTicks == 0;
 
@@ -778,9 +844,13 @@ public sealed partial class HunterController : ISimShapeSource
 	// IsDucking) onto the stock controller, which sizes the colliders bullets hit and the eye from it.
 	void SyncSimPosture()
 	{
-		if ( !Owned || SimSelf is not { } b || !_controller.IsValid() )
+		if ( SimSelf is not { } b || !_controller.IsValid() )
 			return;
-		if ( _controller.IsDucking != b.Ctrl.Ducked )
+		// Clinging, on every machine (IsAirborne reads it: the eye, the duck spring, the landing event — and HunterSimMode's
+		// controller is never in HunterClimb's mode to set it).
+		if ( _controller.IsClimbing != b.Ctrl.Climbing )
+			_controller.IsClimbing = b.Ctrl.Climbing;
+		if ( Owned && _controller.IsDucking != b.Ctrl.Ducked )
 			_controller.IsDucking = b.Ctrl.Ducked;
 	}
 }

@@ -113,6 +113,26 @@ Peak drawn speed of the pushed player, per screen:
 
 Every screen's hunter-to-B gap matches the host's within 4u.
 
+**H3 built 2026-11-08 (uncommitted).** `HunterController.SimClimb.cs`: `HunterClimb` (the engine MoveMode) ported into the sim walk as a mode of the hunter driver. Its tuning is still read off that component.
+- **Same rules as the engine climb:**
+  - walls only;
+  - the hard grab: Space held or buffered, steering in, airborne for MinAirTime, not falling fast, not about to clear the top;
+  - lookAlong keys;
+  - Shift, pulling away, ground underfoot and a lost surface all let go;
+  - inner corners, step-over, outer-corner wrap with the carried travel, step-out under shallow overhangs, mantle carry, and climbing on from a mantle with Space held.
+- **Order:** the engine read the surface after each step. Here the whole climb runs before the step, reading first, on the same pose. State is in `SimCtrl` (the prop climb's fields plus `ClimbGap`). `SimInput.LabGrab` is the lab's standing grab, sent as input so the host grabs on the same tick. The engine controller's `IsClimbing` follows the sim on every machine, and the scrape sound reads `Clinging`.
+- **Results:**
+  - jump at a wall with Space held → grab 0.14 s later → climb → mantle onto the 110u top in 0.67 s, 0 replays;
+  - `hcorner`: 9 faces round the pillar in 5 of 5 runs (the engine climb manages 10).
+
+**Findings:**
+- **A sim body's children were followers.** The hunter's clay head (its own kinematic Rigidbody) sat in front of the hunter's sim body as an obstacle, drawn where the body was drawn.
+  - Fix: `SimWorld.ExcludedFromFollowers` now excludes a sim body's whole hierarchy.
+- **Climbers caught on corner edges.** Resting flush on a face, as the engine does, the body caught the edge of the face it had just wrapped from as it crossed that face's plane, and stopped dead. This happened on the host and every copy, though a query sweep called the way clear. The engine's body has `ContactRecycling` off, which game code can't set.
+  - Fix: `ClimbRestGap` 2u. That gets 7 faces in 6 of 6 runs, against 2–4 at 0 and 0.5u. The edge pull also never heads back toward the face just left.
+- **Lab:** HunterClimb's debug move only applies while clinging, as in the engine. A failed grab had the hunter walk sideways for the whole run, shoving the parked props off the lab floor.
+- **Seen in passing (not hunter work):** a released loose prop pushed off the floor edge falls forever. There's no fall respawn for loose sim props, and the jump watch fills with it until the lab reopens.
+
 **Known cost (the full walk's):** a player's prop walking into a standing hunter shoves it (152u). The hunter's own screen learns of the walk late and is corrected: 58–83u, faded in, peak 304 u/s, no snaps. Look at it in H5's latency pass.
 
 ## Phases

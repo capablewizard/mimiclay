@@ -347,7 +347,7 @@ public static class SimLab
 			if ( role == "H" && scen == "hcorner" && hClimb is not null )
 			{
 				// Grab the pillar, climb up a second, then sideways (D) for the rest — round its corners.
-				if ( !hGrabbed && t > 0.3 ) { hGrabbed = true; hClimb.LabGrab(); HunterClimb.DebugVertical = 1f; }
+				if ( !hGrabbed && t > 0.3 ) { hGrabbed = true; if ( me.SimWalking ) me.LabSimGrab(); else hClimb.LabGrab(); HunterClimb.DebugVertical = 1f; }
 				if ( hGrabbed && t > 1.3 ) { HunterClimb.DebugVertical = 0f; HunterClimb.DebugMove = new Vector3( 0f, -1f, 0f ); }
 			}
 			if ( role != "H" || ctl is null || !HunterHolds( scen ) )
@@ -398,7 +398,7 @@ public static class SimLab
 			}
 			if ( hClimb is not null )
 			{
-				s.HClimb = hClimb.IsClinging; s.HN = hClimb.LabNormal; s.HP = me.WorldPosition;
+				s.HClimb = me.Clinging; s.HN = me.SimWalking ? me.SimClimbNormal : hClimb.LabNormal; s.HP = me.WorldPosition;
 			}
 			fr.Add( s );
 		}
@@ -424,7 +424,7 @@ public static class SimLab
 		{
 			if ( role == "HOST" ) return "recording the truth";
 			if ( role == "H" && scen == "hcorner" )
-				return !hGrabbed ? "facing the pillar" : t < 1.3 ? "grabbed - climbing up" : hClimb?.IsClinging == true ? "climbing sideways (D) round the pillar" : "fell off";
+				return !hGrabbed ? "facing the pillar" : t < 1.3 ? "grabbed - climbing up" : me?.Clinging == true ? "climbing sideways (D) round the pillar" : "fell off";
 			if ( role == "A" && ClimbScen( scen ) && climbT >= 0 )
 				return !hA.SimClimbing ? (scen == "climb" ? "mantled - walking onto the top" : "not climbing (fell off?)") : scen == "climb" ? "climbing up (Space)" : t - climbT < 0.8 ? "climbing up" : "climbing sideways (D)";
 			if ( role == "H" )
