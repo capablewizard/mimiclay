@@ -135,6 +135,37 @@ public sealed class PropMoveHull : IDisposable
 	{
 		if ( !Ready )
 			return default;
+		EnsureFoot( height );
+		return _footBody is not null ? trace.Sweep( _footBody, from, to ).Run() : Sweep( trace, from, to );
+	}
+
+	// ── The same sweeps through a sim world (SimWorld — the walk's rollback copy) ────────────────────────────
+	// This hull must have been Refreshed with THAT world: the scratch bodies live in the world they're swept through.
+
+	public PhysicsTraceResult Sweep( PhysicsTraceBuilder trace, in Transform from, in Transform to )
+		=> trace.Sweep( _body, from, to ).Run();
+
+	public PhysicsTraceResult SweepFoot( PhysicsTraceBuilder trace, in Transform from, in Transform to, float height )
+	{
+		if ( !Ready )
+			return default;
+		EnsureFoot( height );
+		return _footBody is not null ? trace.Sweep( _footBody, from, to ).Run() : Sweep( trace, from, to );
+	}
+
+	/// <summary>The hull's vertices with everything lower than <paramref name="floorClearance"/> above its base raised
+	/// to it — the floating shape the physics walk collides with (see <see cref="AttachTo"/>).</summary>
+	public List<Vector3> FloatingVertices( float floorClearance )
+	{
+		floorClearance = Math.Clamp( floorClearance, 0f, LocalBounds.Size.z * 0.9f );
+		if ( floorClearance <= 0f )
+			return new List<Vector3>( _verts );
+		float floor = LocalBounds.Mins.z + floorClearance;
+		return _verts.Select( v => v.z < floor ? v.WithZ( floor ) : v ).ToList();
+	}
+
+	void EnsureFoot( float height )
+	{
 		if ( _footBody is null || !_footBody.IsValid() || _footVersion != Version || MathF.Abs( _footHeight - height ) > 0.01f )
 		{
 			_footVersion = Version;
@@ -179,7 +210,6 @@ public sealed class PropMoveHull : IDisposable
 				}
 			}
 		}
-		return _footBody is not null ? trace.Sweep( _footBody, from, to ).Run() : Sweep( trace, from, to );
 	}
 
 	/// <summary>Is the hull at <paramref name="pose"/> overlapping anything solid? Translation sweeps can't

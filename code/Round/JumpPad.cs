@@ -88,6 +88,8 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 		var pc = root.Components.Get<PlayerController>();
 		if ( pc.IsValid() )
 		{
+			if ( root.Components.Get<HunterController>() is { } hunter && hunter.SimWalking )
+				return; // walking in the sim: the sim launches it (SimPadLaunch) — its scene body is only where it's drawn
 			Launch( pc, pc.Body, pc.IsProxy );
 			return;
 		}
@@ -95,6 +97,8 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 		// Hider/prop: the launch goes through HiderController.Launch (it also lets go of a climb and keeps the walk's
 		// ground spring off for a moment), not straight onto the rigidbody. Same IsProxy gate: a proxy is moved, not simulated.
 		var hider = root.Components.Get<HiderController>();
+		if ( hider.IsValid() && hider.SimWalking )
+			return; // (the same: the sim walk launches it)
 		if ( hider.IsValid() && !hider.IsProxy && TakeCooldown( hider.GameObject ) )
 		{
 			hider.Launch( LaunchVelocity( hider.Velocity ) );
@@ -144,6 +148,34 @@ public sealed class JumpPad : Component, Component.ITriggerListener
 	{
 		const float gravity = 800f; // s&box's default PlayerController.Gravity magnitude
 		return launchSpeed / gravity + 0.2f; // time to apex, plus a little slack
+	}
+
+	// ── In the sim (HunterController.Sim, HiderController.Sim) ────────────────────────────────────────────────
+	// A pawn the sim walks isn't moved by its scene body (that's only where it's drawn): writing a launch onto it did
+	// nothing, and the pad was dead to hunters and walking props alike. The sim walks launch themselves instead, every tick
+	// testing their body against the pads' trigger volumes — the host, the owner's prediction and every replay launch on the
+	// same tick, so a pad costs no round trip. The per-pawn debounce rides the walk's controller state (SimCtrl.PadCool).
+
+	/// <summary>The pad whose trigger volume <paramref name="body"/> (world bounds) is in, if any.</summary>
+	internal static JumpPad SimPadAt( Scene scene, BBox body )
+	{
+		if ( scene is null )
+			return null;
+		foreach ( var pad in scene.GetAllComponents<JumpPad>() )
+			foreach ( var col in pad.Components.GetAll<Collider>() )
+				if ( col.IsTrigger && col.GetWorldBounds().Overlaps( body ) )
+					return pad;
+		return null;
+	}
+
+	/// <summary>The velocity this pad launches a pawn moving at <paramref name="current"/> with.</summary>
+	internal Vector3 SimLaunchVelocity( Vector3 current ) => LaunchVelocity( current );
+
+	/// <summary>The host's sim launched something off this pad: everyone hears it (the host never replays, so once).</summary>
+	internal void SimLaunched()
+	{
+		if ( !Networking.IsActive || Networking.IsHost )
+			BroadcastBoing();
 	}
 
 	[Rpc.Broadcast]

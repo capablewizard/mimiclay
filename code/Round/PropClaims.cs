@@ -33,16 +33,9 @@ public interface IPropClaimHost
 	bool GrabPlayersAllowed => false;
 
 	/// <summary>Creative's sandbox grab (default): R scales, LMB freezes, grabbed scene clay is CONVERTED into a released
-	/// prop pawn, and a held player body is simulated by its wearer. False = prop hunt's INSPECT grab: carry and turn
-	/// only; scene decoys are held as they are (the host moves their own local body — RoundManager.ShotProps), and a
-	/// held player body is BORROWED by the host for the hold so it moves exactly like a decoy (no extra round-trip
-	/// through its wearer to tell them apart by). See PropClaims.Grab.</summary>
+	/// prop pawn. False = prop hunt's INSPECT grab: carry and turn only; scene decoys are held as they are (RoundManager.Grab).
+	/// See PropClaims.Grab.</summary>
 	bool GrabSandbox => true;
-
-	/// <summary>Is a held prop LENT to the machine holding it (PropClaims.BorrowedBodies) — a player's or bot's body, and
-	/// in creative the released scenery too — so the holder simulates the hold with no round-trip, instead of the host
-	/// (scenery) or the wearer (bodies) doing it? Prop hunt and creative both say yes (mimi_grab_borrow); default off.</summary>
-	bool GrabBorrowsBodies => false;
 
 	/// <summary>The prop-pawn prefab a claimed SCENE prop converts into (read live off scene furniture — a
 	/// NetworkSpawn'd manager's [Property] refs only exist on the host).</summary>
@@ -218,8 +211,7 @@ public sealed partial class PropClaims : Component, IInteractable
 		var hider = sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 			return IsReleased( hider ) && (joinEdited || !IsBeingEdited( hider )) // a pawn's body: only once released into the world — and, for a claim, not while people are sculpting it in place
-				&& !IsHeld( hider ) // nor while someone is carrying it around
-				&& !IsLent( hider.GameObject ); // nor while it's lent to a holder settling it (see PropClaims.Grab — ownership is theirs)
+				&& !IsHeld( hider ); // nor while someone is carrying it around
 
 		return IsScenery( sculpture ); // scene-placed clay — claimable by conversion
 	}
@@ -594,10 +586,7 @@ public sealed partial class PropClaims : Component, IInteractable
 	protected override void OnUpdate()
 	{
 		if ( Networking.IsActive && !Networking.IsHost )
-		{
-			SettleGrabScales(); // a holder scaling a prop lent to it commits here (see ApplyLocalGrabScale)
 			return;
-		}
 		SweepEditors();
 		SweepHolders();
 		TickShotKicks(); // creative's shot props (PropClaims.Shot)
@@ -715,7 +704,15 @@ public sealed partial class PropClaims : Component, IInteractable
 		// with any tilt folded into the Disguise, so the shape stays exactly where it lay (see SettleUpright).
 		bool wasLoose = LooseProps.Remove( prop.GameObject.Id );
 		bool wasFrozen = FrozenProps.Remove( prop.GameObject.Id );
-		if ( wasLoose || wasFrozen )
+		// The sim walk on: NOT SettleUpright — for a body in the sim its scene object is presentation, and the walker switch
+		// folds the tilt itself on every machine (SimWorld.ApplyRedrive → HiderController.OnSimBodyAdded); settled here as well,
+		// the tilt was folded TWICE — the clay turned 170° at the possession of a prop lying on its side (measured 2026-11-08),
+		// and its new move hull shoved whatever it was stacked with (user: "fires the rest of the objects off"). Instead it
+		// lies DOWN as it is until Space flips it onto ITS OWN upright (HiderController.NoteStandOnPossess) — a fresh scene
+		// conversion too, whose root carries the tilt (ConvertSceneProp); nothing moves at the possession itself.
+		if ( HiderController.SimWalk && prop.Network.Active )
+			prop.NoteStandOnPossess();
+		else if ( wasLoose || wasFrozen || Vector3.GetAngle( prop.WorldRotation.Up, Vector3.Up ) > 0.5f )
 			prop.SettleUpright();
 
 		Host.OnClaimGranted( c, hunterPawn, prop );
@@ -820,8 +817,19 @@ public sealed partial class PropClaims : Component, IInteractable
 			? sceneT.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) )
 			: sceneT.Position;
 		var rootT = new Transform( feet, Rotation.FromYaw( sceneT.Rotation.Yaw() ) );
+		var disguiseLocal = rootT.ToLocal( sceneT );
+		if ( HiderController.SimWalk )
+		{
+			// The sim walk on: the ROOT carries the tilt and the clay sits at its own upright under it (UprightLocal = identity),
+			// so a prop knocked over in a stack is possessed lying as it is and Space flips it onto ITS feet. Folded into the
+			// Disguise instead, the tumbled pose became the prop's "upright" for good (user, 2026-11-08). The clay lands exactly
+			// where it stood either way; standing up again, the root comes back to the feet (the offset is the upright one).
+			var rootRot = sceneT.Rotation;
+			rootT = new Transform( sceneT.Position - rootRot * disguiseLocal.Position, rootRot );
+			disguiseLocal = new Transform( disguiseLocal.Position, Rotation.Identity, disguiseLocal.Scale );
+		}
 
-		var pawn = SpawnPropPawn( sculpture.Brushes, rootT, rootT.ToLocal( sceneT ),
+		var pawn = SpawnPropPawn( sculpture.Brushes, rootT, disguiseLocal,
 			owner is not null ? $"Claimed Prop {owner.DisplayName}" : "Shared Prop", owner, scenery,
 			sourceOf: sculpture.GameObject );
 
@@ -864,6 +872,7 @@ public sealed partial class PropClaims : Component, IInteractable
 		{
 			hider.DisguiseSource = sourceRoot.IsValid() ? sourceRoot.PrefabInstanceSource : null;
 			hider.BornScenery = scenery; // pre-spawn, so it ships in the snapshot — see HiderController.BornScenery
+			hider.UprightLocal = disguiseLocal.Rotation; // the clay as it stood: its own upright (HiderController.UprightLocal)
 		}
 
 		var disguise = pawn.Children.FirstOrDefault( ch => ch.Name == "Disguise" );
@@ -982,6 +991,11 @@ public sealed partial class PropClaims : Component, IInteractable
 		}
 		PossessedProps.Remove( hider.GameObject.Id );
 		ReleasedProps[hider.GameObject.Id] = true;
+		// Creative: an unpossessed prop is a PHYSICS ITEM from here — loose, a free rigid body (in the sim: driver 0) — not a
+		// walker standing where it was left, and not a lying one that rights itself as a bot would (user, 2026-11-05: "once a
+		// prop is unpossessed it should just go back to being a physics item"). A round's props keep the round's rules.
+		if ( Sandbox && !FrozenProps.ContainsKey( hider.GameObject.Id ) )
+			LooseProps[hider.GameObject.Id] = true;
 	}
 
 	/// <summary>Where a hunter appears when its player releases a prop in place: stepped back from the prop

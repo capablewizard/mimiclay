@@ -43,7 +43,7 @@
         "FreeCamSmoothing": 0.5,
         "FreeCamSpeed": 600,
         "Gravity": 800,
-        "GroundControl": 30,
+        "GroundControl": 12,
         "GroundRestGap": 4,
         "GroundSnapSpeed": 300,
         "JumpPower": 300,

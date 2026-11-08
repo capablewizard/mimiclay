@@ -242,8 +242,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	bool _fovBlendSeeded;  // false until first driven, so the very first frame starts from whatever's live (no pop)
 
 	SpectatorController _freeCam; // our free cam while it runs
-	RealTimeSince _sinceNotOurs;  // a proxy the lent registry doesn't (yet) call ours — see OnUpdate's proxy branch
-	const float NotOursGrace = 0.5f;
 
 	/// <summary>Is this prop's owner flying the free cam (its body left standing)?</summary>
 	public bool FreeCamming => _freeCam.IsValid();
@@ -266,6 +264,12 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	/// (which also say so) have arrived. Cleared machine-locally by <see cref="ResumeControl"/> (a later
 	/// possession IS someone wearing it).</summary>
 	[Sync] public bool BornScenery { get; set; }
+
+	/// <summary>The prop's OWN upright: the Disguise's local rotation when the pawn was made (PropClaims.SpawnPropPawn — a
+	/// converted prop's clay as it stood in the map; identity for a fresh prop). A walker folds any tilt into the Disguise
+	/// (OnSimBodyAdded); leaving the walk hands that tilt back to the root (OnSimBodyLeftWalk), so standing up again rights the
+	/// clay to THIS, not to whatever pose it was walked in (user, 2026-11-08: "it should come from the prop itself").</summary>
+	[Sync] public Rotation UprightLocal { get; set; } = Rotation.Identity;
 	bool _woken; // ResumeControl ran on this machine — BornScenery no longer gates
 
 	// Is this body SCENERY on this machine — driven by nobody here, whatever ownership says? The single gate
@@ -431,6 +435,12 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	protected override void OnStart()
 	{
 		_body = EnsureDisguiseBody();
+		if ( SimSystem is { } sim )
+			RegisterSimDriver( sim ); // every machine knows the walk driver before any sim-walking body arrives
+		if ( SimSystem is { } simForFold )
+			simForFold.BodyAdded += OnSimBodyAdded; // fold a tilt into the disguise when our walker appears (HiderController.Sim)
+		if ( SimSystem is { } simForUnfold )
+			simForUnfold.BodyLeftWalk += OnSimBodyLeftWalk; // …and hand it back to the root when it stops walking (HiderController.Sim)
 
 		// Guarantee the disguise is solid regardless of how the body was made (prefab vs in-code fallback) — the
 		// prefab might not carry an SdfCollider, and forcing a rebuild here doesn't depend on the clone's
@@ -516,6 +526,19 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		ReleaseHoldJoint();
 		_scrapeHandle?.Stop();
 		_hull.Dispose();
+		_simHull.Dispose();
+		if ( SimSystem is { } sim )
+		{
+			if ( sim.LocalControlled == GameObject.Id )
+			{
+				sim.LocalInput = null;
+				sim.LocalControlled = Guid.Empty;
+			}
+			sim.BodyAdded -= OnSimBodyAdded;
+			sim.BodyLeftWalk -= OnSimBodyLeftWalk;
+			if ( sim.IsAuthority )
+				sim.Unregister( GameObject.Id ); // a pawn that leaves (its player disconnected) leaves the sim too
+		}
 		if ( _body.IsValid() )
 			_body.Committed -= RecenterOriginOnShape;
 	}
@@ -527,10 +550,11 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// after this point is owner-only.
 		UpdateConcealment();
 		UpdateReleasedSolidity();
+		UpdateSimRegistration(); // host: does this pawn walk in the sim world (HiderController.Sim)?
+		UpdateSimControl();      // owner: our input drives it there
+		DrawSimWalkHud();        // owner: what mimi_sim_walk is, and whether it applies to us
 		UpdateScrape();
 		UpdateSettlePin(); // other players' props: hold the clay still through their stand-up (see SettleUpright)
-		if ( !IsProxy )
-			_sinceNotOurs = 0f; // the grace below counts from the moment we STOP owning it
 
 		// A granted possession resumes here — before the dormant gate, because a HOST possessing a prop it
 		// released itself still has _dormant latched on its own copy (ResumeControl clears it).
@@ -538,16 +562,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		{
 			_possessionPending = false;
 			ResumeControl();
-		}
-
-		// Borrowed from its wearer for a hold (the inspect grab — see PropClaims.BorrowedBodies): this machine moves it,
-		// but it's somebody else's body — no input, no camera, and never our microphone (the engine's Voice records on
-		// any non-proxy copy).
-		if ( PropClaims.IsBorrowedHere( this ) )
-		{
-			if ( Components.Get<PlayerVoice>() is { } voice )
-				voice.Muted = true;
-			return;
 		}
 
 		// Released into the level: no input, no camera — just let OnFixedUpdate keep the physics settling.
@@ -572,19 +586,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// HunterController gates live). The streamed disguise shape is applied by SdfNetworkSync, not here.
 		if ( IsProxy )
 		{
-			// Our own body, lent out for a hold (or on its way back): still ours to watch (and to break free of).
-			if ( OwnBodyAway )
-			{
-				_sinceNotOurs = 0f;
-				UpdateBorrowedView();
-				return;
-			}
-
-			// Released / ownership dropped mid-flight: the free cam was ours, it goes too. Not on the first frames,
-			// though: when someone grabs our body the ownership change can land BEFORE the lent registry names it ours
-			// (OwnBodyAway), and a ghost out flying was yanked back to the body the instant it was grabbed.
-			if ( _sinceNotOurs > NotOursGrace )
-				SetFreeCam( false );
+			SetFreeCam( false ); // released / ownership dropped mid-flight: the free cam was ours, it goes too
 			return;
 		}
 
@@ -621,15 +623,16 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 		UpdateTaunts();
 
-		if ( ControlActive && Input.Pressed( "jump" ) )
+		if ( ControlActive && (Input.Pressed( "jump" ) || (DebugPropWander && _sinceDebugJump > 3f)) )
 		{
+			_sinceDebugJump = 0f;
 			_jumpQueued = true;
 			_sinceJumpPress = 0f; // also an air-grab request (see HiderController.Climb)
 		}
-		WatchMoveEscape(); // a fresh movement press breaks free of a grab (see HiderController.Grabbed)
+		TrackHold(); // when a hold on us began (the no-escape window, HiderController.Grabbed)
 
 		// Shift lets go of a climb — latched here so a quick tap can't fall between fixed ticks.
-		if ( _climbing && ControlActive && Input.Pressed( "run" ) )
+		if ( (_climbing || SimClimbing) && ControlActive && Input.Pressed( "run" ) )
 			_letGoQueued = true;
 
 		// Free cam toggle — blocked while editing (the sculpt rig already owns navigation there) or while a
@@ -669,21 +672,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	/// are hidden from what we're playing (Infection: a fellow prop before the Reveal; Teams: any prop on a
 	/// hunter's machine during prep). Never true for our own pawn — concealment is about what OTHER machines
 	/// perceive.</summary>
-	public bool Concealed => (IsProxy || RoundManager.IsBotPawn( GameObject ) || PropClaims.IsBorrowedHere( this ))
-		&& !OwnBodyAway && RoundManager.PropsConcealed;
-
-	// Our own body, lent out for a grab: a proxy here for the hold, but still OURS — never concealed from us.
-	// Not a bot: the host is a lent bot's "wearer", but nobody watches through a bot.
-	bool BorrowedFromUs => IsProxy && !RoundManager.IsBotPawn( GameObject )
-		&& PropClaims.WearerOf( GameObject ) is { } wearer && wearer == Connection.Local?.Id;
-
-	// …and through both EDGES of the lend: the lent registry and the ownership change arrive separately, in either order,
-	// so for a few frames the body can be a proxy the registry doesn't (yet, or any more) call ours — concealment then hid
-	// it (measured on the wearer at the START of a grab: ~17 ms hidden; and at the hand-back). The round's roster is the
-	// truth that doesn't flicker — it names our pawn whoever owns it on the network — and _wasBorrowed covers modes
-	// without one, from the moment we've watched it lent out until StepHandback takes it back.
-	bool OwnBodyAway => BorrowedFromUs
-		|| (IsProxy && (_wasBorrowed || RoundManager.IsLocalRosterPawn( GameObject )));
+	public bool Concealed => (IsProxy || RoundManager.IsBotPawn( GameObject )) && RoundManager.PropsConcealed;
 
 	// Keep other players' props out of our world until the Reveal. Asserted every frame on every machine and
 	// unconditionally, not on change: GameObject.Enabled is serialized, so a spawn snapshot or a network refresh
@@ -731,7 +720,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	// from us (RoundManager.PropsConcealed — Infection, a prop's machine, until the Reveal). Anywhere else they're
 	// solid to each other, like everything else — and a prop someone is HOLDING is never ghosted (on any machine), so a
 	// hunter pushing a held prop into others gets the same contacts from a player as from a decoy: a ghosting player
-	// prop was a dead giveaway. Outside rounds (creative, lobby, charades) the tag stays on, as before.
+	// prop was a dead giveaway. Outside rounds (creative, lobby, charades) the tag is OFF too: possessed props are solid to
+	// each other there (they ghosted "as before" until 2026-11-05 — the user wanted them to collide).
 	void UpdateReleasedSolidity()
 	{
 		if ( !_body.IsValid() )
@@ -758,7 +748,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	{
 		var round = RoundManager.Current;
 		if ( !round.IsValid() )
-			return true; // creative, lobby, charades: unchanged
+			return false; // creative, lobby, charades: solid to each other, like everything else (user, 2026-11-05: "possessed props don't collide with each other when they should")
 		if ( PropClaims.IsHeldObject( GameObject ) )
 			return false; // in someone's hands: solid to everything, exactly like a held decoy
 		return round.Phase is RoundPhase.Starting or RoundPhase.Hide || RoundManager.PropsConcealed;
@@ -858,10 +848,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// Proxy: the engine drives this body from the networked transform (see Rigidbody.ShouldSimulatePhysics —
 		// a synced proxy is moved, not simulated). Skip movement entirely for a body we're not simulating.
 		if ( IsProxy )
-		{
-			EndLentBody(); // we were the holder of a lent body, and it has gone back (see HiderController.Grabbed)
 			return;
-		}
 
 		WatchMoveJumps();
 
@@ -872,17 +859,14 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// scenery prop that escapes the map should come back too.
 		ApplyClayMass();
 
-		// A lent body just came back to us (or its pose hasn't yet) — see HiderController.Grabbed.
-		if ( StepHandback() )
+		// Walking in the shared sim world (mimi_sim_walk — HiderController.Sim): the sim moves it; nothing to do here.
+		if ( StepSimWalking() )
 			return;
 
 		// Grabbed (creative's pickup — see PropClaims.Grab): chase the holder's pose, free to rotate, no gravity.
 		// Ahead of everything else: a held prop is nobody's body and nobody's sculpt.
-		// A body LENT to us for a hold (the inspect grab — we're the holder) is held exactly like scenery here, from the
-		// target our own hunter computes (PropClaims.SetLocalGrabTarget).
 		Transform held = default;
-		bool borrowed = PropClaims.IsBorrowedHere( this );
-		bool isHeld = (Scenery || borrowed) && PropClaims.Current.IsValid() && PropClaims.Current.TryGetGrabTarget( this, out held );
+		bool isHeld = Scenery && PropClaims.Current.IsValid() && PropClaims.Current.TryGetGrabTarget( this, out held );
 
 		// Frozen from a grab (LMB while holding): exactly where it was let go, with motion OFF — solid, but no
 		// physics at all (no gravity, nothing can push it). Ahead of the fall check and the motion recovery
@@ -891,8 +875,6 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( !isHeld && Scenery && PropClaims.IsFrozen( this ) )
 		{
 			SetPhysicsMode( PhysicsMode.Frozen );
-			if ( borrowed )
-				ReportLentFrozen(); // lent to us (creative): frozen is at rest — hand it back now
 			return;
 		}
 
@@ -910,22 +892,13 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 
 		// Someone is carrying OUR body (or just let go of it) — see HiderController.Grabbed.
-		if ( !Scenery && !borrowed && StepGrabbed() )
+		if ( !Scenery && StepGrabbed() )
 			return;
 
 		if ( isHeld )
 		{
-			if ( borrowed )
-				HoldLentBody();
 			SetPhysicsMode( PhysicsMode.Held );
 			DriveHeld( held );
-			return;
-		}
-
-		// A lent body we've let go of: we keep simulating it until it's at rest, then hand it back.
-		if ( borrowed )
-		{
-			StepLentBody();
 			return;
 		}
 
@@ -1077,7 +1050,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	void ApplyHeldFriction() => _hold.ApplyFriction( GameObject ); // climbing slides frictionless like a held prop
 	void RestoreHeldFriction() => _hold.RestoreFriction();
 
-	// The simulating machine (the host for scenery, the holder for a lent body, the wearer the creative way): steer the
+	// The simulating machine (the host for scenery, the wearer for a body — the fallback hold, see PropClaims.Grab): steer the
 	// body toward the holder's pose.
 	void DriveHeld( Transform target ) => _hold.Drive( Body, target, touching: _sinceHeldContact < HeldBodyDriver.ContactWindow );
 

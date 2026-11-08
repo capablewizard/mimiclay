@@ -27,7 +27,7 @@ public sealed partial class HiderController
 	[Property, Group( "Climbing" )] public bool AllowClimbing { get; set; } = true;
 
 	/// <summary>Speed along a surface while climbing (u/s).</summary>
-	[Property, Group( "Climbing" )] public float ClimbSpeed { get; set; } = 80f;
+	[Property, Group( "Climbing" )] public float ClimbSpeed { get; set; } = 150f; // the hunters' speed (user, 2026-11-08; was 80)
 
 	// ClimbSpeed for THIS prop: small props climb slower too (see SizeSpeedScale).
 	float ScaledClimbSpeed => ClimbSpeed * SizeSpeedScale;
@@ -103,17 +103,17 @@ public sealed partial class HiderController
 
 	// Stepping over a bump on the surface (see the corner look-ahead): seconds left of lifting off it.
 	float _climbStepOver;
-	const float ClimbStepOverTime = 0.12f;
+	const float ClimbStepOverTime = SimClimbShared.StepOverTime;
 
 	// cos(35°): a sensed surface angle further than this from the current one is ignored (see the surface sensing).
-	const float SurfaceNormalGate = 0.82f;
+	const float SurfaceNormalGate = SimClimbShared.NormalGate;
 
 	// ...but a gated reading that persists this long (seconds) is a real surface, not a passing bump edge.
 	const float SurfaceGateHold = 0.2f;
-	const float FacingGate = 0.3f;
+	const float FacingGate = SimClimbShared.FacingGate;
 	float _surfaceGated;
-	const float CornerSwitchCooldown = 0.2f; // no second corner straight after one — never ping-pong between two
-	const float CornerMinSpeed = 5f; // u/s along the surface before the corner look-ahead runs
+	const float CornerSwitchCooldown = SimClimbShared.CornerCooldown; // no second corner straight after one — never ping-pong between two
+	const float CornerMinSpeed = SimClimbShared.CornerMinSpeed; // u/s along the surface before the corner look-ahead runs
 
 	// Where the climb went still, and on which shape — a hold re-checks the surface if either changes.
 	Vector3 _climbHoldPos;
@@ -375,10 +375,14 @@ public sealed partial class HiderController
 		return _climbing;
 	}
 
-	// WASD while climbing: sideways and in depth by the camera, W into the wall (see ClimbRules, shared with hunters).
-	float ClimbViewYaw => _orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw;
-	Vector3 ClimbAlong( Vector3 move, Vector3 n ) => ClimbRules.Along( ClimbViewYaw, move, n, ScaledClimbSpeed );
-	float ClimbInto( Vector3 move, Vector3 n ) => ClimbRules.Into( ClimbViewYaw, move, n );
+	// WASD while climbing: sideways and in depth by the camera, W along a wall the way you look and otherwise into it — the
+	// hunters' rules exactly (ClimbRules lookAlong; user, 2026-11-08).
+	float ClimbViewYaw => DebugClimbYaw ?? (_orbit.IsValid() ? _orbit.Angles.yaw : MoveYaw);
+
+	/// <summary>Test harness: the camera yaw the climb maps its keys by (sim climb input), in place of the camera's.</summary>
+	public static float? DebugClimbYaw { get; set; }
+	Vector3 ClimbAlong( Vector3 move, Vector3 n ) => ClimbRules.Along( ClimbViewYaw, move, n, ScaledClimbSpeed, lookAlong: true );
+	float ClimbInto( Vector3 move, Vector3 n ) => ClimbRules.Into( ClimbViewYaw, move, n, lookAlong: true );
 
 	// Grabs and the climb look THROUGH floor-like clay props (see PropsAsFloor — props smaller than us) to the surface they
 	// sit on: a fridge covered in magnets is still a fridge. Each floor prop hit is ignored and the trace re-run (a few
@@ -768,7 +772,7 @@ public sealed partial class HiderController
 		{
 			// Stepping over a bump: lift off the surface while we pass it instead of pressing in; the stick pulls us
 			// back down once it's behind us.
-			velocity = along + n * ClimbSpeed;
+			velocity = along + n * ClimbSpeed * 0.5f; // (half the climb speed, as the hunters' climb)
 		}
 		else if ( surface )
 		{

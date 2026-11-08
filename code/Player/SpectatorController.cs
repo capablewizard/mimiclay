@@ -109,6 +109,14 @@ public sealed class SpectatorController : Component
 		return cam;
 	}
 
+	/// <summary>SimLab's observer: put the free cam at a point, looking along <paramref name="angles"/>, at rest.</summary>
+	internal void LabPlace( Vector3 pos, Angles angles )
+	{
+		_pos = pos;
+		_angles = angles with { roll = 0f };
+		_velocity = Vector3.Zero;
+	}
+
 	/// <summary>Stop flying (no-op when this machine isn't). The caller takes the camera back on the same frame.</summary>
 	public static void End()
 	{

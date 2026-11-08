@@ -1,0 +1,15 @@
+{
+  "BaseSurface": "surfaces/clay.surface",
+  "AudioSurface": "Generic",
+  "Description": "clay.surface without rolling resistance: what a lying prop's clay wears while its wearer's move keys drive it (SimDownDriver.Settle) — its friction is zeroed there so the push adds slide only, and rolling resistance alone would then bleed the spin in a second (it acts as a bare torque once friction isn't coupling spin to the slide). Same sounds.",
+  "Friction": 0.8,
+  "Elasticity": 0.05,
+  "Density": 2000,
+  "RollingResistance": 0,
+  "BounceThreshold": 35,
+  "SoundCollection": {
+    "ImpactHard": { "Path": "sounds/game/splats/splat_physics.sound" },
+    "ImpactSoft": { "Path": "sounds/game/splats/splat_physics.sound" },
+    "ScrapeRough": { "Path": "sounds/game/splats/squelch.sound" }
+  }
+}

@@ -33,7 +33,7 @@ public sealed partial class HunterController
 		_scrapeFrom = pos;
 		_scrapeSeeded = true;
 
-		bool climbing = _climb.IsValid() && _climb.ClingingNet;
+		bool climbing = Clinging; // (the engine climb's synced flag, or the sim climb's — HunterController.SimClimb)
 		bool creeping = _controller.IsDucking && _controller.IsOnGround;
 
 		// How fast relative to the move's own top speed: a full-speed creep or climb is the full (quiet) scrape.

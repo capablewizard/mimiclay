@@ -58,6 +58,8 @@
               "DebugSoloHide": true,
               "DirectPlayGame": "Creative",
               "DisableSceneCameras": true,
+              "Ghosts": "None",
+              "GrabProps": false,
               "HideSeconds": 5,
               "HintSeconds": 10,
               "HunterCount": 2,
@@ -70,8 +72,12 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OverrideCharadesRules": false,
+              "OverrideGhosts": false,
+              "OverrideGrabProps": false,
+              "OverrideRepairProps": false,
               "OverrideRules": false,
               "PlayAs": "Auto",
+              "RepairProps": false,
               "RevealSeconds": 30,
               "StartCountdownSeconds": 4,
               "TauntSeconds": 35
@@ -11170,14 +11176,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "5bb504da-cf04-44a7-976a-5e7c4197f6cc"
-            },
-            "Property": "__enabled",
-            "Value": false
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "015be4f3-b057-4606-9a8f-53c2cb842e9a"
             },
             "Property": "__enabled",
@@ -11975,7 +11973,7 @@
         "MovedObjects": []
       },
       "__PrefabIdToInstanceId": {
-        "e75eddfe-5f89-41c0-9edb-095ded10aa2e": "0277e022-86a3-880e-95ee-1e400fa49a3f"
+        "69fb00a8-bb36-4d65-9ec2-7d5a957a90c4": "9d397554-d5eb-8469-93ee-83fa8acfa08c"
       }
     },
     {

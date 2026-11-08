@@ -12,6 +12,9 @@ namespace Mimiclay;
 // Not the engine's collision-sound path: that only broadcasts when the OTHER object is networked, so a prop
 // hitting the map — the usual case — would splat on the host alone. Instead the host, which simulates every
 // released prop, hears the hit here and broadcasts it, so every machine plays it.
+//
+// A prop in the SIM world (held, loose, thrown — the default since 2026-11-05) gets no scene contacts at all (its scene
+// body is keyframed presentation): the host hears the sim's own contacts instead (SimContact, below).
 public sealed partial class HiderController : Component.ICollisionListener
 {
 	// Below this contact speed (units/s) a touch is a rest, not an impact — the engine's own floor.
@@ -51,16 +54,40 @@ public sealed partial class HiderController : Component.ICollisionListener
 		// The simulating machine only (the host, for every released prop) — it alone sees the real contacts.
 		if ( IsProxy || !ImpactSoundsLive )
 			return;
+		TryImpact( collision.Contact.Point, MathF.Abs( collision.Contact.NormalSpeed ) );
+	}
 
-		float speed = MathF.Abs( collision.Contact.NormalSpeed );
+	void TryImpact( Vector3 point, float speed )
+	{
 		if ( speed < ImpactMinSpeed || _sinceImpact < ImpactCooldown )
 			return;
 
 		_sinceImpact = 0f;
 		if ( Networking.IsActive && GameObject.Network.Active )
-			BroadcastImpact( collision.Contact.Point, speed );
+			BroadcastImpact( point, speed );
 		else
-			PlayImpact( collision.Contact.Point, speed );
+			PlayImpact( point, speed );
+	}
+
+	// ── In the SIM world (held, loose and thrown props since the sim hold went default, 2026-11-05) ──────────
+	// Those props move in the sim; their scene body is keyframed presentation, which never gets a contact — every splat and
+	// scrape went silent (user, 2026-11-08). The host hears the sim's own contacts instead (SimWorld.HookContacts) and feeds
+	// the same splat and scrape: held, loose, or a player's body tumbling after a throw (lying settled, or walking, it's a
+	// body again — silent, as a hiding player always was). The host only: it never replays, so each contact is real, once.
+
+	// Host: this prop's sim body is in a state that makes sounds.
+	bool SimSoundsLive => (!Networking.IsActive || Networking.IsHost) && SimSystem is { Active: true } sim && sim.Find( GameObject.Id ) is { } b
+		&& (b.Spec.Driver == 0 || b.Spec.Driver == Sim.SimHoldDriver.Id || (b.Spec.Driver == Sim.SimDownDriver.Id && !b.Ctrl.Grounded));
+
+	/// <summary>Host, from the sim's step: <paramref name="body"/> touched something (start = a new contact).</summary>
+	internal static void SimContact( Sim.SimBody body, in PhysicsIntersection c, bool start )
+	{
+		var h = Game.ActiveScene?.Directory.FindByGuid( body.Spec.Source )?.Components.Get<HiderController>();
+		if ( !h.IsValid() || !h.SimSoundsLive )
+			return;
+		h.NoteSlide( c.Self.Body, c.Other.Body, c.Contact.Point, c.Contact.Normal );
+		if ( start )
+			h.TryImpact( c.Contact.Point, MathF.Abs( c.Contact.NormalSpeed ) );
 	}
 
 	[Rpc.Broadcast( NetFlags.Unreliable )]
@@ -80,6 +107,8 @@ public sealed partial class HiderController : Component.ICollisionListener
 	const float ScrapeFullSpeed = 350f;   // full volume from here
 	const float ScrapeInterval = 0.1f;    // host → everyone while scraping, plus one zero when it stops
 	const float ScrapeFadeRate = 10f;     // volume per second (the engine's scrape fade)
+	const float ScrapeLoudness = 0.75f;   // × the clay surface's ScrapeRough volume at full slide (user, 2026-11-08: ~25% quieter).
+	                                      // Here, not on the sound event: the hunters' creep/climb scrape plays that one too.
 
 	float _scrapeSlide;                   // host: fastest slide this interval
 	RealTimeSince _sinceScrapeSent;
@@ -93,16 +122,19 @@ public sealed partial class HiderController : Component.ICollisionListener
 	{
 		if ( IsProxy || !ImpactSoundsLive || !collision.Self.Body.IsValid() )
 			return;
+		NoteSlide( collision.Self.Body, collision.Other.Body, collision.Contact.Point, collision.Contact.Normal );
+	}
+
+	void NoteSlide( PhysicsBody self, PhysicsBody other, Vector3 point, Vector3 normal )
+	{
+		if ( self is null || !self.IsValid() )
+			return;
 
 		// How fast the contact SLIPS: the centre's speed along the surface, minus what the spin accounts for
 		// (spin rate about the surface's axes × centre-to-contact distance). Rolling cleanly → ~0, sliding
 		// without turning → the full speed, a skidding roll → about the skid. Not the velocity AT the contact
 		// point: the engine reports one representative point per pair, rarely the exact touching spot on a lumpy
 		// shape, and the rest of a rolling body moves at up to twice its speed — so rolling read as scraping.
-		var self = collision.Self.Body;
-		var point = collision.Contact.Point;
-		var normal = collision.Contact.Normal;
-		var other = collision.Other.Body;
 		var centre = self.MassCenter;
 		var relative = self.Velocity - (other.IsValid() ? other.GetVelocityAtPoint( point ) : Vector3.Zero);
 		var spin = self.AngularVelocity;
@@ -114,9 +146,12 @@ public sealed partial class HiderController : Component.ICollisionListener
 	// Every machine, per frame.
 	void UpdateScrape()
 	{
-		if ( !IsProxy && _sinceScrapeSent >= ScrapeInterval )
+		// The machine hearing the contacts sends: the simulating owner (scene physics), or the host for a body in the sim.
+		// (_scrapeSent is only ever set where it is sent from: a machine that stopped hearing still sends its closing zero.)
+		bool hearing = (!IsProxy && ImpactSoundsLive) || SimSoundsLive;
+		if ( (hearing || _scrapeSent > 0f) && _sinceScrapeSent >= ScrapeInterval )
 		{
-			float volume = ImpactSoundsLive ? MathX.LerpInverse( _scrapeSlide, ScrapeMinSpeed, ScrapeFullSpeed ) : 0f;
+			float volume = hearing ? MathX.LerpInverse( _scrapeSlide, ScrapeMinSpeed, ScrapeFullSpeed ) : 0f;
 			if ( volume > 0f || _scrapeSent > 0f )
 			{
 				if ( Networking.IsActive && GameObject.Network.Active )
@@ -153,7 +188,7 @@ public sealed partial class HiderController : Component.ICollisionListener
 		if ( _scrapeHandle is { IsValid: true } )
 		{
 			_scrapeHandle.Position = PropClaims.PopSpot( GameObject ); // the clay's centre, following the prop
-			_scrapeHandle.Volume = _scrapeBaseVolume * _scrapeVolume;
+			_scrapeHandle.Volume = _scrapeBaseVolume * _scrapeVolume * ScrapeLoudness;
 		}
 	}
 

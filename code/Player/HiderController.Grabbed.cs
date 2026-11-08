@@ -3,19 +3,14 @@ using System.Linq;
 
 namespace Mimiclay;
 
-// Being GRABBED while wearing this prop (see PropClaims.Grab, "players' props"). Two flavours:
+// Being GRABBED while wearing this prop (see PropClaims.Grab, "players' props"), when the sim doesn't carry it (the sim
+// off, or our shape mid-edit — HiderController.SimHoldApplies; otherwise the sim holds it and StepSimWalking presents it).
 //
-// CREATIVE: the body stays ours and simulates HERE, so being carried is local physics on our own machine: the camera
-// follows a body that never waits on the network, and edit mode keeps working on a shape we still own. The host relays
-// the holder's pose (ReceiveGrabTarget) and we chase it with the same hold the host uses for scenery (DriveHeld).
+// The body stays ours and simulates HERE, so being carried is local physics on our own machine: the camera follows a
+// body that never waits on the network, and edit mode keeps working on a shape we still own. The host relays the
+// holder's pose (ReceiveGrabTarget) and we chase it with the same hold the host uses for scenery (DriveHeld).
 //
-// PROP HUNT (the inspect grab): the body is LENT to the hunter holding it (PropClaims.BorrowedBodies), whose machine
-// simulates it — held, then settling after the drop until it's at rest (StepLentBody) — so it answers the hunter's hand
-// with no lag, exactly like a held decoy. Our copy is a proxy meanwhile: we keep the camera on it and our keys watched
-// (UpdateBorrowedView). It comes back WITH its exact pose (ReceiveHandback), and we don't move until we have both the
-// body and the pose, whichever lands first (StepHandback) — then we stand straight up as a character, mouse turning it.
-//
-// Creative, while held we can't move; jump or a movement key breaks free (EscapeGrab) and stands us straight back up.
+// While held we can't move; Space breaks free (EscapeGrab) and stands us straight back up.
 // If the holder lets go instead, we're a loose object — thrown props fly — until we move or jump, which stands us up
 // (SettleUpright: the clay stays exactly where it landed, the root goes upright) and hands back to walking with
 // whatever speed we had.
@@ -24,192 +19,27 @@ public sealed partial class HiderController
 	Transform? _grabbedTarget;  // the latest pose the holder asked for (null until the first lands)
 	bool _grabbedObject;        // held, or tumbling since a holder let go — an object, not a character
 	bool _escapeSent;           // we jumped free; the host's Held row lingers a round-trip
-	bool _moveEscapeQueued;     // a movement key went down this frame while held (latched for the fixed step)
-	bool _moveWasDown;          // …edge detection for it: holding W through the grab isn't a press
-	bool _wasBorrowed;          // we watched our body lent out — the first owned tick after is the hand-back
-	bool _escapeJump;           // that escape (while lent out) was SPACE: jump on the hand-back (see EscapeJump)
-	(Vector3 Position, Rotation Rotation, Vector3 Velocity, bool Escaped)? _handback; // the pose it came back at
-	RealTimeSince _sinceOwnedBack; // owned again but no pose yet: how long we've waited for it (see StepHandback)
-	bool _awaitingHandback;
-	bool _simLent;              // THIS machine is simulating a body lent to it (the holder)
-	bool _lentReported;         // …and has reported it at rest (FinishBorrow sent once)
-	RealTimeSince _lentStill;   // …how long it's been still since the hold ended
 	List<PhysicsFilter> _grabbedFilters;
 	System.Guid _grabbedFilterHolder;
 	float? _grabCamLift;        // camera pivot height above the clay centre while an object (see UpdateGrabbedCamera)
 
-	/// <summary>Host → the wearer of a lent body (filtered — see PropClaims.HandBack): it's yours again, at exactly this
-	/// pose. <paramref name="escaped"/> = you broke free (moving at <paramref name="velocity"/> — zero from the host).</summary>
-	[Rpc.Broadcast]
-	public void ReceiveHandback( Vector3 position, Rotation rotation, Vector3 velocity, bool escaped )
+	// Held by another player: for the first moment after the grab nothing breaks free (user, 2026-11-06: "a short window after
+	// being grabbed where you can't escape even by pressing jump"); the host enforces the same window (PropClaims.EscapeGrab).
+	// Only Space breaks free — the move keys never do (user, 2026-11-06).
+	System.Guid? _lastHolder;
+	RealTimeSince _sinceHeld = 999f;
+
+	// Owner, every frame (HiderController.OnUpdate): the moment a hold starts — a new holder, or the same hunter again after a
+	// gap (tracked every frame, not only while held, or a regrab by the same hunter had no edge and no window: measured).
+	void TrackHold()
 	{
-		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
-			return;
-		TakeHandback( position, rotation, velocity, escaped );
+		var holder = PropClaims.HolderOf( this );
+		if ( holder is { } && holder != _lastHolder )
+			_sinceHeld = 0f;
+		_lastHolder = holder;
 	}
 
-	/// <summary>The hand-back pose, applied on our first owned fixed step (StepHandback) — straight from the host when it
-	/// wears the body itself.</summary>
-	internal void TakeHandback( Vector3 position, Rotation rotation, Vector3 velocity, bool escaped )
-		=> _handback = (position, rotation, velocity, escaped);
-
-	// Fixed step, on the machine that owns the body. True = this tick is handled.
-	//  - HOLDER, simulating a lent body: held (OnFixedUpdate's held branch) and then, once the hold ends, a loose
-	//    tumble until it's been still for a moment — then report the resting pose so the host hands it back.
-	//  - WEARER, just given it back: wait until the pose is here too, put the body exactly there, stand up.
-	// Also cleans up after a lend on the holder once the body has gone (it's a proxy here again).
-	bool StepHandback()
-	{
-		if ( _handback is { } back )
-		{
-			_handback = null;
-			_wasBorrowed = false;
-			_awaitingHandback = false;
-			_escapeSent = PropClaims.HolderOf( this ) is not null; // a lingering Held row mustn't re-grab us
-			_grabbedTarget = null;
-			PlaceExactly( back.Position, back.Rotation );
-			RecoverFromGrab();
-			_velocity = back.Velocity;
-			if ( back.Escaped && _escapeJump )
-				EscapeJump();
-			_escapeJump = false;
-			return false;
-		}
-
-		// Owned again, pose not here yet: stay exactly where we are (keyframed) — a short wait beats a jump. If it never
-		// comes, carry on from here.
-		if ( _wasBorrowed )
-		{
-			if ( !_awaitingHandback )
-			{
-				_awaitingHandback = true;
-				_sinceOwnedBack = 0f;
-			}
-			if ( _sinceOwnedBack < HandbackWait )
-			{
-				SetPhysicsMode( PhysicsMode.Character );
-				return true;
-			}
-			_wasBorrowed = false;
-			_awaitingHandback = false;
-			RecoverFromGrab();
-			return false;
-		}
-
-		return false;
-	}
-
-	// Put a body we've just been handed exactly here — the GameObject AND its physics body, with the walk's own state
-	// cleared. Setting the transform alone wasn't enough: while we were a proxy the walk had the body PARKED (left to its
-	// physics sleep at the spot it rested BEFORE the grab), and on taking over the physics body pulled the prop straight
-	// back there — measured as a 13-unit snap a ping after every hand-back.
-	void PlaceExactly( Vector3 position, Rotation rotation )
-	{
-		WorldPosition = position;
-		WorldRotation = rotation;
-		Transform.ClearInterpolation();
-		if ( Body.IsValid() && Body.PhysicsBody is { } pb && pb.IsValid() )
-		{
-			pb.Position = position;
-			pb.Rotation = rotation;
-			pb.Velocity = Vector3.Zero;
-			pb.AngularVelocity = Vector3.Zero;
-		}
-		ResetMover(); // unparks, clears the walk's velocity and ground
-	}
-
-	// How long a returned body waits for its pose (see StepHandback) before carrying on regardless.
-	const float HandbackWait = 0.5f;
-
-	// Speed (u/s) under which a dropped lent body counts as still, and for how long, before it's handed back.
-	const float LentRestSpeed = 4f;
-	const float LentRestTime = 0.25f;
-
-	// Holder, fixed step: a lent body nobody holds any more — tumble on (a throw still flies) until it's been still for a
-	// moment, then report where it rests (once). The host hands it back; the wearer doesn't move until it has the pose.
-	void StepLentBody()
-	{
-		_simLent = true;
-		ClearGrabbedFilters();
-		SetPhysicsMode( PhysicsMode.Loose );
-
-		if ( Body.Velocity.Length > LentRestSpeed || Body.AngularVelocity.Length > 0.2f )
-			_lentStill = 0f;
-		if ( _lentReported || _lentStill < LentRestTime )
-			return;
-
-		_lentReported = true;
-		PropClaims.Current?.FinishBorrow( GameObject, WorldPosition, WorldRotation );
-	}
-
-	// Holder: a lent prop put down FROZEN (creative's LMB) is at rest the moment it's let go — report it at once.
-	void ReportLentFrozen()
-	{
-		_simLent = true;
-		if ( _lentReported )
-			return;
-		_lentReported = true;
-		ClearGrabbedFilters();
-		PropClaims.Current?.FinishBorrow( GameObject, WorldPosition, WorldRotation );
-	}
-
-	/// <summary>Host, taking back creative's released scenery from its holder (PropClaims.HandBack): put it exactly where
-	/// the holder left it. It stays an object — loose or frozen, as it was put down (the next fixed step picks the mode
-	/// from the registries) — rather than standing up like a player's body.</summary>
-	internal void TakeBackScenery( Vector3 position, Rotation rotation ) => PlaceExactly( position, rotation );
-
-	// Holder, held: the body never collides with OUR hunter (the host's filter for held scenery, made here because this
-	// is the machine simulating it).
-	void HoldLentBody()
-	{
-		_simLent = true;
-		_lentReported = false;
-		_lentStill = 0f;
-		if ( Connection.Local is { } me )
-			IgnoreGrabHolder( me.Id );
-	}
-
-	// Holder, the lend over (the body's a proxy here again): leave nothing of the hold behind on this copy.
-	void EndLentBody()
-	{
-		if ( !_simLent )
-			return;
-		_simLent = false;
-		_lentReported = false;
-		ClearGrabbedFilters();
-		SetPhysicsMode( PhysicsMode.Character );
-	}
-
-	// Per frame, wherever we read our own keys (owner, or watching our borrowed body): latch a FRESH movement press.
-	void WatchMoveEscape()
-	{
-		bool down = !Input.AnalogMove.IsNearZeroLength;
-		if ( down && !_moveWasDown && ControlActive )
-			_moveEscapeQueued = true;
-		_moveWasDown = down;
-	}
-
-	// Our body, borrowed by the host for a hold (we're a proxy of it): keep the camera on it, and break free on jump or
-	// a movement key.
-	void UpdateBorrowedView()
-	{
-		_grabbedObject = true; // the camera follows the clay centre while we're an object (UpdateGrabbedCamera)
-		_wasBorrowed = true;   // the first owned tick after this is the hand-back (StepHandback)
-
-		WatchMoveEscape();
-		bool jumped = ControlActive && Input.Pressed( "jump" );
-		bool escape = _moveEscapeQueued || jumped;
-		_moveEscapeQueued = false;
-		if ( escape && !_escapeSent )
-		{
-			_escapeSent = true;
-			_escapeJump = jumped; // jumps once the body is ours again (StepHandback)
-			PropClaims.Current?.EscapeGrab( GameObject );
-		}
-
-		if ( !FreeCamming )
-			UpdateCamera();
-	}
+	bool EscapeGraceActive() => PropClaims.HolderOf( this ) is { } && _sinceHeld < PropClaims.EscapeHoldGrace;
 
 	/// <summary>Is this body being carried, or tumbling from a carry, on its owner's machine?</summary>
 	public bool IsGrabbedObject => _grabbedObject;
@@ -238,12 +68,13 @@ public sealed partial class HiderController
 			_grabbedTarget = null;
 		}
 
-		bool escapePressed = _jumpQueued || _moveEscapeQueued;
-		_moveEscapeQueued = false;
+		if ( EscapeGraceActive() )
+			_jumpQueued = false; // (a press inside the no-escape window is simply lost)
+		bool escapePressed = _jumpQueued;
 
 		if ( holder is { } h && !_escapeSent )
 		{
-			// Jump or a movement key breaks free: ask the host to end the hold and stand up right away — no waiting on
+			// Jump breaks free: ask the host to end the hold and stand up right away — no waiting on
 			// the reply.
 			if ( escapePressed )
 			{
@@ -312,9 +143,8 @@ public sealed partial class HiderController
 		_bodyYaw = WorldRotation.Angles().yaw;
 
 		// …and re-seed the walk's turn tracking from it. The walk turns the body by how much the facing CHANGED since its
-		// last tick (ReadTurn), and while the body was lent out the walk never ran — its last facing was from before the
-		// grab, so the reset above read as one big mouse turn: measured as a 51° spin (and a 5.5u swing of the clay) a
-		// ping after every hand-back.
+		// last tick (ReadTurn), and while the body was carried the walk never ran — its last facing was from before the
+		// grab, so the reset above read as one big mouse turn (measured as a 51° spin and a 5.5u swing of the clay).
 		_turnSeeded = false;
 	}
 
