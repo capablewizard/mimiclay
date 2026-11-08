@@ -21,6 +21,10 @@ namespace Mimiclay;
 // step, the reading first: nothing moves the body between one tick's step and the next's drive, so reading it then gives
 // the same answers, and no reading has to be carried between ticks (only the gap to a far wall — SimCtrl.ClimbGap).
 //
+// Shared with the props' sim climb (SimClimbShared): the keys, steering and the corner carry-over, reading the surface's
+// normal, turning inner and outer corners, the edge pull, grab/let-go state. What's here is the hunter's own: its box and
+// capsule sweeps, walls only, set-back ledges, pulling away, the rest gap, stepping out under an overhang, its mantle.
+//
 // State in SimCtrl (the prop climb's fields, meaning the same here): Climbing, ClimbN (the smoothed normal), ClimbP (the last
 // contact; the mantle's start while mantling), ClimbGap, LostTicks (without a surface), GateTicks (an off-normal reading
 // held), CornerCool, StepOverTicks, CornerLeft + CornerMoveX/Y/CornerVertical, CarryDir/CarryFrom + CarryMoveX/Y,
@@ -41,12 +45,12 @@ public sealed partial class HunterController
 	/// <summary>The surface normal of the sim climb (SimLab).</summary>
 	public Vector3 SimClimbNormal => SimSelf is { } s ? s.Ctrl.ClimbN : Vector3.Zero;
 
-	static byte ClimbTicks( float seconds ) => (byte)Math.Clamp( (int)MathF.Round( seconds * SimWorld.T ), 1, 255 );
+	static byte ClimbTicks( float seconds ) => SimClimbShared.Ticks( seconds );
 
-	const float ClimbBackOff = 2f, ClimbReach = 6f, ClimbNormalGate = 0.82f, ClimbSenseInset = 2f;
+	const float ClimbBackOff = 2f, ClimbReach = 6f, ClimbSenseInset = 2f;
 	const float ClimbWrapReach = 18f, ClimbSetBackReach = 24f, ClimbOnReach = 64f;
 	const float ClimbRestGap = 2f;
-	const float ClimbGateHold = 0.15f, ClimbCornerCooldown = 0.2f, ClimbStepOverTime = 0.12f, ClimbLetGoCooldown = 0.3f, ClimbMantleTime = 0.4f;
+	const float ClimbGateHold = 0.15f, ClimbLetGoCooldown = 0.3f, ClimbMantleTime = 0.4f;
 
 	float ClimbSpeedNow => ClimbCfg.IsValid() ? ClimbCfg.ClimbSpeed : 150f;
 
@@ -94,30 +98,15 @@ public sealed partial class HunterController
 	// Every tick, any mode (SimHunterStep, first thing): the Space press buffer, the cooldowns, Space held on from a mantle.
 	void SimClimbClock( ref SimCtrl c, in SimInput input )
 	{
-		if ( input.Has( SimInput.Jump ) )
-			c.SpaceBuffer = ClimbTicks( ClimbCfg.IsValid() ? ClimbCfg.GrabBuffer : 0.15f );
-		else if ( c.SpaceBuffer > 0 )
-			c.SpaceBuffer--;
-		if ( c.LetGoCool > 0 ) c.LetGoCool--;
-		if ( c.CornerCool > 0 ) c.CornerCool--;
+		SimClimbShared.Clock( ref c, input, ClimbTicks( ClimbCfg.IsValid() ? ClimbCfg.GrabBuffer : 0.15f ) );
 		if ( c.StepOverTicks > 0 && c.Climbing ) c.StepOverTicks--;
-		if ( c.ClimbOn && !input.Has( SimInput.JumpHeld ) )
-			c.ClimbOn = false;
 	}
 
 	// The engine's OnModeBegin: stop dead INTO the surface, keep what ran along it (catching a wall at speed doesn't stop dead).
 	void SimHunterStartClimb( ref SimCtrl c, PhysicsBody pb, Vector3 normal, Vector3 point, float gap = 0f )
 	{
-		c.Climbing = true;
-		c.ClimbN = normal.Normal;
-		c.ClimbP = point;
+		SimClimbShared.Grab( ref c, normal, point );
 		c.ClimbGap = MathF.Max( gap, 0f );
-		c.LostTicks = c.StepOverTicks = c.GateTicks = c.CornerCool = 0;
-		c.CornerLeft = c.CarryDir = c.CarryFrom = c.CeilingOut = Vector3.Zero;
-		c.MantleTicks = 0;
-		c.ClimbOn = false;
-		c.Grounded = false;
-		c.StillTicks = 0;
 		c.PushLevel = 0;
 		var v = pb.Velocity;
 		pb.Velocity = (v - c.ClimbN * Vector3.Dot( v, c.ClimbN )).ClampLength( ClimbSpeedNow );
@@ -128,11 +117,8 @@ public sealed partial class HunterController
 	void SimHunterEndClimb( ref SimCtrl c, PhysicsBody pb, bool pushOff = false )
 	{
 		var n = c.ClimbN;
-		c.Climbing = false;
+		SimClimbShared.LetGo( ref c, ClimbTicks( ClimbLetGoCooldown ) );
 		c.MantleTicks = 0;
-		c.SpaceBuffer = 0;
-		c.LetGoCool = ClimbTicks( ClimbLetGoCooldown );
-		c.CornerLeft = c.CarryDir = c.CarryFrom = Vector3.Zero;
 		c.StillTicks = 255; // (long since the ground: a fresh press may grab again at once)
 		c.PushLevel = 0;
 		c.ClimbGap = 0f;
@@ -218,9 +204,7 @@ public sealed partial class HunterController
 		var move = new Vector3( input.Move.x, input.Move.y, 0f ).ClampLength( 1f );
 		float yaw = input.ViewYaw;
 		float vertical = (input.Has( SimInput.JumpHeld ) ? 1f : 0f) - (input.Has( SimInput.Duck ) ? 1f : 0f);
-		c.Wish = new Vector2( MathF.Round( move.x * 127f ), MathF.Round( move.y * 127f ) ); // (a remote copy repeats these — Guess)
-		c.ClimbYaw = yaw;
-		c.ClimbVertical = (sbyte)vertical;
+		SimClimbShared.NoteKeys( ref c, move, yaw, vertical ); // (a remote copy repeats these — Guess)
 
 		if ( c.MantleTicks > 0 )
 			return SimHunterMantle( body, ref c, pos );
@@ -232,39 +216,10 @@ public sealed partial class HunterController
 		}
 
 		var n = c.ClimbN;
-		var wasd = ClimbRules.Along( yaw, move, n, climbSpeed, lookAlong: true );
-		bool carrying = false;
-		if ( c.CarryDir != Vector3.Zero )
-		{
-			var carryMove = new Vector3( c.CarryMoveX / 127f, c.CarryMoveY / 127f, 0f );
-			if ( !move.IsNearZeroLength && !carryMove.IsNearZeroLength && Vector3.Dot( move.Normal, carryMove.Normal ) > 0.95f && Vector3.Dot( n, c.CarryFrom ) <= 0.97f )
-			{
-				var flat = c.CarryDir - n * Vector3.Dot( c.CarryDir, n );
-				if ( !flat.IsNearZeroLength )
-				{
-					wasd = flat.Normal * climbSpeed * MathF.Min( move.Length, 1f );
-					carrying = true;
-				}
-			}
-			else
-				c.CarryDir = c.CarryFrom = Vector3.Zero; // new keys (or back on a face like the one we left): the look has W/S again
-		}
-		var climbUp = ClimbRules.Vertical( vertical, n, Vector3.Zero, climbSpeed );
-		if ( c.CornerLeft != Vector3.Zero )
-		{
-			var cornerMove = new Vector3( c.CornerMoveX / 127f, c.CornerMoveY / 127f, 0f );
-			if ( vertical != c.CornerVertical || (move - cornerMove).Length > 0.05f )
-				c.CornerLeft = Vector3.Zero; // new keys: a fresh press back toward it is meant
-			else
-			{
-				wasd = ClimbRules.NotBack( wasd, c.CornerLeft );
-				climbUp = ClimbRules.NotBack( climbUp, c.CornerLeft );
-			}
-		}
+		var along = SimClimbShared.Steer( ref c, yaw, move, vertical, n, climbSpeed, out _, out bool carrying ); // (CeilingOut is always zero for a hunter)
 		float into = ClimbRules.Into( yaw, move, n, lookAlong: true );
 		var flatN = n.WithZ( 0f );
 		float away = flatN.IsNearZeroLength || carrying ? 0f : move.x * Vector3.Dot( Rotation.FromYaw( yaw ).Forward, flatN.Normal );
-		var along = wasd + climbUp;
 		bool anyInput = !move.IsNearZeroLength || vertical != 0f;
 
 		// W/S backing straight off the wall for PullAwayTime: let go and push off.
@@ -306,7 +261,7 @@ public sealed partial class HunterController
 		if ( !tr.Hit && !embedded )
 		{
 			var setBack = ClimbSense( trace, c.Ducked, pos + n * ClimbBackOff, pos - n * (ClimbReach + ClimbSetBackReach) );
-			if ( setBack.Hit && !setBack.StartedSolid && Vector3.Dot( setBack.Normal, n ) > ClimbNormalGate )
+			if ( setBack.Hit && !setBack.StartedSolid && Vector3.Dot( setBack.Normal, n ) > SimClimbShared.NormalGate )
 			{
 				tr = setBack;
 				back = ClimbBackOff;
@@ -318,23 +273,11 @@ public sealed partial class HunterController
 		// Still nothing, going sideways: round an outer corner onto the face beyond the wall's end.
 		if ( !tr.Hit && !embedded && c.CornerCool == 0 && MathF.Abs( n.z ) < 0.7f && SimWrapOuterCorner( sim, trace, c.Ducked, pos, n, along, out var face ) )
 		{
-			var turnOver = Rotation.FromToRotation( n, face.Normal );
 			var flatAlong = (along - n * Vector3.Dot( along, n )).WithZ( 0f );
-			if ( !move.IsNearZeroLength && !flatAlong.IsNearZeroLength )
-			{
-				c.CarryDir = turnOver * flatAlong.Normal;
-				c.CarryMoveX = (sbyte)MathF.Round( move.x * 127f );
-				c.CarryMoveY = (sbyte)MathF.Round( move.y * 127f );
-				c.CarryFrom = n;
-			}
+			SimClimbShared.TakeOuterCorner( ref c, face.Normal, face.HitPosition, flatAlong, move );
 			if ( DebugSimTrace )
 				SimClimbLog.Add( $"{(sim.IsAuthority ? "H" : "C")} t{sim.Tick} WRAP {n:0.00} -> {face.Normal:0.00} move {move} flatAlong {flatAlong:0} carry {c.CarryDir:0.0}" );
-			c.CornerLeft = Vector3.Zero;
-			c.ClimbN = n = face.Normal;
-			c.ClimbP = face.HitPosition;
-			c.ClimbGap = 0f;
-			c.LostTicks = 0;
-			c.CornerCool = ClimbTicks( ClimbCornerCooldown );
+			n = c.ClimbN;
 			surface = false; // swung round by the edge pull until the new face is under us
 			gap = 0f;
 		}
@@ -345,18 +288,8 @@ public sealed partial class HunterController
 			if ( hitOk )
 			{
 				gap = tr.Distance - back;
-				bool close = Vector3.Dot( tr.Normal, n ) > ClimbNormalGate;
-				c.GateTicks = close || anyInput ? (byte)0 : (byte)Math.Min( c.GateTicks + 1, 255 );
-				if ( close )
-					n = Vector3.Lerp( n, tr.Normal, 0.5f ).Normal;
-				else if ( Vector3.Dot( tr.Normal, n ) > 0.3f && c.GateTicks > ClimbTicks( ClimbGateHold ) )
-				{
-					n = tr.Normal;
-					c.GateTicks = 0;
-				}
-				c.ClimbN = n;
-				c.ClimbP = tr.HitPosition;
-				c.LostTicks = 0;
+				SimClimbShared.ReadSurface( ref c, tr.Normal, tr.HitPosition, anyInput, ClimbTicks( ClimbGateHold ) );
+				n = c.ClimbN;
 			}
 			else
 			{
@@ -377,7 +310,7 @@ public sealed partial class HunterController
 		c.ClimbGap = gap;
 
 		// Inner corners: a different surface ahead takes over (ground ends the climb), or it's a bump we step over.
-		if ( !SimClimbCorners( sim, trace, pb, ref c, pos, along, vertical, move, dt ) )
+		if ( !SimClimbCorners( sim, trace, pb, ref c, pos, along, vertical, move ) )
 			return false;
 		n = c.ClimbN;
 
@@ -391,7 +324,7 @@ public sealed partial class HunterController
 				var lifted = pos + n.WithZ( 0f ).Normal * StepUp;
 				var upTr = ClimbSweep( trace, pb, lifted, lifted + Vector3.Up * 6f );
 				if ( !upTr.Hit && !upTr.StartedSolid )
-					c.StepOverTicks = ClimbTicks( ClimbStepOverTime );
+					c.StepOverTicks = ClimbTicks( SimClimbShared.StepOverTime );
 			}
 		}
 		else
@@ -422,10 +355,7 @@ public sealed partial class HunterController
 		}
 		else
 		{
-			var pull = (c.ClimbP - (pos + Vector3.Up * SimHeight( c.Ducked ) * 0.5f)).Normal * cfg.EdgePullSpeed;
-			float inward = Vector3.Dot( pull, -n );
-			if ( inward > stick )
-				pull -= -n * (inward - stick);
+			var pull = SimClimbShared.EdgePull( c.ClimbP, pos + Vector3.Up * SimHeight( c.Ducked ) * 0.5f, n, cfg.EdgePullSpeed, stick );
 			// Just round an outer corner: never back toward the face we left (pulled back to its plane, the body caught on its edge —
 			// see ClimbRestGap).
 			if ( c.CarryFrom != Vector3.Zero )
@@ -450,29 +380,26 @@ public sealed partial class HunterController
 	{
 		face = default;
 		var d = (along - n * Vector3.Dot( along, n )).WithZ( 0f );
-		if ( d.Length < 5f )
+		if ( d.Length < SimClimbShared.CornerMinSpeed )
 			return false;
 		d = d.Normal;
 		float depth = SimRadius + 2f;
 		var probe = pos + d * 2f - n * depth;
 		var tr = ClimbSense( trace, ducked, probe, probe - d * (2f + ClimbWrapReach) );
-		if ( !tr.Hit || tr.StartedSolid || !SimClimbable( sim, tr ) || Standable( tr.Normal ) || MathF.Abs( tr.Normal.z ) > 0.7f )
-			return false;
-		if ( Vector3.Dot( tr.Normal, d ) < 0.5f || Vector3.Dot( tr.Normal, n ) > 0.7f )
+		if ( !SimClimbShared.IsWrapFace( tr, n, d ) || !SimClimbable( sim, tr ) || Standable( tr.Normal ) )
 			return false;
 		face = tr;
 		return true;
 	}
 
 	// Inner corners (HunterClimb.Corners). False = let go (climbed down onto ground).
-	bool SimClimbCorners( SimWorld sim, PhysicsTraceBuilder trace, PhysicsBody pb, ref SimCtrl c, Vector3 pos, Vector3 along, float vertical, Vector3 move, float dt )
+	bool SimClimbCorners( SimWorld sim, PhysicsTraceBuilder trace, PhysicsBody pb, ref SimCtrl c, Vector3 pos, Vector3 along, float vertical, Vector3 move )
 	{
-		if ( along.Length < 5f || c.CornerCool > 0 )
+		if ( along.Length < SimClimbShared.CornerMinSpeed || c.CornerCool > 0 )
 			return true;
 		var n = c.ClimbN;
 		var dir = along.Normal;
-		var from = pos + n * ClimbBackOff - dir * ClimbBackOff;
-		float reach = ClimbBackOff + along.Length * dt + 3f;
+		SimClimbShared.CornerProbe( pos, n, dir, along.Length, ClimbBackOff, out var from, out float reach );
 		var ahead = ClimbSweep( trace, pb, from, from + dir * reach );
 		if ( !ahead.Hit || ahead.StartedSolid || Vector3.Dot( ahead.Normal, n ) >= 0.7f )
 			return true;
@@ -490,19 +417,12 @@ public sealed partial class HunterController
 		var over = ClimbSweep( trace, pb, lifted, lifted + dir * reach );
 		if ( (!over.Hit && !over.StartedSolid) || !SimClimbable( sim, ahead ) )
 		{
-			c.StepOverTicks = ClimbTicks( ClimbStepOverTime );
+			c.StepOverTicks = ClimbTicks( SimClimbShared.StepOverTime );
 			return true;
 		}
 		if ( ClimbCeiling( ahead.Normal ) )
 			return true; // up into an overhang: no turning onto it — the body just comes to rest against it
-		c.CornerLeft = n;
-		c.CornerMoveX = (sbyte)MathF.Round( move.x * 127f );
-		c.CornerMoveY = (sbyte)MathF.Round( move.y * 127f );
-		c.CornerVertical = (sbyte)vertical;
-		c.ClimbN = ahead.Normal;
-		c.ClimbP = ahead.HitPosition;
-		c.LostTicks = 0;
-		c.CornerCool = ClimbTicks( ClimbCornerCooldown );
+		SimClimbShared.TakeInnerCorner( ref c, ahead.Normal, ahead.HitPosition, move, vertical );
 		return true;
 	}
 
