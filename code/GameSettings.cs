@@ -49,6 +49,10 @@ public static class GameSettings
 	/// <see cref="HunterThirdPerson"/>, so it survives free cam re-entries and scene changes.</summary>
 	public static bool SpectatorThirdPerson { get; set; }
 
+	/// <summary>Prop play camera over the shoulder with a crosshair (HiderController.Grab) instead of the centred orbit. Toggled
+	/// with the "View" action (Tab) in play; static, like <see cref="HunterThirdPerson"/>, so it survives respawns and scenes.</summary>
+	public static bool PropShoulderView { get; set; } = true;
+
 	/// <summary>
 	/// Orbit-rig distance (reference-FOV units, see <see cref="ReferenceFov"/>) that frames a sphere of
 	/// <paramref name="radius"/> with <paramref name="margin"/> breathing room: r·margin / sin(ref/2). The

@@ -73,6 +73,12 @@ public static class AltNav
 
 	const float TapTravelPx = 6f; // matches BrushScrub's tap threshold — one "that was a click" feel
 
+	/// <summary>A gesture driven from the HUD — a hotkey-bar camera card (Orbit / Pan / Zoom) held with the left button:
+	/// claimed immediately (it never waits on a click window, and the pointer being over the HUD doesn't refuse it)
+	/// and latched until the card sets this back to None. Never yields an RMB tap.</summary>
+	public static Gesture Forced { get; set; }
+	static bool _forcedLatch;
+
 	static Gesture _active;
 	static bool _pending; // bare LMB press seen; waiting for TapTravelPx to decide click (tap) vs drag (orbit)
 	static Vector2 _anchor;
@@ -117,7 +123,7 @@ public static class AltNav
 		{
 			// Latched: the gesture holds until ITS button releases — other buttons (or alt) can't retarget it
 			// mid-drag, and claim state going stale under it can't cut it short.
-			bool still = _active switch
+			bool still = _forcedLatch ? Forced == _active : _active switch
 			{
 				Gesture.Orbit => lmb,
 				Gesture.Pan => mmb,
@@ -127,8 +133,9 @@ public static class AltNav
 			if ( !still )
 			{
 				// A zoom claim that never travelled was a right-click TAP — the edit layer's step-back gesture.
-				RmbTapped = _active == Gesture.Dolly && _travel < TapTravelPx;
+				RmbTapped = !_forcedLatch && _active == Gesture.Dolly && _travel < TapTravelPx;
 				_active = Gesture.None;
+				_forcedLatch = false;
 			}
 		}
 		else if ( _pending )
@@ -175,7 +182,13 @@ public static class AltNav
 					$"scrub={BrushScrub.Active} session={(session.IsValid() ? "editing" : "none")}" );
 			}
 
-			if ( lmb && !_lmbWas )
+			if ( Forced != Gesture.None )
+			{
+				// A hotkey-bar camera card is held — the HUD asked for this gesture explicitly.
+				Begin( Forced );
+				_forcedLatch = true;
+			}
+			else if ( lmb && !_lmbWas )
 			{
 				if ( alt )
 					Begin( Gesture.Orbit );
@@ -255,6 +268,7 @@ public static class AltNav
 		RmbTapped = false;
 		_active = Gesture.None;
 		_pending = false;
+		_forcedLatch = false; // (Forced itself belongs to the card holding it — it clears it on release)
 		_travel = 0f;
 		_lmbWas = _mmbWas = _rmbWas = false;
 	}

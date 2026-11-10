@@ -1,0 +1,427 @@
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	The bottom-centre controls bar: one paper .key-card per control (glyph + action) — the crosshair's hover-prompt card
+	at the compact size. Shared by the round HUD (lobby / round / free cam sets) and the edit HUD (the sculpt modes):
+	each hands it a Source of HotkeyHints and calls Step() from its OnUpdate (Input reads reliably there, not in panel
+	code), and the bar does the rest —
+
+	  • a quiet constant clay wobble, lock-stepped to the boil (ClayRowPoser at WobbleStrength);
+	  • cards that join grow in (CSS :intro), cards that leave pop + shrink away IN THEIR OWN PLACE (UpdateShown /
+	    CollapseLeaving) — never an :outro, because razor parks a panel it's deleting at the END of the row;
+	  • a card punches (pop-spring) and the shared click plays when its key is pressed (UpdatePunches).
+
+	Three layers per card, one `transform` each: the slot takes the wobble, the grow wrapper the grow-in / exit scale,
+	the card the press punch. @key / id = the glyph (unique within a set), so a card added mid-row is the panel that's
+	NEW — it grows in — instead of the row's last panel being created and the rest shuffling their contents along.
+*@
+
+@foreach ( var (hint, leaving) in Shown )
+{
+	<div class="hotkey-slot @(leaving ? "leaving" : "") @(!leaving && hint.Key == _hoverKey ? "hover" : "") @(!leaving && hint.Key == _heldKey ? "held" : "")" @key=@hint.Key id=@hint.Key>
+		<div class="hotkey-grow">
+			<div class="paper-card key-card compact @(Fired( hint ) ? "fired" : "") @(hint.Hot ? "hot" : "")">
+				@if ( InputGlyphs.MouseIcon( hint.Key ) is { } icon )
+				{
+					<span class="key-chip mouse" style=@InputGlyphs.IconStyle( icon )></span>
+				}
+				else
+				{
+					<span class="key-chip">@hint.Key</span>
+				}
+				<span>@hint.Label</span>
+			</div>
+		</div>
+	</div>
+}
+
+@code
+{
+	/// <summary>The cards to show this frame, in order. Walked every frame (the punch check and the row), so keep it
+	/// cheap. Null / empty = no cards (any shown ones leave).</summary>
+	[Parameter] public Func<IEnumerable<HotkeyHint>> Source { get; set; }
+
+	/// <summary>The constant wobble, as a fraction of the hover prompts' full card-scale jitter.</summary>
+	[Parameter] public float WobbleStrength { get; set; } = 0.3f;
+
+	/// <summary>Keep clear of the round HUD's bottom-right mode card (side padding — the row wraps rather than run under it).</summary>
+	[Parameter] public bool ClearCorner { get; set; }
+
+	/// <summary>Faded out but still laid out (the edit HUD's guided tutorial: its card does the teaching). Presses
+	/// don't punch or click while hidden.</summary>
+	[Parameter] public bool Hidden { get; set; }
+
+	/// <summary>The cards take the mouse: pressing one does its action — holds its key (<see cref="HotkeyHint.Hold"/>),
+	/// drives its camera gesture (<see cref="HotkeyHint.Nav"/>), scrolls as it's dragged (<see cref="HotkeyHint.Wheel"/>)
+	/// or fires its one-shot (<see cref="HotkeyHint.Click"/>). Only where there's a cursor to click with (the edit HUD
+	/// with a free pointer) — never in mouse-look play.</summary>
+	[Parameter] public bool Clickable { get; set; }
+
+	public HotkeyBar()
+	{
+		AddClass( "hotkey-bar" );
+	}
+
+	protected override void OnParametersSet()
+	{
+		base.OnParametersSet();
+		SetClass( "clear-corner", ClearCorner );
+		SetClass( "hidden", Hidden );
+		SetClass( "clickable", Clickable && !Hidden );
+		if ( !Clickable || Hidden )
+		{
+			ReleaseCard();
+			_hoverKey = null;
+		}
+	}
+
+	public override void OnDeleted()
+	{
+		ReleaseCard(); // never leave a key held / a gesture forced by a bar that's gone
+		base.OnDeleted();
+	}
+
+	// ── Clickable cards ─────────────────────────────────────────────────────────────────────────────────────────────
+	// The cards do NOT take the pointer: a press on a UI panel is swallowed by the UI, so the game never sees the
+	// button held — and every action a card stands in for (a scrub, an orbit, depth) runs off the game's own button +
+	// mouse motion. So the press goes to the GAME, exactly like a press on empty space, and the bar finds which card is
+	// under the cursor itself (hit-testing its slots each frame, from Step — component update, where Input reads
+	// reliably). Holding the button then IS holding the card: the mouse drives the scrub / camera / depth until the
+	// game sees the button come up. The edit HUD counts a hovered card as "over the UI" (PointerOverCard), so the same
+	// press never also selects / deselects / orbits the world. Hover styling is a class set here, not CSS :hover.
+	HotkeyHint? _held;
+	string _heldKey;   // the held card's glyph — rendered as .held (markup, so a re-render can't drop it)
+	string _hoverKey;  // the hovered card's glyph — rendered as .hover
+	float _wheelAccum;
+	const float WheelPx = 24f; // drag travel per scroll notch on the Depth card
+
+	/// <summary>The cursor is over a card this frame, or one is held (clickable bars only) — the edit HUD treats it as
+	/// "over the UI".</summary>
+	public bool PointerOverCard => _hoverKey is not null || _held is not null;
+
+	// The glyph of the live card under the cursor (not a leaving one), or null.
+	string CardUnderCursor()
+	{
+		if ( !Clickable || Hidden || PauseMenu.IsOpen || _shown is null )
+			return null;
+		var at = Mouse.Position;
+		foreach ( var slot in Children )
+		{
+			if ( slot.IsDeleting || slot.HasClass( "leaving" ) || slot.Id is null )
+				continue;
+			if ( slot.IsInside( at ) )
+				return slot.Id;
+		}
+		return null;
+	}
+
+	void CardDown( string key )
+	{
+		var hint = _shown.Find( s => s.Hint.Key == key && !s.LeftAt.HasValue ).Hint;
+		if ( hint.Key is null )
+			return;
+		ReleaseCard();
+
+		_held = hint;
+		_heldKey = key;
+		_wheelAccum = 0f;
+		if ( hint.Hold is { } hold )
+			VirtualInput.SetHeld( hold, true );
+		if ( hint.Nav != AltNav.Gesture.None )
+			AltNav.Forced = hint.Nav;
+		hint.Click?.Invoke();
+
+		// The press feedback a key press gets: the punch + the click.
+		(_fired ??= new())[hint.Key] = 0f;
+		UiSounds.PlayHotkeyPress();
+	}
+
+	void ReleaseCard()
+	{
+		_heldKey = null;
+		if ( _held is not { } h )
+			return;
+		_held = null;
+		if ( h.Hold is { } hold )
+			VirtualInput.SetHeld( hold, false );
+		if ( h.Nav != AltNav.Gesture.None && AltNav.Forced == h.Nav )
+			AltNav.Forced = AltNav.Gesture.None;
+		VirtualInput.WheelY = 0f;
+	}
+
+	// Per frame (from Step): hover, the press, the hold's release, and the Depth card's drag → scroll notches.
+	void StepCards()
+	{
+		VirtualInput.WheelY = 0f; // one frame's notches — each value is read once
+
+		// Held: the card keeps its look and nothing else hovers until the button comes up.
+		if ( _held is { } h )
+		{
+			if ( !Input.Down( "Attack1" ) || PauseMenu.IsOpen || !Clickable || Hidden )
+			{
+				ReleaseCard();
+			}
+			else
+			{
+				if ( h.Wheel )
+				{
+					_wheelAccum -= Mouse.Delta.y; // drag UP = wheel up = push away
+					int notches = (int)(_wheelAccum / WheelPx);
+					if ( notches != 0 )
+					{
+						_wheelAccum -= notches * WheelPx;
+						VirtualInput.WheelY = notches;
+					}
+				}
+				return;
+			}
+		}
+
+		var under = CardUnderCursor();
+		if ( under != _hoverKey )
+		{
+			_hoverKey = under;
+			if ( under is not null )
+				UiSounds.PlayEvent( "ui.button.over" ); // the buttons' hover sound
+		}
+
+		if ( under is not null && Input.Pressed( "Attack1" ) )
+			CardDown( under );
+	}
+
+	// Every field below is lazily created: initializers never run on a hotloaded live instance.
+	ClayRowPoser _poser;
+	List<HotkeyHint> _live;
+
+	/// <summary>The owning HUD's per-frame hook (from its OnUpdate — see <see cref="Step"/>): find the bar under
+	/// <paramref name="root"/> if <paramref name="cached"/> is gone, and step it. Found by search rather than @ref: razor
+	/// only assigns a ref when it builds the element, so a bar that outlived a hotload adding the ref stayed unstepped —
+	/// empty — forever. Only searches while <paramref name="expected"/> (the owner is showing its bar).
+	/// <paramref name="source"/> is re-asserted every step for the same reason: a parameter is only set when razor
+	/// renders the element, and a hotload that fails to carry the field over (it happens — "Couldn't resolve" in the
+	/// hotload log) left the bar with no source, and so no cards, until something re-rendered the owner.</summary>
+	public static void StepIn( Panel root, ref HotkeyBar cached, bool expected, Func<IEnumerable<HotkeyHint>> source )
+	{
+		if ( !expected )
+		{
+			cached = null;
+			return;
+		}
+		if ( cached is not { IsValid: true } || cached.IsDeleting )
+			cached = root?.Descendants.OfType<HotkeyBar>().FirstOrDefault( b => !b.IsDeleting );
+		if ( cached is null )
+			return;
+		cached.Source ??= source;
+		cached.Step();
+	}
+
+	/// <summary>Advance the bar one frame — call from the owning HUD component's OnUpdate, NOT from panel code: the
+	/// press checks read Input, which reads reliably in a component's update and not from a panel's Tick.</summary>
+	public void Step()
+	{
+		_live ??= new();
+		_live.Clear();
+		if ( Source?.Invoke() is { } hints )
+			_live.AddRange( hints );
+
+		StepCards();
+		CollapseLeaving(); // first: the row's panels still match the list from last frame's render
+		UpdateShown();
+		(_poser ??= new()).Update( this, WobbleStrength );
+		UpdatePunches();
+	}
+
+	protected override int BuildHash() => HashCode.Combine( _shownSignal, _firedSignal, _hoverKey, _heldKey );
+
+	// ── Shown row ────────────────────────────────────────────────────────────────────────────────────────────────────
+	// What the bar draws: the live hints, plus any card that just dropped out, held IN ITS OLD PLACE as .leaving for
+	// LeaveSeconds while it plays its pop-and-shrink exit. Only once it's fully collapsed does it leave the list for
+	// razor to delete. A card that comes back mid-exit (re-grabbing the wall) just turns live again in place.
+	const float LeaveSeconds = 0.4f; // a touch past the exit (0.15s pop + 0.2s close)
+	readonly record struct ShownHint( HotkeyHint Hint, RealTimeSince? LeftAt );
+	List<ShownHint> _shown;
+	List<ShownHint> _shownScratch;
+	HashSet<string> _shownKeys;
+	int _shownSignal;
+
+	IEnumerable<(HotkeyHint Hint, bool Leaving)> Shown
+		=> (_shown ?? (IEnumerable<ShownHint>)Array.Empty<ShownHint>()).Select( s => (s.Hint, s.LeftAt.HasValue) );
+
+	void UpdateShown()
+	{
+		_shown ??= new();
+		_shownScratch ??= new();
+		_shownKeys ??= new();
+
+		var result = _shownScratch;
+		result.Clear();
+		_shownKeys.Clear();
+
+		// Walk the previous row in order: a card still live flushes the live cards up to and including it (so new ones
+		// slot in where the source puts them); a card that's gone stays at this point as leaving, until it's done.
+		var next = 0;
+		foreach ( var prev in _shown )
+		{
+			var at = _live.FindIndex( h => h.Key == prev.Hint.Key );
+			if ( at >= 0 )
+			{
+				for ( ; next <= at; next++ )
+					if ( _shownKeys.Add( _live[next].Key ) )
+						result.Add( new( _live[next], null ) );
+				continue;
+			}
+
+			var leftAt = prev.LeftAt ?? 0f;
+			if ( leftAt < LeaveSeconds && _shownKeys.Add( prev.Hint.Key ) )
+				result.Add( new( prev.Hint, leftAt ) );
+		}
+		for ( ; next < _live.Count; next++ )
+			if ( _shownKeys.Add( _live[next].Key ) )
+				result.Add( new( _live[next], null ) );
+
+		(_shown, _shownScratch) = (result, _shown);
+
+		var sig = 0;
+		foreach ( var s in _shown )
+			sig = HashCode.Combine( sig, s.Hint.Key, s.Hint.Label, s.Hint.Hot, s.LeftAt.HasValue );
+		_shownSignal = sig;
+	}
+
+	// ── Leaving cards close their space ─────────────────────────────────────────────────────────────────────────────
+	// In CODE, from the slot's real width: CSS could only take max-width down from the 360px cap, which bites nothing
+	// until it's under the card's actual width — the neighbours sat still and jumped at the very end, where the grow-in
+	// slides them. So: measure the slot the first frame it's leaving, then drive its max-width + side padding to zero —
+	// held through the pop (LeaveCloseDelay), then eased shut over LeaveCloseSeconds. Matched by panel id (= the glyph).
+	const float LeaveCloseDelay = 0.15f, LeaveCloseSeconds = 0.2f;
+	const float SlotPad = 4f; // .hotkey-slot's padding ($space-xs)
+	Dictionary<string, float> _leaveWidths; // glyph → measured slot width (style px), while leaving
+	List<string> _leaveDone;
+
+	void CollapseLeaving()
+	{
+		_leaveWidths ??= new();
+		_leaveDone ??= new();
+		if ( _shown is null )
+			return;
+
+		// A slot razor has deleted (it left the list — already collapsed below) goes NOW. The engine's deferred deletion
+		// waits until a panel has no active transitions, and these slots never get there (they read as permanently
+		// transitioning — likely the per-tick wobble writes), so an exited card lingered forever as an invisible gap at
+		// the end of the row, knocking the row off centre.
+		foreach ( var slot in Children.Where( s => s.IsDeleting ).ToList() )
+			slot.Delete( immediate: true );
+
+		foreach ( var slot in Children )
+		{
+			var key = slot.Id;
+			if ( key is null )
+				continue;
+
+			var shown = _shown.Find( s => s.Hint.Key == key );
+			if ( shown.Hint.Key is null || shown.LeftAt is not { } leftAt )
+			{
+				if ( _leaveWidths.Remove( key ) ) // back from a leave: the stylesheet owns it again
+				{
+					slot.Style.MaxWidth = null;
+					slot.Style.PaddingLeft = null;
+					slot.Style.PaddingRight = null;
+				}
+				continue;
+			}
+
+			if ( !_leaveWidths.TryGetValue( key, out var width ) )
+				_leaveWidths[key] = width = slot.Box.Rect.Width * slot.ScaleFromScreen;
+
+			var t = Math.Clamp( (leftAt - LeaveCloseDelay) / LeaveCloseSeconds, 0f, 1f );
+			var open = 1f - Sandbox.Utility.Easing.EaseInOut( t );
+			slot.Style.MaxWidth = Length.Pixels( width * open );
+			slot.Style.PaddingLeft = Length.Pixels( SlotPad * open );
+			slot.Style.PaddingRight = Length.Pixels( SlotPad * open );
+		}
+
+		// Forget measurements for slots that have gone (finished leaving and deleted).
+		_leaveDone.Clear();
+		foreach ( var key in _leaveWidths.Keys )
+			if ( !_shown.Exists( s => s.Hint.Key == key ) )
+				_leaveDone.Add( key );
+		foreach ( var key in _leaveDone )
+			_leaveWidths.Remove( key );
+	}
+
+	// ── Press punch + click ─────────────────────────────────────────────────────────────────────────────────────────
+	// A card springs (pop-spring, like the hover prompts' .fired) for PunchSeconds after its key is pressed. Keyed by
+	// the glyph, so a card whose label flips on the press (Tab: Third → First Person) still punches. _firedSignal = which
+	// glyphs are mid-punch, for BuildHash — the class going on replays the one-shot animation, coming off resets it.
+	const float PunchSeconds = 0.4f;
+	Dictionary<string, RealTimeSince> _fired;
+	int _firedSignal;
+
+	// Raw keys held last frame. Raw presses are edges of Keyboard.Down, not Keyboard.Pressed: the edit session reads its
+	// scrub keys as Down because Pressed doesn't fire reliably there, and an edge can't miss what Down sees.
+	HashSet<string> _rawWasDown;
+	HashSet<string> _rawDownNow;
+
+	void UpdatePunches()
+	{
+		_fired ??= new();
+		_rawWasDown ??= new();
+		_rawDownNow ??= new();
+		_rawDownNow.Clear();
+
+		var any = false;
+		foreach ( var hint in _live )
+		{
+			if ( Pressed( hint ) )
+			{
+				_fired[hint.Key] = 0f;
+				any = true;
+			}
+		}
+		(_rawWasDown, _rawDownNow) = (_rawDownNow, _rawWasDown);
+
+		// The press click — once a frame however many cards punched (W+Shift together is one click, not two).
+		if ( any )
+			UiSounds.PlayHotkeyPress();
+
+		var signal = 0;
+		foreach ( var (key, since) in _fired )
+		{
+			if ( since < PunchSeconds )
+				signal = HashCode.Combine( signal, key );
+		}
+		_firedSignal = signal;
+	}
+
+	bool Pressed( HotkeyHint hint )
+	{
+		bool rawEdge = false;
+		if ( hint.RawKey is { } raw && Input.Keyboard.Down( raw ) )
+		{
+			_rawDownNow.Add( raw ); // tracked even while blocked, so a key held through a menu doesn't punch on close
+			rawEdge = !_rawWasDown.Contains( raw );
+		}
+
+		if ( Hidden || PauseMenu.IsOpen || (hint.SwapGate && PawnSwapKeys.Blocked) )
+			return false;
+		if ( rawEdge )
+			return true;
+		if ( hint.Actions is { } actions )
+		{
+			foreach ( var action in actions )
+			{
+				if ( Input.Pressed( action ) )
+					return true;
+			}
+		}
+		return false;
+	}
+
+	bool Fired( HotkeyHint hint )
+		=> _fired is not null && _fired.TryGetValue( hint.Key, out var since ) && since < PunchSeconds;
+}

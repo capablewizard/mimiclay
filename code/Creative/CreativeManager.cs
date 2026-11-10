@@ -77,6 +77,7 @@ public sealed class CreativeManager : Component, IRoundContext, IPropClaimHost, 
 	bool IPropClaimHost.LeasesAllowed => true; // collaborative building: sculpt any released prop in place (F)
 	bool IPropClaimHost.GrabAllowed => true;   // sandbox physics: RMB picks props up, dropped ones tumble
 	bool IPropClaimHost.GrabPlayersAllowed => true; // …other players' props included (they jump to break free)
+	bool IPropClaimHost.PropsGrab => true; // props grab too (their shoulder camera's crosshair)
 
 	GameObject IPropClaimHost.PropPrefab
 		=> RoundManagerSpawner.Current.IsValid() ? RoundManagerSpawner.Current.PropPrefab : null;

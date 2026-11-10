@@ -81,117 +81,13 @@
 		@* (The alt-nav view hints that used to sit top-right are gone — the picker column lives there now,
 		   and the alt gestures are covered by muscle memory / the menu's own copy.) *@
 
-		@* Hotkey hint strip, bottom-centre — contextual: the stamp scheme while placing, the selection
-		   scheme while editing. The S/D labels live-update with the active shape. *@
-		@* Hidden while a guided tutorial step runs — the tutorial card teaches one thing at a time, and the
-		   full key list underneath it would drown that. Back the moment guidance ends (free-play included). *@
-		<div class="hint-strip @(TutorialDirector.HintStripHidden ? "hidden" : "")">
-			@if ( Session.BodyKeys )
-			{
-				@* First-person (in-place) sculpting: the crosshair is the pointer and the body keeps walking, so
-				   the WASD-row scrubs are gone — R/E and the LMB grab are the whole transform scheme, and the
-				   HUD is reached by holding alt for the cursor. *@
-				@if ( Session.Tool == SculptTool.Sculpt )
-				{
-					<div class="hint"><span class="key">LMB</span><span>@(Session.ActiveShape == SdfShape.Spline ? (Session.ChainWillLoop ? "close loop" : "add point") : Session.StampOperation == SdfOperation.Subtract ? "carve" : Session.StampOperation == SdfOperation.Cutout ? "cutout" : Session.StampOperation == SdfOperation.Colour ? "paint" : "stamp")</span></div>
-					<div class="hint"><span class="key">RMB</span><span>@(Session.ActiveShape == SdfShape.Spline ? "finish" : "done")</span></div>
-				}
-				else
-				{
-					<div class="hint"><span class="key">LMB</span><span>@(Session.SelectedBrush is not null ? "select / grab / gizmo" : "select")</span></div>
-					<div class="hint"><span class="key">LMB away</span><span>done</span></div>
-					<div class="hint"><span class="key">Ctrl+LMB</span><span>multi-select</span></div>
-					@if ( Session.SelectedBrush is not null )
-					{
-						<div class="hint"><span class="key">RMB</span><span>deselect</span></div>
-						<div class="hint"><span class="key">Del</span><span>delete</span></div>
-					}
-				}
-				@if ( Session.ActiveBrush is not null )
-				{
-					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-					<div class="hint"><span class="key">R</span><span>scale</span></div>
-					<div class="hint"><span class="key">E</span><span>rotate</span></div>
-					<div class="hint"><span class="key">Shift</span><span>snap (standing)</span></div>
-				}
-				<div class="hint"><span class="key">1-7</span><span>@(Session.Tool == SculptTool.Sculpt || Session.SelectedBrush is not null ? "shape" : "add shape")</span></div>
-				<div class="hint"><span class="key">Alt</span><span>cursor + all keys</span></div>
-				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
-				<div class="hint"><span class="key">Q</span><span>done</span></div>
-			}
-			else if ( Session.Tool == SculptTool.Sculpt && Session.ActiveShape == SdfShape.Spline )
-			{
-				@* Chain placement has its own verbs: click points along the curve, right-click/Enter ends it. *@
-				<div class="hint"><span class="key">LMB</span><span>@(Session.ChainWillLoop ? "close loop" : "add point")</span></div>
-				<div class="hint"><span class="key">RMB tap / Space</span><span>finish</span></div>
-				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-				<div class="hint"><span class="key">R</span><span>point size</span></div>
-				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-				<div class="hint"><span class="key">A</span><span>add / carve / cutout / colour</span></div>
-				<div class="hint"><span class="key">S</span><span>blend</span></div>
-				<div class="hint"><span class="key">D</span><span>smooth</span></div>
-				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
-				<div class="hint"><span class="key">Esc</span><span>cancel</span></div>
-			}
-			else if ( Session.Tool == SculptTool.Sculpt )
-			{
-				<div class="hint"><span class="key">LMB</span><span>@(Session.StampOperation == SdfOperation.Subtract ? "carve" : Session.StampOperation == SdfOperation.Cutout ? "cutout" : Session.StampOperation == SdfOperation.Colour ? "paint" : "stamp")</span></div>
-				<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-				<div class="hint"><span class="key">RMB tap</span><span>done</span></div>
-				<div class="hint"><span class="key">R</span><span>scale</span></div>
-				<div class="hint"><span class="key">E</span><span>rotate</span></div>
-				<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-				<div class="hint"><span class="key">A</span><span>add / carve / cutout / colour</span></div>
-				<div class="hint"><span class="key">S</span><span>blend</span></div>
-				<div class="hint"><span class="key">D</span><span>@(SecondSliderName)</span></div>
-				@if ( WildcardName is { } wc )
-				{
-					<div class="hint"><span class="key">F</span><span>@wc</span></div>
-				}
-				@if ( Brush?.Operation == SdfOperation.Cutout )
-				{
-					<div class="hint"><span class="key">G</span><span>gap</span></div>
-				}
-				<div class="hint"><span class="key">1-7</span><span>shape</span></div>
-				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
-				<div class="hint"><span class="key">Space</span><span>done</span></div>
-				<div class="hint"><span class="key">Esc</span><span>cancel</span></div>
-			}
-			else
-			{
-				@if ( Session.SplineWillLoop )
-				{
-					<div class="hint hot"><span class="key">Release</span><span>close loop</span></div>
-				}
-				<div class="hint"><span class="key">LMB</span><span>select</span></div>
-				<div class="hint"><span class="key">Ctrl+LMB</span><span>multi-select</span></div>
-				@if ( Session.SelectedBrush is not null )
-				{
-					<div class="hint"><span class="key">Scroll</span><span>depth</span></div>
-					<div class="hint"><span class="key">RMB tap</span><span>deselect</span></div>
-					<div class="hint"><span class="key">W</span><span>move</span></div>
-					<div class="hint"><span class="key">R</span><span>scale</span></div>
-					<div class="hint"><span class="key">E</span><span>rotate</span></div>
-					<div class="hint"><span class="key">Shift</span><span>snap</span></div>
-					<div class="hint"><span class="key">A</span><span>add / carve / cutout / colour</span></div>
-					<div class="hint"><span class="key">S</span><span>blend</span></div>
-					<div class="hint"><span class="key">D</span><span>@(SecondSliderName)</span></div>
-					@if ( WildcardName is { } wc )
-					{
-						<div class="hint"><span class="key">F</span><span>@wc</span></div>
-					}
-					@if ( Brush?.Operation == SdfOperation.Cutout )
-					{
-						<div class="hint"><span class="key">G</span><span>gap</span></div>
-					}
-					<div class="hint"><span class="key">1-7</span><span>shape</span></div>
-					<div class="hint"><span class="key">Del</span><span>delete</span></div>
-				}
-				<div class="hint"><span class="key">Space</span><span>add shape</span></div>
-				<div class="hint"><span class="key">Tab</span><span>wireframe</span></div>
-				<div class="hint"><span class="key">Q</span><span>done</span></div>
-			}
-		</div>
+		@* Hotkey bar, bottom-centre — the shared HotkeyBar (the round HUD's controls bar): contextual cards for the
+		   current mode (EditHotkeys), with the wobble, grow-in / exit, press punch and click. Faded (still laid out)
+		   while a guided tutorial step runs — the tutorial card teaches one thing at a time, and the full key list
+		   underneath would drown that. Back the moment guidance ends (free-play included). *@
+		@* WobbleStrength 0: the edit bar holds still — it sits under the sliders and shape row, where the motion was noise. *@
+		<HotkeyBar Source=@EditHotkeySource Hidden=@TutorialDirector.HintStripHidden ClearCorner=@true WobbleStrength=@(0f)
+			Clickable=@BarClickable />
 
 		@* Part dock — Head / Weapon (whatever parts the pawn wired onto its sessions; see
 		   SculptEditSession.EditParts). Bottom-centre, only while nothing is selected and no stamp is held:
@@ -199,7 +95,7 @@
 		   is the usual selected-orange chip; clicking the other one switches which session is editing. *@
 		@if ( PartDockShown )
 		{
-			<div class="part-dock" @ref="PartDockPanel">
+			<div class="part-dock" @ref="PartDockPanel" style="bottom: @((int)(BarClearance + 16f))px;">
 				@foreach ( var entry in Session.EditParts )
 				{
 					var part = entry;
@@ -288,8 +184,10 @@
 					@if ( EditHudGate.Visible( HudSection.AddChip ) )
 					{
 						var placing = Session.Tool == SculptTool.Sculpt;
-						<div class="chip action @(placing ? "on" : "") @EditHudGate.ChipClass( HudSection.AddChip )" @onclick=@(() => GateClick( HudSection.AddChip, () => Session.SetTool( placing ? SculptTool.Gizmo : SculptTool.Sculpt ) ))>
-							<div class="icon">@(placing ? "check_circle" : "add_circle")</div><span>@(placing ? "Done" : "Add Shape")</span>
+						@* Its key (Space — adds a shape, or finishes placing one) in front of the label: the hotkey cards'
+						   style, standing in for the icon (a key-cap AND an icon don't fit the column beside the name). *@
+						<div class="chip action @(placing ? "on" : "") @(StripFired( "space" ) ? "fired" : "") @EditHudGate.ChipClass( HudSection.AddChip )" @onclick=@(() => GateClick( HudSection.AddChip, () => Session.SetTool( placing ? SculptTool.Gizmo : SculptTool.Sculpt ) ))>
+							<div class="slider-key">Space</div><span>@(placing ? "Done" : "Add Shape")</span>
 						</div>
 					}
 
@@ -312,8 +210,8 @@
 						<div class="chip action @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.DuplicateSelected() ))>
 							<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
 						</div>
-						<div class="chip action danger @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.RemoveSelected() ))>
-							<div class="icon">delete</div><span>Delete</span>
+						<div class="chip action danger @(StripFired( "delete" ) ? "fired" : "") @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.RemoveSelected() ))>
+							<div class="slider-key">Del</div><span>Delete</span>
 						</div>
 					}
 				</div>
@@ -539,16 +437,16 @@
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
-			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @((int)SliderStripWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				@* Add/Carve/Cutout/Colour cycle for the active brush (ghost or selection) — same cycle the A key steps. *@
 				@{ var opNow = fb?.Operation ?? SdfOperation.Add; }
 				@if ( !isGroup )
 				{
-					<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : opNow == SdfOperation.Colour ? "colour" : "")" @onclick=@ToggleActiveOperation>
-						<span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : opNow == SdfOperation.Colour ? "Colour" : "Add")</span>
+					<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : opNow == SdfOperation.Colour ? "colour" : "") @(StripFired( "a" ) ? "fired" : "")" @onclick=@ToggleActiveOperation>
+						<div class="slider-key">A</div><span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : opNow == SdfOperation.Colour ? "Colour" : "Add")</span>
 					</div>
 				}
-				<ClaySlider Label="Blend" Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
+				<ClaySlider Label="Blend" Key="S" Fired=@StripFired( "s" ) Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
 				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
@@ -558,7 +456,7 @@
 					@* While PLACING: just smoothness. Each point's size is set as you place it (R + move),
 					   and the loop closes itself by snapping to the first point — so the uniform Size
 					   slider and the Loop chip would both fight the flow. *@
-					<ClaySlider Label="Smooth" Value=@curveVal Min=@(0f) Max=@(1f)
+					<ClaySlider Label="Smooth" Key="D" Fired=@StripFired( "d" ) Value=@curveVal Min=@(0f) Max=@(1f)
 						OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
 				}
 				else if ( isSpline )
@@ -567,7 +465,7 @@
 					   No Size slider / per-point toggle: every point carries its own radius (set as it was
 					   placed) and is resized by its 3D radius ring, so a uniform slider would flatten them. *@
 					<div class="slider-row">
-						<ClaySlider Label="Curve" Value=@curveVal Min=@(0f) Max=@(1f)
+						<ClaySlider Label="Curve" Key="D" Fired=@StripFired( "d" ) Value=@curveVal Min=@(0f) Max=@(1f)
 							OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
 						<div class="chip mini @(fb?.SplineClosed == true ? "on" : "") @(canLoop ? "" : "disabled")" @onclick=@(() => ToggleSplineClosed())>
 							<div class="icon">loop</div>
@@ -576,11 +474,11 @@
 				}
 				else if ( !isGroup )
 				{
-					<ClaySlider Label="Round" Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
+					<ClaySlider Label="Round" Key="D" Fired=@StripFired( "d" ) Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
 						OnInput=@((float v) => SetRounding( v )) OnCommit=@CommitEdit />
 					@if ( isSphere || isCone )
 					{
-						<ClaySlider Label="Slice" Value=@sliceVal Min=@(0f) Max=@SdfBrush.MaxSlice
+						<ClaySlider Label="Slice" Key="F" Fired=@StripFired( "f" ) Value=@sliceVal Min=@(0f) Max=@SdfBrush.MaxSlice
 							OnInput=@((float v) => SetSlice( v )) OnCommit=@CommitEdit />
 					}
 				}
@@ -588,7 +486,7 @@
 				   paper style, riding along under the sliders (same fade/tracking, it's inside the stack). *@
 				@if ( isExtruded )
 				{
-					<div class="xsection-row">
+					<div class="xsection-row @(StripFired( "f" ) ? "fired" : "")"><div class="slider-key">F</div>
 						@foreach ( var xs in CrossSections )
 						{
 							var cs = xs;
@@ -604,7 +502,7 @@
 				   slot (like a box already does for F), so G is as stable as S and D. *@
 				@if ( opNow == SdfOperation.Cutout )
 				{
-					<ClaySlider Label="Gap" Value=@gapVal Min=@(0f) Max=@SdfBrush.MaxGap Curve=@BlendCurve
+					<ClaySlider Label="Gap" Key="G" Fired=@StripFired( "g" ) Value=@gapVal Min=@(0f) Max=@SdfBrush.MaxGap Curve=@BlendCurve
 						OnInput=@((float v) => SetGap( v )) OnCommit=@CommitEdit />
 				}
 				@* Text brush: edit the string in place, riding under the sliders like the profile chips. *@
@@ -642,7 +540,14 @@
 						var shape = entry.Shape;
 						var active = Brush?.Shape == shape;
 						<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => ShapeClicked( shape ) ))>
-							<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
+							@* The shape's number key in front of its picture, the name underneath. *@
+							<div class="tile-top">
+								@if ( ShapeKey( shape ) is { } key )
+								{
+									<div class="slider-key">@key</div>
+								}
+								<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
+							</div>
 							<span class="label">@entry.Label</span>
 						</div>
 					}
@@ -650,12 +555,21 @@
 					   only for the head-only kinds; see SculptEditSession.GroupKinds / HotkeyGroup for the verb. *@
 					@if ( !EditHudGate.BasicShapesOnly )
 					{
+						var firstGroup = true; // only the first group kind has a key (8 — SculptEditSession's Slot8)
 						foreach ( var kind in Session.GroupKinds )
 						{
 							var k = kind;
+							var groupKey = firstGroup ? InputGlyphs.KeyFor( "Slot8", "8" ) : null;
+							firstGroup = false;
 							var groupActive = Brush?.Shape == SdfShape.Group && string.Equals( Brush.GroupKind, k.Id, StringComparison.OrdinalIgnoreCase );
 							<div class="paper-card shape-tile @(groupActive ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => Session.HotkeyGroup( k.Id ) ))>
-								<div class="shape-img" style="background-image: url( @SdfIcons.GroupImage( k.Id ) )"></div>
+								<div class="tile-top">
+									@if ( groupKey is not null )
+									{
+										<div class="slider-key">@groupKey</div>
+									}
+									<div class="shape-img" style="background-image: url( @SdfIcons.GroupImage( k.Id ) )"></div>
+								</div>
 								<span class="label">@k.Label</span>
 							</div>
 						}
@@ -813,6 +727,238 @@
 	// Hint-strip labels for the shape-dependent scrubs: D = the second slider, F = the wildcard third.
 	// A spline being PLACED has neither a Round nor a Size slot — just smoothness on the wildcard.
 	bool PlacingSpline => Session?.Tool == SculptTool.Sculpt && Brush?.Shape == SdfShape.Spline;
+
+	// ── Hotkey bar ───────────────────────────────────────────────────────────────────────────────────────────────────
+	// The shared HotkeyBar, fed per mode. Triggers: input actions where the session reads one (LMB/RMB, Q, Tab, Alt,
+	// the 1-7 slots); RAW keys for the scrubs the session reads as Keyboard.Down (W/E/R/A/S/D/F/G, Shift, Space, Del).
+	// Scroll, Ctrl+LMB and Esc never punch (no clean press to read, or the press leaves the mode). Glyphs are the cards'
+	// identities, so each must be unique within one mode's set.
+	HotkeyBar HintBar; // found + stepped from OnUpdate (HotkeyBar.StepIn); BarClearance measures it
+
+	/// <summary>How far up from the screen's bottom edge the hotkey bar reaches (style px): its MEASURED top, so the
+	/// bottom-centre docks (sliders, part dock, shape dock, validity toast) sit above it however many rows it wraps to.
+	/// One compact row at $panel-inset before the first layout.</summary>
+	float BarClearance
+	{
+		get
+		{
+			if ( HintBar is { IsValid: true } bar && bar.Box.Rect.Height > 0f )
+				return MathF.Max( 0f, (Screen.Height - bar.Box.Rect.Top) * bar.ScaleFromScreen );
+			return 74f; // one compact row (≈50 with its slots) at $panel-inset
+		}
+	}
+	Func<IEnumerable<HotkeyHint>> _hintSource;
+	Func<IEnumerable<HotkeyHint>> EditHotkeySource => _hintSource ??= () => EditHotkeys;
+
+	static string[] Act( string action ) => HotkeyActs.Act( action );
+
+	// Clickable bar (a free cursor): the one-shot cards' actions — the same verbs their keys reach. Cached: the hint
+	// list is rebuilt every frame. Q goes through RequestExit (the confirm-aware exit every player-driven path uses;
+	// the pawns reconcile after any exit — see HunterController's weapon-edit teardown).
+	Action _clickWireframe, _clickDone, _clickStopPlacing, _clickDelete;
+	Action ClickWireframe => _clickWireframe ??= () => Session?.ToggleWireframes();
+	Action ClickDone => _clickDone ??= () => Session?.RequestExit();
+	Action ClickStopPlacing => _clickStopPlacing ??= () => Session?.SetTool( SculptTool.Gizmo );
+	Action ClickDelete => _clickDelete ??= () => Session?.RemoveSelected();
+
+	/// <summary>The bar's cards take the mouse wherever there's a free cursor to click with — every orbit-camera
+	/// session, and a first-person one while alt frees the cursor.</summary>
+	static bool BarClickable => !EditPointer.Locked || EditPointer.CursorFree;
+
+	// Over (or holding) a hotkey-bar card. The cards don't take the pointer — the press must reach the game so the
+	// held card can run off the real button + mouse (see HotkeyBar.StepCards) — so the bar hit-tests them itself.
+	bool OverBarCard() => BarClickable && HintBar is { IsValid: true } bar && bar.PointerOverCard;
+
+	// The LMB verb while placing a stamp.
+	string StampVerb => Session.StampOperation switch
+	{
+		SdfOperation.Subtract => "Carve",
+		SdfOperation.Cutout => "Cutout",
+		SdfOperation.Colour => "Paint",
+		_ => "Stamp",
+	};
+
+	// (The shape-tweak scrubs — A op · S blend · D round · F wildcard · G gap — and the 1–8 shape keys aren't bar cards
+	// while their controls are up: each shows its key-cap
+	// on the slider-strip control it drives, which is up whenever they apply.)
+
+	// The number key that picks a shape (SculptEditSession's Slot1..7 hotkeys) — bound to the SHAPE, not its position
+	// in the dock, so a dock showing fewer shapes still labels each right. Null = no key.
+	static string ShapeKey( SdfShape shape ) => shape switch
+	{
+		SdfShape.Sphere => InputGlyphs.KeyFor( "Slot1", "1" ),
+		SdfShape.Box => InputGlyphs.KeyFor( "Slot2", "2" ),
+		SdfShape.Cylinder => InputGlyphs.KeyFor( "Slot3", "3" ),
+		SdfShape.Cone => InputGlyphs.KeyFor( "Slot4", "4" ),
+		SdfShape.Extruded => InputGlyphs.KeyFor( "Slot5", "5" ),
+		SdfShape.Spline => InputGlyphs.KeyFor( "Slot6", "6" ),
+		SdfShape.Text => InputGlyphs.KeyFor( "Slot7", "7" ),
+		_ => null,
+	};
+
+	// The strip's press punch + click — the hotkey cards' feedback, on the control the key drives. Raw key EDGES (the
+	// session reads these scrubs as Keyboard.Down; Pressed isn't reliable there), stepped from OnUpdate. Each key only
+	// counts while its control is in the strip, and never while a text box has focus (the Text shape's entry).
+	const float StripPunchSeconds = 0.4f;
+	// Lazy: a hotload doesn't run a NEW static's initializer on an existing type (it was null → an NRE every frame).
+	// The slider strip's scrub keys + the tools column's Space (Add Shape / Done) and Del (Delete). (Renamed when the
+	// list grew: a hotload keeps a live static's cached value, so the old name would have kept the old list.)
+	static string[] _punchKeys;
+	static string[] StripKeys => _punchKeys ??= new[] { "a", "s", "d", "f", "g", "space", "delete" };
+	Dictionary<string, RealTimeSince> _stripFired; // lazy — initializers never run on a hotloaded live instance
+	HashSet<string> _stripDown;
+	int _stripFiredSignal;
+
+	bool StripShows( string key )
+	{
+		var s = Session;
+		// The tools column: Add Shape (Done while placing) is always up; Delete only for a selection in the gizmo.
+		if ( key == "space" )
+			return s is not null && EditHudGate.Visible( HudSection.AddChip );
+		if ( key == "delete" )
+			return s is not null && s.Tool == SculptTool.Gizmo && Brush is not null && EditHudGate.Visible( HudSection.EditChips );
+
+		var b = Brush;
+		if ( b is null )
+			return false;
+		bool group = b.Shape == SdfShape.Group;
+		return key switch
+		{
+			"a" or "d" => !group,
+			"s" => true,
+			"f" => b.Shape is SdfShape.Sphere or SdfShape.Cone or SdfShape.Extruded,
+			"g" => b.Operation == SdfOperation.Cutout,
+			_ => false,
+		};
+	}
+
+	void UpdateStripPunches()
+	{
+		_stripFired ??= new();
+		_stripDown ??= new();
+
+		bool live = (Session?.IsEditing ?? false) && Sandbox.UI.InputFocus.Current is null
+			&& !PauseMenu.IsOpen && !TutorialDirector.HintStripHidden;
+		var any = false;
+		foreach ( var key in StripKeys )
+		{
+			bool down = Input.Keyboard.Down( key );
+			bool edge = down && !_stripDown.Contains( key );
+			if ( down ) _stripDown.Add( key ); else _stripDown.Remove( key );
+
+			if ( edge && live && StripShows( key ) )
+			{
+				_stripFired[key] = 0f;
+				any = true;
+			}
+		}
+		if ( any )
+			UiSounds.PlayHotkeyPress();
+
+		var signal = 0;
+		foreach ( var (key, since) in _stripFired )
+			if ( since < StripPunchSeconds )
+				signal = HashCode.Combine( signal, key );
+		_stripFiredSignal = signal;
+	}
+
+	bool StripFired( string key )
+		=> _stripFired is not null && _stripFired.TryGetValue( key, out var since ) && since < StripPunchSeconds;
+
+	IEnumerable<HotkeyHint> EditHotkeys
+	{
+		get
+		{
+			var s = Session;
+			if ( s is null || !s.IsEditing )
+				yield break;
+
+			if ( s.BodyKeys )
+			{
+				// First-person (in-place) sculpting: the crosshair is the pointer and the body keeps walking, so the
+				// WASD-row scrubs are gone — R/E and the LMB grab are the whole transform scheme, and the HUD is
+				// reached by holding alt for the cursor.
+				if ( s.Tool == SculptTool.Sculpt )
+				{
+					yield return new( "LMB", s.ActiveShape == SdfShape.Spline ? (s.ChainWillLoop ? "Close Loop" : "Add Point") : StampVerb, Act( "Attack1" ) );
+					yield return s.ActiveShape == SdfShape.Spline
+						? new( "RMB", "Finish", Act( "Attack2" ), Hold: "space" )
+						: new( "RMB", "Done", Act( "Attack2" ), Click: ClickStopPlacing );
+				}
+				else
+				{
+					yield return new( "LMB", s.SelectedBrush is not null ? "Select / Grab / Gizmo" : "Select", Act( "Attack1" ) );
+					yield return new( "LMB Away", "Done" );
+					yield return new( "Ctrl+LMB", "Multi-select" );
+					if ( s.SelectedBrush is not null )
+					{
+						yield return new( "RMB", "Deselect", Act( "Attack2" ) );
+						yield return new( "Del", "Delete", RawKey: "delete", Click: ClickDelete );
+					}
+				}
+				if ( s.ActiveBrush is not null )
+				{
+					yield return new( "Scroll", "Depth", Wheel: true );
+					yield return new( "R", "Scale", RawKey: "r", Hold: "r" );
+					yield return new( "E", "Rotate", RawKey: "e", Hold: "e" );
+					yield return new( "Shift", "Snap (Standing)", RawKey: "shift", Hold: "shift" );
+				}
+				yield return new( "1-7", s.Tool == SculptTool.Sculpt || s.SelectedBrush is not null ? "Shape" : "Add Shape", HotkeyActs.Slots1To7 );
+				yield return new( "Alt", "Cursor + All Keys", Act( "Walk" ) );
+				yield return new( "Tab", "Wireframe", Act( "ToggleWireframes" ), Click: ClickWireframe );
+				yield return new( "Q", "Done", Act( "Edit" ), Click: ClickDone );
+				yield break;
+			}
+
+			if ( s.Tool == SculptTool.Sculpt && s.ActiveShape == SdfShape.Spline )
+			{
+				// Chain placement has its own verbs: click points along the curve, right-click / Space ends it.
+				yield return new( "LMB", s.ChainWillLoop ? "Close Loop" : "Add Point", Act( "Attack1" ) );
+				yield return new( "RMB", "Finish (or Space)", Act( "Attack2" ), RawKey: "space", Hold: "space" );
+				yield return new( "Scroll", "Depth", Wheel: true );
+				yield return new( "R", "Point Size", RawKey: "r", Hold: "r" );
+				yield return new( "Shift", "Snap", RawKey: "shift", Hold: "shift" );
+				yield return new( "Tab", "Wireframe", Act( "ToggleWireframes" ), Click: ClickWireframe );
+				yield return new( "Esc", "Cancel", Click: ClickStopPlacing );
+				yield break;
+			}
+
+			if ( s.Tool == SculptTool.Sculpt )
+			{
+				// Placing a stamp.
+				yield return new( "LMB", StampVerb, Act( "Attack1" ) );
+				yield return new( "Scroll", "Depth", Wheel: true );
+				yield return new( "RMB", "Done", Act( "Attack2" ), Click: ClickStopPlacing );
+				yield return new( "R", "Scale", RawKey: "r", Hold: "r" );
+				yield return new( "E", "Rotate", RawKey: "e", Hold: "e" );
+				yield return new( "Shift", "Snap", RawKey: "shift", Hold: "shift" );
+				yield return new( "Tab", "Wireframe", Act( "ToggleWireframes" ), Click: ClickWireframe );
+				yield return new( "Esc", "Cancel", Click: ClickStopPlacing );
+				yield break;
+			}
+
+			// The gizmo: selecting and editing shapes.
+			if ( s.SplineWillLoop )
+				yield return new( "Release", "Close Loop", Hot: true );
+			// LMB says what it does HERE: a click on a shape selects it; anywhere else the button is the camera (a drag
+			// orbits from anywhere — see AltNav — but over a shape the click is the reason you'd press it).
+			yield return new( "LMB", s.HoveringShape ? "Select" : "Orbit", Act( "Attack1" ), Nav: AltNav.Gesture.Orbit );
+			// The other two camera drags (AltNav: MMB pan, RMB zoom). RMB says Zoom even with a selection — a right TAP
+			// deselects, but the drag is what the card teaches.
+			yield return new( "MMB", "Pan", Act( "CameraPan" ), Nav: AltNav.Gesture.Pan );
+			yield return new( "RMB", "Zoom", Act( "Attack2" ), Nav: AltNav.Gesture.Dolly );
+			if ( s.SelectedBrush is not null )
+			{
+				// (No Ctrl+LMB multi-select or Shift snap cards — trimmed: the modifiers are learnt, not read off a bar.)
+				yield return new( "Scroll", "Depth", Wheel: true );
+				yield return new( "W", "Move", RawKey: "w", Hold: "w" );
+				yield return new( "R", "Scale", RawKey: "r", Hold: "r" );
+				yield return new( "E", "Rotate", RawKey: "e", Hold: "e" );
+			}
+			yield return new( "Tab", "Wireframe", Act( "ToggleWireframes" ), Click: ClickWireframe );
+			yield return new( "Q", "Done", Act( "Edit" ), Click: ClickDone );
+		}
+	}
 
 	string SecondSliderName => Brush?.Shape == SdfShape.Spline ? (PlacingSpline ? "smooth" : "curve") : "round";
 	string WildcardName => Brush?.Shape switch
@@ -1003,7 +1149,10 @@
 	Panel LayersMaskPanel { get; set; } // carries the list's edge-fade mask (see .layers-mask)
 
 	// The shape list's wheel stepping + edge fades (see StepScrollList).
-	readonly StepScrollList _listFx = new();
+	// Lazy (not a readonly initialiser): a failed hotload has nulled this field on the live HUD, which then threw
+	// every frame. Recreated on next use instead.
+	StepScrollList _listFxStore;
+	StepScrollList _listFx => _listFxStore ??= new();
 
 	Panel RightPanel { get; set; }
 	Panel ShapeDockPanel { get; set; }
@@ -1019,22 +1168,22 @@
 
 	// The validity toast's BOTTOM edge, from the bottom of the screen (its wrapper centres x — see the
 	// markup for why neither axis may depend on the toast's measured size). Two anchors: just above the
-	// shape dock while the dock is shown, or the sliders' 64px hotkey-bar allowance any other time
-	// (nothing selected, or not editing at all).
+	// shape dock while the dock is shown, or just above the hotkey bar any other time (nothing selected, or not
+	// editing at all — the round HUD's bar sits in the same spot then, which the fallback clearance covers).
 	float ToastBottom()
 	{
 		bool dockShown = (Session?.IsEditing ?? false) && ShowTools && Brush is not null;
 		if ( dockShown && ShapeDockPos() is { } dock )
 		{
 			float sc = Panel?.ScaleFromScreen ?? 1f;
-			return MathF.Max( 64f, Screen.Height * sc - dock.y + 28f );
+			return MathF.Max( BarClearance + 36f, Screen.Height * sc - dock.y + 28f );
 		}
 
 		// The Head/Weapon part dock owns the bottom-centre slot while nothing is selected — float above it.
 		if ( PartDockShown )
-			return 112f;
+			return BarClearance + 84f; // above the part dock (which sits BarClearance + 16)
 
-		return 64f;
+		return BarClearance + 36f; // clear of the hotkey bar
 	}
 
 	// The shape row sits centred, directly above the slider stack (measured sizes; estimates pre-layout).
@@ -1048,7 +1197,7 @@
 			h = sd.Box.Rect.Height * sc;
 		}
 
-		float slidersTop = Screen.Height * sc - SliderStackHeight - 64f;
+		float slidersTop = Screen.Height * sc - SliderStackHeight - (BarClearance + 36f);
 		if ( SliderPos() is { } sl )
 			slidersTop = sl.y;
 
@@ -1110,6 +1259,8 @@
 			return null;
 		if ( s.ExitConfirmPending )
 			return null; // the scrim declares no CSS cursor, so the fallback would show through it
+		if ( OverBarCard() )
+			return "pointer"; // a hotkey-bar card: no pointer-events (see OverBarCard), so no CSS cursor of its own
 		if ( s.SplinePointUiDragging )
 			return "hand_closed"; // the freshly inserted point is held — matches the zone's .dragging CSS
 		if ( s.HoveringSplineLine )
@@ -1131,7 +1282,8 @@
 	// into Target.Brushes. _dragOffsetY = how far (style px) the floating row has moved from its slot;
 	// _stride = one row's height + gap, so the others can shift by exactly one slot. All feed BuildHash.
 	// Hover-out springs on the layer rows (see .layer.unhover-* in the sheet + PickNudge). Keyed by row index.
-	readonly PickNudge _rowNudge = new();
+	PickNudge _rowNudgeStore; // lazy, like _listFx — survives a hotload that drops the field
+	PickNudge _rowNudge => _rowNudgeStore ??= new();
 	static string RowKey( int idx ) => idx.ToString( CultureInfo.InvariantCulture );
 
 	int _dragIndex = -1;
@@ -1343,6 +1495,11 @@
 	protected override void OnUpdate()
 	{
 		base.OnUpdate();
+
+		// The hotkey bar's press checks read Input — reliable here, not from the bar's own panel tick.
+		HotkeyBar.StepIn( Panel, ref HintBar, Session?.IsEditing ?? false, EditHotkeySource );
+		UpdateStripPunches();
+
 		// The session reads these to stop world clicks/picks falling through the palette or slider stack. (During
 		// alt-nav both panels go pointer-events:none, so HasHovered reads false and can't spuriously block picks.)
 		// Read through Over(), never HasHovered directly — see Over() for the latched-hover trap.
@@ -1351,6 +1508,9 @@
 		PointerOverPicker = Over( PickerPanel );
 		PointerOverPanels = Over( LeftPanel ) || Over( RightPanel ) || Over( ShapeDockPanel )
 			|| Over( WorkshopWindowPanel ) || Over( WorkshopPanel ) || Over( PartDockPanel )
+			// The hotkey bar's cards (clickable with a free cursor): a press on one is the card's, never a world
+			// select / deselect / stamp / orbit falling through it.
+			|| OverBarCard()
 			// The shape list's thumb sits OUTSIDE the left panel's rect (so the rows never change width), which Over()
 			// requires — and for the whole of a drag, wherever the cursor wanders. Without it a thumb drag read as the
 			// mouse being over the world: the editor ran its world hover / picking every frame, and a fast drag lagged.
@@ -1907,10 +2067,21 @@
 	// The blend/round/etc. sliders: ONE horizontal strip docked bottom-centre, above the hint strip — a
 	// stable home and the live READOUT for the A/S/D hold scrubs. Width and height are measured (the
 	// slider count and the profile/text rows vary by shape); estimates cover the pre-first-layout frame.
+	/// <summary>How wide the slider strip is (style px): the space between the side panels — the same 400px each side the
+	/// hotkey bar keeps clear (HotkeyBar ClearCorner) — so the controls share it and the tracks run long.</summary>
+	float SliderStripWidth
+	{
+		get
+		{
+			float sc = Panel?.ScaleFromScreen ?? 1f;
+			return MathF.Max( 520f, Screen.Width * sc - 800f );
+		}
+	}
+
 	Vector2? SliderPos()
 	{
 		float sc = Panel?.ScaleFromScreen ?? 1f;
-		float sw = SliderWidth * 2f;
+		float sw = SliderStripWidth;
 		float sh = 52f;
 		if ( SliderStackPanel is { } sp && sp.Box.Rect.Width > 0f )
 		{
@@ -1920,7 +2091,7 @@
 
 		return new Vector2(
 			MathF.Max( 8f, (Screen.Width * sc - sw) * 0.5f ),
-			MathF.Max( 8f, Screen.Height * sc - sh - 40f ) );
+			MathF.Max( 8f, Screen.Height * sc - sh - (BarClearance + 12f) ) );
 	}
 
 	// Re-render when the session/selection/brush state or the gizmo's screen position changes (so the palette
@@ -1948,7 +2119,8 @@
 		hc.Add( s?.ExitConfirmTooBig ?? false );
 		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
-		hc.Add( TutorialDirector.HintStripHidden ); // the tutorial hides the hint-strip while guiding
+		hc.Add( TutorialDirector.HintStripHidden ); // the tutorial fades the hotkey bar while guiding
+		hc.Add( (int)BarClearance ); // the docks above the hotkey bar re-place when it changes height (wraps / empties)
 		hc.Add( EditHudGate.Version ); // per-section tutorial gating (hide/lock/highlight) — bumped on every change
 		hc.Add( BackAction is not null ); // the customiser's Back button mounts/unmounts with its wiring
 		hc.Add( WorkshopSave is not null ); // ditto the customiser's Workshop column
@@ -1974,6 +2146,8 @@
 		// happened to redraw).
 		if ( ShapeDockPos() is { } sdp ) { hc.Add( (int)sdp.x ); hc.Add( (int)sdp.y ); }
 		if ( SliderPos() is { } slp ) { hc.Add( (int)slp.x ); hc.Add( (int)slp.y ); }
+		hc.Add( (int)SliderStripWidth ); // the strip spans the panels' gap — a resize re-lays it
+		hc.Add( _stripFiredSignal );     // a strip control's press punch goes on / comes off
 		hc.Add( (int)ToastBottom() );
 
 		// While a frozen-cursor gesture runs with a stamp up, the dot rides the shape — fold its projected

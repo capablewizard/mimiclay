@@ -131,6 +131,33 @@ public sealed class SdfCollider : Component
 	/// derived from the brush list instead cannot know what a subtract carved away.</summary>
 	public IReadOnlyList<Vector3> FramePoints => _framePoints;
 
+	// The brush bounds the standing build (and so _framePoints) came from, and the sculpture's brush LIST at that build —
+	// see LiveFramePoints.
+	BBox? _frameSourceBounds;
+	List<SdfBrush> _frameSourceList;
+
+	/// <summary><see cref="FramePoints"/> carried onto the clay's CURRENT brushes: stretched from the bounds the last build
+	/// came from to the bounds the brushes have now. The collider only rebuilds on a commit, so between them — a grab's
+	/// scale preview rewrites the brushes every frame and commits on release — the raw points frame the OLD size. A
+	/// uniform scale about any pivot maps exactly; anything else is approximate until the next commit rebuilds.</summary>
+	public IEnumerable<Vector3> LiveFramePoints()
+	{
+		// Fast path (nameplates ask every frame for every prop): a scale preview installs a NEW brush list, so the list
+		// the build saw still being in place means nothing has been rescaled — the raw points are exact.
+		if ( _frameSourceBounds is not { } source || !_sculpture.IsValid() || ReferenceEquals( _sculpture.Brushes, _frameSourceList )
+			|| BuildBrushes( _sculpture.Brushes ) is not { } now || !Sdf.TryGetBounds( now, out var live ) )
+		{
+			foreach ( var p in _framePoints )
+				yield return p;
+			yield break;
+		}
+
+		static float Ratio( float to, float from ) => from > 0.01f ? to / from : 1f;
+		var scale = new Vector3( Ratio( live.Size.x, source.Size.x ), Ratio( live.Size.y, source.Size.y ), Ratio( live.Size.z, source.Size.z ) );
+		foreach ( var p in _framePoints )
+			yield return live.Mins + (p - source.Mins) * scale;
+	}
+
 	// Kind + source brush of every shape the last build emitted, in emission order (the debug view's colouring).
 	readonly List<SdfCollisionBuilder.EmittedShape> _emitted = new();
 
@@ -297,6 +324,8 @@ public sealed class SdfCollider : Component
 		_builtModel = model;
 		_builtKey = key;
 		_builtAuthoredKey = authoredKey;
+		_frameSourceBounds = brushes is not null && Sdf.TryGetBounds( brushes, out var source ) ? source : null;
+		_frameSourceList = _sculpture?.Brushes;
 		BuildSerial++;
 
 		// The volume is read lazily, later — off a COPY when the list is the live one (CarveCollision builds from the

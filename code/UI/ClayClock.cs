@@ -66,3 +66,46 @@ public static class ClayClock
 		return t;
 	}
 }
+
+/// <summary>
+/// Poses every child of a row from <see cref="ClayClock"/> — card-scale jitter, each child seeded off its index so
+/// neighbours hold different poses while snapping together. Call every frame; it only writes on a new tick, or
+/// immediately when the row remounts / changes length. Used by the key-card rows (crosshair hover prompts, the
+/// round HUD's controls bar): pose the WRAPPER slots, leaving each card's own transform free.
+/// </summary>
+public sealed class ClayRowPoser
+{
+	Panel _panel;
+	int _count;
+	int _lastTick = int.MinValue;
+
+	/// <param name="row">The row whose children to pose.</param>
+	/// <param name="strength">Wobble amount as a fraction of full card-scale (scales rotation, travel and the scale
+	/// pulse) — the hover prompts run full, the controls bar a quiet fraction. An argument rather than stored state,
+	/// so it can't go stale across a hotload (which keeps a live instance's old field values).</param>
+	public void Update( Panel row, float strength = 1f )
+	{
+		if ( row is not { IsValid: true } )
+		{
+			_panel = null;
+			return;
+		}
+
+		var count = row.ChildrenCount;
+		if ( row != _panel || count != _count )
+		{
+			_panel = row;
+			_count = count;
+			_lastTick = int.MinValue;
+		}
+
+		int tick = ClayClock.Tick;
+		if ( tick == _lastTick )
+			return;
+		_lastTick = tick;
+
+		var i = 0;
+		foreach ( var child in row.Children )
+			child.Style.Transform = ClayClock.BuildPose( i++ * 2, strength, strength, strength );
+	}
+}

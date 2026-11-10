@@ -67,6 +67,94 @@ label { pointer-events: none; }
 	animation: action-jitter $wobble-duration linear 0s infinite;
 }
 
+// --- Key card -------------------------------------------------------------------
+// One control: an input glyph (key-cap chip, or mouse-button art) + its action, header capitals on a paper card.
+// The crosshair's hover prompts ("E Edit") and the round HUD's bottom controls bar both draw this. Pair with
+// .paper-card for the surface. NO jitter of its own — consumers pose a wrapper slot from ClayClock (ClayRowPoser)
+// so the wobble stays lock-stepped with the clay, and the card's own transform stays free for a press spring.
+// .compact = the bottom-bar size (a whole row of them has to fit across the screen).
+.key-card
+{
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	gap: $space-md;
+	padding: $space-md $space-lg;
+	border-radius: 22px; // match .toast-card / .shape-tile
+	color: $paper-ink;
+	font-family: $header-font;
+	font-size: 30px;
+	font-weight: 800;
+	letter-spacing: 1px;
+	text-transform: uppercase; // house rule: all headers are uppercase
+	white-space: nowrap;
+	pointer-events: none;
+
+	// The keyboard key-cap. min-width (not width) so multi-letter keys ("WASD", "Space / Ctrl") grow the cap.
+	.key-chip
+	{
+		min-width: 40px;
+		height: 40px;
+		padding: 0px $space-sm;
+		align-items: center;
+		justify-content: center;
+		border-radius: $radius-md;
+		background-color: $paper-top;
+		border: 2px solid $card-edge;
+		font-size: 24px;
+		color: $paper-ink;
+
+		// Hit the implicit text label too — an inherited colour on a key glyph has rendered white in-game before.
+		label { color: $paper-ink; }
+
+		// A mouse button: the input-icon art itself (InputGlyphs.MouseIcon), no cap — the art carries its own
+		// silhouette, so it gets the drop-shadow the tutorial card gives it.
+		&.mouse
+		{
+			width: 40px;
+			padding: 0px;
+			background-color: transparent;
+			border: none;
+			background-size: 40px 40px;
+			background-position: center;
+			background-repeat: no-repeat;
+			filter: drop-shadow( 2px 3px 2px rgba( black, 0.2 ) );
+		}
+	}
+
+	// Its key was just pressed: the one-shot "ta-da" spring, like a pressed button. The consumer adds the class for
+	// the punch's length (0.4s) — going on replays the animation, coming off resets it for the next press.
+	&.fired
+	{
+		transform-origin: center;
+		animation: pop-spring 0.4s ease-out;
+	}
+
+	// The bottom hotkey bar's size (HotkeyBar — every mode). Trimmed ~15% from 20px lettering / 30px caps so the row
+	// sits quieter under the scene.
+	&.compact
+	{
+		gap: 6px;
+		padding: 6px 12px;
+		border-radius: 14px;
+		font-size: 17px;
+
+		.key-chip
+		{
+			min-width: 26px;
+			height: 26px;
+			border-radius: $radius-sm;
+			font-size: 14px;
+
+			&.mouse
+			{
+				width: 26px;
+				background-size: 26px 26px;
+			}
+		}
+	}
+}
+
 // --- Action tile -------------------------------------------------------------
 // A chunky cream paper card, so it reads clearly floating over the 3D scene.
 .btn
@@ -353,6 +441,17 @@ label { pointer-events: none; }
 }
 
 // Lift + grow (the EditHud workshop tiles).
+// Scale-only hover spring to 1.25 — the hover family's overshoot shape (≈1.75× the rest offset, dip, settle) with no
+// lift: for round handles that grow in place (the clay sliders' knob).
+@keyframes hover-scale-125
+{
+	0%   { transform: scale( 1 ); }
+	50%  { transform: scale( 1.44 ); }
+	75%  { transform: scale( 1.15 ); }
+	90%  { transform: scale( 1.29 ); }
+	100% { transform: scale( 1.25 ); }
+}
+
 @keyframes hover-pop-3-103
 {
 	0%   { transform: translateY( 0px ) scale( 1 ); }

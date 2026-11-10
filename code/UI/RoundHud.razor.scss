@@ -541,59 +541,7 @@ $clock-col-width: 150px;
 		}
 	}
 
-	// ── Right edge: placeholder hotkey hints ────────────────────────────────────────────────────────────────
-	.hotkeys {
-		position: absolute;
-		right: $panel-inset;
-		top: 0; bottom: 0;
-		flex-direction: column;
-		justify-content: center;
-		align-items: flex-end;
-
-		.hotkeys-title {
-			font-family: $header-font;
-			font-size: 18px;
-			color: $scene-text-dim;
-			text-shadow: $scene-shadow;
-			text-transform: uppercase;   // house rule: all headers are uppercase
-			margin-bottom: $space-sm;
-			margin-right: 2px;
-		}
-
-		.hotkey {
-			flex-direction: row;
-			align-items: center;
-			justify-content: flex-end;
-			margin-bottom: $space-xs;
-
-			.key {
-				min-width: 44px;
-				justify-content: center;
-				padding: 2px $space-sm;
-				font-family: $body-font;
-				font-weight: $body-weight;
-				font-size: 16px;
-				color: $paper-edge;
-				background-color: $paper-top;
-				border: 2px solid $paper-edge;
-				border-radius: $radius-sm;
-				box-shadow: $shadow-edge;
-
-				// The glyph is an implicit child `label` element — hit it directly as well as via inheritance,
-				// since the inherited colour never reached it in-game (rendered white).
-				label { color: $paper-edge; }
-			}
-
-			.label {
-				margin-left: $space-sm;
-				font-family: $body-font;
-				font-weight: $body-weight;
-				font-size: 16px;
-				color: $scene-text;
-				text-shadow: $scene-shadow;
-			}
-		}
-	}
+	// (The bottom-centre controls bar is HotkeyBar — its styles live in HotkeyBar.razor.scss.)
 
 	// ── Bottom-right: active game mode + blurb (from Start through the whole round) ──────────────────────────
 	.mode-card {

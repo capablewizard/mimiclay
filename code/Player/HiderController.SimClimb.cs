@@ -26,6 +26,10 @@ public sealed partial class HiderController
 	/// <summary>Does this pawn's SIM body climb right now (any machine — the owner's prediction, the host, a copy)?</summary>
 	internal bool SimClimbing => SimSelf is { } s && s.Ctrl.Climbing;
 
+	/// <summary>Clinging to a surface, whichever walk this prop is on (the sim's, or the old scene walk's climb) — the
+	/// HUD's "Unstick" hint. Mirrors HunterController.Clinging.</summary>
+	public bool Clinging => SimClimbing || IsClimbing;
+
 	static byte Ticks( float seconds ) => SimClimbShared.Ticks( seconds );
 
 	float SimMantleSpeed => MathF.Max( ScaledClimbSpeed, WalkSpeed * SizeSpeedScale * 0.5f );

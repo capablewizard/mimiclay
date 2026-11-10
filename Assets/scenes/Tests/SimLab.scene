@@ -628,7 +628,7 @@
       "__version": 2,
       "__Prefab": {
         "Id": "a20e3c36-27a2-4708-ac25-339084df6fe3",
-        "Path": "prefabs/saved/football.prefab"
+        "Path": "football.prefab"
       },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
@@ -1158,7 +1158,7 @@
       "__version": 2,
       "__Prefab": {
         "Id": "a20e3c36-27a2-4708-ac25-339084df6fe3",
-        "Path": "prefabs/saved/football.prefab"
+        "Path": "football.prefab"
       },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
@@ -1187,6 +1187,22 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,1"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -1316,7 +1332,7 @@
       "__version": 2,
       "__Prefab": {
         "Id": "a20e3c36-27a2-4708-ac25-339084df6fe3",
-        "Path": "prefabs/saved/football.prefab"
+        "Path": "football.prefab"
       },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
@@ -1474,7 +1490,7 @@
       "__version": 2,
       "__Prefab": {
         "Id": "a20e3c36-27a2-4708-ac25-339084df6fe3",
-        "Path": "prefabs/saved/football.prefab"
+        "Path": "football.prefab"
       },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
@@ -2116,7 +2132,7 @@
       "__version": 2,
       "__Prefab": {
         "Id": "a20e3c36-27a2-4708-ac25-339084df6fe3",
-        "Path": "prefabs/saved/football.prefab"
+        "Path": "football.prefab"
       },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
@@ -2350,7 +2366,7 @@
       "__version": 2,
       "__Prefab": {
         "Id": "a20e3c36-27a2-4708-ac25-339084df6fe3",
-        "Path": "prefabs/saved/football.prefab"
+        "Path": "football.prefab"
       },
       "__PrefabInstancePatch": {
         "AddedObjects": [],

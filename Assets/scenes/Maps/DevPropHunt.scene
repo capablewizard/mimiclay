@@ -58,77 +58,6 @@
       "Children": []
     },
     {
-      "__guid": "af58f18a-1b12-43d1-a873-74cb3ee29edd",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Soundscape",
-      "Position": "-78.6869507,343.226196,104.317261",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.SoundPointComponent",
-          "__guid": "777ff7f3-f578-4108-b978-781670866569",
-          "__enabled": true,
-          "Flags": 0,
-          "Distance": 512,
-          "DistanceAttenuation": false,
-          "DistanceAttenuationOverride": false,
-          "Falloff": [
-            {
-              "x": 0,
-              "y": 1,
-              "in": 3.1415927,
-              "out": -3.1415927,
-              "mode": "Mirrored"
-            },
-            {
-              "x": 1,
-              "y": 0,
-              "in": 0,
-              "out": 0,
-              "mode": "Mirrored"
-            }
-          ],
-          "Force2d": false,
-          "MaxRepeatTime": 1,
-          "MinRepeatTime": 1,
-          "OcclusionEnabled": false,
-          "OcclusionOverride": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Pitch": 1,
-          "PlayOnStart": true,
-          "Repeat": true,
-          "ReverbEnabled": false,
-          "ReverbOverride": false,
-          "SoundEvent": {
-            "Id": "e67fac7b-5b0d-484f-bb9e-1a5fe0d55489",
-            "Path": "sounds/ambience/parkambience.sound"
-          },
-          "SoundOverride": false,
-          "StopOnNew": false,
-          "TargetMixer": {
-            "Name": "game",
-            "Id": "ed1481f6-82d3-47c0-bf84-3be85d957393"
-          },
-          "Volume": 1
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "019f185b-29a4-4a93-8bf8-4e527cab8c88",
       "__version": 2,
       "Flags": 0,
@@ -2483,6 +2412,33 @@
                 "BoundingRadius": 4.1074
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ae4a22ce-d707-8764-9b45-d9c108a6b332"
+            },
+            "Property": "MixerOverride",
+            "Value": {
+              "Name": "radio",
+              "Id": "823aa1f5-7c0b-49a0-b92a-09acb68a91ba"
+            }
           }
         ],
         "MovedObjects": []
@@ -2499,77 +2455,6 @@
         "ae4a22ce-d707-8764-9b45-d9c108a6b332": "d1857c21-8680-41f9-8a60-302ca3343a7a",
         "5b1f0c3e-7a2d-4e8b-9c61-2f4d8a3e7b90": "4453fc28-8b32-8c4a-aaad-cabb5eaac3c3"
       }
-    },
-    {
-      "__guid": "b220ae88-d1f4-49d2-b767-d5b110b6a665",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "street_amb_01",
-      "Position": "299.216888,44.111084,-4.76452637",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.SoundPointComponent",
-          "__guid": "c3a131b0-23e5-4580-a81b-8253065b0f7d",
-          "__enabled": true,
-          "Flags": 0,
-          "Distance": 512,
-          "DistanceAttenuation": false,
-          "DistanceAttenuationOverride": false,
-          "Falloff": [
-            {
-              "x": 0,
-              "y": 1,
-              "in": 3.1415927,
-              "out": -3.1415927,
-              "mode": "Mirrored"
-            },
-            {
-              "x": 1,
-              "y": 0,
-              "in": 0,
-              "out": 0,
-              "mode": "Mirrored"
-            }
-          ],
-          "Force2d": false,
-          "MaxRepeatTime": 1,
-          "MinRepeatTime": 1,
-          "OcclusionEnabled": false,
-          "OcclusionOverride": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Pitch": 1,
-          "PlayOnStart": true,
-          "Repeat": false,
-          "ReverbEnabled": false,
-          "ReverbOverride": false,
-          "SoundEvent": {
-            "Id": "d7ce1ef1-51d1-4abe-b651-076f0a425484",
-            "Path": "street_amb_01.sound"
-          },
-          "SoundOverride": false,
-          "StopOnNew": false,
-          "TargetMixer": {
-            "Name": "unknown",
-            "Id": "00000000-0000-0000-0000-000000000000"
-          },
-          "Volume": 1
-        }
-      ],
-      "Children": []
     },
     {
       "__guid": "21172289-330c-4c44-8025-75ce6337bd62",
@@ -2620,7 +2505,7 @@
             "Id": "fd36e902-2745-4a21-9702-c183aa5d0cb7",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_main_relocation_2fe6ab35-9a66-46f0-9ba6-2d2cf39436c8_70faedc2451745c4b2683289692c4dc8.vtex"
           },
-          "RenderExcludeTags": "",
+          "RenderExcludeTags": "sdf_render",
           "RuntimeContrast": 1,
           "RuntimeIntensity": 2,
           "RuntimeSaturation": 1.2,
@@ -2656,16 +2541,16 @@
           "BlendDistance": 50,
           "Bounds": {
             "Mins": "-1869.86621,-908.25,-247.5",
-            "Maxs": "-448.148682,908.25,247.5"
+            "Maxs": "-448.148682,908.25,307.74176"
           },
           "DistanceTexture": {
-            "Id": "755f25f9-32a0-48c2-94ae-93dff26a26b1",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_distance_fff47440-764c-4073-a40f-1b42b199b681_7e17954fe0834ba2864fb4ff7eab8a75.vtex"
+            "Id": "fcd88b3c-b716-45c1-80b4-e20abd4ef914",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_distance_fff47440-764c-4073-a40f-1b42b199b681_4f184d339bb14203926554c9b0b04c18.vtex"
           },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": {
-            "Id": "4e20c968-8dbd-4b4a-9d1c-7144527f0436",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_irradiance_fff47440-764c-4073-a40f-1b42b199b681_7e17954fe0834ba2864fb4ff7eab8a75.vtex"
+            "Id": "59aaed5d-ab33-489e-9036-31086cfcf7f7",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_irradiance_fff47440-764c-4073-a40f-1b42b199b681_4f184d339bb14203926554c9b0b04c18.vtex"
           },
           "NormalBias": 5,
           "OnComponentDestroy": null,
@@ -2676,10 +2561,10 @@
           "OnComponentUpdate": null,
           "ProbeDensity": 32,
           "RelocationTexture": {
-            "Id": "16ae34b6-f71d-43b6-9bfa-8195a389a34a",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_relocation_fff47440-764c-4073-a40f-1b42b199b681_7e17954fe0834ba2864fb4ff7eab8a75.vtex"
+            "Id": "40c4f2d5-8944-4c9b-bdb1-210b3883c7eb",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_relocation_fff47440-764c-4073-a40f-1b42b199b681_4f184d339bb14203926554c9b0b04c18.vtex"
           },
-          "RenderExcludeTags": "",
+          "RenderExcludeTags": "sdf_render",
           "RuntimeContrast": 1,
           "RuntimeIntensity": 1.2,
           "RuntimeSaturation": 1.4,
@@ -2738,7 +2623,7 @@
             "Id": "ba1159fa-e41d-4e39-b68f-0c862e6bb5c9",
             "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_topfloor_relocation_a21a7456-092b-4884-a037-4689decc717a_7da0a0f165c04edbaffcaeb25e22c277.vtex"
           },
-          "RenderExcludeTags": "",
+          "RenderExcludeTags": "sdf_render",
           "RuntimeContrast": 1,
           "RuntimeIntensity": 1,
           "RuntimeSaturation": 1,
@@ -2897,7 +2782,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": true,
-          "LastImport": "63 object(s), 67661 tris — 15:08:28",
+          "LastImport": "63 object(s), 67661 tris — 00:52:49",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -8250,7 +8135,10 @@
           "__enabled": true,
           "Flags": 0,
           "AutoReimport": true,
-          "BakedGeometry": "models/fbxbaked/prefabs_kitchen_garden.fbxbake",
+          "BakedGeometry": {
+            "Id": "ca933835-cfbb-45be-be2d-64136f071887",
+            "Path": "models/fbxbaked/prefabs_kitchen_garden.fbxbake"
+          },
           "BuildCollision": true,
           "CheckInterval": 0.5,
           "DefaultMaterial": {
@@ -8260,7 +8148,7 @@
           "FbxPath": "prefabs/kitchen/garden.fbx",
           "ImportScale": 2.54,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "72 object(s), 28218 tris — 20:42:50",
+          "LastImport": "77 object(s), 29370 tris — 00:52:49",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay",
@@ -8289,6 +8177,17 @@
                 "Id": "77709800-1372-45f5-94bd-3204352ca0a2",
                 "Path": "scenes/maps/flatgrass/materials/clayplanks.vmat"
               }
+            },
+            {
+              "FbxMaterial": "ClayTiles",
+              "Material": {
+                "Id": "77e18c49-24c6-43ae-86b4-d64723127a11",
+                "Path": "scenes/maps/flatgrass/materials/claytiles.vmat"
+              }
+            },
+            {
+              "FbxMaterial": "ClayTiles.001",
+              "Material": null
             }
           ],
           "OnComponentDestroy": null,
@@ -8893,7 +8792,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "Cube.077",
-          "Position": "-148.843979,-959.306824,438.435089",
+          "Position": "-315.968628,-959.306824,438.435089",
           "Rotation": "-0.707106829,-0,0,0.707106709",
           "Scale": "1,1,1",
           "Tags": "",
@@ -8942,7 +8841,7 @@
                 "AfterUILayer": false
               },
               "RenderType": "On",
-              "Tint": "0.17255,0.27059,0.28235,1"
+              "Tint": "0.18414,0.28551,0.29767,1"
             },
             {
               "__type": "Sandbox.ModelCollider",
@@ -9362,7 +9261,7 @@
                 "AfterUILayer": false
               },
               "RenderType": "On",
-              "Tint": "0.06047,0.06047,0.06047,1"
+              "Tint": "0.15814,0.15814,0.15814,1"
             },
             {
               "__type": "Sandbox.ModelCollider",
@@ -14066,7 +13965,7 @@
                 "AfterUILayer": false
               },
               "RenderType": "On",
-              "Tint": "1,1,1,1"
+              "Tint": "0.39216,0.21961,0.05882,1"
             },
             {
               "__type": "Sandbox.ModelCollider",
@@ -14318,11 +14217,431 @@
                 "AfterUILayer": false
               },
               "RenderType": "On",
-              "Tint": "0.11585,0.16279,0.16123,1"
+              "Tint": "0.11981,0.17729,0.1814,1"
             },
             {
               "__type": "Sandbox.ModelCollider",
               "__guid": "50ffd595-6fea-4624-aaf7-bf6199f56f88",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "114ab9ff-a8df-43a3-b5eb-80318a7d2565",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Cube.127",
+          "Position": "-248.82843,-187.331802,124.41909",
+          "Rotation": "4.25546049E-15,2.18556941E-08,1,1.94707184E-07",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "e1686b34-2149-4003-a9d4-b200c79d004b",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "Cube.127"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "9ec642fc-0031-4a44-9558-abf69b34fd7b",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.39216,0.21961,0.05882,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "62815183-398f-48f5-98e9-f02aad57b0e1",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "66952115-71d4-4fb7-b9fd-31ef5c062259",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Cube.129",
+          "Position": "-218.354156,-886.707153,245.665939",
+          "Rotation": "-7.34999203E-15,3.77489506E-08,-1,1.94707184E-07",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "a2b4e385-cedb-4f99-bddb-1f16c068e266",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "Cube.129"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "ddcb298d-b172-4064-8167-7191246bb249",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "1,1,1,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "54f41ce3-3947-47eb-a8b5-66b7fa737393",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "ae648a21-7ec1-4246-9f89-fb1c6ec44ecd",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Cube.132",
+          "Position": "-476.414062,-748.564087,149.634872",
+          "Rotation": "1.54543134E-08,-1.54543098E-08,-0.707106709,0.707106829",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "6d2150f4-6c22-470b-ab65-98715d8e976c",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "Cube.132"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "2fb7ad64-2f85-4da6-be0a-ac353ac91c26",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.11981,0.17729,0.1814,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "c491a3fb-8751-4a71-bdf6-cede740f93a6",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "61743492-afe1-44b0-aeca-af1f22f07e80",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Plane.004",
+          "Position": "-483.093292,-904.015015,366.797089",
+          "Rotation": "-0.5,-0.49999994,-0.5,0.49999994",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "912f30d7-e0f1-4c33-a3fc-e356aa0126c7",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "Plane.004"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "7849f273-b758-4cae-914d-f93288887f98",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.11981,0.17729,0.1814,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "e65935fa-a4bd-41c8-ad51-8a934900b417",
+              "__enabled": true,
+              "Flags": 0,
+              "ColliderFlags": 0,
+              "Elasticity": null,
+              "Friction": null,
+              "IsTrigger": false,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnObjectTriggerEnter": null,
+              "OnObjectTriggerExit": null,
+              "OnTriggerEnter": null,
+              "OnTriggerExit": null,
+              "RollingResistance": null,
+              "Static": false,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "7a43d5b1-8216-47fd-8e04-dd502d459c4a",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Roof Tiles.001",
+          "Position": "-495.528015,-955.51355,424.655121",
+          "Rotation": "-0.428725302,0.428725243,-0.562311828,0.562311888",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Mimiclay.FbxImportedPiece",
+              "__guid": "6bf17047-149e-43ef-86ca-9bcb0de99366",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SourceName": "Roof Tiles.001"
+            },
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "c890a5cf-3790-4876-87ef-f7603275a212",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "sbox_procedural_model.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.13488,0.13488,0.13488,1"
+            },
+            {
+              "__type": "Sandbox.ModelCollider",
+              "__guid": "d427d084-3c65-470f-bf9d-cc58adecda94",
               "__enabled": true,
               "Flags": 0,
               "ColliderFlags": 0,
@@ -14355,8 +14674,8 @@
       "__version": 2,
       "Flags": 2048,
       "Name": "IconCamera",
-      "Position": "221.704834,558.423462,460.452484",
-      "Rotation": "0.132008076,0.222623438,-0.492660731,0.83084178",
+      "Position": "-1356.62036,-832.313049,543.041565",
+      "Rotation": "-0.0670653284,0.216031015,0.288800031,0.930283487",
       "Scale": "1,1,1",
       "Tags": "maincamera",
       "Enabled": true,
@@ -14402,7 +14721,7 @@
           "Flags": 0,
           "Aspect": 2.4,
           "AssignToMap": true,
-          "LastCapture": "ui/banners/maps/devprophunt_banner.png (1536x640) 23:14:54",
+          "LastCapture": "ui/banners/maps/devprophunt_banner.png (1536x640) 09:52:22",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -14820,8 +15139,24 @@
               "Type": "Component",
               "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -14951,7 +15286,7 @@
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -15113,7 +15448,7 @@
               "IdValue": "7917a861-fdd7-42cd-aa82-fbc097b75a0b"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -15757,7 +16092,7 @@
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "LodOverride": 1,
+          "LodOverride": 2,
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
@@ -16076,7 +16411,7 @@
               "IdValue": "7a45f3e3-ed1c-49b3-aa7f-03bbda6bba11"
             },
             "Property": "Position",
-            "Value": "-358.306061,-187.332001,117.612999"
+            "Value": "-358.306061,-187.332001,145.089401"
           },
           {
             "Target": {
@@ -16181,7 +16516,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -16230,7 +16565,7 @@
               "IdValue": "7a45f3e3-ed1c-49b3-aa7f-03bbda6bba11"
             },
             "Property": "Position",
-            "Value": "-358.306061,-404.789185,117.612999"
+            "Value": "-358.306061,-404.789185,145.089401"
           },
           {
             "Target": {
@@ -16335,7 +16670,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -17081,7 +17416,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -17227,7 +17562,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -17373,7 +17708,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -17519,7 +17854,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -17665,7 +18000,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -17811,7 +18146,7 @@
               "IdValue": "f649080a-e812-4561-9610-03107fe7daff"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -18645,8 +18980,24 @@
               "Type": "Component",
               "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -21672,7 +22023,7 @@
               "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -21914,7 +22265,7 @@
               "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -22312,8 +22663,24 @@
               "Type": "Component",
               "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
             },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -22695,8 +23062,24 @@
               "Type": "Component",
               "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
             },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -23081,8 +23464,24 @@
               "Type": "Component",
               "IdValue": "023ac5c2-9981-417e-9ba8-9bcdfc6974cf"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "023ac5c2-9981-417e-9ba8-9bcdfc6974cf"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "023ac5c2-9981-417e-9ba8-9bcdfc6974cf"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -23467,8 +23866,24 @@
               "Type": "Component",
               "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -23773,8 +24188,24 @@
               "Type": "Component",
               "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -24701,6 +25132,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "239936e3-3fd0-4c52-a5f0-f4d89e833a00"
             },
             "Property": "SdfShadows",
@@ -25131,6 +25578,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -25405,7 +25868,7 @@
               "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -25632,7 +26095,7 @@
               "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -26096,6 +26559,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f34d6c2e-6f75-4fd8-bb53-424daa174e29"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f34d6c2e-6f75-4fd8-bb53-424daa174e29"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -26552,6 +27031,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d309cb71-8acf-44fc-ba5b-2153b754d2cb"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d309cb71-8acf-44fc-ba5b-2153b754d2cb"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -26601,7 +27096,7 @@
               "IdValue": "c0ed3bd6-5786-4cee-b714-b81b3108f448"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -26844,7 +27339,7 @@
               "IdValue": "a4afd291-7548-478f-8288-8b6133800e5f"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -27046,7 +27541,7 @@
               "IdValue": "2b28ec53-00e3-46cf-9027-8b5369bf131e"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -27360,7 +27855,7 @@
               "IdValue": "e7601da9-8ae1-4549-855f-b2b5034d6707"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -27754,7 +28249,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -28164,7 +28659,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -28557,8 +29052,24 @@
               "Type": "Component",
               "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -28944,8 +29455,24 @@
               "Type": "Component",
               "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -29332,7 +29859,7 @@
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -29622,7 +30149,7 @@
               "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -29889,6 +30416,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "67836350-fc36-4285-a4b9-f8176add1a51"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "67836350-fc36-4285-a4b9-f8176add1a51"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -30155,7 +30698,7 @@
               "IdValue": "a347f32f-d129-4f28-a743-ecfe966bbffa"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -30839,7 +31382,7 @@
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -31249,7 +31792,7 @@
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -32211,7 +32754,7 @@
               "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -33167,6 +33710,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -33553,7 +34112,7 @@
               "IdValue": "bd8a5941-5cb1-4f72-ab2a-880cb3e2048c"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -33763,7 +34322,7 @@
               "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -34005,7 +34564,7 @@
               "IdValue": "9286d036-db3f-46dd-9fb8-c7fa569d0bda"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -34312,7 +34871,7 @@
               "IdValue": "2ec162e9-f079-4eed-a3fa-d395a1f53f9c"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -34580,8 +35139,24 @@
               "Type": "Component",
               "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
             },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -34850,7 +35425,7 @@
               "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -34906,8 +35481,24 @@
               "Type": "Component",
               "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -35812,275 +36403,6 @@
       }
     },
     {
-      "__guid": "224a769d-b093-4e9c-95f7-8275afca7908",
-      "__version": 2,
-      "__Prefab": {
-        "Id": "78d14cc4-bd4a-4d8a-a24d-74aaa5ae8297",
-        "Path": "prefabs/props/kitchen/fryingpan.prefab"
-      },
-      "__PrefabInstancePatch": {
-        "AddedObjects": [],
-        "RemovedObjects": [],
-        "PropertyOverrides": [
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "15b199fd-51f0-4103-8e99-5c86e9002a5c"
-            },
-            "Property": "Name",
-            "Value": "fryingpan (2)"
-          },
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "15b199fd-51f0-4103-8e99-5c86e9002a5c"
-            },
-            "Property": "Position",
-            "Value": "-96.4195251,340.677185,31.2370682"
-          },
-          {
-            "Target": {
-              "Type": "GameObject",
-              "IdValue": "15b199fd-51f0-4103-8e99-5c86e9002a5c"
-            },
-            "Property": "Rotation",
-            "Value": "0,0,0.443332016,0.896357536"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "a43099ce-2652-4045-b453-be36ecb74c04"
-            },
-            "Property": "Brushes",
-            "Value": [
-              {
-                "Id": "97f530a6-26df-48d7-a0cd-dcb47cc3c8a2",
-                "Shape": "Sphere",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "GroupKind": null,
-                "LinkColor": false,
-                "LinkBlend": false,
-                "Enabled": true,
-                "Position": "-1.87706947,0.943980217,-3.56047344",
-                "Rotation": "-3.44879965E-08,-8.49007122E-08,2.98023224E-08,-0.999999881",
-                "Size": "30.9359245,30.9359245,30.9359245",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0.45916665,
-                "SlicePlaneN": 0.08166671,
-                "LocalCentre": "0,0,-14.2047443",
-                "Blend": 6,
-                "Gap": 0,
-                "Rounding": 0.92951006,
-                "Color": "0.6549,0.6549,0.6549,1",
-                "Metallic": 1,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 32.435925
-              },
-              {
-                "Id": "80809ac3-be4a-4812-840d-e78dcd82d76b",
-                "Shape": "Spline",
-                "Operation": "Add",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "GroupKind": null,
-                "LinkColor": false,
-                "LinkBlend": false,
-                "Enabled": true,
-                "Position": "0,0,0",
-                "Rotation": "0,0,0,1",
-                "Size": "6,6,6",
-                "Points": [
-                  "19.0547714,-9.30582905,-10.45119,3.1169951",
-                  "59.9948006,-29.9919472,-6.23681641,5.29767275"
-                ],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": true,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 2,
-                "Gap": 0,
-                "Rounding": 0.75,
-                "Color": "0.6549,0.6549,0.6549,1",
-                "Metallic": 1,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 6.5
-              },
-              {
-                "Id": "30731614-323e-4dbd-b20e-27b59a36a6b1",
-                "Shape": "Sphere",
-                "Operation": "Subtract",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "GroupKind": null,
-                "LinkColor": false,
-                "LinkBlend": false,
-                "Enabled": true,
-                "Position": "-1.87706947,0.943980217,-3.56047344",
-                "Rotation": "-8.94069672E-08,0.99999994,-1.77635684E-15,-4.37113883E-08",
-                "Size": "26.1879616,26.1879616,26.1879616",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0.2797222,
-                "SlicePlaneN": 0.44055557,
-                "LocalCentre": "0,0,-7.32535553",
-                "Blend": 2.1657345,
-                "Gap": 0,
-                "Rounding": 2.1162148,
-                "Color": "0.42326,0.42326,0.42326,1",
-                "Metallic": 1,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 26.729395
-              },
-              {
-                "Id": "108bca73-8608-4efd-8466-155c728f57ff",
-                "Shape": "Box",
-                "Operation": "Subtract",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "GroupKind": null,
-                "LinkColor": false,
-                "LinkBlend": false,
-                "Enabled": true,
-                "Position": "-1.87706947,0.943980217,-42.0504608",
-                "Rotation": "-8.94069672E-08,0.99999994,-1.77635684E-15,-4.37113883E-08",
-                "Size": "30.9359245,30.9359245,18.4518604",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0,
-                "SlicePlaneN": 1,
-                "LocalCentre": "0,0,0",
-                "Blend": 4.6838837,
-                "Gap": 0,
-                "Rounding": 4.2813787,
-                "Color": "0.6549,0.6549,0.6549,1",
-                "Metallic": 1,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 48.652905
-              },
-              {
-                "Id": "47db7008-30eb-4f9a-a46e-c9b9c135279a",
-                "Shape": "Cylinder",
-                "Operation": "Cutout",
-                "CrossSection": "Triangle",
-                "Text": "clay",
-                "Font": "Super Joyful",
-                "GroupKind": null,
-                "LinkColor": false,
-                "LinkBlend": false,
-                "Enabled": true,
-                "Position": "-1.87708902,0.943962336,-16.6915894",
-                "Rotation": "-8.94069672E-08,0.99999994,-1.77635684E-15,-4.37113883E-08",
-                "Size": "15.7040863,25.7264366,12.0120964",
-                "Points": [],
-                "Curvature": 1,
-                "SplineClosed": false,
-                "SplinePerPointRadius": false,
-                "Slice": 0.2797222,
-                "SlicePlaneN": 0.44055557,
-                "LocalCentre": "0,0,0",
-                "Blend": 1.7999991,
-                "Gap": 0,
-                "Rounding": 0,
-                "Color": "0.36663,0.17857,0.17857,1",
-                "Metallic": 0,
-                "Roughness": 0.5,
-                "MirrorX": false,
-                "MirrorY": false,
-                "EffectiveMirrorX": false,
-                "EffectiveMirrorY": false,
-                "EffectiveMirrorZ": false,
-                "MirrorZ": false,
-                "Damage": false,
-                "Shrinks": false,
-                "ShrinkDelay": 2,
-                "ShrinkDuration": 1.5,
-                "IsSplineLoop": false,
-                "BoundingRadius": 20.221413
-              }
-            ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
-            },
-            "Property": "Model",
-            "Value": "sbox_procedural_model.vmdl"
-          }
-        ],
-        "MovedObjects": []
-      },
-      "__PrefabIdToInstanceId": {
-        "15b199fd-51f0-4103-8e99-5c86e9002a5c": "224a769d-b093-4e9c-95f7-8275afca7908",
-        "a43099ce-2652-4045-b453-be36ecb74c04": "03298049-7dcc-4653-99b2-d0da3d94acf3",
-        "2a803963-5772-4c98-9f46-5d1679f6c76f": "329e37f4-0b78-4497-8c27-bb0969197217",
-        "3dcc0d2f-bf7b-4e97-ba34-082a2657039a": "95c610f0-2cbf-4484-b319-817acce02645",
-        "9eea0585-a324-4096-a49b-782fc67d3127": "ed240b06-9427-4ac3-bbb8-6eec6263a137",
-        "144dbda4-bb8d-480f-a801-fd8d713e6179": "86069e12-bd12-4c7c-bae2-328d6bddc739",
-        "0a524fb7-ed3d-4bf0-885d-5f4655ec6920": "1b82d42c-5a3e-4219-973e-ef54b87c15fa",
-        "3f03a10f-b957-4010-a37b-da9d3a017a1e": "e3e79365-b91d-4eca-81ab-c5b9331d818f"
-      }
-    },
-    {
       "__guid": "471c1c25-df3e-4305-92d4-01abc38a53a5",
       "__version": 2,
       "__Prefab": {
@@ -36455,8 +36777,24 @@
               "Type": "Component",
               "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -36506,6 +36844,22 @@
             },
             "Property": "Rotation",
             "Value": "-0.206549138,-0.353634804,0.802396059,0.434097052"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "01f79587-2f73-4056-90c5-1867987efd3d"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "01f79587-2f73-4056-90c5-1867987efd3d"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -36612,6 +36966,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36667,8 +37037,24 @@
               "Type": "Component",
               "IdValue": "b4a8108d-d7de-4a89-ad51-3718d5d57076"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b4a8108d-d7de-4a89-ad51-3718d5d57076"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b4a8108d-d7de-4a89-ad51-3718d5d57076"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36710,6 +37096,22 @@
             },
             "Property": "Position",
             "Value": "-351.095154,-700.913757,26.4333858"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36751,6 +37153,22 @@
             },
             "Property": "Position",
             "Value": "-351.095154,-568.363281,26.4333858"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36767,11 +37185,174 @@
       }
     },
     {
+      "__guid": "1ea28c85-2cf3-41c6-9fc3-ba84b62ab4af",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "3130e038-7bc6-49c0-a66b-4d6098ed6b60",
+        "Path": "prefabs/props/garden/gardenpot.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Name",
+            "Value": "gardenpot (6)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Position",
+            "Value": "-966.139343,-1156.13391,22.1148224"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a": "1ea28c85-2cf3-41c6-9fc3-ba84b62ab4af",
+        "f075e73a-6f8b-445f-a29b-693f1a42a791": "8e4c8924-541b-494c-b25f-278c6b96678c",
+        "3e9af8b7-a4a4-4523-869d-922c41971ca7": "82ac4808-3df3-4bbf-b779-cabe9c686fec",
+        "1b8eef7b-4c97-46a4-8828-92668d6bec62": "b6dfe792-bd92-4083-b034-1c9f85e4f43a",
+        "ddbdffa5-d073-4a85-be8b-1e3fd0c3e7fa": "6865fe50-8425-491a-8d59-fedd55ddfe2f",
+        "049d5532-5440-4c0f-9a13-8daf01b29546": "1c49d742-8024-4760-a0ce-77aa085e4c30",
+        "859e7062-9a2b-4e32-87fe-fa8a5ac0eb74": "be00f7f7-07b8-458d-97b2-fa2334df910c",
+        "40c6b265-66b8-40ca-8008-7a95af4585a2": "9e7826b4-f606-4ec9-8325-c7f1a24a423c"
+      }
+    },
+    {
+      "__guid": "6b74bc70-e2ce-4a7b-9d8f-a500f64aa83b",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "3130e038-7bc6-49c0-a66b-4d6098ed6b60",
+        "Path": "prefabs/props/garden/gardenpot.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Name",
+            "Value": "gardenpot (5)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Position",
+            "Value": "-297.246155,-213.529709,58.1189384"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a": "6b74bc70-e2ce-4a7b-9d8f-a500f64aa83b",
+        "f075e73a-6f8b-445f-a29b-693f1a42a791": "cd6174c5-ce7a-42be-b524-2d508667f99b",
+        "3e9af8b7-a4a4-4523-869d-922c41971ca7": "a09b453f-5348-48dd-bd1f-a74ac15354a5",
+        "1b8eef7b-4c97-46a4-8828-92668d6bec62": "8461614c-899a-4e48-b7fb-e24cb0000e62",
+        "ddbdffa5-d073-4a85-be8b-1e3fd0c3e7fa": "1c91e1a4-bace-4fa1-8124-fb566abc29ed",
+        "049d5532-5440-4c0f-9a13-8daf01b29546": "c3bfe90f-1ab4-4345-b27e-069a93a57cb1",
+        "859e7062-9a2b-4e32-87fe-fa8a5ac0eb74": "83c08b0a-c897-4f4e-a26a-98c50e47046e",
+        "40c6b265-66b8-40ca-8008-7a95af4585a2": "b4d8cbc1-e8c6-41a3-87ab-e5a7656400a5"
+      }
+    },
+    {
+      "__guid": "13af0df2-90a1-4df4-b719-ad4fa4586ec5",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "3130e038-7bc6-49c0-a66b-4d6098ed6b60",
+        "Path": "prefabs/props/garden/gardenpot.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Name",
+            "Value": "gardenpot (4)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Position",
+            "Value": "-183.465393,486.726288,27.3577747"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0,1"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a": "13af0df2-90a1-4df4-b719-ad4fa4586ec5",
+        "f075e73a-6f8b-445f-a29b-693f1a42a791": "edeba010-2671-4923-a194-68e983db57f6",
+        "3e9af8b7-a4a4-4523-869d-922c41971ca7": "a4dfeac5-a673-4b93-94e7-095d6120c076",
+        "1b8eef7b-4c97-46a4-8828-92668d6bec62": "c36b56f0-d172-41d3-ad58-d34cb451bd5e",
+        "ddbdffa5-d073-4a85-be8b-1e3fd0c3e7fa": "f10ad174-a52f-40a2-9e1b-2aef3e8d4362",
+        "049d5532-5440-4c0f-9a13-8daf01b29546": "e039a12e-4cf1-4a12-8918-174218d49c8b",
+        "859e7062-9a2b-4e32-87fe-fa8a5ac0eb74": "ee868ab5-6946-4fe3-8871-4d6c809a883d",
+        "40c6b265-66b8-40ca-8008-7a95af4585a2": "6cc1b0ae-2a7c-4bed-9556-8d3a64374048"
+      }
+    },
+    {
       "__guid": "26ed5247-2c77-499c-8804-3d722967b6cf",
       "__version": 2,
       "__Prefab": {
         "Id": "4e07c999-95c5-41eb-b313-ccbd2010fb48",
-        "Path": "prefabs/props/garden/gardenpot (3).prefab"
+        "Path": "prefabs/props/garden/gardenpot_small.prefab"
       },
       "__PrefabInstancePatch": {
         "AddedObjects": [],
@@ -36792,6 +37373,22 @@
             },
             "Property": "Position",
             "Value": "-299.170319,-569.362915,95.8119354"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36841,6 +37438,22 @@
             },
             "Property": "Rotation",
             "Value": "-0.0273424722,0.102659389,0.907054186,-0.407389253"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36882,6 +37495,22 @@
             },
             "Property": "Rotation",
             "Value": "0.526650667,-0.337373972,-0.718242288,-0.304869533"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36923,6 +37552,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "250c8059-e01c-435a-a08b-06f86dbead63"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "250c8059-e01c-435a-a08b-06f86dbead63"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -36936,6 +37581,1394 @@
         "7dd3240f-ec2c-4abf-91ea-90a24577ecdb": "df16db49-ce45-44c8-a183-bfb5572f46df",
         "92d4d124-85e1-4814-9cb6-bf6ae16ad0d9": "0403ca80-a0c3-442f-b232-a6cb9eb5d00f",
         "bfae92d2-1846-42a7-a620-796a63af049d": "c8288ae5-f2eb-4971-af6a-27996339d212"
+      }
+    },
+    {
+      "__guid": "1dce78f3-3346-4fca-879c-dcd0dca36e38",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object",
+      "Position": "216.692459,499.673767,162.726456",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SoundBoxComponent",
+          "__guid": "e2698769-d7f5-49f8-aba2-254ea58c34d7",
+          "__enabled": true,
+          "Flags": 0,
+          "Distance": 512,
+          "DistanceAttenuation": false,
+          "DistanceAttenuationOverride": false,
+          "Falloff": [
+            {
+              "x": 0,
+              "y": 1,
+              "in": 3.1415927,
+              "out": -3.1415927,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "Force2d": false,
+          "MaxRepeatTime": 1,
+          "MinRepeatTime": 1,
+          "OcclusionEnabled": false,
+          "OcclusionOverride": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Pitch": 1,
+          "PlayOnStart": true,
+          "Repeat": false,
+          "ReverbEnabled": false,
+          "ReverbOverride": false,
+          "Scale": "138.666656,180,319.919495",
+          "SoundEvent": {
+            "Id": "64dff1dd-008b-49dc-ab06-67ef739785bc",
+            "Path": "sounds/game/fridgebuzz.sound"
+          },
+          "SoundOverride": false,
+          "StopOnNew": false,
+          "TargetMixer": {
+            "Name": "game",
+            "Id": "80da816b-c03e-4415-a56b-31ea7372098f"
+          },
+          "Volume": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "e0e4dacd-8d71-4203-8bd9-2a358b4dd34e",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object (1)",
+      "Position": "472.332581,506.976562,66.4053574",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SoundBoxComponent",
+          "__guid": "f6fcd851-f65d-481a-aaf8-454072d639c3",
+          "__enabled": true,
+          "Flags": 0,
+          "Distance": 512,
+          "DistanceAttenuation": false,
+          "DistanceAttenuationOverride": false,
+          "Falloff": [
+            {
+              "x": 0,
+              "y": 1,
+              "in": 3.1415927,
+              "out": -3.1415927,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "Force2d": false,
+          "MaxRepeatTime": 1,
+          "MinRepeatTime": 1,
+          "OcclusionEnabled": false,
+          "OcclusionOverride": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Pitch": 1,
+          "PlayOnStart": true,
+          "Repeat": false,
+          "ReverbEnabled": false,
+          "ReverbOverride": false,
+          "Scale": "124.58654,136.260178,138.306122",
+          "SoundEvent": {
+            "Id": "04db65e9-70b0-468f-870a-857d72195a3e",
+            "Path": "sounds/game/washingmachine.sound"
+          },
+          "SoundOverride": false,
+          "StopOnNew": false,
+          "TargetMixer": {
+            "Name": "game",
+            "Id": "80da816b-c03e-4415-a56b-31ea7372098f"
+          },
+          "Volume": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "e5e55cc1-4ec2-475e-bee8-1443e9d96f16",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object (2)",
+      "Position": "-838.265198,-317.369263,614.67218",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SoundBoxComponent",
+          "__guid": "8adb8a29-aea3-45bd-b6c9-49a32eed4c2b",
+          "__enabled": true,
+          "Flags": 0,
+          "Distance": 512,
+          "DistanceAttenuation": false,
+          "DistanceAttenuationOverride": false,
+          "Falloff": [
+            {
+              "x": 0,
+              "y": 1,
+              "in": 3.1415927,
+              "out": -3.1415927,
+              "mode": "Mirrored"
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "in": 0,
+              "out": 0,
+              "mode": "Mirrored"
+            }
+          ],
+          "Force2d": false,
+          "MaxRepeatTime": 1,
+          "MinRepeatTime": 1,
+          "OcclusionEnabled": false,
+          "OcclusionOverride": false,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Pitch": 1,
+          "PlayOnStart": true,
+          "Repeat": false,
+          "ReverbEnabled": false,
+          "ReverbOverride": false,
+          "Scale": "1435.99231,1929.12634,1380.30603",
+          "SoundEvent": {
+            "Id": "e67fac7b-5b0d-484f-bb9e-1a5fe0d55489",
+            "Path": "sounds/ambience/parkambience.sound"
+          },
+          "SoundOverride": false,
+          "StopOnNew": false,
+          "TargetMixer": {
+            "Name": "game",
+            "Id": "80da816b-c03e-4415-a56b-31ea7372098f"
+          },
+          "Volume": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "511629fa-f398-45c7-91be-f21129ee58de",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "450e8bed-a030-49c6-b0d5-8034c27345cc",
+        "Path": "prefabs/props/garden/bowlingpin.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Position",
+            "Value": "-1112.14172,-1081.94666,19.302"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "49ab711b-f7fa-4735-80e3-d4e60f66eba0": "511629fa-f398-45c7-91be-f21129ee58de",
+        "a4af6560-f700-41a7-92a0-99e0948e20d4": "75d2f033-d94e-438c-b2b7-7e28676c4904",
+        "7a6b71c6-0c79-409c-a424-08a2c254cb54": "7c94fad8-eb24-4d89-9692-333b74d22f33",
+        "1f81dbf1-1284-4dd6-893f-76fb45f1995b": "3512a905-fe53-4bcf-af87-17dd0047631e",
+        "3c7a8e3d-248e-4612-a4b5-af04057e4e13": "672ff58b-3b25-4c0c-9ae0-a6bb0f250181",
+        "c17f544b-37db-48f5-85cc-5ef083dd5861": "94b4fc3d-0794-497d-a942-984cd47df8ed",
+        "8d4a5e62-1d34-4115-aa57-09d8b973f272": "b48f538a-3f21-4075-bd0d-eeb15c1c0947",
+        "3bb7a58e-c096-4c41-9033-d1101cedee0f": "39b3a800-6b02-440e-8f1f-a9bbd99d925f"
+      }
+    },
+    {
+      "__guid": "7d769b22-b892-483c-be01-4dffb3c9ed08",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "450e8bed-a030-49c6-b0d5-8034c27345cc",
+        "Path": "prefabs/props/garden/bowlingpin.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Name",
+            "Value": "bowlingpin (3)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Position",
+            "Value": "-1181.87573,-1140.64001,19.302"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4af6560-f700-41a7-92a0-99e0948e20d4"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "18d4435c-c17c-48d1-859e-6d92bfd453a7",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.00418585539,0.0650011674,0.932656407",
+                "Rotation": "-0.999998927,-5.96046448E-08,-8.73114914E-11,-4.37576091E-08",
+                "Size": "16,16,41.7674141",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.19807692,
+                "SlicePlaneN": 0.6038462,
+                "LocalCentre": "0,0,-8.27315903",
+                "Blend": 6,
+                "Gap": 0,
+                "Rounding": 2.75,
+                "Color": "0.33248,0.65581,0.35404,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 43.267414
+              },
+              {
+                "Id": "96fe762d-2d6d-4d9e-9ece-338b29064e71",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "5.50076365E-05,-0.00071415049,17.7650719",
+                "Rotation": "0.999999046,5.96046448E-08,-1.16415322E-10,-4.36266419E-08",
+                "Size": "19,19,26.6277161",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 12.400001,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.33248,0.65581,0.35404,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.727716
+              },
+              {
+                "Id": "bdf37a16-4052-4ea5-90b2-084997420821",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.000130506232,0.00416191434,38.6244125",
+                "Rotation": "0.999999046,5.96046448E-08,-1.16415322E-10,-4.36266419E-08",
+                "Size": "6.2590394,10.2626324,19.3580589",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.11875,
+                "SlicePlaneN": 0.7625,
+                "LocalCentre": "0,0,0",
+                "Blend": 3.7799966,
+                "Gap": 0,
+                "Rounding": 0,
+                "Color": "0.33248,0.65581,0.35404,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 21.289778
+              },
+              {
+                "Id": "5c5f0ea2-31d2-4f79-95f3-939eb8bd2f23",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "6.7435205E-05,5.03286719E-06,64.9353638",
+                "Rotation": "1.45519152E-11,0,0,0.999999881",
+                "Size": "11,11,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 4.2000003,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.33248,0.65581,0.35404,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.05
+              }
+            ]
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "49ab711b-f7fa-4735-80e3-d4e60f66eba0": "7d769b22-b892-483c-be01-4dffb3c9ed08",
+        "a4af6560-f700-41a7-92a0-99e0948e20d4": "a4b729d0-11b8-40ac-a4cb-7d243891a92d",
+        "7a6b71c6-0c79-409c-a424-08a2c254cb54": "ac668527-fe63-4825-9cf1-f52ef9bfbd02",
+        "1f81dbf1-1284-4dd6-893f-76fb45f1995b": "d143719c-5a38-401d-a60b-91b140392d0a",
+        "3c7a8e3d-248e-4612-a4b5-af04057e4e13": "1b3cfd10-9635-481c-8743-50c113c6f55b",
+        "c17f544b-37db-48f5-85cc-5ef083dd5861": "19c1fce0-9586-449b-be41-62541b019176",
+        "8d4a5e62-1d34-4115-aa57-09d8b973f272": "a9d990c4-875d-4aaa-a183-ccc6241aa02d",
+        "3bb7a58e-c096-4c41-9033-d1101cedee0f": "ee5737f8-0bbc-4dbc-a900-349ad394a66b"
+      }
+    },
+    {
+      "__guid": "4dbc0fb6-116b-40b1-b24c-fbd85ca42832",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "450e8bed-a030-49c6-b0d5-8034c27345cc",
+        "Path": "prefabs/props/garden/bowlingpin.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Name",
+            "Value": "bowlingpin (4)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Position",
+            "Value": "-1259.92358,-1114.26648,19.7422276"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Rotation",
+            "Value": "-0.734524965,0.255268633,0.593895555,0.20639582"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4af6560-f700-41a7-92a0-99e0948e20d4"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "18d4435c-c17c-48d1-859e-6d92bfd453a7",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.00419348478,0.0650171041,0.932694614",
+                "Rotation": "-0.999998987,-1.49011612E-08,0,0",
+                "Size": "16,16,41.7674141",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.19807692,
+                "SlicePlaneN": 0.6038462,
+                "LocalCentre": "0,0,-8.27315903",
+                "Blend": 6,
+                "Gap": 0,
+                "Rounding": 2.75,
+                "Color": "0.76744,0.47807,0.22488,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 43.267414
+              },
+              {
+                "Id": "96fe762d-2d6d-4d9e-9ece-338b29064e71",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "4.72068787E-05,-0.000759363174,17.7651157",
+                "Rotation": "0.999999046,3.7252903E-08,0,-8.94069672E-08",
+                "Size": "19,19,26.6277161",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 12.400001,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.76744,0.47807,0.22488,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.727716
+              },
+              {
+                "Id": "bdf37a16-4052-4ea5-90b2-084997420821",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.000137329102,0.00414037704,38.6244278",
+                "Rotation": "0.999999046,3.7252903E-08,0,-8.94069672E-08",
+                "Size": "6.2590394,10.2626324,19.3580589",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.11875,
+                "SlicePlaneN": 0.7625,
+                "LocalCentre": "0,0,0",
+                "Blend": 3.7799966,
+                "Gap": 0,
+                "Rounding": 0,
+                "Color": "0.76744,0.47807,0.22488,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 21.289778
+              },
+              {
+                "Id": "5c5f0ea2-31d2-4f79-95f3-939eb8bd2f23",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "5.7220459E-05,2.00271606E-05,64.9354248",
+                "Rotation": "0,0,0,1",
+                "Size": "11,11,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 4.2000003,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.76744,0.47807,0.22488,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.05
+              }
+            ]
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "49ab711b-f7fa-4735-80e3-d4e60f66eba0": "4dbc0fb6-116b-40b1-b24c-fbd85ca42832",
+        "a4af6560-f700-41a7-92a0-99e0948e20d4": "62f7eff8-5c3a-45e4-9aff-e276f8db2144",
+        "7a6b71c6-0c79-409c-a424-08a2c254cb54": "a887dda4-16dc-4406-8fca-b00cafc7e451",
+        "1f81dbf1-1284-4dd6-893f-76fb45f1995b": "15d47886-525c-4f40-950a-9de84d75adb5",
+        "3c7a8e3d-248e-4612-a4b5-af04057e4e13": "66cefb02-c902-45e7-a18c-fa060ecb1b3d",
+        "c17f544b-37db-48f5-85cc-5ef083dd5861": "c1a92921-d860-4d4d-a510-8eccc62c6689",
+        "8d4a5e62-1d34-4115-aa57-09d8b973f272": "cf2cb162-5303-413a-b264-6e1c04a3bea2",
+        "3bb7a58e-c096-4c41-9033-d1101cedee0f": "9218c15e-9408-41aa-a7e2-65ecdd823bd2"
+      }
+    },
+    {
+      "__guid": "69585bba-e781-441d-a754-817d4996b5c7",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "450e8bed-a030-49c6-b0d5-8034c27345cc",
+        "Path": "prefabs/props/garden/bowlingpin.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Name",
+            "Value": "bowlingpin (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Position",
+            "Value": "-1132.29614,-1134.37915,19.302"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Rotation",
+            "Value": "-0.000145736267,-0.000391755981,0.170533389,-0.985351861"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4af6560-f700-41a7-92a0-99e0948e20d4"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "18d4435c-c17c-48d1-859e-6d92bfd453a7",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.00421329821,0.0650137737,0.932657301",
+                "Rotation": "-0.999999166,-7.4505806E-08,8.36735126E-11,-4.3772161E-08",
+                "Size": "16,16,41.7674141",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.19807692,
+                "SlicePlaneN": 0.6038462,
+                "LocalCentre": "0,0,-8.27315903",
+                "Blend": 6,
+                "Gap": 0,
+                "Rounding": 2.75,
+                "Color": "0.23678,0.52477,0.92558,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 43.267414
+              },
+              {
+                "Id": "96fe762d-2d6d-4d9e-9ece-338b29064e71",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "0.000107249827,-0.000707982574,17.7650757",
+                "Rotation": "0.999999285,7.4505806E-08,-1.74622983E-10,-4.36775736E-08",
+                "Size": "19,19,26.6277161",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 12.400001,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.23678,0.52477,0.92558,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.727716
+              },
+              {
+                "Id": "bdf37a16-4052-4ea5-90b2-084997420821",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.000117904303,0.0041250498,38.6244202",
+                "Rotation": "0.999999285,7.4505806E-08,-1.74622983E-10,-4.36775736E-08",
+                "Size": "6.2590394,10.2626324,19.3580589",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.11875,
+                "SlicePlaneN": 0.7625,
+                "LocalCentre": "0,0,0",
+                "Blend": 3.7799966,
+                "Gap": 0,
+                "Rounding": 0,
+                "Color": "0.23678,0.52477,0.92558,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 21.289778
+              },
+              {
+                "Id": "5c5f0ea2-31d2-4f79-95f3-939eb8bd2f23",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "9.29659E-05,1.42906792E-05,64.9353638",
+                "Rotation": "-7.27595761E-12,1.8189894E-12,0,1",
+                "Size": "11,11,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 4.2000003,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.23678,0.52477,0.92558,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.05
+              }
+            ]
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "49ab711b-f7fa-4735-80e3-d4e60f66eba0": "69585bba-e781-441d-a754-817d4996b5c7",
+        "a4af6560-f700-41a7-92a0-99e0948e20d4": "76427d10-329f-4ac0-8d6b-87fde3d842ed",
+        "7a6b71c6-0c79-409c-a424-08a2c254cb54": "83ef7064-6840-4751-aa11-b6b2a7d5f26b",
+        "1f81dbf1-1284-4dd6-893f-76fb45f1995b": "8149a2ea-3ab5-47a7-8b5c-dc9fe1f9377c",
+        "3c7a8e3d-248e-4612-a4b5-af04057e4e13": "8035a4e6-928a-4169-aa76-d45f3de8e1a6",
+        "c17f544b-37db-48f5-85cc-5ef083dd5861": "15b0b788-9af6-48f7-958e-c6beef8acc9d",
+        "8d4a5e62-1d34-4115-aa57-09d8b973f272": "d8e036f4-ab85-42b4-9758-a7faab3aef1f",
+        "3bb7a58e-c096-4c41-9033-d1101cedee0f": "49efedff-ca36-41aa-b24c-e9d6cde951f9"
+      }
+    },
+    {
+      "__guid": "e08e0859-f805-40c0-a9e3-f91077a417e8",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "450e8bed-a030-49c6-b0d5-8034c27345cc",
+        "Path": "prefabs/props/garden/bowlingpin.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Name",
+            "Value": "bowlingpin (2)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Position",
+            "Value": "-1328.52478,-1148.65027,19.302"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Rotation",
+            "Value": "-0.000145736267,-0.000391755981,0.170533389,-0.985351861"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4af6560-f700-41a7-92a0-99e0948e20d4"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "18d4435c-c17c-48d1-859e-6d92bfd453a7",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.00421329821,0.0650137737,0.932657301",
+                "Rotation": "-0.999999046,-8.94069672E-08,1.10958354E-10,-4.37867129E-08",
+                "Size": "16,16,41.7674141",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.19807692,
+                "SlicePlaneN": 0.6038462,
+                "LocalCentre": "0,0,-8.27315903",
+                "Blend": 6,
+                "Gap": 0,
+                "Rounding": 2.75,
+                "Color": "0.67442,0.32074,0.28859,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 43.267414
+              },
+              {
+                "Id": "96fe762d-2d6d-4d9e-9ece-338b29064e71",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "0.000107245054,-0.000707981875,17.7650814",
+                "Rotation": "0.999999166,7.4505806E-08,-2.61934474E-10,-4.36921255E-08",
+                "Size": "19,19,26.6277161",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 12.400001,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.67442,0.32074,0.28859,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.727716
+              },
+              {
+                "Id": "bdf37a16-4052-4ea5-90b2-084997420821",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.000117886986,0.00412504608,38.6243973",
+                "Rotation": "0.999999166,7.4505806E-08,-2.61934474E-10,-4.36921255E-08",
+                "Size": "6.2590394,10.2626324,19.3580589",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.11875,
+                "SlicePlaneN": 0.7625,
+                "LocalCentre": "0,0,0",
+                "Blend": 3.7799966,
+                "Gap": 0,
+                "Rounding": 0,
+                "Color": "0.67442,0.32074,0.28859,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 21.289778
+              },
+              {
+                "Id": "5c5f0ea2-31d2-4f79-95f3-939eb8bd2f23",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "9.29659E-05,1.42906792E-05,64.9353638",
+                "Rotation": "-7.27595761E-12,1.8189894E-12,0,1",
+                "Size": "11,11,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 4.2000003,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.67442,0.32074,0.28859,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.05
+              }
+            ]
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "49ab711b-f7fa-4735-80e3-d4e60f66eba0": "e08e0859-f805-40c0-a9e3-f91077a417e8",
+        "a4af6560-f700-41a7-92a0-99e0948e20d4": "a19b9033-e0e3-4176-b9cd-efd5648e53fe",
+        "7a6b71c6-0c79-409c-a424-08a2c254cb54": "9b1ae17d-56d7-4d1f-a157-b38bab86841f",
+        "1f81dbf1-1284-4dd6-893f-76fb45f1995b": "d53d694c-eb1a-428e-8fd4-195cb011d23a",
+        "3c7a8e3d-248e-4612-a4b5-af04057e4e13": "9193dce5-dba2-4a07-b3af-fb84fc00d787",
+        "c17f544b-37db-48f5-85cc-5ef083dd5861": "9f78cd1b-9e67-486a-b4bb-5dd74f9c0030",
+        "8d4a5e62-1d34-4115-aa57-09d8b973f272": "7aa9d3c4-f98f-4488-97c1-2b6ba3ad56bb",
+        "3bb7a58e-c096-4c41-9033-d1101cedee0f": "3ec5d65a-4bef-4b70-8173-97b5cac73b07"
+      }
+    },
+    {
+      "__guid": "1e4a3b04-7563-4e34-9507-7553cb106274",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "450e8bed-a030-49c6-b0d5-8034c27345cc",
+        "Path": "prefabs/props/garden/bowlingpin.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Name",
+            "Value": "bowlingpin (5)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Position",
+            "Value": "-1068.8866,-1164.4541,19.3021431"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "49ab711b-f7fa-4735-80e3-d4e60f66eba0"
+            },
+            "Property": "Rotation",
+            "Value": "-0.000145736267,-0.000391755981,0.170533389,-0.985351861"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "a4af6560-f700-41a7-92a0-99e0948e20d4"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "18d4435c-c17c-48d1-859e-6d92bfd453a7",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.00421329821,0.0650137737,0.932657301",
+                "Rotation": "-0.999998927,-1.04308128E-07,1.61890057E-10,-4.38230927E-08",
+                "Size": "16,16,41.7674141",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.19807692,
+                "SlicePlaneN": 0.6038462,
+                "LocalCentre": "0,0,-8.27315903",
+                "Blend": 6,
+                "Gap": 0,
+                "Rounding": 2.75,
+                "Color": "0.87451,0.87451,0.87451,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 43.267414
+              },
+              {
+                "Id": "96fe762d-2d6d-4d9e-9ece-338b29064e71",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "0.000107243133,-0.00070798141,17.7650833",
+                "Rotation": "0.999999046,8.94069672E-08,-2.91038305E-10,-4.36921255E-08",
+                "Size": "19,19,26.6277161",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 12.400001,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.87451,0.87451,0.87451,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.727716
+              },
+              {
+                "Id": "bdf37a16-4052-4ea5-90b2-084997420821",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.000117878371,0.00412504375,38.6243858",
+                "Rotation": "0.999999046,8.94069672E-08,-2.91038305E-10,-4.36921255E-08",
+                "Size": "6.2590394,10.2626324,19.3580589",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0.11875,
+                "SlicePlaneN": 0.7625,
+                "LocalCentre": "0,0,0",
+                "Blend": 3.7799966,
+                "Gap": 0,
+                "Rounding": 0,
+                "Color": "0.87451,0.87451,0.87451,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 21.289778
+              },
+              {
+                "Id": "5c5f0ea2-31d2-4f79-95f3-939eb8bd2f23",
+                "Shape": "Sphere",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "9.29659E-05,1.42906792E-05,64.9353638",
+                "Rotation": "-7.27595761E-12,1.8189894E-12,0,1",
+                "Size": "11,11,12",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 4.2000003,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "Color": "0.87451,0.87451,0.87451,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 13.05
+              }
+            ]
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "49ab711b-f7fa-4735-80e3-d4e60f66eba0": "1e4a3b04-7563-4e34-9507-7553cb106274",
+        "a4af6560-f700-41a7-92a0-99e0948e20d4": "afbb801f-78a4-46c8-847a-9f47401e5450",
+        "7a6b71c6-0c79-409c-a424-08a2c254cb54": "a9bacd08-6f4e-4d57-9274-ec60e344e7e0",
+        "1f81dbf1-1284-4dd6-893f-76fb45f1995b": "c45ddded-731c-4685-bfba-67424c6b36be",
+        "3c7a8e3d-248e-4612-a4b5-af04057e4e13": "e038f95c-6b7c-4989-8b75-d0776556120b",
+        "c17f544b-37db-48f5-85cc-5ef083dd5861": "4816999c-0273-43a6-beca-0d36dad1c36d",
+        "8d4a5e62-1d34-4115-aa57-09d8b973f272": "9ad53faa-2bdc-4bc8-9aa4-636c4ea43112",
+        "3bb7a58e-c096-4c41-9033-d1101cedee0f": "18cb03df-436e-4541-bfb9-c8cdcb6e96e1"
+      }
+    },
+    {
+      "__guid": "ecd7cea4-8490-4702-b7e5-c25ef2446bc9",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "e2c59590-033a-4575-b43f-b49c4157f117",
+        "Path": "prefabs/props/garden/lawnsball.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "37f4b207-0faa-4306-94e0-fe4e652aeb87"
+            },
+            "Property": "Name",
+            "Value": "LawnsBall (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "37f4b207-0faa-4306-94e0-fe4e652aeb87"
+            },
+            "Property": "Position",
+            "Value": "-1222.31445,-1051.67334,9.94820309"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "495911f8-8458-4e89-ba77-82d59ef60188"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "495911f8-8458-4e89-ba77-82d59ef60188"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "37f4b207-0faa-4306-94e0-fe4e652aeb87": "ecd7cea4-8490-4702-b7e5-c25ef2446bc9",
+        "9fb0e588-c785-4b11-86db-ff4a4d928c20": "34427149-cd83-48f4-b768-59cb6da06986",
+        "495911f8-8458-4e89-ba77-82d59ef60188": "eca84ede-baf7-421e-ad6a-55d5c34dcad1",
+        "c98357dc-be7a-4fc4-ab49-f5bcc45279a7": "c10da102-de09-486e-a537-26fa9b7e2055",
+        "7c49de48-00a1-441e-8b18-0825d6211646": "dfbf9d6d-1165-40f0-bf72-99029824615a",
+        "8ea4c9ca-fa48-4db9-af15-f3a79f8068de": "86b21939-0dc3-4dd9-9d8c-5eea2c3e0028",
+        "7472b643-7c43-4d96-b0a6-4e2640be6f26": "c7763ee0-8f58-47a5-a69f-e9684e56b9bb",
+        "0766e65f-1745-40c8-9d05-feedee682e1e": "710cfd08-504c-4bd9-a9a1-78403ea7428c"
       }
     }
   ],
@@ -36976,8 +39009,6 @@
   "ResourceVersion": 3,
   "Title": null,
   "Description": null,
-  "__references": [
-    "flex.street_amb_01#12741"
-  ],
+  "__references": [],
   "__version": 3
 }

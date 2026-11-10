@@ -96,7 +96,7 @@
         "__enabled": true,
         "Flags": 0,
         "__version": 3,
-        "AutoExposureEnabled": false,
+        "AutoExposureEnabled": true,
         "ExposureCompensation": 0,
         "ExposureMethod": "RGB",
         "MaximumExposure": 2,
@@ -108,7 +108,7 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "Rate": 1
+        "Rate": 5
       },
       {
         "__type": "Mimiclay.Fxaa",

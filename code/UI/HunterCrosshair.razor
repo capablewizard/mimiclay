@@ -34,16 +34,16 @@
 					@* Two layers, because two things drive `transform`: the slot takes the code-driven clay wobble
 					   (UpdateToastPose poses FloatPanel's children), the card inside springs when its key fires. *@
 					<div class="toast-slot">
-						<div class="paper-card possess-toast @(Fired( card ) ? "fired" : "")">
+						<div class="paper-card key-card possess-toast @(Fired( card ) ? "fired" : "")">
 							@* Mouse slots draw the input-icon art (the tutorial card's mouse glyphs) instead of a
-							   "LMB" chip; keyboard slots keep the key-cap chip. *@
-							@if ( MouseIcon( card.Slot ) is { } icon )
+							   "LMB" chip; keyboard slots keep the key-cap chip. Same .key-card kit as the round HUD's controls bar. *@
+							@if ( InputGlyphs.MouseIcon( card.Key ) is { } icon )
 							{
-								<span class="key mouse" style=@($"background-image: url( /{icon} );")></span>
+								<span class="key-chip mouse" style=@InputGlyphs.IconStyle( icon )></span>
 							}
 							else
 							{
-								<span class="key">@card.Key</span>
+								<span class="key-chip">@card.Key</span>
 							}
 							<span>@card.Label</span>
 						</div>
@@ -81,7 +81,7 @@
 	[ConVar( "mimiclay_toast_debug" )]
 	public static bool ToastDebug { get; set; }
 
-	HunterController _hunter;
+	ICrosshairOwner _hunter;
 
 	// Where the prompt is drawn, as viewport fractions (resolution-independent — see PromptStyle), or null when
 	// nothing interactive is under the dot. Recomputed every frame in OnUpdate, since it tracks the world.
@@ -90,15 +90,6 @@
 	// The cards to draw (key glyph + label), snapshotted off the hunter's hover each frame so the render
 	// reads stable data; _cardsHash is their content for BuildHash.
 	readonly record struct Card( string Key, string Label, InteractSlot Slot );
-
-	// Input-icon art for the mouse-button slots (under Assets/UI — only "UI/*" loose files ship); null = a
-	// keyboard slot, drawn as the key-cap chip.
-	static string MouseIcon( InteractSlot slot ) => slot switch
-	{
-		InteractSlot.Fire => "UI/inputicons/mouse_left.png",
-		InteractSlot.Pickup => "UI/inputicons/mouse_right.png",
-		_ => null,
-	};
 	readonly List<Card> _cards = new();
 	int _cardsHash;
 
@@ -108,14 +99,14 @@
 	Vector2 _debugMin, _debugMax;
 	bool _debugValid;
 
-	// The pawn's controller, resolved once from the prefab hierarchy (this panel sits on the HUD child).
-	HunterController Hunter => _hunter.IsValid() ? _hunter : _hunter = Components.Get<HunterController>( FindMode.InAncestors );
+	// The pawn that owns this HUD — the hunter, or a prop on its shoulder camera (HiderController.Grab) — resolved once
+	// from the hierarchy (this panel sits on the pawn's HUD child).
+	ICrosshairOwner Hunter => _hunter is Component c && c.IsValid() ? _hunter : _hunter = Components.Get<ICrosshairOwner>( FindMode.InAncestors );
 
-	// Ownership is gated LIVE, not in OnStart — same reason as HunterController.OnUpdate: a host-spawned pawn
-	// runs OnStart on the owning client before ownership replicates, so an early IsProxy read is stale.
-	// Hidden during a third-person alt-orbit too (ours, or our free cam's): the camera is off the aim axis, so a centre dot would lie
-	// about where a shot lands.
-	bool Visible => Hunter.IsValid() && !Hunter.IsProxy && !Hunter.EditMode && !Hunter.AltOrbiting && !SpectatorController.LocalAltOrbiting;
+	// The owner's live gate (ICrosshairOwner.CrosshairVisible): ownership is read LIVE, not in OnStart — a host-spawned
+	// pawn runs OnStart on the owning client before ownership replicates, so an early IsProxy read is stale. The hunter
+	// also hides it during a third-person alt-orbit (the camera is off the aim axis, so a centre dot would lie).
+	bool Visible => Hunter is Component c && c.IsValid() && Hunter.CrosshairVisible;
 
 	// PreRender, not OnUpdate: the camera is composed after every OnUpdate (ICameraModifier stage), so the prompt's
 	// projection ran against last frame's camera and trailed mouse-look. It also guarantees HunterController's
@@ -124,6 +115,7 @@
 	protected override void OnPreRender()
 	{
 		UpdateCards();
+		UpdatePressSound();
 		_promptAt = _cards.Count > 0 ? ResolvePrompt() : null;
 		UpdateToastPose();
 	}
@@ -149,35 +141,9 @@
 	// match the rate). Card-scale amplitudes = the shared table verbatim; each card is seeded off its index so
 	// neighbours hold different poses while still snapping together.
 	Panel FloatPanel { get; set; }
-	Panel _posedPanel;          // the row remounts per hover — a fresh panel needs an immediate pose
-	int _posedCount;
-	int _lastToastTick = int.MinValue;
+	ClayRowPoser _toastPoser; // lazy (hotload-safe); the row remounts per hover — the poser re-poses it immediately
 
-	void UpdateToastPose()
-	{
-		if ( FloatPanel is not { IsValid: true } )
-		{
-			_posedPanel = null;
-			return;
-		}
-
-		var count = FloatPanel.ChildrenCount;
-		if ( FloatPanel != _posedPanel || count != _posedCount )
-		{
-			_posedPanel = FloatPanel;
-			_posedCount = count;
-			_lastToastTick = int.MinValue;
-		}
-
-		int tick = ClayClock.Tick;
-		if ( tick == _lastToastTick )
-			return;
-		_lastToastTick = tick;
-
-		var i = 0;
-		foreach ( var card in FloatPanel.Children )
-			card.Style.Transform = ClayClock.BuildPose( i++ * 2 );
-	}
+	void UpdateToastPose() => (_toastPoser ??= new()).Update( FloatPanel );
 
 	// Where the prompt goes — the simple, pose-blind scheme: project the prop's COLLISION GEOMETRY
 	// (SdfCollider.FramePoints — hull vertices, carved voxel-box corners, on-sphere points, captured from the
@@ -265,9 +231,11 @@
 
 	static IEnumerable<Vector3> FramePoints( SdfSculpture sculpture )
 	{
+		// LIVE points: stretched onto the current brushes, so the cards follow a grab's scale preview (which only
+		// rebuilds the collider when it commits on release).
 		var collider = sculpture.Components.Get<SdfCollider>();
-		if ( collider.IsValid() && collider.FramePoints is { Count: > 0 } frame )
-			return frame;
+		if ( collider.IsValid() && collider.FramePoints is { Count: > 0 } )
+			return collider.LiveFramePoints();
 
 		return Sdf.TryGetBounds( sculpture.Brushes, out var bounds )
 			? bounds.Corners
@@ -300,7 +268,27 @@
 	const float FiredSeconds = 0.4f;
 
 	bool Fired( Card card )
-		=> Hunter.IsValid() && Hunter.LastFiredSlot == card.Slot && Hunter.SinceFired < FiredSeconds;
+		=> Hunter is Component c && c.IsValid() && Hunter.LastFiredSlot == card.Slot && Hunter.SinceFired < FiredSeconds;
 
-	int FiredSignal => Hunter.IsValid() && Hunter.SinceFired < FiredSeconds ? (int)(Hunter.LastFiredSlot ?? 0) + 1 : 0;
+	int FiredSignal => Hunter is Component c && c.IsValid() && Hunter.SinceFired < FiredSeconds ? (int)(Hunter.LastFiredSlot ?? 0) + 1 : 0;
+
+	// The press click — the controls bar's sound (UiSounds.HotkeyPress), so every card press sounds the same. A new
+	// press is SinceFired going back DOWN (the owner zeroes it on each stamp); only for a card that's on screen. Once per
+	// press even if the same key is hammered: every press re-stamps, and each one plays.
+	float _lastSinceFired = float.MaxValue;
+
+	void UpdatePressSound()
+	{
+		if ( Hunter is not Component c || !c.IsValid() )
+		{
+			_lastSinceFired = float.MaxValue;
+			return;
+		}
+
+		float since = Hunter.SinceFired;
+		bool newPress = since < _lastSinceFired && since < FiredSeconds && Hunter.LastFiredSlot is not null;
+		_lastSinceFired = since;
+		if ( newPress && Visible )
+			UiSounds.PlayHotkeyPress();
+	}
 }

@@ -365,6 +365,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( voice.IsValid() )
 			voice.Muted = false;
 
+		_framingSeeded = false; // a fresh possession frames both views anew (HiderController.Grab)
 		EyeAngles = WorldRotation.Angles() with { pitch = 0f, roll = 0f };
 		_bodyYaw = EyeAngles.yaw;
 
@@ -523,16 +524,18 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 	protected override void OnDestroy()
 	{
 		SetFreeCam( false ); // the free cam (and its ghost) leave with the body
+		EndPropGrab();       // and whatever it was carrying is put down
 		ReleaseHoldJoint();
 		_scrapeHandle?.Stop();
 		_hull.Dispose();
 		_simHull.Dispose();
 		if ( SimSystem is { } sim )
 		{
-			if ( sim.LocalControlled == GameObject.Id )
+			if ( sim.LocalControlled == GameObject.Id || (_simInputFn is not null && sim.LocalInput == _simInputFn) )
 			{
 				sim.LocalInput = null;
-				sim.LocalControlled = Guid.Empty;
+				if ( sim.LocalControlled == GameObject.Id )
+					sim.LocalControlled = Guid.Empty;
 			}
 			sim.BodyAdded -= OnSimBodyAdded;
 			sim.BodyLeftWalk -= OnSimBodyLeftWalk;
@@ -612,13 +615,17 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 		if ( Input.Pressed( "ToggleWireframes" ) )
 			_session?.ToggleWireframes();
+		UpdateViewToggle(); // Tab in play: centred ⇄ shoulder view (the same key; the wireframes only toggle in edit)
 
 		// Keep the wire in step with the session, whatever path entered or left edit mode (see NetEditing) —
 		// and on the way OUT, stamp the camera's angle as the icon portrait pose: the view the player was
 		// looking from when they signed the shape off is the best angle we'll ever get for it.
 		NetEditing = EditMode;
 		if ( _editWas && !EditMode )
+		{
 			CaptureIconPose();
+			ReframeShoulder(); // the shape may have changed size
+		}
 		_editWas = EditMode;
 
 		UpdateTaunts();
@@ -647,6 +654,9 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// Not while the free cam flies: it owns the camera then.
 		if ( !FreeCamming )
 			UpdateCamera();
+
+		// The crosshair's hover and the grab (creative), on this frame's camera (HiderController.Grab).
+		UpdatePropAim();
 
 		// Drawn per frame (not in the fixed step) so it tracks the interpolated body, edit mode included.
 		if ( DebugMovement || SdfCollisionDebug.MoveHull )
@@ -1208,6 +1218,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		}
 
 		UpdateGrabbedCamera();
+		UpdateShoulder(); // over the shoulder in play, centred while sculpting (HiderController.Grab)
 
 		if ( EditMode )
 		{
@@ -1301,17 +1312,22 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 		Mouse.Visibility = MouseVisibility.Hidden;
 
-		// Dolly / pan are drag-based (RMB/MMB) and don't rotate.
-		if ( Input.Down( "Attack2" ) ) { _orbit.Dolly( Mouse.Delta ); return; }
+		// Dolly / pan are drag-based (RMB/MMB) and don't rotate. RMB is the grab's while it's carrying or asking for
+		// something (HiderController.Grab) — no dolly then.
+		if ( Input.Down( "Attack2" ) && !GrabOwnsRmb ) { _orbit.Dolly( Mouse.Delta ); return; }
 		if ( Input.Down( "CameraPan" ) ) { _orbit.Pan( Mouse.Delta ); return; }
+
+		// E/R over a held prop: the mouse turns or scales it, the view holds still.
+		if ( GrabLookFrozen )
+			return;
 
 		// Free mouse-look turns the camera; the disguise comes along UNLESS we're orbiting camera-only (LMB drag,
 		// or the alt-hold shortcut). The same look input drives both, so an orbit and a free-look turn at the
-		// identical speed.
+		// identical speed. LMB is the grab's freeze while carrying, not an orbit.
 		var look = Input.AnalogLook;
 		_orbit.ApplyLook( look );
 
-		bool cameraOnly = Input.Down( "Attack1" ) || (AltHoldOrbits && Input.Down( "Walk" ));
+		bool cameraOnly = (Input.Down( "Attack1" ) && !GrabOwnsLmb) || (AltHoldOrbits && Input.Down( "Walk" ));
 		if ( !cameraOnly )
 			_bodyYaw += look.yaw;
 	}

@@ -9,7 +9,7 @@
 	position: absolute;
 	left: 0;
 	right: 0;
-	bottom: 44px; // level with the edit HUD's Head / Weapon part dock (EditHud .part-dock)
+	bottom: 96px; // above the round HUD's bottom controls bar (RoundHud .hotkeys)
 	flex-direction: column-reverse; // row on the bottom, toast above it
 	align-items: center;
 	pointer-events: none;

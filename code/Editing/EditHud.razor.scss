@@ -518,7 +518,7 @@
 	// during alt-nav (the &.alt-nav .chip rule above covers them).
 	.part-dock {
 		position: absolute;
-		bottom: 44px; // clear of the 12px hint strip below
+		// bottom: set inline — just above the hotkey bar's measured top (EditHud.BarClearance)
 		left: 0;
 		width: 100%;
 		flex-direction: row;
@@ -531,56 +531,51 @@
 			width: 150px;
 			pointer-events: all;
 
-			span { font-size: 16px; }
+			// Header-font capitals, like the edit HUD's other key-led controls (slider strip, shape tiles).
+			span {
+				font-family: $header-font;
+				font-size: 20px;
+				font-weight: 800;
+				letter-spacing: 1px;
+			}
 
 			&:hover { sound-in: $sound-hover; }
 			&:active { sound-in: $sound-click; }
 		}
 	}
 
-	// Add-tool hint strip, bottom-centre: the hold-key scheme at a glance. Display-only.
-	.hint-strip {
-		position: absolute;
-		bottom: 12px;
-		left: 0;
-		width: 100%;
-		flex-direction: row;
-		justify-content: center;
-		gap: 18px;
-		pointer-events: none;
-		font-family: Tahoma;
-		font-size: 12px;
-		font-weight: 700;
-		text-transform: uppercase;
-		color: $paper-edge;
-		opacity: 0.9;
-
-		// Guided tutorial: the card does the teaching, this strip stays out of the way (see the markup).
-		&.hidden { opacity: 0; }
-
-		.hint {
-			flex-direction: row;
-			align-items: center;
-			gap: 5px;
-
-			.key { color: $craft-blue; }
-
-			// Active toggle (snap on): orange, matching the toolbar's on-chips.
-			&.hot { color: $craft-orange; .key { color: $craft-orange; } }
-		}
-	}
+	// (The bottom-centre hotkey bar is the shared HotkeyBar — its styles live in UI/HotkeyBar.razor.scss.)
 
 	// "Add a shape" tile: a chunky floating cream paper card with a blue shape icon + label.
+	// A key-cap ON the control its key drives — the slider strip (A op · S blend · D round · F wildcard · G gap) and the
+	// shape tiles (1–8) — instead of as a card on the hotkey bar. The hotkey cards' key-cap (.key-card.compact .key-chip).
+	.slider-key {
+		flex-shrink: 0;
+		min-width: 30px;
+		height: 30px;
+		padding: 0px 6px;
+		align-items: center;
+		justify-content: center;
+		border-radius: $radius-sm;
+		background-color: $paper-top;
+		border: 2px solid $card-edge;
+		font-family: $header-font;
+		font-size: 16px;
+		font-weight: 800;
+		color: $paper-ink;
+		text-transform: uppercase;
+	}
+
 	.shape-tile {
 		pointer-events: all;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 5px;
+		gap: 6px;
 		flex-shrink: 0; // keep full size in the nowrap row instead of squeezing into the panel width
-		width: 82px;
-		height: 90px; // slightly taller than wide, matching the reference
-		padding: 7px 5px; // even padding on all sides
+		min-width: 82px; // grows to fit its key-cap + name (wider than tall is fine)
+		min-height: 90px;
+		padding: 8px 12px;
 		border-radius: 22px; // surface (fill/outline/shadow) comes from .paper-card
 		cursor: pointer;
 		transition: transform 0.1s ease, background-color 0.1s ease;
@@ -592,8 +587,34 @@
 			background-size: contain;
 			background-repeat: no-repeat;
 			background-position: center;
+
+			// Brown ink outline ($paper-ink, the HUD text colour) round the icon's silhouette — the badge-emoji trick (_badges.scss .badge-img): eight zero-blur
+			// offsets in ONE drop-shadow() (each drop-shadow() call replaces the list), on this leaf element.
+			filter: drop-shadow(
+				2px 0px 0px $paper-ink,
+				-2px 0px 0px $paper-ink,
+				0px 2px 0px $paper-ink,
+				0px -2px 0px $paper-ink,
+				1.4px 1.4px 0px $paper-ink,
+				-1.4px 1.4px 0px $paper-ink,
+				1.4px -1.4px 0px $paper-ink,
+				-1.4px -1.4px 0px $paper-ink );
 		}
-		.label { font-size: 16px; font-weight: 700; color: $paper-ink; text-transform: uppercase; }
+		// The shape's number key in front of its picture (the name sits underneath, in the hotkey cards' lettering).
+		.tile-top {
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
+		}
+		.label {
+			font-family: $header-font;
+			font-size: 20px;
+			font-weight: 800;
+			letter-spacing: 1px;
+			color: $paper-ink;
+			text-transform: uppercase;
+			white-space: nowrap;
+		}
 
 		&:hover { transform: translateY( -2px ); background-color: #fff; sound-in: $sound-hover; animation: hover-lift-2 $spring-duration ease-out; }
 		&:active { sound-in: $sound-click; }
@@ -862,6 +883,21 @@
 
 			.icon { font-size: 20px; color: $craft-blue; }
 			span { font-size: 15px; }
+
+			// A key-cap in the icon's place (Add Shape: Space, Delete: Del) — the hotkey cards' cap, at this chip's
+			// smaller text size so the chip keeps its height.
+			.slider-key {
+				min-width: 24px;
+				height: 24px;
+				padding: 0px 5px;
+				font-size: 13px;
+			}
+
+			// Its key was just pressed (EditHud.UpdateStripPunches): the hotkey cards' press punch.
+			&.fired {
+				transform-origin: center;
+				animation: pop-spring 0.4s ease-out;
+			}
 		}
 	}
 
@@ -1007,20 +1043,63 @@
 
 		// In the horizontal strip every item is a fixed-width pill matching the sliders — including the
 		// extruded "Shape" brush's profile chip row, whose chips flex to share that width evenly.
-		> .clay-slider, .slider-row, .text-row, .xsection-row { width: 250px; flex-shrink: 0; }
+		// The strip spans the space between the side panels (its width is set inline — EditHud.SliderStripWidth) and
+		// the controls share it equally, so the tracks run long.
+		> .clay-slider, .slider-row, .text-row, .xsection-row { flex-grow: 1; flex-shrink: 1; flex-basis: 0px; min-width: 0px; }
 
-		// Add/Carve/Cutout/Colour cycle chip at the strip's head — green adding, red carving, blue cutout, purple colour,
-		// cream text. Fixed width so the strip doesn't shift as the label changes.
+		// (The key-caps on these controls are .slider-key — top level, shared with the shape tiles.)
+
+		// The strip's sliders at the hotkey bar's weight (.key-card.compact): ~50px pills, header-font capitals at
+		// 20px, a heavier groove + knob to match. Scoped to the strip — the colour column's Metal/Rough sliders keep
+		// their compact size.
+		> .clay-slider, > .slider-row > .clay-slider {
+			padding: 10px 16px;
+			gap: 12px;
+
+			> .label {
+				width: auto;                  // the name sits at its own width; the track takes the rest
+				font-family: $header-font;
+				font-size: 20px;
+				font-weight: 800;
+				letter-spacing: 1px;
+			}
+
+			.track-hit { height: 30px; }
+			.track { height: 9px; }
+			.track .knob {
+				width: 24px;
+				height: 24px;
+				margin-left: -12px;
+				margin-top: -12px;
+			}
+		}
+
+		.xsection-row > .slider-key { align-self: center; }
+
+		// Its key was just pressed (EditHud.UpdateStripPunches): the hotkey cards' press punch.
+		.fired {
+			transform-origin: center;
+			animation: pop-spring 0.4s ease-out;
+		}
+
 		.op-chip {
-			width: 80px;
+			width: 150px;                   // room for "Cutout" + its key-cap at header-font size
 			flex-grow: 0;
 			flex-shrink: 0;
+			flex-direction: row;
 			align-items: center;
 			justify-content: center;
+			gap: 8px;
 			padding: 10px 0;
 			background-color: $craft-green;
 
-			span { font-size: 15px; color: $paper-tile; }
+			span {
+				font-family: $header-font;
+				font-size: 20px;
+				font-weight: 800;
+				letter-spacing: 1px;
+				color: $paper-tile;
+			}
 
 			&:hover { background-color: $craft-green; }
 
@@ -1110,7 +1189,7 @@
 		align-items: center;
 		gap: 10px;
 		padding: 8px 14px;
-		border-radius: $radius-pill; // surface (fill/outline/shadow) comes from .paper-card
+		border-radius: 16px; // the edit HUD chips' bevel (Add, symmetry, tools) — not a full pill; surface from .paper-card
 
 		// Parked (e.g. spline Size while per-point mode drives the radii from the 3D dots): only the
 		// interactive blue parts (fill + knob) go grey — the pill and label stay fully legible.
@@ -1126,7 +1205,9 @@
 			.track-hit { pointer-events: none; cursor: default; }
 		}
 
-		.label {
+		// `>` — the slider's own name only. A bare `.label` also caught the implicit text label inside the key-cap
+		// (.slider-key), forcing it to this width.
+		> .label {
 			flex-shrink: 0;
 			width: 72px;
 			font-size: 16px;          // matches the Add Shape tile labels
@@ -1150,6 +1231,13 @@
 
 			&:hover { sound-in: $sound-hover; }  // hover the groove zone — not the label
 			&:active { sound-in: $sound-click; } // click/grab to scrub
+
+			// The knob springs up in place on hover, like the buttons' hover spring (hover-scale-125, _button.scss),
+			// and eases back down on the way out. (A disabled slider's .track-hit takes no pointer, so it never hovers.)
+			&:hover .track .knob {
+				transform: scale( 1.25 );
+				animation: hover-scale-125 $spring-duration ease-out;
+			}
 		}
 
 		// The visual groove: a thin recessed line. Purely visual now (the .track-hit above catches the cursor).
@@ -1188,6 +1276,8 @@
 				border: 2px solid $paper-edge;
 				box-shadow: $shadow-edge;
 				pointer-events: none;
+				transform-origin: center;
+				transition: transform 0.12s ease-out; // the ease back down after a hover (the spring is the way up)
 			}
 		}
 	}

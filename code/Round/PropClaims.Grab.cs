@@ -133,6 +133,9 @@ public sealed partial class PropClaims
 	/// with claims closed).</summary>
 	public bool GrabOpen => Host?.GrabAllowed ?? false;
 
+	/// <summary>May a PROP grab right now (the mode lets props grab — <see cref="IPropClaimHost.PropsGrab"/> — and the grab is open)?</summary>
+	public bool PropGrabOpen => GrabOpen && (Host?.PropsGrab ?? false);
+
 	/// <summary>The grab's sandbox extras (R scale, LMB freeze) — off in prop hunt's inspect grab.</summary>
 	public bool GrabExtras => Sandbox;
 
@@ -247,6 +250,18 @@ public sealed partial class PropClaims
 	[Rpc.Host]
 	public void RequestGrab( GameObject target ) => GrabFor( Rpc.Caller ?? Connection.Local, target );
 
+	/// <summary>May this pawn hold a prop? A hunter always (where the mode grabs at all); a prop pawn — one a player is
+	/// driving, not released scenery — only where the mode lets props grab (<see cref="IPropClaimHost.PropsGrab"/>).</summary>
+	bool CanHold( GameObject pawn )
+	{
+		if ( !pawn.IsValid() )
+			return false;
+		if ( pawn.Components.Get<HunterController>().IsValid() )
+			return true;
+		var hider = pawn.Components.Get<HiderController>();
+		return (Host?.PropsGrab ?? false) && hider.IsValid() && !IsReleased( hider );
+	}
+
 	internal void GrabFor( Connection c, GameObject target )
 	{
 		var host = Host;
@@ -254,7 +269,7 @@ public sealed partial class PropClaims
 			return;
 
 		var pawn = host.ClaimantPawn( c );
-		if ( !pawn.IsValid() || !pawn.Components.Get<HunterController>().IsValid() )
+		if ( !CanHold( pawn ) )
 			return;
 
 		// Its own, shorter anti-spam gate: hold-to-carry makes quick re-presses normal (drop, grab again), and
@@ -270,6 +285,8 @@ public sealed partial class PropClaims
 		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
 		{
+			if ( hider.GameObject == pawn )
+				return; // a prop can't pick itself up
 			if ( !IsGrabbable( hider.DisguiseSculpture ) )
 				return; // someone's body (where the mode says no), being sculpted, or already held
 			prop = hider.GameObject;
@@ -563,7 +580,7 @@ public sealed partial class PropClaims
 	}
 
 	// Host-only, per frame (beside SweepEditors): a hold must belong to a connected player whose pawn is still a
-	// hunter, on a prop that still exists. Anything else drops it where it is.
+	// pawn that may hold (CanHold), on a prop that still exists. Anything else drops it where it is.
 	void SweepHolders()
 	{
 		SettleGrabScales();
@@ -577,8 +594,7 @@ public sealed partial class PropClaims
 		{
 			var conn = Connection.All.FirstOrDefault( x => x.Id == holder );
 			var claimant = conn is not null ? Host?.ClaimantPawn( conn ) : null;
-			bool holderIsHunter = claimant.IsValid() && claimant.Components.Get<HunterController>().IsValid();
-			if ( open && holderIsHunter && Scene.Directory.FindByGuid( pawnId ).IsValid() )
+			if ( open && CanHold( claimant ) && Scene.Directory.FindByGuid( pawnId ).IsValid() )
 				continue;
 
 			if ( conn is not null )

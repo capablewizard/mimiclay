@@ -235,7 +235,7 @@ public sealed partial class HunterController : ISimShapeSource
 			return;
 		_simInputFn ??= ReadHunterSimInput;
 		bool walking = Owned && SimWalking;
-		bool mine = walking || _simHolding || _simFreezeQueued; // (a frozen drop's let-go tick still has to go out)
+		bool mine = walking || (_grabHolder?.NeedsSimInput ?? false); // (a frozen drop's let-go tick still has to go out)
 		if ( mine )
 		{
 			sim.LocalInput = _simInputFn;
@@ -253,17 +253,7 @@ public sealed partial class HunterController : ISimShapeSource
 	SimInput ReadHunterSimInput( int tick )
 	{
 		var input = new SimInput();
-		if ( _simHolding )
-		{
-			input.Buttons |= SimInput.Hold;
-			input.HoldPos = _simHoldTarget.Position;
-			input.HoldRot = _simHoldTarget.Rotation;
-		}
-		else if ( _simFreezeQueued )
-		{
-			input.Buttons |= SimInput.Freeze; // the let-go tick of a frozen drop (EndSimHold)
-			_simFreezeQueued = false;
-		}
+		_grabHolder?.WriteSimInput( ref input ); // the hold target (or a frozen drop's Freeze) - GrabHolder
 		if ( !SimWalking || !_controller.IsValid() )
 			return input;
 		input.ViewYaw = SimInput.QuantYaw( _controller.EyeAngles.yaw );
@@ -444,41 +434,8 @@ public sealed partial class HunterController : ISimShapeSource
 	// Before the step (the engine's FixedUpdate input pass, BeginPhysicsStep, AddVelocity and the walk's PrePhysicsStep, in order).
 	PhysicsBody _simCcdOff; // (the body CCD was last turned off on)
 
-	// What this hunter carries never collides with it (the scene filters the two — PropClaims.FilterAgainst): a filter joint
-	// between our sim body and each body the sim holds for our player, kept in step every tick — host ticks, predictions and
-	// replays alike — so a replay across a grab or a drop filters exactly where the original did.
-	readonly System.Collections.Generic.Dictionary<PhysicsBody, Sandbox.Physics.PhysicsJoint> _holdFilters = new();
-	PhysicsBody _holdFiltersFor;
-
-	void SyncHoldFilters( SimWorld sim, SimBody me )
-	{
-		if ( _holdFiltersFor != me.Phys )
-		{
-			foreach ( var j in _holdFilters.Values )
-				j?.Remove();
-			_holdFilters.Clear();
-			_holdFiltersFor = me.Phys;
-		}
-		System.Collections.Generic.List<PhysicsBody> keep = null;
-		foreach ( var b in sim.Bodies )
-		{
-			if ( b == me || b.Spec.Driver != SimHoldDriver.Id || b.Spec.Owner != me.Spec.Owner || b.Phys is not { } p || !p.IsValid() )
-				continue;
-			(keep ??= new()).Add( p );
-			if ( !_holdFilters.ContainsKey( p ) )
-				_holdFilters[p] = Sandbox.Physics.PhysicsJoint.CreateFilter( me.Phys, p );
-		}
-		if ( _holdFilters.Count == (keep?.Count ?? 0) )
-			return;
-		foreach ( var p in _holdFilters.Keys.ToList() )
-		{
-			if ( keep is not null && keep.Contains( p ) )
-				continue;
-			if ( p.IsValid() )
-				_holdFilters[p]?.Remove();
-			_holdFilters.Remove( p );
-		}
-	}
+	// What this hunter carries never collides with it (SimHoldFilters).
+	readonly SimHoldFilters _holdFilters = new();
 
 	void SimHunterStep( SimBody body, in SimInput input, int tick )
 	{
@@ -513,7 +470,7 @@ public sealed partial class HunterController : ISimShapeSource
 		}
 
 		var trace = SimHunterTrace( sim, body );
-		SyncHoldFilters( sim, body );
+		_holdFilters.Sync( sim, body );
 
 		// Climbing (HunterController.SimClimb): the grabs — Space held on from a mantle, a lab grab, the air grab (the engine's
 		// FixedUpdate pass, while the walk is the mode) — and, on a wall, the climb in place of the walk.
@@ -840,10 +797,7 @@ public sealed partial class HunterController : ISimShapeSource
 	// — the host's orphan sweep only catches it a while later, and meanwhile this machine's sim input still pointed here.
 	void LeaveSimOnDestroy()
 	{
-		EndScalePreview(); // (a scale preview mid-hold: the prop's copy takes the host's frames again)
-		foreach ( var j in _holdFilters.Values )
-			if ( j.IsValid() )
-				j.Remove();
+		_grabHolder?.EndScalePreview(); // (a scale preview mid-hold: the prop's copy takes the host's frames again)
 		_holdFilters.Clear();
 		if ( HunterSim is not { } sim )
 			return;

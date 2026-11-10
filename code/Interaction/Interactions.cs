@@ -40,6 +40,9 @@ public readonly record struct InteractOption( string Id, string Label, InteractS
 public readonly struct InteractContext
 {
 	public HunterController Hunter { get; init; }
+	/// <summary>Set instead of <see cref="Hunter"/> when a PROP is the one aiming (creative's prop grab — HiderController.Grab).
+	/// Only the grab offers anything to a prop.</summary>
+	public HiderController Prop { get; init; }
 	public GameObject Target { get; init; }
 	public SdfSculpture Sculpture { get; init; }
 	public Vector3 HitPosition { get; init; }
@@ -223,4 +226,22 @@ public static class Interactions
 		_hover = default;
 		_hoverChoices.Clear();
 	}
+}
+
+/// <summary>A pawn that draws the crosshair HUD (<see cref="HunterCrosshair"/> — the dot plus the hover's toast row): the
+/// hunter, and a prop on its shoulder camera. The HUD sits under the pawn and reads this.</summary>
+public interface ICrosshairOwner
+{
+	/// <summary>Draw the dot (and the toasts) this frame — the owner's live gate (owned, playing, aim on the crosshair).</summary>
+	bool CrosshairVisible { get; }
+
+	/// <summary>What the crosshair is over, if it offers anything (null otherwise).</summary>
+	InteractContext? HoverContext { get; }
+
+	/// <summary>The options for <see cref="HoverContext"/>, one per slot, in slot order.</summary>
+	IReadOnlyList<InteractChoice> Hover { get; }
+
+	/// <summary>The slot last fired from a card, and how long ago (the card springs).</summary>
+	InteractSlot? LastFiredSlot { get; }
+	RealTimeSince SinceFired { get; }
 }

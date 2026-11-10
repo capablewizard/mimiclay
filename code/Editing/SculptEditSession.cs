@@ -143,7 +143,7 @@ public sealed partial class SculptEditSession : Component
 	/// it means "run", not "snap" — a sprinting carry that snapped to the grid every frame read as violent
 	/// jitter. Stand still (or hold alt for cursor mode) and Shift snaps as everywhere else.</para>
 	public static bool SnapHeld =>
-		Sandbox.UI.InputFocus.Current is null && Input.Keyboard.Down( "shift" )
+		Sandbox.UI.InputFocus.Current is null && VirtualInput.KeyDown( "shift" )
 		&& !(EditPointer.Locked && !EditPointer.CursorFree && Input.AnalogMove.LengthSquared > 0.0001f);
 
 	/// <summary>The angle grid (degrees) every rotate control snaps to while Shift is held — half-steps
@@ -238,6 +238,10 @@ public sealed partial class SculptEditSession : Component
 	// Brush under the cursor via the 3D scene pick ONLY (never the layer-row hover fallback that feeds
 	// _hoverBrush) — the grab cursor must not go open-hand while the mouse is over a HUD row.
 	int _worldHover = -1;
+
+	/// <summary>The cursor is over a shape in the world (the scene pick — never the layer-row hover) — a click there
+	/// selects it. The hotkey bar's LMB card reads this: "Select" over a shape, "Orbit" over empty space.</summary>
+	public bool HoveringShape => IsEditing && _worldHover >= 0;
 
 	/// <summary>The grab cursor the world should show this frame — ONE rule for the whole edit system:
 	/// open hand over anything grabbable (a gizmo handle, a spline point/radius dot, a shape you can
@@ -2172,6 +2176,13 @@ public sealed partial class SculptEditSession : Component
 
 	protected override void OnUpdate()
 	{
+		// Self-heal Current: it's only ever set when a session STARTS editing, and a failed hotload ("Couldn't
+		// resolve" in the hotload log) has left it pointing at an object that isn't the live editing session — the
+		// edit HUD then sees no editing session (its panels vanish) and throws every frame. The session that IS
+		// editing reclaims it. One editor at a time (a hunter's Head / Weapon sessions swap via SetEditPart).
+		if ( IsEditing && Current != this )
+			Current = this;
+
 		if ( !ExternallyTicked )
 			Tick();
 	}
@@ -2390,8 +2401,8 @@ public sealed partial class SculptEditSession : Component
 		// runs the one full commit once the scrolling goes quiet.
 		// (Skipped while a gizmo handle is being dragged — the drag owns the wheel there; a spline point
 		// drag consumes it to push that single point along the view ray.)
-		float pushWheel = Input.MouseWheel.y;
-		if ( pushWheel != 0f && !overUi && !AltNav.NavModifierHeld && !AltNav.Dragging && !PauseMenu.IsOpen
+		float pushWheel = Input.MouseWheel.y + VirtualInput.WheelY; // + the Depth card's drag (HotkeyBar)
+		if ( pushWheel != 0f && (!overUi || VirtualInput.WheelY != 0f) && !AltNav.NavModifierHeld && !AltNav.Dragging && !PauseMenu.IsOpen
 			&& BrushScrub.Active == ScrubKind.None && !_gizmo.IsDragging
 			&& SelectedBrush is { } pushB && Scene.Camera is { } pushCam )
 		{

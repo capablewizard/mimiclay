@@ -476,13 +476,14 @@
 	}
 
 	// The sculpture-local points that outline a prop: the collider's emitted geometry (hull vertices, carved
-	// voxel-box corners). A collider that hasn't built yet falls back to the loose brush-bounds corners for the
-	// frame or two until it has.
+	// voxel-box corners), carried onto the CURRENT brushes (SdfCollider.LiveFramePoints) so the plate follows a grab's
+	// scale preview, which only rebuilds the collider when it commits. A collider that hasn't built yet falls back to
+	// the loose brush-bounds corners for the frame or two until it has.
 	static IEnumerable<Vector3> FramePoints( SdfSculpture sculpture )
 	{
 		var collider = sculpture.Components.Get<SdfCollider>();
-		if ( collider.IsValid() && collider.FramePoints is { Count: > 0 } frame )
-			return frame;
+		if ( collider.IsValid() && collider.FramePoints is { Count: > 0 } )
+			return collider.LiveFramePoints();
 
 		return Sdf.TryGetBounds( sculpture.Brushes, out var bounds )
 			? bounds.Corners

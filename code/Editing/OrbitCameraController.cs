@@ -81,6 +81,15 @@ public sealed class OrbitCameraController : Component
 
 	public Vector3 Pivot { get; set; }
 
+	/// <summary>Over-the-shoulder offset (real units, along the camera's right): the boom hangs off a point this far to the
+	/// right of <see cref="Pivot"/>, so the subject sits left of centre and the middle of the screen is free for a crosshair
+	/// (the prop's play camera — HiderController.Grab). Swept out from the pivot first, so a wall at our right shoulder
+	/// squeezes it in rather than the camera seeing through. 0 = centred (edit mode, the menu).</summary>
+	public float ShoulderOffset { get; set; }
+
+	/// <summary>The point the boom actually hung from last frame: <see cref="Pivot"/> plus the (swept) shoulder offset.</summary>
+	public Vector3 BoomPivot { get; private set; }
+
 	/// <summary>Framing distance, in units measured at <see cref="GameSettings.ReferenceFov"/>. The camera
 	/// actually sits at <see cref="Reach"/> — this scaled by the live FOV — so the subject covers the same
 	/// share of the screen at any FOV preference (a dolly zoom). Every owner's distances, zoom limits and
@@ -115,6 +124,14 @@ public sealed class OrbitCameraController : Component
 	/// <summary>Shift the follow pan by <paramref name="delta"/> (world units) — lets an owner change what the
 	/// pivot follows without the camera jumping.</summary>
 	public void AddPanOffset( Vector3 delta ) => _panOffset += delta;
+
+	/// <summary>The accumulated follow pan (world units) — an owner that keeps per-view framing (the prop's centred and
+	/// shoulder views) reads and writes it.</summary>
+	public Vector3 PanOffset
+	{
+		get => _panOffset;
+		set => _panOffset = value;
+	}
 
 	/// <summary>Camera orientation. Yaw drives the follow camera's facing (the hider reads this for movement).</summary>
 	public Angles Angles
@@ -256,9 +273,24 @@ public sealed class OrbitCameraController : Component
 			Pivot += delta;
 	}
 
+	// The shoulder-shifted pivot the boom hangs from: ShoulderOffset along the camera's right, swept from the real pivot
+	// (8u, the hard clamp's radius) so it stops short of a wall at our side.
+	Vector3 ShoulderPivot( Rotation rot )
+	{
+		if ( MathF.Abs( ShoulderOffset ) < 0.01f )
+			return Pivot;
+		var want = Pivot + rot.Right * ShoulderOffset;
+		if ( !BoomCollision || !IgnoreCollision.IsValid() )
+			return want;
+		var tr = FilterBoomTrace( Scene.Trace.Ray( Pivot, want ).Radius( 8f ) ).Run();
+		return tr.StartedSolid ? Pivot : tr.Hit ? tr.EndPosition : want;
+	}
+
 	void Apply( CameraComponent cam )
 	{
 		var rot = _angles.ToRotation();
+		var pivot = ShoulderPivot( rot );
+		BoomPivot = pivot;
 		float reach = Reach; // real boom length at the live FOV — all the collision maths below is in real units
 		float boom = reach;
 
@@ -269,8 +301,8 @@ public sealed class OrbitCameraController : Component
 		// pull-in, not the distance itself, so player dolly zoom stays instant.
 		if ( BoomCollision && IgnoreCollision.IsValid() )
 		{
-			var softTr = TraceBoom( rot, 16f );
-			var hardTr = TraceBoom( rot, 8f );
+			var softTr = TraceBoom( pivot, rot, 16f );
+			var hardTr = TraceBoom( pivot, rot, 8f );
 
 			float hard = hardTr.Hit ? hardTr.Fraction * reach : reach;
 			// A start-solid soft sweep (pivot within 16u of a wall — a prop hiding against one) carries no
@@ -286,7 +318,7 @@ public sealed class OrbitCameraController : Component
 			// The raw whisker fraction is quantized to quarters and jumps as rays cross an edge one at a
 			// time (orbiting into a cube), so it's smoothed before use — a genuine wall still reads 1.0 on
 			// the very first frame, so detection isn't delayed, only the transitions are.
-			float rawBlocked = wantPull > 0f ? WhiskerOcclusion( rot ) : 0f;
+			float rawBlocked = wantPull > 0f ? WhiskerOcclusion( pivot, rot ) : 0f;
 			_boomBlocked = MathX.Lerp( _boomBlocked, rawBlocked, 1f - MathF.Exp( -12f * Time.Delta ) );
 			wantPull *= _boomBlocked;
 
@@ -308,7 +340,7 @@ public sealed class OrbitCameraController : Component
 			_boomBlocked = 0f;
 		}
 
-		cam.WorldPosition = Pivot - rot.Forward * boom;
+		cam.WorldPosition = pivot - rot.Forward * boom;
 		cam.WorldRotation = rot;
 
 		// Every rig consumer runs at the edit FOV by default; the prop's play camera overrides it after Tick
@@ -322,9 +354,9 @@ public sealed class OrbitCameraController : Component
 	// from just beside the pivot (half spread — so clutter sitting right next to the disguise doesn't block
 	// them) out to beside the full-distance camera position (full spread). A wall crosses all of them at any
 	// depth; a thin pole or a small prop near the pivot crosses none. Only run when the centre trace hit.
-	float WhiskerOcclusion( Rotation rot )
+	float WhiskerOcclusion( Vector3 pivot, Rotation rot )
 	{
-		var camPos = Pivot - rot.Forward * Reach;
+		var camPos = pivot - rot.Forward * Reach;
 		var offsets = new Vector3[]
 		{
 			rot.Right * BoomWhiskerSpread, rot.Right * -BoomWhiskerSpread,
@@ -334,7 +366,7 @@ public sealed class OrbitCameraController : Component
 		int blockedCount = 0;
 		foreach ( var off in offsets )
 		{
-			var trace = FilterBoomTrace( Scene.Trace.Ray( Pivot + off * 0.5f, camPos + off ) );
+			var trace = FilterBoomTrace( Scene.Trace.Ray( pivot + off * 0.5f, camPos + off ) );
 			if ( trace.Run().Hit )
 				blockedCount++;
 		}
@@ -343,9 +375,9 @@ public sealed class OrbitCameraController : Component
 	}
 
 	// Sweep a sphere from the pivot out along the full boom length; the caller reads Fraction/StartedSolid.
-	SceneTraceResult TraceBoom( Rotation rot, float radius )
+	SceneTraceResult TraceBoom( Vector3 pivot, Rotation rot, float radius )
 	{
-		var trace = FilterBoomTrace( Scene.Trace.Ray( Pivot, Pivot - rot.Forward * Reach ).Radius( radius ) );
+		var trace = FilterBoomTrace( Scene.Trace.Ray( pivot, pivot - rot.Forward * Reach ).Radius( radius ) );
 		return trace.Run();
 	}
 

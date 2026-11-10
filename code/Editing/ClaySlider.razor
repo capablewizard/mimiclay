@@ -11,6 +11,12 @@
 	the new value through OnInput as the raw value (already mapped from Min..Max), so callers stay unit-aware.
 *@
 
+@if ( !string.IsNullOrEmpty( Key ) )
+{
+	@* The hold-key that scrubs this value (S blend, D round…) — shown here, on the thing it drives, instead of as a
+	   card on the hotkey bar. Key first, then name: the hotkey cards' order. *@
+	<div class="slider-key">@Key</div>
+}
 <div class="label">@Label</div>
 
 @* An enlarged invisible hit area is the pointer-events leaf (easy to grab); the thin visual .track inside it is
@@ -25,6 +31,11 @@
 @code
 {
 	[Parameter] public string Label { get; set; } = "";
+	/// <summary>The hold-key that scrubs this value, drawn as a small key-cap before the label (null = none).</summary>
+	[Parameter] public string Key { get; set; }
+	/// <summary>Its <see cref="Key"/> was just pressed: the pill springs (.fired — the hotkey cards' press punch). The
+	/// owner holds it true for the punch's length.</summary>
+	[Parameter] public bool Fired { get; set; }
 	[Parameter] public float Value { get; set; }
 	[Parameter] public float Min { get; set; } = 0f;
 	[Parameter] public float Max { get; set; } = 1f;
@@ -80,6 +91,7 @@
 	{
 		base.Tick();
 		SetClass( "disabled", Disabled );
+		SetClass( "fired", Fired ); // the press punch — the class going on replays the one-shot animation
 	}
 
 	void ApplyFromCursor()
@@ -158,5 +170,5 @@
 	}
 
 	// Re-render when the inbound value or range changes (the gizmo / another control can move blend/round too).
-	protected override int BuildHash() => HashCode.Combine( Label, Value, Min, Max, Curve, Disabled );
+	protected override int BuildHash() => HashCode.Combine( Label, Key, Value, Min, Max, Curve, Disabled, Fired );
 }

@@ -21,7 +21,7 @@ namespace Mimiclay;
 [Title( "Hunter Controller" )]
 [Category( "Mimiclay" )]
 [Icon( "sports_esports" )]
-public sealed partial class HunterController : Component, PlayerController.IEvents
+public sealed partial class HunterController : Component, PlayerController.IEvents, ICrosshairOwner
 {
 	[Property, Group( "Weapon" )] public float Range { get; set; } = 4096f;
 
@@ -932,6 +932,11 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	/// for the toast row.</summary>
 	public InteractContext? HoverContext { get; private set; }
 
+	/// <summary>The crosshair HUD's gate (ICrosshairOwner): our own pawn, playing, the aim on the crosshair — not while sculpting
+	/// (the orbit camera frees the real cursor) or during a third-person alt-orbit (ours or our free cam's: the camera is off
+	/// the aim axis, so a centre dot would lie about where a shot lands).</summary>
+	public bool CrosshairVisible => !IsProxy && !EditMode && !AltOrbiting && !SpectatorController.LocalAltOrbiting;
+
 	/// <summary>The options on offer for <see cref="HoverContext"/>, one per slot, in slot order (empty when
 	/// nothing is hovered).</summary>
 	public IReadOnlyList<InteractChoice> Hover => _hoverChoices;
@@ -1012,7 +1017,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	// to the pawn's rigidbody, so the trace answers with the body's object) — and the root has no sculpture,
 	// its clay is the Disguise CHILD. An upward-only sculpture walk therefore misses pawn props entirely (the
 	// bug that killed hover on player-made props), while static scene clay still resolves off its own GO.
-	static SdfSculpture FindSculpture( GameObject go )
+	internal static SdfSculpture FindSculpture( GameObject go )
 	{
 		while ( go.IsValid() )
 		{
@@ -2202,8 +2207,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		if ( on )
 		{
 			// Nothing of the play state may outlive the hand-off: a held prop is dropped, the hover prompt cleared.
-			if ( _grabbed.IsValid() )
-				LetGo( _grabbed );
+			_grabHolder?.Release();
 			HoverContext = null;
 			_hoverChoices.Clear();
 

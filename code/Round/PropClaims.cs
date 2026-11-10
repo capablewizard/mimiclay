@@ -32,6 +32,10 @@ public interface IPropClaimHost
 	/// Only meaningful with <see cref="GrabAllowed"/>. Default off.</summary>
 	bool GrabPlayersAllowed => false;
 
+	/// <summary>May a PROP pawn grab too (the same RMB grab, aimed with the prop's shoulder-camera crosshair — see
+	/// GrabHolder and HiderController.Grab)? Only meaningful with <see cref="GrabAllowed"/>. Creative says yes; default off.</summary>
+	bool PropsGrab => false;
+
 	/// <summary>Creative's sandbox grab (default): R scales, LMB freezes, grabbed scene clay is CONVERTED into a released
 	/// prop pawn. False = prop hunt's INSPECT grab: carry and turn only; scene decoys are held as they are (RoundManager.Grab).
 	/// See PropClaims.Grab.</summary>
@@ -163,7 +167,9 @@ public sealed partial class PropClaims : Component, IInteractable
 		{
 			// Same root rule again — the hunter streams the hold pose once the host's row lands.
 			var grabHider = ctx.Sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
-			ctx.Hunter?.BeginGrab( grabHider.IsValid() ? grabHider.GameObject : ctx.Sculpture.GameObject );
+			var grabRoot = grabHider.IsValid() ? grabHider.GameObject : ctx.Sculpture.GameObject;
+			ctx.Hunter?.BeginGrab( grabRoot );
+			ctx.Prop?.BeginGrab( grabRoot );
 			return;
 		}
 

@@ -561,7 +561,7 @@ public sealed class BrushStampTool
 			// resolves to invalid/false, never throws).
 			bool enter = Sandbox.UI.InputFocus.Current is null
 				&& (Input.Keyboard.Down( "enter" ) || Input.Keyboard.Down( "return" )
-					|| Input.Keyboard.Down( "space" ));
+					|| VirtualInput.KeyDown( "space" ));
 			bool enterTap = enter && !_enterWas;
 			_enterWas = enter;
 
@@ -663,7 +663,7 @@ public sealed class BrushStampTool
 			// per-notch step scales with the ghost's size (half its largest dimension, clamped), so a
 			// pebble nudges finely and a boulder actually travels. The steered position recomputes from
 			// the moved anchor below, staying under the cursor by construction.
-			float wheel = Input.MouseWheel.y;
+			float wheel = Input.MouseWheel.y + VirtualInput.WheelY; // + the Depth card's drag (HotkeyBar)
 			float camDist = (tx.PointToWorld( _stamp.Position ) - cam.WorldPosition).Length;
 
 			if ( EditPointer.Locked && !EditPointer.CursorFree )
@@ -900,13 +900,13 @@ public static class BrushScrub
 		// the rest of the row; the right mouse button belongs to the CAMERA now (zoom drag, step-back tap
 		// via AltNav.RmbTapped).
 		bool typing = Sandbox.UI.InputFocus.Current is not null;
-		bool blendKey = !typing && Input.Keyboard.Down( "s" );
-		bool roundKey = !typing && Input.Keyboard.Down( "d" );
-		bool wildKey = !typing && Input.Keyboard.Down( "f" );
-		bool gapKey = !typing && Input.Keyboard.Down( "g" ); // cutout slot width — the row's fourth slot
-		bool moveKey = allowMove && !typing && Input.Keyboard.Down( "w" );
-		bool scale = !typing && Input.Keyboard.Down( "r" );
-		bool rot = !typing && Input.Keyboard.Down( "e" );
+		bool blendKey = !typing && VirtualInput.KeyDown( "s" );
+		bool roundKey = !typing && VirtualInput.KeyDown( "d" );
+		bool wildKey = !typing && VirtualInput.KeyDown( "f" );
+		bool gapKey = !typing && VirtualInput.KeyDown( "g" ); // cutout slot width — the row's fourth slot
+		bool moveKey = allowMove && !typing && VirtualInput.KeyDown( "w" );
+		bool scale = !typing && VirtualInput.KeyDown( "r" );
+		bool rot = !typing && VirtualInput.KeyDown( "e" );
 
 		// First-person session (lockedKeys): the player is still WALKING — W/A/S/D/F/G are movement and action keys
 		// there, so only the two keys the body doesn't use may scrub: R scale and E rotate (the Garry's-Mod pair).
@@ -916,6 +916,11 @@ public static class BrushScrub
 		bool blendP = blendKey && !_blendWas, roundP = roundKey && !_roundWas, wildP = wildKey && !_wildWas,
 			gapP = gapKey && !_gapWas, moveP = moveKey && !_moveWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
 		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _gapWas = gapKey; _moveWas = moveKey; _scaleWas = scale; _rotWas = rot;
+
+		// A hotkey-bar card holding a scrub key (VirtualInput) may start it even though the pointer is over the HUD —
+		// the card IS where the press landed. Never behind the pause menu.
+		if ( VirtualInput.AnyHeld && !PauseMenu.IsOpen )
+			allow = true;
 
 		if ( b is null || cam is null || (!allow && Active == ScrubKind.None) )
 		{

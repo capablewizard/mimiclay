@@ -41,7 +41,7 @@ Layer0
 	TextureNormal "scenes/maps/flatgrass/materials/woodplanks_normal.png"
 
 	//---- Roughness ----
-	g_flRoughnessScaleFactor "2.000"
+	g_flRoughnessScaleFactor "3.500"
 	TextureRoughness "scenes/maps/flatgrass/materials/woodplanks_specularroughness.png"
 
 	//---- Texture Coordinates ----

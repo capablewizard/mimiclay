@@ -3,8 +3,8 @@
   "Description": "Slip between the rooms of a quiet house.",
   "Preview": "ui/banners/maps/home_banner.png",
   "Scene": "scenes/maps/home.scene",
-  "Hidden": false,
-  "DefaultPick": true,
+  "Hidden": true,
+  "DefaultPick": false,
   "__references": [],
   "__version": 0
 }

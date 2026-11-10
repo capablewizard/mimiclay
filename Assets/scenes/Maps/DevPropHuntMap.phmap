@@ -8,9 +8,9 @@
   },
   "Hidden": false,
   "ForPropHunt": true,
-  "ForCreative": false,
+  "ForCreative": true,
   "ForCharades": false,
-  "DefaultPick": false,
+  "DefaultPick": true,
   "__references": [],
   "__version": 0
 }

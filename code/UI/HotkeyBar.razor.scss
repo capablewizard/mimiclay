@@ -1,0 +1,99 @@
+@import "/UI/_theme.scss";
+@import "/UI/_button.scss"; // .paper-card + .key-card (the hover-prompt card) + pop-spring
+
+// The bottom-centre controls bar (HotkeyBar.razor) — shared by the round HUD and the edit HUD. A row of compact
+// .key-cards; wraps to a second line rather than run off the screen.
+.hotkey-bar {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: $panel-inset;
+	padding: 0px 48px;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+
+	// The round HUD's bottom-right mode card is up: keep clear of it (360 blurb + inset, with air).
+	&.clear-corner {
+		padding: 0px 400px;
+	}
+
+	// The edit HUD's guided tutorial: its card does the teaching, the bar stays out of the way (still laid out, so
+	// the docks it lifts don't jump).
+	&.hidden {
+		opacity: 0;
+	}
+
+	// A card joining or leaving the row (Unstick while climbing, Leave Prop on possess, the whole bar appearing).
+	// Split by property, because each layer owns a different job:
+	//  • the SLOT (its transform is the code-driven wobble) carries max-width + padding — the space opening and
+	//    closing, so the neighbours slide rather than jump. The spacing between cards is this padding, not a row
+	//    `gap`: a gap would stay behind a collapsed card and snap shut when it's deleted.
+	//  • the GROW wrapper carries the scale.
+	// The max-width cap only has to clear the widest card — past that it's just how quickly the slide finishes.
+	.hotkey-slot {
+		flex-direction: row;
+		max-width: 360px;
+		padding: $space-xs;              // half the space between neighbours, each side
+		transition: max-width 0.25s ease-out, padding 0.25s ease-out;
+
+		// Grow in: :intro holds it collapsed for its first frame, the transitions grow it to rest.
+		&:intro {
+			max-width: 0px;
+			padding: 0px;
+		}
+
+		// Leave (HotkeyBar.UpdateShown holds the card in place as .leaving, then removes it once collapsed — not
+		// :outro, because razor moves a panel it's deleting to the end of the row). The card POPS then shrinks away —
+		// a back-in curve, whose dip below 0 is the swell past full size before it falls to nothing. The space closing
+		// behind it is CODE-driven from the slot's measured width (HotkeyBar.CollapseLeaving), so the slot's own
+		// transitions are off here: they'd lag every per-frame value.
+		&.leaving {
+			transition: none;
+
+			.hotkey-grow {
+				transform: scale( 0 );
+				transition: transform 0.3s cubic-bezier( 0.6, -0.5, 0.735, 0.045 );
+			}
+		}
+	}
+
+	.hotkey-grow {
+		flex-direction: row;
+		transform-origin: center;
+		transition: transform 0.3s ease-out;
+
+		&:intro {
+			transform: scale( 0 );
+		}
+	}
+
+	// Clickable (the edit HUD with a free cursor): the cards take the mouse — press one to do its action, drag it for
+	// the drag ones (HotkeyBar.CardDown). The bar itself stays click-through between them.
+	// The cards never take the pointer (the press must reach the GAME — see HotkeyBar.StepCards); .hover / .held are
+	// classes the bar sets from its own hit-test. The look is the edit HUD's buttons' (.shape-tile): lift + white +
+	// the hover spring, settling back down while pressed. (The hover sound plays from code on hover-enter.)
+	&.clickable {
+		.key-card {
+			transition: transform 0.1s ease, background-color 0.1s ease;
+		}
+		.hotkey-slot.hover .key-card {
+			transform: translateY( -2px );
+			background-color: #fff;
+			animation: hover-lift-2 $spring-duration ease-out;
+		}
+		.hotkey-slot.held .key-card {
+			transform: translateY( 0px );
+			background-color: #fff;
+		}
+	}
+
+	// Act-on-this-now (the edit mode's "Release: close loop"): the toolbar's on-chip orange.
+	.key-card.hot {
+		background-color: $craft-orange;
+		color: $paper-tile;
+	}
+}

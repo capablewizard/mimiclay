@@ -17,6 +17,23 @@ public static class UiSounds
 	/// A sound EVENT, so play it with <see cref="PlayEvent"/>.</summary>
 	public const string Success = "sounds/game/success.sound";
 
+	/// <summary>A controls-bar key press (the card's punch) — kenney drop_003, as a flat UI event so its pitch /
+	/// volume are tweakable in the editor. A sound EVENT, so play it with <see cref="PlayEvent"/>.</summary>
+	public const string HotkeyPress = "sounds/ui/hotkeypress.sound";
+
+	static float _lastHotkeyPress = -1f;
+
+	/// <summary>The key-press click, at most once a frame: the controls bar and the crosshair's hover cards both play it,
+	/// and one press can punch a card in each (LMB is the bar's Shoot and a held prop's Freeze) — one click, not a
+	/// doubled, louder one.</summary>
+	public static void PlayHotkeyPress()
+	{
+		if ( Time.Now == _lastHotkeyPress )
+			return;
+		_lastHotkeyPress = Time.Now;
+		PlayEvent( HotkeyPress );
+	}
+
 	/// <summary>The typewriter tick: the menu hover sound pitched up — speech bubbles typing out a chat line, the
 	/// charades word box typing a solved answer. Play at most one per frame; per-character at typing speed is
 	/// machine-gun fire.</summary>

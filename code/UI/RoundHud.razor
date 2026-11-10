@@ -347,20 +347,11 @@
 	@* Hidden while sculpt-editing: the edit HUD owns the screen (and its own hint strip) — the lobby/round
 	   hotkey hints ("Swap to Hunter", "Set Up Game"…) are noise there. And in charades altogether: its HUD
 	   carries its own prompts, and swap/nominate/edit hints don't apply to a guess-the-sculpt game. *@
-	@if ( SculptEditSession.Current?.IsEditing != true && !CharadesManager.Current.IsValid() )
+	@if ( ShowHotkeys )
 	{
-	<div class="hotkeys">
-		<div class="hotkeys-title">Controls</div>
-		@foreach ( var hint in Hotkeys )
-		{
-			<div class="hotkey">
-				@* Colour inline, not in the scss: the stylesheet's .key colour never reached the glyph in-game
-				   (rendered white despite the rule), and inline wins the cascade unconditionally. *@
-				<div class="key" style="color: #2c2418;">@hint.Key</div>
-				<div class="label">@hint.Label</div>
-			</div>
-		}
-	</div>
+	@* Bottom-centre controls bar (HotkeyBar — shared with the edit HUD): the cards, their wobble, grow-in / exit,
+	   press punch and click all live there; this HUD only says which hints apply (Hotkeys). *@
+	<HotkeyBar Source=@HotkeySource ClearCorner=@ShowModeCard />
 	}
 
 	@if ( ShowModeCard && SculptEditSession.Current?.IsEditing != true )
@@ -377,7 +368,8 @@
 
 @code
 {
-	readonly record struct HotkeyHint( string Key, string Label );
+	// One controls-bar card: the glyph, the action, and what PRESSES it (for the punch) — input actions, or a raw
+	// keyboard key for the binds that bypass the action table (N, G, the free-cam keys). Neither = never punches.
 
 	/// <summary>The one live round HUD on this machine. The system scene carries a RoundHUD object into every
 	/// map, and some map scenes (DefaultMap, Medieval, perftest) ALSO place their own — two identical HUDs then
@@ -399,6 +391,10 @@
 		}
 
 		Current = this;
+
+		// Load the controls-bar click now: Sound.Play loads an unloaded file synchronously on the main thread, so
+		// otherwise the FIRST key press of the session stalls on the disk before it can sound.
+		Sound.Preload( UiSounds.HotkeyPress );
 	}
 
 	// Take the host object with us when it exists only to carry this HUD (a ScreenPanel and us, nothing else) —
@@ -639,8 +635,30 @@
 	HashSet<Guid> _hintingPrev = new(); // last frame's set, kept as the swap buffer so no per-frame allocation
 	int _hintSignal;
 
+	// The controls bar (HotkeyBar) — hidden while sculpt-editing (the edit HUD runs its own) and in charades.
+	bool ShowHotkeys => SculptEditSession.Current?.IsEditing != true && !CharadesManager.Current.IsValid();
+
+	// Handed to the bar once and re-read by it every frame; the delegate is cached so the bar's parameter never changes.
+	Func<IEnumerable<HotkeyHint>> _hotkeySource;
+	Func<IEnumerable<HotkeyHint>> HotkeySource => _hotkeySource ??= () => Hotkeys;
+	HotkeyBar _hotkeyBar; // stepped from OnUpdate (its press checks read Input — see HotkeyBar.StepIn)
+
+	bool _localClimbing; // LocalClimbing, sampled once a frame in OnUpdate (the bar walks Hotkeys every frame)
+
+	static string[] Act( string action ) => HotkeyActs.Act( action );
+
+	// Alt orbits the camera — bound as the "Walk" action.
+	static HotkeyHint OrbitHint => new( InputGlyphs.KeyFor( "Walk", "ALT" ), "Orbit", Act( "Walk" ) );
+
+	// Where Alt orbits: a prop always (HiderController.AltHoldOrbits), a hunter only in third person
+	// (HunterController.UpdateAltOrbit gates on HunterThirdPerson). The free cam's own third-person gate is in its set.
+	bool OrbitApplies => LocalRole == PlayerRole.Prop || (LocalRole == PlayerRole.Hunter && GameSettings.HunterThirdPerson);
+
 	protected override void OnUpdate()
 	{
+		_localClimbing = LocalClimbing; // for Hotkeys (the bar reads them every frame)
+		HotkeyBar.StepIn( Panel, ref _hotkeyBar, ShowHotkeys, HotkeySource );
+
 		(_hintingNow, _hintingPrev) = (_hintingPrev, _hintingNow);
 		_hintingNow.Clear();
 		_hintSignal = 0;
@@ -816,6 +834,15 @@
 		=> Scene.GetAllComponents<HiderController>().Any( c => c.IsValid() && !c.IsProxy
 			&& !RoundManager.IsBotPawn( c.GameObject ) && PropClaims.IsPossessed( c ) );
 
+	// Is the local pawn — prop or hunter — clinging to a wall or ceiling? Drives the "Unstick" hint.
+	bool LocalClimbing
+		=> Scene.GetAllComponents<HiderController>().Any( c => c.IsValid() && !c.IsProxy
+				&& !RoundManager.IsBotPawn( c.GameObject ) && c.Clinging )
+			|| Scene.GetAllComponents<HunterController>().Any( c => c.IsValid() && c.Owned && c.Clinging );
+
+	// Shift lets go of a climb, props and hunters alike (the sim's SimInput.LetGo / HunterClimb).
+	HotkeyHint UnstickHint => new( InputGlyphs.KeyFor( "Run", "SHIFT" ), "Unstick", Act( "Run" ) );
+
 	// PLACEHOLDER hotkey hints, context-switched by phase. In the lobby these mirror the temporary debug keys on
 	// LobbyController; in a round they're the pawn controls. Replace with real input-action bindings later.
 	IEnumerable<HotkeyHint> Hotkeys
@@ -826,16 +853,12 @@
 			// plus the key back to your body when there is one.
 			if ( SpectatorController.Flying )
 			{
-				yield return new( "WASD", "Fly" );
-				yield return new( "Space / Ctrl", "Up / Down" );
-				yield return new( "Shift", "Fast" );
-				yield return new( Input.GetButtonOrigin( "ToggleView" )?.ToUpperInvariant() ?? "TAB",
-					GameSettings.SpectatorThirdPerson ? "First Person" : "Third Person" );
+				// The fly keys themselves (WASD / Space-Ctrl / Shift) and Esc are left off: they're the obvious ones.
+				yield return new( ViewKey, GameSettings.SpectatorThirdPerson ? "First Person" : "Third Person", Act( "ToggleView" ) );
 				if ( GameSettings.SpectatorThirdPerson )
-					yield return new( "Alt", "Orbit Camera" );
+					yield return OrbitHint;
 				if ( SpectatorController.Local.LeftBehind.IsValid() && SpectatorController.ToggleKey is { } back )
-					yield return new( back, "Back to Body" );
-				yield return new( "Esc", "Pause" );
+					yield return new( back, "Exit Freecam", RawKey: back );
 				yield break;
 			}
 
@@ -843,35 +866,64 @@
 			// shares this lobby-only hint set rather than the in-round one below.
 			if ( Phase == RoundPhase.Lobby )
 			{
+				if ( _localClimbing )
+					yield return UnstickHint; // first: it's the urgent one while it's up
 				if ( LocalPossessed )
-					yield return new( Input.GetButtonOrigin( PawnSwapKeys.LeaveAction )?.ToUpperInvariant() ?? "E", "Leave Prop" );
-				yield return new( Input.GetButtonOrigin( PawnSwapKeys.SwapAction )?.ToUpperInvariant() ?? "R",
-					LocalRole == PlayerRole.Prop ? "Swap to Hunter" : "Swap to Prop" );
+					yield return new( InputGlyphs.KeyFor( PawnSwapKeys.LeaveAction, "E" ), "Leave Prop",
+						Act( PawnSwapKeys.LeaveAction ), SwapGate: true );
+				yield return new( InputGlyphs.KeyFor( PawnSwapKeys.SwapAction, "R" ),
+					LocalRole == PlayerRole.Prop ? "Player" : "Prop", Act( PawnSwapKeys.SwapAction ), SwapGate: true ); // what R turns you into
 				if ( LobbyGame == GameModeKind.PropHunt )
-					yield return new( "N", "Nominate to Hunt" ); // nominations only mean anything in prop hunt
+					yield return new( "N", "Nominate to Hunt", RawKey: "N" ); // nominations only mean anything in prop hunt
 				if ( LobbyManager.Current.IsValid() )
-					yield return new( "G", "Set Up Game (Host)" ); // the setup HUD only exists in the real lobby
-				yield return new( "Q", "Edit Mode" );
+					yield return new( "G", "Set Up Game (Host)", RawKey: "G" ); // the setup HUD only exists in the real lobby
+				yield return new( "Q", "Edit Mode", Act( "Edit" ) );
+				if ( LocalRole == PlayerRole.Hunter )
+					yield return HunterViewHint;
+				else if ( LocalRole == PlayerRole.Prop )
+					yield return PropViewHint;
+				if ( OrbitApplies )
+					yield return OrbitHint;
 				if ( SpectatorController.ToggleKey is { } fly )
-					yield return new( fly, "Free Cam" ); // creative only — the lobby has none
+					yield return new( fly, "Free Cam", RawKey: fly ); // creative only — the lobby has none
 				yield break;
 			}
 
 			// In a round: shared movement + role-specific actions.
-			yield return new( "WASD", "Move" );
-			yield return new( "Alt", "Orbit Camera" );
+			yield return new( "WASD", "Move", HotkeyActs.Move );
+			if ( _localClimbing )
+				yield return UnstickHint;
+
+			if ( OrbitApplies )
+				yield return OrbitHint;
 
 			if ( LocalRole == PlayerRole.Hunter )
-				yield return new( "LMB", "Shoot" );
+			{
+				yield return new( "LMB", "Shoot", Act( "Attack1" ) );
+				yield return HunterViewHint;
+			}
 
 			if ( LocalRole == PlayerRole.Prop )
-				yield return new( "F", "Free Cam" );
+			{
+				yield return PropViewHint; // in play Tab is the camera toggle — wireframes only exist in edit mode
+				yield return new( "F", "Free Cam", RawKey: "F" );
+			}
 
-			yield return new( "Q", LocalRole == PlayerRole.Prop ? "Edit Disguise" : "Edit Face" );
-			yield return new( "Tab", "Toggle Wireframes" );
-			yield return new( "Esc", "Pause" );
+			yield return new( "Q", LocalRole == PlayerRole.Prop ? "Edit Disguise" : "Edit Face", Act( "Edit" ) );
+			yield return new( "Esc", "Pause" ); // no punch: the pause menu consumes Escape and covers the screen
 		}
 	}
+
+	// The prop's Tab flips its camera between over the shoulder and centred behind the shape (HiderController.Grab:
+	// UpdateViewToggle, GameSettings.PropShoulderView) — labelled with where it goes, like the hunter's.
+	static HotkeyHint PropViewHint => new( ViewKey, GameSettings.PropShoulderView ? "Centred View" : "Shoulder View", Act( "ToggleView" ) );
+
+	// The ToggleView key (Tab by default), as bound.
+	static string ViewKey => InputGlyphs.KeyFor( "ToggleView", "TAB" );
+
+	// The hunter's Tab flips first ⇄ third person (HunterController, play mode only) — labelled with where it goes,
+	// like the free cam's.
+	static HotkeyHint HunterViewHint => new( ViewKey, GameSettings.HunterThirdPerson ? "First Person" : "Third Person", Act( "ToggleView" ) );
 
 	// TEMP DEBUG helpers — concealment ground-truth readout.
 	/// <summary>Shows the yellow state overlay (networking / phase / pawn counts). Console: `mimiclay_debug_hud true`.</summary>
@@ -922,11 +974,11 @@
 	// Re-render when anything visible changes. Hotkeys derive from Phase + LocalRole (+ eliminated), so
 	// they're covered.
 	protected override int BuildHash()
-		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, ClockCaption, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated, LobbyReturn.Signal, SpectatorController.Flying, GameSettings.SpectatorThirdPerson ) ),
+		=> HashCode.Combine( HashCode.Combine( Phase, TimerText, ClockCaption, LocalRole, ShowLobbyStatus, LocalIsHost, ShowModeCard, HashCode.Combine( CurrentMode, LobbyGame, RoundManager.LocalEliminated, LobbyReturn.Signal, SpectatorController.Flying, GameSettings.SpectatorThirdPerson, GameSettings.HunterThirdPerson, _localClimbing ) ),
 			HashCode.Combine( DbgMode, DbgSelfPawns, DbgProxyPawns, DebugHud,
 				SculptEditSession.Current?.IsEditing ?? false, // hotkey hints hide while sculpt-editing
 				TutorialDirector.IsRunning, // lobby roster hides while the tutorial runs
-				LocalPossessed ), // the "E Leave Prop" hint
+				LocalPossessed ), // the "E Leave Prop" hint (the bar re-renders its own cards — HotkeyBar)
 			HashCode.Combine( ShowTally, PropsLeft, HunterCount, IconSignal, _icons.CachedCount, DebugThumb, DebugPlayerCount,
 				// Silhouette hints: which props are flashing (from OnUpdate) + the setting itself, so the pips
 				// re-render on every pop in/out and drop their icons the moment the host turns hints off.

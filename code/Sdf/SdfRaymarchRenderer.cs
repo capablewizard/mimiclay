@@ -40,6 +40,11 @@ public enum SdfMeshMode
 [Icon( "blur_circular" )]
 public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 {
+	/// <summary>Scene-object tag on everything this renderer draws (the marched proxy AND the sibling mesh), so
+	/// DDGI bakes leave SDF props out — <see cref="SdfBakeExclusion"/> keeps it in every volume's RenderExcludeTags.
+	/// Lives on the SceneObjects only, never the GameObject, so physics/trace tag rules are untouched.</summary>
+	public const string BakeExcludeTag = "sdf_render";
+
 	const int MaxBrushes = SdfBrushPacker.MaxBrushes;
 	const int TexelsPerBrush = 7; // pos+shape, size+blend, quat, colour+op, rounding+(metal|rough packed)+gap+mirrormask, aabbMin, aabbMax
 	// The brush texels, then one group record per 4 brushes (SdfBrushPacker.PackGroups, read by the group cull).
@@ -956,6 +961,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		var meshSo = mesh.SceneObject;
 		if ( meshSo.IsValid() )
 		{
+			// ModelRenderer resets its SceneObject's tags to the GameObject's on every tag change (and makes a
+			// new SceneObject on model swaps), so re-assert the bake-exclude tag here rather than once.
+			if ( !meshSo.Tags.Has( BakeExcludeTag ) )
+				meshSo.Tags.Add( BakeExcludeTag );
+
 			bool flat = DebugLodColours && !culled && !sdf;
 			meshSo.ColorTint = flat ? DebugBandTint( culled, sdf, meshLod ) : mesh.Tint;
 			// The mesh shader swaps its albedo for that tint (sdf_mesh.shader g_flSdfDebugFlat), so the band
@@ -1483,6 +1493,8 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// (the hidden pawn body) clips every PERSPECTIVE view in-shader — only the ortho sun-shadow
 		// march survives; ExcludeGameLayer additionally keeps it out of the game colour passes.
 		bool shadowOnly = RenderHidden && MarchedShadowsNow;
+		if ( !_so.Tags.Has( BakeExcludeTag ) ) // kept out of DDGI bakes — see SdfBakeExclusion
+			_so.Tags.Add( BakeExcludeTag );
 		_so.Flags.CastShadows = MarchedShadowsNow;
 		_so.Flags.ExcludeGameLayer = shadowOnly;
 		ApplyViewLayer();

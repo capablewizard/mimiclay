@@ -433,23 +433,39 @@ public sealed partial class HiderController : ISimShapeSource
 			return;
 		UpdateSimHoldFollower( sim );
 		bool mine = !IsProxy && !RoundManager.IsBotPawn( GameObject ) && !Scenery && (SimWalking || SimDown); // walking, or lying down (rolling / the flip)
-		if ( mine )
+		bool holding = !IsProxy && (_grabHolder?.NeedsSimInput ?? false); // a prop we carry (HiderController.Grab) rides our input too
+		_simInputFn ??= ReadSimInput;
+		if ( mine || holding )
 		{
-			sim.LocalInput = ReadSimInput;
-			sim.LocalControlled = GameObject.Id;
+			sim.LocalInput = _simInputFn;
+			if ( mine )
+				sim.LocalControlled = GameObject.Id;
 		}
-		else if ( sim.LocalControlled == GameObject.Id )
-		{
+		else if ( sim.LocalInput == _simInputFn )
 			sim.LocalInput = null;
+		if ( !mine && sim.LocalControlled == GameObject.Id )
+		{
+			if ( sim.LocalInput == _simInputFn && !holding )
+				sim.LocalInput = null;
 			sim.LocalControlled = Guid.Empty;
 		}
 	}
+
+	Func<int, SimInput> _simInputFn; // (one delegate, so "is the sim's input ours?" compares)
 
 	// One sim tick's input. Called once per predicted tick (possibly twice in a frame when the clock catches up — the
 	// turn is a delta since the last call, and a queued jump is taken once).
 	SimInput ReadSimInput( int tick )
 	{
-		if ( !ControlActive )
+		var input = ReadWalkInput();
+		_grabHolder?.WriteSimInput( ref input ); // the hold target of a prop we carry (or a frozen drop's Freeze) — GrabHolder
+		return input;
+	}
+
+	// The walk's part of a tick's input (ReadSimInput adds the grab's).
+	SimInput ReadWalkInput()
+	{
+		if ( !ControlActive || (!SimWalking && !SimDown) )
 		{
 			_jumpQueued = false;
 			ReadTurn(); // keep the turn baseline current, so control coming back doesn't turn by everything missed
@@ -607,6 +623,7 @@ public sealed partial class HiderController : ISimShapeSource
 		RefreshSceneHull();
 		if ( !_simHull.Ready || !_hull.Ready )
 			return;
+		_holdFilters.Sync( sim, body ); // what we carry (creative's prop grab) never collides with us
 
 		ref var c = ref body.Ctrl;
 		const float dt = SimWorld.Dt;
@@ -839,6 +856,7 @@ public sealed partial class HiderController : ISimShapeSource
 		var pb = body.Phys;
 		if ( sim is null || pb is null || !pb.IsValid() || !_collider.IsValid() )
 			return;
+		_holdFilters.Sync( sim, body );
 		ref var c = ref body.Ctrl;
 		const float dt = SimWorld.Dt;
 		bool inert = (body.Spec.Flags & SimBodyFlags.Inert) != 0;
