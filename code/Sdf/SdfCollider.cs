@@ -37,6 +37,15 @@ public sealed class SdfCollider : Component
 	/// for shot decoys when "Repair props" is off (RoundManager.PrepareShotCarve).</summary>
 	[Property] public bool CarveCollision { get; set; }
 
+	/// <summary>The most physics shapes this collider may have. The exact collider is used while it fits; past it the
+	/// sculpture collides as one convex hull when it's nearly convex, otherwise as its whole shape voxelised coarsely
+	/// enough to fit. 0 (the default) = follow <see cref="SdfCollisionBuilder.DefaultMaxShapes"/>, so saved prefabs pick up a
+	/// changed project default; set a number only to override one prop. There is no "unlimited" (a hotload zeroes this on
+	/// existing components, and a zero once meant every collider in the open scene went unbounded).</summary>
+	[Property, Range( 0, 256 )] public int MaxShapes { get; set; }
+
+	internal int EffectiveMaxShapes => MaxShapes > 0 ? MaxShapes : SdfCollisionBuilder.DefaultMaxShapes;
+
 	// The brushes the collider is built from: the authored prefix, or everything when craters are opted in.
 	// The damage tail is contiguous at the END (SdfSculpture.AuthoredBrushCount), so this is a cheap range copy.
 	List<SdfBrush> BuildBrushes( List<SdfBrush> all )
@@ -259,7 +268,7 @@ public sealed class SdfCollider : Component
 		var brushes = BuildBrushes( all );
 		int key = HashCode.Combine(
 			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
-			BuildAsTrigger, SdfCollisionBuilder.CodeVersion );
+			BuildAsTrigger, SdfCollisionBuilder.CodeVersion, EffectiveMaxShapes );
 
 		bool standingIsOurs = _builtModel is not null && standing.IsValid() && standing.Enabled && ReferenceEquals( standing.Model, _builtModel );
 		if ( key == _builtKey && standingIsOurs )
@@ -309,7 +318,7 @@ public sealed class SdfCollider : Component
 
 		// The frame points ride the same build (see FramePoints) — the prop's move hull is derived from them.
 		_buildEpoch++; // supersedes any async crater build still in flight
-		var model = SdfCollisionBuilder.Build( brushes, null, _framePoints, _emitted );
+		var model = SdfCollisionBuilder.Build( brushes, null, _framePoints, _emitted, EffectiveMaxShapes );
 		Apply( model, key, authoredKey, brushes );
 	}
 
@@ -364,7 +373,7 @@ public sealed class SdfCollider : Component
 				var all = _sculpture.Brushes;
 				var brushes = BuildBrushes( all );
 				int key = HashCode.Combine( SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
-					BuildAsTrigger, SdfCollisionBuilder.CodeVersion );
+					BuildAsTrigger, SdfCollisionBuilder.CodeVersion, EffectiveMaxShapes );
 				int authoredKey = AuthoredKey( all );
 				if ( key == _builtKey )
 					continue; // already standing (a sync build got there first)
@@ -373,7 +382,7 @@ public sealed class SdfCollider : Component
 				var snapshot = new List<SdfBrush>( brushes );
 				var frame = new List<Vector3>();
 				var emitted = new List<SdfCollisionBuilder.EmittedShape>();
-				var model = await SdfCollisionBuilder.BuildAsync( snapshot, null, frame, emitted );
+				var model = await SdfCollisionBuilder.BuildAsync( snapshot, null, frame, emitted, EffectiveMaxShapes );
 
 				// Stale: disabled, or a synchronous build (an authored change) landed meanwhile — it's newer.
 				if ( !this.IsValid() || !_sculpture.IsValid() || epoch != _buildEpoch )

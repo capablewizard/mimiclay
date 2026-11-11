@@ -20,6 +20,13 @@ public enum SdfShape
 	/// Position/Rotation/Size transform the whole set; <see cref="SdfBrush.GroupKind"/> names the prefab set.
 	/// Never reaches the shaders: every geometry consumer expands it to its <see cref="SdfBrush.Members"/>.</summary>
 	Group,
+	/// <summary>A stack MODIFIER, not a shape: no geometry of its own — it smooths everything UNDERNEATH it in
+	/// the stack (every earlier brush) by raising their joins' blend and their edges' rounding to at least its
+	/// <see cref="SdfBrush.Blend"/> (the "Smooth" amount). Resolved on the CPU by <see cref="SdfModifiers.Apply"/>
+	/// into each brush's <see cref="SdfBrush.EffectiveBlend"/>/<see cref="SdfBrush.EffectiveRounding"/>, so it
+	/// costs the shaders nothing and never reaches them. Carries <see cref="SdfOperation.Colour"/> so every
+	/// solid-only consumer (bounds, collision, last-solid checks) already ignores it.</summary>
+	Smooth,
 }
 
 /// <summary>The 2D profile an <see cref="SdfShape.Extruded"/> brush sweeps along its local Z. Triangle keeps the
@@ -252,6 +259,26 @@ public class SdfBrush
 	/// shapes. 0 = perfectly sharp (a hard boolean-style cut); defaults to <see cref="DefaultRounding"/>.</summary>
 	[Property, Range( MinRounding, 64f )] public float Rounding { get; set; } = DefaultRounding;
 
+	/// <summary>A stack modifier (<see cref="SdfShape.Smooth"/>) rather than a shape: no geometry, no transform —
+	/// it reshapes the brushes underneath it instead. Its amount rides in <see cref="Blend"/>.</summary>
+	public bool IsModifier => Shape == SdfShape.Smooth;
+
+	/// <summary>Runtime smoothing floor from the Smooth modifiers ABOVE this brush in the stack, written by
+	/// <see cref="SdfModifiers.Apply"/> at every evaluator's entry. A plain field: never serialised, networked or
+	/// hashed — it is derived entirely from the list (the modifiers' own Blend, order and Enabled), which the
+	/// list-level hashes already cover. Copied by <see cref="Copy"/> so worker snapshots keep it.</summary>
+	internal float SmoothFloor;
+
+	/// <summary>The blend the GEOMETRY uses: <see cref="Blend"/>, raised to any Smooth modifier floor above it.
+	/// Every field evaluator (CPU sample, GPU pack, bounds padding) reads this; UI keeps reading Blend.</summary>
+	public float EffectiveBlend => SmoothFloor > 0f ? MathF.Max( Blend, SmoothFloor ) : Blend;
+
+	/// <summary>The rounding the GEOMETRY uses: <see cref="Rounding"/>, raised toward a Smooth modifier floor —
+	/// capped at the shape's <see cref="MaxRounding"/> so a big smooth can't round a small shape inside out.</summary>
+	public float EffectiveRounding => SmoothFloor > 0f
+		? MathF.Max( Rounding, MathF.Min( SmoothFloor, MaxRounding() ) )
+		: Rounding;
+
 	[Property] public Color Color { get; set; } = Color.White;
 
 	/// <summary>PBR metalness of this brush's surface. Blended across smooth-union seams exactly like Color.</summary>
@@ -364,6 +391,7 @@ public class SdfBrush
 		Blend = Blend,
 		Gap = Gap,
 		Rounding = Rounding,
+		SmoothFloor = SmoothFloor,
 		Slice = Slice,
 		Color = Color,
 		Metallic = Metallic,
@@ -533,6 +561,9 @@ public class SdfBrush
 	/// any mirror-symmetry copies.</summary>
 	public float Distance( Vector3 p )
 	{
+		if ( IsModifier ) // a modifier has no volume: never nearest, never entered, never picked
+			return 1e9f;
+
 		// A group's "primitive" is the nearest of its members' volumes (ops ignored — this is the picking /
 		// attribution measure; the field itself folds members in with their own ops, see Sdf.Sample). Members
 		// already carry the group's mirror flags, so no second mirror pass here.
@@ -563,7 +594,7 @@ public class SdfBrush
 						continue; // the un-mirrored primitive, already in d
 
 					var q = new Vector3( sx == 1 ? -p.x : p.x, sy == 1 ? -p.y : p.y, sz == 1 ? -p.z : p.z );
-					d = Sdf.SmoothUnion( d, PrimitiveDistance( q ), Blend );
+					d = Sdf.SmoothUnion( d, PrimitiveDistance( q ), EffectiveBlend );
 				}
 
 		return d;
@@ -580,16 +611,17 @@ public class SdfBrush
 
 		// Move the sample point into the brush's local space so the primitive math is axis-aligned.
 		var lp = Rotation.Inverse * (p - Position);
+		float rr = EffectiveRounding; // a Smooth modifier above may raise it
 
 		return Shape switch
 		{
-			SdfShape.Box => BoxDistance( lp, Size, Rounding ),
-			SdfShape.Cylinder => CylinderDistance( lp, Size, Rounding ),
-			SdfShape.Cone => ConeBasePivot( lp, Size, Rounding, Slice ),
-			SdfShape.Extruded => ExtrudedDistance( lp, Size, Rounding, CrossSection ),
-			SdfShape.Text => TextDistance( lp, Size, Rounding, TextData ),
+			SdfShape.Box => BoxDistance( lp, Size, rr ),
+			SdfShape.Cylinder => CylinderDistance( lp, Size, rr ),
+			SdfShape.Cone => ConeBasePivot( lp, Size, rr, Slice ),
+			SdfShape.Extruded => ExtrudedDistance( lp, Size, rr, CrossSection ),
+			SdfShape.Text => TextDistance( lp, Size, rr, TextData ),
 			_ => SliceRound( EllipsoidDistance( lp, Size ), lp.z, MathF.Max( Size.z, 1e-3f ), Slice,
-				MathF.Min( Rounding, SphereSliceMaxRounding( Size, Slice ) ) ),
+				MathF.Min( rr, SphereSliceMaxRounding( Size, Slice ) ) ),
 		};
 	}
 
@@ -919,7 +951,13 @@ public class SdfBrush
 		float bx = p.x / (rx * rx), by = p.y / (ry * ry), bz = p.z / (rz * rz);
 		float k1 = MathF.Sqrt( bx * bx + by * by + bz * bz );
 
-		return k1 > 1e-6f ? k0 * (k0 - 1f) / k1 : -MathF.Min( rx, MathF.Min( ry, rz ) );
+		float rMin = MathF.Min( rx, MathF.Min( ry, rz ) );
+		if ( k1 <= 1e-6f )
+			return -rMin;
+		float d = k0 * (k0 - 1f) / k1;
+		// Inside, IQ's estimate overestimates on stretched ellipsoids; (k0 - 1) * rMin is a guaranteed lower bound there.
+		// Mirrors sdf_eval.hlsl's sdEllipsoid (see the note there) — keep the two identical.
+		return k0 < 1f ? MathF.Max( d, (k0 - 1f) * rMin ) : d;
 	}
 
 	static float BoxDistance( Vector3 p, Vector3 b, float r )
@@ -1277,7 +1315,7 @@ public class SdfBrush
 				_ => MathF.Max( Size.x, MathF.Max( Size.y, Size.z ) ), // ellipsoid: largest radius
 
 			};
-			return r + Blend * BlendBoundsFactor; // smooth-union bulge ≈ k/4 for one blend (see AabbExtents)
+			return r + EffectiveBlend * BlendBoundsFactor; // smooth-union bulge ≈ k/4 for one blend (see AabbExtents)
 		}
 	}
 
@@ -1318,7 +1356,7 @@ public class SdfBrush
 		// additive brushes coinciding at one point stack their blends and can push past k/4 (toward k in
 		// the limit) — raise this factor if a heavily-overlapped seam ever clips. The mesher/field bounds
 		// need this padding; a VISUAL bounds (UI anchor) wants the bare primitive, so it passes false.
-		return includeBlend ? ext + Blend * BlendBoundsFactor : ext;
+		return includeBlend ? ext + EffectiveBlend * BlendBoundsFactor : ext;
 	}
 
 	// Bounds inflation as a fraction of Blend. k/4 = exact for one blend; see AabbExtents for the caveat.
@@ -1359,7 +1397,7 @@ public class SdfBrush
 				// bulges past them, so control-point bounds alone would clip the curve.
 				var lo = new Vector3( float.MaxValue );
 				var hi = new Vector3( float.MinValue );
-				float blend = includeBlend ? Blend * BlendBoundsFactor : 0f;
+				float blend = includeBlend ? EffectiveBlend * BlendBoundsFactor : 0f;
 				int n = pts.Count;
 				int k = (n == 1 || Curvature <= 1e-4f) ? 1 : SplineTessellation;
 				bool closed = IsSplineLoop;
@@ -1524,6 +1562,14 @@ public static class Sdf
 	/// <summary>Combined signed distance of the whole brush list at <paramref name="p"/>.</summary>
 	public static float Sample( List<SdfBrush> brushes, Vector3 p )
 	{
+		SdfModifiers.Apply( brushes );
+		return SamplePrepared( brushes, p );
+	}
+
+	/// <summary><see cref="Sample"/> without re-applying the Smooth modifiers — for callers that sample one unchanging
+	/// list many times: call <see cref="SdfModifiers.Apply"/> once first (it's a full pass over the list per call).</summary>
+	public static float SamplePrepared( List<SdfBrush> brushes, Vector3 p )
+	{
 		float d = 1e9f; // empty space
 		foreach ( var b in brushes )
 		{
@@ -1550,11 +1596,11 @@ public static class Sdf
 		float bd = b.Distance( p );
 		d = b.Operation switch
 		{
-			SdfOperation.Add => SmoothUnion( d, bd, b.Blend ),
-			SdfOperation.Subtract => SmoothSubtract( d, bd, b.Blend ),
+			SdfOperation.Add => SmoothUnion( d, bd, b.EffectiveBlend ),
+			SdfOperation.Subtract => SmoothSubtract( d, bd, b.EffectiveBlend ),
 			// Cutout: subtract a SHELL of the brush boundary (|bd| < Gap) — a slot where the brush
 			// surface crosses the clay, its lip rounded by Blend (Gap 0 + Blend 0 = pure recolour).
-			SdfOperation.Cutout => SmoothSubtract( d, MathF.Abs( bd ) - b.Gap, b.Blend ),
+			SdfOperation.Cutout => SmoothSubtract( d, MathF.Abs( bd ) - b.Gap, b.EffectiveBlend ),
 			// Colour: paint only — the field is untouched.
 			_ => d,
 		};
@@ -1579,6 +1625,7 @@ public static class Sdf
 	/// reads far worse than a colour edge).</summary>
 	public static SdfSurface SampleSurface( List<SdfBrush> brushes, Vector3 p )
 	{
+		SdfModifiers.Apply( brushes );
 		float d = 1e9f;
 		Color col = Color.White;
 		float metal = 0f, rough = 1f; // empty-space material; the first brush overrides it
@@ -1604,7 +1651,7 @@ public static class Sdf
 	{
 		{
 			float bd = b.Distance( p );
-			float k = b.Blend;
+			float k = b.EffectiveBlend; // Colour brushes never get a floor (SdfModifiers.Apply), so their feather is untouched
 
 			if ( b.Operation == SdfOperation.Colour )
 			{
@@ -1688,6 +1735,7 @@ public static class Sdf
 	/// stamp is being placed; render/mesh consumers leave it null (the preview surface needs coverage).</summary>
 	public static bool TryGetBounds( List<SdfBrush> brushes, out BBox bounds, SdfBrush exclude = null )
 	{
+		SdfModifiers.Apply( brushes ); // the blend padding reads EffectiveBlend
 		bounds = default;
 		bool any = false;
 		Vector3 mn = default, mx = default;
@@ -1760,6 +1808,7 @@ public static class Sdf
 
 		if ( brushes is null )
 			return;
+		SdfModifiers.Apply( brushes );
 
 		foreach ( var b0 in brushes )
 		{
@@ -1843,7 +1892,7 @@ public static class Sdf
 		return (b * (1f - h) + a * h) - k * h * (1f - h);
 	}
 
-	static float SmoothSubtract( float d, float sub, float k )
+	internal static float SmoothSubtract( float d, float sub, float k )
 	{
 		if ( k <= 0 ) return MathF.Max( d, -sub );
 		float h = Math.Clamp( 0.5f - 0.5f * (d + sub) / k, 0f, 1f );

@@ -22,10 +22,47 @@ public sealed partial class HunterController
 	bool _scrapeSeeded;
 	HunterClimb _climb;
 
+	// Unstick squelch (user, 2026-11-10): Shift peeling a clinging hunter off the wall plays a wet splat. Detected by the
+	// owner on the same gate the HUD's "Unstick" hint and both climbs read (Clinging + Run pressed, keys allowed), then
+	// broadcast so everyone hears it — or played locally only while the pawn is off the network (Hide's concealment;
+	// see DetectJumpEvents). One-shot: the Squelch.sound / squeeze clips are long loops, the Splat set are short hits.
+	/// <summary>One-shot played when Shift unsticks the hunter from a wall (null = sounds/game/splats/splat.sound).</summary>
+	[Property, Group( "Footsteps" )] public SoundEvent UnstickSound { get; set; }
+	[Property, Group( "Footsteps" ), Range( 0f, 1f )] public float UnstickVolume { get; set; } = 0.6f;
+
+	const string UnstickSoundPath = "sounds/game/splats/splat.sound";
+
+	void UpdateUnstickSquelch()
+	{
+		if ( !Owned || !_simKeysAllowed || !Clinging || Concealed || !Input.Pressed( "run" ) )
+			return;
+		if ( GameObject.Network.Active )
+			BroadcastUnstickSquelch();
+		else
+			PlayUnstickSquelch();
+	}
+
+	[Rpc.Broadcast] void BroadcastUnstickSquelch() => PlayUnstickSquelch();
+
+	void PlayUnstickSquelch()
+	{
+		var sound = UnstickSound ?? ResourceLibrary.Get<SoundEvent>( UnstickSoundPath );
+		if ( sound is null || !_controller.IsValid() )
+			return;
+		// The middle of the body, where it was stuck to the wall (as the climb scrape).
+		var handle = Sound.Play( sound, _controller.WorldPosition + Vector3.Up * _controller.CurrentHeight * 0.5f );
+		if ( handle is { IsValid: true } )
+		{
+			handle.TargetMixer = _controller.FootstepMixer.GetOrDefault();
+			handle.Volume *= UnstickVolume;
+		}
+	}
+
 	void UpdateScrape()
 	{
 		if ( !_controller.IsValid() )
 			return;
+		UpdateUnstickSquelch();
 		_climb ??= Components.Get<HunterClimb>();
 
 		var pos = _controller.WorldPosition;

@@ -31,9 +31,9 @@ public sealed class BrushGhost
 
 	public void Show( SdfBrush brush, Transform sculptTx, Scene scene, Color color )
 	{
-		if ( brush is null || scene is null )
+		if ( brush is null || scene is null || brush.IsModifier )
 		{
-			Hide();
+			Hide(); // a modifier has no shape to ghost
 			return;
 		}
 

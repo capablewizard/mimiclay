@@ -258,20 +258,40 @@ public static class SdfCollisionDebug
 		return snap;
 	}
 
+	// Editor preview build budget (see EditorSnapshot): at most BuildBudgetMs of builds per BudgetWindowMs.
+	const double BuildBudgetMs = 30, BudgetWindowMs = 100;
+	// SkipHotload: a hotload once carried the window start over but not the clock, so "now − start" stayed negative, the
+	// window never reset, and no preview rebuilt again (the lettuce's collider view froze on an old shape).
+	[SkipHotload] static readonly System.Diagnostics.Stopwatch _budgetClock = System.Diagnostics.Stopwatch.StartNew();
+	[SkipHotload] static double _budgetWindowStart, _budgetSpentMs;
+
 	// EDITOR: a private preview build, same inputs Rebuild uses (the brush selection).
 	static Snapshot EditorSnapshot( SdfCollider collider )
 	{
 		var brushes = collider.CollisionBrushes();
 		int key = HashCode.Combine(
 			SdfSculpture.ContentHashPrefix( brushes, brushes?.Count ?? 0, 0, false ),
-			SdfCollisionBuilder.CodeVersion );
+			SdfCollisionBuilder.CodeVersion, collider.EffectiveMaxShapes );
 
 		var snap = collider.DebugSnapshot;
 		if ( snap is not null && (snap.Key == key || snap.Built < EditorRebuildInterval) )
 			return snap;
 
+		// Per-frame build budget. Every collider's gizmo asks in the SAME frame, so turning the view on (or a hotload, or
+		// opening a scene) built every collider in the scene at once on the main thread — long enough for the editor's
+		// stall watchdog to kill it. Past the budget, the rest keep their last preview (or none) and build next frame.
+		var now = _budgetClock.Elapsed.TotalMilliseconds;
+		if ( now < _budgetWindowStart || now - _budgetWindowStart > BudgetWindowMs ) // a clock that went backwards (hotload) restarts the window too
+		{
+			_budgetWindowStart = now;
+			_budgetSpentMs = 0;
+		}
+		if ( _budgetSpentMs >= BuildBudgetMs )
+			return snap;
+
 		var emitted = new List<SdfCollisionBuilder.EmittedShape>();
-		var model = SdfCollisionBuilder.Build( brushes, null, null, emitted );
+		var model = SdfCollisionBuilder.Build( brushes, null, null, emitted, collider.EffectiveMaxShapes );
+		_budgetSpentMs += _budgetClock.Elapsed.TotalMilliseconds - now;
 
 		snap = Derive( model, emitted, brushes );
 		snap.Key = key;

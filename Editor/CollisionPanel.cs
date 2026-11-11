@@ -145,6 +145,10 @@ public static class CollisionPanel
 		}
 	}
 
+	/// <summary>This viewport's collision panel, for panels that stack on top of it (Physics Scatter). Null when hidden.</summary>
+	internal static CollisionPanelWidget WidgetFor( SceneViewportWidget viewport )
+		=> _widgets.TryGetValue( viewport, out var widget ) && widget.IsValid() ? widget : null;
+
 	static void DestroyAll()
 	{
 		foreach ( var widget in _widgets.Values )

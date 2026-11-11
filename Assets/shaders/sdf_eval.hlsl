@@ -38,7 +38,17 @@ float sdEllipsoid( float3 p, float3 r )
 	r = max( r, 1e-3 );
 	float k0 = length( p / r );
 	float k1 = length( p / (r * r) );
-	return k1 > 1e-6 ? k0 * (k0 - 1.0) / k1 : -min( r.x, min( r.y, r.z ) );
+	float rMin = min( r.x, min( r.y, r.z ) );
+	if ( k1 <= 1e-6 )
+		return -rMin;
+	float d = k0 * (k0 - 1.0) / k1;
+	// INSIDE, IQ's estimate overestimates on stretched ellipsoids (measured: -28.8 where the true distance is -11.05,
+	// radii 38 x 11.9 x 43.5). For a SUBTRACT brush the inside is the empty space a ray crosses, so the march
+	// overstepped into the clay by up to ~18u and the hit wobbled with the view (dark blobs on a carved cushion,
+	// 2026-11-10). (k0 - 1) * rMin is a guaranteed lower bound there (a ball of that radius maps inside the unit
+	// sphere); take whichever is smaller in magnitude. Exact for spheres, so uniform Size is unchanged.
+	// Mirrored in SdfBrush.EllipsoidDistance.
+	return k0 < 1.0 ? max( d, (k0 - 1.0) * rMin ) : d;
 }
 
 float sdBox( float3 p, float3 b, float r )

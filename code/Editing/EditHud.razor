@@ -138,7 +138,8 @@
 							continue; // the pending stamp ghost isn't a real layer yet — no row
 						<LayerRow @key=@b class=@(LayerClass( idx )) style=@(LayerStyle( idx ))
 							Index=@idx Shape=@b.Shape Operation=@b.Operation Color=@b.Color
-							Enabled=@b.Enabled SymmetryOn=@(b.MirrorX || b.MirrorY || b.MirrorZ)
+							Enabled=@b.Enabled SymmetryOn=@(b.MirrorX || b.MirrorY || b.MirrorZ) Amount=@b.Blend
+							AmountScrubBegin=@HandleAmountScrubBegin AmountScrubMove=@HandleAmountScrubMove AmountScrubEnd=@HandleAmountScrubEnd
 							PressStart=@HandlePressStart Pick=@HandlePick DragBegin=@HandleDragBegin DragMove=@HandleDragMove DragEnd=@HandleDragEnd
 							ToggleEnabled=@HandleToggleEnabled ToggleOperation=@HandleToggleOperation
 							ToggleSymmetry=@HandleToggleSymmetry DeleteRow=@HandleDelete
@@ -204,6 +205,15 @@
 							<div class="icon">@SdfIcons.Redo</div><span>Redo</span>
 						</div>
 					</div>
+					}
+					@* Smooth: adds a Smooth MODIFIER layer — no shape of its own, it smooths every layer under it in the
+					   stack (SdfModifiers). Lands just above the selected layer, or on top of the stack with nothing
+					   selected. Always offered (not a selection-only tool); hidden while the tutorial trims to basics. *@
+					@if ( EditHudGate.Visible( HudSection.EditChips ) && !EditHudGate.BasicShapesOnly )
+					{
+						<div class="chip action @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.AddModifier( SdfShape.Smooth ) ))>
+							<div class="icon">@SdfIcons.Modifier</div><span>Add Smooth</span>
+						</div>
 					}
 					@if ( Session.Tool == SculptTool.Gizmo && Brush is not null && EditHudGate.Visible( HudSection.EditChips ) )
 					{
@@ -332,10 +342,10 @@
 		if ( palettePos.HasValue )
 			_palettePos = palettePos.Value;
 
-		if ( ShowPalette && EditHudGate.Visible( HudSection.Palette ) )
+		if ( PaletteOn && EditHudGate.Visible( HudSection.Palette ) )
 		{
 			var paletteGate = EditHudGate.Of( HudSection.Palette );
-			var paletteShown = Brush is not null && palettePos.HasValue;
+			var paletteShown = Brush is not null && !Brush.IsModifier && palettePos.HasValue; // a modifier has no material
 			@* The lock dim rides the inline opacity (a class can't override an inline style). *@
 			var paletteOpacity = (!paletteShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f))
 				* (paletteGate == SectionState.Locked ? LockDim : 1f);
@@ -375,7 +385,7 @@
 		if ( ShowPicker && EditHudGate.Visible( HudSection.Picker ) )
 		{
 			var pickerGate = EditHudGate.Of( HudSection.Picker );
-			var pickerShown = Brush is not null && pickerPos.HasValue;
+			var pickerShown = Brush is not null && !Brush.IsModifier && pickerPos.HasValue;
 			var pickerOpacity = (!pickerShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f))
 				* (pickerGate == SectionState.Locked ? LockDim : 1f);
 			var pfb = _fadeBrush;
@@ -433,6 +443,7 @@
 			var isCone = fb?.Shape == SdfShape.Cone;
 			var isText = fb?.Shape == SdfShape.Text;
 			var isGroup = fb?.Shape == SdfShape.Group; // add-only, no roundness: just Blend (+ material elsewhere)
+			var isModifier = fb?.IsModifier == true; // Smooth: one amount slider, no op / round / material
 			var xsVal = fb?.CrossSection ?? SdfCrossSection.Triangle;
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
@@ -440,13 +451,14 @@
 			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @((int)SliderStripWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				@* Add/Carve/Cutout/Colour cycle for the active brush (ghost or selection) — same cycle the A key steps. *@
 				@{ var opNow = fb?.Operation ?? SdfOperation.Add; }
-				@if ( !isGroup )
+				@if ( !isGroup && !isModifier )
 				{
 					<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : opNow == SdfOperation.Colour ? "colour" : "") @(StripFired( "a" ) ? "fired" : "")" @onclick=@ToggleActiveOperation>
 						<div class="slider-key">A</div><span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : opNow == SdfOperation.Colour ? "Colour" : "Add")</span>
 					</div>
 				}
-				<ClaySlider Label="Blend" Key="S" Fired=@StripFired( "s" ) Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
+				@* A modifier's amount rides in Blend (SdfModifiers) — same S key + scrub, its own label. *@
+					<ClaySlider Label=@(isModifier ? "Smooth" : "Blend") Key="S" Fired=@StripFired( "s" ) Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
 					Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
 				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
@@ -472,7 +484,7 @@
 						</div>
 					</div>
 				}
-				else if ( !isGroup )
+				else if ( !isGroup && !isModifier )
 				{
 					<ClaySlider Label="Round" Key="D" Fired=@StripFired( "d" ) Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
 						OnInput=@((float v) => SetRounding( v )) OnCommit=@CommitEdit />
@@ -525,7 +537,7 @@
 		   with a stamp held it re-moulds the ghost, with a selection it converts the brush in place.
 		   Hidden with no active brush — the Tools panel's "Add Shape" button (or Q / number keys) is the
 		   entry point then. *@
-		@if ( ShowTools && Brush is not null && EditHudGate.Visible( HudSection.ShapeDock ) )
+		@if ( ShowTools && Brush is not null && !Brush.IsModifier && EditHudGate.Visible( HudSection.ShapeDock ) ) @* a Smooth layer isn't a shape: no shape row *@
 		{
 			var shapeDockPos = ShapeDockPos();
 			if ( shapeDockPos.HasValue )
@@ -824,7 +836,7 @@
 		bool group = b.Shape == SdfShape.Group;
 		return key switch
 		{
-			"a" or "d" => !group,
+			"a" or "d" => !group && !b.IsModifier,
 			"s" => true,
 			"f" => b.Shape is SdfShape.Sphere or SdfShape.Cone or SdfShape.Extruded,
 			"g" => b.Operation == SdfOperation.Cutout,
@@ -896,14 +908,15 @@
 						yield return new( "Del", "Delete", RawKey: "delete", Click: ClickDelete );
 					}
 				}
-				if ( s.ActiveBrush is not null )
+				if ( s.ActiveBrush is not null && !s.ActiveBrush.IsModifier )
 				{
 					yield return new( "Scroll", "Depth", Wheel: true );
 					yield return new( "R", "Scale", RawKey: "r", Hold: "r" );
 					yield return new( "E", "Rotate", RawKey: "e", Hold: "e" );
 					yield return new( "Shift", "Snap (Standing)", RawKey: "shift", Hold: "shift" );
 				}
-				yield return new( "1-7", s.Tool == SculptTool.Sculpt || s.SelectedBrush is not null ? "Shape" : "Add Shape", HotkeyActs.Slots1To7 );
+				if ( s.SelectedBrush is not { IsModifier: true } ) // a Smooth layer doesn't convert to a shape
+					yield return new( "1-7", s.Tool == SculptTool.Sculpt || s.SelectedBrush is not null ? "Shape" : "Add Shape", HotkeyActs.Slots1To7 );
 				yield return new( "Alt", "Cursor + All Keys", Act( "Walk" ) );
 				yield return new( "Tab", "Wireframe", Act( "ToggleWireframes" ), Click: ClickWireframe );
 				yield return new( "Q", "Done", Act( "Edit" ), Click: ClickDone );
@@ -947,7 +960,7 @@
 			// deselects, but the drag is what the card teaches.
 			yield return new( "MMB", "Pan", Act( "CameraPan" ), Nav: AltNav.Gesture.Pan );
 			yield return new( "RMB", "Zoom", Act( "Attack2" ), Nav: AltNav.Gesture.Dolly );
-			if ( s.SelectedBrush is not null )
+			if ( s.SelectedBrush is not null && !s.SelectedBrush.IsModifier ) // a Smooth layer has no transform: no depth/move/scale/rotate
 			{
 				// (No Ctrl+LMB multi-select or Shift snap cards — trimmed: the modifiers are learnt, not read off a bar.)
 				yield return new( "Scroll", "Depth", Wheel: true );
@@ -1012,6 +1025,11 @@
 	[Property, Group( "Panels" )] public bool ShowLayers { get; set; } = true;
 	/// <summary>Show the floating colour palette anchored to the gizmo.</summary>
 	[Property, Group( "Panels" )] public bool ShowPalette { get; set; } = true;
+
+	// The colour pips (the swatch grid under the picker) are switched OFF for now — they made room for the Tools
+	// column's Smooth button; the wheel + metal/rough picker drops into their bottom-right slot (PickerPos).
+	const bool ColourPipsEnabled = false;
+	bool PaletteOn => ShowPalette && ColourPipsEnabled;
 	/// <summary>Show the floating colour wheel + metal/rough sliders to the right of the palette.</summary>
 	[Property, Group( "Panels" )] public bool ShowPicker { get; set; } = true;
 	/// <summary>Show the floating blend/round sliders under the gizmo.</summary>
@@ -1387,6 +1405,24 @@
 
 	// Per-row icon buttons.
 	void HandleToggleEnabled( int idx ) => Session?.ToggleEnabled( idx );
+
+	// A Smooth row's amount scrub (drag the 0–100 value sideways): live-previews that ONE row's Blend from where the
+	// press started, then commits once on release (one undo step). Full range over AmountScrubRangePx of travel.
+	const float AmountScrubRangePx = 200f;
+	float _amountScrubStart;
+	void HandleAmountScrubBegin( int idx )
+	{
+		if ( Session?.Target?.Brushes is { } list && idx >= 0 && idx < list.Count )
+			_amountScrubStart = list[idx].Blend;
+	}
+	void HandleAmountScrubMove( int idx, float dx )
+	{
+		if ( Session?.Target?.Brushes is not { } list || idx < 0 || idx >= list.Count || !list[idx].IsModifier )
+			return;
+		list[idx].Blend = Math.Clamp( _amountScrubStart + dx / AmountScrubRangePx * SdfBrush.MaxBlend, 0f, SdfBrush.MaxBlend );
+		Session.PreviewChanged();
+	}
+	void HandleAmountScrubEnd() => Session?.CommitChanged();
 	void HandleToggleOperation( int idx ) => Session?.ToggleOperation( idx );
 	void HandleToggleSymmetry( int idx ) => Session?.ToggleSymmetry( idx );
 	void HandleDelete( int idx ) => Session?.Remove( idx );
@@ -2054,7 +2090,7 @@
 			ph = pp.Box.Rect.Height * sc;
 
 		float bottom = Screen.Height * sc - m;
-		if ( ShowPalette && PalettePos() is { } pal )
+		if ( PaletteOn && PalettePos() is { } pal )
 			bottom = pal.y - PickerGap;
 
 		return new Vector2(
@@ -2117,7 +2153,7 @@
 		hc.Add( NoSolidToast ); // transient "must have at least 1 shape" toast appears/disappears
 		hc.Add( s?.ExitConfirmPending ?? false ); // exit-confirm dialog mounts/unmounts
 		hc.Add( s?.ExitConfirmTooBig ?? false );
-		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( ShowPalette ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
+		hc.Add( ShowTools ); hc.Add( ShowLayers ); hc.Add( PaletteOn ); hc.Add( ShowSliders ); hc.Add( ShowBounds );
 		hc.Add( ShowPicker );
 		hc.Add( TutorialDirector.HintStripHidden ); // the tutorial fades the hotkey bar while guiding
 		hc.Add( (int)BarClearance ); // the docks above the hotkey bar re-place when it changes height (wraps / empties)
@@ -2181,6 +2217,8 @@
 				hc.Add( br.Color );
 				hc.Add( br.MirrorX ); hc.Add( br.MirrorY ); hc.Add( br.MirrorZ );
 				hc.Add( br.GroupKind ); // group tile highlight / kind swap
+				if ( br.IsModifier )
+					hc.Add( br.Blend ); // a Smooth row shows its amount
 			}
 
 		hc.Add( _dragIndex );

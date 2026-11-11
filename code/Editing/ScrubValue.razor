@@ -1,0 +1,55 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits Panel
+
+@*
+	A number you change by DRAGGING it sideways (press on it, slide right = up, left = down) — the Smooth layer
+	row's 0–100 amount. A real Panel subclass that opts into the engine's drag system itself: FindDragTarget picks
+	the FIRST WantsDrag panel walking up from the press, so a press here makes THIS the drag source, and every
+	drag event is stopped here so the row's drag-to-reorder never sees it. Reports the horizontal travel; the owner maps it to a value and commits on release.
+*@
+
+<label class="scrub-text">@Value</label>
+
+@code
+{
+	/// <summary>What the cell shows.</summary>
+	[Parameter] public int Value { get; set; }
+
+	/// <summary>A scrub began (the press dragged past the engine's drag threshold).</summary>
+	[Parameter] public Action ScrubBegin { get; set; }
+
+	/// <summary>The scrub moved. Arg: horizontal travel since the press, in UI px (right = positive).</summary>
+	[Parameter] public Action<float> ScrubMove { get; set; }
+
+	/// <summary>The scrub finished — commit the edit.</summary>
+	[Parameter] public Action ScrubEnd { get; set; }
+
+	public override bool WantsDrag => true;
+
+	// Drag events BUBBLE (Panel.OnEvent hands them on to the parent unless stopped), so without StopPropagation the
+	// row above would get the same OnDragStart/OnDrag/OnDragEnd and start its drag-to-reorder alongside the scrub.
+	protected override void OnDragStart( DragEvent e )
+	{
+		e.StopPropagation();
+		ScrubBegin?.Invoke();
+	}
+
+	// DragEvent positions are real screen px; scale them into UI px so the scrub rate doesn't change with the
+	// HUD's resolution scale.
+	protected override void OnDrag( DragEvent e )
+	{
+		e.StopPropagation();
+		ScrubMove?.Invoke( (e.ScreenPosition.x - e.ScreenGrabPosition.x) * ScaleFromScreen );
+	}
+
+	protected override void OnDragEnd( DragEvent e )
+	{
+		e.StopPropagation();
+		ScrubEnd?.Invoke();
+	}
+
+	protected override int BuildHash() => HashCode.Combine( Value );
+}

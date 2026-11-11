@@ -9,7 +9,8 @@
 	(not an inline <div>) so it can opt into s&box's native drag system — WantsDrag marks it as a drag
 	source and the engine calls the OnDrag* virtuals; the reorder itself lives in the HUD.
 
-	Icons left→right: visibility · shape · colour · add/subtract · symmetry · delete. The glyphs all come
+	Icons left→right: visibility · shape · colour · add/subtract · symmetry · delete. A Smooth modifier row
+	swaps the middle for its name + amount (grip · eye · SMOOTH · 0–100 · delete). The glyphs all come
 	from SdfIcons (one place to retune them). The eye/symmetry/bin cells are buttons; the shape/colour/op
 	cells are display-only (pointer-events:none) so dragging works from them.
 *@
@@ -20,15 +21,29 @@
 	<div class="icon">@(Enabled ? SdfIcons.Visible : SdfIcons.Hidden)</div>
 </div>
 
-<div class="cell shapeswatch" style=@ShapeSwatchStyle()></div>
+@if ( Shape == SdfShape.Smooth )
+{
+	@* A Smooth MODIFIER, not a shape. It keeps the shape rows' six slots (same widths) so the eye, value and bin
+	   sit in exactly the same columns: the name starts at the shape swatch's left edge and runs on over the empty op
+	   slot (absolute inside the swatch slot), and the amount (0–100) takes the symmetry slot —
+	   drag it sideways to change it. The name/empty slots are display-only so a row drag can start from them. *@
+	<div class="cell swatchslot"><div class="modword">SMOOTH</div></div>
+	<div class="cell opslot"></div>
+	@* The amount scrubs: press it and slide right/left (ScrubValue). An .iconbtn, so it hovers like the others. *@
+	<ScrubValue class="cell iconbtn modvalue" Value=@AmountPercent ScrubBegin=@OnScrubBegin ScrubMove=@OnScrubMove ScrubEnd=@OnScrubEnd />
+}
+else
+{
+	<div class="cell shapeswatch" style=@ShapeSwatchStyle()></div>
 
-<div class="cell icon iconbtn op @(Operation == SdfOperation.Subtract ? "sub" : Operation == SdfOperation.Cutout ? "cut" : Operation == SdfOperation.Colour ? "col" : "add")" onclick=@OnToggleOperation>
-	@(Operation == SdfOperation.Subtract ? SdfIcons.Subtract : Operation == SdfOperation.Cutout ? SdfIcons.Cutout : Operation == SdfOperation.Colour ? SdfIcons.Colour : SdfIcons.Add)
-</div>
+	<div class="cell icon iconbtn op @(Operation == SdfOperation.Subtract ? "sub" : Operation == SdfOperation.Cutout ? "cut" : Operation == SdfOperation.Colour ? "col" : "add")" onclick=@OnToggleOperation>
+		@(Operation == SdfOperation.Subtract ? SdfIcons.Subtract : Operation == SdfOperation.Cutout ? SdfIcons.Cutout : Operation == SdfOperation.Colour ? SdfIcons.Colour : SdfIcons.Add)
+	</div>
 
-<div class="cell iconbtn sym @(SymmetryOn ? "on" : "")" onclick=@OnToggleSymmetry>
-	<div class="icon">@SdfIcons.Symmetry</div>
-</div>
+	<div class="cell iconbtn sym @(SymmetryOn ? "on" : "")" onclick=@OnToggleSymmetry>
+		<div class="icon">@SdfIcons.Symmetry</div>
+	</div>
+}
 
 <div class="cell iconbtn bin" onclick=@OnDelete>
 	<div class="icon">@SdfIcons.Delete</div>
@@ -45,6 +60,21 @@
 	[Parameter] public bool Enabled { get; set; }
 	/// <summary>Whether any mirror axis is on — drives the symmetry button highlight.</summary>
 	[Parameter] public bool SymmetryOn { get; set; }
+	/// <summary>A Smooth modifier's amount (its Blend, 0 .. SdfBrush.MaxBlend) — shown on the row as 0–100.</summary>
+	[Parameter] public float Amount { get; set; }
+
+	int AmountPercent => (int)MathF.Round( Math.Clamp( Amount / SdfBrush.MaxBlend, 0f, 1f ) * 100f );
+
+	/// <summary>The amount cell's scrub began (arg: this row's index).</summary>
+	[Parameter] public Action<int> AmountScrubBegin { get; set; }
+	/// <summary>The amount cell scrubbed. Args: index, horizontal travel since the press in UI px.</summary>
+	[Parameter] public Action<int, float> AmountScrubMove { get; set; }
+	/// <summary>The amount scrub finished — commit.</summary>
+	[Parameter] public Action AmountScrubEnd { get; set; }
+
+	void OnScrubBegin() => AmountScrubBegin?.Invoke( Index );
+	void OnScrubMove( float dx ) => AmountScrubMove?.Invoke( Index, dx );
+	void OnScrubEnd() => AmountScrubEnd?.Invoke();
 
 	/// <summary>A press began on this row (OnMouseDown) — lets the HUD reset its click-vs-drag flag.</summary>
 	[Parameter] public Action PressStart { get; set; }

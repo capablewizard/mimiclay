@@ -913,6 +913,9 @@ public static class BrushScrub
 		// Blend/round/wildcard/gap live on the HUD sliders (hold alt for the cursor); W move is the LMB grab.
 		if ( lockedKeys )
 			blendKey = roundKey = wildKey = gapKey = moveKey = false;
+		// A Smooth modifier has one value (its amount, on S) and no transform: every other scrub is dead on it.
+		if ( b is { IsModifier: true } )
+			roundKey = wildKey = gapKey = moveKey = scale = rot = false;
 		bool blendP = blendKey && !_blendWas, roundP = roundKey && !_roundWas, wildP = wildKey && !_wildWas,
 			gapP = gapKey && !_gapWas, moveP = moveKey && !_moveWas, scaleP = scale && !_scaleWas, rotP = rot && !_rotWas;
 		_blendWas = blendKey; _roundWas = roundKey; _wildWas = wildKey; _gapWas = gapKey; _moveWas = moveKey; _scaleWas = scale; _rotWas = rot;

@@ -128,6 +128,24 @@ public sealed partial class HiderController
 	SceneTraceResult HullSweep( Vector3 from, Rotation rot, Vector3 to )
 		=> _hull.Sweep( MoveTrace, new Transform( from, rot ), new Transform( to, rot ) );
 
+	/// <summary>Sweep this prop's single convex move hull (pawn-root transforms) through <paramref name="trace"/> — for a
+	/// holder clamping where it carries us (GrabHolder). The real compound collider can be hundreds of hulls (a lettuce:
+	/// 217, ~16 ms per sweep); the move hull is one shape enclosing the clay. False when there's no hull yet.</summary>
+	internal bool TrySweepMoveHull( SceneTrace trace, in Transform from, in Transform to, out SceneTraceResult result )
+	{
+		// A pawn converted this frame hasn't run OnStart yet, so _collider isn't bound — but the disguise's collider built
+		// when the pawn was enabled, so derive the hull from it straight away (a grab's first frames otherwise had no hull).
+		var collider = _collider.IsValid() ? _collider : GameObject.Components.Get<SdfCollider>( FindMode.EnabledInSelfAndDescendants );
+		_hull.Refresh( collider, Scene.PhysicsWorld );
+		if ( !_hull.Ready )
+		{
+			result = default;
+			return false;
+		}
+		result = _hull.Sweep( trace, from, to );
+		return true;
+	}
+
 	bool PoseBlocked( Vector3 pos, Rotation rot )
 		=> _hull.Overlaps( Scene, MoveTrace, GameObject, MoveIgnoreTags, new Transform( pos, rot ) );
 

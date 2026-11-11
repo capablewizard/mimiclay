@@ -17,6 +17,7 @@ public static class SdfIcons
 		SdfShape.Spline => "polyline",          // multi-point path
 		SdfShape.Text => "text_fields",         // "T" glyph
 		SdfShape.Group => "sentiment_satisfied", // a prefab set (mouths are the first); kinds can override via SdfGroupKind.Glyph
+		SdfShape.Smooth => "blur_on",            // the smoothing modifier
 		_ => "category",
 	};
 
@@ -74,6 +75,7 @@ public static class SdfIcons
 	public const string Subtract = "remove";
 	public const string Cutout = "content_cut"; // scissors — the score-and-recolour op
 	public const string Colour = "palette"; // paint palette — the paint-only op
+	public const string Modifier = "blur_on"; // the Tools column's Smooth button (adds a Smooth modifier layer)
 	public const string Symmetry = "flip"; // a shape mirrored across a dashed line
 	public const string Delete = "delete";
 	public const string Duplicate = "content_copy";

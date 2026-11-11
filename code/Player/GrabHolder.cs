@@ -312,7 +312,7 @@ public sealed class GrabHolder
 		// UnstickStep from the near end, so the target flipped between that and the fallback's every frame
 		// at the pitch where the two met (a 29u jump each way: the jitter there).
 		bool aimSpan = far > near + 0.5f;
-		var aim = aimSpan ? Trace( held ).Sweep( body, RootAt( near ), RootAt( far ) ).Run() : default;
+		var aim = aimSpan ? Sweep( held, body, RootAt( near ), RootAt( far ) ) : default;
 		if ( aimSpan && !aim.StartedSolid && (!aim.Hit || aim.Fraction > 0.001f) )
 		{
 			if ( !aim.Hit )
@@ -333,7 +333,7 @@ public sealed class GrabHolder
 		var centreNow = held.WorldTransform.PointToWorld( _centre );
 		var travel = desired + rotation * _centre - centreNow;
 		Vector3 RootFor( Vector3 move ) => centreNow + move - rotation * _centre;
-		var path = Trace( held ).Sweep( body, now, now.WithPosition( now.Position + travel ) ).Run();
+		var path = Sweep( held, body, now, now.WithPosition( now.Position + travel ) );
 
 		// Starting inside something too (resting contact, the press, a prop bigger than the gap we're in):
 		// there's no clear point to aim for, so ask for a short step toward the target. Not "stay where it
@@ -364,7 +364,7 @@ public sealed class GrabHolder
 		var rest = travel * (1f - hit.Fraction);
 		var slide = rest - hit.Normal * Vector3.Dot( rest, hit.Normal );
 		var at = start.WithPosition( start.Position + toContact );
-		var slid = Trace( held ).Sweep( body, at, at.WithPosition( at.Position + slide ) ).Run();
+		var slid = Sweep( held, body, at, at.WithPosition( at.Position + slide ) );
 		var moved = toContact + (slid.StartedSolid ? slide.ClampLength( UnstickStep ) : slide * slid.Fraction);
 
 		// The press scales with how hard you PUSH: how far past the surface the aim wants the prop (the part of
@@ -409,6 +409,20 @@ public sealed class GrabHolder
 		.IgnoreGameObjectHierarchy( held )
 		.IgnoreGameObjectHierarchy( _owner.GameObject )
 		.WithoutTags( "trigger", "headcollider", "water" );
+
+	// Sweep the held prop from `from` to `to` (root transforms). A prop pawn sweeps its single convex move hull: the live
+	// body is the full compound collider — a leafy prop (lettuce) is 217 hulls at ~16 ms a sweep, and a frame here runs
+	// two, which pinned Update at ~20 ms while carrying it. The hull encloses the clay, so the clamp only gets slightly
+	// more conservative (concavities ignored — the same trade the prop's own movement makes). A prop pawn with no hull yet
+	// (nothing built) reports a clear path rather than paying for the compound body: the clamp just skips that frame.
+	// Anything else (a scene decoy held as it is): the body.
+	SceneTraceResult Sweep( GameObject held, PhysicsBody body, Transform from, Transform to )
+	{
+		var trace = Trace( held );
+		if ( held.Components.Get<HiderController>() is { } hider && hider.IsValid() )
+			return hider.TrySweepMoveHull( trace, from, to, out var tr ) ? tr : default;
+		return trace.Sweep( body, from, to ).Run();
+	}
 
 	void Seed( GameObject held, Vector3 eye, float viewYaw )
 	{

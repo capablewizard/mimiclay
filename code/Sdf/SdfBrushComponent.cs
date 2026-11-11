@@ -23,8 +23,42 @@ namespace Mimiclay;
 // routes the first click to the outermost prefab root and only the next one to the child, so clicks on a
 // converted prefab would alternate between the sculpture and the shape.
 [SelectionBase]
-public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor
+public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor, Component.IHasBounds
 {
+	/// <summary>The shape's extent in this object's LOCAL (scaled) space — the object's scale IS the brush size, so a
+	/// unit box (±1) is a box brush exactly. Mostly for the editor's native Scale tool, which divides the drag by
+	/// the object's bounds size: with no bounds it treats the object as 1 unit wide and a 20-unit brush grows ~20×
+	/// per inch dragged. With real bounds the dragged face follows the cursor. Also gives F (frame selection) a
+	/// real box to frame.</summary>
+	BBox Component.IHasBounds.LocalBounds
+	{
+		get
+		{
+			if ( Shape == SdfShape.Spline )
+			{
+				// Points are children: their LocalPosition is already in this object's space; radius likewise.
+				BBox? b = null;
+				foreach ( var child in GameObject.Children )
+				{
+					var p = child.IsValid() ? child.Components.Get<SdfSplinePoint>() : null;
+					if ( p is null )
+						continue;
+					var pb = BBox.FromPositionAndSize( child.LocalPosition, p.Radius * 2f );
+					b = b is { } acc ? acc.AddBBox( pb ) : pb;
+				}
+				return b ?? BBox.FromPositionAndSize( Vector3.Zero, 1f );
+			}
+
+			// Cylinder/cone use Size.x for both round axes (see SdfBrushGizmos.Hitbox), so their local y extent is
+			// Size.x / Size.y. The cone stands on its pivot (local z 0..2); the rest are centred.
+			var s = WorldScale;
+			float y = Shape is SdfShape.Cylinder or SdfShape.Cone && MathF.Abs( s.y ) > 1e-4f ? MathF.Abs( s.x / s.y ) : 1f;
+			var ext = new Vector3( 1f, y, 1f );
+			var centre = Shape == SdfShape.Cone ? new Vector3( 0f, 0f, 1f ) : Vector3.Zero;
+			return BBox.FromPositionAndSize( centre, ext * 2f );
+		}
+	}
+
 	/// <summary>Editor master switch for brush outlines + hitboxes (the viewport eye toggle). Off = the
 	/// brushes draw nothing and register no hitboxes, so the scene behaves as if they weren't there.</summary>
 	public static bool GizmosVisible = true;

@@ -145,6 +145,12 @@ public static class ConvexHull
 					continue;
 				n = n.Normal;
 				int id = faces.Count;
+				// Runaway guard: near-degenerate input (grid-aligned, many coplanar points) can leave the incremental
+				// hull open, and every later point then re-adds faces without bound — the tankard's 20-cell fit grid
+				// hung here for minutes (and the editor's collision gizmos with it). A real hull's faces created
+				// over the whole pass stay a small multiple of the point count; past this, give up as degenerate.
+				if ( faces.Count > 64 * pts.Count + 4096 )
+					return false;
 				faces.Add( new Face { A = a, B = b, C = pi, N = n, D = Vector3.Dot( n, pts[a] ), Alive = true } );
 				edges[(a, b)] = id;
 				edges[(b, pi)] = id;
@@ -219,11 +225,15 @@ public static class ConvexHull
 		int next = Farthest( verts, i => (verts[i] - centroid).LengthSquared );
 		while ( picked.Count < count )
 		{
-			picked.Add( verts[next] );
+			// Measure from the point just PICKED — `next` is reassigned inside the scan below, and measuring from it
+			// (as this once did) collapsed a thinned hull onto one or two points. Physics' quickhull then corrupted its
+			// heap on the degenerate cloud: the editor died a beat later, when the collision gizmos built the fit hulls.
+			var p = verts[next];
+			picked.Add( p );
 			float best = -1f;
 			for ( int i = 0; i < verts.Count; i++ )
 			{
-				minD[i] = MathF.Min( minD[i], (verts[i] - verts[next]).LengthSquared );
+				minD[i] = MathF.Min( minD[i], (verts[i] - p).LengthSquared );
 				if ( minD[i] > best )
 				{
 					best = minD[i];

@@ -1061,6 +1061,8 @@ PS
 		if ( tExit < tEnter )
 			return false;
 
+		bool depthClamped = false; // tExit came from the scene-depth clamp, not the bounds
+
 	#if ( S_MODE_DEPTH == 0 )
 		// Scene-depth occlusion clamp — FORWARD pass only (S_MODE_DEPTH covers the camera prepass,
 		// where the chain is still being written this frame, and every shadow view, where the bound
@@ -1079,6 +1081,7 @@ PS
 			float tScene = dot( sceneWp - ro, rd ) + 2.0;
 			if ( tEnter > tScene )
 				return false;
+			depthClamped = tScene < tExit;
 			tExit = min( tExit, tScene );
 		}
 	#endif
@@ -1185,9 +1188,19 @@ PS
 				// around hitP, so interior hits paint lump-shaped albedo blotches (seen on raw props
 				// 2026-08-15). 3d keeps the grazing win down to cosθ≈⅓ while bounding the overshoot to
 				// the same order as the old "+d" refine. The first sample has no pair -> plain +d.
-				float refine = ( prevStep > 0.0 && prevD > d )
-					? clamp( d * prevStep / ( prevD - d ), d, min( prevStep, 3.0 * d ) )
-					: d;
+				// OVERSHOT (d < 0): the step landed INSIDE — the field overestimated (the ellipsoid approximation
+				// inside a stretched subtract brush, wide smooth-subtract blends). The root is then bracketed
+				// between the previous sample (outside) and this one, so the secant is exact-ish and needs no cap.
+				// The 3d cap must NOT apply here: with d < 0 its bounds invert (3d < d) and clamp returned 3d,
+				// pulling the hit 3·|d| BACK into empty space in front of the surface. The prepass wrote that
+				// bogus depth and the forward depth-cull (prepass + 2u) then stopped short of the real surface:
+				// flat background-coloured blobs over the dents of a carved cushion (2026-11-10).
+				float refine = d;
+				if ( prevStep > 0.0 && prevD > d )
+				{
+					float secant = d * prevStep / ( prevD - d );
+					refine = d < 0.0 ? clamp( secant, -prevStep, 0.0 ) : clamp( secant, d, min( prevStep, 3.0 * d ) );
+				}
 				hitP = ro + rd * ( t + refine );
 				return true;
 			}
@@ -1202,7 +1215,26 @@ PS
 			prevD = d;
 			prevStep = d * stepScale;
 			t += prevStep;
-			if ( t > tExit ) { s_marchSteps = s + 1; break; }
+			if ( t > tExit )
+			{
+				s_marchSteps = s + 1;
+				// The scene-depth clamp sits only 2u past our own prepass surface, but an overestimating field can
+				// step more than 2u past it (see the overshoot note above). Sample once AT the clamp: inside means
+				// the surface lies between the last sample and here — take the bracketed secant root instead of
+				// dropping the pixel. Only clamped rays pay it (the bounds exit is always outside the clay).
+				if ( depthClamped )
+				{
+					float dE = SdfDistMarchWs( ro + rd * tExit );
+					if ( dE < eps )
+					{
+						float tPrev = t - prevStep;
+						float tHit = ( dE < 0.0 && prevD > dE ) ? tExit + dE * ( tExit - tPrev ) / ( prevD - dE ) : tExit + dE;
+						hitP = ro + rd * clamp( tHit, tPrev, tExit + eps );
+						return true;
+					}
+				}
+				break;
+			}
 		}
 		return false;
 	}

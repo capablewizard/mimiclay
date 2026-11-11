@@ -407,6 +407,38 @@ public sealed partial class SculptEditSession : Component
 		SetGroup( kind );
 	}
 
+	/// <summary>Modifier verb (the Tools column's "Add Smooth" button). A modifier isn't placed in the world — it
+	/// reshapes everything UNDER it in the stack — so there's no stamp phase: drop any held stamp, insert a fresh
+	/// modifier just above the topmost selected row (or at the top of the authored stack with nothing selected,
+	/// so it smooths the whole sculpt), and select it so its slider is up — a selected modifier counts like any
+	/// row, so pressing again stacks another one above it.
+	/// Refused at the brush cap.</summary>
+	public void AddModifier( SdfShape shape )
+	{
+		if ( !Target.IsValid() )
+			return;
+
+		if ( Tool == SculptTool.Sculpt )
+			SetTool( SculptTool.Gizmo ); // strips the pending ghost; the selection was cleared on entering Add
+
+		var b = Target.Brushes;
+		if ( b is null || b.Count >= SdfBrushPacker.MaxBrushes )
+			return;
+
+		int authored = Target.AuthoredBrushCount;
+		int insert = authored;
+		if ( _selection.Count > 0 && _selection[^1] >= 0 && _selection[^1] < authored )
+			insert = _selection[^1] + 1;
+
+		b.Insert( insert, SdfModifiers.Create( shape ) );
+
+		_selection.Clear();
+		_selection.Add( insert );
+		_selected = insert;
+		_anchor = insert;
+		NotifyChanged();
+	}
+
 	// Strip the pending ghost from the brush list. If one was actually removed the surface still shows it,
 	// so run the full commit (NotifyChanged's ghost guard passes — StampBrush is null once cancelled).
 	void CancelStamp()
@@ -1111,6 +1143,9 @@ public sealed partial class SculptEditSession : Component
 		// way. Picking a primitive tile with a group selected does nothing; see HotkeyGroup for the reverse.
 		if ( b.Shape == SdfShape.Group || shape == SdfShape.Group )
 			return false;
+		// Same for a modifier: it isn't a shape, so it never converts to or from one (see AddModifier).
+		if ( b.IsModifier || shape == SdfShape.Smooth )
+			return false;
 
 		// Keep the shape's world-space VOLUME CENTRE fixed across the swap. LocalCentre is each shape's
 		// centre offset from its pivot — zero for the centred shapes, +Size.z for the base-pivoted cone —
@@ -1512,7 +1547,8 @@ public sealed partial class SculptEditSession : Component
 		{
 			var op = NextOperation( b.Operation );
 			var group = new List<SdfBrush>( SelectedBrushes );
-			group.RemoveAll( static s => s.Shape == SdfShape.Group ); // groups are add-only (carvers live inside them)
+			group.RemoveAll( static s => s.Shape == SdfShape.Group );
+			group.RemoveAll( static s => s.IsModifier ); // modifiers have no op // groups are add-only (carvers live inside them)
 			if ( group.Count == 0 )
 				return;
 			if ( op != SdfOperation.Add && RefuseIfLosingSolids( group ) )
@@ -1523,6 +1559,9 @@ public sealed partial class SculptEditSession : Component
 			NotifyChanged();
 			return;
 		}
+
+		if ( b.IsModifier ) // a modifier has no operation — it only reshapes what's under it
+			return;
 
 		if ( b.Shape == SdfShape.Group ) // add-only — the op cycle doesn't apply
 			return;
@@ -1590,6 +1629,8 @@ public sealed partial class SculptEditSession : Component
 	// without scrambling anyone's remembered axes.
 	bool ApplySymmetryToggle( SdfBrush b, bool on )
 	{
+		if ( b.IsModifier ) // nothing to mirror
+			return false;
 		bool anyOn = b.MirrorX || b.MirrorY || b.MirrorZ;
 		if ( on == anyOn )
 			return false;
@@ -2338,7 +2379,9 @@ public sealed partial class SculptEditSession : Component
 		else if ( Selected >= 0 )
 			_gizmoBrush = brushes[Selected]; // remember so the fade-out has something to draw
 
-		float gizmoTarget = (ShowGizmo && Selected >= 0) ? 1f : 0f;
+		// A modifier has no transform worth handling (it smooths the whole stack under it) — no gizmo for it.
+		bool gizmoSubject = _gizmoBrush is not null && !_gizmoBrush.IsModifier;
+		float gizmoTarget = (ShowGizmo && Selected >= 0 && gizmoSubject) ? 1f : 0f;
 		_gizmoAlpha = MathX.Lerp( _gizmoAlpha, gizmoTarget, 1f - MathF.Exp( -GizmoFadeSpeed * Time.Delta ) );
 
 		bool changed = false;
@@ -2349,9 +2392,9 @@ public sealed partial class SculptEditSession : Component
 		// gizmo draws, so its mesh is built around where the shape IS this frame — drawn after, it trailed
 		// the carried shape by a frame, which read as the gizmo jittering behind it.
 		if ( FirstPerson )
-			changed |= UpdateFirstPersonGrab( tx, multi ? _multiProxy : SelectedBrush );
+			changed |= UpdateFirstPersonGrab( tx, multi ? _multiProxy : SelectedBrush is { IsModifier: true } ? null : SelectedBrush ); // nothing to carry on a Smooth layer
 
-		if ( ShowGizmo && _gizmoBrush is not null && (gizmoTarget > 0f || _gizmoAlpha > 0.01f) )
+		if ( ShowGizmo && gizmoSubject && (gizmoTarget > 0f || _gizmoAlpha > 0.01f) )
 		{
 			// First person too: every handle follows the pick ray, which there is the aim — drag an arrow by
 			// looking along it. A press on a handle grabs the handle (IsBusy), a press on the shape off the
@@ -2404,7 +2447,7 @@ public sealed partial class SculptEditSession : Component
 		float pushWheel = Input.MouseWheel.y + VirtualInput.WheelY; // + the Depth card's drag (HotkeyBar)
 		if ( pushWheel != 0f && (!overUi || VirtualInput.WheelY != 0f) && !AltNav.NavModifierHeld && !AltNav.Dragging && !PauseMenu.IsOpen
 			&& BrushScrub.Active == ScrubKind.None && !_gizmo.IsDragging
-			&& SelectedBrush is { } pushB && Scene.Camera is { } pushCam )
+			&& SelectedBrush is { IsModifier: false } pushB && Scene.Camera is { } pushCam ) // a Smooth layer has no depth
 		{
 			// A spline's transform is inert (its geometry lives in the control points), so pushing Position
 			// would do nothing visible — shift every point instead, measured from the curve's centre.

@@ -173,6 +173,8 @@ public sealed class BrushWireframes
 			var b = brushes[i];
 			if ( b.Damage )
 				continue; // shot craters aren't part of the authored sculpt — no wireframe
+			if ( b.IsModifier )
+				continue; // a modifier has no shape to outline
 
 			_brush = b;
 

@@ -355,6 +355,7 @@ public sealed class SculptBounds : Component
 			regionCentre = bb.Center;
 		}
 
+		SdfModifiers.Apply( brushes ); // support pads read EffectiveBlend/EffectiveRounding
 		bool fieldBuilt = false;
 		float worst = 0f;
 		for ( int i = 0; i < Math.Min( authoredCount, brushes.Count ); i++ )
@@ -463,7 +464,7 @@ public sealed class SculptBounds : Component
 			return;
 		}
 
-		float pad = blendInert ? 0f : b.Blend * 0.25f; // smooth-union bulge ≈ k/4 — same as SdfBrush.AabbExtents
+		float pad = blendInert ? 0f : b.EffectiveBlend * 0.25f; // smooth-union bulge ≈ k/4 — same as SdfBrush.AabbExtents
 		Span<Vector3> signs = stackalloc Vector3[8];
 		int ns = MirrorSigns( b, signs );
 
@@ -498,7 +499,7 @@ public sealed class SculptBounds : Component
 		// up to ~0.73·rounding of clay that isn't there.
 		if ( b.Shape == SdfShape.Box )
 		{
-			float r = Math.Clamp( b.Rounding, 0f, MathF.Min( b.Size.x, MathF.Min( b.Size.y, b.Size.z ) ) );
+			float r = Math.Clamp( b.EffectiveRounding, 0f, MathF.Min( b.Size.x, MathF.Min( b.Size.y, b.Size.z ) ) );
 			var e = b.Size - new Vector3( r );
 			for ( int s = 0; s < ns; s++ )
 			{
@@ -832,6 +833,7 @@ public sealed class SculptBounds : Component
 		if ( Anchor == SculptBoundsAnchor.FollowShape && Sdf.TryGetBounds( brushes, out var bb ) )
 			regionCentre = bb.Center;
 
+		SdfModifiers.Apply( brushes );
 		bool fieldBuilt = false;
 		_supportDraw.Clear();
 		_supportDrawBad.Clear();

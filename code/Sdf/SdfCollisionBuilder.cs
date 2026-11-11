@@ -89,6 +89,22 @@ public static class SdfCollisionBuilder
 	/// survives a hotload, and the cache would keep serving what the OLD builder made.</summary>
 	[SkipHotload] public static readonly int CodeVersion = Guid.NewGuid().GetHashCode();
 
+	/// <summary>The default most collision shapes one sculpture may have (<see cref="SdfCollider.MaxShapes"/>). Most
+	/// hand-made props are 1–20 exact shapes; ordinary containers (bowls, pans, pots) run 30–60 and still keep their
+	/// exact colliders, and so do the garden pot (72), bin, generator and laundry basket. At 96 only real
+	/// outliers go over (2026-11-10: lettuce 237, plate stack 101, trophy 97); at 64 the garden pot voxelised and felt bulky.</summary>
+	public const int DefaultMaxShapes = 96;
+
+	// THE SHAPE LIMIT (see ComputeShapes). The exact collider is built first and counted as it goes; once it runs past
+	// the limit it stops, and the sculpture gets ONE convex hull when its finished clay fills ≥ HullFitThreshold of that
+	// hull (Fit: sampled on a FitCells grid); otherwise ONE scan of the finished shape, voxelised from that result and
+	// coarsened until it fits (VoxeliseWhole). Nothing a player sculpts can push a collider past it: a lettuce's leaf cups once came to 235
+	// voxel boxes, ~70 ms a build and a 217-shape physics body that made every spawn, sweep and grab of it slow.
+	// Measured over every prop (2026-11-10): lettuce hull 93–94%, every container far under (mug 80%, bowl 34%, pans ~41%).
+	[SkipHotload] public static float HullFitThreshold = 0.9f;
+	[SkipHotload] public static int FitCells = 20;            // the hull check's grid, cells across the longest axis
+	[SkipHotload] public static int BailFactor = 2;           // stop the exact build at this × the limit (buried-shape culling trims later)
+
 	// Detail gate (see EffectiveMinExtent): an additive brush whose local bounding box is under this on EVERY
 	// axis is decoration — an eye, a button, a stud — and contributes no collider. All three axes must be
 	// small, so a thin plate (100×100×2) is still a surface you can stand on and stays solid.
@@ -163,11 +179,46 @@ public static class SdfCollisionBuilder
 	static void PreparePending()
 	{
 		foreach ( var p in _pending )
+		{
 			if ( p.Hull is { Count: > HullThinVertices } && ConvexHull.EdgeCount( p.Hull ) > HullEdgeLimit )
 				p.Hull = ConvexHull.Thin( p.Hull, HullThinVertices );
 
+			// Never hand physics a degenerate hull: its native quickhull corrupts its own heap on a collapsed or flat
+			// cloud (a buggy Thin once produced one — the editor died a moment after building it). Dropped instead.
+			if ( p.Hull is not null && Degenerate( p.Hull ) )
+				p.Culled = true;
+		}
+
 		if ( CullBuried )
 			CullBuriedShapes( _pending );
+	}
+
+	// Fewer than 4 distinct points, or no thickness along some axis (a voxel box is never thinner than a cell).
+	static bool Degenerate( List<Vector3> hull )
+	{
+		if ( hull.Count < 4 )
+			return true;
+		Vector3 lo = hull[0], hi = hull[0];
+		foreach ( var v in hull )
+		{
+			if ( !float.IsFinite( v.x ) || !float.IsFinite( v.y ) || !float.IsFinite( v.z ) )
+				return true;
+			lo = Vector3.Min( lo, v );
+			hi = Vector3.Max( hi, v );
+		}
+		var size = hi - lo;
+		if ( MathF.Min( size.x, MathF.Min( size.y, size.z ) ) < 1e-3f )
+			return true;
+		int distinct = 0;
+		for ( int i = 0; i < hull.Count && distinct < 4; i++ )
+		{
+			bool seen = false;
+			for ( int j = 0; j < i && !seen; j++ )
+				seen = (hull[i] - hull[j]).LengthSquared < 1e-8f;
+			if ( !seen )
+				distinct++;
+		}
+		return distinct < 4;
 	}
 
 	// MAIN THREAD: hand the surviving shapes to a fresh builder in recording order (the debug view relies on the
@@ -294,13 +345,55 @@ public static class SdfCollisionBuilder
 			if ( !AllCovered( s.Extremes, covers, CullTolerance ) )
 				continue;
 
-			float h = MathF.Max( CullTolerance / CullCoverRadius, MathF.Sqrt( s.Area / CullMaxSamples ) );
-			samples.Clear();
-			if ( !SampleSurface( s, h, samples ) )
-				continue; // couldn't sample it within budget — keep it
-			if ( AllCovered( samples, covers, CullTolerance - CullCoverRadius * h ) )
+			// Inside ONE cover → culled, exactly and for free: a convex shape lies inside a convex cover iff all its corners do
+			// (a ball/capsule: its end centres sit at least its radius in). The common case by far — the toy train engine's
+			// windows in the cabin, the pumpkins' centre sphere in the body, chess squares in the board — and one the sampled
+			// test below missed whenever the shape merely TOUCHED its cover from inside (no margin left for the bound).
+			bool inOne = false;
+			foreach ( var t in covers )
+			{
+				if ( ContainedIn( s, t ) )
+				{
+					inOne = true;
+					break;
+				}
+			}
+			if ( inOne )
+			{
 				s.P.Culled = true;
+				continue;
+			}
+
+			// Buried across SEVERAL covers: the sampled bound. Over the sample budget → coarser spacing, deeper bar — rather
+			// than giving up (sliver triangles of a round hull overshoot the area estimate).
+			float h = MathF.Max( CullTolerance / CullCoverRadius, MathF.Sqrt( s.Area / CullMaxSamples ) );
+			for ( int attempt = 0; attempt < 4; attempt++, h *= 1.5f )
+			{
+				samples.Clear();
+				if ( !SampleSurface( s, h, samples ) )
+					continue;
+				if ( AllCovered( samples, covers, CullTolerance - CullCoverRadius * h ) )
+					s.P.Culled = true;
+				break;
+			}
 		}
+	}
+
+	// Is shape s inside the convex cover t (to CullTolerance)? Every cover's Sd is convex, so its maximum over a convex
+	// shape is reached at the shape's corners — hull vertices, or a ball/capsule's end centres plus its radius.
+	static bool ContainedIn( CullShape s, CullShape t )
+	{
+		// A hull's Sd is the furthest plane: exact inside, but OUTSIDE it can read up to √3× short near an edge or corner,
+		// so the bar shrinks by that much there to keep "sticks out ≤ CullTolerance" a guarantee. Ball/capsule Sd is exact.
+		float bar = t.Planes is not null ? CullTolerance * 0.577f : CullTolerance;
+		if ( s.Planes is not null )
+		{
+			foreach ( var v in s.Extremes ) // a hull's Extremes are its vertices
+				if ( t.Sd( v ) > bar )
+					return false;
+			return true;
+		}
+		return t.Sd( s.P.A ) + s.P.R <= bar && t.Sd( s.P.B ) + s.P.R <= bar;
 	}
 
 	static bool AllCovered( List<Vector3> pts, List<CullShape> covers, float maxSd )
@@ -441,7 +534,7 @@ public static class SdfCollisionBuilder
 	/// (the creative-mode prompt frames the prop on screen with them). Pass <paramref name="emitted"/> to receive
 	/// each emitted shape's kind and source brush (see <see cref="EmittedShape"/>).</summary>
 	public static Model Build( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies = null, List<Vector3> framePoints = null,
-		List<EmittedShape> emitted = null )
+		List<EmittedShape> emitted = null, int maxShapes = DefaultMaxShapes )
 	{
 		carvedCopies?.Clear();
 		framePoints?.Clear();
@@ -453,7 +546,7 @@ public static class SdfCollisionBuilder
 		// group-flattened list.
 		brushes = SdfGroups.Flatten( brushes );
 
-		var cached = GetOrBuild( brushes );
+		var cached = GetOrBuild( brushes, maxShapes );
 		carvedCopies?.AddRange( cached.Carved );
 		framePoints?.AddRange( cached.Frame );
 		emitted?.AddRange( cached.Emitted );
@@ -500,13 +593,14 @@ public static class SdfCollisionBuilder
 	public static void ClearCache() => _cache.Clear();
 
 	static int SettingsHash() => HashCode.Combine( CodeVersion, VoxelTarget, VoxelMaxPerAxis, CarvedHulls, CullBuried,
-		CullTolerance, CarveShallowCells );
+		CullTolerance, CarveShallowCells, HashCode.Combine( FitCells, HullFitThreshold, BailFactor, WholeVoxelMaxCells, WholeVoxelTouch ) );
 
-	static int CacheKey( List<SdfBrush> flat ) => HashCode.Combine( SdfSculpture.ContentHashPrefix( flat, flat.Count, 0, false ), SettingsHash() );
+	static int CacheKey( List<SdfBrush> flat, int maxShapes ) =>
+		HashCode.Combine( SdfSculpture.ContentHashPrefix( flat, flat.Count, 0, false ), SettingsHash(), maxShapes );
 
-	static CachedBuild GetOrBuild( List<SdfBrush> flat )
+	static CachedBuild GetOrBuild( List<SdfBrush> flat, int maxShapes = DefaultMaxShapes )
 	{
-		int key = CacheKey( flat );
+		int key = CacheKey( flat, maxShapes );
 		if ( _cache.TryGetValue( key, out var hit ) )
 		{
 			CacheHits++;
@@ -514,17 +608,17 @@ public static class SdfCollisionBuilder
 		}
 
 		var built = new CachedBuild();
-		var pending = Compute( flat, built.Carved );
+		var pending = Compute( flat, built.Carved, maxShapes );
 		return Finish( key, built, pending );
 	}
 
 	// The worker-safe half: every shape decided, nothing built. Null when nothing is solid.
-	static List<PendingShape> Compute( List<SdfBrush> flat, List<CarvedCopy> carved )
+	static List<PendingShape> Compute( List<SdfBrush> flat, List<CarvedCopy> carved, int maxShapes )
 	{
 		_pending = new List<PendingShape>( 64 );
 		try
 		{
-			return ComputeShapes( flat, carved ) ? _pending : null;
+			return ComputeShapes( flat, carved, maxShapes ) ? _pending : null;
 		}
 		finally
 		{
@@ -560,7 +654,7 @@ public static class SdfCollisionBuilder
 	/// to make the Model (the only engine call). The brushes are snapshotted before the hop, so the caller may keep
 	/// editing the live list. Same cache as <see cref="Build"/> — a hit returns without leaving the main thread.</summary>
 	public static async Task<Model> BuildAsync( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies = null,
-		List<Vector3> framePoints = null, List<EmittedShape> emitted = null )
+		List<Vector3> framePoints = null, List<EmittedShape> emitted = null, int maxShapes = DefaultMaxShapes )
 	{
 		carvedCopies?.Clear();
 		framePoints?.Clear();
@@ -575,12 +669,12 @@ public static class SdfCollisionBuilder
 		foreach ( var b in live )
 			flat.Add( b.Copy() );
 
-		int key = CacheKey( flat );
+		int key = CacheKey( flat, maxShapes );
 		if ( !_cache.TryGetValue( key, out var built ) )
 		{
 			var fresh = new CachedBuild();
 			await GameTask.WorkerThread();
-			var pending = Compute( flat, fresh.Carved );
+			var pending = Compute( flat, fresh.Carved, maxShapes );
 			await GameTask.MainThread();
 
 			// Another build of the same shape may have finished meanwhile; keep the first.
@@ -633,7 +727,7 @@ public static class SdfCollisionBuilder
 	// Decide every shape (records into _pending, thinned + culled) — pure brush maths, no engine calls, so it may run
 	// on a worker (BuildAsync). The helpers still take a ModelBuilder parameter from before the split; nothing on
 	// this path calls into it any more (EmitPending is the only place shapes reach a builder), so it's null here.
-	static bool ComputeShapes( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies )
+	static bool ComputeShapes( List<SdfBrush> brushes, List<CarvedCopy> carvedCopies, int maxShapes )
 	{
 		ModelBuilder builder = null;
 		bool any = false;
@@ -645,8 +739,17 @@ public static class SdfCollisionBuilder
 		var carverBounds = new List<(Vector3 lo, Vector3 hi)>( 4 ); // their sculpture-space AABBs (all copies)
 		float minExtent = EffectiveMinExtent( brushes );
 
+		bool overLimit = false;
 		for ( int bi = 0; bi < brushes.Count; bi++ )
 		{
+			// The shape limit, counted as we go: well past it (BailFactor — buried-shape culling trims some later), stop
+			// building the exact collider; the end of this method replaces it. The lettuce bails a few carved leaves in.
+			if ( maxShapes > 0 && _pending.Count > maxShapes * BailFactor )
+			{
+				overLimit = true;
+				break;
+			}
+
 			var b = brushes[bi];
 			if ( !b.Enabled || b.Operation != SdfOperation.Add )
 				continue; // hidden or subtractive — contributes no solid volume
@@ -744,9 +847,38 @@ public static class SdfCollisionBuilder
 			}
 		}
 
-		if ( any )
+		if ( any && !overLimit )
 			PreparePending();
+
+		// Over the limit: the exact collider is thrown away whole — nothing of it survives next to what replaces it.
+		//  • Nearly convex (≥ HullFitThreshold of its hull is clay) → ONE hull (the lettuce).
+		//  • Otherwise → ONE scan of the finished shape (every add, subtract and blend combined), voxelised from that result
+		//    and coarsened until it fits (VoxeliseWhole). Never brush-by-brush: per-brush shapes overlapping per-brush voxels
+		//    is exactly the "physics shapes inside a mess of voxels" this replaces.
+		if ( maxShapes > 0 && (overLimit || LiveCount( _pending ) > maxShapes) )
+		{
+			_pending.Clear();
+			carvedCopies?.Clear();
+			_brushIndex = FirstSolid( brushes );
+			if ( Fit( brushes, FitCells, true, pts, out _, out float hullFit, out _, out _, out var hull )
+				&& hull is not null && hullFit >= HullFitThreshold )
+				RecordHull( hull.Count > HullThinVertices ? ConvexHull.Thin( hull, HullThinVertices ) : hull );
+			else
+				VoxeliseWhole( brushes, maxShapes );
+			any = _pending.Count > 0;
+			if ( any )
+				PreparePending();
+		}
 		return any;
+	}
+
+	static int LiveCount( List<PendingShape> pending )
+	{
+		int n = 0;
+		foreach ( var p in pending )
+			if ( !p.Culled )
+				n++;
+		return n;
 	}
 
 	// Five convex kite hulls covering a star-profile brush (per mirror copy): each is the extruded quad
@@ -953,6 +1085,331 @@ public static class SdfCollisionBuilder
 
 		for ( int i = 0; i < pts.Count; i++ )
 			pts[i] = centre + (pts[i] - centre) * scale;
+	}
+
+	// One fit pass at `cells` across the longest axis; `surface` adds the brushes' on-clay hull-cloud points to the hull
+	// (accurate, but brushes² samples — the fine pass only). False when there's too little clay to judge.
+	static bool Fit( List<SdfBrush> brushes, int cells, bool surface, List<Vector3> pts,
+		out float sphereFit, out float hullFit, out Vector3 centre, out float radius, out List<Vector3> hullOut )
+	{
+		sphereFit = hullFit = radius = 0f;
+		centre = default;
+		hullOut = null;
+		SdfModifiers.Apply( brushes ); // once per pass — the samples below skip it
+		var boxes = BrushBounds( brushes );
+		if ( !Sdf.TryGetBounds( brushes, out var bounds ) )
+			return false;
+
+		var size = bounds.Size;
+		float longest = MathF.Max( size.x, MathF.Max( size.y, size.z ) );
+		if ( longest <= 1e-3f )
+			return false;
+		float edge = longest / Math.Max( cells, 4 );
+		int nx = Math.Max( 2, (int)MathF.Ceiling( size.x / edge ) );
+		int ny = Math.Max( 2, (int)MathF.Ceiling( size.y / edge ) );
+		int nz = Math.Max( 2, (int)MathF.Ceiling( size.z / edge ) );
+		var cell = new Vector3( size.x / nx, size.y / ny, size.z / nz );
+		float cellMin = MathF.Min( cell.x, MathF.Min( cell.y, cell.z ) );
+
+		var solid = new bool[nx * ny * nz];
+		var cloud = new List<Vector3>( 256 );
+		int count = 0;
+		Vector3 sum = default;
+		for ( int iz = 0; iz < nz; iz++ )
+		for ( int iy = 0; iy < ny; iy++ )
+		for ( int ix = 0; ix < nx; ix++ )
+		{
+			var p = CellCentre( bounds.Mins, cell, ix, iy, iz );
+			if ( SampleCulled( brushes, boxes, p ) > 0f )
+				continue;
+			solid[(iz * ny + iy) * nx + ix] = true;
+			sum += p;
+			count++;
+		}
+		if ( count < 8 )
+			return false;
+
+		// Hull candidates from the grid: only BOUNDARY solid cells (an interior cell can't be a hull vertex), each nudged
+		// by a small fixed per-cell offset. Raw grid centres are massively coplanar, which degenerated the incremental
+		// hull (the tankard hung at 20 cells). The offset is a hash of the cell index — identical on every machine.
+		bool Solid( int x, int y, int z ) => x >= 0 && y >= 0 && z >= 0 && x < nx && y < ny && z < nz && solid[(z * ny + y) * nx + x];
+		for ( int iz = 0; iz < nz; iz++ )
+		for ( int iy = 0; iy < ny; iy++ )
+		for ( int ix = 0; ix < nx; ix++ )
+		{
+			if ( !Solid( ix, iy, iz ) || (Solid( ix - 1, iy, iz ) && Solid( ix + 1, iy, iz ) && Solid( ix, iy - 1, iz )
+				&& Solid( ix, iy + 1, iz ) && Solid( ix, iy, iz - 1 ) && Solid( ix, iy, iz + 1 )) )
+				continue;
+			uint h = unchecked((uint)ix * 73856093u ^ (uint)iy * 19349663u ^ (uint)iz * 83492791u); // NOT HashCode.Combine: that's seeded per process
+			h = unchecked((h ^ (h >> 15)) * 2246822519u);
+			var jitter = new Vector3( (h & 0xff) / 255f - 0.5f, ((h >> 8) & 0xff) / 255f - 0.5f, ((h >> 16) & 0xff) / 255f - 0.5f );
+			cloud.Add( CellCentre( bounds.Mins, cell, ix, iy, iz ) + jitter * (0.1f * cellMin) );
+		}
+
+		// Surface points: each solid brush's coarse hull cloud, at every mirror copy, kept where it's still clay.
+		float onClay = 0.5f * cellMin;
+		foreach ( var b in brushes )
+		{
+			if ( !surface )
+				break;
+			if ( !b.Enabled || b.Operation != SdfOperation.Add || b.Shape is SdfShape.Spline or SdfShape.Text )
+				continue;
+			LocalPoints( b, pts );
+			int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
+			for ( int sx = 0; sx <= mx; sx++ )
+			for ( int sy = 0; sy <= my; sy++ )
+			for ( int sz = 0; sz <= mz; sz++ )
+			{
+				var sign = new Vector3( sx == 1 ? -1f : 1f, sy == 1 ? -1f : 1f, sz == 1 ? -1f : 1f );
+				foreach ( var lp in pts )
+				{
+					var p = (b.Position + b.Rotation * lp) * sign;
+					if ( SampleCulled( brushes, boxes, p ) <= onClay )
+						cloud.Add( p );
+				}
+			}
+		}
+
+		var planes = new List<(Vector3 n, float d)>( 64 );
+		var hull = new List<Vector3>( 64 );
+		bool haveHull = ConvexHull.TryBuild( cloud, planes, hull );
+
+		centre = sum / count;
+		radius = MathF.Pow( 3f * count * cell.x * cell.y * cell.z / (4f * MathF.PI), 1f / 3f );
+		int inHull = 0, inSphere = 0, sphereAndClay = 0;
+		for ( int iz = 0; iz < nz; iz++ )
+		for ( int iy = 0; iy < ny; iy++ )
+		for ( int ix = 0; ix < nx; ix++ )
+		{
+			var p = CellCentre( bounds.Mins, cell, ix, iy, iz );
+			bool clay = solid[(iz * ny + iy) * nx + ix];
+			if ( (p - centre).LengthSquared <= radius * radius )
+			{
+				inSphere++;
+				if ( clay )
+					sphereAndClay++;
+			}
+			if ( haveHull && InsideAll( planes, p ) )
+				inHull++;
+		}
+
+		sphereFit = (float)sphereAndClay / (count + inSphere - sphereAndClay);
+		hullFit = haveHull && inHull > 0 ? MathF.Min( (float)count / inHull, 1f ) : 0f;
+		hullOut = haveHull ? hull : null;
+		return true;
+	}
+
+	// Each brush's blend-padded sculpture-space bounds (mirror copies and spline sweeps included — TryGetBounds' own
+	// measure, taken on a copy posing as an Add since it only measures solids). Outside its box a brush can't change
+	// whether a point is clay: an add can't fill it, a subtract or cutout can't carve it.
+	static BBox[] BrushBounds( List<SdfBrush> brushes )
+	{
+		var boxes = new BBox[brushes.Count];
+		var one = new List<SdfBrush>( 1 ) { null };
+		for ( int i = 0; i < brushes.Count; i++ )
+		{
+			var c = brushes[i].Copy();
+			c.Operation = SdfOperation.Add;
+			c.Enabled = true;
+			one[0] = c;
+			boxes[i] = Sdf.TryGetBounds( one, out var bb ) ? bb : default;
+		}
+		return boxes;
+	}
+
+	// Sdf.SamplePrepared, skipping every brush whose box (BrushBounds) misses p. Only the SIGN is trusted — that's
+	// all the fit reads. A long spline seam (the basketball's three) costs ~50 µs a sample unculled; most of the
+	// grid is nowhere near it. Modifiers must already be applied.
+	static float SampleCulled( List<SdfBrush> brushes, BBox[] boxes, Vector3 p )
+	{
+		float d = 1e9f;
+		for ( int i = 0; i < brushes.Count; i++ )
+		{
+			var b = brushes[i];
+			if ( !b.Enabled || b.IsModifier || !boxes[i].Contains( p ) )
+				continue;
+			float bd = b.Distance( p );
+			d = b.Operation switch
+			{
+				SdfOperation.Add => Sdf.SmoothUnion( d, bd, b.EffectiveBlend ),
+				SdfOperation.Subtract => Sdf.SmoothSubtract( d, bd, b.EffectiveBlend ),
+				SdfOperation.Cutout => Sdf.SmoothSubtract( d, MathF.Abs( bd ) - b.Gap, b.EffectiveBlend ),
+				_ => d,
+			};
+		}
+		return d;
+	}
+
+	// Whole-object voxelisation — the over-the-limit collider for anything not nearly convex. The FINISHED clay (every
+	// add, subtract and blend: SampleCulled) on ONE grid — cells start at VoxelTarget, or coarser if that would put more
+	// than WholeVoxelMaxCells across the longest axis — greedy-merged into boxes (x runs, then y, then z). While there
+	// are more boxes than the limit the cells grow ×1.25 and it goes again (each pass is cheaper than the last). Fixed
+	// work, no timer: every machine builds the same boxes. Never over the limit: if even the coarsest pass doesn't fit,
+	// or the clay is thinner than a cell everywhere, it's one box around the clay.
+	[SkipHotload] public static int WholeVoxelMaxCells = 24;
+	// A cell is solid when the field at its centre is within this × its diagonal. Measured on the over-limit props: 0 (centre
+	// only) lost up to 40% of the clay (walls thinner than a cell vanish); 0.5 kept it all but bloated (≈71% of the box
+	// volume air); 0.3 ≈ half an edge keeps ~99.5% with the least bloat.
+	[SkipHotload] public static float WholeVoxelTouch = 0.3f;
+	const int WholeVoxelPasses = 12;
+
+	static void VoxeliseWhole( List<SdfBrush> brushes, int maxShapes )
+	{
+		SdfModifiers.Apply( brushes );
+		var boxes = BrushBounds( brushes );
+		if ( !Sdf.TryGetBounds( brushes, out var bounds ) )
+			return;
+		var size = bounds.Size;
+		float longest = MathF.Max( size.x, MathF.Max( size.y, size.z ) );
+		if ( longest <= 1e-3f )
+			return;
+
+		var merged = new List<(int x0, int y0, int z0, int x1, int y1, int z1)>( 64 );
+		float edge = MathF.Max( VoxelTarget, longest / Math.Max( WholeVoxelMaxCells, 1 ) );
+		Vector3 cell = default;
+		for ( int pass = 0; pass < WholeVoxelPasses; pass++, edge *= 1.25f )
+		{
+			int nx = Math.Max( 1, (int)MathF.Ceiling( size.x / edge ) );
+			int ny = Math.Max( 1, (int)MathF.Ceiling( size.y / edge ) );
+			int nz = Math.Max( 1, (int)MathF.Ceiling( size.z / edge ) );
+			cell = new Vector3( size.x / nx, size.y / ny, size.z / nz );
+			// CONSERVATIVE (WholeVoxelTouch): a cell counts when the clay reaches near its centre, not only when the centre is
+			// inside — centre-only lost every wall thinner than a cell, and things fell through the gaps.
+			float touches = cell.Length * WholeVoxelTouch;
+			var solid = new bool[nx * ny * nz];
+			for ( int iz = 0; iz < nz; iz++ )
+			for ( int iy = 0; iy < ny; iy++ )
+			for ( int ix = 0; ix < nx; ix++ )
+				solid[(iz * ny + iy) * nx + ix] = SampleCulled( brushes, boxes, CellCentre( bounds.Mins, cell, ix, iy, iz ) ) <= touches;
+
+			GreedyMerge( solid, nx, ny, nz, merged );
+			if ( merged.Count <= maxShapes )
+				break;
+		}
+
+		if ( merged.Count == 0 || merged.Count > maxShapes )
+		{
+			RecordHull( BoxCorners( bounds.Mins, bounds.Maxs ), ShapeKind.VoxelBox );
+			return;
+		}
+
+		foreach ( var (x0, y0, z0, x1, y1, z1) in merged )
+		{
+			var lo = bounds.Mins + new Vector3( x0 * cell.x, y0 * cell.y, z0 * cell.z );
+			var hi = bounds.Mins + new Vector3( (x1 + 1) * cell.x, (y1 + 1) * cell.y, (z1 + 1) * cell.z );
+			if ( TightenToClay( brushes, boxes, cell, ref lo, ref hi ) )
+				RecordHull( BoxCorners( lo, hi ), ShapeKind.VoxelBox );
+		}
+	}
+
+	// Shrink a merged box to the clay actually inside it. The coarse cells count as solid when the clay merely comes NEAR
+	// them (WholeVoxelTouch), so a box could stand most of a cell proud of the surface — the voxel colliders read as badly
+	// inflated, a garden pot's walls fat. Re-sampled on a grid TightenSubdiv× finer per cell, by the same touch rule at that
+	// scale (so a wall thinner than a coarse cell still registers), and cut down to the sub-cells that hold clay: overshoot
+	// drops from up to a cell to about a sub-cell. False when no clay is left in the box at all (it only grazed a neighbour's).
+	const int TightenSubdiv = 4;
+
+	static bool TightenToClay( List<SdfBrush> brushes, BBox[] boxes, Vector3 cell, ref Vector3 lo, ref Vector3 hi )
+	{
+		var size = hi - lo;
+		int sx = Math.Max( 1, (int)MathF.Round( size.x / cell.x ) * TightenSubdiv );
+		int sy = Math.Max( 1, (int)MathF.Round( size.y / cell.y ) * TightenSubdiv );
+		int sz = Math.Max( 1, (int)MathF.Round( size.z / cell.z ) * TightenSubdiv );
+		var sub = new Vector3( size.x / sx, size.y / sy, size.z / sz );
+		float touches = sub.Length * WholeVoxelTouch;
+		var origin = lo;
+
+		// Only the extent matters, so march slices inward from each face and stop at the first one holding clay — a solid
+		// box costs six slices, not its whole volume (sampling every sub-cell took the generator from 0.7 s to 4.9 s).
+		// Each axis narrows the slices the next one scans.
+		bool Clay( int ix, int iy, int iz ) => SampleCulled( brushes, boxes, CellCentre( origin, sub, ix, iy, iz ) ) <= touches;
+		bool SliceX( int ix, int y0, int y1, int z0, int z1 ) { for ( int z = z0; z <= z1; z++ ) for ( int y = y0; y <= y1; y++ ) if ( Clay( ix, y, z ) ) return true; return false; }
+		bool SliceY( int iy, int x0, int x1, int z0, int z1 ) { for ( int z = z0; z <= z1; z++ ) for ( int x = x0; x <= x1; x++ ) if ( Clay( x, iy, z ) ) return true; return false; }
+		bool SliceZ( int iz, int x0, int x1, int y0, int y1 ) { for ( int y = y0; y <= y1; y++ ) for ( int x = x0; x <= x1; x++ ) if ( Clay( x, y, iz ) ) return true; return false; }
+
+		int mnx = 0, mxx = sx - 1, mny = 0, mxy = sy - 1, mnz = 0, mxz = sz - 1;
+		while ( mnx <= mxx && !SliceX( mnx, mny, mxy, mnz, mxz ) ) mnx++;
+		if ( mnx > mxx )
+			return false; // no clay left in the box at all
+		while ( mxx > mnx && !SliceX( mxx, mny, mxy, mnz, mxz ) ) mxx--;
+		while ( mny < mxy && !SliceY( mny, mnx, mxx, mnz, mxz ) ) mny++;
+		while ( mxy > mny && !SliceY( mxy, mnx, mxx, mnz, mxz ) ) mxy--;
+		while ( mnz < mxz && !SliceZ( mnz, mnx, mxx, mny, mxy ) ) mnz++;
+		while ( mxz > mnz && !SliceZ( mxz, mnx, mxx, mny, mxy ) ) mxz--;
+
+		lo = origin + new Vector3( mnx * sub.x, mny * sub.y, mnz * sub.z );
+		hi = origin + new Vector3( (mxx + 1) * sub.x, (mxy + 1) * sub.y, (mxz + 1) * sub.z );
+		return true;
+	}
+
+	// Solid cells → as few axis-aligned boxes as a greedy sweep finds: from each unused solid cell, grow along x, then
+	// the whole x-run along y, then the whole slab along z, as far as every cell stays solid and unused.
+	static void GreedyMerge( bool[] solid, int nx, int ny, int nz, List<(int, int, int, int, int, int)> into )
+	{
+		into.Clear();
+		var used = new bool[solid.Length];
+		bool Free( int x, int y, int z ) => solid[(z * ny + y) * nx + x] && !used[(z * ny + y) * nx + x];
+		for ( int z = 0; z < nz; z++ )
+		for ( int y = 0; y < ny; y++ )
+		for ( int x = 0; x < nx; x++ )
+		{
+			if ( !Free( x, y, z ) )
+				continue;
+			int x1 = x;
+			while ( x1 + 1 < nx && Free( x1 + 1, y, z ) )
+				x1++;
+			int y1 = y;
+			while ( y1 + 1 < ny )
+			{
+				bool ok = true;
+				for ( int i = x; i <= x1 && ok; i++ )
+					ok = Free( i, y1 + 1, z );
+				if ( !ok )
+					break;
+				y1++;
+			}
+			int z1 = z;
+			while ( z1 + 1 < nz )
+			{
+				bool ok = true;
+				for ( int j = y; j <= y1 && ok; j++ )
+				for ( int i = x; i <= x1 && ok; i++ )
+					ok = Free( i, j, z1 + 1 );
+				if ( !ok )
+					break;
+				z1++;
+			}
+			for ( int k = z; k <= z1; k++ )
+			for ( int j = y; j <= y1; j++ )
+			for ( int i = x; i <= x1; i++ )
+				used[(k * ny + j) * nx + i] = true;
+			into.Add( (x, y, z, x1, y1, z1) );
+		}
+	}
+
+	static List<Vector3> BoxCorners( Vector3 lo, Vector3 hi ) => new()
+	{
+		new( lo.x, lo.y, lo.z ), new( hi.x, lo.y, lo.z ), new( lo.x, hi.y, lo.z ), new( hi.x, hi.y, lo.z ),
+		new( lo.x, lo.y, hi.z ), new( hi.x, lo.y, hi.z ), new( lo.x, hi.y, hi.z ), new( hi.x, hi.y, hi.z ),
+	};
+
+	static Vector3 CellCentre( Vector3 mins, Vector3 cell, int ix, int iy, int iz ) =>
+		mins + new Vector3( (ix + 0.5f) * cell.x, (iy + 0.5f) * cell.y, (iz + 0.5f) * cell.z );
+
+	static bool InsideAll( List<(Vector3 n, float d)> planes, Vector3 p )
+	{
+		foreach ( var (n, d) in planes )
+			if ( Vector3.Dot( n, p ) - d > 1e-3f )
+				return false;
+		return true;
+	}
+
+	static int FirstSolid( List<SdfBrush> brushes )
+	{
+		for ( int i = 0; i < brushes.Count; i++ )
+			if ( brushes[i].Enabled && brushes[i].Operation == SdfOperation.Add )
+				return i;
+		return 0;
 	}
 
 	// Subtractive brushes AFTER index that could overlap brushes[index] — any mirror copy of either side.

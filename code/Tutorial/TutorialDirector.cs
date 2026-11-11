@@ -697,15 +697,16 @@ public sealed class TutorialDirector : Component
 			Enter = d =>
 			{
 				d.SnapshotBrushes();
-				// The palette is the whole lesson (ringed) — the wheel/metal/rough column isn't shown at all
-				// yet; it turns up from the next step on. Everything else stays gone; selection
-				// and the (learned) gizmo stay live.
+				// The colour picker is the whole lesson (ringed) — the palette pips are switched off for now
+				// (EditHud.ColourPipsEnabled), so the wheel/metal/rough column stands in for them. Everything
+				// else stays gone; selection and the (learned) gizmo stay live.
 				d.ApplyGate(
 					(HudSection.WorldSelect, SectionState.Normal),
 					(HudSection.GizmoMove, SectionState.Normal),
 					(HudSection.GizmoRotate, SectionState.Normal),
 					(HudSection.GizmoScale, SectionState.Normal),
-					(HudSection.Palette, SectionState.Highlight) );
+					(HudSection.Palette, SectionState.Highlight),
+					(HudSection.Picker, SectionState.Highlight) );
 			},
 		} );
 

@@ -782,6 +782,17 @@
 		.op.sub { color: $craft-red; }
 		.op.cut { color: $craft-blue; }
 		.op.col { color: $craft-purple; }
+		// A Smooth modifier's row (LayerRow): the same six slots as a shape row — empty swatch/op slots at their
+		// widths, the 0–100 amount in the symmetry slot (an .iconbtn's 33px) — so its columns line up with the
+		// rows around it. The name is anchored to the swatch slot's left edge (lined up with the shapes' icons)
+		// and overflows right across the empty op slot. Display-only, so a drag can start anywhere on it.
+		.swatchslot { position: relative; width: 30px; height: 30px; pointer-events: none; }
+		.opslot { width: 33px; height: 33px; pointer-events: none; }
+		.modword, .modvalue { font-family: $body-font; font-size: 18px; color: $paper-ink; }
+		.modword { pointer-events: none; }
+		// The amount is a SCRUB (drag sideways — ScrubValue): an .iconbtn for the hover/sounds, at its 33px.
+		.modvalue { width: 33px; }
+		.modword { position: absolute; left: 0px; top: 0px; bottom: 0px; align-items: center; white-space: nowrap; letter-spacing: 1px; }
 
 		// Combined shape + colour cell: the small white shape icon (background-image set inline), tinted by
 		// the brush colour (background-tint, a multiply) so it reads as both shape and swatch.
@@ -1038,6 +1049,7 @@
 		position: absolute;
 		flex-direction: row;
 		align-items: center;
+		justify-content: center;
 		gap: 10px;
 		pointer-events: all;
 
@@ -1046,6 +1058,10 @@
 		// The strip spans the space between the side panels (its width is set inline — EditHud.SliderStripWidth) and
 		// the controls share it equally, so the tracks run long.
 		> .clay-slider, .slider-row, .text-row, .xsection-row { flex-grow: 1; flex-shrink: 1; flex-basis: 0px; min-width: 0px; }
+		// ... but never past a cap: a LONE slider (a Smooth layer's amount, a group's blend) would otherwise run the whole
+		// strip. The cap sits above the 2- and 3-slider shares, so only a lone slider meets it; the strip centres what
+		// it holds (justify-content) so a capped slider stays under the shape instead of hugging the left edge.
+		> .clay-slider, .slider-row { max-width: 750px; }
 
 		// (The key-caps on these controls are .slider-key — top level, shared with the shape tiles.)
 

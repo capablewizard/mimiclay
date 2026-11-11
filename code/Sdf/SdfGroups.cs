@@ -299,6 +299,7 @@ public static class SdfGroups
 	/// stay consistent with each other as long as they all flatten the same list.</summary>
 	public static List<SdfBrush> Flatten( List<SdfBrush> brushes )
 	{
+		SdfModifiers.Apply( brushes ); // members inherit their group's Smooth floor before they leave it
 		if ( !Any( brushes ) )
 			return brushes;
 

@@ -579,12 +579,15 @@ public static class SdfBrushPacker
 		int splineWritten = 0;
 		int textSlot = 0; // atlas slots assigned in brush order — deterministic, so every pack agrees
 		int written = 0;
+		SdfModifiers.Apply( brushes ); // resolve Smooth modifiers into each brush's EffectiveBlend/EffectiveRounding
 
 		int k = 0;
 		for ( ; k < brushes.Count && written < maxBrushes; k++ )
 		{
 			var b = brushes[k];
 			if ( !b.Enabled )
+				continue;
+			if ( b.IsModifier ) // no geometry — its effect is already folded into the brushes below it
 				continue;
 
 			// A group packs as its members (each a plain brush, in prefab order) — the shaders never see the
@@ -617,7 +620,7 @@ public static class SdfBrushPacker
 		// (authoring + network apply cap at MaxBrushes, so reaching this is a bug or a hand-edited asset) — say so.
 		for ( ; k < brushes.Count; k++ )
 		{
-			if ( !brushes[k].Enabled )
+			if ( !brushes[k].Enabled || brushes[k].IsModifier )
 				continue;
 			if ( _sinceTruncWarn > 5f )
 			{
@@ -659,7 +662,7 @@ public static class SdfBrushPacker
 			{
 				data[o + 4] = b.Size.x; data[o + 5] = b.Size.y; data[o + 6] = b.Size.z;
 			}
-			data[o + 7] = b.Blend;
+			data[o + 7] = b.EffectiveBlend;
 
 			data[o + 8] = rot.x; data[o + 9] = rot.y; data[o + 10] = rot.z; data[o + 11] = rot.w;
 
@@ -668,7 +671,7 @@ public static class SdfBrushPacker
 			data[o + 14] = SrgbToLinear( b.Color.b );
 			data[o + 15] = (int)b.Operation; // 0 add, 1 subtract, 2 cutout, 3 colour — sdf_eval's SdfDist + SdfSurfaceLocal branch on it
 
-			data[o + 16] = b.Shape == SdfShape.Spline ? (b.SplineClosed ? 1f : 0f) : b.Rounding;
+			data[o + 16] = b.Shape == SdfShape.Spline ? (b.SplineClosed ? 1f : 0f) : b.EffectiveRounding;
 			// Metal + rough share one lane (two 10-bit ints, exact in RGBA32F) so the cutout gap gets the
 			// freed .z without an 8th texel. Gap is cutout-only — zeroed for the other ops so the shader's
 			// shell maths never sees a stale value if the op is cycled away and back.
