@@ -2314,10 +2314,60 @@ public static class SdfCollisionBuilder
 	}
 
 	// Brush-local hull points per shape (axis = Z, matching the SDF/CSG conventions). Coarse on purpose —
-	// a convex collider doesn't benefit from fine tessellation. Rounding/Blend are ignored, so the collider
-	// is the sharp primitive (a hair smaller than the blended visual surface — fine for gameplay).
+	// a convex collider doesn't benefit from fine tessellation. Blend is ignored, and so is Rounding except on
+	// cones, so the collider is the sharp primitive (a hair smaller than the blended visual surface — fine for
+	// gameplay). Cones follow the rounded profile: their rounding loss grows without bound as they narrow.
 	// Internal: SculptBounds measures its max-size region against these same support points (a bounding
 	// box/sphere reads far past the visible surface for flat/rotated/sliced shapes).
+	const int ConeRoundRing = 10; // segments around a ROUNDED cone: 6 rings × 10 = 110 edges, under HullEdgeLimit
+
+	// The rounded cone's revolved profile (base-pivot frame): SdfBrush.ConeErodedCore's eroded frustum with an
+	// r-radius arc at each cap corner — base ring, arc midpoint, slant tangent at the bottom; slant tangent,
+	// arc midpoint, top ring (a single apex point when the core comes to a point). Rings at radius ~0 collapse
+	// to one point. False when there's no rounding, so the caller keeps the sharp frustum.
+	static bool RoundedConePoints( float R, float H, float rounding, float slice, List<Vector3> dst )
+	{
+		if ( !SdfBrush.ConeErodedCore( R, H, rounding, slice, out float zb, out float zt, out float r1, out float r2, out float r )
+			|| r < 0.05f )
+			return false;
+
+		const float HalfPi = MathF.PI * 0.5f;
+		void AddRing( float q, float z )
+		{
+			z += H; // centred → base-pivot frame (ConeBasePivot shifts by -Size.z)
+			if ( q < 0.05f )
+			{
+				dst.Add( new Vector3( 0f, 0f, z ) );
+				return;
+			}
+			for ( int k = 0; k < ConeRoundRing; k++ )
+			{
+				float a = k / (float)ConeRoundRing * MathF.PI * 2f;
+				dst.Add( new Vector3( MathF.Cos( a ) * q, MathF.Sin( a ) * q, z ) );
+			}
+		}
+		void AddArc( float cq, float cz, float t ) => AddRing( cq + r * MathF.Cos( t ), cz + r * MathF.Sin( t ) );
+
+		if ( zt <= zb ) // caps met: the core is a disc, the shape a rounded puck (a ball when rd = 0)
+		{
+			float rd = MathF.Max( 0.5f * (r1 + r2), 0f ), zc = (zb + zt) * 0.5f;
+			for ( int j = 0; j <= 4; j++ )
+				AddArc( rd, zc, -HalfPi + j * (MathF.PI / 4f) );
+			return true;
+		}
+
+		// Outward normal of the eroded slant in (q, z), as an angle: the tangent point where each corner arc
+		// hands over to the straight side.
+		float tn = MathF.Atan2( r1 - r2, zt - zb );
+		AddArc( r1, zb, -HalfPi );
+		AddArc( r1, zb, (tn - HalfPi) * 0.5f );
+		AddArc( r1, zb, tn );
+		AddArc( r2, zt, tn );
+		AddArc( r2, zt, (tn + HalfPi) * 0.5f );
+		AddArc( r2, zt, HalfPi );
+		return true;
+	}
+
 	internal static void LocalPoints( SdfBrush b, List<Vector3> dst )
 	{
 		dst.Clear();
@@ -2354,6 +2404,12 @@ public static class SdfCollisionBuilder
 
 			case SdfShape.Cone: // BASE-pivot: base radius Size.x at z=0 (on Position), apex at z=+2·Size.z
 			{
+				// Rounded: follow the rendered surface, not the sharp frustum. Rounding erodes the cone by r and
+				// dilates it back, which pulls a narrow cone's tip in by r/sin(half-angle) − r — far more than
+				// the "hair" every other shape loses — so the sharp hull floated well past the clay.
+				if ( RoundedConePoints( sx, sz, b.EffectiveRounding, b.Slice, dst ) )
+					break;
+
 				for ( int k = 0; k < Ring; k++ )
 				{
 					float a = k / (float)Ring * MathF.PI * 2f;

@@ -27,44 +27,34 @@
 		opacity: 0;
 	}
 
-	// A card joining or leaving the row (Unstick while climbing, Leave Prop on possess, the whole bar appearing).
-	// Split by property, because each layer owns a different job:
-	//  • the SLOT (its transform is the code-driven wobble) carries max-width + padding — the space opening and
-	//    closing, so the neighbours slide rather than jump. The spacing between cards is this padding, not a row
-	//    `gap`: a gap would stay behind a collapsed card and snap shut when it's deleted.
-	//  • the GROW wrapper carries the scale.
-	// The max-width cap only has to clear the widest card — past that it's just how quickly the slide finishes.
+	// A card joining or leaving the row (Unstick while climbing, Leave Prop on possess, the whole bar appearing):
+	// all CODE-driven by the shared PopFlex springs (UI/PopFlex.cs, stepped from HotkeyBar.CollapseLeaving), so no
+	// transitions here — they'd lag every per-frame value. Each layer owns one job:
+	//  • the SLOT (its transform is the code-driven wobble) takes the room: it keeps its natural width and negative
+	//    side margins pull its footprint in, so neighbours slide as it opens / closes. The spacing between cards is
+	//    its padding, not a row `gap`: a gap would stay behind a collapsed card and snap shut when it's deleted.
+	//  • the GROW wrapper takes the pop scale.
 	.hotkey-slot {
 		flex-direction: row;
-		max-width: 360px;
+		justify-content: center;
+		flex-shrink: 0;
 		padding: $space-xs;              // half the space between neighbours, each side
-		transition: max-width 0.25s ease-out, padding 0.25s ease-out;
 
-		// Grow in: :intro holds it collapsed for its first frame, the transitions grow it to rest.
+		// Out of the flow for its first layout, before the springs have written anything (it measures its natural
+		// width there without taking room).
 		&:intro {
-			max-width: 0px;
-			padding: 0px;
-		}
-
-		// Leave (HotkeyBar.UpdateShown holds the card in place as .leaving, then removes it once collapsed — not
-		// :outro, because razor moves a panel it's deleting to the end of the row). The card POPS then shrinks away —
-		// a back-in curve, whose dip below 0 is the swell past full size before it falls to nothing. The space closing
-		// behind it is CODE-driven from the slot's measured width (HotkeyBar.CollapseLeaving), so the slot's own
-		// transitions are off here: they'd lag every per-frame value.
-		&.leaving {
-			transition: none;
-
-			.hotkey-grow {
-				transform: scale( 0 );
-				transition: transform 0.3s cubic-bezier( 0.6, -0.5, 0.735, 0.045 );
-			}
+			position: absolute;
 		}
 	}
 
 	.hotkey-grow {
 		flex-direction: row;
+		flex-shrink: 0;
 		transform-origin: center;
-		transition: transform 0.3s ease-out;
+
+		// The card and its glyph / label must hold their natural size inside a slot that's narrower while opening —
+		// left to shrink they measured ~10px, so the slot opened to that and then jumped to the real width.
+		.key-card, .key-card > * { flex-shrink: 0; }
 
 		&:intro {
 			transform: scale( 0 );

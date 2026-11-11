@@ -110,6 +110,13 @@
 		}
 	}
 
+	// Edit mode opening (EditHud.StepSideSlide): a side column mounting now starts parked off its own edge for its first
+	// layout, before the slide's first transform lands — otherwise it flashed at home for a frame.
+	&.sides-opening {
+		.panel.left > .section-title:intro, .layer:intro { position: relative; left: -700px; } // the layer stack staggers in (StepLayerStagger)
+		.panel.right:intro { transform: translateX( 700px ); }
+	}
+
 	// Drawn dot cursor shown at the alt-drag anchor while the real cursor is hidden for relative-mode input.
 	.alt-cursor {
 		position: absolute;
@@ -409,13 +416,11 @@
 
 		&.left {
 			left: $panel-inset;
-			animation: edit-hud-slide-left 0.18s ease-out;
 		}
 
 		&.right {
 			right: $panel-inset;
 			width: 190px; // one consistent column width, shared with the colour wheel + palette below it
-			animation: edit-hud-slide-right 0.18s ease-out;
 
 			// Right-aligned section header (label sits against the right edge, icon trails it).
 			// Only the header is pushed right; the chip rows below still stretch to full width.
@@ -438,10 +443,8 @@
 			}
 		}
 
-		// Highlighted panel: the slide-in above OWNS the `animation` shorthand and out-ranks the generic
-		// .tutorial-highlight rule (animations replace, never merge) — so the ringed state re-declares the
-		// glow at higher specificity, forfeiting a slide it has already played. Rounded like the other
-		// ringed surfaces.
+		// Highlighted panel: re-declares the glow at higher specificity than the generic .tutorial-highlight rule.
+		// Rounded like the other ringed surfaces.
 		&.left.tutorial-highlight,
 		&.right.tutorial-highlight {
 			animation: tutorial-glow 1.2s ease-in-out 0s infinite;
@@ -460,6 +463,19 @@
 
 	// The Tools panel's vertical button list — full-width chips stacked, so the top button (Add Shape)
 	// never moves as selection-only tools appear beneath it.
+	// A Tools-column group that slides in and out from the right (EditHud.StepToolGroups): its own column, at its
+	// parent's spacing; a leaving group never takes clicks. Gone on its mount frame so it can't flash open.
+	.tool-slide {
+		flex-direction: column;
+		flex-shrink: 0;
+		gap: 10px;
+		width: 100%;
+
+		&.sym-group { gap: 14px; }
+		&.gone, &.gone * { pointer-events: none; }
+		&.gone:intro { display: none; }
+	}
+
 	.tool-list {
 		flex-direction: column;
 		gap: 10px;
@@ -482,6 +498,21 @@
 			}
 		}
 
+		// Symmetry's per-axis picks: three compact chips sharing one row under the Symmetry button.
+		.axis-row {
+			flex-direction: row;
+			gap: 8px;
+			width: 100%;
+
+			.chip.axis {
+				flex-grow: 1;
+				width: auto;
+				padding: 6px 0px;
+				font-size: 13px;
+				justify-content: center;
+			}
+		}
+
 		// Delete: red accents, like the layer rows' bin button.
 		.chip.danger {
 			.icon { color: $craft-red; }
@@ -493,16 +524,43 @@
 		}
 	}
 
-	// The shape dock: the shape tile row, centred above the slider stack (left/top from code). The
-	// container is click-through; the tiles inside opt back in — except while the dock is faded out
-	// (gizmo manipulation), when they must not catch invisible clicks.
+	// The shape dock: the shape tile row, centred above the slider stack (bottom from code — EditHud.DockBottom). The
+	// container is click-through; the tiles inside opt back in.
+	// Full width with its tiles centred by layout — never left from a measured width (a remount measured nothing on
+	// its first frame, drew off-centre, then jumped). Always mounted while editing: the tiles are PopFlex `.pop` items
+	// (EditHud.StepPops) in RISE mode — they all pop up together from below, taking no room, so nothing slides.
 	.shape-dock {
 		position: absolute;
+		left: 0px;
+		width: 100%;
 		flex-direction: column;
 		align-items: center;
 		gap: 10px;
 		pointer-events: none;
 
+		.shape-grid { gap: 0px; }
+
+		.pop {
+			flex-direction: row;
+			justify-content: center;
+			flex-shrink: 0;
+			padding: 0px 5px;
+			transform-origin: center bottom; // grows up out of the strip
+
+			&:intro { transform: scale( 0 ); } // rise mode takes no room, so no out-of-flow first layout
+			&.gone, &.gone * { pointer-events: none; } // every descendant: several set pointer-events: all on themselves
+		}
+	}
+
+	// The colour column's slide layer (EditHud.StepColourSlide): a full-screen click-through sheet holding the palette
+	// + picker at their usual absolute spots, translated in from the right edge on a spring.
+	.colour-slide {
+		position: absolute;
+		left: 0px;
+		top: 0px;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
 	}
 
 	// The active stamp shape in add mode — same orange the selected layer row / on-chips use.
@@ -523,8 +581,18 @@
 		width: 100%;
 		flex-direction: row;
 		justify-content: center;
-		gap: 10px;
 		pointer-events: none;
+
+		// PopFlex items (EditHud.StepPops, rise mode): pop up together, spacing = side padding (no row gap).
+		.pop {
+			flex-direction: row;
+			flex-shrink: 0;
+			padding: 0px 5px;
+			transform-origin: center bottom;
+
+			&:intro { transform: scale( 0 ); }
+			&.gone, &.gone * { pointer-events: none; }
+		}
 
 		.chip {
 			flex-grow: 0;
@@ -534,7 +602,7 @@
 			// Header-font capitals, like the edit HUD's other key-led controls (slider strip, shape tiles).
 			span {
 				font-family: $header-font;
-				font-size: 20px;
+				font-size: 24px;
 				font-weight: 800;
 				letter-spacing: 1px;
 			}
@@ -1050,25 +1118,49 @@
 		flex-direction: row;
 		align-items: center;
 		justify-content: center;
-		gap: 10px;
 		pointer-events: all;
+		// A FIXED height — one pill. An item squeezed to a sliver while it pops in / out (the Text row, a leaving
+		// slider) laid out tall for a few frames, the strip grew with it, and since it sits by its bottom edge with
+		// its items centred, the whole strip — and the shape tiles stacked on its height — rose and dropped back.
+		height: 54px; // the slider pills' own height (measured), so nothing shifts — EditHud.StripHeight must match
 
-		// In the horizontal strip every item is a fixed-width pill matching the sliders — including the
-		// extruded "Shape" brush's profile chip row, whose chips flex to share that width evenly.
+		// Every control is a `.pop` wrapper (always mounted; `.gone` when it doesn't apply) whose room and pop scale are
+		// CODE-driven by PopFlex (EditHud.StepPops) — so no transitions here. The spacing is each wrapper's side padding
+		// (written by PopFlex), never a row `gap`: a gap would stay behind a collapsed item and snap shut.
 		// The strip spans the space between the side panels (its width is set inline — EditHud.SliderStripWidth) and
-		// the controls share it equally, so the tracks run long.
-		> .clay-slider, .slider-row, .text-row, .xsection-row { flex-grow: 1; flex-shrink: 1; flex-basis: 0px; min-width: 0px; }
+		// the `.grow` controls share it equally (flex-basis 0; PopFlex eases their flex-grow), so the tracks run long.
+		.pop {
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+			padding: 0px 5px;
+			transform-origin: center;
+			white-space: nowrap; // squeezed while popping, labels must not wrap onto extra lines
+
+			&:intro { position: absolute; transform: scale( 0 ); } // first layout: measured, out of the flow
+			&.gone, &.gone * { pointer-events: none; } // every descendant: the chips + TextEntry set pointer-events: all on themselves
+		}
+		.pop.grow {
+			flex-grow: 1;
+			flex-shrink: 1;
+			flex-basis: 0px;
+			min-width: 0px;
+
+			&:intro { position: relative; flex-grow: 0; } // grow items need no measure: in the flow with no share
+			> * { flex-grow: 1; min-width: 0px; }
+		}
 		// ... but never past a cap: a LONE slider (a Smooth layer's amount, a group's blend) would otherwise run the whole
 		// strip. The cap sits above the 2- and 3-slider shares, so only a lone slider meets it; the strip centres what
 		// it holds (justify-content) so a capped slider stays under the shape instead of hugging the left edge.
-		> .clay-slider, .slider-row { max-width: 750px; }
+		.pop.capped { max-width: 760px; }
 
 		// (The key-caps on these controls are .slider-key — top level, shared with the shape tiles.)
 
 		// The strip's sliders at the hotkey bar's weight (.key-card.compact): ~50px pills, header-font capitals at
 		// 20px, a heavier groove + knob to match. Scoped to the strip — the colour column's Metal/Rough sliders keep
 		// their compact size.
-		> .clay-slider, > .slider-row > .clay-slider {
+		.pop > .clay-slider, .pop > .slider-row > .clay-slider {
 			padding: 10px 16px;
 			gap: 12px;
 
@@ -1297,16 +1389,6 @@
 			}
 		}
 	}
-}
-
-@keyframes edit-hud-slide-left {
-	from { transform: translateX( -100% ); }
-	to { transform: translateX( 0 ); }
-}
-
-@keyframes edit-hud-slide-right {
-	from { transform: translateX( 100% ); }
-	to { transform: translateX( 0 ); }
 }
 
 // The tutorial highlight's breathing ring — only the shadow moves (alpha + spread), never the layout.

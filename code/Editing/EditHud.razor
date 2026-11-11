@@ -76,7 +76,7 @@
 		</div>
 	}
 
-	@if ( Session is not null && Session.IsEditing )
+	@if ( Session is not null && (Session.IsEditing || Closing) )
 	{
 		@* (The alt-nav view hints that used to sit top-right are gone — the picker column lives there now,
 		   and the alt gestures are covered by muscle memory / the menu's own copy.) *@
@@ -92,15 +92,20 @@
 		@* Part dock — Head / Weapon (whatever parts the pawn wired onto its sessions; see
 		   SculptEditSession.EditParts). Bottom-centre, only while nothing is selected and no stamp is held:
 		   the neutral state, when the shape dock and sliders are down and the slot is free. The active part
-		   is the usual selected-orange chip; clicking the other one switches which session is editing. *@
-		@if ( PartDockShown )
+		   is the usual selected-orange chip; clicking the other one switches which session is editing.
+		   Mounted whenever the session has parts; the chips are PopFlex `pop` items (StepPops), `gone` outside the
+		   neutral state, so they pop UP together like the shape tiles instead of blinking in. *@
+		@if ( ((Session?.IsEditing ?? false) || Closing) && Session.EditParts is { Count: > 0 } parts )
 		{
+			var partsOn = PartDockShown;
 			<div class="part-dock" @ref="PartDockPanel" style="bottom: @((int)(BarClearance + 16f))px;">
-				@foreach ( var entry in Session.EditParts )
+				@foreach ( var entry in parts )
 				{
 					var part = entry;
-					<div class="chip @(part.Active ? "on" : "")" @onclick=@(() => part.Select?.Invoke())>
-						<span>@part.Label</span>
+					<div class="pop @(partsOn ? "" : "gone")" @key=@part.Label>
+						<div class="chip @(part.Active ? "on" : "")" @onclick=@(() => part.Select?.Invoke())>
+							<span>@part.Label</span>
+						</div>
 					</div>
 				}
 			</div>
@@ -215,23 +220,35 @@
 							<div class="icon">@SdfIcons.Modifier</div><span>Add Smooth</span>
 						</div>
 					}
-					@if ( Session.Tool == SculptTool.Gizmo && Brush is not null && EditHudGate.Visible( HudSection.EditChips ) )
+					@* Selection-only tools: always mounted, slid in from the right edge and out again (StepToolGroups) while
+					   the list below closes up; they used to blink in and out. *@
+					@if ( EditHudGate.Visible( HudSection.EditChips ) )
 					{
-						<div class="chip action @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.DuplicateSelected() ))>
-							<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
-						</div>
-						<div class="chip action danger @(StripFired( "delete" ) ? "fired" : "") @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.RemoveSelected() ))>
-							<div class="slider-key">Del</div><span>Delete</span>
+						<div class="tool-slide @(Session.Tool == SculptTool.Gizmo && ToolsBrush is not null ? "" : "gone")" @ref="EditChipsGroup">
+							<div class="chip action @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.DuplicateSelected() ))>
+								<div class="icon">@SdfIcons.Duplicate</div><span>Duplicate</span>
+							</div>
+							<div class="chip action danger @(StripFired( "delete" ) ? "fired" : "") @EditHudGate.ChipClass( HudSection.EditChips )" @onclick=@(() => GateClick( HudSection.EditChips, () => Session.RemoveSelected() ))>
+								<div class="slider-key">Del</div><span>Delete</span>
+							</div>
 						</div>
 					}
 				</div>
-				@if ( Brush is not null && EditHudGate.Visible( HudSection.Symmetry ) )
+				@if ( EditHudGate.Visible( HudSection.Symmetry ) )
 				{
-				<div class="section-title"><span>Symmetry</span><div class="icon">@SdfIcons.Symmetry</div></div>
-				<div class="shape-grid">
-					<div class="chip @(Brush.MirrorX ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 0 ) ))>X</div>
-					<div class="chip @(Brush.MirrorY ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 1 ) ))>Y</div>
-					<div class="chip @(Brush.MirrorZ ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 2 ) ))>Z</div>
+				<div class="tool-slide sym-group @(ToolsBrush is not null ? "" : "gone")" @ref="SymGroup">
+					@* One Symmetry button (the layer row's quick toggle: off remembers the axes, on restores them, X by default)
+					   with the per-axis picks in a compact row under it. *@
+					<div class="tool-list">
+						<div class="chip action @(SymOn ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, ToggleSymmetryAll ))>
+							<div class="icon">@SdfIcons.Symmetry</div><span>Symmetry</span>
+						</div>
+						<div class="axis-row">
+							<div class="chip axis @(SymBrush?.MirrorX == true ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 0 ) ))>X</div>
+							<div class="chip axis @(SymBrush?.MirrorY == true ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 1 ) ))>Y</div>
+							<div class="chip axis @(SymBrush?.MirrorZ == true ? "on" : "") @EditHudGate.ChipClass( HudSection.Symmetry )" @onclick=@(() => GateClick( HudSection.Symmetry, () => ToggleMirror( 2 ) ))>Z</div>
+						</div>
+					</div>
 				</div>
 				}
 				@if ( EditHudGate.Of( HudSection.Tools ) == SectionState.Locked )
@@ -244,10 +261,10 @@
 		@* Workshop column — a second card stack just LEFT of the Tools panel, same paper style. Only mounted
 		   when an owner wires the actions: the menu customiser (heads) and creative mode (props / faces —
 		   see CreativeManager.UpdateWorkshopUi); round HUDs never do. *@
-		@if ( WorkshopSave is not null || Game.IsEditor )
+		@if ( WorkshopShown || Game.IsEditor )
 		{
 			<div class="panel right workshop-col" @ref="WorkshopPanel">
-				@if ( WorkshopSave is not null )
+				@if ( WorkshopShown )
 				{
 				<div class="section-title"><span>Workshop</span><div class="icon">cloud</div></div>
 				<div class="tool-list">
@@ -337,20 +354,30 @@
 		   and opacity is driven by whether a brush is selected, so the CSS opacity transition animates both ways. *@
 		if ( Brush is not null )
 			_fadeBrush = Brush;
+		if ( Brush is not null && !Brush.IsModifier )
+			_shapeBrush = Brush; // the shape-only controls (op chip, shape tiles) keep showing this while they pop OUT for a Smooth layer
 
 		var palettePos = PalettePos();
 		if ( palettePos.HasValue )
 			_palettePos = palettePos.Value;
 
-		if ( PaletteOn && EditHudGate.Visible( HudSection.Palette ) )
+		@* The colour column (palette + picker) rides one full-screen, click-through layer that SLIDES in from the right
+		   edge it's docked to, on a spring (OnUpdate → StepColourSlide) — rather than fading: it's out whenever the
+		   active brush has no material (none, or a Smooth layer). Opacity is left to the manipulation fade + lock dim. *@
+		var colourOn = Brush is not null && !Brush.IsModifier;
+		var pickerPos = PickerPos();
+		if ( pickerPos.HasValue )
+			_pickerPos = pickerPos.Value;
+		<div @ref="ColourSlidePanel" class="colour-slide">
+		@if ( PaletteOn && EditHudGate.Visible( HudSection.Palette ) )
 		{
 			var paletteGate = EditHudGate.Of( HudSection.Palette );
-			var paletteShown = Brush is not null && !Brush.IsModifier && palettePos.HasValue; // a modifier has no material
+			var paletteShown = colourOn && palettePos.HasValue; // a modifier has no material
 			@* The lock dim rides the inline opacity (a class can't override an inline style). *@
-			var paletteOpacity = (!paletteShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f))
+			var paletteOpacity = (Session.IsManipulating ? EditTransparency : 1f)
 				* (paletteGate == SectionState.Locked ? LockDim : 1f);
 			var mats = ClayPalette.Default.Materials;
-			<div @ref="PalettePanel" class="palette-float @(paletteGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_palettePos.x)px; top: @((int)_palettePos.y)px; width: @(PaletteWidth)px; opacity: @(paletteOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(paletteOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			<div @ref="PalettePanel" class="palette-float @(paletteGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_palettePos.x)px; top: @((int)_palettePos.y)px; width: @(PaletteWidth)px; opacity: @(paletteOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(paletteShown && paletteOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				@for ( int i = 0; i < mats.Count; i++ )
 				{
 					var idx = i;
@@ -378,18 +405,14 @@
 		@* Colour wheel + metal/rough sliders, floating to the RIGHT of the palette — same fade/tracking as the
 		   palette. The wheel edits the selected brush's colour directly; a palette click re-seats it (the wheel
 		   resyncs whenever the brush colour changes underneath it), and dragging it just deselects every swatch. *@
-		var pickerPos = PickerPos();
-		if ( pickerPos.HasValue )
-			_pickerPos = pickerPos.Value;
-
-		if ( ShowPicker && EditHudGate.Visible( HudSection.Picker ) )
+		@if ( ShowPicker && EditHudGate.Visible( HudSection.Picker ) )
 		{
 			var pickerGate = EditHudGate.Of( HudSection.Picker );
-			var pickerShown = Brush is not null && !Brush.IsModifier && pickerPos.HasValue;
-			var pickerOpacity = (!pickerShown ? 0f : (Session.IsManipulating ? EditTransparency : 1f))
+			var pickerShown = colourOn && pickerPos.HasValue;
+			var pickerOpacity = (Session.IsManipulating ? EditTransparency : 1f)
 				* (pickerGate == SectionState.Locked ? LockDim : 1f);
 			var pfb = _fadeBrush;
-			<div @ref="PickerPanel" class="picker-float @(pickerGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_pickerPos.x)px; top: @((int)_pickerPos.y)px; width: @((int)PickerSize)px; opacity: @(pickerOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(pickerOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			<div @ref="PickerPanel" class="picker-float @(pickerGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_pickerPos.x)px; top: @((int)_pickerPos.y)px; width: @((int)PickerSize)px; opacity: @(pickerOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(pickerShown && pickerOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
 				<ClayColorPicker Size=@PickerSize Value=@(pfb?.Color ?? Color.White) OnInput=@((Color c) => SetColor( c )) OnCommit=@CommitEdit />
 				<ClaySlider Label="Metal" Value=@(pfb?.Metallic ?? 0f) Min=@(0f) Max=@(1f)
 					OnInput=@((float v) => SetMetallic( v )) OnCommit=@CommitEdit />
@@ -410,6 +433,7 @@
 				}
 			</div>
 		}
+		</div>
 
 		@* Blend / roundness sliders, floating under the gizmo (replacing the old 3D slider handles). They track the
 		   gizmo's screen position like the palette, fade out while a handle is manipulated, and fade in/out with the
@@ -425,7 +449,7 @@
 			// No manipulation fade (unlike the palette/picker): the sliders sit BELOW the gizmo, so a drag
 			// doesn't need them cleared out of the way — and the validity toast anchors off this stack's
 			// slot, so keeping it solid keeps that anchor readable too.
-			var sliderOpacity = (slidersShown ? 1f : 0f) * (sliderGate == SectionState.Locked ? LockDim : 1f);
+			var sliderOpacity = sliderGate == SectionState.Locked ? LockDim : 1f; // shown / hidden is the items popping (PopFlex), not a fade
 			var fb = _fadeBrush;
 			@* The first additive brush's blend folds against empty space — a field no-op that would only
 			   inflate the SculptBounds size padding — so its slider parks at 0, greyed (mirror symmetry
@@ -448,34 +472,41 @@
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
-			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; top: @((int)_sliderPos.y)px; width: @((int)SliderStripWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(sliderOpacity > 0.01f && !Inert ? "all" : "none"); transition: opacity @(FadeTime.ToString( "0.###", CultureInfo.InvariantCulture ))s ease;">
+			@* Every control is ALWAYS mounted, as a `pop` item that's `gone` when it doesn't apply: the shared PopFlex
+			   (UI/PopFlex.cs, stepped from OnUpdate) pops each one in / out while its neighbours slide to make or close the
+			   room — a Smooth layer's lone slider and a box's Add · Blend · Round morph into each other instead of
+			   swapping in one frame. (Conditional markup can't animate out: razor parks a deleting panel at the row's
+			   end.) `grow` items share the strip (flex-basis 0); the op chip is a fixed width. With nothing selected
+			   every item is gone, so selecting pops the whole strip in. *@
+			var stripOn = slidersShown;
+			var placingSpline = isSpline && Session.Tool == SculptTool.Sculpt;
+			var opNow = (isModifier ? _shapeBrush : fb)?.Operation ?? SdfOperation.Add; // a modifier has no op: the leaving chip keeps the last one
+			<div @ref="SliderStackPanel" class="slider-stack @(sliderGate == SectionState.Highlight ? "tutorial-highlight" : "")" style="left: @((int)_sliderPos.x)px; bottom: @((int)StripBottom)px; width: @((int)SliderStripWidth)px; opacity: @(sliderOpacity.ToString( "0.###", CultureInfo.InvariantCulture )); pointer-events: @(slidersShown && !Inert ? "all" : "none");">
 				@* Add/Carve/Cutout/Colour cycle for the active brush (ghost or selection) — same cycle the A key steps. *@
-				@{ var opNow = fb?.Operation ?? SdfOperation.Add; }
-				@if ( !isGroup && !isModifier )
-				{
+				<div class="pop @(stripOn && !isGroup && !isModifier ? "" : "gone")">
 					<div class="chip op-chip @(opNow == SdfOperation.Subtract ? "carve" : opNow == SdfOperation.Cutout ? "cutout" : opNow == SdfOperation.Colour ? "colour" : "") @(StripFired( "a" ) ? "fired" : "")" @onclick=@ToggleActiveOperation>
 						<div class="slider-key">A</div><span>@(opNow == SdfOperation.Subtract ? "Carve" : opNow == SdfOperation.Cutout ? "Cutout" : opNow == SdfOperation.Colour ? "Colour" : "Add")</span>
 					</div>
-				}
+				</div>
 				@* A modifier's amount rides in Blend (SdfModifiers) — same S key + scrub, its own label. *@
+				<div class="pop grow capped @(stripOn ? "" : "gone")">
 					<ClaySlider Label=@(isModifier ? "Smooth" : "Blend") Key="S" Fired=@StripFired( "s" ) Value=@blendVal Min=@(0f) Max=@SdfBrush.MaxBlend Curve=@BlendCurve
-					Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
+						Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
+				</div>
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
 				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
 				   cone) add Slice as a third slider. *@
-				@if ( isSpline && Session.Tool == SculptTool.Sculpt )
-				{
-					@* While PLACING: just smoothness. Each point's size is set as you place it (R + move),
-					   and the loop closes itself by snapping to the first point — so the uniform Size
-					   slider and the Loop chip would both fight the flow. *@
+				@* Spline while PLACING: just smoothness. Each point's size is set as you place it (R + move),
+				   and the loop closes itself by snapping to the first point — so the uniform Size
+				   slider and the Loop chip would both fight the flow. *@
+				<div class="pop grow capped @(stripOn && placingSpline ? "" : "gone")">
 					<ClaySlider Label="Smooth" Key="D" Fired=@StripFired( "d" ) Value=@curveVal Min=@(0f) Max=@(1f)
 						OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
-				}
-				else if ( isSpline )
-				{
-					@* Curve slider with the Loop chip riding beside it (close the ring; needs 3+ points).
-					   No Size slider / per-point toggle: every point carries its own radius (set as it was
-					   placed) and is resized by its 3D radius ring, so a uniform slider would flatten them. *@
+				</div>
+				@* Spline otherwise: Curve with the Loop chip riding beside it (close the ring; needs 3+ points).
+				   No Size slider / per-point toggle: every point carries its own radius (set as it was
+				   placed) and is resized by its 3D radius ring, so a uniform slider would flatten them. *@
+				<div class="pop grow capped @(stripOn && isSpline && !placingSpline ? "" : "gone")">
 					<div class="slider-row">
 						<ClaySlider Label="Curve" Key="D" Fired=@StripFired( "d" ) Value=@curveVal Min=@(0f) Max=@(1f)
 							OnInput=@((float v) => SetCurvature( v )) OnCommit=@CommitEdit />
@@ -483,21 +514,18 @@
 							<div class="icon">loop</div>
 						</div>
 					</div>
-				}
-				else if ( !isGroup && !isModifier )
-				{
+				</div>
+				<div class="pop grow capped @(stripOn && !isSpline && !isGroup && !isModifier ? "" : "gone")">
 					<ClaySlider Label="Round" Key="D" Fired=@StripFired( "d" ) Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
 						OnInput=@((float v) => SetRounding( v )) OnCommit=@CommitEdit />
-					@if ( isSphere || isCone )
-					{
-						<ClaySlider Label="Slice" Key="F" Fired=@StripFired( "f" ) Value=@sliceVal Min=@(0f) Max=@SdfBrush.MaxSlice
-							OnInput=@((float v) => SetSlice( v )) OnCommit=@CommitEdit />
-					}
-				}
+				</div>
+				<div class="pop grow capped @(stripOn && (isSphere || isCone) ? "" : "gone")">
+					<ClaySlider Label="Slice" Key="F" Fired=@StripFired( "f" ) Value=@sliceVal Min=@(0f) Max=@SdfBrush.MaxSlice
+						OnInput=@((float v) => SetSlice( v )) OnCommit=@CommitEdit />
+				</div>
 				@* Extruded "Shape" brush: pick the 2D profile it sweeps — a row of icon chips in the same
 				   paper style, riding along under the sliders (same fade/tracking, it's inside the stack). *@
-				@if ( isExtruded )
-				{
+				<div class="pop grow @(stripOn && isExtruded ? "" : "gone")">
 					<div class="xsection-row @(StripFired( "f" ) ? "fired" : "")"><div class="slider-key">F</div>
 						@foreach ( var xs in CrossSections )
 						{
@@ -507,24 +535,22 @@
 							</div>
 						}
 					</div>
-				}
+				</div>
 				@* Cutout only: the slot's half-width — Blend then rounds the slot's lip instead of doubling
 				   as its size. LAST in the strip so it reads in keyboard order: S blend · D round · F wildcard
 				   · G gap. Keys bind to MEANING, not position — a shape with no wildcard just collapses that
 				   slot (like a box already does for F), so G is as stable as S and D. *@
-				@if ( opNow == SdfOperation.Cutout )
-				{
+				<div class="pop grow capped @(stripOn && !isModifier && !isGroup && opNow == SdfOperation.Cutout ? "" : "gone")">
 					<ClaySlider Label="Gap" Key="G" Fired=@StripFired( "g" ) Value=@gapVal Min=@(0f) Max=@SdfBrush.MaxGap Curve=@BlendCurve
 						OnInput=@((float v) => SetGap( v )) OnCommit=@CommitEdit />
-				}
+				</div>
 				@* Text brush: edit the string in place, riding under the sliders like the profile chips. *@
-				@if ( isText )
-				{
+				<div class="pop grow @(stripOn && isText ? "" : "gone")">
 					<div class="text-row paper-card">
 						<div class="icon">@SdfIcons.Shape( SdfShape.Text )</div>
 						<TextEntry @ref="TextInput" class="text-input" Value:bind=@SelectedText onblur=@OnTextEntryBlur />
 					</div>
-				}
+				</div>
 				@* Last child so it paints (and hit-tests) above the sliders/chips. *@
 				@if ( sliderGate == SectionState.Locked )
 				{
@@ -535,32 +561,39 @@
 
 		@* Shape row — docked above the sliders, because shape is a PROPERTY of the brush, not a tool:
 		   with a stamp held it re-moulds the ghost, with a selection it converts the brush in place.
-		   Hidden with no active brush — the Tools panel's "Add Shape" button (or Q / number keys) is the
-		   entry point then. *@
-		@if ( ShowTools && Brush is not null && !Brush.IsModifier && EditHudGate.Visible( HudSection.ShapeDock ) ) @* a Smooth layer isn't a shape: no shape row *@
+		   Its tiles are gone with no active brush — the Tools panel's "Add Shape" button (or Q / number keys) is the
+		   entry point then — and on a Smooth layer (a modifier isn't a shape). The dock stays MOUNTED and its tiles
+		   are PopFlex items (stepped from OnUpdate), so they pop up / down together instead of blinking; the dock is centred
+		   by CSS (full width, justify centre), never from a measured width — a remount measured nothing on its first
+		   frame and drew off-centre, then jumped. *@
+		@if ( ShowTools && ((Session?.IsEditing ?? false) || Closing) && EditHudGate.Visible( HudSection.ShapeDock ) )
 		{
+			var dockOn = Brush is not null && !Brush.IsModifier;
+			var tileBrush = _shapeBrush; // the last SHAPE brush, so the active tile holds while the row pops out
 			var shapeDockPos = ShapeDockPos();
 			if ( shapeDockPos.HasValue )
 				_shapeDockPos = shapeDockPos.Value;
 
 			@* No manipulation fade — the dock sits well below the gizmo, and the validity toast anchors
 			   above this row, so both stay solid through a handle drag. *@
-			<div @ref="ShapeDockPanel" class="shape-dock @EditHudGate.PanelClass( HudSection.ShapeDock )" style="left: @((int)_shapeDockPos.x)px; top: @((int)_shapeDockPos.y)px;">
+			<div @ref="ShapeDockPanel" class="shape-dock @EditHudGate.PanelClass( HudSection.ShapeDock )" style="bottom: @((int)DockBottom)px;">
 				<div class="shape-grid">
 					@foreach ( var entry in VisibleShapes )
 					{
 						var shape = entry.Shape;
-						var active = Brush?.Shape == shape;
-						<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => ShapeClicked( shape ) ))>
-							@* The shape's number key in front of its picture, the name underneath. *@
-							<div class="tile-top">
-								@if ( ShapeKey( shape ) is { } key )
-								{
-									<div class="slider-key">@key</div>
-								}
-								<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
+						var active = tileBrush?.Shape == shape;
+						<div class="pop @(dockOn ? "" : "gone")">
+							<div class="paper-card shape-tile @(active ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => ShapeClicked( shape ) ))>
+								@* The shape's number key in front of its picture, the name underneath. *@
+								<div class="tile-top">
+									@if ( ShapeKey( shape ) is { } key )
+									{
+										<div class="slider-key">@key</div>
+									}
+									<div class="shape-img" style="background-image: url( @SdfIcons.ShapeImage( shape ) )"></div>
+								</div>
+								<span class="label">@entry.Label</span>
 							</div>
-							<span class="label">@entry.Label</span>
 						</div>
 					}
 					@* Group tiles (prefab-backed multi-brush shapes — a mouth) follow the primitives. Head sessions
@@ -573,16 +606,18 @@
 							var k = kind;
 							var groupKey = firstGroup ? InputGlyphs.KeyFor( "Slot8", "8" ) : null;
 							firstGroup = false;
-							var groupActive = Brush?.Shape == SdfShape.Group && string.Equals( Brush.GroupKind, k.Id, StringComparison.OrdinalIgnoreCase );
-							<div class="paper-card shape-tile @(groupActive ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => Session.HotkeyGroup( k.Id ) ))>
-								<div class="tile-top">
-									@if ( groupKey is not null )
-									{
-										<div class="slider-key">@groupKey</div>
-									}
-									<div class="shape-img" style="background-image: url( @SdfIcons.GroupImage( k.Id ) )"></div>
+							var groupActive = tileBrush?.Shape == SdfShape.Group && string.Equals( tileBrush.GroupKind, k.Id, StringComparison.OrdinalIgnoreCase );
+							<div class="pop @(dockOn ? "" : "gone")">
+								<div class="paper-card shape-tile @(groupActive ? "active" : "")" @onclick=@(() => GateClick( HudSection.ShapeDock, () => Session.HotkeyGroup( k.Id ) ))>
+									<div class="tile-top">
+										@if ( groupKey is not null )
+										{
+											<div class="slider-key">@groupKey</div>
+										}
+										<div class="shape-img" style="background-image: url( @SdfIcons.GroupImage( k.Id ) )"></div>
+									</div>
+									<span class="label">@k.Label</span>
 								</div>
-								<span class="label">@k.Label</span>
 							</div>
 						}
 					}
@@ -642,7 +677,39 @@
 
 @code
 {
-	static SculptEditSession Session => SculptEditSession.Current;
+	// The session the HUD draws. While edit mode is OPEN that's SculptEditSession.Current; for CloseLinger seconds after
+	// it closes it's the session that just closed (the object outlives the exit — only Current is cleared), so the HUD
+	// stays drawn while everything leaves: the side columns slide out to their edges, and with no brush (Brush) and an
+	// empty hotkey source every bottom row pops out on its PopFlex springs. Inert throughout, so nothing takes the
+	// mouse. Static like before (GateClick and friends read it); the linger fields reset in OnAwake / OnDestroy.
+	static SculptEditSession Session => SculptEditSession.Current ?? (Closing ? _lingerSession : null);
+
+	static SculptEditSession _lingerSession;
+	static float _lingerUntil;
+	static bool _wasOpen;
+	const float CloseLinger = 0.6f;
+
+	/// <summary>Edit mode just closed and the HUD is still animating out. _wasOpen covers the gap before TrackOpenClose
+	/// sees the close: the panel can BUILD in that frame before our update runs, and without it Session read null for one
+	/// frame: the whole HUD was deleted, then rebuilt from scratch the next frame (the exit flicker).</summary>
+	static bool Closing => SculptEditSession.Current is null && _lingerSession.IsValid() && (_wasOpen || RealTime.Now < _lingerUntil);
+
+	// Per frame, first thing: notice the open → closed edge and start the linger.
+	static void TrackOpenClose()
+	{
+		var cur = SculptEditSession.Current;
+		if ( cur.IsValid() && cur.IsEditing )
+		{
+			_lingerSession = cur;
+			_lingerUntil = 0f;
+			_wasOpen = true;
+		}
+		else if ( _wasOpen )
+		{
+			_wasOpen = false;
+			_lingerUntil = RealTime.Now + CloseLinger;
+		}
+	}
 
 	/// <summary>The one live EditHud. The system scene (merged into every map with WantsSystemScene) places one,
 	/// and some map scenes ALSO placed their own — two identical HUDs then stacked exactly on top of each other,
@@ -663,6 +730,14 @@
 		}
 
 		Current = this;
+		ResetLinger(); // statics outlive Stop → Play
+	}
+
+	static void ResetLinger()
+	{
+		_lingerSession = null;
+		_lingerUntil = 0f;
+		_wasOpen = false;
 	}
 
 	// Take the host object with us when it exists only to carry this HUD (a ScreenPanel and us, nothing else) —
@@ -684,12 +759,38 @@
 		_listFx.Clear(); // the shape list's cached fade textures
 
 		if ( Current == this )
+		{
 			Current = null;
+			ResetLinger();
+		}
 	}
 
 	// The brush the panels edit: the SELECTED brush in edit mode, the STAMP GHOST in add mode (palette /
 	// sliders / symmetry pre-style the next stamp). Identical to SelectedBrush when the edit tool is up.
-	SdfBrush Brush => Session?.ActiveBrush;
+	SdfBrush Brush => Closing ? null : Session?.ActiveBrush; // closing: no brush, so every brush-driven control pops out
+
+	// The side columns slide out whole, so while closing they keep showing what they showed on the last open frame —
+	// clearing them (no brush → Duplicate / Delete / Symmetry gone; the owner nulling the workshop actions on exit)
+	// emptied them the instant edit mode closed, before the slide had moved them.
+	SdfBrush _closeBrush;
+	bool _closeWorkshop;
+	SdfBrush ToolsBrush => Closing ? _closeBrush : Brush;
+	bool WorkshopShown => WorkshopSave is not null || (Closing && _closeWorkshop);
+
+	// The Symmetry chips' brush: the live one, else the last one shown — so the section keeps its X/Y/Z state while it
+	// slides out after a deselect instead of flipping every axis off first.
+	SdfBrush _lastSymBrush;
+	SdfBrush SymBrush => ToolsBrush ?? _lastSymBrush;
+
+	void LatchSideContents()
+	{
+		if ( ToolsBrush is { } tb )
+			_lastSymBrush = tb;
+		if ( SculptEditSession.Current is not { IsEditing: true } cur )
+			return;
+		_closeBrush = cur.ActiveBrush;
+		_closeWorkshop = WorkshopSave is not null;
+	}
 
 	// The shape row's shapes — all of them; a spline is placed as a CHAIN of points rather than one stamp,
 	// but it's picked from the same row. The tutorial's first shape lesson trims to the primitives
@@ -750,13 +851,17 @@
 	/// <summary>How far up from the screen's bottom edge the hotkey bar reaches (style px): its MEASURED top, so the
 	/// bottom-centre docks (sliders, part dock, shape dock, validity toast) sit above it however many rows it wraps to.
 	/// One compact row at $panel-inset before the first layout.</summary>
+	// Measured only while the bar is SETTLED (no card mid-pop) and held otherwise: the rows stacked on it (slider strip,
+	// shape dock, part dock, toast) must never move during a transition — a card swelling in near the width limit
+	// briefly wrapped the bar onto two lines, which lifted every row above it for a few frames.
+	float _barClearance;
 	float BarClearance
 	{
 		get
 		{
-			if ( HintBar is { IsValid: true } bar && bar.Box.Rect.Height > 0f )
-				return MathF.Max( 0f, (Screen.Height - bar.Box.Rect.Top) * bar.ScaleFromScreen );
-			return 74f; // one compact row (≈50 with its slots) at $panel-inset
+			if ( HintBar is { IsValid: true } bar && bar.Box.Rect.Height > 0f && (bar.Settled || _barClearance <= 0f) )
+				_barClearance = MathF.Max( 0f, (Screen.Height - bar.Box.Rect.Top) * bar.ScaleFromScreen );
+			return _barClearance > 0f ? _barClearance : 74f; // 74: one compact row (≈50 with its slots) at $panel-inset
 		}
 	}
 	Func<IEnumerable<HotkeyHint>> _hintSource;
@@ -992,8 +1097,8 @@
 	// The HUD goes click-through (its interactive cards drop pointer-events, via the "alt-nav" class) both during
 	// alt camera-nav AND while the pause menu is open — so its buttons don't hover/click behind the pause overlay
 	// (separate ScreenPanels don't block each other's hover, so a higher z-index alone isn't enough).
-	static bool Inert => AltNavActive || PauseMenu.IsOpen;
-	string RootClass => Inert ? "edit-hud alt-nav" : "edit-hud";
+	static bool Inert => AltNavActive || PauseMenu.IsOpen || Closing; // closing: nothing takes the mouse while it all leaves
+	string RootClass => (Inert ? "edit-hud alt-nav" : "edit-hud") + (SidesOpening ? " sides-opening" : "");
 
 	// The "must have at least 1 shape" toast's lifetime — a quick flash; each blocked click re-arms it.
 	const float NoSolidToastTime = 1f;
@@ -1119,6 +1224,200 @@
 	Panel PalettePanel { get; set; }
 	Panel SliderStackPanel { get; set; }
 	Panel PickerPanel { get; set; }
+	Panel ColourSlidePanel { get; set; }
+
+	// ── Pop-in / pop-out motion (UI/PopFlex.cs) ─────────────────────────────────────────────────────────────────────
+	// One motion language for everything that comes and goes with the selection: buttons POP (a bouncy scale) while
+	// their row slides to make or close the room — the slider strip and the hotkey bar (stepped by HotkeyBar
+	// itself); the shape dock's tiles pop UP together (they all come and go at once) — and the colour column, docked to the right edge, SLIDES in from it on the same kind of spring.
+	// Lazily created: initializers never run on a hotloaded live instance.
+	PopFlex _stripPops, _dockPops, _partPops;
+	UiSpring _colourSlide;
+	const float PopPad = 5f; // each item's side padding: the old 10px row gap, split either side
+	const float DockRise = 60f; // the shape tiles pop UP from this far below (together — no cascade, they take no room)
+	const float PartRise = 30f; // the Head / Weapon chips: the same rise, scaled to their smaller size
+
+	void StepPops()
+	{
+		(_stripPops ??= new()).Step( SliderStackPanel, PopPad );
+		var grid = ShapeDockPanel is { IsValid: true } dock && dock.ChildrenCount > 0 ? dock.GetChild( 0 ) : null;
+		(_dockPops ??= new()).Step( grid, PopPad, rise: DockRise );
+		(_partPops ??= new()).Step( PartDockPanel, PopPad, rise: PartRise );
+		StepColourSlide();
+		StepSideSlide();
+		StepToolGroups();
+	}
+
+	// The side columns — the layer stack (left) and the Tools / Workshop columns (right). Opening: the right columns
+	// slide in from the screen edge on the colour column's spring, and the layer stack's rows stagger in from the left
+	// one after another (StepLayerStagger) rather than as one block. Closing: every column slides out whole on a
+	// timed ease-in-back — a small wind-up toward the screen, then away. The old exit was the open spring run
+	// backwards with its undershoot clamped off: 1 → 0 in under 0.2s, which read as a flick, not a slide.
+	// 1 = home. While opening, the root carries .sides-opening so anything mounting that frame starts parked off its
+	// edge (:intro) instead of flashing at home for a frame before the first offset lands.
+	UiSpring _sideSlide;
+	bool _sidesOn;
+	float _outFrom, _outT = -1f; // the exit tween: where it started, seconds in (-1 = not running)
+	const float SideOutTime = 0.3f;
+	const float SideOutBack = 1.3f; // ease-in-back wind-up (~8% of the run toward the screen before leaving)
+
+	bool SidesOpening => (Session?.IsEditing ?? false) && (_sideSlide.Value < 0.5f || _staggerT >= 0f && _staggerT < 0.05f);
+
+	// Frame time for HUD tweens: clamped, so a hitch (leaving edit mode commits + saves the sculpt) slows the motion
+	// down rather than skipping it.
+	static float TweenDelta => MathF.Min( RealTime.Delta, 1f / 30f );
+
+	void StepSideSlide()
+	{
+		bool on = Session?.IsEditing ?? false;
+		bool opened = on && !_sidesOn;
+		if ( !on && _sidesOn )
+		{
+			_outFrom = _sideSlide.Value;
+			_outT = 0f;
+		}
+		_sidesOn = on;
+
+		if ( on )
+		{
+			_outT = -1f;
+			_sideSlide.Step( 1f, TweenDelta, 2.4f, 0.62f );
+		}
+		else if ( _outT >= 0f )
+		{
+			_outT += TweenDelta;
+			var t = MathF.Min( _outT / SideOutTime, 1f );
+			var c = SideOutBack;
+			var e = (c + 1f) * t * t * t - c * t * t; // ease-in-back
+			_sideSlide.Value = _outFrom * (1f - e);
+			_sideSlide.Velocity = 0f;
+			if ( t >= 1f )
+				_outT = -1f;
+			else if ( Closing )
+				_lingerUntil = MathF.Max( _lingerUntil, RealTime.Now + 0.1f ); // a hitch never cuts the slide short
+		}
+		if ( _sideSlide.Value < 0f && on ) { _sideSlide.Value = 0f; _sideSlide.Velocity = 0f; }
+		bool home = on && _sideSlide.SettledAt( 1f );
+		float away = 1f - _sideSlide.Value;
+
+		float sc = Panel?.ScaleFromScreen ?? 1f;
+		if ( PopFlex.TraceFrames > 0 )
+			Log.Info( $"[pop] sides v={_sideSlide.Value:0.00} closing={Closing} stagger={_staggerT:0.00} L[{SideDebug( LeftPanel )}] R[{SideDebug( RightPanel )}] W[{SideDebug( WorkshopPanel )}]" );
+
+		// The layer stack never slides in as a block — its rows stagger in — so it's home whenever edit mode is on.
+		SlideColumn( LeftPanel, on, p => -(p.Box.Rect.Right * sc + 40f) * away );
+		SlideColumn( RightPanel, home, p => (Screen.Width - p.Box.Rect.Left) * sc * away + 40f * away );
+		SlideColumn( WorkshopPanel, home, p => (Screen.Width - p.Box.Rect.Left) * sc * away + 40f * away );
+		StepLayerStagger( on, opened, sc );
+	}
+
+	// The layer stack's open: the "Shapes" title then each row slides in from the left edge, StaggerStep apart, each
+	// on an ease-out-back over StaggerTime (a small overshoot, like the pops). Driven through Style.Left (a relative
+	// offset that moves the row without touching layout): the rows' transform belongs to the drag shuffle
+	// (LayerStyle). Rows past StaggerCap share the last delay — a long stack mustn't take ages to arrive.
+	float _staggerT = -1f;
+	const float StaggerStep = 0.028f, StaggerTime = 0.3f, StaggerBack = 1.2f;
+	const int StaggerCap = 12;
+	List<Panel> _staggerItems;
+
+	void StepLayerStagger( bool on, bool opened, float sc )
+	{
+		if ( opened )
+			_staggerT = 0f;
+		if ( _staggerT < 0f )
+			return;
+
+		(_staggerItems ??= new()).Clear();
+		if ( LeftPanel is { IsValid: true } left )
+		{
+			foreach ( var child in left.Children )
+				if ( child.HasClass( "section-title" ) )
+					_staggerItems.Add( child );
+			if ( LayersPanel is { IsValid: true } list )
+				foreach ( var row in list.Children )
+					if ( row.HasClass( "layer" ) && !row.IsDeleting )
+						_staggerItems.Add( row );
+		}
+
+		// Not mounted yet (the first frame of a mount): hold the clock — :intro keeps them parked meanwhile.
+		if ( _staggerItems.Count == 0 && on )
+			return;
+
+		_staggerT += TweenDelta;
+		var dist = (LeftPanel?.Box.Rect.Right ?? 400f) * sc + 40f;
+		var done = true;
+		for ( int i = 0; i < _staggerItems.Count; i++ )
+		{
+			var item = _staggerItems[i];
+			var t = on ? (_staggerT - MathF.Min( i, StaggerCap ) * StaggerStep) / StaggerTime : 1f;
+			if ( t >= 1f )
+			{
+				item.Style.Left = null;
+				item.Style.Position = null;
+			}
+			else
+			{
+				done = false;
+				t = MathF.Max( t, 0f ) - 1f;
+				var c = StaggerBack;
+				var e = 1f + (c + 1f) * t * t * t + c * t * t; // ease-out-back
+				item.Style.Position = PositionMode.Relative; // rows are static, and a static box ignores left
+				item.Style.Left = Length.Pixels( -dist * (1f - e) );
+			}
+			item.Style.Dirty();
+		}
+		if ( PopFlex.TraceFrames > 0 && _staggerItems.Count > 0 )
+			Log.Info( $"[pop] stagger t={_staggerT:0.00} n={_staggerItems.Count} first={_staggerItems[0].Box.Rect.Left:0} row1={(_staggerItems.Count > 1 ? _staggerItems[1].Box.Rect.Left : 0):0} row12={(_staggerItems.Count > 12 ? _staggerItems[12].Box.Rect.Left : 0):0}" );
+		if ( done )
+			_staggerT = -1f;
+	}
+
+	static string SideDebug( Panel p ) => p is { IsValid: true }
+		? $"x={p.Box.Rect.Left:0} kids={p.Descendants.Count()} tf={p.ComputedStyle?.Transform is not null}"
+		: "none";
+
+	static void SlideColumn( Panel column, bool home, Func<Panel, float> offset )
+	{
+		if ( column is not { IsValid: true } || column.IsDeleting )
+			return;
+		if ( home )
+		{
+			column.Style.Transform = null;
+		}
+		else
+		{
+			var t = new PanelTransform();
+			t.AddTranslateX( Length.Pixels( offset( column ) ) );
+			column.Style.Transform = t;
+		}
+		column.Style.Dirty();
+	}
+
+	// The colour column's slide: 1 = home, 0 = parked just off the right edge. Same spring family as the pops, a touch
+	// less bouncy (a whole column overshooting the screen edge reads as a wobble, not a pop).
+	void StepColourSlide()
+	{
+		if ( ColourSlidePanel is not { IsValid: true } layer )
+			return;
+
+		bool on = Brush is not null && !Brush.IsModifier && (Session?.IsEditing ?? false);
+		_colourSlide.Step( on ? 1f : 0f, RealTime.Delta, 2.4f, 0.62f );
+
+		// Far enough that the widest piece (the wheel column / palette) and its shadow are fully off-screen.
+		float off = MathF.Max( PickerSize, PaletteOn ? PaletteWidth : 0f ) + 24f + 40f;
+		float x = (1f - _colourSlide.Value) * off;
+		if ( _colourSlide.SettledAt( 1f ) && on )
+		{
+			layer.Style.Transform = null;
+		}
+		else
+		{
+			var t = new PanelTransform();
+			t.AddTranslateX( Length.Pixels( x ) );
+			layer.Style.Transform = t;
+		}
+		layer.Style.Dirty();
+	}
 	Panel LeftPanel { get; set; }
 
 	// The shape list's scroll container (see .layers-wrap). Scrollable = the rows overflow it.
@@ -1176,6 +1475,79 @@
 	Panel ShapeDockPanel { get; set; }
 	Panel WorkshopWindowPanel { get; set; }
 	Panel WorkshopPanel { get; set; }
+
+	Panel EditChipsGroup { get; set; }
+	Panel SymGroup { get; set; }
+
+	// The Tools column's selection-only groups (Duplicate + Delete; the Symmetry section). Always mounted; a group that
+	// arrives slides in from the right screen edge on the pop springs while the space under it opens, and one that
+	// leaves slides back out while that space closes (negative bottom margin = its height + the column gap, scaled by
+	// the room) — nothing below it jumps. Snapped to rest when the column itself mounts: it slides in whole then.
+	UiSpring _editChipsSlide, _symSlide;
+	float _editChipsH, _symH;
+	Panel _toolGroupsPanel;
+
+	void StepToolGroups()
+	{
+		bool fresh = !ReferenceEquals( RightPanel, _toolGroupsPanel );
+		_toolGroupsPanel = RightPanel;
+		StepToolGroup( EditChipsGroup, ref _editChipsSlide, ref _editChipsH, 10f, fresh ); // .tool-list gap
+		StepToolGroup( SymGroup, ref _symSlide, ref _symH, 14f, fresh ); // .panel gap
+	}
+
+	static void StepToolGroup( Panel g, ref UiSpring s, ref float h, float gap, bool snap )
+	{
+		if ( g is not { IsValid: true } || g.IsDeleting )
+			return;
+
+		bool want = !g.HasClass( "gone" );
+		if ( snap )
+		{
+			s.Value = want ? 1f : 0f;
+			s.Velocity = 0f;
+		}
+		if ( want )
+			s.Step( 1f, TweenDelta, 2.4f, 0.55f );
+		else
+			s.Step( 0f, TweenDelta, 2.6f, 0.8f );
+		if ( s.Value < 0f ) { s.Value = 0f; s.Velocity = 0f; }
+
+		var p = s.Value;
+		bool closed = !want && p <= 0.002f;
+		g.Style.Display = closed ? DisplayMode.None : null;
+		if ( closed )
+		{
+			g.Style.Dirty();
+			return;
+		}
+
+		float sc = g.ScaleFromScreen;
+		var measured = g.Box.Rect.Height * sc;
+		if ( measured > 0f )
+			h = measured; // the box keeps its natural height; only its margin pulls the footprint in
+
+		if ( want && s.SettledAt( 1f ) )
+		{
+			g.Style.Transform = null;
+			g.Style.MarginBottom = null;
+			g.Style.Position = null;
+		}
+		else
+		{
+			// Never laid out yet: nothing to measure, so held out of the flow for that one frame (no flash of room).
+			g.Style.Position = h > 0f ? null : PositionMode.Absolute;
+			var room = Math.Clamp( p, 0f, 1f );
+			g.Style.MarginBottom = Length.Pixels( -(h + gap) * (1f - room) );
+			var dist = (Screen.Width - g.Box.Rect.Left) * sc + 40f;
+			var t = new PanelTransform();
+			t.AddTranslateX( Length.Pixels( dist * (1f - p) ) );
+			g.Style.Transform = t;
+		}
+		if ( PopFlex.TraceFrames > 0 )
+			Log.Info( $"[pop] toolgroup {g.Classes} want={want} p={p:0.00} h={h:0} y={g.Box.Rect.Top * sc:0} mb={g.Style.MarginBottom}" );
+		g.Style.Dirty();
+	}
+
 	Panel PartDockPanel { get; set; }
 	Vector2 _shapeDockPos;
 
@@ -1204,30 +1576,30 @@
 		return BarClearance + 36f; // clear of the hotkey bar
 	}
 
-	// The shape row sits centred, directly above the slider stack (measured sizes; estimates pre-layout).
+	// The shape row sits centred, directly above the slider stack. Both are anchored by their BOTTOM edge (StripBottom /
+	// DockBottom), never top = bottom - measured height: a row whose items are all popped out measures 0 tall, so the
+	// first frame back in drew it at the wrong height and it jumped. The strip's height is FIXED in its stylesheet (an
+	// item squeezed mid-pop laid out tall and lifted everything) — StripHeight must match `.slider-stack { height }`.
+	// The dock's is only for the toast anchor, remembered from the last time there was something to measure.
+	const float StripHeight = 54f;
+	float _dockH;
+	float StripBottom => BarClearance + 12f;
+	float DockBottom => StripBottom + StripHeight + 12f;
+
 	Vector2? ShapeDockPos()
 	{
 		float sc = Panel?.ScaleFromScreen ?? 1f;
-		float w = 480f, h = 100f;
-		if ( ShapeDockPanel is { } sd && sd.Box.Rect.Width > 0f )
-		{
-			w = sd.Box.Rect.Width * sc;
-			h = sd.Box.Rect.Height * sc;
-		}
-
-		float slidersTop = Screen.Height * sc - SliderStackHeight - (BarClearance + 36f);
-		if ( SliderPos() is { } sl )
-			slidersTop = sl.y;
-
-		return new Vector2(
-			MathF.Max( 8f, (Screen.Width * sc - w) * 0.5f ),
-			MathF.Max( 8f, slidersTop - h - 12f ) );
+		if ( ShapeDockPanel is { IsValid: true } sd && sd.Box.Rect.Height > 1f )
+			_dockH = sd.Box.Rect.Height * sc;
+		float h = _dockH > 0f ? _dockH : 100f;
+		return new Vector2( 0f, MathF.Max( 8f, Screen.Height * sc - DockBottom - h ) );
 	}
 
 	// Retained state so the palette + sliders can fade OUT after a deselect (a mount/unmount can't animate, so the
 	// panels stay rendered and just drop opacity). _fadeBrush is the last selected brush — its colour/values fill
 	// the panels while they fade; _palettePos/_sliderPos hold their last on-screen spot so they fade in place.
 	SdfBrush _fadeBrush;
+	SdfBrush _shapeBrush; // the last selected non-modifier brush
 	Vector2 _palettePos;
 	Vector2 _sliderPos;
 	Vector2 _pickerPos;
@@ -1532,9 +1904,12 @@
 	{
 		base.OnUpdate();
 
+		TrackOpenClose(); // first: everything below reads Session / Closing
+		LatchSideContents();
 		// The hotkey bar's press checks read Input — reliable here, not from the bar's own panel tick.
-		HotkeyBar.StepIn( Panel, ref HintBar, Session?.IsEditing ?? false, EditHotkeySource );
+		HotkeyBar.StepIn( Panel, ref HintBar, (Session?.IsEditing ?? false) || Closing, EditHotkeySource ); // closing: an empty source, so the cards pop out
 		UpdateStripPunches();
+		StepPops();
 
 		// The session reads these to stop world clicks/picks falling through the palette or slider stack. (During
 		// alt-nav both panels go pointer-events:none, so HasHovered reads false and can't spuriously block picks.)
@@ -1864,6 +2239,19 @@
 
 	// Toggle a mirror-symmetry axis (0=X, 1=Y, 2=Z): the chip flips the PRIMARY's axis and the whole
 	// selection lands on that same state, then rebuild.
+	bool SymOn => SymBrush is { } sb && (sb.MirrorX || sb.MirrorY || sb.MirrorZ);
+
+	// The Tools column's Symmetry button: the same toggle as the layer row's symmetry icon (whole selection; off stores
+	// the axis combo, on brings it back — X the first time).
+	void ToggleSymmetryAll()
+	{
+		if ( Brush is null || Session?.Target?.Brushes is not { } list )
+			return;
+		var index = list.IndexOf( Brush );
+		if ( index >= 0 )
+			Session.ToggleSymmetry( index );
+	}
+
 	void ToggleMirror( int axis )
 	{
 		if ( Brush is null )
@@ -2117,17 +2505,10 @@
 	Vector2? SliderPos()
 	{
 		float sc = Panel?.ScaleFromScreen ?? 1f;
-		float sw = SliderStripWidth;
-		float sh = 52f;
-		if ( SliderStackPanel is { } sp && sp.Box.Rect.Width > 0f )
-		{
-			sw = sp.Box.Rect.Width * sc;
-			sh = sp.Box.Rect.Height * sc;
-		}
-
+		float sw = SliderStripWidth; // set inline, so never measured
 		return new Vector2(
 			MathF.Max( 8f, (Screen.Width * sc - sw) * 0.5f ),
-			MathF.Max( 8f, Screen.Height * sc - sh - (BarClearance + 12f) ) );
+			MathF.Max( 8f, Screen.Height * sc - StripHeight - StripBottom ) ); // y: the toast's anchor; the strip itself sits by `bottom`
 	}
 
 	// Re-render when the session/selection/brush state or the gizmo's screen position changes (so the palette
@@ -2138,6 +2519,7 @@
 		var s = Session;
 		var b = Brush;
 		bool manip = s?.IsManipulating ?? false;
+		var linger = HashCode.Combine( Closing, SidesOpening ); // the close linger starting / ending, the open class
 		var pos = PalettePos();
 		int px = (pos.HasValue && !manip) ? (int)pos.Value.x : int.MinValue;
 		int py = (pos.HasValue && !manip) ? (int)pos.Value.y : int.MinValue;
@@ -2148,6 +2530,7 @@
 		var hc = new HashCode();
 		hc.Add( s );
 		hc.Add( s?.IsEditing ?? false );
+		hc.Add( linger );
 		hc.Add( _rowNudge.Version ); // a row's hover-out spring class goes on
 		hc.Add( InvalidBounds is { } iv ? (iv.TooBig ? 1 : 2) : 0 ); // validity toast appears/disappears/relabels
 		hc.Add( NoSolidToast ); // transient "must have at least 1 shape" toast appears/disappears

@@ -1005,6 +1005,42 @@ public class SdfBrush
 	// distance of the eroded trapezoid, dilate by r. The cut rim therefore rounds exactly like the base rim,
 	// the flat survives any legal r, and the shape stays INSIDE the sharp silhouette. Unsliced (Rt = 0) this
 	// reproduces the old pointed-cone formula exactly (the eroded top collapses to the shortened apex).
+	/// <summary>The rounded cone is this eroded core dilated by <paramref name="r"/>: a frustum in the CENTRED
+	/// frame (base at z=-H) from (<paramref name="r1"/>, <paramref name="zb"/>) to (<paramref name="r2"/>,
+	/// <paramref name="zt"/>); <c>zt &lt;= zb</c> means the caps met and the core is a flat disc. False when
+	/// there's no rounding to apply (or the cone is degenerate) — the sharp frustum is the shape. Shared by
+	/// <see cref="ConeDistance"/> and the collider's hull points so the two can't drift apart.</summary>
+	internal static bool ConeErodedCore( float R, float H, float rounding, float slice,
+		out float zb, out float zt, out float r1, out float r2, out float r )
+	{
+		float s = Math.Clamp( slice, 0f, MaxSlice );
+		float zcut = H * (1f - 2f * s);
+		float Rt = R * s;
+		float hh = (zcut + H) * 0.5f;
+		zb = zt = r1 = r2 = r = 0f;
+		if ( hh < 1e-4f || R < 1e-4f )
+			return false;
+
+		float L = MathF.Sqrt( (R - Rt) * (R - Rt) + 4f * hh * hh ); // slant length
+		float k = (Rt - R) / (2f * hh);                             // slant slope dq/dz (< 0)
+		r = Math.Clamp( rounding, 0f, FrustumMaxRounding( R, H, slice ) );
+		if ( r < 1e-4f )
+			return false;
+
+		// Erode: caps move in by r; the slant shifts horizontally by r/cos(tilt) = r·L/(2hh).
+		float dq = r * L / (2f * hh);
+		zb = -H + r; zt = zcut - r;
+		r1 = R + r * k - dq;  // eroded radius at the bottom cap
+		r2 = Rt - r * k - dq; // eroded radius at the top cap
+
+		if ( r2 < 0f )
+		{
+			zt = (dq - R) / k - H; // slant meets the axis below the top cap — eroded shape is pointed
+			r2 = 0f;               // (this is the old zApex = H − r/sinB when unsliced)
+		}
+		return true;
+	}
+
 	static float ConeDistance( Vector3 p, Vector3 size, float rounding, float slice )
 	{
 		float R = size.x, H = size.z;
@@ -1019,24 +1055,8 @@ public class SdfBrush
 		if ( hh < 1e-4f || R < 1e-4f )
 			return MathF.Sqrt( qx * qx + (p.z - zc0) * (p.z - zc0) ) - MathF.Max( R, MathF.Max( Rt, 1e-3f ) );
 
-		float L = MathF.Sqrt( (R - Rt) * (R - Rt) + 4f * hh * hh ); // slant length
-		float k = (Rt - R) / (2f * hh);                             // slant slope dq/dz (< 0)
-		float r = Math.Clamp( rounding, 0f, FrustumMaxRounding( R, H, slice ) );
-
-		if ( r < 1e-4f )
+		if ( !ConeErodedCore( R, H, rounding, slice, out float zb, out float zt, out float r1, out float r2, out float r ) )
 			return CappedCone( qx, p.z - zc0, hh, R, Rt );
-
-		// Erode: caps move in by r; the slant shifts horizontally by r/cos(tilt) = r·L/(2hh).
-		float dq = r * L / (2f * hh);
-		float zb = -H + r, zt = zcut - r;
-		float r1 = R + r * k - dq;  // eroded radius at the bottom cap
-		float r2 = Rt - r * k - dq; // eroded radius at the top cap
-
-		if ( r2 < 0f )
-		{
-			zt = (dq - R) / k - H; // slant meets the axis below the top cap — eroded shape is pointed
-			r2 = 0f;               // (this is the old zApex = H − r/sinB when unsliced)
-		}
 
 		if ( zt <= zb ) // caps met — eroded core is a flat disc of radius r1 == r2 (0 when unsliced → ball)
 		{

@@ -2479,7 +2479,7 @@
               "IdValue": "5e8a0e3d-14a2-413b-a075-d261aef33ae0"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -2831,7 +2831,7 @@
           "FbxPath": "prefabs/kitchen/kitchen.fbx",
           "ImportScale": 3,
           "KeepOnlyExistingPieces": true,
-          "LastImport": "63 object(s), 67661 tris — 17:37:38",
+          "LastImport": "63 object(s), 67661 tris — 13:57:38",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay_Metal",
@@ -8197,7 +8197,7 @@
           "FbxPath": "prefabs/kitchen/garden.fbx",
           "ImportScale": 2.54,
           "KeepOnlyExistingPieces": false,
-          "LastImport": "90 object(s), 33114 tris — 22:46:27",
+          "LastImport": "90 object(s), 33114 tris — 13:57:38",
           "MaterialRemaps": [
             {
               "FbxMaterial": "Clay",
@@ -20469,7 +20469,7 @@
               "IdValue": "b0f41ab9-9207-4601-9da0-98556f047712"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -23841,7 +23841,7 @@
               "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -24272,7 +24272,7 @@
               "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -24703,7 +24703,7 @@
               "IdValue": "5b7eae22-0957-4449-acc5-3f1990250497"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -25571,7 +25571,7 @@
               "IdValue": "204fb4c8-0b79-4a87-ad3f-15b128e50fe3"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -27965,7 +27965,7 @@
               "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -28471,22 +28471,6 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "f34d6c2e-6f75-4fd8-bb53-424daa174e29"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "f34d6c2e-6f75-4fd8-bb53-424daa174e29"
-            },
-            "Property": "RenderType",
-            "Value": "On"
-          },
-          {
-            "Target": {
-              "Type": "Component",
               "IdValue": "e9a19120-0e9d-490f-b229-48565c1ac22b"
             },
             "Property": "MaxShapes",
@@ -28977,22 +28961,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d309cb71-8acf-44fc-ba5b-2153b754d2cb"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "d309cb71-8acf-44fc-ba5b-2153b754d2cb"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -29929,7 +29897,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -30235,7 +30203,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -30627,7 +30595,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -30657,6 +30625,382 @@
         "2c074b7b-323c-4cc6-9272-70c9cc045f73": "1d9aadab-34a6-43a1-bc20-2d14ee3a6c38",
         "ba1df3b3-753b-4ef6-ac00-a1b2012719de": "031b9888-92bd-4eb2-bc63-820b42a222b3",
         "9b97ae99-e8c0-4501-b787-77f01891578d": "9967cc3e-2526-4ece-aa53-1adfdbd47fdc"
+      }
+    },
+    {
+      "__guid": "a8779563-603f-4491-98a2-e9fd66244067",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "ae21ea84-9dc4-42d1-924b-ac08b48fbf06",
+        "Path": "prefabs/props/kitchen/mug.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Name",
+            "Value": "mug (6)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Position",
+            "Value": "-681.739258,310.687195,104.916855"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
+            },
+            "Property": "Rotation",
+            "Value": "-3.60023114E-05,-6.09638591E-05,-0.440651298,0.897678435"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "9b76d781-06f1-4f60-a4fe-4bc5ab77c861"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "58df91f7-f163-430b-89b5-75153ccd2a36",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "3.59668047E-06,2.98938539E-05,-10.9455547",
+                "Rotation": "3.63797881E-12,0,-2.98023224E-08,1",
+                "Size": "15.2337704,15.7871084,16.3466473",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 5.1,
+                "Gap": 0,
+                "Rounding": 2.45,
+                "IsModifier": false,
+                "EffectiveBlend": 5.1,
+                "EffectiveRounding": 2.45,
+                "Color": "0.25938,0.40232,0.51163,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 23.619589
+              },
+              {
+                "Id": "a01f7f1d-f8d8-482a-a011-ed523f5d7885",
+                "Shape": "Cylinder",
+                "Operation": "Colour",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "9.3950337E-05,0.000153208995,-12.0251598",
+                "Rotation": "3.52429197E-12,0,-2.98023224E-08,1",
+                "Size": "18.9404316,15.7871084,4.53330612",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.4,
+                "Gap": 0,
+                "Rounding": 2.45,
+                "IsModifier": false,
+                "EffectiveBlend": 0.4,
+                "EffectiveRounding": 2.45,
+                "Color": "0.68372,0.66676,0.55652,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 19.57539
+              },
+              {
+                "Id": "9cb5a038-74bc-434d-9c60-7e5436b7abf2",
+                "Shape": "Spline",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-20.8541756,-1.52587891E-05,-10.4278297",
+                "Rotation": "3.63797881E-12,0,-2.98023224E-08,1",
+                "Size": "1,1,1",
+                "Points": [
+                  "-12.3276424,2.86102295E-06,-21.8989315,2.3307941",
+                  "-20.3835926,-2.76565552E-05,-20.1041203,2.3307941",
+                  "-26.1681824,-3.81469727E-05,-15.9131374,2.3307941",
+                  "-28.5120525,-7.62939453E-05,-9.95285416,2.3307941",
+                  "-27.0264053,-4.48226929E-05,-4.43623638,2.3307941",
+                  "-22.4393463,1.90734863E-05,-1.78328037,2.3307941",
+                  "-16.6456223,2.47955322E-05,-2.87399697,2.3307941",
+                  "-13.3305283,-2.00271606E-05,-6.460145,2.3307941"
+                ],
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.139401,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "IsModifier": false,
+                "EffectiveBlend": 1.139401,
+                "EffectiveRounding": 0.75,
+                "Color": "0.25938,0.40232,0.51163,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 1.2848502
+              },
+              {
+                "Id": "250cf89d-2953-4d73-9f5b-9bda3484c1dc",
+                "Shape": "Cylinder",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-2.89006275E-05,1.13412534E-05,-8.11970425",
+                "Rotation": "3.63797881E-12,0,-2.98023224E-08,1",
+                "Size": "12.5350704,16.2088699,17.7522163",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0.3282127,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "IsModifier": false,
+                "EffectiveBlend": 0.3282127,
+                "EffectiveRounding": 0.75,
+                "Color": "0.25938,0.40232,0.51163,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 21.813807
+              },
+              {
+                "Id": "5c95f623-1a99-424e-b98a-52f0ea87a350",
+                "Shape": "Box",
+                "Operation": "Subtract",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "2.94141937E-05,-1.05300405E-05,16.7504406",
+                "Rotation": "3.63797881E-12,0,-2.98023224E-08,1",
+                "Size": "19.0080967,17.4197235,13.5613728",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "IsModifier": false,
+                "EffectiveBlend": 0,
+                "EffectiveRounding": 0.75,
+                "Color": "0.25938,0.40232,0.51163,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 29.13186
+              },
+              {
+                "Id": "6df7369d-eed9-4580-9ec1-52cabcc46922",
+                "Shape": "Cylinder",
+                "Operation": "Colour",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.000662337639,-0.000878976076,-2.98854041",
+                "Rotation": "3.52429197E-12,0,-2.98023224E-08,1",
+                "Size": "13.4137201,15.7871084,13.5333071",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 1.3000001,
+                "Gap": 0,
+                "Rounding": 2.45,
+                "IsModifier": false,
+                "EffectiveBlend": 1.3000001,
+                "EffectiveRounding": 2.45,
+                "Color": "0.64651,0.62446,0.48112,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 19.379614
+              },
+              {
+                "Id": "43ff7819-a8f3-4093-b634-584140638317",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-0.000479549926,-0.00070176844,-13.7251263",
+                "Rotation": "3.63797881E-12,0,-2.98023224E-08,1",
+                "Size": "11.3811903,16.1033478,6.09332418",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 0,
+                "Gap": 0,
+                "Rounding": 0.75,
+                "IsModifier": false,
+                "EffectiveBlend": 0,
+                "EffectiveRounding": 0.75,
+                "Color": "0.6,0.42132,0.22,1",
+                "Metallic": 0,
+                "Roughness": 0.34444445,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 12.90969
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "fa2fc9de-7ded-4198-b734-e0bbca7ea36d"
+            },
+            "Property": "MaxShapes",
+            "Value": 0
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "a98a3e9f-e662-4874-94b6-98983a196ae7": "a8779563-603f-4491-98a2-e9fd66244067",
+        "9b76d781-06f1-4f60-a4fe-4bc5ab77c861": "b179b1e1-444a-4146-b348-c14fba1a46d8",
+        "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6": "3b22bea4-f158-432a-ad3e-d4905cf7ffde",
+        "d1176097-b5b5-49d1-b0cf-63001c68503c": "6db14e8d-5517-46b7-a87f-507149fbf8ec",
+        "fa2fc9de-7ded-4198-b734-e0bbca7ea36d": "974a1257-fcd6-413d-81af-d160f61229c7",
+        "2c074b7b-323c-4cc6-9272-70c9cc045f73": "21b052be-172f-4a1a-9c0a-a602a7ad135a",
+        "ba1df3b3-753b-4ef6-ac00-a1b2012719de": "21a1546e-af99-4e22-814c-7dacff860456",
+        "9b97ae99-e8c0-4501-b787-77f01891578d": "80870f82-ac71-4ed8-b5b7-817d4b7eae59"
       }
     },
     {
@@ -30969,22 +31313,6 @@
                 "BoundingRadius": 19.60039
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -31483,7 +31811,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -31901,7 +32229,7 @@
               "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -32336,7 +32664,7 @@
               "IdValue": "4baaaa56-57fb-4f6d-991f-b48254940750"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -32771,7 +33099,7 @@
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -33084,7 +33412,7 @@
               "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -34860,7 +35188,7 @@
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -35896,7 +36224,7 @@
               "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -37571,7 +37899,7 @@
               "IdValue": "88a529ec-e7c0-4048-aae1-f8d474313c8e"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -38168,7 +38496,7 @@
               "IdValue": "2ec162e9-f079-4eed-a3fa-d395a1f53f9c"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -38460,7 +38788,7 @@
               "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -38905,8 +39233,24 @@
               "Type": "Component",
               "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
             },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -40415,6 +40759,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f12a6fac-b676-491a-a71a-62b919c1787a"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "77995f39-f464-4cc6-b411-a40f6bf10519"
             },
             "Property": "MaxShapes",
@@ -40602,6 +40962,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "ddbdffa5-d073-4a85-be8b-1e3fd0c3e7fa"
             },
             "Property": "MaxShapes",
@@ -40647,6 +41023,22 @@
             },
             "Property": "Position",
             "Value": "-351.095154,-568.363281,26.4333858"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -40700,6 +41092,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "ddbdffa5-d073-4a85-be8b-1e3fd0c3e7fa"
             },
             "Property": "MaxShapes",
@@ -40717,6 +41125,55 @@
         "049d5532-5440-4c0f-9a13-8daf01b29546": "1c49d742-8024-4760-a0ce-77aa085e4c30",
         "859e7062-9a2b-4e32-87fe-fa8a5ac0eb74": "be00f7f7-07b8-458d-97b2-fa2334df910c",
         "40c6b265-66b8-40ca-8008-7a95af4585a2": "9e7826b4-f606-4ec9-8325-c7f1a24a423c"
+      }
+    },
+    {
+      "__guid": "00b74ece-81b9-48c3-aa92-0bb467c8be4d",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "3130e038-7bc6-49c0-a66b-4d6098ed6b60",
+        "Path": "prefabs/props/garden/gardenpot.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Name",
+            "Value": "gardenpot (8)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a"
+            },
+            "Property": "Position",
+            "Value": "-571.091187,385.292297,22.7265339"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ddbdffa5-d073-4a85-be8b-1e3fd0c3e7fa"
+            },
+            "Property": "MaxShapes",
+            "Value": 0
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "10f243a8-9b5a-4f38-a21c-d2e0f7f4476a": "00b74ece-81b9-48c3-aa92-0bb467c8be4d",
+        "f075e73a-6f8b-445f-a29b-693f1a42a791": "d5d0425d-8c68-4490-890d-6f5e706a7769",
+        "3e9af8b7-a4a4-4523-869d-922c41971ca7": "ab59dca9-4720-4aa9-b95a-ed5563c5e497",
+        "1b8eef7b-4c97-46a4-8828-92668d6bec62": "6b7af443-c667-47b0-a456-63e119d1c048",
+        "ddbdffa5-d073-4a85-be8b-1e3fd0c3e7fa": "ebfa919c-11ce-48ac-8631-d00fd32a0908",
+        "049d5532-5440-4c0f-9a13-8daf01b29546": "5f3636ca-25c2-49d2-bfff-f1fc48577f02",
+        "859e7062-9a2b-4e32-87fe-fa8a5ac0eb74": "9eb823a6-b9ff-490f-99ca-90493330b6d5",
+        "40c6b265-66b8-40ca-8008-7a95af4585a2": "1bf02d76-b298-478e-9d77-915cc9a48825"
       }
     },
     {
@@ -40802,22 +41259,6 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,1"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -40939,7 +41380,7 @@
               "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -40969,6 +41410,104 @@
         "e339020b-7ca2-49c0-9a28-9b44b40750bb": "31b2465d-9a71-44d1-a4a3-46ca1b8eafc7",
         "9683c37c-af9e-408e-aa29-ae81d529c36a": "a6823a11-0dad-4360-b6a8-7fae0e0d2c4b",
         "b8b339ff-a6b3-4a3a-a218-0f6226047706": "1b018656-8609-437e-b4e0-49f07966fd36"
+      }
+    },
+    {
+      "__guid": "b60ce807-f850-48ad-a9e2-7866011d73a7",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "4e07c999-95c5-41eb-b313-ccbd2010fb48",
+        "Path": "prefabs/props/garden/gardenpot_small.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7af0b3f1-f49b-4ae7-9891-cf4c288f7bd8"
+            },
+            "Property": "Name",
+            "Value": "gardenpot (9)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7af0b3f1-f49b-4ae7-9891-cf4c288f7bd8"
+            },
+            "Property": "Position",
+            "Value": "-555.853088,338.188354,2.84695053"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1e6d9d09-4478-486b-be1d-247de2183f82"
+            },
+            "Property": "MaxShapes",
+            "Value": 0
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "7af0b3f1-f49b-4ae7-9891-cf4c288f7bd8": "b60ce807-f850-48ad-a9e2-7866011d73a7",
+        "16f0e5fd-470f-4ce1-a1c2-4eede2929823": "fdc8d72c-32ab-4720-8e1c-043aefac36f4",
+        "eac60454-4127-46c1-b532-2771a30027e7": "295885ea-af7c-4250-9300-b6c458711953",
+        "0e6ae4ce-bf52-4bca-b75d-4a081445af7e": "e32e25ed-1d84-407b-aa37-01051b6327a5",
+        "1e6d9d09-4478-486b-be1d-247de2183f82": "8bb8760b-074b-400b-9872-eabf05bce3fa",
+        "e339020b-7ca2-49c0-9a28-9b44b40750bb": "ce67fe0d-8daf-4dbf-ba4f-ae82a79e33a1",
+        "9683c37c-af9e-408e-aa29-ae81d529c36a": "9efd568d-7f2b-45c7-9e60-5da9875ad673",
+        "b8b339ff-a6b3-4a3a-a218-0f6226047706": "cc30bd65-57dc-49fd-8ee8-f5cbf8c8e636"
+      }
+    },
+    {
+      "__guid": "df51d975-9963-4ce0-a2e2-19841a3b427b",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "4e07c999-95c5-41eb-b313-ccbd2010fb48",
+        "Path": "prefabs/props/garden/gardenpot_small.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7af0b3f1-f49b-4ae7-9891-cf4c288f7bd8"
+            },
+            "Property": "Name",
+            "Value": "gardenpot (10)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "7af0b3f1-f49b-4ae7-9891-cf4c288f7bd8"
+            },
+            "Property": "Position",
+            "Value": "-612.867371,354.700043,2.79179692"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "1e6d9d09-4478-486b-be1d-247de2183f82"
+            },
+            "Property": "MaxShapes",
+            "Value": 0
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "7af0b3f1-f49b-4ae7-9891-cf4c288f7bd8": "df51d975-9963-4ce0-a2e2-19841a3b427b",
+        "16f0e5fd-470f-4ce1-a1c2-4eede2929823": "5aab34dd-fe69-43f7-b7d4-814411e34945",
+        "eac60454-4127-46c1-b532-2771a30027e7": "b2ae6050-a738-4803-a20d-bf51baf8736f",
+        "0e6ae4ce-bf52-4bca-b75d-4a081445af7e": "f4cef336-f796-42b0-aa00-ac3353f52291",
+        "1e6d9d09-4478-486b-be1d-247de2183f82": "1f19885e-34bb-45a9-baea-beb287b868e0",
+        "e339020b-7ca2-49c0-9a28-9b44b40750bb": "84d34f2e-943e-4f62-98f7-c8322740f0d1",
+        "9683c37c-af9e-408e-aa29-ae81d529c36a": "beb9202e-5103-40fa-a05c-eeb08b824fd3",
+        "b8b339ff-a6b3-4a3a-a218-0f6226047706": "a3a50cb2-0670-4679-8690-ab25064be1ee"
       }
     },
     {
@@ -41005,6 +41544,22 @@
             },
             "Property": "Rotation",
             "Value": "-0.0273424722,0.102659389,0.907054186,-0.407389253"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -41396,6 +41951,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3c7a8e3d-248e-4612-a4b5-af04057e4e13"
             },
             "Property": "MaxShapes",
@@ -41622,6 +42193,22 @@
                 "BoundingRadius": 13.05
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -41864,6 +42451,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3c7a8e3d-248e-4612-a4b5-af04057e4e13"
             },
             "Property": "MaxShapes",
@@ -42098,6 +42701,22 @@
                 "BoundingRadius": 13.05
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -42340,6 +42959,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3c7a8e3d-248e-4612-a4b5-af04057e4e13"
             },
             "Property": "MaxShapes",
@@ -42578,6 +43213,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3c7a8e3d-248e-4612-a4b5-af04057e4e13"
             },
             "Property": "MaxShapes",
@@ -42630,7 +43281,7 @@
               "IdValue": "495911f8-8458-4e89-ba77-82d59ef60188"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -42822,6 +43473,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "31fb5796-9f06-4775-b4bd-746d87c8ae28"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "31fb5796-9f06-4775-b4bd-746d87c8ae28"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "9b64db6e-a555-4faa-8549-0087bfa302d2"
             },
             "Property": "MaxShapes",
@@ -42997,6 +43664,22 @@
             },
             "Property": "Rotation",
             "Value": "0.0240751058,-0.0485924035,0.00117159216,0.998527825"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -43229,6 +43912,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3e7622f2-eb7f-47bc-a020-1f851173fa14"
             },
             "Property": "MaxShapes",
@@ -43282,6 +43981,22 @@
             },
             "Property": "Rotation",
             "Value": "-0.103701338,0.0877263844,0.00143461232,0.990731061"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -43343,6 +44058,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3e7622f2-eb7f-47bc-a020-1f851173fa14"
             },
             "Property": "MaxShapes",
@@ -43396,6 +44127,22 @@
             },
             "Property": "Rotation",
             "Value": "-0.078738302,0.0726747662,-0.800869346,0.589174807"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -43457,6 +44204,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3e7622f2-eb7f-47bc-a020-1f851173fa14"
             },
             "Property": "MaxShapes",
@@ -43510,6 +44273,22 @@
             },
             "Property": "Rotation",
             "Value": "-0.00726095214,0.111290321,-0.79707998,0.593485653"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -43571,6 +44350,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3e7622f2-eb7f-47bc-a020-1f851173fa14"
             },
             "Property": "MaxShapes",
@@ -43628,6 +44423,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "3e7622f2-eb7f-47bc-a020-1f851173fa14"
             },
             "Property": "MaxShapes",
@@ -43665,22 +44476,6 @@
             },
             "Property": "Position",
             "Value": "-809.804321,499.886841,184.092194"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "bf183d33-7083-4ab8-a0f4-2eb4cecb1fa6"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "bf183d33-7083-4ab8-a0f4-2eb4cecb1fa6"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -45997,965 +46792,7 @@
         "Path": "prefabs/props/garden/grassclump_01.prefab"
       },
       "__PrefabInstancePatch": {
-        "AddedObjects": [
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5ea65601-f8fa-490d-b9f3-bba42ba3a0af"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Spline",
-              "Position": "-0.132330894,3.90883017,6.40640068",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "543f1630-cf12-43f1-b2ee-914f1edf9d50"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfBrushComponent",
-              "__guid": "543f1630-cf12-43f1-b2ee-914f1edf9d50",
-              "__enabled": true,
-              "Flags": 0,
-              "Blend": 8.860972,
-              "BrushId": "f3fe2f21-cbce-464e-8b4d-adeaf3f37d31",
-              "Color": "0.50736,0.5907,0.20606,1",
-              "CrossSection": "Triangle",
-              "Curvature": 1,
-              "Font": "Super Joyful",
-              "Gap": 0,
-              "GroupKind": null,
-              "LinkBlend": false,
-              "LinkColor": false,
-              "Metallic": 0,
-              "MirrorX": false,
-              "MirrorY": false,
-              "MirrorZ": false,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Operation": "Add",
-              "Roughness": 0.5,
-              "Rounding": 1,
-              "Shape": "Spline",
-              "ShrinkDelay": 2,
-              "ShrinkDuration": 1.5,
-              "Shrinks": false,
-              "Slice": 0,
-              "SplineClosed": false,
-              "Text": "clay"
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "b3b77e11-1cc3-4d7e-bd0b-aa143704c5ea"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "b3b77e11-1cc3-4d7e-bd0b-aa143704c5ea",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 1",
-              "Position": "0.132330894,-3.90883017,-14.5960865",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "6c530c32-01f9-4013-8bb6-deea39992620"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "b3b77e11-1cc3-4d7e-bd0b-aa143704c5ea"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "6c530c32-01f9-4013-8bb6-deea39992620",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 6.685223
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "17329683-e323-41c2-a928-67ae731626e0"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "b3b77e11-1cc3-4d7e-bd0b-aa143704c5ea"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "17329683-e323-41c2-a928-67ae731626e0",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 2",
-              "Position": "0.132289976,-1.58101106,-3.2685082",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "b1c6786c-0d75-4dc1-bc01-542731867bce"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "17329683-e323-41c2-a928-67ae731626e0"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "b1c6786c-0d75-4dc1-bc01-542731867bce",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 5.2823887
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "dd185042-3ccb-4137-b231-257d5a607d7c"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "17329683-e323-41c2-a928-67ae731626e0"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "dd185042-3ccb-4137-b231-257d5a607d7c",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 3",
-              "Position": "0.0264909267,1.11504984,5.59298897",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "7633873c-2a37-467f-b649-3814e6384b1e"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "dd185042-3ccb-4137-b231-257d5a607d7c"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "7633873c-2a37-467f-b649-3814e6384b1e",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 4.007085
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "ba2aa82e-063b-4cef-93af-cdc21f1c3f45"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "dd185042-3ccb-4137-b231-257d5a607d7c"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "ba2aa82e-063b-4cef-93af-cdc21f1c3f45",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 4",
-              "Position": "-0.291230321,4.37483311,12.2716017",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "3c28378e-3989-4985-8af5-f13023c52c8e"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "ba2aa82e-063b-4cef-93af-cdc21f1c3f45"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "3c28378e-3989-4985-8af5-f13023c52c8e",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 2.7317812
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "eef5d450-4e8e-4c03-be72-ebebdc36c523"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5ea65601-f8fa-490d-b9f3-bba42ba3a0af"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "d2a86e39-ac4a-4315-ac9d-a2ea1b3414c2"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "eef5d450-4e8e-4c03-be72-ebebdc36c523",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Spline",
-              "Position": "6.65721893,-5.44283009,4.56278515",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "96e13f85-db41-492a-a510-6fde333604bf"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "eef5d450-4e8e-4c03-be72-ebebdc36c523"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfBrushComponent",
-              "__guid": "96e13f85-db41-492a-a510-6fde333604bf",
-              "__enabled": true,
-              "Flags": 0,
-              "Blend": 0,
-              "BrushId": "20de63a6-3e57-4c01-be2b-bfb7c8b651f0",
-              "Color": "0.50736,0.5907,0.20606,1",
-              "CrossSection": "Triangle",
-              "Curvature": 1,
-              "Font": "Super Joyful",
-              "Gap": 0,
-              "GroupKind": null,
-              "LinkBlend": false,
-              "LinkColor": false,
-              "Metallic": 0,
-              "MirrorX": false,
-              "MirrorY": false,
-              "MirrorZ": false,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Operation": "Add",
-              "Roughness": 0.5,
-              "Rounding": 1,
-              "Shape": "Spline",
-              "ShrinkDelay": 2,
-              "ShrinkDuration": 1.5,
-              "Shrinks": false,
-              "Slice": 0,
-              "SplineClosed": false,
-              "Text": "clay"
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "0e2a103f-dd07-4621-a6fe-917003ccf377"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "eef5d450-4e8e-4c03-be72-ebebdc36c523"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "0e2a103f-dd07-4621-a6fe-917003ccf377",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 1",
-              "Position": "-4.55257654,1.6118654,-10.9940319",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "0df1be4f-6aed-4194-a794-37be3b63f6f0"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "0e2a103f-dd07-4621-a6fe-917003ccf377"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "0df1be4f-6aed-4194-a794-37be3b63f6f0",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 5.3124504
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "f9989a34-fb18-4dc3-9dff-c8db122ec058"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "eef5d450-4e8e-4c03-be72-ebebdc36c523"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "0e2a103f-dd07-4621-a6fe-917003ccf377"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "f9989a34-fb18-4dc3-9dff-c8db122ec058",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 2",
-              "Position": "-1.57273638,0.451044977,-2.37879562",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "c880edc2-76cd-4af7-95a8-54e15266b373"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "f9989a34-fb18-4dc3-9dff-c8db122ec058"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "c880edc2-76cd-4af7-95a8-54e15266b373",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 4.19768
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "dd550c0c-0075-484a-b6ad-b7e884ea02b7"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "eef5d450-4e8e-4c03-be72-ebebdc36c523"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "f9989a34-fb18-4dc3-9dff-c8db122ec058"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "dd550c0c-0075-484a-b6ad-b7e884ea02b7",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 3",
-              "Position": "1.43913198,-0.585132897,4.25742579",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "1c78d04f-67cb-48ad-8d51-4d085fd26f47"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "dd550c0c-0075-484a-b6ad-b7e884ea02b7"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "1c78d04f-67cb-48ad-8d51-4d085fd26f47",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 3.1842527
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "93330142-fae5-47b7-8373-fa47cc873344"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "eef5d450-4e8e-4c03-be72-ebebdc36c523"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "dd550c0c-0075-484a-b6ad-b7e884ea02b7"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "93330142-fae5-47b7-8373-fa47cc873344",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 4",
-              "Position": "4.68614626,-1.47782815,9.11540127",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "2d671c88-d695-4bb6-9c7d-542b6f2f0965"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "93330142-fae5-47b7-8373-fa47cc873344"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "2d671c88-d695-4bb6-9c7d-542b6f2f0965",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 2.1708255
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "5270e560-c6d9-463e-980a-6c49fa8faf42"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5ea65601-f8fa-490d-b9f3-bba42ba3a0af"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "eef5d450-4e8e-4c03-be72-ebebdc36c523"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "5270e560-c6d9-463e-980a-6c49fa8faf42",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Spline",
-              "Position": "12.5621109,2.15548134,0.333796263",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "1cd62dc1-5095-4902-9d87-24bc818df627"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5270e560-c6d9-463e-980a-6c49fa8faf42"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfBrushComponent",
-              "__guid": "1cd62dc1-5095-4902-9d87-24bc818df627",
-              "__enabled": true,
-              "Flags": 0,
-              "Blend": 0,
-              "BrushId": "a000911b-d582-40f7-b443-24651e6355cf",
-              "Color": "0.50736,0.5907,0.20606,1",
-              "CrossSection": "Triangle",
-              "Curvature": 1,
-              "Font": "Super Joyful",
-              "Gap": 0,
-              "GroupKind": null,
-              "LinkBlend": false,
-              "LinkColor": false,
-              "Metallic": 0,
-              "MirrorX": false,
-              "MirrorY": false,
-              "MirrorZ": false,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Operation": "Add",
-              "Roughness": 0.5,
-              "Rounding": 1,
-              "Shape": "Spline",
-              "ShrinkDelay": 2,
-              "ShrinkDuration": 1.5,
-              "Shrinks": false,
-              "Slice": 0,
-              "SplineClosed": false,
-              "Text": "clay"
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "cd7b15ae-3295-4a0d-92d0-eb60d2ce2734"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5270e560-c6d9-463e-980a-6c49fa8faf42"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "cd7b15ae-3295-4a0d-92d0-eb60d2ce2734",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 1",
-              "Position": "-3.79877901,-1.93722343,-7.46542168",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "5f53a4b5-7e90-49ae-afea-fb80013affea"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "cd7b15ae-3295-4a0d-92d0-eb60d2ce2734"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "5f53a4b5-7e90-49ae-afea-fb80013affea",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 4.6869626
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "7cdb04cd-93fb-4090-b7fc-1349a9d6fe06"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5270e560-c6d9-463e-980a-6c49fa8faf42"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "cd7b15ae-3295-4a0d-92d0-eb60d2ce2734"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "7cdb04cd-93fb-4090-b7fc-1349a9d6fe06",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 2",
-              "Position": "-1.29815352,-0.764816821,-1.58924651",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "ab95974c-1a93-40dc-8593-ea09e328f911"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "7cdb04cd-93fb-4090-b7fc-1349a9d6fe06"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "ab95974c-1a93-40dc-8593-ea09e328f911",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 3.7034454
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "1d19f0ac-4939-4abd-8cac-b7270515e44e"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5270e560-c6d9-463e-980a-6c49fa8faf42"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "7cdb04cd-93fb-4090-b7fc-1349a9d6fe06"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "1d19f0ac-4939-4abd-8cac-b7270515e44e",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 3",
-              "Position": "1.22100949,0.54765588,2.90498567",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "49c08120-4131-4adb-8675-8a89e6c18566"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "1d19f0ac-4939-4abd-8cac-b7270515e44e"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "49c08120-4131-4adb-8675-8a89e6c18566",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 2.809339
-            }
-          },
-          {
-            "Id": {
-              "Type": "GameObject",
-              "IdValue": "d948a741-7c1a-414c-9c6f-84941dd98499"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "5270e560-c6d9-463e-980a-6c49fa8faf42"
-            },
-            "PreviousElement": {
-              "Type": "GameObject",
-              "IdValue": "1d19f0ac-4939-4abd-8cac-b7270515e44e"
-            },
-            "ContainerProperty": "Children",
-            "IsContainerArray": true,
-            "Data": {
-              "__guid": "d948a741-7c1a-414c-9c6f-84941dd98499",
-              "__version": 2,
-              "Flags": 0,
-              "Name": "Point 4",
-              "Position": "3.87614346,2.15427446,6.14968252",
-              "Rotation": "0,0,0,1",
-              "Scale": "1,1,1",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkFlags": 0,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [],
-              "Children": []
-            }
-          },
-          {
-            "Id": {
-              "Type": "Component",
-              "IdValue": "d088a916-c574-4854-9c74-5ef0c52678a5"
-            },
-            "Parent": {
-              "Type": "GameObject",
-              "IdValue": "d948a741-7c1a-414c-9c6f-84941dd98499"
-            },
-            "PreviousElement": null,
-            "ContainerProperty": "Components",
-            "IsContainerArray": true,
-            "Data": {
-              "__type": "Mimiclay.SdfSplinePoint",
-              "__guid": "d088a916-c574-4854-9c74-5ef0c52678a5",
-              "__enabled": true,
-              "Flags": 0,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Radius": 1.9152325
-            }
-          }
-        ],
+        "AddedObjects": [],
         "RemovedObjects": [],
         "PropertyOverrides": [
           {
@@ -47138,10 +46975,18 @@
           {
             "Target": {
               "Type": "Component",
-              "IdValue": "eae88433-6152-44ad-8656-d1ebfd0a0d37"
+              "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
-            "Property": "BrushObjects",
-            "Value": true
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -47191,6 +47036,22 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0.660956502,0.750424206"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -47204,6 +47065,693 @@
         "1d77e2a5-9351-4288-ba3c-8c799287512a": "33c7214d-c859-4b66-ae45-1c68195d24ef",
         "d7266454-7ea7-4d7a-8e83-c1e8468c39d0": "fcfc1a79-8a14-4145-b178-ccb694b5af62",
         "9219ffa9-b81a-45f4-acad-59b938d729ba": "12a89a96-1a09-4500-b199-519bf35d957e"
+      }
+    },
+    {
+      "__guid": "c6431352-5a45-4a07-8950-467b94c76008",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "adf4ae62-377e-4d90-9da1-1df830a639ea",
+        "Path": "prefabs/props/garden/lawnmower.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "da239aeb-2a4c-416c-9ba5-299aecb7f3dd"
+            },
+            "Property": "Position",
+            "Value": "-702.237976,-546.070923,16.7947922"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d45b531b-c7ab-4ef0-9933-2408ec83ae1d"
+            },
+            "Property": "__enabled",
+            "Value": true
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "da239aeb-2a4c-416c-9ba5-299aecb7f3dd": "c6431352-5a45-4a07-8950-467b94c76008",
+        "ca02bf6b-19d5-4a05-96ea-2fee7e9fe8c6": "4ce7c933-fd32-49a2-b1f7-427046ee76b6",
+        "d45b531b-c7ab-4ef0-9933-2408ec83ae1d": "175f15f6-92c3-4f21-9bb8-e2dd9e71db5b",
+        "3c998a3d-544f-4896-916b-b7036bed8264": "9842612e-7880-4058-b8b1-6931441a8550",
+        "a6904f16-556e-4798-a8c2-211308c3c23c": "3624657b-d89c-422e-9018-30b3fea9f969",
+        "16b067ac-b25e-4419-8afa-0e55d82bad12": "0ea57b46-8c4c-474c-9d50-47fa6a6bab3b",
+        "bcf3adbb-a7a4-4dc5-881f-e9a759ecdc0b": "bfff40e3-1b34-4fcc-8e07-3be832d76865",
+        "e1ec7752-2788-4d9a-bc76-50a11ae08d2a": "d0136162-75f5-4476-8067-20755c1a4b59"
+      }
+    },
+    {
+      "__guid": "a00ccc72-b36d-4001-b495-19ff18c851da",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "18a67b2f-c58e-4a48-a8d9-a5b69ff3df2a",
+        "Path": "prefabs/props/garden/lawnmowerhandle.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ed705114-277a-4558-85ae-a75d735b1439"
+            },
+            "Property": "Name",
+            "Value": "lawnmowerhandle (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "ed705114-277a-4558-85ae-a75d735b1439"
+            },
+            "Property": "Position",
+            "Value": "-702.237976,-546.070923,16.7947922"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "ed705114-277a-4558-85ae-a75d735b1439": "a00ccc72-b36d-4001-b495-19ff18c851da",
+        "5204fe54-9095-4ff6-a0c1-60fe408d1ab4": "67c83bd4-3c66-40dd-ae1b-1cbf27bc4332",
+        "18d8bd23-2f8e-4746-b714-c6790833728e": "a72c601e-3762-4357-9d70-585c98ea6414",
+        "a08c029a-04de-4f05-aee8-dffc6f34a072": "d8093aa4-fb43-4619-a6e2-db1618f12e15",
+        "e7981cbc-93b7-42d7-9741-80fbf0ab6ce5": "083aaca9-539c-47ce-b2b8-b9cc7065e491",
+        "31645ec2-1b1c-4125-8230-b26c0a83bcd2": "372ec0c9-ea71-4434-9d76-31fe5a0220e4",
+        "f07275ff-6813-44dc-a7ad-b6ebbfece3a1": "6f00bae1-2694-4564-a158-190b7fffa9f0",
+        "2757554c-a62d-4699-94ae-6208aa520290": "ab3446ee-90c7-4fd0-89b5-9a88d8de2274"
+      }
+    },
+    {
+      "__guid": "94be107c-5024-4b7d-9c07-d207280cfedc",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "b5a63167-d979-434f-b5de-234a3d4f1af1",
+        "Path": "prefabs/props/garden/lawnmowerwheel.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Name",
+            "Value": "lawnmowerWheel (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Position",
+            "Value": "-763.78064,-510.669586,14.458128"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.788060069,0.615598261"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "6f38d10d-69b5-4410-96b8-1120b3f52173": "94be107c-5024-4b7d-9c07-d207280cfedc",
+        "e25ea9d2-8434-4c6e-ae6e-b43273fcc29f": "f3073ba2-77fa-47b7-bbad-67ac51f56a0a",
+        "ac0b83cc-5ab8-4307-9906-03c9cea622fc": "72e191eb-96d9-4af3-bfee-c664982af8ac",
+        "9e0cbd63-f6f4-4aa8-b64c-d58d6215df33": "56fdb9c1-4589-4b1c-afba-737fac92b7d9",
+        "c2f139a6-946f-40fd-820d-819c663d9f66": "0b1ce048-7f45-4bf8-8c81-f43944079363",
+        "6bef5ae0-c6d0-4bcc-bac9-946e01e24658": "6b78c659-87f2-4109-bef0-5faa9441a661",
+        "86018758-c629-4f95-b284-8843017a85b2": "1d4c9616-51f7-40b0-9466-3463fec1f9c8",
+        "709ca0e7-2843-40c3-b178-454602ad10b3": "cb6f6713-fe08-43a4-9b78-ede5c673fde4"
+      }
+    },
+    {
+      "__guid": "28f43647-68ab-4aa4-8e79-22e659cb821b",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "b5a63167-d979-434f-b5de-234a3d4f1af1",
+        "Path": "prefabs/props/garden/lawnmowerwheel.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Name",
+            "Value": "lawnmowerWheel (4)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Position",
+            "Value": "-736.069153,-621.738342,18.3719234"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.788060069,0.615598261"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e25ea9d2-8434-4c6e-ae6e-b43273fcc29f"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "eebe250c-8b8c-450e-a283-984c305ebd3d",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "0,0,0",
+                "Rotation": "-0.707106769,2.98023224E-08,-2.98023224E-08,0.707106769",
+                "Size": "23.6136189,15.5769386,6.56950712",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 7.8942065,
+                "Gap": 0,
+                "Rounding": 2.8500001,
+                "IsModifier": false,
+                "EffectiveBlend": 7.8942065,
+                "EffectiveRounding": 2.8500001,
+                "Color": "0.27907,0.27907,0.27907,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 26.483986
+              },
+              {
+                "Id": "3b0e81ec-f6e0-4c4e-bc23-e7cfc2eb85de",
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-1.12056732E-05,4.17461395,0",
+                "Rotation": "-0.707106769,2.98023224E-08,-2.98023224E-08,0.707106769",
+                "Size": "15.5656843,15.5769386,5.71370745",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 3.5,
+                "Gap": 0,
+                "Rounding": 2.4,
+                "IsModifier": false,
+                "EffectiveBlend": 3.5,
+                "EffectiveRounding": 2.4,
+                "Color": "0.81395,0.67725,0.38237,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 17.456224
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "6f38d10d-69b5-4410-96b8-1120b3f52173": "28f43647-68ab-4aa4-8e79-22e659cb821b",
+        "e25ea9d2-8434-4c6e-ae6e-b43273fcc29f": "698af661-af85-4b1a-ab68-8acd9474902a",
+        "ac0b83cc-5ab8-4307-9906-03c9cea622fc": "bc49fec2-53e9-433f-96fd-d662c7158c00",
+        "9e0cbd63-f6f4-4aa8-b64c-d58d6215df33": "8fb0122e-4424-44ed-997d-45a65d43e0aa",
+        "c2f139a6-946f-40fd-820d-819c663d9f66": "11de2441-a73b-4df9-bd85-7d24d810a639",
+        "6bef5ae0-c6d0-4bcc-bac9-946e01e24658": "a68d66ef-3325-4c90-b1a1-f7e562deb437",
+        "86018758-c629-4f95-b284-8843017a85b2": "ebe0c341-c685-4a01-bb28-9baf3192f576",
+        "709ca0e7-2843-40c3-b178-454602ad10b3": "8f8f89e2-2cb6-4e9d-8b84-4502769d8538"
+      }
+    },
+    {
+      "__guid": "065d8d0d-1044-4e07-98fe-16b8a76127b5",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "b5a63167-d979-434f-b5de-234a3d4f1af1",
+        "Path": "prefabs/props/garden/lawnmowerwheel.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Name",
+            "Value": "lawnmowerWheel (6)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Position",
+            "Value": "-664.50592,-485.900696,14.458128"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.615598261,0.788060069"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "6f38d10d-69b5-4410-96b8-1120b3f52173": "065d8d0d-1044-4e07-98fe-16b8a76127b5",
+        "e25ea9d2-8434-4c6e-ae6e-b43273fcc29f": "8e1560dd-185f-4b8a-ad8b-fb2714a3df5f",
+        "ac0b83cc-5ab8-4307-9906-03c9cea622fc": "7e110423-d4e5-4bcf-adbc-297941cd5448",
+        "9e0cbd63-f6f4-4aa8-b64c-d58d6215df33": "7368f67e-0660-4e57-aef2-4c030104df39",
+        "c2f139a6-946f-40fd-820d-819c663d9f66": "d6465506-f39c-4c13-8ea3-7425a1790840",
+        "6bef5ae0-c6d0-4bcc-bac9-946e01e24658": "c2e90a86-fcb5-42f6-851c-81c50d8bc49c",
+        "86018758-c629-4f95-b284-8843017a85b2": "6906141d-03ca-4de2-a7da-d5adb941e4f2",
+        "709ca0e7-2843-40c3-b178-454602ad10b3": "b9fda778-b959-4230-8a59-67b2efcb8180"
+      }
+    },
+    {
+      "__guid": "a4b7e05f-5292-4659-8dcb-500bf0af11c4",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "b5a63167-d979-434f-b5de-234a3d4f1af1",
+        "Path": "prefabs/props/garden/lawnmowerwheel.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Name",
+            "Value": "lawnmowerWheel (5)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Position",
+            "Value": "-636.987061,-597.017456,18.3719234"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "6f38d10d-69b5-4410-96b8-1120b3f52173"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,-0.615598261,0.788060069"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e25ea9d2-8434-4c6e-ae6e-b43273fcc29f"
+            },
+            "Property": "Brushes",
+            "Value": [
+              {
+                "Id": "eebe250c-8b8c-450e-a283-984c305ebd3d",
+                "Shape": "Cylinder",
+                "Operation": "Add",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "0,0,0",
+                "Rotation": "-0.707106769,2.98023224E-08,-2.98023224E-08,0.707106769",
+                "Size": "23.6136189,15.5769386,6.56950712",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 7.8942065,
+                "Gap": 0,
+                "Rounding": 2.8500001,
+                "IsModifier": false,
+                "EffectiveBlend": 7.8942065,
+                "EffectiveRounding": 2.8500001,
+                "Color": "0.27907,0.27907,0.27907,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 26.483986
+              },
+              {
+                "Id": "3b0e81ec-f6e0-4c4e-bc23-e7cfc2eb85de",
+                "Shape": "Cylinder",
+                "Operation": "Cutout",
+                "CrossSection": "Triangle",
+                "Text": "clay",
+                "Font": "Super Joyful",
+                "GroupKind": null,
+                "LinkColor": false,
+                "LinkBlend": false,
+                "Enabled": true,
+                "Position": "-1.12056732E-05,4.17461395,0",
+                "Rotation": "-0.707106769,2.98023224E-08,-2.98023224E-08,0.707106769",
+                "Size": "15.5656843,15.5769386,5.71370745",
+                "Points": null,
+                "Curvature": 1,
+                "SplineClosed": false,
+                "SplinePerPointRadius": false,
+                "Slice": 0,
+                "SlicePlaneN": 1,
+                "LocalCentre": "0,0,0",
+                "Blend": 3.5,
+                "Gap": 0,
+                "Rounding": 2.4,
+                "IsModifier": false,
+                "EffectiveBlend": 3.5,
+                "EffectiveRounding": 2.4,
+                "Color": "0.81395,0.67725,0.38237,1",
+                "Metallic": 0,
+                "Roughness": 0.5,
+                "MirrorX": false,
+                "MirrorY": false,
+                "EffectiveMirrorX": false,
+                "EffectiveMirrorY": false,
+                "EffectiveMirrorZ": false,
+                "MirrorZ": false,
+                "Damage": false,
+                "Shrinks": false,
+                "ShrinkDelay": 2,
+                "ShrinkDuration": 1.5,
+                "IsSplineLoop": false,
+                "BoundingRadius": 17.456224
+              }
+            ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac0b83cc-5ab8-4307-9906-03c9cea622fc"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "6f38d10d-69b5-4410-96b8-1120b3f52173": "a4b7e05f-5292-4659-8dcb-500bf0af11c4",
+        "e25ea9d2-8434-4c6e-ae6e-b43273fcc29f": "b7de8815-d59d-4615-b75f-d24d491dc43d",
+        "ac0b83cc-5ab8-4307-9906-03c9cea622fc": "70652e6f-6028-4034-abe6-2e040193a5b0",
+        "9e0cbd63-f6f4-4aa8-b64c-d58d6215df33": "9aa7edf4-847c-4cd3-9ba3-a83de0d76a4f",
+        "c2f139a6-946f-40fd-820d-819c663d9f66": "9aa5fff4-4cbd-4f05-84b9-a666c2f054ce",
+        "6bef5ae0-c6d0-4bcc-bac9-946e01e24658": "2919c3d5-3d65-4cb0-a904-5d1f0d4d034f",
+        "86018758-c629-4f95-b284-8843017a85b2": "0bb5f32d-aa69-4949-99e5-3bfd29f796b9",
+        "709ca0e7-2843-40c3-b178-454602ad10b3": "cb4e3953-36ab-4cca-b21d-6f49badda945"
+      }
+    },
+    {
+      "__guid": "fe2ea642-299c-4356-89a9-b1dd1a5e20d4",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "16ba0221-fd73-4da5-98ba-c335fb8eb1ef",
+        "Path": "prefabs/props/garden/gardenstool.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "142278df-033a-45fb-832c-ad64f1a02cd8"
+            },
+            "Property": "Position",
+            "Value": "-241.3311,68.0428925,41.9559746"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8"
+            },
+            "Property": "__enabled",
+            "Value": true
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "142278df-033a-45fb-832c-ad64f1a02cd8": "fe2ea642-299c-4356-89a9-b1dd1a5e20d4",
+        "79b8bbdc-57aa-4b65-a724-8471f1c5a353": "2086b441-3cbd-458e-8211-1fa4d8037aaf",
+        "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8": "5a63dddd-7ed9-4ebb-8fe5-86a0a10be1f0",
+        "a5d16820-a2ba-48ce-9d84-6ff7841982ac": "4c9d627d-a6c8-4fdb-a4b6-fbb82deb31ec",
+        "772c403a-e4c3-4abc-b510-2153f8a1763b": "5365124e-9839-4706-bbe2-cb59559d417b",
+        "7e9c98d7-36f1-4855-a9da-67451a02bb8a": "f5ccbccb-0cd8-47cd-af04-ba690fa2fbf1",
+        "01f79ed7-f6d6-44a6-aca9-807ba32a6d48": "e5d25882-d51f-46c7-b191-bfc0e84d15a3",
+        "f99b2563-a50a-4a31-990d-b8e190930f37": "1cb660d0-270b-41e2-92a6-9bebe331b34d"
+      }
+    },
+    {
+      "__guid": "25a54389-c0d6-4eed-a39d-a31ec9204a87",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "eba4952b-72aa-48a2-a90a-69a1fae1aaa6",
+        "Path": "prefabs/props/garden/gardenstoolcushion.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "2df26f44-91c1-4fd9-b700-60d7f8d114ad"
+            },
+            "Property": "Name",
+            "Value": "gardenstoolcushion (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "2df26f44-91c1-4fd9-b700-60d7f8d114ad"
+            },
+            "Property": "Position",
+            "Value": "-241.3311,68.0428925,83.3566818"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2377d0e9-263a-4c35-8aa5-041a8b55a390"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2377d0e9-263a-4c35-8aa5-041a8b55a390"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "2df26f44-91c1-4fd9-b700-60d7f8d114ad": "25a54389-c0d6-4eed-a39d-a31ec9204a87",
+        "88e97f9e-5de2-4f23-8b8c-acfa2be86114": "650eaaf3-4f01-487b-8ce6-36350ac782ac",
+        "2377d0e9-263a-4c35-8aa5-041a8b55a390": "6d4ab75f-405a-4ae0-89e2-c2c7c0666ec8",
+        "c5a33116-a9c1-4218-976a-d1e6bc9f73e1": "d7a26c60-f935-44f3-b7ee-b2845bbd3119",
+        "7e261a8b-c8ce-40c7-a44b-997d2b737642": "6cbb57c2-3de1-4e20-ba8f-df05cc715dbf",
+        "8c051b73-d4b6-4e3f-b053-c921e77dd5eb": "c3d21826-2b3b-4ab3-8568-00a48349be66",
+        "a58edc4c-f818-45b8-b119-2ce5f44042a8": "683b8db9-977a-4c8f-8ac8-8a90c9ae68c4",
+        "0abea06d-9396-4c65-972c-9f7062fb805b": "d121cdff-76b4-4ba1-a0dc-08d307704d78"
+      }
+    },
+    {
+      "__guid": "3ecd3587-140b-45cd-ada7-befbe4a50bcb",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "16ba0221-fd73-4da5-98ba-c335fb8eb1ef",
+        "Path": "prefabs/props/garden/gardenstool.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "142278df-033a-45fb-832c-ad64f1a02cd8"
+            },
+            "Property": "Name",
+            "Value": "gardenstool (1)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "142278df-033a-45fb-832c-ad64f1a02cd8"
+            },
+            "Property": "Position",
+            "Value": "-687.603394,303.015778,41.9559746"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "142278df-033a-45fb-832c-ad64f1a02cd8"
+            },
+            "Property": "Rotation",
+            "Value": "0,0,0.127211973,0.991875529"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8"
+            },
+            "Property": "__enabled",
+            "Value": true
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "142278df-033a-45fb-832c-ad64f1a02cd8": "3ecd3587-140b-45cd-ada7-befbe4a50bcb",
+        "79b8bbdc-57aa-4b65-a724-8471f1c5a353": "ced944bc-f257-44b1-b498-950f720134e8",
+        "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8": "acd205ad-c68e-4b85-901a-255019d6fa8e",
+        "a5d16820-a2ba-48ce-9d84-6ff7841982ac": "ddcbbd28-cd4b-4dba-90cb-a95a0ef9b8a6",
+        "772c403a-e4c3-4abc-b510-2153f8a1763b": "b2b938a6-00e1-43a2-b0bd-5a9ecdb89690",
+        "7e9c98d7-36f1-4855-a9da-67451a02bb8a": "73853aa6-5f13-47c3-ae45-640a11bb1dcb",
+        "01f79ed7-f6d6-44a6-aca9-807ba32a6d48": "f01fe909-5871-4610-8bd2-ac6c99f950aa",
+        "f99b2563-a50a-4a31-990d-b8e190930f37": "8d9f2fce-e90d-42cb-993a-160f8a74ecf4"
       }
     }
   ],

@@ -121,6 +121,24 @@ public sealed class OrbitCameraController : Component
 	/// position — offset and pan still apply. The hider uses it while it tumbles as a grabbed object.</summary>
 	public Vector3? FollowPointOverride { get; set; }
 
+	/// <summary>Free-pivot mode only: the object the pivot rides. Each tick the pivot moves by however far this
+	/// object's ORIGIN moved since the last tick — so a hunter entering edit mid-stride (momentum still carrying the
+	/// body) keeps its head where the view put it, instead of sliding out from under a world-fixed pivot (and that
+	/// gap then being saved as the edit view's pan for good). The origin, not the shape's bounds: sculpting moves the
+	/// bounds, and that must never move the camera. Setting it (or <see cref="ResyncPivotCarry"/>) re-baselines, so
+	/// an owner that places the pivot itself (framing, a restored view, a teleport) isn't carried twice.</summary>
+	public GameObject PivotCarry
+	{
+		get => _carry;
+		set { _carry = value; ResyncPivotCarry(); }
+	}
+
+	/// <summary>Take the carry's current position as the baseline — call after writing <see cref="Pivot"/> directly.</summary>
+	public void ResyncPivotCarry() => _carryLast = _carry.IsValid() ? _carry.WorldPosition : null;
+
+	GameObject _carry;
+	Vector3? _carryLast;
+
 	/// <summary>Shift the follow pan by <paramref name="delta"/> (world units) — lets an owner change what the
 	/// pivot follows without the camera jumping.</summary>
 	public void AddPanOffset( Vector3 delta ) => _panOffset += delta;
@@ -177,6 +195,7 @@ public sealed class OrbitCameraController : Component
 	{
 		AltNav.Reset();
 		_seeded = false;
+		_carryLast = null;
 		_boomPull = 0f;
 		_boomBlocked = 0f;
 	}
@@ -215,6 +234,13 @@ public sealed class OrbitCameraController : Component
 
 		if ( FollowTarget.IsValid() )
 			Pivot = (FollowPointOverride ?? FollowTarget.WorldPosition) + FollowOffset + _panOffset;
+		else if ( _carry.IsValid() )
+		{
+			var at = _carry.WorldPosition;
+			if ( _carryLast is { } last )
+				Pivot += at - last;
+			_carryLast = at;
+		}
 
 		if ( PivotXYOverride is { } xy )
 			Pivot = new Vector3( xy.x, xy.y, Pivot.z );

@@ -719,6 +719,12 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		if ( _gun.IsValid() && _gun.EditShown && !(_gunSession?.IsEditing ?? false) )
 			_gun.EndEdit();
 
+		// The edit camera rides the head/gun it frames (FrameFace/FrameGun set it) only while that edit is open — the
+		// rig serves the lease and external sessions too, which frame other things.
+		if ( _orbit.IsValid() && _orbit.PivotCarry is not null
+			&& !(_session?.IsEditing ?? false) && !(_gunSession?.IsEditing ?? false) )
+			_orbit.PivotCarry = null;
+
 		// Keep the wire in step with the session, whatever path entered or left edit mode (see NetEditing).
 		if ( Owned )
 			NetEditing = EditMode || LeaseEditing;
@@ -2767,6 +2773,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 	void RestoreEditView( (Angles view, float distance, Vector3 panOffset) v )
 	{
+		_orbit.PivotCarry = Face.IsValid() ? Face.GameObject : null; // (re-baselined: rides the head from this placement on)
 		_orbit.Pivot = FaceCenterWorld() + Rotation.FromYaw( FaceYaw() ) * v.panOffset;
 		_orbit.Distance = v.distance;
 		_orbit.Angles = new Angles( v.view.pitch, FaceYaw() + v.view.yaw, 0f );
@@ -2780,6 +2787,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 
 	void RestoreGunEditView( (Angles view, float distance, Vector3 panOffset) v )
 	{
+		_orbit.PivotCarry = GunCarry();
 		_orbit.Pivot = GunCenterWorld() + Rotation.FromYaw( FaceYaw() ) * v.panOffset;
 		_orbit.Distance = v.distance;
 		_orbit.Angles = new Angles( v.view.pitch, FaceYaw() + v.view.yaw, 0f );
@@ -2834,6 +2842,7 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			RestoreEditView( last );
 		else
 		{
+			_orbit.PivotCarry = Face.IsValid() ? Face.GameObject : null;
 			_orbit.Pivot = FaceCenterWorld();
 			_orbit.Distance = FramingDistance();
 			_orbit.Angles = new Angles( EditCameraPitch, FaceYaw() + 180f, 0f ); // +180: stand in front, look back at the face
@@ -2851,11 +2860,15 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			RestoreGunEditView( last );
 		else
 		{
+			_orbit.PivotCarry = GunCarry();
 			_orbit.Pivot = GunCenterWorld();
 			_orbit.Distance = FramingDistance( _gun.IsValid() ? _gun.EditSculpt : null );
 			_orbit.Angles = new Angles( EditCameraPitch, FaceYaw() + 180f, 0f );
 		}
 	}
+
+	// What the weapon edit's camera rides: the edit gun (parented to the pawn's hand), else the pawn.
+	GameObject GunCarry() => _gun.IsValid() && _gun.EditSculpt.IsValid() ? _gun.EditSculpt.GameObject : GameObject;
 
 	// Distance that fits the head's bounding sphere in the frame with EditFramingMargin breathing room, derived
 	// in the rig's reference-FOV units (GameSettings.EditFitDistance) — the rig dolly-zooms it to the live FOV,

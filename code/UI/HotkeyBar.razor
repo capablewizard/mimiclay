@@ -13,8 +13,9 @@
 	code), and the bar does the rest —
 
 	  • a quiet constant clay wobble, lock-stepped to the boil (ClayRowPoser at WobbleStrength);
-	  • cards that join grow in (CSS :intro), cards that leave pop + shrink away IN THEIR OWN PLACE (UpdateShown /
-	    CollapseLeaving) — never an :outro, because razor parks a panel it's deleting at the END of the row;
+	  • cards that join pop in while the row opens room for them; cards that leave swell + shrink away IN THEIR OWN
+	    PLACE while the room closes (UpdateShown + the shared PopFlex springs, from CollapseLeaving) — never an
+	    :outro, because razor parks a panel it's deleting at the END of the row;
 	  • a card punches (pop-spring) and the shared click plays when its key is pressed (UpdatePunches).
 
 	Three layers per card, one `transform` each: the slot takes the wobble, the grow wrapper the grow-in / exit scale,
@@ -24,7 +25,7 @@
 
 @foreach ( var (hint, leaving) in Shown )
 {
-	<div class="hotkey-slot @(leaving ? "leaving" : "") @(!leaving && hint.Key == _hoverKey ? "hover" : "") @(!leaving && hint.Key == _heldKey ? "held" : "")" @key=@hint.Key id=@hint.Key>
+	<div class="hotkey-slot pop @(leaving ? "leaving gone" : "") @(!leaving && hint.Key == _hoverKey ? "hover" : "") @(!leaving && hint.Key == _heldKey ? "held" : "")" @key=@hint.Key id=@hint.Key>
 		<div class="hotkey-grow">
 			<div class="paper-card key-card compact @(Fired( hint ) ? "fired" : "") @(hint.Hot ? "hot" : "")">
 				@if ( InputGlyphs.MouseIcon( hint.Key ) is { } icon )
@@ -243,7 +244,7 @@
 	// What the bar draws: the live hints, plus any card that just dropped out, held IN ITS OLD PLACE as .leaving for
 	// LeaveSeconds while it plays its pop-and-shrink exit. Only once it's fully collapsed does it leave the list for
 	// razor to delete. A card that comes back mid-exit (re-grabbing the wall) just turns live again in place.
-	const float LeaveSeconds = 0.4f; // a touch past the exit (0.15s pop + 0.2s close)
+	const float LeaveSeconds = 0.5f; // past the PopFlex springs settling shut (~0.4s)
 	readonly record struct ShownHint( HotkeyHint Hint, RealTimeSince? LeftAt );
 	List<ShownHint> _shown;
 	List<ShownHint> _shownScratch;
@@ -293,23 +294,20 @@
 		_shownSignal = sig;
 	}
 
-	// ── Leaving cards close their space ─────────────────────────────────────────────────────────────────────────────
-	// In CODE, from the slot's real width: CSS could only take max-width down from the 360px cap, which bites nothing
-	// until it's under the card's actual width — the neighbours sat still and jumped at the very end, where the grow-in
-	// slides them. So: measure the slot the first frame it's leaving, then drive its max-width + side padding to zero —
-	// held through the pop (LeaveCloseDelay), then eased shut over LeaveCloseSeconds. Matched by panel id (= the glyph).
-	const float LeaveCloseDelay = 0.15f, LeaveCloseSeconds = 0.2f;
+	// ── Cards pop in and out; the row makes / closes their room ─────────────────────────────────────────────────────
+	// The shared PopFlex (UI/PopFlex.cs): each slot is a `pop` item, `gone` while leaving. Its room (the slot's width,
+	// from the card's measured natural width, + side padding) and the card's pop (the grow wrapper's scale) are two
+	// springs running TOGETHER — a joining card grows while the row opens for it, a leaving one swells, shrinks and its
+	// room closes at once (it used to pop first and only then close, which read as a wait-then-snap).
 	const float SlotPad = 4f; // .hotkey-slot's padding ($space-xs)
-	Dictionary<string, float> _leaveWidths; // glyph → measured slot width (style px), while leaving
-	List<string> _leaveDone;
+	PopFlex _flex;
+
+	/// <summary>No card is mid-pop: the bar's size is its real one (a card swelling in can briefly wrap the row onto a
+	/// second line). Owners stacking rows on the bar's height measure it only while this holds.</summary>
+	public bool Settled => _flex?.IsSettled ?? true;
 
 	void CollapseLeaving()
 	{
-		_leaveWidths ??= new();
-		_leaveDone ??= new();
-		if ( _shown is null )
-			return;
-
 		// A slot razor has deleted (it left the list — already collapsed below) goes NOW. The engine's deferred deletion
 		// waits until a panel has no active transitions, and these slots never get there (they read as permanently
 		// transitioning — likely the per-tick wobble writes), so an exited card lingered forever as an invisible gap at
@@ -317,41 +315,7 @@
 		foreach ( var slot in Children.Where( s => s.IsDeleting ).ToList() )
 			slot.Delete( immediate: true );
 
-		foreach ( var slot in Children )
-		{
-			var key = slot.Id;
-			if ( key is null )
-				continue;
-
-			var shown = _shown.Find( s => s.Hint.Key == key );
-			if ( shown.Hint.Key is null || shown.LeftAt is not { } leftAt )
-			{
-				if ( _leaveWidths.Remove( key ) ) // back from a leave: the stylesheet owns it again
-				{
-					slot.Style.MaxWidth = null;
-					slot.Style.PaddingLeft = null;
-					slot.Style.PaddingRight = null;
-				}
-				continue;
-			}
-
-			if ( !_leaveWidths.TryGetValue( key, out var width ) )
-				_leaveWidths[key] = width = slot.Box.Rect.Width * slot.ScaleFromScreen;
-
-			var t = Math.Clamp( (leftAt - LeaveCloseDelay) / LeaveCloseSeconds, 0f, 1f );
-			var open = 1f - Sandbox.Utility.Easing.EaseInOut( t );
-			slot.Style.MaxWidth = Length.Pixels( width * open );
-			slot.Style.PaddingLeft = Length.Pixels( SlotPad * open );
-			slot.Style.PaddingRight = Length.Pixels( SlotPad * open );
-		}
-
-		// Forget measurements for slots that have gone (finished leaving and deleted).
-		_leaveDone.Clear();
-		foreach ( var key in _leaveWidths.Keys )
-			if ( !_shown.Exists( s => s.Hint.Key == key ) )
-				_leaveDone.Add( key );
-		foreach ( var key in _leaveDone )
-			_leaveWidths.Remove( key );
+		(_flex ??= new()).Step( this, SlotPad, scaleChild: true );
 	}
 
 	// ── Press punch + click ─────────────────────────────────────────────────────────────────────────────────────────

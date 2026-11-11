@@ -110,6 +110,17 @@ public static class UiShotDebug
 		s.SetTool( tool.ToLowerInvariant() == "add" ? SculptTool.Sculpt : SculptTool.Gizmo );
 	}
 
+	/// <summary>Edit session, Add mode: re-mould the stamp ghost to a shape ("sphere", "text", ...) — drives the slider strip
+	/// through a shape swap without touching the sculpt.</summary>
+	[ConCmd( "mimi_shot_shape" )]
+	static void Shape( string shape )
+	{
+		var s = SculptEditSession.Current;
+		if ( !s.IsValid() || !s.IsEditing ) { Log.Warning( "mimi_shot_shape: no edit session." ); return; }
+		if ( !Enum.TryParse<SdfShape>( shape, true, out var parsed ) ) { Log.Warning( $"mimi_shot_shape: no shape '{shape}'." ); return; }
+		s.SetShape( parsed );
+	}
+
 	/// <summary>Force every edit session on the local hunter closed (tutorial included), no dialogs.</summary>
 	[ConCmd( "mimi_shot_editoff" )]
 	static void EditOff()
