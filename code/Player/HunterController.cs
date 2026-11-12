@@ -2314,12 +2314,13 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			{
 				if ( b.Damage )
 					continue;
-				if ( b.Color == src.Color && b.Metallic == src.Metallic && b.Roughness == src.Roughness )
+				if ( b.Color == src.Color && b.Metallic == src.Metallic && b.Roughness == src.Roughness && b.Emission == src.Emission )
 					continue;
 
 				b.Color = src.Color;
 				b.Metallic = src.Metallic;
 				b.Roughness = src.Roughness;
+				b.Emission = src.Emission;
 				changed = true;
 			}
 

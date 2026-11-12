@@ -1,0 +1,206 @@
+@using System
+@using System.Globalization
+@using Sandbox
+@using Sandbox.UI
+@namespace Mimiclay
+@inherits PanelComponent
+
+@*
+	Taunt pie — hold T as a prop player (TauntPicker; driven by HiderController, or by SpectatorController for an
+	eliminated prop's ghost). One equal slice per entry in Taunts.All, slice 0 at the top, going clockwise; the middle
+	is empty (release there = no taunt). The mouse is still captured, so there's no real cursor: the picker steers a
+	virtual one and resolves the slice under it — this panel only draws that state. Lives under a runtime screen panel
+	parented to its owner (TauntPicker.EnsureHud), found here as the ITauntPieOwner above it.
+*@
+
+<root class="taunt-pie">
+	@if ( Open || Closing )
+	{
+		<div class="pie">
+			@if ( Open && _hasDir )
+			{
+				<div class="spoke" style=@Rotate( _dir )><div class="pointer"></div></div>
+			}
+
+			@for ( int i = 0; i < Taunts.All.Count; i++ )
+			{
+				@* Three layers, one `transform` each: the slot takes the spring-in/out and the pop (code-driven), the
+				   button its selected grow (a CSS transition), the emoji its wobble while its sound plays (keyframes). *@
+				<div class="slot" style=@SlotStyle( i )>
+					<div class="slice paper-card @(i == ShownSelection ? "selected" : "")">
+						<span class="emoji @(i == Playing ? "playing" : "")">@Taunts.All[i].Emoji</span>
+					</div>
+				</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	// Geometry, in design px: half the .pie box (its centre), and the circle the round taunt buttons sit on.
+	// Mirrors .pie in the SCSS.
+	const float Outer = 190f;
+	const float SliceRadius = 135f;
+
+	ITauntPieOwner _owner;
+	ITauntPieOwner Owner
+	{
+		get
+		{
+			if ( _owner is not Component c || !c.IsValid() )
+				_owner = Components.Get<ITauntPieOwner>( FindMode.InAncestors );
+			return _owner is Component o && o.IsValid() ? _owner : null;
+		}
+	}
+
+	TauntPicker Picker => Owner?.TauntPicker;
+
+	// The taunt our source is sounding right now: its emoji wobbles (.playing) for as long as it lasts — read live, so
+	// closing and reopening the pie mid-sound finds it still going.
+	int Playing => Owner?.PlayingTaunt ?? -1;
+
+	// ── Pop ──────────────────────────────────────────────────────────────────────────────────────────────────────
+	// The button whose taunt just started gives a quick springy size pop (on top of the spring-in/out scale).
+	const float PopStrength = 0.22f;
+	const float PopDamping = 10f;
+	const float PopFrequency = 28f;
+	const float PopDuration = 0.4f;
+
+	int _lastSerial;
+	bool _serialSeeded;
+	int _popIndex = -1;
+	RealTimeSince _sincePop;
+
+	float PopScale( int i )
+	{
+		if ( i != _popIndex || _sincePop >= PopDuration )
+			return 1f;
+		float t = _sincePop;
+		return 1f + PopStrength * MathF.Exp( -PopDamping * t ) * MathF.Sin( PopFrequency * t );
+	}
+
+	int PopStep => _popIndex >= 0 && _sincePop < PopDuration ? (int)(_sincePop * 240f) : -1;
+
+	void UpdatePop()
+	{
+		var owner = Owner;
+		if ( owner is null )
+			return;
+
+		int serial = owner.TauntSerial;
+		if ( !_serialSeeded )
+		{
+			// Taunts that played before this panel existed aren't news.
+			_serialSeeded = true;
+			_lastSerial = serial;
+			return;
+		}
+		if ( serial == _lastSerial )
+			return;
+
+		_lastSerial = serial;
+		_popIndex = owner.PlayingTaunt;
+		_sincePop = 0f;
+	}
+
+	bool Open => Picker?.Open ?? false;
+
+	int _selection = -1;
+	bool _hasDir;
+	float _dir;            // the virtual cursor's angle, radians (0 = up, clockwise)
+	int _dirStep;          // _dir quantised for BuildHash
+
+	// ── Spring-in ────────────────────────────────────────────────────────────────────────────────────────────────
+	// On open, each button springs from nothing to full size, one after another clockwise from the whistle. Driven
+	// from code rather than CSS keyframes: a staggered keyframe start needs animation-delay, and without a fill-mode
+	// the button sits at full size through its delay, then pops to 0 when its turn comes.
+	const float IntroStagger = 0.025f;  // seconds between neighbours
+	const float SpringDamping = 16f;    // per second — how fast the wobble dies
+	const float SpringFrequency = 26f;  // radians per second — overshoot ≈ e^(-π·16/26) ≈ 14%
+	const float SpringSettle = 0.35f;   // after this the last button is treated as landed
+
+	// The clock is the picker's (stamped when it opens), read live at render — the panel can draw its first open frame
+	// before its own OnUpdate runs, and a clock kept here would show every button at full size for that frame.
+	float SinceOpen => Picker?.SinceOpened ?? 0f;
+
+	float IntroDuration => IntroStagger * (Taunts.All.Count - 1) + SpringSettle;
+
+	// A damped spring from 0 to 1: overshoots, settles.
+	static float Spring( float t )
+		=> t <= 0f ? 0f : 1f - MathF.Exp( -SpringDamping * t ) * MathF.Cos( SpringFrequency * t );
+
+	float IntroScale( int i )
+	{
+		float t = SinceOpen;
+		return t >= IntroDuration ? 1f : Spring( t - IntroStagger * i );
+	}
+
+	// The intro's frame, for BuildHash (re-render every step while it plays); -1 once every button has landed.
+	int IntroStep => Open && SinceOpen < IntroDuration ? (int)(SinceOpen * 240f) : -1;
+
+	// ── Spring-out ───────────────────────────────────────────────────────────────────────────────────────────────
+	// On close the buttons swell slightly and shrink away in reverse order — the last one (anticlockwise from the
+	// whistle) first, the whistle last — starting THE FRAME T comes up. Not the intro's spring played backwards: that
+	// holds each button near full size for ~0.2 s before it moves, which read as lag on release. The pie keeps
+	// drawing until they're all gone; the button that was picked stays lit on the way out.
+	const float OutroStagger = 0.012f;  // seconds between neighbours
+	const float OutroShrink = 0.16f;    // each button's swell-and-vanish
+
+	float SinceClose => Picker?.SinceClosed ?? float.MaxValue;
+
+	float OutroDuration => OutroStagger * (Taunts.All.Count - 1) + OutroShrink;
+
+	bool Closing => !Open && Picker is { HasClosed: true } && SinceClose < OutroDuration;
+
+	float OutroScale( int i )
+	{
+		float u = (SinceClose - OutroStagger * (Taunts.All.Count - 1 - i)) / OutroShrink;
+		if ( u <= 0f ) return 1f;
+		if ( u >= 1f ) return 0f;
+		return (1f - u) * (1f + 2f * u); // swells to ~1.12 a quarter of the way in, then down to nothing
+	}
+
+	int OutroStep => Closing ? (int)(SinceClose * 240f) : -1;
+
+	int ShownSelection => Open ? _selection : Picker?.ClosedSelection ?? -1;
+
+	protected override void OnUpdate()
+	{
+		UpdatePop();
+
+		int selection = -1;
+		_hasDir = false;
+
+		if ( Open )
+		{
+			selection = Picker.Selection;
+			var c = Picker.Cursor;
+			if ( c.Length > TauntPicker.Deadzone * 0.5f )
+			{
+				_hasDir = true;
+				_dir = MathF.Atan2( c.x, -c.y );
+			}
+		}
+
+		// A new slice under the cursor: the menu's hover tick.
+		if ( selection != _selection && selection >= 0 )
+			UiSounds.PlayEvent( "ui.button.over" );
+		_selection = selection;
+		_dirStep = _hasDir ? (int)MathF.Round( _dir * 90f / MathF.PI ) : int.MinValue; // 2° steps
+	}
+
+	static string F( float v ) => v.ToString( "0.##", CultureInfo.InvariantCulture );
+
+	static string Rotate( float radians ) => $"transform: rotate( {F( radians * 180f / MathF.PI )}deg );";
+
+	string SlotStyle( int i )
+	{
+		float a = Taunts.SliceAngle( i );
+		float x = Outer + MathF.Sin( a ) * SliceRadius;
+		float y = Outer - MathF.Cos( a ) * SliceRadius;
+		return $"left: {F( x )}px; top: {F( y )}px; transform: scale( {F( (Open ? IntroScale( i ) : OutroScale( i )) * PopScale( i ) )} );";
+	}
+
+	protected override int BuildHash() => HashCode.Combine( Open, _selection, _dirStep, Taunts.All.Count, IntroStep, OutroStep, Closing, HashCode.Combine( Playing, PopStep ) );
+}

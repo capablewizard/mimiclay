@@ -418,6 +418,9 @@
 					OnInput=@((float v) => SetMetallic( v )) OnCommit=@CommitEdit />
 				<ClaySlider Label="Rough" Value=@(pfb?.Roughness ?? 1f) Min=@(0f) Max=@(1f)
 					OnInput=@((float v) => SetRoughness( v )) OnCommit=@CommitEdit />
+				<div class="chip action glow-toggle @(pfb?.Emission > 0f ? "on" : "")" @onclick=@ToggleGlow>
+					<div class="icon">@SdfIcons.Glow</div><span>Glow</span>
+				</div>
 				<div class="mat-clipboard">
 					<div class="chip action" @onclick=@CopyMaterial>
 						<div class="icon">@SdfIcons.Copy</div><span>Copy</span>
@@ -2332,15 +2335,29 @@
 		Session?.PreviewChanged();
 	}
 
-	// The copied material (colour + metal/rough). Static on purpose: one clipboard for the whole game, so a
+	// Glow is all-or-nothing in the HUD (half glows looked muddy): on = full emission, and the brush then SHADES with
+	// its colour at full brightness (SdfBrush.ShadeColor) while Color keeps the user's pick, so off restores it.
+	// Follows the primary brush: a mixed selection all switches to the opposite of what the primary shows.
+	void ToggleGlow()
+	{
+		if ( Brush is null )
+			return;
+		float v = Brush.Emission > 0f ? 0f : 1f;
+		EditEach( b => b.Emission = v );
+		SculptEditSession.RememberMaterial( Brush );
+		Session?.PreviewChanged();
+		CommitEdit();
+	}
+
+	// The copied material (colour + metal/rough + glow). Static on purpose: one clipboard for the whole game, so a
 	// material copied from one brush/sculpt can be pasted onto another (and it survives selection changes).
-	static (Color Color, float Metallic, float Roughness)? _materialClipboard;
+	static (Color Color, float Metallic, float Roughness, float Emission)? _materialClipboard;
 
 	void CopyMaterial()
 	{
 		if ( Brush is null )
 			return;
-		_materialClipboard = (Brush.Color, Brush.Metallic, Brush.Roughness);
+		_materialClipboard = (Brush.Color, Brush.Metallic, Brush.Roughness, Brush.Emission);
 	}
 
 	void PasteMaterial()
@@ -2352,6 +2369,7 @@
 			b.Color = m.Color;
 			b.Metallic = m.Metallic;
 			b.Roughness = m.Roughness;
+			b.Emission = m.Emission;
 		} );
 		SculptEditSession.RememberMaterial( Brush );
 		Session?.PreviewChanged();
@@ -2634,6 +2652,7 @@
 		hc.Add( b?.Color );
 		hc.Add( b?.Metallic ?? 0f );
 		hc.Add( b?.Roughness ?? 0f );
+		hc.Add( b?.Emission ?? 0f );
 		hc.Add( b?.Blend ?? 0f );      // drives the 2D blend slider's fill
 		hc.Add( b?.Gap ?? 0f );        // drives the cutout gap slider's fill
 		hc.Add( (int)(b?.Operation ?? SdfOperation.Add) ); // gap slider + G hint show for cutouts only

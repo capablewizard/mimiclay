@@ -13,8 +13,8 @@ namespace Mimiclay;
 // look like) and streams their poses by hand. Creative already has a way to make scene clay a real physics object —
 // the CONVERSION a grab does (ConvertSceneProp → host-owned released scenery, LooseProps = a free rigidbody) — so a
 // shot just does that: the prop becomes released scenery the moment it's hit, and from there the engine's network
-// sync moves it. Possessed props and hunters are never knocked; a frozen prop stays put, and a prop someone's holding
-// or sculpting is left alone.
+// sync moves it. Possessed props and hunters are never knocked; a frozen prop is unfrozen and knocked loose, and a prop
+// someone's holding or sculpting is left alone.
 public sealed partial class PropClaims
 {
 	// The released scenery pawn this clay is the disguise of — nobody wearing it — or null.
@@ -65,8 +65,7 @@ public sealed partial class PropClaims
 			return;
 
 		var id = hider.GameObject.Id;
-		if ( FrozenProps.ContainsKey( id ) )
-			return;
+		FrozenProps.Remove( id ); // shooting a frozen prop unfreezes it, like grabbing one does
 		LooseProps[id] = true;
 		_shotKicks[id] = new ShotKick { Point = hit, Impulse = dir.Normal * RoundManager.ShotKnockSpeed, Since = 0f };
 	}
@@ -94,6 +93,21 @@ public sealed partial class PropClaims
 			if ( !hider.IsValid() || kick.Since > ShotKickTimeout )
 			{
 				_shotKicks.Remove( id );
+				continue;
+			}
+
+			// The sim walk on, a loose prop is the SIM's rigid body (HiderController.UpdateSimRegistration) and the scene body
+			// is only presentation — the kick has to go to the sim body, or it's lost. Waited for: a prop shot while FROZEN is
+			// registered a tick or two later, and from an asleep (frozen) scene body it registers ASLEEP — without this kick
+			// waking it, it hung in the air wherever it was frozen (user: "fairly often it just doesn't" fall).
+			if ( HiderController.SimWalk && hider.Network.Active )
+			{
+				var sim = Scene.GetSystem<Mimiclay.Sim.SimWorld>();
+				if ( sim is not { Active: true } || sim.Find( id ) is not { Spec.Driver: 0, ShapesReady: true } simBody || !simBody.Phys.IsValid() )
+					continue;
+
+				_shotKicks.Remove( id );
+				sim.Kick( id, kick.Point, kick.Impulse * MathF.Max( simBody.Phys.Mass, 1f ) );
 				continue;
 			}
 

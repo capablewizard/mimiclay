@@ -21,7 +21,7 @@ namespace Mimiclay;
 [Title( "Hider Controller" )]
 [Category( "Mimiclay" )]
 [Icon( "directions_run" )]
-public sealed partial class HiderController : Component, IGameObjectNetworkEvents
+public sealed partial class HiderController : Component, IGameObjectNetworkEvents, ITauntPieOwner
 {
 	/// <summary>Collision tag stamped on every player prop's disguise. ProjectSettings/Collision.config pairs it
 	/// with ITSELF as Ignore, so two player props never generate contacts — they pass through each other and
@@ -576,6 +576,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			// are host-owned; every other machine sees them as proxies and gets the whistle through the
 			// broadcast). Released SCENERY is dormant too and must never whistle — it has no BotPawn row.
 			// Manual is withheld: the host's T key belongs to the host's own pawn, not the whole bot flock.
+			CloseTauntPie();
 			if ( !IsProxy && Components.Get<BotPawn>() is not null )
 				UpdateTaunts( manual: false );
 
@@ -590,6 +591,7 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( IsProxy )
 		{
 			SetFreeCam( false ); // released / ownership dropped mid-flight: the free cam was ours, it goes too
+			CloseTauntPie();
 			return;
 		}
 
@@ -783,74 +785,126 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	// ── Taunts ────────────────────────────────────────────────────────────────────────────────────────
 	// During the Hunt every surviving prop periodically whistles from wherever it's hiding — the classic
-	// prop-hunt tension dial, tuned by the host (RoundSettings.TauntSeconds). T taunts on demand (and resets
-	// the clock, so a manual whistle buys quiet until the next auto one). Owner-side only: this runs after
-	// OnUpdate's dormant/IsProxy gates, and the sound reaches everyone through the broadcast RPC below. Any
-	// pawn still wearing a HiderController during the Hunt IS a live prop (a found prop respawns as a hunter),
-	// so no per-frame roster lookup is needed.
+	// prop-hunt tension dial, tuned by the host (RoundSettings.TauntSeconds). On top of that the player taunts on
+	// demand, any time they're a possessed prop: TAP T for the whistle, HOLD T for the taunt pie (TauntPie) — the
+	// mouse steers a virtual cursor round it; releasing on a slice plays that taunt, releasing in the empty middle
+	// plays nothing. The sounds are the Taunts list. Owner-side only: this runs after OnUpdate's dormant/IsProxy
+	// gates, and the sound reaches everyone through the broadcast RPC below. Any pawn still wearing a
+	// HiderController during the Hunt IS a live prop (a found prop respawns as a hunter), so no per-frame roster
+	// lookup is needed.
 
-	const string TauntSoundPath = "sounds/game/tauntwhistyle.sound";
-
-	/// <summary>Extra seconds a manual (T) taunt must wait after ANY taunt, so the key can't be drummed into a
-	/// continuous whistle.</summary>
+	/// <summary>Extra seconds a manual taunt must wait after ANY taunt during the Hunt, so the key can't be drummed
+	/// into continuous noise. Outside the Hunt there's no cooldown.</summary>
 	const float ManualTauntCooldown = 2f;
+
+	/// <summary>A manual taunt this close to the next automatic one rewinds the auto clock, so the two don't play on
+	/// top of each other. Further out, a manual taunt leaves the clock alone.</summary>
+	const float AutoTauntNearSeconds = 3f;
 
 	TimeUntil _nextAutoTaunt;
 	RealTimeSince _sinceTaunt;
 	bool _tauntClockSeeded; // seeded on the first Hunt frame; reset outside the Hunt so a next round re-seeds
+	GameObject _tauntHud;
+	SoundHandle _tauntSound; // the taunt this prop is playing, on THIS machine — a new one fades it out
+	int _tauntIndex = -1;    // which taunt _tauntSound is
+
+	/// <inheritdoc/>
+	public int PlayingTaunt => Taunts.IsPlaying( _tauntSound ) ? _tauntIndex : -1;
+
+	/// <inheritdoc/>
+	public int TauntSerial { get; private set; }
+	TauntPicker _tauntPicker;
+
+	/// <summary>Tap / hold T (lazy: a hotload leaves a new field null on a live pawn).</summary>
+	public TauntPicker TauntPicker => _tauntPicker ??= new();
+
+	/// <summary>The taunt pie is up (owner only) — mouse-look is suspended while it is. The free cam reads it too: a
+	/// prop scouting as a ghost still taunts from its body.</summary>
+	public bool TauntPieOpen => _tauntPicker?.Open ?? false;
+
+	void CloseTauntPie() => _tauntPicker?.Close();
 
 	void UpdateTaunts( bool manual = true )
 	{
 		var round = RoundManager.Current;
-		if ( !round.IsValid() || round.Phase != RoundPhase.Hunt )
+		bool hunt = round.IsValid() && round.Phase == RoundPhase.Hunt;
+		float interval = 0f;
+
+		if ( !hunt )
 		{
 			_tauntClockSeeded = false;
-			return;
 		}
-
-		// 0 = the host chose "None": no automatic whistling at all (manual T still works — taunting on purpose
-		// is the prop's own risk to take). Anything else keeps the same 5s floor as LobbyManager.SetTauntSeconds,
-		// which also catches a sub-floor value from any stale settings path (e.g. an old serialized struct) that
-		// Max(0) would turn into per-frame whistling.
-		float interval = round.Settings.TauntSeconds <= 0f ? 0f : MathF.Max( 5f, round.Settings.TauntSeconds );
-
-		// First Hunt frame: every prop starts its clock at a RANDOM fraction of the interval. All machines flip
-		// into the Hunt within a frame or two of each other, so without this offset the whole lobby would
-		// whistle in chorus every cycle — the random phase is the stagger.
-		if ( !_tauntClockSeeded )
+		else
 		{
-			_tauntClockSeeded = true;
-			// A manual taunt is allowed immediately at the whistle-phase start (with auto taunts off there's no
-			// interval to wait out, so just clear the manual cooldown).
-			_sinceTaunt = MathF.Max( interval, ManualTauntCooldown );
-			if ( interval > 0f )
-				_nextAutoTaunt = Game.Random.Float( 0.3f, 1f ) * interval;
+			// 0 = the host chose "None": no automatic whistling at all (manual taunts still work — taunting on
+			// purpose is the prop's own risk to take). Anything else keeps the same 5s floor as
+			// LobbyManager.SetTauntSeconds, which also catches a sub-floor value from any stale settings path (e.g.
+			// an old serialized struct) that Max(0) would turn into per-frame whistling.
+			interval = round.Settings.TauntSeconds <= 0f ? 0f : MathF.Max( 5f, round.Settings.TauntSeconds );
+
+			// First Hunt frame: every prop starts its clock at a RANDOM fraction of the interval. All machines flip
+			// into the Hunt within a frame or two of each other, so without this offset the whole lobby would
+			// whistle in chorus every cycle — the random phase is the stagger.
+			if ( !_tauntClockSeeded )
+			{
+				_tauntClockSeeded = true;
+				// A manual taunt is allowed immediately at the whistle-phase start (with auto taunts off there's no
+				// interval to wait out, so just clear the manual cooldown).
+				_sinceTaunt = MathF.Max( interval, ManualTauntCooldown );
+				if ( interval > 0f )
+					_nextAutoTaunt = Game.Random.Float( 0.3f, 1f ) * interval;
+			}
 		}
 
-		if ( manual && Input.Pressed( "Taunt" ) && _sinceTaunt > ManualTauntCooldown )
-			Taunt( interval );
-		else if ( interval > 0f && _nextAutoTaunt <= 0f )
-			Taunt( interval );
+		if ( manual && UpdateTauntInput( hunt, interval ) )
+			return;
+
+		if ( hunt && interval > 0f && _nextAutoTaunt <= 0f )
+			PlayTaunt( Taunts.Whistle, interval, manual: false );
 	}
 
-	// Fire one taunt and rewind the auto clock — jittered ±15% so two props whose clocks happened to land in
-	// step drift apart again instead of whistling together for the whole hunt. With auto taunts off (interval 0)
-	// the auto clock is left alone — the `interval > 0` gate above never reads it.
-	void Taunt( float interval )
+	// Tap / hold T (TauntPicker). Returns true when a manual taunt played this frame (an auto one then waits a frame).
+	// The pie opens in play AND while scouting on the free cam (F) — the taunt still comes from this body, where we're
+	// hiding, which is the risk of taunting. Never in edit mode (the cursor belongs to the sculpt tools) or while
+	// picking a charades word.
+	bool UpdateTauntInput( bool hunt, float interval )
+	{
+		bool canOpen = ControlActive || (FreeCamming && !EditMode && !CharadesManager.LocalPicking);
+		int pick = TauntPicker.Update( PauseMenu.IsOpen || RoundSetup.IsOpen, canOpen );
+		if ( TauntPicker.Open )
+			_tauntHud = TauntPicker.EnsureHud( GameObject, _tauntHud );
+
+		// Clicks on the open pie skip the cooldown — clicking away is meant to spam.
+		if ( pick < 0 || (hunt && !TauntPicker.LastWasClick && _sinceTaunt <= ManualTauntCooldown) )
+			return false;
+
+		PlayTaunt( pick, interval, manual: true );
+		return true;
+	}
+
+	// Play one taunt. The auto clock is rewound — jittered ±15% so two props whose clocks happened to land in step
+	// drift apart again instead of whistling together for the whole hunt — after an automatic taunt, and after a
+	// manual one only when the auto one was due within AutoTauntNearSeconds (so the two don't overlap). With auto
+	// taunts off (interval 0) the auto clock is left alone — nothing reads it.
+	void PlayTaunt( int index, float interval, bool manual )
 	{
 		_sinceTaunt = 0f;
-		if ( interval > 0f )
+		if ( interval > 0f && (!manual || _nextAutoTaunt < AutoTauntNearSeconds) )
 			_nextAutoTaunt = interval * Game.Random.Float( 0.85f, 1.15f );
-		BroadcastTaunt();
+		BroadcastTaunt( index );
 	}
 
-	// The whistle, on every machine, from wherever this machine sees the prop (no position argument: proxies
-	// place it from their network-interpolated pawn transform, which is exactly where they see the disguise).
-	// The pawn is networked for the whole Hunt in every mode, so the broadcast always reaches everyone.
+	// The taunt, on every machine, from wherever this machine sees the prop (no position argument: proxies place it
+	// from their network-interpolated pawn transform, which is exactly where they see the disguise). The pawn is
+	// networked for the whole Hunt in every mode, so the broadcast always reaches everyone then.
 	[Rpc.Broadcast]
-	void BroadcastTaunt()
+	void BroadcastTaunt( int index )
 	{
-		Sound.Play( TauntSoundPath, WorldPosition + Vector3.Up * 16f );
+		// Follows the pawn; a new taunt (manual or automatic) fades out whatever this prop is still playing — every
+		// machine runs this RPC, so each fades its own copy.
+		Taunts.Play( GameObject, WorldPosition + Vector3.Up * 16f, index, ref _tauntSound );
+		_tauntIndex = index;
+		TauntSerial++;
 	}
 
 	protected override void OnFixedUpdate()
@@ -1311,6 +1365,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			return;
 
 		Mouse.Visibility = MouseVisibility.Hidden;
+
+		// The taunt pie steers its own cursor with the mouse — the view holds still while it's up.
+		if ( TauntPieOpen )
+			return;
 
 		// Dolly / pan are drag-based (RMB/MMB) and don't rotate. RMB is the grab's while it's carrying or asking for
 		// something (HiderController.Grab) — no dolly then.

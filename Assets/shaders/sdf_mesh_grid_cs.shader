@@ -58,18 +58,21 @@ CS
 
 		// Empty-space material, matching Sdf.SampleSurface's seed (white, dielectric, fully rough).
 		float3 col = float3( 1, 1, 1 );
-		float metal = 0.0, rough = 1.0;
+		float metal = 0.0, rough = 1.0, emit = 0.0;
 		if ( abs( d ) <= g_flAttrBand )
 		{
 			SdfSurface s = SdfSurfaceLocal( lp );
 			col = LinearToSrgbApprox( s.col );
 			metal = s.metal;
 			rough = s.rough;
+			emit = s.emit;
 		}
 
 		float3 c255 = floor( saturate( col ) * 255.0 + 0.5 );
 		float packed = c255.x + c255.y * 256.0 + c255.z * 65536.0;
+		// Metal + glow share .y as two 10-bit ints (SurfaceNetsMesher.PackMetalGlow) — unpacked per corner on the CPU.
+		float metalGlow = floor( saturate( metal ) * 1023.0 + 0.5 ) + 1024.0 * floor( saturate( emit ) * 1023.0 + 0.5 );
 
-		g_tMeshGrid[int2( id.x, id.y + (uint)g_vGridDims.y * id.z )] = float4( d, metal, rough, packed );
+		g_tMeshGrid[int2( id.x, id.y + (uint)g_vGridDims.y * id.z )] = float4( d, metalGlow, rough, packed );
 	}
 }

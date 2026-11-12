@@ -310,13 +310,13 @@ public sealed partial class SculptEditSession : Component
 	/// scrub, paste, or the last committed stamp. New shapes are born wearing it, so picking gold and then
 	/// adding a shape gives a gold shape. Static: one "current colour" for the session, like a paint
 	/// program's active swatch. Null until the first pick, where shapes keep their own defaults.</summary>
-	public static (Color Color, float Metallic, float Roughness)? LastMaterial { get; private set; }
+	public static (Color Color, float Metallic, float Roughness, float Emission)? LastMaterial { get; private set; }
 
 	/// <summary>Record a brush's material as the current one (call after any user-driven material edit).</summary>
 	public static void RememberMaterial( SdfBrush b )
 	{
 		if ( b is not null )
-			LastMaterial = (b.Color, b.Metallic, b.Roughness);
+			LastMaterial = (b.Color, b.Metallic, b.Roughness, b.Emission);
 	}
 
 	/// <summary>The stamp tool's Add/Carve toggle state (the HUD chips bind to this).</summary>

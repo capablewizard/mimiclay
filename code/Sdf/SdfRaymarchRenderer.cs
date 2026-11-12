@@ -638,6 +638,11 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 	/// on the analytic brush path that march re-runs the brush loop per step.</summary>
 	[Property, Group( "Transmission" )] public bool Transmission { get; set; }
 
+	/// <summary>Icon stages only (set by <see cref="SdfStage"/>, never serialised): write colour as c/(1+c) so HDR —
+	/// glow above all — survives the ScenePanel's 8-bit target; <see cref="SdfStagePost"/> unpacks it before its
+	/// tonemap. Follows the post chain's kill switch, so turning the chain off never leaves an encoded picture.</summary>
+	public bool HdrEncode { get; set; }
+
 	/// <summary>Let engine decals (the hunter's world splats) paint this surface. Per-OBJECT switch for a renderer
 	/// on a shared material; the material's own "Receive Decals" (off on the hunter and viewmodel vmats) must
 	/// also allow it. Drives both the raymarch and the meshed LODs — see clay_shading.hlsl.</summary>
@@ -1553,6 +1558,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		_so.Attributes.Set( "SdfShadowStepScale", SdfShadowSettings.StepScale );
 		_so.Attributes.Set( "SdfDebugSkip", DebugSkip );
 		_so.Attributes.Set( "SdfEdgeAA", EdgeAntiAlias );
+		_so.Attributes.Set( "SdfHdrEncode", HdrEncode && SdfStagePost.Enabled ? 1 : 0 );
 		_so.Attributes.Set( "SdfUniformMat", UniformMaterialEnabled && _uniformMat ? 1 : 0 );
 		_so.Attributes.Set( "SdfUniformMatValue", _uniformMatValue );
 		_so.Attributes.Set( "SdfCull", BrushCulling ? 1 : 0 );

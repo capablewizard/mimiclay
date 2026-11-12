@@ -44,6 +44,17 @@ sealed class SdfStagePost
 	public int TonemapMode;
 	public int ExposureMethod;
 
+	// HDR unpack (sdf_thumbnail_hdr.shader). Set by a SUBJECT stage, whose raymarch packs colour as c/(1+c) so HDR
+	// survives the ScenePanel's 8-bit target (SdfRaymarchRenderer.HdrEncode); never by the lighting-only stage,
+	// whose renderers don't encode. Bloom rides the same pass, mirrored off the rig's Bloom component.
+	public bool HdrDecode;
+	public float BloomStrength;
+	public float BloomThreshold = 1f;
+	public Color BloomTint = Color.White;
+
+	/// <summary>Blurred mips the grab builds for bloom: each is twice as wide, so 6 reaches ~1/32 of the icon.</summary>
+	const int BloomMips = 6;
+
 	// Sharpen. Strength <= 0 = skip, mirroring the component's own early-out.
 	public float SharpenStrength;
 	public float SharpenTexelSize = 1f;
@@ -87,7 +98,7 @@ sealed class SdfStagePost
 	public float SilhouetteGrey = 0.5f;
 
 	/// <summary>Whether anything would actually draw — the stage skips creating the pass object if not.</summary>
-	public bool Any => TonemapMode > 0 || SharpenStrength > 0f || ColorEnabled || OutlineWidth > 0f || Silhouette;
+	public bool Any => HdrDecode || TonemapMode > 0 || SharpenStrength > 0f || ColorEnabled || OutlineWidth > 0f || Silhouette;
 
 	/// <summary>
 	/// Kill switch for the whole chain: `mimiclay_thumb_post false`. This pass grabs the frame buffer and blits
@@ -98,6 +109,7 @@ sealed class SdfStagePost
 	[ConVar( "mimiclay_thumb_post" )]
 	public static bool Enabled { get; set; } = true;
 
+	static Material _hdrMaterial;
 	static Material _tonemapMaterial;
 	static Material _sharpenMaterial;
 	static Material _colorMaterial;
@@ -113,11 +125,12 @@ sealed class SdfStagePost
 	/// the RENDER thread and <c>Material.Create</c> asserts main-thread, so loading lazily down there throws
 	/// (and <c>SceneCustomObject</c> swallows it into the log, leaving the whole chain silently dead).
 	///
-	/// Loads all four regardless of which are currently switched on — they're process-wide statics, so it's a
+	/// Loads all of them regardless of which are currently switched on — they're process-wide statics, so it's a
 	/// one-off cost, and tying it to the flags would just mean a config change could reintroduce the crash.
 	/// </summary>
 	public static void EnsureMaterials()
 	{
+		_hdrMaterial ??= Material.FromShader( "shaders/sdf_thumbnail_hdr.shader" );
 		_tonemapMaterial ??= Material.FromShader( "shaders/tonemapping/tonemapping.shader" );
 		_sharpenMaterial ??= Material.FromShader( "shaders/postprocess/pp_sharpen.shader" );
 		_colorMaterial ??= Material.FromShader( "shaders/postprocess/pp_color.shader" );
@@ -132,15 +145,42 @@ sealed class SdfStagePost
 		// Order matches the components' render stages: Tonemapping (6500), then AfterPostProcess with
 		// Sharpen at order 1 and ColorAdjustments at 3000.
 		// Materials are loaded up-front by EnsureMaterials — never create one here, see its remarks.
-		if ( TonemapMode > 0 )
+		bool tonemap = TonemapMode > 0 && _tonemapMaterial is not null;
+
+		if ( HdrDecode && _hdrMaterial is not null )
 		{
-			if ( _tonemapMaterial is not null )
+			// The frame is the subject's packed c/(1+c) in an 8-bit target. Unpack it (+ bloom off the grab's blurred
+			// mips) into a FLOAT target, then tonemap from that — the frame itself can't hold HDR, which is the whole
+			// problem. No tonemap authored: unpack straight back into the frame, which clips as it always did.
+			bool bloom = BloomStrength > 0f;
+			Graphics.GrabFrameTexture( "ColorBuffer", _attributes,
+				bloom ? Graphics.DownsampleMethod.GaussianBlur : Graphics.DownsampleMethod.None, bloom ? BloomMips : 0 );
+			_attributes.Set( "BloomStrength", BloomStrength );
+			_attributes.Set( "BloomThreshold", BloomThreshold );
+			_attributes.Set( "BloomTint", new Vector3( BloomTint.r, BloomTint.g, BloomTint.b ) );
+			_attributes.Set( "BloomMips", bloom ? BloomMips : 0 );
+
+			if ( tonemap )
 			{
-				Graphics.GrabFrameTexture( "ColorBuffer", _attributes, Graphics.DownsampleMethod.None );
+				using var hdr = RenderTarget.GetTemporary( 1, ImageFormat.RGBA16161616F, ImageFormat.None );
+				Graphics.RenderTarget = hdr;
+				Graphics.Blit( _hdrMaterial, _attributes );
+				Graphics.RenderTarget = null;
+
+				_attributes.Set( "ColorBuffer", hdr.ColorTarget );
 				_attributes.SetCombo( "D_TONEMAPPING", TonemapMode );
 				_attributes.SetCombo( "D_EXPOSUREMETHOD", ExposureMethod );
 				Graphics.Blit( _tonemapMaterial, _attributes );
 			}
+			else
+				Graphics.Blit( _hdrMaterial, _attributes );
+		}
+		else if ( tonemap )
+		{
+			Graphics.GrabFrameTexture( "ColorBuffer", _attributes, Graphics.DownsampleMethod.None );
+			_attributes.SetCombo( "D_TONEMAPPING", TonemapMode );
+			_attributes.SetCombo( "D_EXPOSUREMETHOD", ExposureMethod );
+			Graphics.Blit( _tonemapMaterial, _attributes );
 		}
 
 		if ( SharpenStrength > 0f )
@@ -215,6 +255,13 @@ sealed class SdfStagePost
 		{
 			TonemapMode = (int)tonemap.Mode;
 			ExposureMethod = (int)tonemap.ExposureMethod;
+		}
+
+		if ( rigRoot.GetAllComponents<Bloom>().FirstOrDefault() is { Enabled: true } bloom )
+		{
+			BloomStrength = bloom.Strength;
+			BloomThreshold = bloom.Threshold;
+			BloomTint = bloom.Tint;
 		}
 
 		if ( rigRoot.GetAllComponents<Sharpen>().FirstOrDefault() is { } sharpen )

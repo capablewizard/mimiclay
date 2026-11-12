@@ -30,7 +30,7 @@ function RGB255([int]$r, [int]$g, [int]$b) { "$(F ($r/255.0)),$(F ($g/255.0)),$(
 # Scale a colour string's rgb by k (k<1 darker; used for Subtract interiors / shadow bands).
 function Shade([string]$c, [double]$k) {
     $p = $c.Split(',')
-    "$(F ([math]::Min(1,[double]$p[0]*$k))),$(F ([math]::Min(1,[double]$p[1]*$k))),$(F ([math]::Min(1,[double]$p[2]*$k))),1"
+    "$(F ([math]::Min(1.0,[double]$p[0]*$k))),$(F ([math]::Min(1.0,[double]$p[1]*$k))),$(F ([math]::Min(1.0,[double]$p[2]*$k))),1"
 }
 
 # Quaternion "x,y,z,w" from axis + degrees.

@@ -175,6 +175,11 @@ public sealed class SdfStage : IDisposable
 			// reason a thumbnail stopped resembling the prop it depicts.
 			_renderer.Displace = _displace;
 			_renderer.Transmission = _transmission;
+			// The ScenePanel target is 8-bit, so HDR (glow) would clip before the post chain's tonemap. Our own
+			// subject packs its colour (c/(1+c)) and the post chain unpacks it into a float target first. Only
+			// for the subject stage: the lighting-only stage lights renderers it doesn't own, which never encode.
+			_renderer.HdrEncode = true;
+			_post.HdrDecode = true;
 
 			_host.Enabled = true;
 		}

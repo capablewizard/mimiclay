@@ -150,6 +150,9 @@ PS
 	float  g_flBaseTexAmount < Default( 1.0 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/45" ); >;
 	float  g_flRoughness < Default( 0.7 ); Range( 0.0, 2.0 ); UiGroup( "Surface,10/50" ); >;
 	float  g_flMetalness < Default( 0.0 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/60" ); >;
+	// Per-brush Glow brightness — mirror of sdf_raymarch.shader's g_flGlowBrightness (stops), keep the two in sync.
+	float  g_flGlowBrightness < Default( 3.0 ); Range( -4.0, 10.0 ); UiGroup( "Surface,10/65" ); >;
+	float2 g_vGlowFadeRange < Default2( 0.2, 0.7 ); Range2( 0.0, 0.0, 1.0, 1.0 ); UiGroup( "Surface,10/66" ); >; // mirror of sdf_raymarch
 	float  g_flTriTile   < Default( 8.0 ); Range( 0.01, 64.0 ); UiGroup( "Surface,10/70" ); >;
 	// Tiling for the normal map, fully independent of Tri Tile (which covers base colour + roughness).
 	float  g_flTriTileNormal < Default( 8.0 ); Range( 0.01, 64.0 ); UiGroup( "Surface,10/72" ); >;
@@ -380,6 +383,19 @@ PS
 		                             * lerp( 1.0, g_flCurveLightSatBoost, saturate( ridgeLift ) ) );
 		if ( g_flSdfDebugFlat > 0.5 )
 			m.Albedo = i.vInstanceTint.rgb;
+
+		// Per-brush Glow, from the vertex colour's ALPHA (SurfaceNetsMesher): 1 = none, 1/255 = full, 0 = no data
+		// (meshes without a real COLOR0). Same maths as sdf_raymarch: the brush's flat colour (no clay texture —
+		// see materials/emissivelight.vmat) moves into emission; the lit albedo fades to black only for bright
+		// colours (g_vGlowFadeRange), so dark glowing clay keeps its shaded material.
+		float a = i.vVertexColor.a;
+		float glow = ( g_bUseVertexData && a > 0.5 / 255.0 && g_flSdfDebugFlat <= 0.5 ) ? saturate( (1.0 - a) * (255.0 / 254.0) ) : 0.0;
+		if ( glow > 0.0 )
+		{
+			m.Emission += vVertexTint * glow * exp2( g_flGlowBrightness );
+			float glowValue = sqrt( max( vVertexTint.r, max( vVertexTint.g, vVertexTint.b ) ) );
+			m.Albedo *= 1.0 - glow * smoothstep( g_vGlowFadeRange.x, g_vGlowFadeRange.y, glowValue );
+		}
 
 		// Floor roughness so near-zero samples don't produce pinpoint specular fireflies. The global
 		// g_flRoughness stays a master multiplier; the triplanar texture adds micro-detail. The

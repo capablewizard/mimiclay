@@ -31,8 +31,15 @@ NOT style references: `Assets/Prefabs/CastleCourtyard/*` and the other `gen-*.ps
 - **Tapers via flipped cylinders.** Pots/buckets: `Rotation = $QFlip` + `Taper` 0.2–0.3 so they widen upward.
 - **Handles = one Spline** (variable radius allowed), radius 1.5–3, low blend where it touches.
 - **Colour:** flat, toy-like, one colour per part; sample the reference then keep it slightly muted.
-  Accent parts (bands, lids, knobs) in a contrasting colour. Roughness 0.4–0.55, Metallic 0 unless
-  it's real metal (gold trim: `0.8,0.686,0.349` metallic 1).
+  Accent parts (bands, lids, knobs) in a contrasting colour. Metallic 0 unless it's real metal
+  (gold trim: `0.8,0.686,0.349` metallic 1).
+- **Bright colours: keep hue, cut saturation/value.** My bright picks come out too saturated EVERY time. For any
+  colour with HSV saturation > 0.5, keep **S ≤ ~0.65 (reds/blues) and V ≤ ~0.85**, roughly S × V ≤ 0.6. Reds
+  take the biggest cut: ketchup S 0.81→0.61, can red V 0.80→0.60. Yellows go toward ochre/mustard
+  (hue −5°, V 0.95→0.8). Plastic "white" is warm cream (`0.89,0.86,0.79`), not a cool blue-white. Lights stay saturated (wall_lamp).
+- **Roughness 0.5.** Leave it at the kit default. Don't vary it per part (my 0.15/0.35/0.4 picks all got reset).
+  Exceptions only: real metal (can lid 0.37, metallic 1), painted metal (can body metallic 0.57 / rough 0.6),
+  bread/fabric 0.6.
 - **Scale:** inches, and BIG — props are hideable-in, not life-size. Mug ~30, sand bucket ~48, garden pot ~52,
   pitcher ~60, spade ~92 long, dustpan ~104 long (pan 75 × 66). My first guesses have run 1.5–2x too small every
   time; size against the user-tuned props in `prop_review.scene` and go bigger than feels right.
@@ -86,6 +93,10 @@ must stay whole (handles outside) go after.
    lag a frame or two). Check at least: 3/4 front view, top-down into any hollow, side view.
    Good cameras for a ~30-tall prop at the origin: `-75,-25,42 / 18,18,0` (3/4), `-30,-10,80 / 62,18,0` (top),
    `8,-62,38 / 18,90,0` (side). Editor yaw 90 looks toward +Y.
+   **Judge symmetry with pitch 0 and the camera centred on the prop:** a pitched, off-centre shot skews vertical
+   edges, so one side's taper vanishes and the other doubles. Check the brush dump before "fixing" it.
+   **The user may switch scene tabs while you work:** batch `open_scene` with the creates and screenshots in ONE
+   `call_tools`, check `get_game_object(...).Scene` after a create, and switch them back to the tab they were on.
    `asset_thumbnail` is unreliable for brand-new prefabs (ERROR model, then a garbled coarse mesh).
    Don't use `render_prefab_icon` for review — it writes `UI/Icons/<name>.png` and settings into the prefab `.meta`.
 6. **Hand over:** tell the user the prefab path, the recipe path, and what you were unsure of.
@@ -105,6 +116,79 @@ When the user says they've changed a prop:
 4. Add a dated line to the Style log below, and fold anything general into "House style".
 
 ## Style log (user corrections, newest first)
+
+- **2026-11-12 wheelbarrow: "the shape of the frame is totally different to the concept."** I'd made generic
+  straight rails sloping up to the grips with separate legs. The concept's frame is ONE continuous tube per side:
+  axle → back → drops into a U-shaped leg touching the ground mid-tray → up under the tray → rises steeply behind
+  the back wall → turns FLAT at rim height into the handle/grip. **Trace the reference's actual silhouette line
+  (especially tubes and frames) instead of building the generic version of the object.** Check a pure side view.
+
+- **2026-11-12 big bucket** ("not a bad attempt"): the user removed the lugs, flattened the rim band (rounding 0.55),
+  widened the hollow to a thin wall, raised the handle pivot to the rim, used a thinner tube, and made the handle a
+  shiny light metal (`0.69,0.71,0.74`, Metallic 1, Roughness 0.6). Then they asked for:
+  - **"Handle rotated so it aligns with the object":** a hanging handle should REST on the wall, not float. Find the
+    swing numerically: sample the arc, check radial distance against the tapered body radius minus the tube radius,
+    and take the angle where the clearance is ~0.5 (it was 139°; my 130° left a 3-unit gap).
+    PowerShell trap: variable names are case-insensitive (`$D` and `$d` are ONE variable).
+  - **Metal bolts where the handle pivots:** a flat round head (Cylinder along Y, MirrorY) on the rim band, plus a
+    small domed nut, both in the handle metal, with the handle end sitting in the nut.
+  - Editing a live instance: instances don't refresh from the prefab file, so load the new `Brushes` JSON from the
+    prefab with `Json.Deserialize<System.Collections.Generic.List<Mimiclay.SdfBrush>>`, assign `sc.Brushes`, then `sc.Rebuild()`.
+
+- **2026-11-12 garden spade/fork: "quite poor — didn't take anything from the existing models."** My upright
+  flat-plate tools + D-grip were thrown out; the user rebuilt `GardenSpade.prefab` as **the sand spade mapped up**:
+  - **Reuse the set's own construction at the new scale, don't invent a new one.** Full-size tool head =
+    sand-toy head scaled (2.025 along the length, 1.716 in width/depth, rounding + blend ×1.716), tilted −12.9°
+    about Y so the tip rises, same carve-a-rounded-block approach (hollow, top cut, base cut at ~+4° vs the head).
+  - **Lies along X like the toys** (handle toward −X, shaft axis z=0), not standing upright.
+  - **Handle:** a sliced, tapered ellipsoid as the metal neck (Sphere, Taper 1, Slice 0.417), a wood capsule shaft
+    (`0.71,0.52,0.28`), a green grip sleeve (`0.15,0.34,0.24`) and a flat closed-spline D loop in the XY plane.
+  - **Metal:** warm grey `0.656,0.607,0.543`, Metallic 0.85, Roughness 0.55.
+  - Size: the whole tool is ~245 long. My 340-tall versions were too big.
+  - **Fork rework (user):** dropped the head tilt and the mapped top cut and dish. The head is a FLAT slab (rounding 16)
+    sliced top and bottom by ONE `MirrorZ` Subtract. The tine wedges carry their own Blend 2.2 / Rounding 3.7 instead of a
+    Smooth modifier, and a rounded centre slot runs in from the tip. Mapping is a starting point; simplify after.
+  - (v1) `garden_fork.ps1` built the fork by running the sand fork's brushes through the same map (`MapPos`/`MapTilt`)
+    and reusing GardenSpade's handle verbatim. **Use that map for any other toy-to-full-size pair.**
+
+- **2026-11-12 flask** (recipe `cart/cart_flask.ps1` ported, base re-zeroed to z=0):
+  - **Red too saturated, again.** Body red became `0.74,0.37,0.34` (a dusty brick red). Saturated reds are the most
+    common miss; start reds at ~0.55 saturation.
+  - **~1.5x bigger** (body r 23, height 62; whole flask ~90 tall). I still under-size props; start bigger.
+  - **Metal = cool light grey `0.64,0.65,0.68`, Metallic ~0.78, Roughness ~0.41.**
+  - **Stepped silhouette:** flat base disc slightly WIDER than the body (rounding 0.2), cap band NARROWER than the body,
+    tall dome (half 11, rounding 10.4) on top. Each step changes the radius, so the silhouette reads.
+  - **Thick handle:** tube radius 4.5 (was 3). The thin groove under the cap was dropped as fussy.
+
+- **2026-11-12 snack cart set** (15 blockouts → 6 kept; the rest deleted as unused, backup in `tmp/backups/Cart_2026-11-12/`):
+  - **Colours too saturated when bright** (the user's explicit note) and **roughness over-varied — 0.5 is the default.**
+    Both folded into House style above.
+  - **Variants = scene overrides, not prefabs.** Mustard/white bottles, a blue can and an orange-lidded tub are colour
+    overrides on the ketchup/can/tub prefab instances. Build one well-tuned prefab per form; don't pre-make colour variants.
+  - **Bowls: cut, don't scoop.** The sphere-Subtract hollow became: tapered body → flat cylinder Subtract slicing the
+    top → rim band added back → tapered (flipped) cylinder Subtract for a straight sloped inner wall (Blend 3–3.6).
+    Bun bowl's interior is darker (Subtract colour `0.567,0.425,0.14`). Fruit bowl lost its fruit (empty bowl).
+  - **Piles look tossed:** every bun got a small random tilt (5–60°) and the pile spread; a big soft filler sphere
+    (Blend 8) under it fills the gaps down to the floor.
+  - **Ovals:** bottle body 12.8 × 11 (cylinder Size.y is ignored by the SDF, so the oval came from editor scale; it
+    reads round in-game). Collar squatter (half 4.5→3.3), nozzle sunk closer.
+  - **Tray deeper with a low lip:** slab doubled in height, then a second wider flat Subtract lowers the walls.
+  - **Tub rebuilt:** opaque cream body (the see-through Colour trick went), flared collar + clips, flat cut, then a
+    chunky lid with an inset and tabs. Everything ~1.3× bigger (body half 42 × 30 × 20).
+  - **Can:** lid smaller and sunk; base dished out by a big-Rounding Subtract instead of a base ring; label band Blend 0 (crisp).
+  - **Blend-seam gotcha:** a smooth Subtract fillets against faces BURIED in the clay (e.g. the body's cut top under
+    an added rim), leaving a ridge on the cut wall. Give the covering Add a small Blend (~3) so the seam is smooth.
+
+- **2026-11-12 wall_lamp** ("small changes"):
+  - **Light sources are saturated:** the globe went from my pale `0.98,0.79,0.45` to pure amber `1,0.58,0`. "Mute
+    colours" is for materials, not for things that glow.
+  - **Capsule = Cylinder with huge Rounding** (100 clamps to the radius): the globe became an elongated capsule
+    reaching up inside the shade instead of a sphere hanging below it.
+  - **Wall mounts are round roses** (a short Cylinder disc on the wall), not pill plates.
+  - **Neutral greys:** slate-blue `0.21,0.25,0.33` → neutral `0.22,0.24,0.27`.
+  - **Hollows in body colour — again.** Only the bucket kept a darker interior; default to the body colour.
+  - **Fussy bits dropped again:** the screw head went. (It also rendered black — `Shade` had an int-overload bug, fixed.)
+  - Rim band fully rounded (Rounding ≥ its half-height); finial cap squatter; shade pulled closer to the wall.
 
 - **2026-11-12 sand_dustpan** (rebuilt at ~2x):
   - **Scale again — bigger.** Pan 75 long × 66 wide (mine 34 × 40); ~104 long with the handle. Every prop so far
@@ -168,3 +252,76 @@ When the user says they've changed a prop:
 | Kids' sand spade | `Tools/PropGen/props/sand_spade.ps1` | `Assets/Prefabs/Props/Garden/sand_spade.prefab` | v2 = user-tuned, recipe ported + verified |
 | Kids' sand fork | `Tools/PropGen/props/sand_fork.ps1` | `Assets/Prefabs/Props/Garden/sand_fork.prefab` | v2 = user-tuned, recipe ported + verified |
 | Kids' dustpan | `Tools/PropGen/props/sand_dustpan.ps1` | `Assets/Prefabs/Props/Garden/sand_dustpan.prefab` | v2 = user-tuned, recipe ported + verified |
+| Wall lamp | `Tools/PropGen/props/wall_lamp.ps1` | `Assets/Prefabs/Props/Garden/wall_lamp.prefab` | v2 = user-tuned, recipe ported + verified (wall = plane x=0) |
+| Snack cart set (6 prefabs: bottle_ketchup, bowl_buns, bowl_fruit, can_red, tray_teal, tub_blue) | `Tools/PropGen/props/cart/*.ps1` (`-OutDir`) | `Assets/Prefabs/Props/Cart/` | v2 = user-tuned, recipes ported + verified; placed in DevPropHunt (variants are scene overrides) |
+| Vacuum flask | `Tools/PropGen/props/cart/cart_flask.ps1` | `Assets/Prefabs/Props/Cart/flask.prefab` | v2 = user-tuned, recipe ported (re-zeroed: base at z=0, centred) |
+| Kids' broom | `Tools/PropGen/props/broom.ps1` | `Assets/Prefabs/Props/Garden/broom.prefab` | v1 = mine; user editing live in DevPropHunt (bristle fan, handle, hang hole) — port when done |
+| Garden spade (full size) | user-built | `Assets/Prefabs/Props/Garden/GardenSpade.prefab` | the user's rebuild = the reference for full-size tools. My `garden_spade.prefab` (from `garden_tools.ps1`) was rejected |
+| Garden digging fork (full size) | `Tools/PropGen/props/garden_fork.ps1` | `Assets/Prefabs/Props/Garden/garden_fork.prefab` | v2 = user-tuned, recipe ported + verified |
+| Big bucket (now blue) | `Tools/PropGen/props/big_bucket.ps1` | `Assets/Prefabs/Props/Garden/big_bucket.prefab` | v3 = user-tuned (blue, bigger bolt heads, nut INSIDE the wall, handle span 49.4); recipe = prefab |
+| Wheelbarrow (empty) | `Tools/PropGen/props/wheelbarrow.ps1` | `Assets/Prefabs/Props/Garden/wheelbarrow.prefab` | v1 = mine (tray carved from tilted planes + union-of-slabs hollow; lawnmowerWheel ×1.6; lawnmower-handle tubes); v1.1 frame redrawn to the concept (one tube per side with U leg, flat handles) |
+
+## Hollowing a flared tub (inner faces from Subtract boxes)
+
+A box only has parallel face pairs, and Subtracts union, so one box can't follow a tub whose walls lean different
+ways. Use ONE Subtract box per inner wall; each box touches its own inner plane and stays inside every other one.
+`Tools/PropGen/hollow_tub.cs` (run_csharp, `hollow_mode.txt` = plan|apply in the exchange dir) does it on a live
+instance:
+- **Measure the walls from the FIELD, never from the cut boxes.** The user's cuts carry Blend 32 plus a Smooth
+  modifier, so the real surface sits 10–20 inside the cut faces, and the floor was the body box's own bottom, not
+  the tilted floor cut. Ray-march from the tub centre to the surface (`Mimiclay.Sdf.Sample(list, p)`), least-squares
+  fit a plane per wall, and put the inner plane at the max hit + wall thickness.
+- **Boxes:** a tall floor box, plus front/back boxes and LAYERED side boxes (sides that flare too leave solid
+  wedges in the top corners otherwise). Grow each box, then shrink one edge per pass until sampled corners
+  satisfy all other inner planes; fix the sideways extent before raising the bottom. Try depths and keep the
+  biggest. Check coverage by sampling the cavity (aim for ≥97%).
+- **Check holes after applying:** fire rays from the centre below the rim; none may escape, and report the thinnest
+  wall. Rounding 20 on the boxes keeps the inner corners (where the outer blend curves in most) from breaking
+  through. Wall 7 for a ~280-long barrow.
+- Modifiers (`Smooth`) only floor brushes EARLIER in the list, so hollow boxes added after them keep their own blend.
+
+## Fitting to a reference mesh the user drops in
+
+The user may import a blockout mesh (an `FbxImportedPiece` under `Blender_Garden` etc.) as the proportions reference:
+- Read its vertices with `ModelRenderer.Model.GetVertices()` in `run_csharp`, transform them to world, then into a frame
+  aligned with the prop (yaw from the object, Y-up FBX already handled by its roll). Slice along the long axis and
+  print z/|y| ranges per slice to get the wheel centre/radius, rim footprint, floor height, wall lean and tube path.
+  Ignore contents baked into the mesh (the wheelbarrow had a sack and pots in it).
+- Put the recipe in that frame (origin = mesh origin, ground z=0), so the prefab drops onto the mesh with one yaw.
+- Compare from the same camera on both. To compare without the reference, disable its renderer, and re-enable it with
+  `Components.Get<ModelRenderer>(true)` (plain `Get` skips disabled components, which is how I left it hidden once).
+- `editor_camera_screenshot` can lag even after 2 throwaway shots when the scene is heavy; take 3, and
+  sanity-check size with `ModelRenderer.Bounds` rather than trusting a single frame.
+- Don't move the user's instance onto the reference without asking: they put it back where it was.
+
+## Reusable parts from the hand-made props (reuse these before inventing)
+
+- **Bevelled corners on a curved spline (Curvature 1):** the curve is uniform Catmull-Rom (tangent = (next − prev)/2),
+  so uneven point spacing overshoots. To keep a straight-segment look with slightly rounded corners, replace each
+  corner P with FOUR points on its two legs: P + u_in·10, P + u_in·4, P + u_out·4, P + u_out·10 (u = unit vectors
+  toward the neighbours; 4 = bevel size). The runs between corners stay exactly straight, because their points are
+  collinear, and each corner becomes a short symmetric round. Legs must be longer than 20. With brush objects on, the
+  points are `SdfSplinePoint` child objects; rebuild them in order (destroy the old ones, create new children).
+  **The user preferred the lighter version: TWO points per corner** (P + u_in·b, P + u_out·b, b ≈ 9 on 25–45-long
+  legs). The runs bow by only ~1 (hidden inside a radius-5 tube) and the corners cut ~4 in: rounder, fewer points.
+  Score candidate b values first by sampling `SdfBrush.CatmullRomPoint` against the original polyline in `run_csharp`.
+
+- **Wheel** = `lawnmowerWheel.prefab`: grey rounded tyre (Cylinder along Y, r 18.9, half 6.6, rounding 2.85) plus a
+  yellow `Cutout` hub recess (r 11, half 5.7, offset 4.2 out, Blend 3.5, Rounding 2.4). Scale it as a unit.
+- **Tube frame / handle** = `lawnmowerhandle.prefab`: one thick spline (radius ~5.5, Blend 1.3, dark grey `0.27`).
+- **Metal bar handle** = `CartHandle.prefab`: capsule cylinder plus sphere end caps plus small box brackets (Metallic 1).
+- **Full-size tool handle** = `GardenSpade.prefab`: sliced tapered-ellipsoid neck, wood capsule, green sleeve, D loop.
+- **Tapered rectangular tub** (wheelbarrow tray): a rounded box, with one big Subtract slab per sloped wall (its face
+  IS the plane: centre = a point on the plane + normal × half-thickness). The hollow is a union of Subtract boxes:
+  a central box plus one slab per wall, offset inward by the wall thickness.
+
+## Blocking out a whole scene/set
+
+- Size everything off ONE anchor object (cart set: a 30-tall mug) and derive the rest from ratios in the
+  reference, so the set is consistent. Big furniture follows (cart ~285 long, shelves at z 58 / 150).
+- One recipe per object family; multi-prefab scripts take `-OutDir` and call `Write-SdfProp` per prefab.
+  Variants (bottle colours, cans, mugs, tubs) = one function with colour/size params.
+- Lay the set out under an empty parent in `prop_review.scene` with `create_game_object parent=…`, in one batch;
+  record the surface heights other props sit on in the base prop's header comment.
+- **Colour op tricks:** a `Colour` brush paints without geometry — label bands on cans, towel stripes, and
+  "contents seen through clear plastic" (a soft Colour box over the lower half of an opaque tub).

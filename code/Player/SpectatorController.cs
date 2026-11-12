@@ -22,7 +22,7 @@ namespace Mimiclay;
 [Title( "Spectator Controller" )]
 [Category( "Mimiclay" )]
 [Icon( "visibility" )]
-public sealed class SpectatorController : Component
+public sealed class SpectatorController : Component, ITauntPieOwner
 {
 	/// <summary>The ghost every free cam spawns when <see cref="WantsGhost"/> is set.</summary>
 	public const string GhostPrefabPath = "prefabs/ghost.prefab";
@@ -192,9 +192,75 @@ public sealed class SpectatorController : Component
 		return boom;
 	}
 
+	// ── Taunts ─────────────────────────────────────────────────────────────────────────────────────────────────────
+	// A prop player taunts on the free cam too (T: tap = whistle, hold = the pie — TauntPicker). A LIVING prop scouting
+	// (F) taunts from its body, where it's hiding: its HiderController keeps handling T, we only hold the view still
+	// while its pie is up. An ELIMINATED prop has no body, so the taunt comes from its ghost (SpectatorGhost.Taunt),
+	// heard only where that ghost may be seen. Hunters and everyone else on the free cam have no taunts.
+
+	/// <summary>Seconds between an eliminated prop's taunts during the Hunt (the living prop's own cooldown).</summary>
+	const float GhostTauntCooldown = 2f;
+
+	TauntPicker _tauntPicker;
+	GameObject _tauntHud;
+	RealTimeSince _sinceGhostTaunt;
+	bool _ghostTaunted;
+
+	/// <summary>Tap / hold T for an eliminated prop's ghost (lazy: hotload-safe).</summary>
+	public TauntPicker TauntPicker => _tauntPicker ??= new();
+
+	SpectatorGhost OwnGhost => _ghost.IsValid() ? _ghost.Components.Get<SpectatorGhost>() : null;
+
+	/// <inheritdoc/>
+	public int PlayingTaunt => OwnGhost?.PlayingTaunt ?? -1;
+
+	/// <inheritdoc/>
+	public int TauntSerial => OwnGhost?.TauntSerial ?? 0;
+
+	/// <summary>The prop body this free cam was launched from (a living prop scouting), if any.</summary>
+	HiderController LeftBehindProp => LeftBehind.IsValid() ? LeftBehind.Components.Get<HiderController>() : null;
+
+	/// <summary>Taunts come from our ghost: an eliminated prop (a ghost, no body left behind, still on the props side).</summary>
+	bool GhostTaunts => WantsGhost && !LeftBehind.IsValid() && GhostRules.LocalTeam == GhostTeam.Props;
+
+	/// <summary>Can the player flying this machine's free cam taunt (from their body or their ghost)? The controls bar
+	/// shows the Taunt card on it.</summary>
+	public static bool LocalCanTaunt => Local.IsValid() && (Local.GhostTaunts || Local.LeftBehindProp.IsValid());
+
+	// A taunt pie is up — ours, or the scouting prop's — so the mouse steers it, not the view.
+	bool TauntPieOpen => (_tauntPicker?.Open ?? false) || (LeftBehindProp?.TauntPieOpen ?? false);
+
+	void UpdateGhostTaunts()
+	{
+		if ( !GhostTaunts )
+		{
+			_tauntPicker?.Close();
+			return;
+		}
+
+		int pick = TauntPicker.Update( PauseMenu.IsOpen || RoundSetup.IsOpen, canOpen: true );
+		if ( TauntPicker.Open )
+			_tauntHud = TauntPicker.EnsureHud( GameObject, _tauntHud );
+		if ( pick < 0 )
+			return;
+
+		bool hunt = RoundManager.Current.IsValid() && RoundManager.Current.Phase == RoundPhase.Hunt;
+		if ( hunt && !TauntPicker.LastWasClick && _ghostTaunted && _sinceGhostTaunt <= GhostTauntCooldown )
+			return;
+
+		var ghost = _ghost.IsValid() ? _ghost.Components.Get<SpectatorGhost>() : null;
+		if ( !ghost.IsValid() )
+			return;
+
+		_ghostTaunted = true;
+		_sinceGhostTaunt = 0f;
+		ghost.Taunt( pick );
+	}
+
 	protected override void OnUpdate()
 	{
 		UpdateGhostLife();
+		UpdateGhostTaunts();
 
 		// A cursor overlay owns the mouse — hold the view rather than navigate behind the menu (the same
 		// gate every other camera driver uses).
@@ -211,9 +277,12 @@ public sealed class SpectatorController : Component
 			GameSettings.SpectatorThirdPerson = !GameSettings.SpectatorThirdPerson;
 
 		// Alt-orbit (third person): the mouse swings the camera around the ghost while the aim — and so the flight
-		// direction — stays frozen, exactly the hunter's gesture. Otherwise the mouse looks.
-		Boom.UpdateAltOrbit( GameSettings.SpectatorThirdPerson, _angles );
-		if ( !Boom.AltOrbiting )
+		// direction — stays frozen, exactly the hunter's gesture. Otherwise the mouse looks — unless a taunt pie is up,
+		// when the mouse is steering that and the view holds.
+		bool pie = TauntPieOpen;
+		if ( !pie )
+			Boom.UpdateAltOrbit( GameSettings.SpectatorThirdPerson, _angles );
+		if ( !pie && !Boom.AltOrbiting )
 		{
 			_angles += Input.AnalogLook;
 			_angles = _angles with { pitch = Math.Clamp( _angles.pitch, -89f, 89f ), roll = 0f };

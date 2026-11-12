@@ -569,7 +569,20 @@ float SdfDist( float3 lp )
 // compute pass that bakes per-vertex colour for the meshed LODs, and — until it is retired — the CPU mirror
 // in Sdf.SampleSurface. Colour comes out LINEAR (the brush pack linearises); a consumer writing to an 8-bit
 // vertex colour has to gamma-encode it, since the mesh shader does SrgbToLinear on the way back in.
-struct SdfSurface { float3 col; float metal; float rough; };
+struct SdfSurface { float3 col; float metal; float rough; float emit; };
+
+// Metalness + roughness + glow ride one brush lane as three 8-bit integers
+// (round(m*255) + 256*round(r*255) + 65536*round(e*255)) — exact in the RGBA32F brush texture; mirrors
+// SdfBrushPacker.PackMaterial. Also decodes the raymarch's single-material uniform (the same lane value).
+void SdfUnpackMaterial( float lane, out float metal, out float rough, out float emit )
+{
+	float eQ = floor( lane / 65536.0 );
+	float rest = lane - eQ * 65536.0;
+	float rQ = floor( rest / 256.0 );
+	metal = (rest - rQ * 256.0) / 255.0;
+	rough = rQ / 255.0;
+	emit = eQ / 255.0;
+}
 
 // Small fixed AA band on a Cutout's colour edge — must match SdfBrush.CutoutColorEdge (1 unit).
 #define SDF_CUTOUT_COLOR_EDGE 1.0
@@ -578,7 +591,7 @@ struct SdfSurface { float3 col; float metal; float rough; };
 #define SDF_COLOUR_EDGE_FLOOR 0.25
 
 // ONE brush's contribution to the material walk at local point lp: the incremental AABB cull, then the blend
-// of colour/metal/rough by the same smooth factors as the geometry. SdfSurfaceLocal below is its only call site
+// of colour/metal/rough/glow by the same smooth factors as the geometry. SdfSurfaceLocal below is its only call site
 // (a second inlined copy hung the editor's shader compile, 2026-10-24).
 void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 {
@@ -586,7 +599,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 	float4 B = LoadBrush( k, 1 );
 	float4 C = LoadBrush( k, 2 );
 	float4 D = LoadBrush( k, 3 );
-	float4 E = LoadBrush( k, 4 ); // rounding .x, metal+rough packed .y, cutout gap .z, mirror mask .w
+	float4 E = LoadBrush( k, 4 ); // rounding .x, metal+rough+glow packed .y, cutout gap .z, mirror mask .w
 	float4 F = LoadBrush( k, 5 ); // cull AABB min .xyz, extruded cross-section id .w
 	float4 G = LoadBrush( k, 6 ); // cull AABB max .xyz, slice fraction .w
 
@@ -604,11 +617,8 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 
 	float bd = BrushDist( lp, A, B, C, E.x, (int)(E.w + 0.5), (int)(F.w + 0.5), G.w );
 	float kk = B.w;
-	// Metalness + roughness ride one lane as two 10-bit integers (round(m*1023) + 1024*round(r*1023)) —
-	// exact in the RGBA32F brush texture; mirrors SdfBrushPacker.PackMaterial.
-	float roughQ = floor( E.y / 1024.0 );
-	float metal = (E.y - roughQ * 1024.0) / 1023.0;
-	float rough = roughQ / 1023.0;
+	float metal, rough, emit;
+	SdfUnpackMaterial( E.y, metal, rough, emit );
 
 	if ( D.w >= 2.5 )
 	{
@@ -618,6 +628,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 		s.col = lerp( s.col, D.rgb, hc );
 		s.metal = lerp( s.metal, metal, hc );
 		s.rough = lerp( s.rough, rough, hc );
+		s.emit = lerp( s.emit, emit, hc );
 		return;
 	}
 
@@ -640,6 +651,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 		s.col = lerp( s.col, D.rgb, hc );
 		s.metal = lerp( s.metal, metal, hc );
 		s.rough = lerp( s.rough, rough, hc );
+		s.emit = lerp( s.emit, emit, hc );
 		return;
 	}
 
@@ -649,7 +661,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 		// smooth-subtract factor as the geometry.
 		if ( kk <= 0.0 )
 		{
-			if ( -bd > d ) { s.col = D.rgb; s.metal = metal; s.rough = rough; }
+			if ( -bd > d ) { s.col = D.rgb; s.metal = metal; s.rough = rough; s.emit = emit; }
 			d = max( d, -bd );
 		}
 		else
@@ -658,6 +670,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 			s.col = lerp( s.col, D.rgb, h );    // h->1 takes the cut material
 			s.metal = lerp( s.metal, metal, h );
 			s.rough = lerp( s.rough, rough, h );
+			s.emit = lerp( s.emit, emit, h );
 			d = lerp( d, -bd, h ) + kk * h * (1.0 - h);
 		}
 		return;
@@ -665,7 +678,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 
 	if ( kk <= 0.0 )
 	{
-		if ( bd < d ) { d = bd; s.col = D.rgb; s.metal = metal; s.rough = rough; }
+		if ( bd < d ) { d = bd; s.col = D.rgb; s.metal = metal; s.rough = rough; s.emit = emit; }
 	}
 	else
 	{
@@ -673,6 +686,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 		s.col = lerp( D.rgb, s.col, h );        // h->1 keeps accumulated, h->0 takes new
 		s.metal = lerp( metal, s.metal, h );
 		s.rough = lerp( rough, s.rough, h );
+		s.emit = lerp( emit, s.emit, h );
 		d = lerp( bd, d, h ) - kk * h * (1.0 - h);
 	}
 }
@@ -680,7 +694,7 @@ void SdfSurfaceBrush( int k, float3 lp, inout float d, inout SdfSurface s )
 SdfSurface SdfSurfaceEmpty()
 {
 	SdfSurface s;
-	s.col = float3( 1, 1, 1 ); s.metal = 0.0; s.rough = 1.0; // empty-space material; the first brush overrides it
+	s.col = float3( 1, 1, 1 ); s.metal = 0.0; s.rough = 1.0; s.emit = 0.0; // empty-space material; the first brush overrides it
 	return s;
 }
 

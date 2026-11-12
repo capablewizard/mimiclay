@@ -1,0 +1,60 @@
+{
+  "UI": false,
+  "Volume": "1.5",
+  "Pitch": "0.949999988 1.04999995",
+  "Decibels": 70,
+  "SelectionMode": "Random",
+  "Sounds": [
+    {
+      "Id": "fbc2a4ed-0ffb-46bc-a59c-e3bb352c47d8",
+      "Path": "sounds/game/taunts/duck quack.vsnd"
+    }
+  ],
+  "OcclusionEnabled": true,
+  "Occlusion": true,
+  "ReverbEnabled": true,
+  "Reflections": true,
+  "AirAbsorption": true,
+  "Transmission": true,
+  "OcclusionRadius": 64,
+  "DistanceAttenuation": true,
+  "Distance": 15000,
+  "FalloffMode": "Physical",
+  "MinDistance": 0,
+  "Falloff": [
+    {
+      "x": 0,
+      "y": 1,
+      "in": 0,
+      "out": -1.8,
+      "mode": "Mirrored"
+    },
+    {
+      "x": 0.05,
+      "y": 0.22,
+      "in": 3.5,
+      "out": -3.5,
+      "mode": "Mirrored"
+    },
+    {
+      "x": 0.2,
+      "y": 0.04,
+      "in": 0.16,
+      "out": -0.16,
+      "mode": "Mirrored"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "in": 0,
+      "out": 0,
+      "mode": "Mirrored"
+    }
+  ],
+  "DefaultMixer": {
+    "Name": "unknown",
+    "Id": "00000000-0000-0000-0000-000000000000"
+  },
+  "__references": [],
+  "__version": 2
+}

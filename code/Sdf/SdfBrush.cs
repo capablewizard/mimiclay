@@ -296,6 +296,24 @@ public class SdfBrush
 	/// <summary>PBR roughness of this brush's surface (1 = matte clay, the default). Blended like Color.</summary>
 	[Property, Range( 0f, 1f )] public float Roughness { get; set; } = 1f;
 
+	/// <summary>Glow, 0..1 (0 = none, the default). The brush's own Color becomes emission scaled by this while
+	/// the lit albedo trends to black — at 1 the clay is pure self-lit colour. Blended across seams like Color.
+	/// Shading-only: never touches the distance field, collider or bounds.</summary>
+	[Property, Range( 0f, 1f )] public float Emission { get; set; } = 0f;
+
+	/// <summary>The colour this brush's surface is SHADED with. Plain <see cref="Color"/> normally (a method, not a property, so it never serialises); with glow on, that colour
+	/// pushed to full brightness (<see cref="GlowColor"/>). Color itself is never rewritten, so the picker keeps showing the
+	/// user's choice and turning glow off restores it exactly. The GPU pack and the CPU surface sampler both read this.</summary>
+	public Color ShadeColor() => Emission > 0f ? GlowColor( Color ) : Color;
+
+	/// <summary>Full-brightness version of <paramref name="c"/>: HSV value 1 with hue and saturation kept, by scaling the
+	/// (gamma) channels so the largest is 1. Black has no hue to keep and becomes white.</summary>
+	public static Color GlowColor( Color c )
+	{
+		float m = MathF.Max( c.r, MathF.Max( c.g, c.b ) );
+		return m <= 1e-4f ? Color.White.WithAlpha( c.a ) : new Color( c.r / m, c.g / m, c.b / m, c.a );
+	}
+
 	/// <summary>Mirror this brush across the sculpture's local YZ plane (x=0): the primitive is unioned with
 	/// its reflection. In an SDF this needs no second brush — the shape is just sampled again at the mirrored
 	/// point, so there's nothing to keep in sync. Combine axes for quadrant/octant symmetry.</summary>
@@ -406,6 +424,7 @@ public class SdfBrush
 		Color = Color,
 		Metallic = Metallic,
 		Roughness = Roughness,
+		Emission = Emission,
 		MirrorX = MirrorX,
 		MirrorY = MirrorY,
 		MirrorZ = MirrorZ,
@@ -519,6 +538,9 @@ public class SdfBrush
 			Mix( MirrorX ? 1 : 0 );
 			Mix( MirrorY ? 1 : 0 );
 			Mix( MirrorZ ? 1 : 0 );
+			// Glow mixes in only when active, so every existing .sdfmesh bake (Emission 0) keeps its hash.
+			if ( Emission != 0f )
+				Mix( F( Emission ) ^ 0x454D4953 ); // salted so a glow value can't alias the next field's mix
 
 			if ( Points is { } pts )
 			{
@@ -610,6 +632,7 @@ public class SdfBrush
 		Color = b.Color;
 		Metallic = b.Metallic;
 		Roughness = b.Roughness;
+		Emission = b.Emission;
 		MirrorX = b.MirrorX;
 		MirrorY = b.MirrorY;
 		MirrorZ = b.MirrorZ;
@@ -1615,6 +1638,7 @@ public struct SdfSurface
 	public Color Color;
 	public float Metallic;
 	public float Roughness;
+	public float Emission;
 }
 
 /// <summary>
@@ -1797,7 +1821,7 @@ public static class Sdf
 		SdfModifiers.Apply( brushes );
 		float d = 1e9f;
 		Color col = Color.White;
-		float metal = 0f, rough = 1f; // empty-space material; the first brush overrides it
+		float metal = 0f, rough = 1f, emit = 0f; // empty-space material; the first brush overrides it
 		foreach ( var b in brushes )
 		{
 			if ( !b.Enabled )
@@ -1807,16 +1831,16 @@ public static class Sdf
 			{
 				foreach ( var m in b.Members() )
 					if ( m.Enabled )
-						SurfaceOne( m, p, ref d, ref col, ref metal, ref rough );
+						SurfaceOne( m, p, ref d, ref col, ref metal, ref rough, ref emit );
 				continue;
 			}
 
-			SurfaceOne( b, p, ref d, ref col, ref metal, ref rough );
+			SurfaceOne( b, p, ref d, ref col, ref metal, ref rough, ref emit );
 		}
-		return new SdfSurface { Color = col, Metallic = metal, Roughness = rough };
+		return new SdfSurface { Color = col, Metallic = metal, Roughness = rough, Emission = emit };
 	}
 
-	static void SurfaceOne( SdfBrush b, Vector3 p, ref float d, ref Color col, ref float metal, ref float rough )
+	static void SurfaceOne( SdfBrush b, Vector3 p, ref float d, ref Color col, ref float metal, ref float rough, ref float emit )
 	{
 		{
 			float bd = b.Distance( p );
@@ -1827,9 +1851,10 @@ public static class Sdf
 				// Colour: paint the clay inside the brush, no geometry. The edge feathers over Blend units
 				// about the brush boundary (floored at the cutout AA band so Blend 0 is a crisp edge).
 				float hc = Math.Clamp( 0.5f - bd / MathF.Max( k, ColourEdgeFloor ), 0f, 1f );
-				col = Color.Lerp( col, b.Color, hc );
+				col = Color.Lerp( col, b.ShadeColor(), hc );
 				metal = MathX.Lerp( metal, b.Metallic, hc );
 				rough = MathX.Lerp( rough, b.Roughness, hc );
+				emit = MathX.Lerp( emit, b.Emission, hc );
 				return;
 			}
 
@@ -1848,9 +1873,10 @@ public static class Sdf
 				}
 
 				float hc = Math.Clamp( 0.5f - bd / CutoutColorEdge, 0f, 1f );
-				col = Color.Lerp( col, b.Color, hc );
+				col = Color.Lerp( col, b.ShadeColor(), hc );
 				metal = MathX.Lerp( metal, b.Metallic, hc );
 				rough = MathX.Lerp( rough, b.Roughness, hc );
+				emit = MathX.Lerp( emit, b.Emission, hc );
 				return;
 			}
 
@@ -1859,15 +1885,16 @@ public static class Sdf
 				// Subtraction tints the cut walls with the brush material.
 				if ( k <= 0f )
 				{
-					if ( -bd > d ) { col = b.Color; metal = b.Metallic; rough = b.Roughness; }
+					if ( -bd > d ) { col = b.ShadeColor(); metal = b.Metallic; rough = b.Roughness; emit = b.Emission; }
 					d = MathF.Max( d, -bd );
 				}
 				else
 				{
 					float hs = Math.Clamp( 0.5f - 0.5f * (d + bd) / k, 0f, 1f );
-					col = Color.Lerp( col, b.Color, hs ); // hs->1 takes the cut material
+					col = Color.Lerp( col, b.ShadeColor(), hs ); // hs->1 takes the cut material
 					metal = MathX.Lerp( metal, b.Metallic, hs );
 					rough = MathX.Lerp( rough, b.Roughness, hs );
+					emit = MathX.Lerp( emit, b.Emission, hs );
 					d = (d * (1f - hs) + (-bd) * hs) + k * hs * (1f - hs);
 				}
 				return;
@@ -1875,14 +1902,15 @@ public static class Sdf
 
 			if ( k <= 0f )
 			{
-				if ( bd < d ) { d = bd; col = b.Color; metal = b.Metallic; rough = b.Roughness; }
+				if ( bd < d ) { d = bd; col = b.ShadeColor(); metal = b.Metallic; rough = b.Roughness; emit = b.Emission; }
 			}
 			else
 			{
 				float h = Math.Clamp( 0.5f + 0.5f * (bd - d) / k, 0f, 1f );
-				col = Color.Lerp( b.Color, col, h ); // h->1 keeps accumulated, h->0 takes new
+				col = Color.Lerp( b.ShadeColor(), col, h ); // h->1 keeps accumulated, h->0 takes new
 				metal = MathX.Lerp( b.Metallic, metal, h );
 				rough = MathX.Lerp( b.Roughness, rough, h );
+				emit = MathX.Lerp( b.Emission, emit, h );
 				d = (bd * (1f - h) + d * h) - k * h * (1f - h);
 			}
 		}

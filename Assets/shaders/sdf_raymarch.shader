@@ -242,6 +242,14 @@ PS
 	float3 g_vTintColor  < UiType( Color ); Default3( 1.0, 1.0, 1.0 ); UiGroup( "Surface,10/40" ); >;
 	float  g_flRoughness < Default( 0.7 ); Range( 0.0, 2.0 ); UiGroup( "Surface,10/50" ); >;
 	float  g_flMetalness < Default( 0.0 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/60" ); >;
+	// Per-brush Glow (SdfBrush.Emission) brightness in STOPS, like complex.shader's Self Illum Brightness:
+	// emission = brush colour * glow * 2^this, while the lit albedo fades by (1 - glow). Default 3 (= 8x) matches
+	// materials/emissivelight.vmat. Mirrored in sdf_mesh.shader — keep in sync.
+	float  g_flGlowBrightness < Default( 3.0 ); Range( -4.0, 10.0 ); UiGroup( "Surface,10/65" ); >;
+	// How much a glowing brush's LIT material fades to black depends on how bright its colour is (perceptual value,
+	// sqrt of the brightest linear channel): at or below .x the normal material stays (a dark glow would otherwise
+	// read as a flat dark blob), at or above .y it fades fully (the solid self-lit look). Mirrored in sdf_mesh.shader.
+	float2 g_vGlowFadeRange < Default2( 0.2, 0.7 ); Range2( 0.0, 0.0, 1.0, 1.0 ); UiGroup( "Surface,10/66" ); >;
 
 	// Triplanar projection controls.
 	float g_flTriTile  < Default( 8.0 ); Range( 0.5, 64.0 ); UiGroup( "Surface,10/70" ); >;
@@ -615,8 +623,9 @@ PS
 	// bakes vertex colours from the SAME code; all this adds is the world->local fold.
 	// Single-material prop (SdfBrushPacker.TryUniformMaterial): every packed brush has the same colour + metal/rough
 	// lane, so every blend in the walk is lerp(a, a, h) = a — the material IS that value everywhere, no walk needed.
+	int       g_nSdfHdrEncode   < Attribute( "SdfHdrEncode" ); Default( 0 ); >; // icon stages only — see the end of MainPs
 	int       g_nSdfUniformMat  < Attribute( "SdfUniformMat" ); Default( 0 ); >;
-	float4    g_vSdfUniformMat  < Attribute( "SdfUniformMatValue" ); Default4( 1.0, 1.0, 1.0, 0.0 ); >; // linear rgb, packed metal+rough lane
+	float4    g_vSdfUniformMat  < Attribute( "SdfUniformMatValue" ); Default4( 1.0, 1.0, 1.0, 0.0 ); >; // linear rgb, packed metal+rough+glow lane
 
 	SdfSurface SdfShade( float3 p )
 	{
@@ -624,10 +633,8 @@ PS
 		{
 			// Same lane decode as SdfSurfaceBrush, so the result matches the walk.
 			SdfSurface u;
-			float roughQ = floor( g_vSdfUniformMat.w / 1024.0 );
 			u.col = g_vSdfUniformMat.rgb;
-			u.metal = (g_vSdfUniformMat.w - roughQ * 1024.0) / 1023.0;
-			u.rough = roughQ / 1023.0;
+			SdfUnpackMaterial( g_vSdfUniformMat.w, u.metal, u.rough, u.emit );
 			return u;
 		}
 
@@ -807,12 +814,14 @@ PS
 
 	// p is the raw world hit (the frame SdfDistWs marches in); m.WorldPosition / m.ScreenPosition are
 	// what the engine's shadow + light queries expect (camera-relative + the high-precision offset).
-	void ApplyTransmission( inout Material m, float3 p, float3 geoN, float3 viewDir )
+	void ApplyTransmission( inout Material m, float3 p, float3 geoN, float3 viewDir, float glow )
 	{
 		// Metal has no subsurface transport. m.Metalness is already the per-brush metal lane (blended
 		// across joins by SdfShade) plus the material slider, so this masks per brush for free, fading
 		// over the blend radius rather than cutting at a seam. Fully metal skips the per-light march.
-		float dielectric = 1.0 - m.Metalness;
+		// Glow masks it the same way: a self-lit surface shouldn't also scatter the scene's light through
+		// it (the lerp toward g_vTransTint below would keep a glowing brush's lobe alive otherwise).
+		float dielectric = (1.0 - m.Metalness) * (1.0 - glow);
 		if ( dielectric <= 0.001 )
 			return;
 
@@ -1463,7 +1472,7 @@ PS
 		// across the brush walk, which cut the forward pass from ~149 to ~122 registers per thread
 		// (Round 2 #21; Nsight GPU metrics). Keep the walk ahead of any new shading state.
 		SdfSurface surf;
-		surf.col = float3( 1, 1, 1 ); surf.metal = 0.0; surf.rough = 1.0;
+		surf.col = float3( 1, 1, 1 ); surf.metal = 0.0; surf.rough = 1.0; surf.emit = 0.0;
 		if ( !SDF_SKIP( 1 ) )
 			surf = SdfShade( p );
 
@@ -1539,14 +1548,33 @@ PS
 		}
 	#endif
 
+		// Glow: the brush's flat colour becomes emission. Calibrated to materials/emissivelight.vmat (complex.shader
+		// Self Illum: Brightness 3 stops, Albedo Factor 0 = no texture in the emission). The lit material fades to
+		// black only for BRIGHT colours (g_vGlowFadeRange) — they get the solid self-lit look — while dark colours
+		// keep their normal shaded material under the dim glow instead of flattening. Transmission below is masked
+		// by the same fade (ApplyTransmission's dielectric term), so it follows the material it belongs to.
+		float glowFade = 0.0;
+		if ( surf.emit > 0.0 )
+		{
+			m.Emission += surf.col * surf.emit * exp2( g_flGlowBrightness );
+			float glowValue = sqrt( max( surf.col.r, max( surf.col.g, surf.col.b ) ) );
+			glowFade = surf.emit * smoothstep( g_vGlowFadeRange.x, g_vGlowFadeRange.y, glowValue );
+			m.Albedo *= 1.0 - glowFade;
+		}
+
 	#if ( D_TRANSMISSION && D_FIELD_TEX && S_MODE_DEPTH == 0 )
 		// Back-scatter using SDF-derived thickness. Runs once here, after the hit — the march above
 		// is untouched. viewDir points from the surface toward the camera (toward -scatterDir = glow).
 		if ( !SDF_SKIP( 8 ) )
-			ApplyTransmission( m, p, baseN, normalize( g_vCameraPositionWs - p ) );
+			ApplyTransmission( m, p, baseN, normalize( g_vCameraPositionWs - p ), glowFade );
 	#endif
 
 		o.vColor = ClayShade( i, m );
+		// Icon stages render into the ScenePanel's 8-bit target, which would clip HDR (a full glow is ~8x)
+		// before SdfStagePost's tonemap sees it. Pack it as c/(1+c) instead — invertible and never clips;
+		// sdf_thumbnail_hdr.shader unpacks it into a float target ahead of the tonemap. Off everywhere else.
+		if ( g_nSdfHdrEncode != 0 )
+			o.vColor.rgb = o.vColor.rgb / ( 1.0 + o.vColor.rgb );
 		o.flDepth = flSurfaceDepth;
 		return o;
 	}

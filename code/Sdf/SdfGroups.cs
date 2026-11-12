@@ -389,6 +389,7 @@ public static class SdfGroups
 					e.Color = g.Color;
 					e.Metallic = g.Metallic;
 					e.Roughness = g.Roughness;
+					e.Emission = g.Emission;
 				}
 
 				// Symmetry is the PLACED brush's — judged at the group's own position (its deadzone), then
@@ -439,6 +440,7 @@ public static class SdfGroups
 		hc.Add( g.Color );
 		hc.Add( g.Metallic );
 		hc.Add( g.Roughness );
+		hc.Add( g.Emission );
 		hc.Add( g.EffectiveMirrorX );
 		hc.Add( g.EffectiveMirrorY );
 		hc.Add( g.EffectiveMirrorZ );

@@ -857,6 +857,8 @@
 				yield return new( ViewKey, GameSettings.SpectatorThirdPerson ? "First Person" : "Third Person", Act( "ToggleView" ) );
 				if ( GameSettings.SpectatorThirdPerson )
 					yield return OrbitHint;
+				if ( SpectatorController.LocalCanTaunt )
+					yield return TauntHint; // a prop scouting (from its body) or an eliminated prop (from its ghost)
 				if ( SpectatorController.Local.LeftBehind.IsValid() && SpectatorController.ToggleKey is { } back )
 					yield return new( back, "Exit Freecam", RawKey: back );
 				yield break;
@@ -881,7 +883,10 @@
 				if ( LocalRole == PlayerRole.Hunter )
 					yield return HunterViewHint;
 				else if ( LocalRole == PlayerRole.Prop )
+				{
 					yield return PropViewHint;
+					yield return TauntHint;
+				}
 				if ( OrbitApplies )
 					yield return OrbitHint;
 				if ( SpectatorController.ToggleKey is { } fly )
@@ -906,6 +911,7 @@
 			if ( LocalRole == PlayerRole.Prop )
 			{
 				yield return PropViewHint; // in play Tab is the camera toggle — wireframes only exist in edit mode
+				yield return TauntHint;
 				yield return new( "F", "Free Cam", RawKey: "F" );
 			}
 
@@ -917,6 +923,9 @@
 	// The prop's Tab flips its camera between over the shoulder and centred behind the shape (HiderController.Grab:
 	// UpdateViewToggle, GameSettings.PropShoulderView) — labelled with where it goes, like the hunter's.
 	static HotkeyHint PropViewHint => new( ViewKey, GameSettings.PropShoulderView ? "Centred View" : "Shoulder View", Act( "ToggleView" ) );
+
+	// T: tap whistles, hold opens the taunt pie (TauntPicker) — any prop player, in play or on the free cam.
+	static HotkeyHint TauntHint => new( InputGlyphs.KeyFor( "Taunt", "T" ), "Taunt", Act( "Taunt" ) );
 
 	// The ToggleView key (Tab by default), as bound.
 	static string ViewKey => InputGlyphs.KeyFor( "ToggleView", "TAB" );

@@ -792,6 +792,7 @@ public sealed class BrushStampTool
 			b.Color = mat.Color;
 			b.Metallic = mat.Metallic;
 			b.Roughness = mat.Roughness;
+			b.Emission = mat.Emission;
 		}
 
 		return b;

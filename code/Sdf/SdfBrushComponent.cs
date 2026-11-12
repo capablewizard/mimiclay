@@ -131,6 +131,7 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor, Co
 	[Property] public Color Color { get => _brush.Color; set => _brush.Color = value; }
 	[Property, Range( 0f, 1f )] public float Metallic { get => _brush.Metallic; set => _brush.Metallic = value; }
 	[Property, Range( 0f, 1f )] public float Roughness { get => _brush.Roughness; set => _brush.Roughness = value; }
+	[Property, Range( 0f, 1f )] public float Emission { get => _brush.Emission; set => _brush.Emission = value; }
 
 	[Property, Group( "Symmetry" )] public bool MirrorX { get => _brush.MirrorX; set => _brush.MirrorX = value; }
 	[Property, Group( "Symmetry" )] public bool MirrorY { get => _brush.MirrorY; set => _brush.MirrorY = value; }
@@ -158,7 +159,7 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor, Co
 		Text = c.Text; Font = c.Font;
 		GroupKind = c.GroupKind; LinkColor = c.LinkColor; LinkBlend = c.LinkBlend;
 		Blend = c.Blend; Rounding = c.Rounding; Slice = c.Slice; Taper = c.Taper; Gap = c.Gap;
-		Color = c.Color; Metallic = c.Metallic; Roughness = c.Roughness;
+		Color = c.Color; Metallic = c.Metallic; Roughness = c.Roughness; Emission = c.Emission;
 		MirrorX = c.MirrorX; MirrorY = c.MirrorY; MirrorZ = c.MirrorZ;
 		Curvature = c.Curvature; SplineClosed = c.SplineClosed;
 		Shrinks = c.Shrinks; ShrinkDelay = c.ShrinkDelay; ShrinkDuration = c.ShrinkDuration;

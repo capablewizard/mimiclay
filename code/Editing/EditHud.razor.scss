@@ -1020,6 +1020,9 @@
 			.label { width: 58px; }
 		}
 
+		// Glow on/off chip under the sliders — full width like them; lit with the shared chip `.on` state.
+		.glow-toggle { width: 100%; }
+
 		// Copy / Paste material chips under the sliders. Paste is dimmed until something has been copied.
 		.mat-clipboard {
 			flex-direction: row;

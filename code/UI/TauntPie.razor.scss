@@ -1,0 +1,95 @@
+@import "/UI/_theme.scss";
+@import "/UI/_button.scss"; // .paper-card — the taunt buttons wear the same paper surface as the other HUD cards
+
+// Taunt pie — a ring of round paper buttons, one per taunt, around an empty middle (TauntPie.razor). Geometry
+// mirrors the razor's constants: the .pie box is 380 square (centre 190), the buttons sit on a 135 radius. Never
+// takes the mouse: the cursor stays captured and the picker drives selection.
+.taunt-pie {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	justify-content: center;
+	align-items: center;
+	pointer-events: none;
+
+	.pie {
+		position: relative;
+		width: 380px;
+		height: 380px;
+		flex-shrink: 0;
+	}
+
+	// A full-size layer rotated about the pie's centre: its child draws along the "up" radius, so rotating the layer
+	// aims it.
+	.spoke {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		transform-origin: center;
+
+		// In the empty middle: shows which way the mouse is pushing.
+		.pointer {
+			position: absolute;
+			left: 183px;
+			top: 118px;
+			width: 14px;
+			height: 14px;
+			border-radius: 7px;
+			background-color: $craft-orange;
+			border: 2px solid $card-edge;
+			box-shadow: $shadow-edge;
+		}
+	}
+
+	// One taunt: a round paper button (surface from .paper-card), emoji centred. The one under the cursor goes orange
+	// and grows — the selected state every other button uses.
+	// Where a button sits (left/top inline) and its spring-in scale (inline transform, TauntPie.SlotStyle).
+	.slot {
+		position: absolute;
+		width: 84px;
+		height: 84px;
+		margin-left: -42px;
+		margin-top: -42px;
+		transform-origin: center;
+	}
+
+	.slice {
+		width: 100%;
+		height: 100%;
+		border-radius: 42px;
+		justify-content: center;
+		align-items: center;
+		transform: scale( 1 );
+		transition: transform $spring-duration ease-out, background-color 0.1s linear;
+
+		// A light ring in the soft text brown ($paper-ink — the roster badges' ring is the darker $paper-edge).
+		.emoji {
+			font-size: 44px;
+			text-shadow:
+				2.5px 0px 0px $paper-ink,
+				-2.5px 0px 0px $paper-ink,
+				0px 2.5px 0px $paper-ink,
+				0px -2.5px 0px $paper-ink,
+				1.8px 1.8px 0px $paper-ink,
+				-1.8px 1.8px 0px $paper-ink,
+				1.8px -1.8px 0px $paper-ink,
+				-1.8px -1.8px 0px $paper-ink;
+		}
+
+		// Its taunt is sounding: the emoji wobbles until it ends — the roster badges' stop-motion jitter (the 🎨
+		// sculpting badge, _badges.scss), same keyframes and clock.
+		.emoji.playing {
+			transform-origin: center;
+			animation: action-jitter $wobble-duration linear 0s infinite;
+		}
+
+		&.selected {
+			background-color: $craft-orange;
+			transform: scale( 1.2 );
+		}
+	}
+}

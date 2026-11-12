@@ -64,7 +64,8 @@ public sealed partial class HiderController : ICrosshairOwner
 
 	/// <inheritdoc/>
 	public bool CrosshairVisible => !IsProxy && !Scenery && ShoulderCamera && _shoulderBlend > 0.5f
-		&& !EditMode && !FreeCamming && !CharadesManager.LocalPicking;
+		&& !EditMode && !FreeCamming && !CharadesManager.LocalPicking
+		&& !TauntPieOpen; // the pie sits dead centre over it, and the mouse is steering the pie, not aiming
 
 	/// <inheritdoc/>
 	public InteractContext? HoverContext { get; private set; }

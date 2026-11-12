@@ -88,6 +88,46 @@ public sealed class SpectatorGhost : Component
 	// Our own ghost, being orbited by our third-person free cam.
 	bool OwnedAndOrbited => SpectatorController.Local is { } cam && cam.Ghost == GameObject && cam.ShowsOwnGhost;
 
+	SoundHandle _tauntSound; // the taunt this ghost is playing, on THIS machine — a new one fades it out
+	int _tauntIndex = -1;    // which taunt _tauntSound is
+
+	/// <summary>The taunt this ghost is playing here, or -1 (the pie's wobble — SpectatorController).</summary>
+	public int PlayingTaunt => Taunts.IsPlaying( _tauntSound ) ? _tauntIndex : -1;
+
+	/// <summary>Bumped each time this ghost starts a taunt here (the pie's pop).</summary>
+	public int TauntSerial { get; private set; }
+
+	/// <summary>Owner: play a taunt from this ghost (an eliminated prop's — SpectatorController). Everywhere it's
+	/// networked; only on our own machine while it's still local (GhostRules.MayNetwork / GhostShared).</summary>
+	public void Taunt( int index )
+	{
+		if ( IsProxy )
+			return;
+
+		if ( Network.Active )
+			BroadcastTaunt( index );
+		else
+			PlayTaunt( index );
+	}
+
+	[Rpc.Broadcast]
+	void BroadcastTaunt( int index ) => PlayTaunt( index );
+
+	// From the head, following it. Heard only where the ghost may be seen (the owner always) — a hidden ghost's taunt
+	// would give away where it is just as its glow would (see UpdateLight).
+	void PlayTaunt( int index )
+	{
+		if ( IsProxy && !Shown )
+			return;
+
+		var at = WorldPosition;
+		if ( Head.IsValid() && Sdf.TryGetBounds( Head.Brushes, out var bounds ) )
+			at = Head.WorldTransform.PointToWorld( bounds.Center );
+		Taunts.Play( GameObject, at, index, ref _tauntSound );
+		_tauntIndex = index;
+		TauntSerial++;
+	}
+
 	/// <summary>Owner: the free cam is over — fade out everywhere, then go (<see cref="ExitFadeSeconds"/>).</summary>
 	public void Dismiss()
 	{

@@ -54,8 +54,8 @@ public static class SurfaceNetsMesher
 		public bool IsEmpty => Vertices is null || Vertices.Length == 0;
 	}
 
-	/// <summary>The sampled field on the mesher's grid: four floats per point — signed distance, metalness,
-	/// roughness, and sRGB colour packed as r + g*256 + b*65536 (8 bits a channel, exact in a float32, and
+	/// <summary>The sampled field on the mesher's grid: four floats per point — signed distance, metalness + glow
+	/// packed as two 10-bit ints (PackMetalGlow), roughness, and sRGB colour packed as r + g*256 + b*65536 (8 bits a channel, exact in a float32, and
 	/// unpacked per corner BEFORE interpolation because lerping packed values is meaningless). Plain arrays and
 	/// numbers, so it crosses to a worker thread freely.</summary>
 	public readonly struct MeshGrid
@@ -240,7 +240,7 @@ public static class SurfaceNetsMesher
 			if ( MathF.Abs( d ) <= band )
 			{
 				var s = Sdf.SampleSurface( brushes, p );
-				data[o + 1] = s.Metallic;
+				data[o + 1] = PackMetalGlow( s.Metallic, s.Emission );
 				data[o + 2] = s.Roughness;
 				data[o + 3] = PackColor( s.Color );
 			}
@@ -252,6 +252,15 @@ public static class SurfaceNetsMesher
 				data[o + 3] = white;
 			}
 		}
+	}
+
+	// Metal + glow as two 10-bit ints in one grid float (exact in float32) — sdf_mesh_grid_cs writes the same.
+	// Unpacked per corner in SampleAttributes, before interpolation, like the packed colour.
+	static float PackMetalGlow( float metal, float glow )
+	{
+		float m = MathF.Floor( Math.Clamp( metal, 0f, 1f ) * 1023f + 0.5f );
+		float e = MathF.Floor( Math.Clamp( glow, 0f, 1f ) * 1023f + 0.5f );
+		return m + 1024f * e;
 	}
 
 	static float PackColor( Color c )
@@ -342,7 +351,11 @@ public static class SurfaceNetsMesher
 				tangent = Vector3.Cross( normal, Vector3.Forward );
 			tangent = tangent.Normal;
 
-			SampleAttributes( g, pos, out var color, out float metal, out float rough );
+			SampleAttributes( g, pos, out var color, out float metal, out float rough, out float glow );
+			// Glow rides the vertex colour's ALPHA (sdf_mesh.shader): 1 = none, down to 1/255 = full. 0 stays
+			// reserved for "no data" so meshes without a real COLOR0 never read as glowing. No new vertex
+			// attribute, so the .sdfmesh format (which already stores colour alpha) is unchanged.
+			color = color.WithAlpha( 1f - glow * (254f / 255f) );
 
 			cellVert[Ci( i, j, k )] = verts.Count;
 			// Per-brush metalness/roughness ride in TexCoord0.xy (this surface has no real UVs —
@@ -462,14 +475,14 @@ public static class SurfaceNetsMesher
 
 	// Trilinear material attributes. Colour is unpacked at each of the eight corners first — the packed
 	// value is a bit field, and interpolating it directly would blend the channels into each other.
-	static void SampleAttributes( in MeshGrid g, Vector3 p, out Color color, out float metal, out float rough )
+	static void SampleAttributes( in MeshGrid g, Vector3 p, out Color color, out float metal, out float rough, out float glow )
 	{
 		Cell( g, p, out int i0, out int j0, out int k0, out float fx, out float fy, out float fz );
 		int gx = g.Gx, gy = g.Gy;
 		var d = g.Data;
 
 		float r = 0f, gr = 0f, b = 0f;
-		metal = 0f; rough = 0f;
+		metal = 0f; rough = 0f; glow = 0f;
 
 		for ( int c = 0; c < 8; c++ )
 		{
@@ -481,7 +494,9 @@ public static class SurfaceNetsMesher
 				continue;
 
 			int o = (i + gx * (j + gy * k)) * 4;
-			metal += d[o + 1] * w;
+			int mg = (int)MathF.Round( d[o + 1] ); // PackMetalGlow: unpack before interpolating
+			metal += (mg & 1023) / 1023f * w;
+			glow += (mg >> 10) / 1023f * w;
 			rough += d[o + 2] * w;
 
 			// Round in DOUBLE: a colour with blue ≥ 128 packs above 2^23, where a float has no .5 — `x + 0.5f`

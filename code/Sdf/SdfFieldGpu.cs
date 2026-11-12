@@ -560,15 +560,16 @@ public static class SdfBrushPacker
 	// Truncation warnings, throttled — Pack runs per frame during drags, one line every few seconds is plenty.
 	static RealTimeSince _sinceTruncWarn = 999f;
 
-	/// <summary>Metalness + roughness as ONE float lane: <c>round(m·1023) + 1024·round(r·1023)</c>. Both are
-	/// 0..1 and only feed the colour loop, and 10 bits each is finer than the HUD sliders or the 8-bit
-	/// vertex-colour path, so nothing visible changes. Max value 1,047,575 &lt; 2^24, so the RGBA32F texture
-	/// carries it exactly. Decoded at the top of sdf_eval's SdfSurfaceLocal — keep the two in step.</summary>
-	static float PackMaterial( float metallic, float roughness )
+	/// <summary>Metalness + roughness + glow as ONE float lane: <c>round(m·255) + 256·round(r·255) + 65536·round(e·255)</c>.
+	/// All three are 0..1 and only feed the colour loop; 8 bits each matches the vertex-colour path the meshed LODs
+	/// use. Max value 2^24 − 1, the largest integer RGBA32F holds exactly. Decoded by sdf_eval's SdfUnpackMaterial —
+	/// keep the two in step. (Was two 10-bit fields before glow took the top byte.)</summary>
+	static float PackMaterial( float metallic, float roughness, float emission )
 	{
-		int m = (int)MathF.Round( Math.Clamp( metallic, 0f, 1f ) * 1023f );
-		int r = (int)MathF.Round( Math.Clamp( roughness, 0f, 1f ) * 1023f );
-		return m + 1024 * r;
+		int m = (int)MathF.Round( Math.Clamp( metallic, 0f, 1f ) * 255f );
+		int r = (int)MathF.Round( Math.Clamp( roughness, 0f, 1f ) * 255f );
+		int e = (int)MathF.Round( Math.Clamp( emission, 0f, 1f ) * 255f );
+		return m + 256 * r + 65536 * e;
 	}
 
 	public static int Pack( List<SdfBrush> brushes, Transform tx, float[] data, float[] spline,
@@ -666,16 +667,17 @@ public static class SdfBrushPacker
 
 			data[o + 8] = rot.x; data[o + 9] = rot.y; data[o + 10] = rot.z; data[o + 11] = rot.w;
 
-			data[o + 12] = SrgbToLinear( b.Color.r );
-			data[o + 13] = SrgbToLinear( b.Color.g );
-			data[o + 14] = SrgbToLinear( b.Color.b );
+			var shade = b.ShadeColor(); // glow brushes shade at full brightness (SdfBrush.GlowColor)
+			data[o + 12] = SrgbToLinear( shade.r );
+			data[o + 13] = SrgbToLinear( shade.g );
+			data[o + 14] = SrgbToLinear( shade.b );
 			data[o + 15] = (int)b.Operation; // 0 add, 1 subtract, 2 cutout, 3 colour — sdf_eval's SdfDist + SdfSurfaceLocal branch on it
 
 			data[o + 16] = b.Shape == SdfShape.Spline ? (b.SplineClosed ? 1f : 0f) : b.EffectiveRounding;
-			// Metal + rough share one lane (two 10-bit ints, exact in RGBA32F) so the cutout gap gets the
+			// Metal + rough + glow share one lane (three 8-bit ints, exact in RGBA32F) so the cutout gap gets the
 			// freed .z without an 8th texel. Gap is cutout-only — zeroed for the other ops so the shader's
 			// shell maths never sees a stale value if the op is cycled away and back.
-			data[o + 17] = PackMaterial( b.Metallic, b.Roughness );
+			data[o + 17] = PackMaterial( b.Metallic, b.Roughness, b.Emission );
 			data[o + 18] = b.Operation == SdfOperation.Cutout ? b.Gap : 0f;
 			// Effective flags (symmetry deadzone): pack-time is the single gate for BOTH GPU shader copies,
 			// so a centre-hugging brush loses its mirror everywhere without touching shader code.
@@ -705,7 +707,7 @@ public static class SdfBrushPacker
 		}
 	}
 
-	/// <summary>True when every packed brush carries the same colour and metal+rough lane. Every material blend in
+	/// <summary>True when every packed brush carries the same colour and metal+rough+glow lane. Every material blend in
 	/// sdf_eval's walk is then lerp(a, a, h) = a, and the first Add always replaces the empty-space material outright,
 	/// so the surface material IS that value at every hit — the raymarch skips the walk (SdfUniformMat). Read off the
 	/// packed floats, not the brushes, so groups, the linearised colour and the lane quantisation match exactly.</summary>

@@ -89,6 +89,23 @@
             "ZNear": 1
           },
           {
+            "__type": "Sandbox.Bloom",
+            "__guid": "3c1d7a52-8e4b-4f0a-9b6e-2d5f8a71c4e9",
+            "__enabled": true,
+            "Flags": 0,
+            "__version": 1,
+            "Mode": "Screen",
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "Strength": 2,
+            "Threshold": 1.6,
+            "Tint": "1,0.89953,0.77674,1"
+          },
+          {
             "__type": "Sandbox.Tonemapping",
             "__guid": "9e0f0eb2-df13-4ac6-8f56-733a34b2ba6a",
             "__enabled": true,
