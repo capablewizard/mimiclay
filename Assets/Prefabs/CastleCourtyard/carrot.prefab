@@ -24,10 +24,10 @@
         "BakedMesh": null,
         "Brushes": [
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "Enabled": true,
-            "Position": "0,0,11",
+            "Position": "0,0,0",
             "Rotation": "1,0,0,0",
             "Size": "3.5,3.5,11",
             "Points": [],
@@ -42,13 +42,14 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 19.64
+            "Slice": 0,
+            "Taper": 1
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "Enabled": true,
-            "Position": "0,0,26",
+            "Position": "0,0,32",
             "Rotation": "0,0,0,1",
             "Size": "1,1,6",
             "Points": [],
@@ -63,13 +64,14 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 10.69
+            "Slice": 0,
+            "Taper": 1
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "Enabled": true,
-            "Position": "2.5,0,25",
+            "Position": "4.6131,0,29.53154",
             "Rotation": "0,0.21644,0,0.976296",
             "Size": "0.9,0.9,5",
             "Points": [],
@@ -84,7 +86,8 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 8.95
+            "Slice": 0,
+            "Taper": 1
           }
         ],
         "FlipFaces": false,

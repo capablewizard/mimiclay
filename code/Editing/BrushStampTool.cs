@@ -813,7 +813,7 @@ public enum ScrubKind
 	None,
 	Blend,
 	Round,
-	Wildcard, // the per-shape third slider: slice / profile / spline size
+	Wildcard, // the per-shape third slider: slice / taper / profile / spline size
 	Gap,      // cutout slot half-width (G) — parks on every other op
 	Scale,
 	Rotate,
@@ -847,23 +847,13 @@ public static class BrushScrub
 	// shift only changes what gets applied to the brush (the grid-snapped version of it).
 	static Rotation _rawRot = Rotation.Identity;
 
-	// Wildcard profile-cycling accumulator (Extruded: the profile steps once per ProfileStepPx of travel).
-	static float _wildAccum;
-	static readonly SdfCrossSection[] ProfileCycle =
-	{
-		SdfCrossSection.Triangle,
-		SdfCrossSection.Star,
-		SdfCrossSection.Pentagon,
-		SdfCrossSection.Hexagon,
-	};
-
 	const float BlendPerPx = 0.06f;   // MaxBlend (15) across ~250 px
 	const float GapPerPx = 0.03f;     // MaxGap (8) across ~270 px
 	const float RoundPerPx = 0.15f;
 	const float CurvePerPx = 0.005f;  // spline curvature 0..1 across ~200 px
 	const float SlicePerPx = 0.0035f; // MaxSlice (0.95) across ~270 px
+	const float TaperPerPx = 0.0035f; // the full 0..1 taper across ~285 px (same feel as slice)
 	const float SplineSizePerPx = 0.08f;
-	const float ProfileStepPx = 80f;
 	internal const float ScaleHalfDoublePx = 240f; // px of mouse travel that doubles the size (the grab's R scale too)
 	internal const float DegPerPx = 0.4f; // matches the gizmo trackball's TrackballDegPerPx — one free-rotate feel (the grab's E rotate too)
 
@@ -991,31 +981,18 @@ public static class BrushScrub
 				return true;
 
 			case ScrubKind.Wildcard:
-				// The per-shape third slider: slice for the sliceable solids, the profile for the extruded
-				// "Shape" brush (steps through them as you scrub), uniform tube size for a spline. Shapes
-				// with no third parameter (box, cylinder, text) just do nothing.
+				// The per-shape third slider: slice for the sphere, taper for the cylinder and the extruded "Shape"
+				// brush (its profile is picked by clicking the chips beside the slider), uniform tube size for a
+				// spline. Shapes with no third parameter (box, text) just do nothing.
 				switch ( b.Shape )
 				{
-					case SdfShape.Sphere or SdfShape.Cone:
+					case SdfShape.Sphere:
 						b.Slice = Math.Clamp( b.Slice + delta.x * SlicePerPx, 0f, SdfBrush.MaxSlice );
 						return true;
 
-					case SdfShape.Extruded:
-					{
-						_wildAccum += delta.x;
-						int steps = (int)(_wildAccum / ProfileStepPx);
-						if ( steps == 0 )
-							return false;
-						_wildAccum -= steps * ProfileStepPx;
-
-						int cur = Array.IndexOf( ProfileCycle, b.CrossSection );
-						if ( cur < 0 )
-							cur = 0;
-						b.CrossSection = ProfileCycle[((cur + steps) % ProfileCycle.Length + ProfileCycle.Length) % ProfileCycle.Length];
-						// Profiles have different rounding caps (star << hexagon) — keep the value honest.
-						b.Rounding = Math.Clamp( b.Rounding, SdfBrush.MinRounding, b.MaxRounding() );
+					case SdfShape.Cylinder or SdfShape.Extruded:
+						b.Taper = Math.Clamp( b.Taper + delta.x * TaperPerPx, 0f, 1f );
 						return true;
-					}
 
 					case SdfShape.Spline:
 					{
@@ -1173,7 +1150,6 @@ public static class BrushScrub
 		Active = kind;
 		Anchor = EditPointer.Position;
 		_rawRot = b.Rotation; // rotate scrub: continuous motion accumulates from the brush's current orientation
-		_wildAccum = 0f;
 		_movePos0 = b.Position;
 		_moveAccum = Vector3.Zero;
 

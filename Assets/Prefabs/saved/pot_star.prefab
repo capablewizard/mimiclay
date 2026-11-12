@@ -24,21 +24,20 @@
         "BakedMesh": null,
         "Brushes": [
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,16",
+            "Position": "-0,0,-1.03987",
             "Rotation": "1.00000012,5.96046448E-08,0,-4.37113883E-08",
-            "Size": "20.2409573,20.2409573,63.2909393",
+            "Size": "20.24096,20.24096,17.03987",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
-            "Slice": 0.7307692,
+            "Slice": 0,
             "SlicePlaneN": -0.46153843,
-            "LocalCentre": "0,0,63.2909393",
             "Blend": 15,
             "Rounding": 3.0151653,
             "Color": "0.5,0.75,0.3,1",
@@ -48,7 +47,7 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 131.93997
+            "Taper": 0.26923
           },
           {
             "Shape": "Cylinder",
@@ -78,21 +77,20 @@
             "BoundingRadius": 22.231392
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Subtract",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,30.1779327",
+            "Position": "0,-0,15.8234",
             "Rotation": "-3.7252903E-09,-1.00000012,-1.11022302E-16,-4.37113883E-08",
-            "Size": "21.5197182,23.8245697,27.6923828",
+            "Size": "21.51972,23.82457,14.35453",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
-            "Slice": 0.48164335,
+            "Slice": 0,
             "SlicePlaneN": 0.036713302,
-            "LocalCentre": "0,0,27.6923828",
             "Blend": 0.83326364,
             "Rounding": 0.75,
             "Color": "0.38314,0.517,0.27606,1",
@@ -102,7 +100,7 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 59.62692
+            "Taper": 0.51836
           },
           {
             "Shape": "Extruded",

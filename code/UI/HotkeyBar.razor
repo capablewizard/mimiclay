@@ -184,7 +184,8 @@
 			}
 		}
 
-		var under = CardUnderCursor();
+		// A slider drag owns the pointer until release: dragging across the bar must not hover (or press) its cards.
+		var under = ClaySlider.Pressed ? null : CardUnderCursor();
 		if ( under != _hoverKey )
 		{
 			_hoverKey = under;

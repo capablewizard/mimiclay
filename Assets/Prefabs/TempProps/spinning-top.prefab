@@ -24,15 +24,16 @@
         "BakedMesh": null,
         "Brushes": [
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "0,0,17",
+            "Position": "0,0,34",
             "Rotation": "0,0,0,1",
             "Size": "18,18,17",
             "Blend": 2,
             "Rounding": 3,
             "Color": "0.85,0.2,0.18,1",
-            "BoundingRadius": 26.7588
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Sphere",
@@ -46,26 +47,28 @@
             "BoundingRadius": 21
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "0,0,7",
+            "Position": "0,0,0",
             "Rotation": "1,0,0,0",
             "Size": "4,4,7",
             "Blend": 1.5,
             "Rounding": 1.5,
             "Color": "0.55,0.56,0.6,1",
-            "BoundingRadius": 9.5623
+            "Slice": 0,
+            "Taper": 1
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "0,0,1.5",
+            "Position": "0,0,-2.5",
             "Rotation": "1,0,0,0",
             "Size": "2,2,4",
             "Blend": 0.8,
             "Rounding": 0.6,
             "Color": "0.62,0.63,0.66,1",
-            "BoundingRadius": 5.2722
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",
@@ -112,15 +115,16 @@
             "BoundingRadius": 11.7159
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "0,0,33",
+            "Position": "0,0,38",
             "Rotation": "0,0,0,1",
             "Size": "9,9,5",
             "Blend": 1.5,
             "Rounding": 2,
             "Color": "0.85,0.2,0.18,1",
-            "BoundingRadius": 11.7956
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",

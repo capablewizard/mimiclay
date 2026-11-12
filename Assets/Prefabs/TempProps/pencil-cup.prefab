@@ -57,15 +57,16 @@
             "BoundingRadius": 15.4851
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "-4,-6.119,52.672",
+            "Position": "-4,-6.53482,54.6283",
             "Rotation": "0.10452846,0,0,0.9945219",
             "Size": "1.8,1.8,2",
             "Blend": 0.4,
             "Rounding": 0,
             "Color": "0.85,0.7,0.45,1",
-            "BoundingRadius": 3.0907
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",
@@ -101,15 +102,16 @@
             "BoundingRadius": 15.4851
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "3,7.862,53.724",
+            "Position": "3,8.24362,55.68725",
             "Rotation": "-0.09584575,0,0,0.9953962",
             "Size": "1.8,1.8,2",
             "Blend": 0.4,
             "Rounding": 0,
             "Color": "0.85,0.7,0.45,1",
-            "BoundingRadius": 3.0907
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",
@@ -123,15 +125,16 @@
             "BoundingRadius": 14.4911
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "-2.851,4,50.641",
+            "Position": "-2.4011,4,52.58974",
             "Rotation": "0,0.11320321,0,0.99357186",
             "Size": "1.8,1.8,2",
             "Blend": 0.4,
             "Rounding": 0,
             "Color": "0.85,0.7,0.45,1",
-            "BoundingRadius": 3.0907
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",
@@ -167,15 +170,16 @@
             "BoundingRadius": 13.4981
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "3.966,0,48.84",
+            "Position": "3.65313,0,50.81538",
             "Rotation": "0,-0.0784591,0,0.99691733",
             "Size": "1.8,1.8,2",
             "Blend": 0.4,
             "Rounding": 0,
             "Color": "0.85,0.7,0.45,1",
-            "BoundingRadius": 3.0907
+            "Slice": 0,
+            "Taper": 1
           }
         ],
         "FlipFaces": false,

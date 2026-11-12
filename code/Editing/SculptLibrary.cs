@@ -56,8 +56,10 @@ public static class SculptLibrary
 		/// <summary>Triangle-winding flip, carried so the reloaded shape faces the same way.</summary>
 		public bool FlipFaces { get; set; }
 
-		/// <summary>The shape itself — every brush, with all its transforms, sizes, materials and symmetry.</summary>
-		public List<SdfBrush> Brushes { get; set; }
+		/// <summary>The shape itself — every brush, with all its transforms, sizes, materials and symmetry. Legacy
+		/// cones in an old save become tapered cylinders as the list lands (see SdfBrush.UpgradeLegacy).</summary>
+		public List<SdfBrush> Brushes { get => _brushes; set { SdfBrush.UpgradeLegacy( value ); _brushes = value; } }
+		List<SdfBrush> _brushes;
 	}
 
 	/// <summary>Snapshot a sculpture into a fresh <see cref="Entry"/> and write it under <paramref name="name"/>.

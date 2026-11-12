@@ -49,12 +49,12 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor, Co
 				return b ?? BBox.FromPositionAndSize( Vector3.Zero, 1f );
 			}
 
-			// Cylinder/cone use Size.x for both round axes (see SdfBrushGizmos.Hitbox), so their local y extent is
-			// Size.x / Size.y. The cone stands on its pivot (local z 0..2); the rest are centred.
+			// The cylinder uses Size.x for both round axes (see SdfBrushGizmos.Hitbox), so its local y extent is
+			// Size.x / Size.y. Every shape is centred on its pivot.
 			var s = WorldScale;
-			float y = Shape is SdfShape.Cylinder or SdfShape.Cone && MathF.Abs( s.y ) > 1e-4f ? MathF.Abs( s.x / s.y ) : 1f;
+			float y = Shape == SdfShape.Cylinder && MathF.Abs( s.y ) > 1e-4f ? MathF.Abs( s.x / s.y ) : 1f;
 			var ext = new Vector3( 1f, y, 1f );
-			var centre = Shape == SdfShape.Cone ? new Vector3( 0f, 0f, 1f ) : Vector3.Zero;
+			var centre = Vector3.Zero;
 			return BBox.FromPositionAndSize( centre, ext * 2f );
 		}
 	}
@@ -115,7 +115,15 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor, Co
 	// field is unclamped so a bigger value can still be typed for a huge box.
 	[Property, Range( SdfBrush.MinRounding, 8f, clamped: false ), Step( 0.05f )]
 	public float Rounding { get => _brush.Rounding; set => _brush.Rounding = MathF.Max( value, SdfBrush.MinRounding ); }
-	[Property, Range( 0f, SdfBrush.MaxSlice )] public float Slice { get => _brush.Slice; set => _brush.Slice = value; }
+	[Property, Range( 0f, SdfBrush.MaxSlice ), ShowIf( nameof( Shape ), SdfShape.Sphere )]
+	public float Slice { get => _brush.Slice; set => _brush.Slice = value; }
+
+	/// <summary>Cylinder / extruded: 0 = straight, 1 = a point at the top (see <see cref="SdfBrush.Taper"/>).</summary>
+	[Property, Range( 0f, 1f ), ShowIf( nameof( HasTaper ), true )]
+	public float Taper { get => _brush.Taper; set => _brush.Taper = value; }
+
+	/// <summary>Inspector gate for <see cref="Taper"/> (not a [Property], so never serialised).</summary>
+	public bool HasTaper => Shape is SdfShape.Cylinder or SdfShape.Extruded;
 
 	[Property, Range( 0f, SdfBrush.MaxGap ), ShowIf( nameof( Operation ), SdfOperation.Cutout )]
 	public float Gap { get => _brush.Gap; set => _brush.Gap = value; }
@@ -149,11 +157,43 @@ public sealed class SdfBrushComponent : Component, Component.ExecuteInEditor, Co
 		Shape = c.Shape; Operation = c.Operation; CrossSection = c.CrossSection;
 		Text = c.Text; Font = c.Font;
 		GroupKind = c.GroupKind; LinkColor = c.LinkColor; LinkBlend = c.LinkBlend;
-		Blend = c.Blend; Rounding = c.Rounding; Slice = c.Slice; Gap = c.Gap;
+		Blend = c.Blend; Rounding = c.Rounding; Slice = c.Slice; Taper = c.Taper; Gap = c.Gap;
 		Color = c.Color; Metallic = c.Metallic; Roughness = c.Roughness;
 		MirrorX = c.MirrorX; MirrorY = c.MirrorY; MirrorZ = c.MirrorZ;
 		Curvature = c.Curvature; SplineClosed = c.SplineClosed;
 		Shrinks = c.Shrinks; ShrinkDelay = c.ShrinkDelay; ShrinkDuration = c.ShrinkDuration;
+	}
+
+	/// <summary>Object-form twin of <see cref="SdfBrush.UpgradeLegacy()"/>: a LEGACY cone object (base pivot,
+	/// LocalScale.z = its half-height) becomes the equivalent centred, tapered cylinder by moving the object up its
+	/// own Z to the new centre and shortening its Z scale — so the clay doesn't move. Children (never brushes, but
+	/// keep anything parked there) hold their world transforms. Called from <see cref="SdfSculpture.BrushComponents"/>
+	/// so every gather sees converted brushes; the asset converter calls it too. True if this object changed.</summary>
+	public bool UpgradeLegacy()
+	{
+		if ( Shape != SdfShape.Cone )
+			return false;
+
+		SdfBrush.LegacyConeToCylinder( Slice, out float heightScale, out float centreUp, out float taper );
+
+		var kids = new List<(GameObject Go, Transform World)>();
+		foreach ( var child in GameObject.Children )
+			if ( child.IsValid() )
+				kids.Add( (child, child.WorldTransform) );
+
+		var local = GameObject.LocalTransform;
+		// Object space: the old base sits at the origin with half-height 1, so the new centre is (0,0,centreUp).
+		GameObject.LocalTransform = local
+			.WithPosition( local.PointToWorld( new Vector3( 0f, 0f, centreUp ) ) )
+			.WithScale( local.Scale.WithZ( local.Scale.z * heightScale ) );
+
+		foreach ( var (go, world) in kids )
+			go.WorldTransform = world;
+
+		Taper = taper;
+		Slice = 0f;
+		Shape = SdfShape.Cylinder;
+		return true;
 	}
 
 	/// <summary>The sculpture this brush belongs to: the nearest <see cref="SdfSculpture"/> up the hierarchy.</summary>
@@ -616,11 +656,10 @@ public static class SdfBrushGizmos
 	/// default bias — only the brush that owns the visible surface registers this).</summary>
 	public static void Hitbox( SdfBrush brush )
 	{
-		var ext = brush.Shape is SdfShape.Cylinder or SdfShape.Cone
+		var ext = brush.Shape == SdfShape.Cylinder
 			? new Vector3( brush.Size.x, brush.Size.x, brush.Size.z )
 			: brush.Size;
-		// The cone stands on its pivot (spans local z 0..2·Size.z); the rest are centred.
-		var centre = brush.Shape == SdfShape.Cone ? new Vector3( 0f, 0f, brush.Size.z ) : Vector3.Zero;
+		var centre = Vector3.Zero;
 		Gizmo.Hitbox.BBox( BBox.FromPositionAndSize( centre, ext * 2f ) );
 	}
 
@@ -657,29 +696,16 @@ public static class SdfBrushGizmos
 				break;
 			}
 			case SdfShape.Cylinder:
-				Ellipse( r, r, ax, ay, emit, 24, bottom );
-				Ellipse( r, r, ax, ay, emit, 24, top );
-				for ( int i = 0; i < 4; i++ )
-				{
-					var side = (ax * MathF.Cos( i * MathF.PI * 0.5f ) + ay * MathF.Sin( i * MathF.PI * 0.5f )) * r;
-					emit( bottom + side, top + side );
-				}
-				break;
-			case SdfShape.Cone:
 			{
-				// Base-pivot (stands ON Position, growing up +Z); sliced = frustum.
-				float coneSlice = brush.SlicePlaneN;
-				float zoff = brush.Size.z;
-				var baseC = new Vector3( 0, 0, zoff + bottom.z );
-				var topC = new Vector3( 0, 0, zoff + (coneSlice < 0.999f ? top.z * coneSlice : top.z) );
-				float rc = coneSlice < 0.999f ? r * (1f - coneSlice) * 0.5f : 0f;
-				Ellipse( r, r, ax, ay, emit, 24, baseC );
-				if ( rc > 0f )
-					Ellipse( rc, rc, ax, ay, emit, 24, topC );
+				// Centred; the top ring narrows with Taper (none at a full point — the side edges meet at the apex).
+				float rt = brush.TopRadius * pad;
+				Ellipse( r, r, ax, ay, emit, 24, bottom );
+				if ( rt > 1e-3f )
+					Ellipse( rt, rt, ax, ay, emit, 24, top );
 				for ( int i = 0; i < 4; i++ )
 				{
 					var dir = ax * MathF.Cos( i * MathF.PI * 0.5f ) + ay * MathF.Sin( i * MathF.PI * 0.5f );
-					emit( baseC + dir * r, topC + dir * rc );
+					emit( bottom + dir * r, top + dir * rt );
 				}
 				break;
 			}
@@ -762,9 +788,14 @@ public static class SdfBrushGizmos
 	static Vector3[] ExtrudedCorners( SdfBrush brush, float pad, float z )
 	{
 		SdfBrush.CrossSectionOutline( brush.CrossSection, brush.Size * pad, _xsOutline );
+		float k = z > 0f ? brush.ExtrudeTopScale : 1f; // tapered: the top cap shrinks toward the taper centre
+		var c = SdfBrush.TaperCentre( brush.CrossSection, brush.Size * pad );
 		var pts = new Vector3[_xsOutline.Count];
 		for ( int i = 0; i < pts.Length; i++ )
-			pts[i] = new Vector3( _xsOutline[i].x, _xsOutline[i].y, z );
+		{
+			var v = c + (_xsOutline[i] - c) * k;
+			pts[i] = new Vector3( v.x, v.y, z );
+		}
 		return pts;
 	}
 
@@ -801,12 +832,28 @@ public static class SdfBrushGizmos
 					Gizmo.Draw.SolidSphere( Vector3.Zero, 1f, 16, 24 );
 				break;
 			case SdfShape.Cylinder:
-				Gizmo.Draw.SolidCylinder( bottom, top, r, 24 );
-				break;
-			case SdfShape.Cone:
 			{
-				var baseC = bottom + new Vector3( 0, 0, brush.Size.z );
-				Gizmo.Draw.SolidCone( baseC, top - bottom, r, 24 );
+				float rt = brush.TopRadius * pad;
+				if ( brush.Taper <= 0f )
+					Gizmo.Draw.SolidCylinder( bottom, top, r, 24 );
+				else if ( rt <= 1e-3f )
+					Gizmo.Draw.SolidCone( bottom, top - bottom, r, 24 );
+				else
+				{
+					const int N = 24;
+					for ( int i = 0; i < N; i++ )
+					{
+						float a0 = i / (float)N * MathF.PI * 2f, a1 = (i + 1) / (float)N * MathF.PI * 2f;
+						var d0 = new Vector3( MathF.Cos( a0 ), MathF.Sin( a0 ), 0f );
+						var d1 = new Vector3( MathF.Cos( a1 ), MathF.Sin( a1 ), 0f );
+						var b0 = bottom + d0 * r; var b1 = bottom + d1 * r;
+						var t0 = top + d0 * rt; var t1 = top + d1 * rt;
+						Gizmo.Draw.SolidTriangle( new Triangle( bottom, b1, b0 ) );
+						Gizmo.Draw.SolidTriangle( new Triangle( top, t0, t1 ) );
+						Gizmo.Draw.SolidTriangle( new Triangle( b0, b1, t1 ) );
+						Gizmo.Draw.SolidTriangle( new Triangle( b0, t1, t0 ) );
+					}
+				}
 				break;
 			}
 			case SdfShape.Extruded:

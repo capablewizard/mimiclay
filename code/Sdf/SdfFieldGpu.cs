@@ -698,7 +698,9 @@ public static class SdfBrushPacker
 				data[o + 23] = (int)b.CrossSection;
 
 			data[o + 24] = wmx.x; data[o + 25] = wmx.y; data[o + 26] = wmx.z;
-			data[o + 27] = b.Slice; // planar slice fraction (sphere/cone), riding the AABB-max texel's free lane
+			// Shape-dependent lane riding the AABB-max texel's free slot: cylinder/extruded taper, else the sphere's slice
+			// (each shape reads only its own — sdf_eval.hlsl SdfShapeDist).
+			data[o + 27] = b.Shape is SdfShape.Cylinder or SdfShape.Extruded ? b.Taper : b.Slice;
 			written++;
 		}
 	}

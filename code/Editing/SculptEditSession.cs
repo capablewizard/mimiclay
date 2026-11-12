@@ -372,7 +372,7 @@ public sealed partial class SculptEditSession : Component
 	/// <summary>The group kinds this session's shape dock offers.</summary>
 	public IEnumerable<SdfGroupKind> GroupKinds => SdfGroups.KindsFor( IsHeadSession );
 
-	/// <summary>Group-tile verb (dock click / Slot8). Groups aren't convertible — they're a different kind
+	/// <summary>Group-tile verb (dock click / Slot7). Groups aren't convertible — they're a different kind
 	/// of thing from a primitive — so: stamp held → re-mould it into this group; a GROUP selected → swap its
 	/// kind in place (mouth style A → B, keeping the transform); anything else selected → drop the selection
 	/// and pick up a stamp of this group.</summary>
@@ -848,7 +848,7 @@ public sealed partial class SculptEditSession : Component
 		{
 			foreach ( var b in SelectedBrushes )
 			{
-				if ( b.Shape is SdfShape.Sphere or SdfShape.Cone )
+				if ( b.Shape == SdfShape.Sphere )
 					b.Slice = Math.Clamp( _multiProxy.Slice, 0f, SdfBrush.MaxSlice );
 			}
 		}
@@ -1259,7 +1259,7 @@ public sealed partial class SculptEditSession : Component
 		// upright THROUGH the letters. The reading direction is the only sensible sweep.
 		int axis = b.Shape switch
 		{
-			SdfShape.Cylinder or SdfShape.Cone or SdfShape.Extruded => 2,
+			SdfShape.Cylinder or SdfShape.Extruded => 2,
 			SdfShape.Text => 0,
 			_ => ext.x >= ext.y && ext.x >= ext.z ? 0 : (ext.y >= ext.z ? 1 : 2),
 		};
@@ -2292,17 +2292,16 @@ public sealed partial class SculptEditSession : Component
 			if ( Input.Pressed( "Slot1" ) ) HotkeyShape( SdfShape.Sphere );
 			if ( Input.Pressed( "Slot2" ) ) HotkeyShape( SdfShape.Box );
 			if ( Input.Pressed( "Slot3" ) ) HotkeyShape( SdfShape.Cylinder );
-			if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Cone );
 
 			// The advanced shapes follow the dock: the tutorial's first shape lesson trims their tiles,
 			// so their hotkeys stand down with them (key and dock must always agree).
 			if ( !EditHudGate.BasicShapesOnly )
 			{
-				if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Extruded );
-				if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Spline );
-				if ( Input.Pressed( "Slot7" ) ) HotkeyShape( SdfShape.Text );
-				// Group tiles follow the primitives in the dock; 8 = the first group this session offers.
-				if ( Input.Pressed( "Slot8" ) && GroupKinds.FirstOrDefault() is { } gk ) HotkeyGroup( gk.Id );
+				if ( Input.Pressed( "Slot4" ) ) HotkeyShape( SdfShape.Extruded );
+				if ( Input.Pressed( "Slot5" ) ) HotkeyShape( SdfShape.Spline );
+				if ( Input.Pressed( "Slot6" ) ) HotkeyShape( SdfShape.Text );
+				// Group tiles follow the primitives in the dock; 7 = the first group this session offers.
+				if ( Input.Pressed( "Slot7" ) && GroupKinds.FirstOrDefault() is { } gk ) HotkeyGroup( gk.Id );
 			}
 		}
 

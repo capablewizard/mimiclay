@@ -363,7 +363,7 @@ public static class SdfCollisionDebug
 			for ( int i = 0; i < flat.Count; i++ )
 			{
 				var b = flat[i];
-				if ( !b.Enabled || b.Operation != SdfOperation.Add || hit.Contains( i ) )
+				if ( !b.Enabled || b.Operation != SdfOperation.Add || b.IsModifier || hit.Contains( i ) )
 					continue;
 
 				var why = gated[i] ? "detail (< 10u on every axis)" : "carved away";

@@ -60,6 +60,7 @@ public sealed partial class SdfSculpture
 		var brush = go.Components.Get<SdfBrushComponent>( true );
 		if ( brush is not null )
 		{
+			brush.UpgradeLegacy(); // a legacy cone object becomes its tapered-cylinder twin before anyone reads it
 			yield return brush;
 			yield break;
 		}

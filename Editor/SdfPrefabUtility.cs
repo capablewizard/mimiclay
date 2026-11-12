@@ -385,6 +385,7 @@ public static class SdfPrefabUtility
 			// Round-trip through the same serializer the runtime uses, so the brush JSON is read identically
 			// to a networked or .sculpt-saved brush list.
 			brushes = Json.Deserialize<List<SdfBrush>>( sculptNode["Brushes"]?.ToJsonString() ?? "null" );
+			SdfBrush.UpgradeLegacy( brushes );
 		}
 		catch ( Exception e )
 		{

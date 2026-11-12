@@ -18,7 +18,14 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 	// shows something and has a brush to click — edit-mode doesn't run OnStart/OnUpdate.
 	// Hidden in object form: there the list is a gathered snapshot and the brush objects are what you edit.
 	[Property, HideIf( nameof( BrushObjects ), true )]
-	public List<SdfBrush> Brushes { get; set; } = new()
+	public List<SdfBrush> Brushes
+	{
+		get => _brushes;
+		// Every assignment is a load seam (scene/prefab deserialisation, saves, the wire all land a whole list
+		// here): legacy cones become tapered cylinders before anything reads them. Cheap — one shape compare each.
+		set { SdfBrush.UpgradeLegacy( value ); _brushes = value; }
+	}
+	List<SdfBrush> _brushes = new()
 	{
 		new SdfBrush { Shape = SdfShape.Sphere, Size = 24f },
 	};
@@ -122,7 +129,12 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 		if ( string.IsNullOrEmpty( data ) )
 			return null;
 
-		try { return Json.Deserialize<List<SdfBrush>>( data ); }
+		try
+		{
+			var list = Json.Deserialize<List<SdfBrush>>( data );
+			SdfBrush.UpgradeLegacy( list ); // old saves / payloads may still carry legacy cones
+			return list;
+		}
 		catch { return null; }
 	}
 
@@ -352,6 +364,9 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 
 	public async Task RebuildAsync()
 	{
+		// Backstop for brushes that reached the list without passing a load seam (a list mutated in place, or one
+		// loaded before a hotload added the upgrade) — legacy cones have no geometry path of their own any more.
+		SdfBrush.UpgradeLegacy( Brushes );
 		var brushes = MeshBrushes( Brushes );
 		var renderer = GameObject.Components.GetOrCreate<ModelRenderer>();
 
@@ -559,9 +574,6 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 	[Button( "Add Cylinder" ), Group( "Add" )]
 	public void AddCylinder() => AddBrush( SdfShape.Cylinder, SdfOperation.Add );
 
-	[Button( "Add Cone" ), Group( "Add" )]
-	public void AddCone() => AddBrush( SdfShape.Cone, SdfOperation.Add );
-
 	[Button( "Subtract Sphere" ), Group( "Subtract" )]
 	public void SubtractSphere() => AddBrush( SdfShape.Sphere, SdfOperation.Subtract );
 
@@ -570,9 +582,6 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 
 	[Button( "Subtract Cylinder" ), Group( "Subtract" )]
 	public void SubtractCylinder() => AddBrush( SdfShape.Cylinder, SdfOperation.Subtract );
-
-	[Button( "Subtract Cone" ), Group( "Subtract" )]
-	public void SubtractCone() => AddBrush( SdfShape.Cone, SdfOperation.Subtract );
 
 	// Default spline layout: a short straight 3-point tube along X, centred on `center` (sculpture-local).
 	static List<Vector4> DefaultSplinePoints( Vector3 center )

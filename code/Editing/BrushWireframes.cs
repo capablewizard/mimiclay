@@ -136,6 +136,7 @@ public sealed class BrushWireframes
 			hc.Add( b.Rotation );
 			hc.Add( b.Size );
 			hc.Add( b.Slice ); // slice moves the cut edge in the wire
+			hc.Add( b.Taper ); // taper moves the top ring
 			hc.Add( b.EffectiveMirrorX ); hc.Add( b.EffectiveMirrorY ); hc.Add( b.EffectiveMirrorZ );
 			if ( b.Shape == SdfShape.Group ) // members follow the transform (hashed above) + kind/variant
 			{
@@ -229,9 +230,8 @@ public sealed class BrushWireframes
 		{
 			case SdfShape.Box: BoxWire( s ); break;
 			case SdfShape.Text: BoxWire( b.TextInkExtents() * Pad ); break; // the ink rect, matching bounds/collider
-			case SdfShape.Cylinder: CylinderWire( s.x, s.z ); break;
-			case SdfShape.Cone: ConeWire( s.x, s.z, b.Size.z, b.SlicePlaneN ); break; // zoff raw: base-pivot
-			case SdfShape.Extruded: ExtrusionWire( b.CrossSection, s ); break;
+			case SdfShape.Cylinder: CylinderWire( s.x, b.TopRadius * Pad, s.z ); break;
+			case SdfShape.Extruded: ExtrusionWire( b.CrossSection, s, b.ExtrudeTopScale ); break;
 			case SdfShape.Spline: SplineWire( b ); break; // centre line + radius rings per control point
 			default: SphereWire( s, b.SlicePlaneN ); break; // Sphere / ellipsoid
 		}
@@ -476,45 +476,28 @@ public sealed class BrushWireframes
 		Ring( a => new Vector3( 0, MathF.Cos( a ) * r.y, MathF.Min( MathF.Sin( a ) * r.z, cut ? zc : r.z ) ) ); // YZ
 	}
 
-	void CylinderWire( float rad, float h )
+	// Tapered cylinder wire (centred): base ring at -h, top ring of radius rt at +h (a single apex point at a
+	// full taper, so no ring), joined by four side edges.
+	void CylinderWire( float rad, float rt, float h )
 	{
-		Ring( a => new Vector3( MathF.Cos( a ) * rad, MathF.Sin( a ) * rad, h ) );
 		Ring( a => new Vector3( MathF.Cos( a ) * rad, MathF.Sin( a ) * rad, -h ) );
-
-		for ( int k = 0; k < 4; k++ )
-		{
-			float a = k / 4f * Tau;
-			float cx = MathF.Cos( a ) * rad, cy = MathF.Sin( a ) * rad;
-			Edge( new Vector3( cx, cy, -h ), new Vector3( cx, cy, h ) );
-		}
-	}
-
-	// Base-pivot cone wire (shifted up by zoff, the RAW half-height), optionally sliced into a frustum at
-	// z = h·sliceN: the side edges stop at the cut plane and a top ring marks the flat cut.
-	void ConeWire( float R, float h, float zoff, float sliceN )
-	{
-		Ring( a => new Vector3( MathF.Cos( a ) * R, MathF.Sin( a ) * R, zoff - h ) );
-
-		bool cut = sliceN < 0.999f;
-		float zc = (cut ? h * sliceN : h) + zoff;
-		float rc = cut ? R * (1f - sliceN) * 0.5f : 0f;
-
-		if ( cut )
-			Ring( a => new Vector3( MathF.Cos( a ) * rc, MathF.Sin( a ) * rc, zc ) ); // the cut edge
+		if ( rt > 1e-3f )
+			Ring( a => new Vector3( MathF.Cos( a ) * rt, MathF.Sin( a ) * rt, h ) );
 
 		for ( int k = 0; k < 4; k++ )
 		{
 			float a = k / 4f * Tau;
 			float ca = MathF.Cos( a ), sa = MathF.Sin( a );
-			Edge( new Vector3( ca * R, sa * R, zoff - h ), new Vector3( ca * rc, sa * rc, zc ) );
+			Edge( new Vector3( ca * rad, sa * rad, -h ), new Vector3( ca * rt, sa * rt, h ) );
 		}
 	}
 
 	// Extruded cross-section (triangle/star/hexagon) swept along Z — both cap outlines plus a vertical at
 	// every profile vertex. Matches ExtrudedDistance / BrushGhost.
 	readonly List<Vector2> _outline = new();
-	void ExtrusionWire( SdfCrossSection xs, Vector3 s )
+	void ExtrusionWire( SdfCrossSection xs, Vector3 s, float ts = 1f ) // ts: top cap scale (taper)
 	{
+		var c = SdfBrush.TaperCentre( xs, s );
 		SdfBrush.CrossSectionOutline( xs, s, _outline );
 		int n = _outline.Count;
 		if ( n < 3 )
@@ -525,9 +508,10 @@ public sealed class BrushWireframes
 			int j = (i + 1) % n;
 			var a = _outline[i];
 			var b = _outline[j];
-			Edge( new Vector3( a.x, a.y, s.z ), new Vector3( b.x, b.y, s.z ) );   // top cap edge
+			Vector2 at = c + (a - c) * ts, bt = c + (b - c) * ts; // top cap shrinks toward the taper centre
+			Edge( new Vector3( at.x, at.y, s.z ), new Vector3( bt.x, bt.y, s.z ) ); // top cap edge
 			Edge( new Vector3( a.x, a.y, -s.z ), new Vector3( b.x, b.y, -s.z ) ); // bottom cap edge
-			Edge( new Vector3( a.x, a.y, -s.z ), new Vector3( a.x, a.y, s.z ) );  // vertical
+			Edge( new Vector3( a.x, a.y, -s.z ), new Vector3( at.x, at.y, s.z ) ); // side edge
 		}
 	}
 

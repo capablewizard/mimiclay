@@ -66,7 +66,7 @@
             "BoundingRadius": 37.7558
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "-3.81469727E-06,-16.9359055,-3.08545661",
@@ -87,7 +87,7 @@
             "BoundingRadius": 47.8355
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "9.69870567,-13.6791716,-3.08545661",
@@ -108,7 +108,7 @@
             "BoundingRadius": 47.87863
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "14.9998503,-4.85902309,-3.08545661",
@@ -129,7 +129,7 @@
             "BoundingRadius": 47.87863
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "16.2745342,5.51824522,-3.08545637",
@@ -150,7 +150,7 @@
             "BoundingRadius": 47.87863
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "7.27462769,13.6808424,-3.08545637",
@@ -171,7 +171,7 @@
             "BoundingRadius": 47.87863
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "-3.15607023,14.7056904,-3.08545637",
@@ -192,7 +192,7 @@
             "BoundingRadius": 47.87863
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "-9.12170696,6.92015648,-3.08545637",
@@ -213,7 +213,7 @@
             "BoundingRadius": 47.87863
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "-11.7861118,-1.17800951,-3.08545637",
@@ -234,7 +234,7 @@
             "BoundingRadius": 47.87863
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "-8.2751112,-10.1338882,-3.08545637",

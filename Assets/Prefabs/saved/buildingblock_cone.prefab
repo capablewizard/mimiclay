@@ -24,20 +24,19 @@
         "BakedMesh": null,
         "Brushes": [
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,0",
+            "Position": "0,0,12",
             "Rotation": "0,0,0,1",
             "Size": "12,12,12",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "Slice": 0,
-            "LocalCentre": "0,0,0",
             "Blend": 2,
             "Rounding": 1,
             "Color": "0.96,0.78,0.13,1",
@@ -47,7 +46,7 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 21.38
+            "Taper": 1
           }
         ],
         "FlipFaces": false,

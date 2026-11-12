@@ -751,7 +751,7 @@ public static class SdfCollisionBuilder
 			}
 
 			var b = brushes[bi];
-			if ( !b.Enabled || b.Operation != SdfOperation.Add )
+			if ( !b.Enabled || b.Operation != SdfOperation.Add || b.IsModifier )
 				continue; // hidden or subtractive — contributes no solid volume
 			if ( TooSmall( b, minExtent, pts, sweep ) )
 				continue; // decoration — no shape, and ComputeFootPoints skips it identically
@@ -917,7 +917,7 @@ public static class SdfCollisionBuilder
 			var hull = new List<Vector3>( 8 );
 			foreach ( var v in new[] { Vector2.Zero, nl, tip, nr } )
 			{
-				hull.Add( (b.Position + b.Rotation * new Vector3( v.x, v.y, sz )) * sign );
+				hull.Add( (b.Position + b.Rotation * new Vector3( v.x * b.ExtrudeTopScale, v.y * b.ExtrudeTopScale, sz )) * sign );
 				hull.Add( (b.Position + b.Rotation * new Vector3( v.x, v.y, -sz )) * sign );
 			}
 			RecordHull( hull );
@@ -955,7 +955,7 @@ public static class SdfCollisionBuilder
 	{
 		body.ClearShapes();
 		samples?.Clear();
-		if ( b is null || !b.Enabled || b.Operation != SdfOperation.Add )
+		if ( b is null || !b.Enabled || b.Operation != SdfOperation.Add || b.IsModifier )
 			return false;
 
 		// A group sweeps as the union of its ADD members' shapes on the one body.
@@ -1152,7 +1152,7 @@ public static class SdfCollisionBuilder
 		{
 			if ( !surface )
 				break;
-			if ( !b.Enabled || b.Operation != SdfOperation.Add || b.Shape is SdfShape.Spline or SdfShape.Text )
+			if ( !b.Enabled || b.Operation != SdfOperation.Add || b.IsModifier || b.Shape is SdfShape.Spline or SdfShape.Text )
 				continue;
 			LocalPoints( b, pts );
 			int mx = b.EffectiveMirrorX ? 1 : 0, my = b.EffectiveMirrorY ? 1 : 0, mz = b.EffectiveMirrorZ ? 1 : 0;
@@ -1407,7 +1407,7 @@ public static class SdfCollisionBuilder
 	static int FirstSolid( List<SdfBrush> brushes )
 	{
 		for ( int i = 0; i < brushes.Count; i++ )
-			if ( brushes[i].Enabled && brushes[i].Operation == SdfOperation.Add )
+			if ( brushes[i].Enabled && brushes[i].Operation == SdfOperation.Add && !brushes[i].IsModifier )
 				return i;
 		return 0;
 	}
@@ -1465,7 +1465,7 @@ public static class SdfCollisionBuilder
 		for ( int j = index + 1; j < brushes.Count; j++ )
 		{
 			var s = brushes[j];
-			if ( !s.Enabled || s.Operation != SdfOperation.Subtract )
+			if ( !s.Enabled || s.Operation != SdfOperation.Subtract || s.IsModifier )
 				continue;
 
 			// A subtractive spline has no Position/Size to bound cheaply — treat it as everywhere (its
@@ -2242,7 +2242,7 @@ public static class SdfCollisionBuilder
 
 		foreach ( var b in brushes )
 		{
-			if ( !b.Enabled || b.Operation != SdfOperation.Add )
+			if ( !b.Enabled || b.Operation != SdfOperation.Add || b.IsModifier )
 				continue;
 			if ( !TooSmall( b, MinBrushExtent, pts, sweep ) )
 				return MinBrushExtent; // something substantial survives — safe to drop the details
@@ -2262,7 +2262,7 @@ public static class SdfCollisionBuilder
 		for ( int i = 0; i < flat.Count; i++ )
 		{
 			var b = flat[i];
-			gated[i] = b.Enabled && b.Operation == SdfOperation.Add && TooSmall( b, minExtent, pts, sweep );
+			gated[i] = b.Enabled && b.Operation == SdfOperation.Add && !b.IsModifier && TooSmall( b, minExtent, pts, sweep );
 		}
 		return gated;
 	}
@@ -2315,26 +2315,25 @@ public static class SdfCollisionBuilder
 
 	// Brush-local hull points per shape (axis = Z, matching the SDF/CSG conventions). Coarse on purpose —
 	// a convex collider doesn't benefit from fine tessellation. Blend is ignored, and so is Rounding except on
-	// cones, so the collider is the sharp primitive (a hair smaller than the blended visual surface — fine for
-	// gameplay). Cones follow the rounded profile: their rounding loss grows without bound as they narrow.
+	// TAPERED cylinders, so the collider is the sharp primitive (a hair smaller than the blended visual surface — fine for
+	// gameplay). Tapered cylinders follow the rounded profile: their rounding loss grows without bound as they narrow.
 	// Internal: SculptBounds measures its max-size region against these same support points (a bounding
 	// box/sphere reads far past the visible surface for flat/rotated/sliced shapes).
-	const int ConeRoundRing = 10; // segments around a ROUNDED cone: 6 rings × 10 = 110 edges, under HullEdgeLimit
+	const int ConeRoundRing = 10; // segments around a ROUNDED tapered cylinder: 6 rings × 10 = 110 edges, under HullEdgeLimit
 
-	// The rounded cone's revolved profile (base-pivot frame): SdfBrush.ConeErodedCore's eroded frustum with an
+	// The rounded tapered cylinder's revolved profile (centred): SdfBrush.FrustumErodedCore's eroded frustum with an
 	// r-radius arc at each cap corner — base ring, arc midpoint, slant tangent at the bottom; slant tangent,
 	// arc midpoint, top ring (a single apex point when the core comes to a point). Rings at radius ~0 collapse
 	// to one point. False when there's no rounding, so the caller keeps the sharp frustum.
-	static bool RoundedConePoints( float R, float H, float rounding, float slice, List<Vector3> dst )
+	static bool RoundedFrustumPoints( float R, float Rt, float H, float rounding, List<Vector3> dst )
 	{
-		if ( !SdfBrush.ConeErodedCore( R, H, rounding, slice, out float zb, out float zt, out float r1, out float r2, out float r )
+		if ( !SdfBrush.FrustumErodedCore( R, Rt, H, rounding, out float zb, out float zt, out float r1, out float r2, out float r )
 			|| r < 0.05f )
 			return false;
 
 		const float HalfPi = MathF.PI * 0.5f;
 		void AddRing( float q, float z )
 		{
-			z += H; // centred → base-pivot frame (ConeBasePivot shifts by -Size.z)
 			if ( q < 0.05f )
 			{
 				dst.Add( new Vector3( 0f, 0f, z ) );
@@ -2392,54 +2391,42 @@ public static class SdfCollisionBuilder
 				break;
 			}
 
-			case SdfShape.Cylinder:
-				for ( int k = 0; k < Ring; k++ )
-				{
-					float a = k / (float)Ring * MathF.PI * 2f;
-					float cx = MathF.Cos( a ) * sx, cy = MathF.Sin( a ) * sx;
-					dst.Add( new Vector3( cx, cy, sz ) );
-					dst.Add( new Vector3( cx, cy, -sz ) );
-				}
-				break;
-
-			case SdfShape.Cone: // BASE-pivot: base radius Size.x at z=0 (on Position), apex at z=+2·Size.z
+			case SdfShape.Cylinder: // centred: base radius Size.x at z=-Size.z, top radius TopRadius at +Size.z
 			{
-				// Rounded: follow the rendered surface, not the sharp frustum. Rounding erodes the cone by r and
-				// dilates it back, which pulls a narrow cone's tip in by r/sin(half-angle) − r — far more than
+				float rt = sx * (1f - Math.Clamp( b.Taper, 0f, 1f ));
+
+				// Tapered + rounded: follow the rendered surface, not the sharp frustum. Rounding erodes the shape
+				// by r and dilates it back, which pulls a narrow tip in by r/sin(half-angle) − r — far more than
 				// the "hair" every other shape loses — so the sharp hull floated well past the clay.
-				if ( RoundedConePoints( sx, sz, b.EffectiveRounding, b.Slice, dst ) )
+				if ( b.Taper > 0f && RoundedFrustumPoints( sx, rt, sz, b.EffectiveRounding, dst ) )
 					break;
 
 				for ( int k = 0; k < Ring; k++ )
 				{
 					float a = k / (float)Ring * MathF.PI * 2f;
-					dst.Add( new Vector3( MathF.Cos( a ) * sx, MathF.Sin( a ) * sx, 0f ) );
+					float ca = MathF.Cos( a ), sa = MathF.Sin( a );
+					if ( rt >= 0.05f ) // pointed (full taper) closes on one apex point instead of a ring
+						dst.Add( new Vector3( ca * rt, sa * rt, sz ) );
+					dst.Add( new Vector3( ca * sx, sa * sx, -sz ) );
 				}
-				// Sliced cone = frustum: the apex becomes a ring on the flat cut, so the collider is flat-topped
-				// like the rendered shape. Unsliced keeps the single apex point.
-				float coneSlice = b.SlicePlaneN;
-				if ( coneSlice < 0.999f )
-				{
-					float zc = sz * coneSlice + sz, rc = sx * (1f - coneSlice) * 0.5f;
-					for ( int k = 0; k < Ring; k++ )
-					{
-						float a = k / (float)Ring * MathF.PI * 2f;
-						dst.Add( new Vector3( MathF.Cos( a ) * rc, MathF.Sin( a ) * rc, zc ) );
-					}
-				}
-				else
-					dst.Add( new Vector3( 0f, 0f, 2f * sz ) );
+				if ( rt < 0.05f )
+					dst.Add( new Vector3( 0f, 0f, sz ) );
 				break;
 			}
+
+			case SdfShape.Cone: // legacy — converted on load (SdfBrush.UpgradeLegacy); never reaches geometry
+				break;
 
 			case SdfShape.Extruded: // 2D profile extruded along Z; exact for the convex profiles (triangle,
 			{                       // hexagon) — the concave star is decomposed in Build/StarHulls (here its
 				// outline just anchors footprint probes to real corners).
 				var outline = new List<Vector2>( 10 );
 				SdfBrush.CrossSectionOutline( b.CrossSection, new Vector3( sx, sy, sz ), outline );
+				var outlineSize = new Vector3( sx, sy, sz ); // tapered: the top cap is the profile shrunk toward its taper centre
 				foreach ( var v in outline )
 				{
-					dst.Add( new Vector3( v.x, v.y, sz ) );
+					var top = b.ExtrudeTop( v, outlineSize );
+					dst.Add( new Vector3( top.x, top.y, sz ) );
 					dst.Add( new Vector3( v.x, v.y, -sz ) );
 				}
 				break;

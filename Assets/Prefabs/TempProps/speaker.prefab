@@ -79,15 +79,16 @@
             "BoundingRadius": 14.0553
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "-17,0,20",
+            "Position": "-19,0,20",
             "Rotation": "0,-0.70710678,0,0.70710678",
             "Size": "5,5,2",
             "Blend": 0.5,
             "Rounding": 0,
             "Color": "0.2,0.2,0.22,1",
-            "BoundingRadius": 5.8851
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",

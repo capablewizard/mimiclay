@@ -205,7 +205,6 @@ internal class SculptPanelWidget : Widget
 		(SdfShape.Sphere, "circle", "Sphere"),
 		(SdfShape.Box, "crop_square", "Box"),
 		(SdfShape.Cylinder, "panorama_vertical", "Cylinder"),
-		(SdfShape.Cone, "change_history", "Cone"),
 		(SdfShape.Extruded, "pentagon", "Extruded profile"),
 		(SdfShape.Text, "title", "Text"),
 		(SdfShape.Spline, "gesture", "Spline"),

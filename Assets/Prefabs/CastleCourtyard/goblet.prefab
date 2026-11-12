@@ -24,10 +24,10 @@
         "BakedMesh": null,
         "Brushes": [
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "Enabled": true,
-            "Position": "0,0,22",
+            "Position": "0,0,15",
             "Rotation": "1,0,0,0",
             "Size": "6,6,7",
             "Points": [],
@@ -42,7 +42,8 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 12.68
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Sphere",

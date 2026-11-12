@@ -222,7 +222,7 @@ public sealed class TutorialDirector : Component
 
 	readonly record struct BrushSnap( Vector3 Position, Vector3 Size, Rotation Rotation,
 		Color Color, float Metallic, float Roughness,
-		SdfOperation Operation, float Blend, float Rounding, float Curvature, float Slice,
+		SdfOperation Operation, float Blend, float Rounding, float Curvature, float Slice, float Taper,
 		SdfShape Shape );
 
 	// The layer lesson's baseline: the authored brush objects in stack order at step entry. A genuine
@@ -1000,7 +1000,7 @@ public sealed class TutorialDirector : Component
 				continue;
 
 			_snap[i] = new BrushSnap( b.Position, b.Size, b.Rotation, b.Color, b.Metallic, b.Roughness,
-				b.Operation, b.Blend, b.Rounding, b.Curvature, b.Slice, b.Shape );
+				b.Operation, b.Blend, b.Rounding, b.Curvature, b.Slice, b.Taper, b.Shape );
 		}
 	}
 

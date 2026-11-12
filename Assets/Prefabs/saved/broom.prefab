@@ -597,22 +597,21 @@
             "BoundingRadius": 8.176458
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "71.6811066,-108.268433,179.330658",
+            "Position": "71.68111,-108.26843,187.04665",
             "Rotation": "0,0,0,1",
-            "Size": "7.79226637,2.26407361,13.841486",
+            "Size": "7.79227,2.26407,7.71598",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.44254658,
+            "Slice": 0,
             "SlicePlaneN": 0.11490685,
-            "LocalCentre": "0,0,13.841486",
             "Blend": 0,
             "Rounding": 2.4193292,
             "Color": "0.2,0.5,0.85,1",
@@ -629,7 +628,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.75876
+            "Taper": 0.55745
           },
           {
             "Shape": "Cylinder",

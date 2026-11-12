@@ -825,21 +825,20 @@
               "BoundingRadius": 19.808252
             },
             {
-              "Shape": "Cone",
+              "Shape": "Cylinder",
               "Operation": "Add",
               "CrossSection": "Triangle",
               "Text": "clay",
               "Font": "Super Joyful",
               "Enabled": true,
-              "Position": "-20.2402382,8.19362068,51.5679588",
+              "Position": "-32.30704,13.16175,51.76975",
               "Rotation": "0.131370783,0.689210296,0.143109605,-0.698033392",
-              "Size": "8.19438934,26.6933022,13.0510826",
+              "Size": "8.19439,26.6933,13.05108",
               "Points": null,
               "Curvature": 1,
               "SplineClosed": false,
               "Slice": 0,
               "SlicePlaneN": 1,
-              "LocalCentre": "0,0,13.0510826",
               "Blend": 1.4769231,
               "Rounding": 2.9538462,
               "Color": "1,0.5,0,1",
@@ -849,7 +848,7 @@
               "MirrorY": false,
               "MirrorZ": false,
               "IsSplineLoop": false,
-              "BoundingRadius": 27.72743
+              "Taper": 1
             },
             {
               "Shape": "Cylinder",
@@ -4388,21 +4387,20 @@
               "BoundingRadius": 36.06059
             },
             {
-              "Shape": "Cone",
+              "Shape": "Cylinder",
               "Operation": "Add",
               "CrossSection": "Triangle",
               "Text": "clay",
               "Font": "Super Joyful",
               "Enabled": true,
-              "Position": "50.3041306,-7.51454163,31.7048759",
+              "Position": "75.99667,-16.80584,43.76413",
               "Rotation": "-0.42658335,-0.340769768,-0.437737405,-0.7143448",
-              "Size": "18.8526077,26.3414459,29.8640404",
+              "Size": "18.85261,26.34145,29.86404",
               "Points": null,
               "Curvature": 1,
               "SplineClosed": false,
               "Slice": 0,
               "SlicePlaneN": 1,
-              "LocalCentre": "0,0,29.8640404",
               "Blend": 1.018097,
               "Rounding": 5.563731,
               "Color": "0.96744,0.67721,0.58047,1",
@@ -4412,7 +4410,7 @@
               "MirrorY": false,
               "MirrorZ": false,
               "IsSplineLoop": false,
-              "BoundingRadius": 62.8873
+              "Taper": 1
             },
             {
               "Shape": "Box",
@@ -5772,21 +5770,20 @@
               "BoundingRadius": 6.430061
             },
             {
-              "Shape": "Cone",
+              "Shape": "Cylinder",
               "Operation": "Add",
               "CrossSection": "Triangle",
               "Text": "clay",
               "Font": "Super Joyful",
               "Enabled": true,
-              "Position": "12.7339478,4.65078068,9.29801941",
+              "Position": "9.52549,8.35695,12.02658",
               "Rotation": "-0.451861352,-0.229446441,0.208006427,0.836605906",
-              "Size": "2.00949669,2.00949669,5.61025333",
+              "Size": "2.0095,2.0095,5.61025",
               "Points": null,
               "Curvature": 1,
               "SplineClosed": false,
               "Slice": 0,
               "SlicePlaneN": 1,
-              "LocalCentre": "0,0,5.61025333",
               "Blend": 0.56437796,
               "Rounding": 8.839439,
               "Color": "0.14492,0.14492,0.15349,1",
@@ -5796,7 +5793,7 @@
               "MirrorY": true,
               "MirrorZ": false,
               "IsSplineLoop": false,
-              "BoundingRadius": 11.540123
+              "Taper": 1
             },
             {
               "Shape": "Cylinder",

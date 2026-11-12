@@ -1311,6 +1311,7 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 
 		var sculpt = GameObject.Components.Get<SdfSculpture>();
 		var brushes = sculpt?.Brushes;
+		SdfBrush.UpgradeLegacy( brushes ); // backstop (see SdfSculpture.RebuildAsync) — one shape compare per brush
 		if ( brushes is not { Count: > 0 } )
 		{
 			ReleaseSceneObject();

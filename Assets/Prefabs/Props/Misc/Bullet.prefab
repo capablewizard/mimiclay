@@ -65,7 +65,7 @@
           },
           {
             "Id": "b315109b-c68c-40dd-98ba-30a6b4d803fd",
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
@@ -74,16 +74,15 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "0,0,-15.1834106",
+            "Position": "0,-0,-17.21211",
             "Rotation": "-1,0,0,-4.37113883E-08",
-            "Size": "9.33096313,15.9324551,8.68577099",
+            "Size": "9.33096,15.93246,2.0287",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.76643425,
+            "Slice": 0,
             "SlicePlaneN": -0.5328685,
-            "LocalCentre": "0,0,2.02869868",
             "Blend": 1.5,
             "Gap": 0,
             "Rounding": 0.75,
@@ -101,7 +100,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 9.705963
+            "Taper": 0.23357
           },
           {
             "Id": "90c7f7ff-380c-46d2-a49f-1dd607f6c952",

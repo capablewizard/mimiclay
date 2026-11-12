@@ -150,12 +150,12 @@
             "BoundingRadius": 5.2473264
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "Enabled": true,
-            "Position": "-18.639679,-8.45034027,20.7187805",
+            "Position": "-27.4117,-2.18804,19.51636",
             "Rotation": "-0.189159304,-0.720871985,-0.23698397,0.623218358",
-            "Size": "4.19457436,2.07165861,10.8448391",
+            "Size": "4.19457,2.07166,10.84484",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
@@ -168,7 +168,8 @@
             "MirrorY": true,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 11.627768
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",

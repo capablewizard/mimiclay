@@ -96,22 +96,21 @@
             "BoundingRadius": 16.10148
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Subtract",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "0,0,-30.0437126",
+            "Position": "0,0,-21.48102",
             "Rotation": "0,0,0,1",
-            "Size": "13.6359072,28.5467319,8.56269455",
+            "Size": "13.63591,28.54673,8.56269",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
             "Slice": 0,
             "SlicePlaneN": 1,
-            "LocalCentre": "0,0,8.56269455",
             "Blend": 2.2199993,
             "Gap": 0,
             "Rounding": 2.3628435,
@@ -129,7 +128,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 17.68039
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",
@@ -460,7 +459,7 @@
         "DetectedBrushCount": 8,
         "Groups": [
           {
-            "Name": "Group 1 \u00B7 #121701 \u00B7 m0.00 r0.50 \u00B7 6 brushes",
+            "Name": "Group 1 · #121701 · m0.00 r0.50 · 6 brushes",
             "Detected": "0.07293,0.09302,0.00692,1",
             "DetectedMetallic": 0,
             "DetectedRoughness": 0.5,
@@ -497,7 +496,7 @@
             "Tints": null
           },
           {
-            "Name": "Group 2 \u00B7 #501a1a \u00B7 m0.00 r0.57 \u00B7 1 brush",
+            "Name": "Group 2 · #501a1a · m0.00 r0.57 · 1 brush",
             "Detected": "0.31595,0.10345,0.10242,1",
             "DetectedMetallic": 0,
             "DetectedRoughness": 0.56666666,
@@ -524,7 +523,7 @@
             "Tints": null
           },
           {
-            "Name": "Group 3 \u00B7 #cbba87 \u00B7 m0.00 r0.50 \u00B7 1 brush",
+            "Name": "Group 3 · #cbba87 · m0.00 r0.50 · 1 brush",
             "Detected": "0.79717,0.73109,0.53283,1",
             "DetectedMetallic": 0,
             "DetectedRoughness": 0.5,

@@ -9904,7 +9904,7 @@
             "Value": [
               {
                 "Id": "b5eb2b38-5186-400e-9bb4-989734d0f0c2",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -9913,16 +9913,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0.5,0",
+                "Position": "1.7289567E-08,2.1408882,-1.0536712E-08",
                 "Rotation": "-0.707106769,1.49011612E-08,0,0.707106769",
-                "Size": "8.81553268,8.81553268,11.1025267",
+                "Size": "8.81553268,8.81553268,1.6408882",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.8522059,
+                "Slice": 0,
                 "SlicePlaneN": -0.70441175,
-                "LocalCentre": "0,0,1.64088821",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.8566403,
@@ -9943,7 +9942,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.315533
+                "Taper": 0.14779
               },
               {
                 "Id": "11ab5a0b-2254-43f1-a1e6-c85a97b2d1ff",
@@ -10072,7 +10071,7 @@
             "Value": [
               {
                 "Id": "b5eb2b38-5186-400e-9bb4-989734d0f0c2",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -10081,16 +10080,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0.5,0",
+                "Position": "1.7289567E-08,2.1408882,-1.0536712E-08",
                 "Rotation": "-0.707106769,1.49011612E-08,0,0.707106769",
-                "Size": "8.81553268,8.81553268,11.1025267",
+                "Size": "8.81553268,8.81553268,1.6408882",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.8522059,
+                "Slice": 0,
                 "SlicePlaneN": -0.70441175,
-                "LocalCentre": "0,0,1.64088821",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.8566403,
@@ -10111,7 +10109,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.315533
+                "Taper": 0.14779
               },
               {
                 "Id": "11ab5a0b-2254-43f1-a1e6-c85a97b2d1ff",
@@ -10240,7 +10238,7 @@
             "Value": [
               {
                 "Id": "b5eb2b38-5186-400e-9bb4-989734d0f0c2",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -10249,16 +10247,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0.5,0",
+                "Position": "1.7289567E-08,2.1408882,-1.0536712E-08",
                 "Rotation": "-0.707106769,1.49011612E-08,0,0.707106769",
-                "Size": "8.81553268,8.81553268,11.1025267",
+                "Size": "8.81553268,8.81553268,1.6408882",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.8522059,
+                "Slice": 0,
                 "SlicePlaneN": -0.70441175,
-                "LocalCentre": "0,0,1.64088821",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.8566403,
@@ -10279,7 +10276,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.315533
+                "Taper": 0.14779
               },
               {
                 "Id": "11ab5a0b-2254-43f1-a1e6-c85a97b2d1ff",
@@ -10408,7 +10405,7 @@
             "Value": [
               {
                 "Id": "b5eb2b38-5186-400e-9bb4-989734d0f0c2",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -10417,16 +10414,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0.5,0",
+                "Position": "1.7289567E-08,2.1408882,-1.0536712E-08",
                 "Rotation": "-0.707106769,1.49011612E-08,0,0.707106769",
-                "Size": "8.81553268,8.81553268,11.1025267",
+                "Size": "8.81553268,8.81553268,1.6408882",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.8522059,
+                "Slice": 0,
                 "SlicePlaneN": -0.70441175,
-                "LocalCentre": "0,0,1.64088821",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.8566403,
@@ -10447,7 +10443,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.315533
+                "Taper": 0.14779
               },
               {
                 "Id": "11ab5a0b-2254-43f1-a1e6-c85a97b2d1ff",
@@ -10576,7 +10572,7 @@
             "Value": [
               {
                 "Id": "b5eb2b38-5186-400e-9bb4-989734d0f0c2",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -10585,16 +10581,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0.5,0",
+                "Position": "1.7289567E-08,2.1408882,-1.0536712E-08",
                 "Rotation": "-0.707106769,1.49011612E-08,0,0.707106769",
-                "Size": "8.81553268,8.81553268,11.1025267",
+                "Size": "8.81553268,8.81553268,1.6408882",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.8522059,
+                "Slice": 0,
                 "SlicePlaneN": -0.70441175,
-                "LocalCentre": "0,0,1.64088821",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.8566403,
@@ -10615,7 +10610,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.315533
+                "Taper": 0.14779
               },
               {
                 "Id": "11ab5a0b-2254-43f1-a1e6-c85a97b2d1ff",
@@ -10726,7 +10721,7 @@
           "Brushes": [
             {
               "Id": "e497d201-5d66-4c4c-adbb-90b42da5e865",
-              "Shape": "Cone",
+              "Shape": "Cylinder",
               "Operation": "Add",
               "CrossSection": "Triangle",
               "Text": "clay",
@@ -10735,7 +10730,7 @@
               "LinkColor": false,
               "LinkBlend": false,
               "Enabled": true,
-              "Position": "0,5.45057535,0",
+              "Position": "0,3.116493,0",
               "Rotation": "0.707106769,0,0,0.707106769",
               "Size": "8.30281067,6.85971069,2.3340826",
               "Points": [],
@@ -10744,7 +10739,6 @@
               "SplinePerPointRadius": false,
               "Slice": 0,
               "SlicePlaneN": 1,
-              "LocalCentre": "0,0,2.3340826",
               "Blend": 6,
               "Gap": 0,
               "Rounding": 0.75,
@@ -10765,7 +10759,7 @@
               "ShrinkDelay": 2,
               "ShrinkDuration": 1.5,
               "IsSplineLoop": false,
-              "BoundingRadius": 9.802811
+              "Taper": 1
             },
             {
               "Id": "3b687cbe-2bd4-4d31-9fd5-74207d9e446a",
@@ -11016,7 +11010,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -11025,7 +11019,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -11034,7 +11028,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -11055,7 +11048,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -11176,7 +11169,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -11185,7 +11178,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -11194,7 +11187,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -11215,7 +11207,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -11320,7 +11312,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -11329,7 +11321,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -11338,7 +11330,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -11359,7 +11350,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -11456,7 +11447,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -11465,7 +11456,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -11474,7 +11465,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -11495,7 +11485,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -11608,7 +11598,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -11617,7 +11607,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -11626,7 +11616,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -11647,7 +11636,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -11760,7 +11749,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -11769,7 +11758,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -11778,7 +11767,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -11799,7 +11787,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -11912,7 +11900,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -11921,7 +11909,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -11930,7 +11918,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -11951,7 +11938,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -12064,7 +12051,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -12073,7 +12060,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -12082,7 +12069,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -12103,7 +12089,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -12216,7 +12202,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -12225,7 +12211,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -12234,7 +12220,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -12255,7 +12240,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -12368,7 +12353,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -12377,7 +12362,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -12386,7 +12371,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -12407,7 +12391,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -12520,7 +12504,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -12529,7 +12513,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -12538,7 +12522,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -12559,7 +12542,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -12680,7 +12663,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -12689,7 +12672,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -12698,7 +12681,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -12719,7 +12701,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -12840,7 +12822,7 @@
             "Value": [
               {
                 "Id": "a9ba404f-3c4b-4f69-8d07-0ead74f1b458",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -12849,7 +12831,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,5.45057535,0",
+                "Position": "0,3.116493,0",
                 "Rotation": "0.707106769,0,0,0.707106769",
                 "Size": "8.30281067,6.85971069,2.3340826",
                 "Points": [],
@@ -12858,7 +12840,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,2.3340826",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -12879,7 +12860,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.802811
+                "Taper": 1
               },
               {
                 "Id": "76dc1db1-6e31-479f-8afa-9195224cb95b",
@@ -13234,7 +13215,7 @@
               },
               {
                 "Id": "5fd74a46-4314-49eb-8a84-2199e288f368",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -13243,16 +13224,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-0.029942587,1.48516893,41.4860039",
+                "Position": "-0.029942587,1.4851686,37.227043",
                 "Rotation": "-1,0,0,-4.37113847E-08",
-                "Size": "9.08458328,9.08458328,5.79798412",
+                "Size": "9.08458328,9.08458328,4.2589602",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.26544118,
+                "Slice": 0,
                 "SlicePlaneN": 0.46911764,
-                "LocalCentre": "0,0,4.25896025",
                 "Blend": 1.1399992,
                 "Gap": 0,
                 "Rounding": 2.4739559,
@@ -13273,7 +13253,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 9.369583
+                "Taper": 0.73456
               },
               {
                 "Id": "9b3a2ec3-2746-438e-8d14-8dd81941cbc4",
@@ -13427,7 +13407,7 @@
               },
               {
                 "Id": "6a2163b6-59ef-4551-bbd8-ebe9981f7fdb",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -13436,7 +13416,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-0.029942587,-47.5071945,32.1867294",
+                "Position": "-0.029942641,-44.261765,26.912828",
                 "Rotation": "-0.962201059,-1.49010475E-08,-5.8029144E-11,0.272340089",
                 "Size": "3.75053144,7.09586811,6.19248247",
                 "Points": [],
@@ -13445,7 +13425,6 @@
                 "SplinePerPointRadius": true,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,6.19248247",
                 "Blend": 0.40282732,
                 "Gap": 0,
                 "Rounding": 0.900856,
@@ -13466,7 +13445,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 12.485672
+                "Taper": 1
               }
             ]
           },
@@ -17146,7 +17125,7 @@
               },
               {
                 "Id": "bee8f34d-5dc6-456a-88d9-11c81b8b8fc3",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -17155,7 +17134,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0.557548523,-2.1419396E-07,57.0775566",
+                "Position": "0.557548523,-7.5648154E-07,50.874508",
                 "Rotation": "-1.00000012,0,0,-4.37113883E-08",
                 "Size": "4.09484148,4.09484148,6.20304632",
                 "Points": [],
@@ -17164,7 +17143,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,6.20304632",
                 "Blend": 2.055758,
                 "Gap": 0,
                 "Rounding": 0.66815066,
@@ -17185,7 +17163,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 12.9200325
+                "Taper": 1
               }
             ]
           },
@@ -17553,7 +17531,7 @@
               },
               {
                 "Id": "bee8f34d-5dc6-456a-88d9-11c81b8b8fc3",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -17562,7 +17540,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0.557548523,-2.1419396E-07,57.0775566",
+                "Position": "0.557548523,-7.5648154E-07,50.874508",
                 "Rotation": "-1.00000012,0,0,-4.37113883E-08",
                 "Size": "4.09484148,4.09484148,6.20304632",
                 "Points": [],
@@ -17571,7 +17549,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,6.20304632",
                 "Blend": 2.055758,
                 "Gap": 0,
                 "Rounding": 0.66815066,
@@ -17592,7 +17569,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 12.9200325
+                "Taper": 1
               }
             ]
           },
@@ -18697,7 +18674,7 @@
               },
               {
                 "Id": "11f419f3-da81-4435-8b82-c26e96d049d8",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -18706,16 +18683,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-5.46740047E-17,2.01823589E-08,21.7984791",
+                "Position": "1.1653442E-15,-4.3017556E-07,16.646984",
                 "Rotation": "-1,1.49011612E-08,-8.8817842E-16,-4.37113847E-08",
-                "Size": "8.24275684,10.7443991,5.43852806",
+                "Size": "8.24275684,10.7443991,5.1514945",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.05277778,
+                "Slice": 0,
                 "SlicePlaneN": 0.89444447,
-                "LocalCentre": "0,0,5.1514945",
                 "Blend": 2.5067828,
                 "Gap": 0,
                 "Rounding": 1.4510419,
@@ -18736,7 +18712,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.938865
+                "Taper": 0.94722
               }
             ]
           },
@@ -19005,7 +18981,7 @@
               },
               {
                 "Id": "b4abf5dd-8a20-4a7a-abfd-425c1d6fe3e0",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -19014,16 +18990,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-5.46740047E-17,2.01823589E-08,21.7984791",
+                "Position": "1.1653442E-15,-4.3017556E-07,16.646984",
                 "Rotation": "-1,1.49011612E-08,-8.8817842E-16,-4.37113847E-08",
-                "Size": "8.24275684,10.7443991,5.43852806",
+                "Size": "8.24275684,10.7443991,5.1514945",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.05277778,
+                "Slice": 0,
                 "SlicePlaneN": 0.89444447,
-                "LocalCentre": "0,0,5.1514945",
                 "Blend": 2.5067828,
                 "Gap": 0,
                 "Rounding": 1.4510419,
@@ -19044,7 +19019,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 10.938865
+                "Taper": 0.94722
               },
               {
                 "Id": "df3c33f1-14db-4a5e-ba4e-f69356a06a13",
@@ -20391,7 +20366,7 @@
             "Value": [
               {
                 "Id": "82eff2b2-5f2a-41ac-a926-674737ccaa7f",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -20400,16 +20375,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "6.45464482E-09,5.35047029E-09,10.332962",
+                "Position": "-4.9578293E-08,-4.1097138E-08,6.805963",
                 "Rotation": "-1.00000012,1.49011612E-08,7.9434308E-09,-6.58457999E-09",
-                "Size": "38.9631729,38.9631729,13.5884361",
+                "Size": "38.9631729,38.9631729,3.526998",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.7404412,
+                "Slice": 0,
                 "SlicePlaneN": -0.4808824,
-                "LocalCentre": "0,0,3.52699804",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 1.4553349,
@@ -20430,7 +20404,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 40.463173
+                "Taper": 0.25956
               },
               {
                 "Id": "dfb4a5f9-1ee8-45d3-8591-57c18645fef3",
@@ -20477,7 +20451,7 @@
               },
               {
                 "Id": "1abc6dc7-2c8f-45c8-b480-c2f08f77c9be",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -20486,16 +20460,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "6.45464482E-09,5.35047029E-09,11.3732405",
+                "Position": "-3.021272E-08,-2.5044363E-08,9.065209",
                 "Rotation": "-1.00000012,1.49011612E-08,7.9434308E-09,-6.58458088E-09",
-                "Size": "37.2022781,36.4986115,4.84775496",
+                "Size": "37.2022781,36.4986115,2.3080304",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.52389705,
+                "Slice": 0,
                 "SlicePlaneN": -0.047794104,
-                "LocalCentre": "0,0,2.30803037",
                 "Blend": 0.78,
                 "Gap": 0,
                 "Rounding": 0.14826706,
@@ -20516,7 +20489,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 37.397278
+                "Taper": 0.4761
               },
               {
                 "Id": "234f3f8c-6418-464c-b1ae-fb2536358f03",
@@ -20673,7 +20646,7 @@
             "Value": [
               {
                 "Id": "82eff2b2-5f2a-41ac-a926-674737ccaa7f",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -20682,16 +20655,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "6.45464482E-09,5.35047029E-09,10.332962",
+                "Position": "-4.9578293E-08,-4.1097138E-08,6.805963",
                 "Rotation": "-1.00000012,1.49011612E-08,7.9434308E-09,-6.58457999E-09",
-                "Size": "38.9631729,38.9631729,13.5884361",
+                "Size": "38.9631729,38.9631729,3.526998",
                 "Points": [],
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.7404412,
+                "Slice": 0,
                 "SlicePlaneN": -0.4808824,
-                "LocalCentre": "0,0,3.52699804",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 1.4553349,
@@ -20712,7 +20684,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 40.463173
+                "Taper": 0.25956
               },
               {
                 "Id": "dfb4a5f9-1ee8-45d3-8591-57c18645fef3",
@@ -20759,7 +20731,7 @@
               },
               {
                 "Id": "1abc6dc7-2c8f-45c8-b480-c2f08f77c9be",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -20768,16 +20740,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "6.45464482E-09,5.35047029E-09,11.3732405",
+                "Position": "-3.021272E-08,-2.5044363E-08,9.065209",
                 "Rotation": "-1.00000012,1.49011612E-08,7.9434308E-09,-6.58458088E-09",
-                "Size": "37.2022781,36.4986115,4.84775496",
+                "Size": "37.2022781,36.4986115,2.3080304",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.52389705,
+                "Slice": 0,
                 "SlicePlaneN": -0.047794104,
-                "LocalCentre": "0,0,2.30803037",
                 "Blend": 0.78,
                 "Gap": 0,
                 "Rounding": 0.14826706,
@@ -20798,7 +20769,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 37.397278
+                "Taper": 0.4761
               },
               {
                 "Id": "234f3f8c-6418-464c-b1ae-fb2536358f03",
@@ -21824,7 +21795,7 @@
               },
               {
                 "Id": "48f5f2ba-9116-44bc-974c-65b3d522bfff",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -21833,16 +21804,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-0.84956938,0.0210986324,6.88643789",
+                "Position": "-0.84956938,0.02109786,-1.949265",
                 "Rotation": "-1,-2.98023224E-08,-8.8817842E-16,-4.37113883E-08",
-                "Size": "27.1626511,27.1626511,57.0857658",
+                "Size": "27.1626511,27.1626511,8.835703",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.84522057,
+                "Slice": 0,
                 "SlicePlaneN": -0.69044113,
-                "LocalCentre": "0,0,8.8357029",
                 "Blend": 3.9599986,
                 "Gap": 0,
                 "Rounding": 3.4500017,
@@ -21863,7 +21833,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 29.961851
+                "Taper": 0.15478
               },
               {
                 "Id": "d4575062-b114-421a-8af3-7f098878633c",
@@ -21996,7 +21966,7 @@
               },
               {
                 "Id": "54a0df99-c0cf-4c88-ab0a-74b3df9ca469",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -22005,16 +21975,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-0.849573731,0.0211126357,11.4360332",
+                "Position": "-0.849573731,0.021111833,2.2620087",
                 "Rotation": "-1,-2.98023224E-08,-8.8817842E-16,-4.37113883E-08",
-                "Size": "25.5402946,25.5402946,59.2715988",
+                "Size": "25.5402946,25.5402946,9.174025",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.84522057,
+                "Slice": 0,
                 "SlicePlaneN": -0.69044113,
-                "LocalCentre": "0,0,9.17402458",
                 "Blend": 1.02,
                 "Gap": 0,
                 "Rounding": 1.8000016,
@@ -22035,7 +22004,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 28.586206
+                "Taper": 0.15478
               },
               {
                 "Id": "b4167e02-b3f3-4489-8121-97be81617556",
@@ -22141,7 +22110,7 @@
             "Value": [
               {
                 "Id": "a60d31ee-d917-4a26-a2ac-9e4fcdadc15e",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -22150,16 +22119,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0,3.47698975",
+                "Position": "9.618285E-07,0,-7.5250463",
                 "Rotation": "0,-1,0,-4.37113883E-08",
-                "Size": "19.2089462,18,40.222496",
+                "Size": "19.2089462,18,11.002036",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.7264706,
+                "Slice": 0,
                 "SlicePlaneN": -0.45294118,
-                "LocalCentre": "0,0,11.0020361",
                 "Blend": 7,
                 "Gap": 0,
                 "Rounding": 9,
@@ -22180,7 +22148,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 27.805975
+                "Taper": 0.27353
               },
               {
                 "Id": "0bc09c2f-7023-4b2a-8589-e07ae16998cc",
@@ -22270,7 +22238,7 @@
               },
               {
                 "Id": "0d081da5-fab0-4b36-9ff8-a9cbcba09e5b",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -22279,7 +22247,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "3.44018463E-06,-6.81676174E-05,43.0578346",
+                "Position": "5.0041467E-06,-6.81676174E-05,25.168194",
                 "Rotation": "0,-1,0,-4.37113883E-08",
                 "Size": "11.6542864,10,17.8896408",
                 "Points": null,
@@ -22288,7 +22256,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,17.8896408",
                 "Blend": 10.29695,
                 "Gap": 0,
                 "Rounding": 1,
@@ -22309,7 +22276,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 38.35352
+                "Taper": 1
               },
               {
                 "Id": "e462c66b-26f6-43dc-9c66-b1d0e03eaa6b",
@@ -22485,7 +22452,7 @@
               },
               {
                 "Id": "6fbab3d2-cb90-42c3-8b66-dabcc33779e6",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -22494,16 +22461,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0,47.8583984",
+                "Position": "8.1278347E-07,0,38.56124",
                 "Rotation": "0,-1,0,-4.37113883E-08",
-                "Size": "11.7939844,10.087348,12.3057289",
+                "Size": "11.7939844,10.087348,9.297159",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.2444853,
+                "Slice": 0,
                 "SlicePlaneN": 0.51102936,
-                "LocalCentre": "0,0,9.29715919",
                 "Blend": 1.0200002,
                 "Gap": 0,
                 "Rounding": 1.05,
@@ -22524,7 +22490,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 19.071562
+                "Taper": 0.75551
               },
               {
                 "Id": "b28024da-a810-4172-bd97-d6c3ae2e0754",
@@ -23277,7 +23243,7 @@
             "Value": [
               {
                 "Id": "2fd53cca-60fb-4d48-bc57-2949d7fe2f26",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -23286,7 +23252,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0,-24",
+                "Position": "0,0,-17.461887",
                 "Rotation": "0,0,0,1",
                 "Size": "13.9519463,13.9519463,6.53811264",
                 "Points": null,
@@ -23295,7 +23261,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,6.53811264",
                 "Blend": 6,
                 "Gap": 0,
                 "Rounding": 1.7290418,
@@ -23316,7 +23281,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 15.451946
+                "Taper": 1
               },
               {
                 "Id": "6fc9589e-9135-4e00-b5ee-3099a951a6ef",
@@ -24475,7 +24440,7 @@
               },
               {
                 "Id": "c5cbe1db-bf0f-49b2-95dd-8c178cd0c8cf",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -24484,7 +24449,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0,-30.0437126",
+                "Position": "0,0,-21.481018",
                 "Rotation": "0,0,0,1",
                 "Size": "13.6359072,28.5467319,8.56269455",
                 "Points": null,
@@ -24493,7 +24458,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,8.56269455",
                 "Blend": 2.2199993,
                 "Gap": 0,
                 "Rounding": 2.3628435,
@@ -24514,7 +24478,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 17.68039
+                "Taper": 1
               },
               {
                 "Id": "bb338ab8-1612-4fcb-9d57-584cf6a66dd1",
@@ -24886,7 +24850,7 @@
               },
               {
                 "Id": "d022dc4b-5be7-4ab7-9d37-21e3ed6cc908",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Subtract",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -24895,7 +24859,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "0,0,-30.0437126",
+                "Position": "0,0,-21.481018",
                 "Rotation": "0,0,0,1",
                 "Size": "13.6359072,28.5467319,8.56269455",
                 "Points": null,
@@ -24904,7 +24868,6 @@
                 "SplinePerPointRadius": false,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,8.56269455",
                 "Blend": 2.2199993,
                 "Gap": 0,
                 "Rounding": 2.3628435,
@@ -24925,7 +24888,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 17.68039
+                "Taper": 1
               },
               {
                 "Id": "a0d9a086-8bc8-406d-b7a8-93e12441b5fa",
@@ -27628,7 +27591,7 @@
             "Value": [
               {
                 "Id": "69cbfd65-9cb1-40c2-b781-89def09394eb",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -27637,16 +27600,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-27.2552795,0,4.72625923",
+                "Position": "-27.2552795,0,11.634577",
                 "Rotation": "0,7.4505806E-09,0,1",
-                "Size": "24.9998322,43.2497101,17.0050907",
+                "Size": "24.9998322,43.2497101,6.908318",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": false,
-                "Slice": 0.59375,
+                "Slice": 0,
                 "SlicePlaneN": -0.1875,
-                "LocalCentre": "0,0,6.90831804",
                 "Blend": 0.6,
                 "Gap": 0,
                 "Rounding": 2.25,
@@ -27667,7 +27629,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 25.149832
+                "Taper": 0.40625
               },
               {
                 "Id": "e24e5f76-0dc3-4d09-a0fe-328c77e1bdc0",
@@ -29852,7 +29814,7 @@
               },
               {
                 "Id": "d83c30f6-1cff-4070-b152-36112e1b4d48",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -29861,16 +29823,15 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-5.84764576,-25.6445236,71.032959",
+                "Position": "-5.84764576,-25.6445236,69.16979",
                 "Rotation": "5.96046448E-08,-1,1.77635684E-15,-4.37113883E-08",
-                "Size": "2.98005056,1.31566477,4.43377876",
+                "Size": "2.98005056,1.31566477,1.8631653",
                 "Points": null,
                 "Curvature": 1,
                 "SplineClosed": false,
                 "SplinePerPointRadius": true,
-                "Slice": 0.5797794,
+                "Slice": 0,
                 "SlicePlaneN": -0.15955877,
-                "LocalCentre": "0,0,1.86316526",
                 "Blend": 0,
                 "Gap": 0,
                 "Rounding": 0,
@@ -29891,7 +29852,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 4.1074
+                "Taper": 0.42022
               }
             ]
           }
@@ -31201,7 +31162,7 @@
               },
               {
                 "Id": "83f5719e-e413-4b7e-8a2a-a779e9f6992f",
-                "Shape": "Cone",
+                "Shape": "Cylinder",
                 "Operation": "Add",
                 "CrossSection": "Triangle",
                 "Text": "clay",
@@ -31210,7 +31171,7 @@
                 "LinkColor": false,
                 "LinkBlend": false,
                 "Enabled": true,
-                "Position": "-3.02549243,15.5677767,24.6912041",
+                "Position": "-5.694132,20.937653,33.698223",
                 "Rotation": "-0.0874713659,-0.275945276,-0.688372493,0.665072918",
                 "Size": "7.18920898,7.18920898,10.8207798",
                 "Points": null,
@@ -31219,7 +31180,6 @@
                 "SplinePerPointRadius": true,
                 "Slice": 0,
                 "SlicePlaneN": 1,
-                "LocalCentre": "0,0,10.8207798",
                 "Blend": 0,
                 "Gap": 0,
                 "Rounding": 0.75,
@@ -31240,7 +31200,7 @@
                 "ShrinkDelay": 2,
                 "ShrinkDuration": 1.5,
                 "IsSplineLoop": false,
-                "BoundingRadius": 21.64156
+                "Taper": 1
               },
               {
                 "Id": "e9322204-0423-4da8-a362-27e1ace2dc3d",

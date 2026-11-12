@@ -234,22 +234,21 @@
             "BoundingRadius": 19.058979
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "-0.029942587,1.48516893,41.4860039",
+            "Position": "-0.02994,1.48517,37.22704",
             "Rotation": "-1,0,0,-4.37113847E-08",
-            "Size": "9.08458328,9.08458328,5.79798412",
+            "Size": "9.08458,9.08458,4.25896",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.26544118,
+            "Slice": 0,
             "SlicePlaneN": 0.46911764,
-            "LocalCentre": "0,0,5.79798412",
             "Blend": 1.1399992,
             "Rounding": 2.4739559,
             "Color": "0.52862,0.29845,0.09365,1",
@@ -266,7 +265,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 15.015788
+            "Taper": 0.73456
           },
           {
             "Shape": "Spline",
@@ -395,22 +394,21 @@
             "BoundingRadius": 15.837698
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Subtract",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "-0.029942587,-47.5071945,32.1867294",
+            "Position": "-0.02994,-44.26176,26.91283",
             "Rotation": "-0.962201059,-1.49010475E-08,-5.8029144E-11,0.272340089",
-            "Size": "3.75053144,7.09586811,6.19248247",
+            "Size": "3.75053,7.09587,6.19248",
             "Points": [],
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": true,
             "Slice": 0,
             "SlicePlaneN": 1,
-            "LocalCentre": "0,0,6.19248247",
             "Blend": 0.40282732,
             "Rounding": 0.900856,
             "Color": "0.30433,0.17686,0.06345,1",
@@ -427,7 +425,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 13.041102
+            "Taper": 1
           }
         ],
         "FlipFaces": false,

@@ -45,10 +45,10 @@
             "BoundingRadius": 32.57
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "Enabled": true,
-            "Position": "0,0,8",
+            "Position": "0,0,-1",
             "Rotation": "1,0,0,0",
             "Size": "5,5,9",
             "Points": [],
@@ -63,7 +63,8 @@
             "MirrorY": false,
             "MirrorZ": false,
             "IsSplineLoop": false,
-            "BoundingRadius": 16.91
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Cylinder",

@@ -76,45 +76,39 @@ float cappedCone( float qx, float qy, float h, float r1, float r2 )
 	return s * sqrt( min( dot( ca, ca ), dot( cb, cb ) ) );
 }
 
-// Cone (base radius R at z=-H, apex at +H), optionally SLICED flat by the slice fraction — the slice is
-// part of the primitive (a frustum), so ONE Minkowski opening rounds every edge together: erode all faces
-// (slant, base, cut) by r, exact capped-cone distance of the eroded trapezoid, dilate by r. The cut rim
-// rounds exactly like the base rim and the flat survives any legal r. Unsliced (Rt = 0) this reproduces
-// the classic pointed-cone formula exactly. Matches SdfBrush.ConeDistance.
-float sdCone( float3 p, float R, float H, float rounding, float slice )
+// Tapered cylinder (centred): base radius R at z=-H, top radius Rt (0..R) at z=+H — a frustum, a pointed cone
+// at Rt = 0. ONE Minkowski opening rounds every edge together: erode all faces (slant, base, top) by r, exact
+// capped-cone distance of the eroded trapezoid, dilate by r — both rims round alike and the flats survive any
+// legal r. Untapered brushes never get here (sdCylinder, the identical surface). Matches SdfBrush.FrustumDistance.
+float sdFrustum( float3 p, float R, float Rt, float H, float rounding )
 {
 	float qx = length( p.xy );
+	Rt = clamp( Rt, 0.0, R );
 
-	float s = clamp( slice, 0.0, MAX_SLICE );
-	float zcut = H * (1.0 - 2.0 * s); // top cap height (= +H when unsliced)
-	float Rt = R * s;                 // top cap radius (0 = pointed)
-	float hh = (zcut + H) * 0.5;      // frustum half-height
-	float zc0 = (zcut - H) * 0.5;     // frustum centre
+	if ( H < 1e-4 || R < 1e-4 )
+		return length( float2( qx, p.z ) ) - max( R, 1e-3 );
 
-	if ( hh < 1e-4 || R < 1e-4 )
-		return length( float2( qx, p.z - zc0 ) ) - max( R, max( Rt, 1e-3 ) );
-
-	float L = sqrt( (R - Rt) * (R - Rt) + 4.0 * hh * hh ); // slant length
-	float k = (Rt - R) / (2.0 * hh);                       // slant slope dq/dz (< 0)
-	// Erosion limit: caps can't cross, eroded base radius can't go negative (= inradius when unsliced).
-	float r = clamp( rounding, 0.0, min( hh, 2.0 * hh * R / max( L + R - Rt, 1e-4 ) ) );
+	float L = sqrt( (R - Rt) * (R - Rt) + 4.0 * H * H ); // slant length
+	float k = (Rt - R) / (2.0 * H);                      // slant slope dq/dz (<= 0)
+	// Erosion limit: caps can't cross, eroded base radius can't go negative (= cone inradius at a point).
+	float r = clamp( rounding, 0.0, min( H, 2.0 * H * R / max( L + R - Rt, 1e-4 ) ) );
 
 	if ( r < 1e-4 )
-		return cappedCone( qx, p.z - zc0, hh, R, Rt );
+		return cappedCone( qx, p.z, H, R, Rt );
 
-	// Erode: caps move in by r; the slant shifts horizontally by r/cos(tilt) = r·L/(2hh).
-	float dq = r * L / (2.0 * hh);
-	float zb = -H + r, zt = zcut - r;
+	// Erode: caps move in by r; the slant shifts horizontally by r/cos(tilt) = r·L/(2H).
+	float dq = r * L / (2.0 * H);
+	float zb = -H + r, zt = H - r;
 	float r1 = R + r * k - dq;  // eroded radius at the bottom cap
 	float r2 = Rt - r * k - dq; // eroded radius at the top cap
 
 	if ( r2 < 0.0 )
 	{
 		zt = (dq - R) / k - H; // slant meets the axis below the top cap — eroded shape is pointed
-		r2 = 0.0;              // (the classic zApex = H − r/sinB when unsliced)
+		r2 = 0.0;
 	}
 
-	if ( zt <= zb ) // caps met — eroded core is a flat disc of radius r1 == r2 (0 when unsliced → ball)
+	if ( zt <= zb ) // caps met — eroded core is a flat disc of radius r1 == r2 (0 at a point → ball)
 	{
 		float rd = max( 0.5 * (r1 + r2), 0.0 );
 		float2 w = float2( max( qx - rd, 0.0 ), p.z - (zb + zt) * 0.5 );
@@ -213,6 +207,66 @@ float sdStar2D( float2 p, float R )
 
 #define STAR_EDGE_FACTOR 0.40673664 // sin(60°−36°): star edge-to-centre / circumradius (SdfBrush.StarEdgeFactor)
 
+// Signed 2D distance to { zb <= Z <= 0, X <= -k*Z }: flat top (Z = 0), slanted side (0,0)->(-k*zb, zb), flat
+// bottom (Z = zb), open toward -X. Matches SdfBrush.Wedge2D.
+float sdWedge2D( float X, float Z, float k, float zb )
+{
+	float xb = -k * zb;
+	float len2 = xb * xb + zb * zb;
+	float tt = len2 > 1e-12 ? clamp( (X * xb + Z * zb) / len2, 0.0, 1.0 ) : 0.0;
+	float dS = length( float2( X - xb * tt, Z - zb * tt ) );
+	float dT = X <= 0.0 ? abs( Z ) : length( float2( X, Z ) );
+	float dB = X <= xb ? abs( Z - zb ) : length( float2( X - xb, Z - zb ) );
+	float d = min( dS, min( dT, dB ) );
+	bool inside = Z <= 0.0 && Z >= zb && X <= -k * Z;
+	return inside ? -d : d;
+}
+
+// Tapered extrusion: the profile shrinks toward its taper centre (origin; the triangle's incentre) from full
+// size at z = -hz to (1 - t) at +hz. Faces erode along their tilted normals (horizontal inset r·L), the core is
+// capped where the eroded profile collapses, and the distance is the exact 2D one in the (X, Z) plane against
+// the core's cross-section — so the rounded top meets the sides cleanly. Matches SdfBrush.TaperedExtrudedDistance.
+float sdTaperedExtruded( float3 p, float wx, float hy, float hz, float rounding, int xs, float t )
+{
+	wx = max( wx, 1e-3 ); hy = max( hy, 1e-3 ); hz = max( hz, 1e-3 );
+	float2 v0 = float2( 0.0, hy ), v1 = float2( -wx, -hy ), v2 = float2( wx, -hy );
+	float e;
+	if ( xs == 1 )      e = wx * STAR_EDGE_FACTOR;
+	else if ( xs == 2 ) e = wx * 0.86602540;
+	else if ( xs == 3 ) e = wx * 0.80901699;
+	else                e = triInradius( v0, v1, v2 );
+
+	// Rounding limit: the frustum erosion limit (as sdFrustum) with e as the base radius.
+	float Rt = e * (1.0 - t);
+	float Ls = sqrt( (e - Rt) * (e - Rt) + 4.0 * hz * hz );
+	float r = clamp( rounding, 0.0, min( hz, 2.0 * hz * e / max( Ls + e - Rt, 1e-4 ) ) );
+
+	float k = e * t / (2.0 * hz);
+	float L = sqrt( 1.0 + k * k );
+	float zBot = -(hz - r), zTop = hz - r;
+	if ( r > 0.0 )
+		zTop = min( zTop, -hz + 2.0 * hz * (1.0 - r * L / e) / t );
+	zTop = max( zTop, zBot );
+
+	float z = clamp( p.z, zBot, zTop );
+	float s = 1.0 - t * (z + hz) / (2.0 * hz);
+	float ea = max( e * s - r * L, 0.0 );
+
+	float D;
+	if ( xs == 1 )      D = sdStar2D( p.xy, ea / STAR_EDGE_FACTOR );
+	else if ( xs == 2 ) D = sdHexagon2D( p.xy, ea );
+	else if ( xs == 3 ) D = sdPentagon2D( p.xy, ea );
+	else
+	{
+		float2 c = float2( 0.0, -hy + e ); // incentre: one inradius above the base
+		float f = ea / e;
+		D = f > 1e-5 ? sdTriangle2D( p.xy, c + (v0 - c) * f, c + (v1 - c) * f, c + (v2 - c) * f ) : length( p.xy - c );
+	}
+
+	float X = D - k * (z - zTop);
+	return sdWedge2D( X, p.z - zTop, k, zBot - zTop ) - r;
+}
+
 // Extruded profile (shape 4): triangle (xs 0), 5-point star (1), regular hexagon (2). Triangle keeps the
 // isosceles wx/hy params; star/hexagon are regular with circumradius wx. Rounding = erode the profile then
 // dilate (Minkowski opening), so it stays inside the sharp silhouette — matches SdfBrush.ExtrudedDistance.
@@ -245,7 +299,7 @@ float sdExtruded( float3 p, float wx, float hy, float hz, float rounding, int xs
 	return sdTriPrism( p, wx, hy, hz, rounding );
 }
 
-// Planar slice for the sphere (the cone folds its slice into sdCone): intersect with the half-space below
+// Planar slice for the sphere: intersect with the half-space below
 // z = halfH·(1 − 2·slice), the rim rounded by the Round slider (erode shape + plane by r, rounded-corner
 // join, dilate by r — the same combine the extrusions use). Matches SdfBrush.SliceRound. Callers pre-clamp
 // r so the fillet fits the cut disc (see SdfShapeDist).
@@ -312,13 +366,14 @@ float SdfShapeDist( float shapeId, float3 pl, float4 B, float rr, int xs, float 
 {
 	int shape = (int)(shapeId + 0.5);
 	if ( shape == 1 ) return sdBox( pl, B.xyz, rr );
-	if ( shape == 2 ) return sdCylinder( pl, B.x, B.z, rr );
-	if ( shape == 3 )
-	{
-		pl.z -= B.z; // base-pivot cone: Position sits on the base; shift into the centred cone frame
-		return sdCone( pl, B.x, B.z, rr, slice ); // slice is part of the primitive (rounded frustum)
-	}
-	if ( shape == 4 ) return sdExtruded( pl, B.x, B.y, B.z, rr, xs );
+	// Cylinder: the shared lane carries its TAPER (SdfFieldGpu packs Taper for cylinders/extrusions, Slice for the rest).
+	// Untapered keeps the plain cylinder (bit-identical to before taper existed). Shape 3 (the legacy cone) is
+	// converted on load (SdfBrush.UpgradeLegacy) and never packed.
+	if ( shape == 2 )
+		return slice > 0.0 ? sdFrustum( pl, B.x, B.x * (1.0 - min( slice, 1.0 )), B.z, rr ) : sdCylinder( pl, B.x, B.z, rr );
+	// Extruded: the shared lane carries its TAPER too; untapered keeps the exact old path.
+	if ( shape == 4 )
+		return slice > 0.0 ? sdTaperedExtruded( pl, B.x, B.y, B.z, rr, xs, min( slice, 1.0 ) ) : sdExtruded( pl, B.x, B.y, B.z, rr, xs );
 	if ( shape == 5 ) return 1e9; // spline handled in OneBrushDist
 	if ( shape == 6 ) return sdText( pl, B.xyz, xs, rr ); // xs lane doubles as the text atlas slot
 	// Sphere/ellipsoid: rim fillet capped by the CAP DEPTH (material under the cut plane, 2·rz·slice) and

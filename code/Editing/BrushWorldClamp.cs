@@ -1404,7 +1404,7 @@ public sealed class BrushWorldClamp
 
 	static bool SameShapeIgnoringPosition( SdfBrush a, SdfBrush b ) =>
 		a.Shape == b.Shape && a.CrossSection == b.CrossSection
-		&& a.Size == b.Size && a.Rotation == b.Rotation && a.Slice == b.Slice
+		&& a.Size == b.Size && a.Rotation == b.Rotation && a.Slice == b.Slice && a.Taper == b.Taper
 		&& a.MirrorX == b.MirrorX && a.MirrorY == b.MirrorY && a.MirrorZ == b.MirrorZ
 		&& a.Text == b.Text && a.Font == b.Font;
 
@@ -1422,6 +1422,7 @@ public sealed class BrushWorldClamp
 		b.Rotation = s.Rotation;
 		b.Size = s.Size;
 		b.Slice = s.Slice;
+		b.Taper = s.Taper;
 		b.MirrorX = s.MirrorX;
 		b.MirrorY = s.MirrorY;
 		b.MirrorZ = s.MirrorZ;

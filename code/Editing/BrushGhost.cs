@@ -42,7 +42,7 @@ public sealed class BrushGhost
 		int mirror = (brush.EffectiveMirrorX ? 1 : 0) | (brush.EffectiveMirrorY ? 2 : 0) | (brush.EffectiveMirrorZ ? 4 : 0);
 		int hash = HashCode.Combine( (int)brush.Shape, brush.Size, brush.Position, brush.Rotation, color,
 			sculptTx.Position, sculptTx.Rotation, mirror );
-		hash = HashCode.Combine( hash, (int)brush.CrossSection, brush.Slice ); // profile swap / slice drag rebuilds the ghost
+		hash = HashCode.Combine( hash, (int)brush.CrossSection, brush.Slice, brush.Taper ); // profile swap / slice or taper drag rebuilds the ghost
 		hash = HashCode.Combine( hash, brush.Text, brush.Font );
 		hash = HashCode.Combine( hash, brush.TextData is not null ); // ink-rect ghost: rebuild when the bake lands
 		if ( brush.Shape == SdfShape.Group )
@@ -109,9 +109,8 @@ public sealed class BrushGhost
 			{
 				case SdfShape.Box: Box( s, col ); break;
 				case SdfShape.Text: Box( brush.TextInkExtents() * Pad, col ); break; // the ink rect, matching the wireframe
-				case SdfShape.Cylinder: Cylinder( s.x, s.z, col ); break;
-				case SdfShape.Cone: Cone( s.x, s.z, brush.Size.z, brush.SlicePlaneN, col ); break;
-				case SdfShape.Extruded: Extrusion( brush.CrossSection, s, col ); break;
+				case SdfShape.Cylinder: Cylinder( s.x, brush.TopRadius * Pad, s.z, col ); break;
+				case SdfShape.Extruded: Extrusion( brush.CrossSection, s, col, brush.ExtrudeTopScale ); break;
 				case SdfShape.Spline: SplineTube( brush, col ); break; // one continuous tube surface
 				default: Ellipsoid( s, brush.SlicePlaneN, col ); break; // Sphere / ellipsoid
 			}
@@ -312,72 +311,37 @@ public sealed class BrushGhost
 			Tri( c[f[k]], c[f[k + 1]], c[f[k + 2]] );
 	}
 
-	void Cylinder( float rad, float h, Color col )
+	// Tapered cylinder (centred): base ring of radius rad at −h, top ring of radius rtop at +h — collapsing to
+	// one apex vertex at a full taper (a cone). Matches SdfBrush.FrustumDistance / CylinderDistance.
+	void Cylinder( float rad, float rtop, float h, Color col )
 	{
 		const int N = 20;
-		int top = V( new Vector3( 0, 0, h ), col );
+		bool pointed = rtop <= 1e-3f;
+		int top = V( new Vector3( 0, 0, h ), col ); // top cap centre, or the apex when pointed
 		int bot = V( new Vector3( 0, 0, -h ), col );
 
-		var rt = new int[N];
+		var rt = pointed ? null : new int[N];
 		var rb = new int[N];
-		for ( int k = 0; k < N; k++ )
-		{
-			float a = k / (float)N * MathF.PI * 2f;
-			float cx = MathF.Cos( a ) * rad, cy = MathF.Sin( a ) * rad;
-			rt[k] = V( new Vector3( cx, cy, h ), col );
-			rb[k] = V( new Vector3( cx, cy, -h ), col );
-		}
-
-		for ( int k = 0; k < N; k++ )
-		{
-			int n = (k + 1) % N;
-			Quad( rb[k], rb[n], rt[n], rt[k] ); // side
-			Tri( top, rt[n], rt[k] );           // top cap
-			Tri( bot, rb[k], rb[n] );           // bottom cap
-		}
-	}
-
-	// Cone (base radius R at −h, apex at +h, then shifted up by zoff — the RAW half-height — because the
-	// cone pivots at its BASE), optionally sliced into a frustum at z = h·sliceN: the apex is replaced by a
-	// top ring at the cone's radius there, plus a flat cap fan (matches SliceRound's cut plane).
-	void Cone( float R, float h, float zoff, float sliceN, Color col )
-	{
-		const int N = 20;
-		bool cut = sliceN < 0.999f;
-		float zc = (cut ? h * sliceN : h) + zoff;
-		float rc = cut ? R * (1f - sliceN) * 0.5f : 0f; // cone radius at the cut plane
-
-		int bot = V( new Vector3( 0, 0, zoff - h ), col );
-		var rb = new int[N];
-		var rt = cut ? new int[N] : null;
 		for ( int k = 0; k < N; k++ )
 		{
 			float a = k / (float)N * MathF.PI * 2f;
 			float ca = MathF.Cos( a ), sa = MathF.Sin( a );
-			rb[k] = V( new Vector3( ca * R, sa * R, zoff - h ), col );
-			if ( cut )
-				rt[k] = V( new Vector3( ca * rc, sa * rc, zc ), col );
+			if ( !pointed )
+				rt[k] = V( new Vector3( ca * rtop, sa * rtop, h ), col );
+			rb[k] = V( new Vector3( ca * rad, sa * rad, -h ), col );
 		}
 
-		if ( cut )
-		{
-			int top = V( new Vector3( 0, 0, zc ), col );
-			for ( int k = 0; k < N; k++ )
-			{
-				int n = (k + 1) % N;
-				Quad( rb[k], rb[n], rt[n], rt[k] ); // side wall
-				Tri( top, rt[n], rt[k] );           // flat cut cap
-				Tri( bot, rb[n], rb[k] );           // base cap
-			}
-			return;
-		}
-
-		int apex = V( new Vector3( 0, 0, zoff + h ), col );
 		for ( int k = 0; k < N; k++ )
 		{
 			int n = (k + 1) % N;
-			Tri( rb[k], rb[n], apex ); // side
-			Tri( bot, rb[n], rb[k] );  // base cap
+			if ( pointed )
+				Tri( rb[k], rb[n], top );           // side
+			else
+			{
+				Quad( rb[k], rb[n], rt[n], rt[k] ); // side
+				Tri( top, rt[n], rt[k] );           // top cap
+			}
+			Tri( bot, rb[k], rb[n] );               // bottom cap
 		}
 	}
 
@@ -385,7 +349,7 @@ public sealed class BrushGhost
 	// triangle fans from the centroid, valid for the star too (it's star-shaped about its centre); the gizmo
 	// shader is two-sided, so cap winding doesn't matter.
 	readonly List<Vector2> _outline = new();
-	void Extrusion( SdfCrossSection xs, Vector3 s, Color col )
+	void Extrusion( SdfCrossSection xs, Vector3 s, Color col, float ts = 1f ) // ts: top cap scale (taper)
 	{
 		SdfBrush.CrossSectionOutline( xs, s, _outline );
 		int n = _outline.Count;
@@ -393,12 +357,14 @@ public sealed class BrushGhost
 			return;
 
 		float hz = s.z;
+		var c = SdfBrush.TaperCentre( xs, s );
 		var top = new int[n];
 		var bot = new int[n];
 		for ( int i = 0; i < n; i++ )
 		{
 			var o = _outline[i];
-			top[i] = V( new Vector3( o.x, o.y, hz ), col );
+			var ot = c + (o - c) * ts; // top cap shrinks toward the taper centre
+			top[i] = V( new Vector3( ot.x, ot.y, hz ), col );
 			bot[i] = V( new Vector3( o.x, o.y, -hz ), col );
 		}
 		int ct = V( new Vector3( 0, 0, hz ), col );

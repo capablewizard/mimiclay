@@ -169,22 +169,21 @@
             "BoundingRadius": 19.195326
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "-0.84956938,0.0210986324,6.88643789",
+            "Position": "-0.84957,0.0211,-1.94927",
             "Rotation": "-1,-2.98023224E-08,-8.8817842E-16,-4.37113883E-08",
-            "Size": "27.1626511,27.1626511,57.0857658",
+            "Size": "27.16265,27.16265,8.8357",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.84522057,
+            "Slice": 0,
             "SlicePlaneN": -0.69044113,
-            "LocalCentre": "0,0,8.8357029",
             "Blend": 3.9599986,
             "Rounding": 3.4500017,
             "Color": "0.56083,0.56083,0.56083,1",
@@ -201,7 +200,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 29.961851
+            "Taper": 0.15478
           },
           {
             "Shape": "Extruded",
@@ -309,22 +308,21 @@
             "BoundingRadius": 17.780321
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Subtract",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "-0.849573731,0.0211126357,11.4360332",
+            "Position": "-0.84957,0.02111,2.26201",
             "Rotation": "-1,-2.98023224E-08,-8.8817842E-16,-4.37113883E-08",
-            "Size": "25.5402946,25.5402946,59.2715988",
+            "Size": "25.54029,25.54029,9.17402",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.84522057,
+            "Slice": 0,
             "SlicePlaneN": -0.69044113,
-            "LocalCentre": "0,0,9.17402458",
             "Blend": 1.02,
             "Rounding": 1.8000016,
             "Color": "0.36577,0.36577,0.36577,1",
@@ -341,7 +339,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 28.586206
+            "Taper": 0.15478
           },
           {
             "Shape": "Box",

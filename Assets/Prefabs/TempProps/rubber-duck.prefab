@@ -35,15 +35,16 @@
             "BoundingRadius": 29
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "22,0,22",
+            "Position": "14.22183,0,29.77818",
             "Rotation": "0,-0.38268343,0,0.92387953",
             "Size": "7,7,11",
             "Blend": 4,
             "Rounding": 2,
             "Color": "1,0.82,0.05,1",
-            "BoundingRadius": 17.0384
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Sphere",
@@ -68,15 +69,16 @@
             "BoundingRadius": 18
           },
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "-32,0,40",
+            "Position": "-41,0,40",
             "Rotation": "0,-0.70710678,0,0.70710678",
             "Size": "7,7,9",
             "Blend": 2,
             "Rounding": 1,
             "Color": "1,0.5,0.05,1",
-            "BoundingRadius": 13.4018
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Sphere",

@@ -6,12 +6,20 @@ public enum SdfShape
 {
 	Sphere,
 	Box,
+	/// <summary>Centred round-ended prism along local Z that narrows toward +Z by <see cref="SdfBrush.Taper"/>:
+	/// 0 = a cylinder, 1 = a pointed cone, between = a frustum. The one round-profile shape — the old Cone
+	/// folded into it (see <see cref="Cone"/>).</summary>
 	Cylinder,
-	Cone,
+	/// <summary>LEGACY — never authored any more. The old base-pivot cone (with its <see cref="SdfBrush.Slice"/>
+	/// frustum cut), kept only so saved data still parses; <see cref="SdfBrush.UpgradeLegacy"/> converts it to
+	/// an exactly equivalent tapered <see cref="Cylinder"/> at every load seam, so no geometry code sees it.
+	/// Hidden from shape pickers; must stay in the enum or old player saves / community sculpts fail to parse.</summary>
+	[Hide] Cone,
 	Extruded,
-	/// <summary>Legacy alias for <see cref="Extruded"/> — kept so saved prefabs / .sculpt JSON (and the
-	/// PropGen tool) that serialised "TriangularPrism" still parse. Same value, so it's the same shape.</summary>
-	TriangularPrism = Extruded,
+	/// <summary>Legacy alias for <see cref="Extruded"/> — kept so old player saves that serialised
+	/// "TriangularPrism" still parse (project assets were rewritten to "Extruded"). Same value, so it's the same
+	/// shape. Hidden from shape pickers.</summary>
+	[Hide] TriangularPrism = Extruded,
 	Spline,
 	/// <summary>Extruded text: the brush's <see cref="SdfBrush.Text"/> string rendered to a baked 2D distance
 	/// field (see <see cref="SdfTextData"/>) and swept along local Z like the other extruded profiles.</summary>
@@ -203,9 +211,11 @@ public class SdfBrush
 	/// maxed slider can never make the brush vanish (an empty field would just silently drop the brush).</summary>
 	public const float MaxSlice = 0.95f;
 
-	/// <summary>Planar slice for the sliceable shapes (sphere and cone for now; ignored by the rest): cut the
-	/// shape flat from its local +Z top. 0 = untouched, 0.5 = cut at the mid-plane (hemisphere / half-height
-	/// frustum), <see cref="MaxSlice"/> leaves a sliver. Slicing a cone turns its tip into a flat frustum top.</summary>
+	/// <summary>Planar slice for the sphere (ignored by the rest): cut the shape flat from its local +Z top.
+	/// 0 = untouched, 0.5 = cut at the mid-plane (hemisphere), <see cref="MaxSlice"/> leaves a sliver. Survives
+	/// a shape conversion, so a non-sphere can carry a stale nonzero value its SDF ignores — never read it for
+	/// another shape. (The legacy cone's slice became <see cref="Taper"/> + a shorter height, see
+	/// <see cref="UpgradeLegacy"/>.)</summary>
 	[Property, Range( 0f, MaxSlice )] public float Slice { get; set; } = 0f;
 
 	/// <summary>The slice plane's height as a fraction of the shape's local half-height (+1 = the untouched
@@ -213,27 +223,26 @@ public class SdfBrush
 	/// mesh proxies and colliders all share, so their cut planes can't disagree.</summary>
 	public float SlicePlaneN => 1f - 2f * MathF.Min( MathF.Max( Slice, 0f ), MaxSlice );
 
-	/// <summary>Local half-height AFTER the slice — <see cref="Size"/>.z when unsliced, shrinking to nothing as
-	/// the cut plane drops: a sliceable shape spans local z from its bottom (−Size.z centred, 0 base-pivot) up to
-	/// the cut at <c>Size.z·SlicePlaneN</c>, so its real half-extent is half of that span. ONLY meaningful for the
-	/// sliceable shapes — <see cref="Slice"/> survives a shape conversion, so a cylinder can carry a stale nonzero
-	/// value its SDF ignores, and reading this for one would shrink its bounds below the actual shape.</summary>
+	/// <summary>Sphere-only: local half-height AFTER the slice — <see cref="Size"/>.z when unsliced, shrinking
+	/// as the cut plane drops (the piece spans −Size.z up to the cut at <c>Size.z·SlicePlaneN</c>).</summary>
 	float SlicedHalfZ => Size.z * (1f + SlicePlaneN) * 0.5f;
 
-	/// <summary>A sliced cone's flat top radius (0 = untouched/pointed) — the cut plane's radius on the frustum.
-	/// Derived from <see cref="SlicePlaneN"/> like everything else, so it can't disagree with the SDF's cut.</summary>
-	float SlicedConeTopRadius => Size.x * (1f - SlicePlaneN) * 0.5f;
+	/// <summary>How far the <see cref="SdfShape.Cylinder"/> (or <see cref="SdfShape.Extruded"/> profile) narrows toward its local +Z end (ignored by every
+	/// other shape): 0 = a straight cylinder, 1 = a pointed cone, between = a frustum whose top radius is
+	/// <c>Size.x·(1 − Taper)</c>. The height and base never change with it, so the shape's box stays put while
+	/// it's dragged. Its own field (not shared with <see cref="Slice"/>) so a sphere's slice can't leak into a
+	/// converted cylinder. Defaults to 0 so every pre-taper cylinder loads unchanged.</summary>
+	[Property, Range( 0f, 1f )] public float Taper { get; set; } = 0f;
+
+	/// <summary>The tapered cylinder's top radius (= Size.x untapered, 0 at a full point).</summary>
+	internal float TopRadius => Size.x * (1f - Math.Clamp( Taper, 0f, 1f )); // internal: public getters get serialised into every saved brush
 
 	/// <summary>The shape's geometric centre, offset from <see cref="Position"/> in the brush's LOCAL frame.
-	/// Zero for the centred shapes; the cone pivots at its BASE (the gizmo sits where the cone stands and
-	/// scaling grows it upward), so its centre is half a height up local Z. Bounds, mirror centres and every
-	/// mesh proxy share this one definition so they can't disagree with the SDF about where the shape sits.
-	/// <para>SLICE-AWARE: a sliced shape loses its local +Z top, so its centre sinks with the cut plane. A deeply
-	/// sliced cone is a short frustum sitting on its base, NOT a full-height cone — treating it as one put the
-	/// centre (and every bounds built from it) most of a phantom height below the clay.</para></summary>
+	/// Zero for the centred shapes. Bounds, mirror centres and every mesh proxy share this one definition so
+	/// they can't disagree with the SDF about where the shape sits.
+	/// <para>SLICE-AWARE: a sliced sphere loses its local +Z top, so its centre sinks with the cut plane.</para></summary>
 	public Vector3 LocalCentre => Shape switch
 	{
-		SdfShape.Cone => new Vector3( 0f, 0f, SlicedHalfZ ),          // frustum spans local z 0 .. 2·SlicedHalfZ
 		SdfShape.Sphere => new Vector3( 0f, 0f, SlicedHalfZ - Size.z ), // spans −Size.z .. 2·SlicedHalfZ − Size.z
 		// Group: the pivot is the prefab ORIGIN (where the author put it), the box sits at the prefab's
 		// bounds centre scaled by the group — Size is the scaled half-extents of that same box.
@@ -393,6 +402,7 @@ public class SdfBrush
 		Rounding = Rounding,
 		SmoothFloor = SmoothFloor,
 		Slice = Slice,
+		Taper = Taper,
 		Color = Color,
 		Metallic = Metallic,
 		Roughness = Roughness,
@@ -416,6 +426,50 @@ public class SdfBrush
 		var b = Copy();
 		b.Id = Guid.NewGuid();
 		return b;
+	}
+
+	/// <summary>Convert a LEGACY <see cref="SdfShape.Cone"/> (base pivot, apex 2·Size.z up, optional
+	/// <see cref="Slice"/> frustum cut) into the exactly equivalent tapered <see cref="SdfShape.Cylinder"/>
+	/// (centred): the slice cut the height to <c>2·Size.z·(1 − s)</c> and left a top radius of <c>Size.x·s</c>,
+	/// so the new half-height is <c>Size.z·(1 − s)</c>, the taper <c>1 − s</c>, and the centre sits that
+	/// half-height up local Z from the old base pivot. Rounding is untouched — both round as the same eroded
+	/// frustum. Idempotent (a converted brush is no longer a Cone). Returns true if this brush changed.</summary>
+	public bool UpgradeLegacy()
+	{
+		if ( Shape != SdfShape.Cone )
+			return false;
+
+		LegacyConeToCylinder( Slice, out float heightScale, out float centreUp, out float taper );
+		Position += Rotation * new Vector3( 0f, 0f, Size.z * centreUp );
+		Size = Size.WithZ( Size.z * heightScale );
+		Taper = taper;
+		Slice = 0f;
+		Shape = SdfShape.Cylinder;
+		return true;
+	}
+
+	/// <summary>The legacy-cone conversion as factors of the old <c>Size.z</c> (shared by <see cref="UpgradeLegacy()"/>
+	/// and the brush-object form, whose Size lives in the object's scale): new half-height = Size.z·<paramref name="heightScale"/>,
+	/// centre = Size.z·<paramref name="centreUp"/> up local Z from the old base pivot.</summary>
+	public static void LegacyConeToCylinder( float slice, out float heightScale, out float centreUp, out float taper )
+	{
+		float s = Math.Clamp( slice, 0f, MaxSlice );
+		heightScale = 1f - s;
+		centreUp = 1f - s;
+		taper = 1f - s;
+	}
+
+	/// <summary><see cref="UpgradeLegacy()"/> over a whole list — call at every seam where brushes arrive from
+	/// saved or received data (scene/prefab properties, .sculpt saves, the wire). Null-safe; true if any changed.</summary>
+	public static bool UpgradeLegacy( List<SdfBrush> brushes )
+	{
+		if ( brushes is null )
+			return false;
+		bool any = false;
+		foreach ( var b in brushes )
+			if ( b is not null && b.UpgradeLegacy() )
+				any = true;
+		return any;
 	}
 
 	/// <summary>Mix every shape-defining property of this brush into a running FNV-1a hash — THE one canonical
@@ -482,6 +536,11 @@ public class SdfBrush
 			if ( Operation == SdfOperation.Cutout && Gap > 0f )
 				Mix( F( Gap ) );
 
+			// Taper only shapes a cylinder or an extrusion, and only when non-zero — conditional (like Gap) so every untapered
+			// brush, and every .sdfmesh baked from one, keeps its pre-taper hash.
+			if ( Shape is SdfShape.Cylinder or SdfShape.Extruded && Taper > 0f )
+				Mix( F( Taper ) );
+
 			// A group IS its members: mix the kind, the per-machine variant (the renderer repacks when a mouth
 			// opens) and every expanded member's own hash — so re-authoring the group PREFAB changes the hash
 			// too (model cache, collider, icons all follow). Group-only, so no other brush's hash shifts.
@@ -515,6 +574,7 @@ public class SdfBrush
 		Gap = MathX.Lerp( a.Gap, b.Gap, t );
 		Rounding = MathX.Lerp( a.Rounding, b.Rounding, t );
 		Slice = MathX.Lerp( a.Slice, b.Slice, t );
+		Taper = MathX.Lerp( a.Taper, b.Taper, t );
 		Curvature = MathX.Lerp( a.Curvature, b.Curvature, t );
 
 		// Spline points lerp position+radius continuously when the layout matches (a moved/resized point);
@@ -616,9 +676,10 @@ public class SdfBrush
 		return Shape switch
 		{
 			SdfShape.Box => BoxDistance( lp, Size, rr ),
-			SdfShape.Cylinder => CylinderDistance( lp, Size, rr ),
-			SdfShape.Cone => ConeBasePivot( lp, Size, rr, Slice ),
-			SdfShape.Extruded => ExtrudedDistance( lp, Size, rr, CrossSection ),
+			SdfShape.Cylinder => Taper > 0f
+				? FrustumDistance( lp, Size.x, TopRadius, Size.z, rr )
+				: CylinderDistance( lp, Size, rr ), // untapered keeps the exact old path (bit-identical bakes)
+			SdfShape.Extruded => ExtrudedDistance( lp, Size, rr, CrossSection, Taper ),
 			SdfShape.Text => TextDistance( lp, Size, rr, TextData ),
 			_ => SliceRound( EllipsoidDistance( lp, Size ), lp.z, MathF.Max( Size.z, 1e-3f ), Slice,
 				MathF.Min( rr, SphereSliceMaxRounding( Size, Slice ) ) ),
@@ -640,16 +701,6 @@ public class SdfBrush
 		float rz = MathF.Max( size.z, 1e-3f );
 		return MathF.Min( MathF.Min( size.x, MathF.Min( size.y, size.z ) ),
 			MathF.Min( 2f * rz * s, rz * (1f - s) ) );
-	}
-
-	// The cone pivots at its BASE: Position sits on the base disc and the shape grows up local +Z (so the
-	// gizmo sits where the cone stands, and scaling grows it upward). Shift into the centred frame the cone
-	// math uses. LocalCentre/LocalBounds/proxies share this same offset. Slice is folded INTO the cone
-	// primitive (a frustum) rather than composed as a plane cut, so one rounding pass covers every edge.
-	static float ConeBasePivot( Vector3 lp, Vector3 size, float rounding, float slice )
-	{
-		lp.z -= size.z;
-		return ConeDistance( lp, size, rounding, slice );
 	}
 
 	// Planar slice shared by the sliceable shapes: intersect the primitive with the half-space below
@@ -878,7 +929,7 @@ public class SdfBrush
 	/// the mesher's sample grid covers every mirrored copy.</summary>
 	public int MirrorCentres( Span<Vector3> dst )
 	{
-		var c = Position + Rotation * LocalCentre; // the shape's true centre (base-pivot cone sits above Position)
+		var c = Position + Rotation * LocalCentre; // the shape's true centre (a sliced sphere's sinks below Position)
 		int n = 0;
 		int nx = EffectiveMirrorX ? 1 : 0, ny = EffectiveMirrorY ? 1 : 0, nz = EffectiveMirrorZ ? 1 : 0;
 		for ( int sx = 0; sx <= nx; sx++ )
@@ -901,19 +952,13 @@ public class SdfBrush
 		float max = Shape switch
 		{
 			SdfShape.Box => MathF.Min( Size.x, MathF.Min( Size.y, Size.z ) ),
-			SdfShape.Cylinder => MathF.Min( Size.x, Size.z ),
-			// Sliced-cone-aware: the erosion limit of the frustum (= the classic inradius when unsliced).
-			SdfShape.Cone => FrustumMaxRounding( Size.x, Size.z, Slice ),
+			// Taper-aware erosion limit: min(Size.x, Size.z) untapered, the classic cone inradius at a point.
+			SdfShape.Cylinder => FrustumMaxRounding( Size.x, TopRadius, Size.z ),
 			// Text: rounding insets glyph strokes, which are far thinner than the quad — keep the cap modest
 			// so full-slider is "chunky rounded letters", not "letters eroded to nothing".
 			SdfShape.Text => MathF.Min( Size.z, MathF.Min( Size.x, Size.y ) * 0.25f ),
-			SdfShape.Extruded => MathF.Min( CrossSection switch
-			{
-				SdfCrossSection.Star => wx * StarEdgeFactor,       // erosion limit — the star shrinks to a point
-				SdfCrossSection.Hexagon => wx * 0.86602540f,       // the apothem — hexagon shrinks to a point
-				SdfCrossSection.Pentagon => wx * 0.80901699f,      // the apothem — pentagon shrinks to a point
-				_ => TriInradius( new Vector2( 0f, hy ), new Vector2( -wx, -hy ), new Vector2( wx, -hy ) ),
-			}, Size.z ),
+			// Taper-aware: the profile's erosion limit narrowing toward the top like the cone (min(limit, Size.z) straight).
+			SdfShape.Extruded => ExtrudedMaxRounding(),
 			// Sphere/ellipsoid: rounding only shows on the sliced rim (fillet); unsliced it's a no-op, so
 			// keep the old sane range. Sliced, the fillet is capped by SphereSliceMaxRounding.
 			_ => Slice > 0f
@@ -924,19 +969,16 @@ public class SdfBrush
 		return MathF.Max( max, MinRounding );
 	}
 
-	// The most rounding a (possibly sliced) cone fits: caps can't cross (half the sliced height) and the
-	// eroded base radius can't go negative. Unsliced this reduces EXACTLY to the classic cone inradius
-	// 2HR/(slant+R). Shared by MaxRounding (the slider max) and ConeDistance's internal clamp.
-	static float FrustumMaxRounding( float R, float H, float slice )
+	// The most rounding a tapered cylinder fits: caps can't cross (its half-height) and the eroded base radius
+	// can't go negative. Untapered (Rt = R) this is min(H, R) — the cylinder's limit; pointed (Rt = 0) it is
+	// EXACTLY the classic cone inradius 2HR/(slant+R). Shared by MaxRounding (the slider max) and the SDF's clamp.
+	static float FrustumMaxRounding( float R, float Rt, float H )
 	{
-		float s = Math.Clamp( slice, 0f, MaxSlice );
-		float zcut = H * (1f - 2f * s);
-		float Rt = R * s;                 // frustum top radius — the sharp cone's radius at the cut plane
-		float hh = (zcut + H) * 0.5f;     // frustum half-height
-		float L = MathF.Sqrt( (R - Rt) * (R - Rt) + 4f * hh * hh ); // slant length
-		if ( hh < 1e-4f )
+		if ( H < 1e-4f )
 			return R;
-		return MathF.Min( hh, 2f * hh * R / MathF.Max( L + R - Rt, 1e-4f ) );
+		Rt = Math.Clamp( Rt, 0f, R );
+		float L = MathF.Sqrt( (R - Rt) * (R - Rt) + 4f * H * H ); // slant length
+		return MathF.Min( H, 2f * H * R / MathF.Max( L + R - Rt, 1e-4f ) );
 	}
 
 	// Ellipsoid with per-axis radii = Size (IQ approximation — exact distance has no closed form).
@@ -999,66 +1041,56 @@ public class SdfBrush
 		return s * MathF.Sqrt( MathF.Min( cax * cax + cay * cay, cbx * cbx + cby * cby ) );
 	}
 
-	// Cone (base radius Size.x at z=-Size.z, apex at z=+Size.z), optionally SLICED flat at the plane the
-	// slice fraction picks — the slice is part of the primitive (a frustum), so ONE Minkowski opening rounds
-	// every edge together: erode all faces (slant, base, cut) inward by r, take the exact capped-cone
-	// distance of the eroded trapezoid, dilate by r. The cut rim therefore rounds exactly like the base rim,
-	// the flat survives any legal r, and the shape stays INSIDE the sharp silhouette. Unsliced (Rt = 0) this
-	// reproduces the old pointed-cone formula exactly (the eroded top collapses to the shortened apex).
-	/// <summary>The rounded cone is this eroded core dilated by <paramref name="r"/>: a frustum in the CENTRED
-	/// frame (base at z=-H) from (<paramref name="r1"/>, <paramref name="zb"/>) to (<paramref name="r2"/>,
+	// The tapered cylinder (centred): base radius R at z=-H, top radius Rt (0..R) at z=+H. One Minkowski
+	// opening rounds every edge together: erode all faces (slant, base, top) inward by r, take the exact
+	// capped-cone distance of the eroded trapezoid, dilate by r — so both rims round alike, the flats survive
+	// any legal r, and the shape stays INSIDE the sharp silhouette. Rt = R is the cylinder (CylinderDistance
+	// gives the identical surface); Rt = 0 is the pointed cone, whose eroded top collapses to a shortened apex.
+	/// <summary>The rounded frustum is this eroded core dilated by <paramref name="r"/>: in the CENTRED frame,
+	/// a frustum from (<paramref name="r1"/>, <paramref name="zb"/>) to (<paramref name="r2"/>,
 	/// <paramref name="zt"/>); <c>zt &lt;= zb</c> means the caps met and the core is a flat disc. False when
-	/// there's no rounding to apply (or the cone is degenerate) — the sharp frustum is the shape. Shared by
-	/// <see cref="ConeDistance"/> and the collider's hull points so the two can't drift apart.</summary>
-	internal static bool ConeErodedCore( float R, float H, float rounding, float slice,
+	/// there's no rounding to apply (or the shape is degenerate) — the sharp frustum is the shape. Shared by
+	/// <see cref="FrustumDistance"/> and the collider's hull points so the two can't drift apart.</summary>
+	internal static bool FrustumErodedCore( float R, float Rt, float H, float rounding,
 		out float zb, out float zt, out float r1, out float r2, out float r )
 	{
-		float s = Math.Clamp( slice, 0f, MaxSlice );
-		float zcut = H * (1f - 2f * s);
-		float Rt = R * s;
-		float hh = (zcut + H) * 0.5f;
 		zb = zt = r1 = r2 = r = 0f;
-		if ( hh < 1e-4f || R < 1e-4f )
+		Rt = Math.Clamp( Rt, 0f, R );
+		if ( H < 1e-4f || R < 1e-4f )
 			return false;
 
-		float L = MathF.Sqrt( (R - Rt) * (R - Rt) + 4f * hh * hh ); // slant length
-		float k = (Rt - R) / (2f * hh);                             // slant slope dq/dz (< 0)
-		r = Math.Clamp( rounding, 0f, FrustumMaxRounding( R, H, slice ) );
+		float L = MathF.Sqrt( (R - Rt) * (R - Rt) + 4f * H * H ); // slant length
+		float k = (Rt - R) / (2f * H);                            // slant slope dq/dz (<= 0)
+		r = Math.Clamp( rounding, 0f, FrustumMaxRounding( R, Rt, H ) );
 		if ( r < 1e-4f )
 			return false;
 
-		// Erode: caps move in by r; the slant shifts horizontally by r/cos(tilt) = r·L/(2hh).
-		float dq = r * L / (2f * hh);
-		zb = -H + r; zt = zcut - r;
+		// Erode: caps move in by r; the slant shifts horizontally by r/cos(tilt) = r·L/(2H).
+		float dq = r * L / (2f * H);
+		zb = -H + r; zt = H - r;
 		r1 = R + r * k - dq;  // eroded radius at the bottom cap
 		r2 = Rt - r * k - dq; // eroded radius at the top cap
 
-		if ( r2 < 0f )
+		if ( r2 < 0f ) // only possible when tapered (k < 0)
 		{
 			zt = (dq - R) / k - H; // slant meets the axis below the top cap — eroded shape is pointed
-			r2 = 0f;               // (this is the old zApex = H − r/sinB when unsliced)
+			r2 = 0f;
 		}
 		return true;
 	}
 
-	static float ConeDistance( Vector3 p, Vector3 size, float rounding, float slice )
+	static float FrustumDistance( Vector3 p, float R, float Rt, float H, float rounding )
 	{
-		float R = size.x, H = size.z;
 		float qx = MathF.Sqrt( p.x * p.x + p.y * p.y );
+		Rt = Math.Clamp( Rt, 0f, R );
 
-		float s = Math.Clamp( slice, 0f, MaxSlice );
-		float zcut = H * (1f - 2f * s); // top cap height (= +H when unsliced)
-		float Rt = R * s;               // top cap radius (0 = pointed)
-		float hh = (zcut + H) * 0.5f;   // frustum half-height
-		float zc0 = (zcut - H) * 0.5f;  // frustum centre
+		if ( H < 1e-4f || R < 1e-4f )
+			return MathF.Sqrt( qx * qx + p.z * p.z ) - MathF.Max( R, 1e-3f );
 
-		if ( hh < 1e-4f || R < 1e-4f )
-			return MathF.Sqrt( qx * qx + (p.z - zc0) * (p.z - zc0) ) - MathF.Max( R, MathF.Max( Rt, 1e-3f ) );
+		if ( !FrustumErodedCore( R, Rt, H, rounding, out float zb, out float zt, out float r1, out float r2, out float r ) )
+			return CappedCone( qx, p.z, H, R, Rt );
 
-		if ( !ConeErodedCore( R, H, rounding, slice, out float zb, out float zt, out float r1, out float r2, out float r ) )
-			return CappedCone( qx, p.z - zc0, hh, R, Rt );
-
-		if ( zt <= zb ) // caps met — eroded core is a flat disc of radius r1 == r2 (0 when unsliced → ball)
+		if ( zt <= zb ) // caps met — eroded core is a flat disc of radius r1 == r2 (0 at a point → ball)
 		{
 			float rd = MathF.Max( 0.5f * (r1 + r2), 0f );
 			float wx = MathF.Max( qx - rd, 0f );
@@ -1123,8 +1155,11 @@ public class SdfBrush
 	// (Size.y unused, like the cylinder). Rounding for all three is the same Minkowski opening as box/cone:
 	// erode the profile geometrically by r, extrude to (Size.z − r), then dilate by r — so the rounded shape
 	// stays INSIDE the sharp silhouette.
-	static float ExtrudedDistance( Vector3 p, Vector3 size, float rounding, SdfCrossSection xs )
+	static float ExtrudedDistance( Vector3 p, Vector3 size, float rounding, SdfCrossSection xs, float taper = 0f )
 	{
+		if ( taper > 0f )
+			return TaperedExtrudedDistance( p, size, rounding, xs, Math.Min( taper, 1f ) );
+
 		switch ( xs )
 		{
 			case SdfCrossSection.Star:
@@ -1187,6 +1222,126 @@ public class SdfBrush
 		float r = Math.Clamp( rounding, 0f, hz );
 		return ExtrudeRound( d2 + r, p.z, hz, r );
 	}
+
+	// ── Tapered extrusion ───────────────────────────────────────────────────────────────────────────────
+	// The profile scales toward its taper centre from full size at the base (z = −hz) to (1 − taper) at the top
+	// (+hz) — a frustum of a prism, a pyramid / star spike at taper 1. The centre is the point every edge sits
+	// the same distance e from (the origin for the regular profiles, the INCENTRE for the triangle), so every
+	// side face leans in by the same angle and an inset of the profile is just a smaller copy of it.
+	// Rounding is the same Minkowski opening as everywhere else, done exactly in 2D like the cone: erode the
+	// faces along their tilted normals (horizontal inset r·L, L = 1/cos(lean)), cap the core where the eroded
+	// profile collapses, then measure in the (X, Z) plane — X = horizontal distance to the eroded profile,
+	// carried to the core's top height along the lean; Z = height above the core top — against the core's
+	// cross-section (top cap, slanted side, bottom cap) and dilate by r. Exact on faces and caps, so the round
+	// top meets the sides with no lip. Must match sdf_eval.hlsl sdTaperedExtruded.
+
+	/// <summary>Edge distance e from the taper centre (= the profile's erosion limit) for the tapered extrusion
+	/// and its MaxRounding.</summary>
+	static void ExtrudedTaperParams( SdfCrossSection xs, Vector3 size, out float edge, out float limit )
+	{
+		float wx = MathF.Max( size.x, 1e-3f ), hy = MathF.Max( size.y, 1e-3f );
+		edge = xs switch
+		{
+			SdfCrossSection.Star => wx * StarEdgeFactor,
+			SdfCrossSection.Hexagon => wx * HexApothemFactor,
+			SdfCrossSection.Pentagon => wx * PentApothemFactor,
+			_ => TriInradius( new Vector2( 0f, hy ), new Vector2( -wx, -hy ), new Vector2( wx, -hy ) ),
+		};
+		limit = edge;
+	}
+
+	/// <summary>The point a tapered profile shrinks toward: the origin, or the triangle's incentre (its apex is at
+	/// (0, +hy) and base at y = −hy, so the incentre sits one inradius above the base). Shared with every outline
+	/// drawer/hull so they taper the same way as the SDF.</summary>
+	internal static Vector2 TaperCentre( SdfCrossSection xs, Vector3 size )
+	{
+		if ( xs != SdfCrossSection.Triangle )
+			return Vector2.Zero;
+		float wx = MathF.Max( size.x, 1e-3f ), hy = MathF.Max( size.y, 1e-3f );
+		return new Vector2( 0f, -hy + TriInradius( new Vector2( 0f, hy ), new Vector2( -wx, -hy ), new Vector2( wx, -hy ) ) );
+	}
+
+	/// <summary>An outline vertex of the extruded profile moved to the TOP cap (shrunk toward <see cref="TaperCentre"/>
+	/// by <see cref="ExtrudeTopScale"/>). <paramref name="size"/> is whatever size the outline was built at.</summary>
+	internal Vector2 ExtrudeTop( Vector2 v, Vector3 size )
+	{
+		float ts = ExtrudeTopScale;
+		if ( ts >= 1f )
+			return v;
+		var c = TaperCentre( CrossSection, size );
+		return c + (v - c) * ts;
+	}
+
+	static float TaperedExtrudedDistance( Vector3 p, Vector3 size, float rounding, SdfCrossSection xs, float t )
+	{
+		float hz = MathF.Max( size.z, 1e-3f );
+		ExtrudedTaperParams( xs, size, out float e, out _ );
+		float r = Math.Clamp( rounding, 0f, FrustumMaxRounding( e, e * (1f - t), hz ) );
+
+		float k = e * t / (2f * hz);       // how much the (eroded) edge distance grows per unit DOWN
+		float L = MathF.Sqrt( 1f + k * k ); // 1/cos(lean): a face eroded by r moves in r·L horizontally
+		float zBot = -(hz - r), zTop = hz - r;
+		if ( r > 0f ) // the eroded profile collapses where e·s(z) = r·L — the core's apex can't go above that
+			zTop = MathF.Min( zTop, -hz + 2f * hz * (1f - r * L / e) / t );
+		zTop = MathF.Max( zTop, zBot );
+
+		float z = Math.Clamp( p.z, zBot, zTop );
+		float s = 1f - t * (z + hz) / (2f * hz);   // profile scale at this height
+		float ea = MathF.Max( e * s - r * L, 0f ); // the eroded profile's edge distance at this height
+
+		float D;
+		switch ( xs )
+		{
+			case SdfCrossSection.Star: D = Star2D( p.x, p.y, ea / StarEdgeFactor ); break;
+			case SdfCrossSection.Hexagon: D = Hexagon2D( p.x, p.y, ea ); break;
+			case SdfCrossSection.Pentagon: D = Pentagon2D( p.x, p.y, ea ); break;
+			default:
+			{
+				// Homothety about the incentre IS the triangle's inset — scale to edge distance ea.
+				float wx = MathF.Max( size.x, 1e-3f ), hy = MathF.Max( size.y, 1e-3f );
+				var c = TaperCentre( xs, size );
+				float f = ea / e;
+				Vector2 v0 = c + (new Vector2( 0f, hy ) - c) * f;
+				Vector2 v1 = c + (new Vector2( -wx, -hy ) - c) * f;
+				Vector2 v2 = c + (new Vector2( wx, -hy ) - c) * f;
+				// Collapsed to a point (the apex / eroded tip): the 2D distance would divide by zero.
+				D = f > 1e-5f ? Triangle2D( p.x, p.y, v0, v1, v2 ) : (new Vector2( p.x, p.y ) - c).Length;
+				break;
+			}
+		}
+
+		// Carry the horizontal distance up to the core top along the lean (exact on faces), then the exact 2D
+		// distance to the core's (X, Z) cross-section.
+		float X = D - k * (z - zTop);
+		return Wedge2D( X, p.z - zTop, k, zBot - zTop ) - r;
+	}
+
+	/// <summary>Signed 2D distance to { zb ≤ Z ≤ 0, X ≤ −k·Z }: a flat top along Z = 0 (X ≤ 0), a slanted side from
+	/// (0, 0) down to (−k·zb, zb), and a flat bottom along Z = zb — open toward −X (deep inside the profile).</summary>
+	static float Wedge2D( float X, float Z, float k, float zb )
+	{
+		float xb = -k * zb;
+		float len2 = xb * xb + zb * zb;
+		float tt = len2 > 1e-12f ? Math.Clamp( (X * xb + Z * zb) / len2, 0f, 1f ) : 0f;
+		float sx = X - xb * tt, sz = Z - zb * tt;
+		float dS = MathF.Sqrt( sx * sx + sz * sz );
+		float dT = X <= 0f ? MathF.Abs( Z ) : MathF.Sqrt( X * X + Z * Z );
+		float bx = X - xb, bz = Z - zb;
+		float dB = X <= xb ? MathF.Abs( bz ) : MathF.Sqrt( bx * bx + bz * bz );
+		float d = MathF.Min( dS, MathF.Min( dT, dB ) );
+		bool inside = Z <= 0f && Z >= zb && X <= -k * Z;
+		return inside ? -d : d;
+	}
+
+	float ExtrudedMaxRounding()
+	{
+		ExtrudedTaperParams( CrossSection, Size, out _, out float lim );
+		float t = Math.Clamp( Taper, 0f, 1f );
+		return t > 0f ? FrustumMaxRounding( lim, lim * (1f - t), MathF.Max( Size.z, 1e-3f ) ) : MathF.Min( lim, Size.z );
+	}
+
+	/// <summary>The extruded profile's scale at its top cap (1 = straight, 0 = a point) — for wires, ghosts, hulls.</summary>
+	internal float ExtrudeTopScale => Shape == SdfShape.Extruded ? 1f - Math.Clamp( Taper, 0f, 1f ) : 1f;
 
 	// Combine an (already eroded-by-r) 2D profile distance with the Z extrusion, then dilate by r — the
 	// shared tail of every rounded extrusion (identical to the box/cylinder combine).
@@ -1326,12 +1481,8 @@ public class SdfBrush
 				SdfShape.Extruded => CrossSection == SdfCrossSection.Triangle
 					? Size.Length
 					: MathF.Sqrt( Size.x * Size.x + Size.z * Size.z ),
+				// Farthest point is the base rim (taper only pulls the top rim in).
 				SdfShape.Cylinder => MathF.Sqrt( Size.x * Size.x + Size.z * Size.z ),
-				// Base-pivot cone, measured from Position (the base): the farthest point is either a base-rim
-				// point or the top — the apex a FULL height (2·Size.z) up when unsliced, the frustum's cut rim
-				// when sliced (slicing brings the top DOWN and IN, so it can only shrink this).
-				SdfShape.Cone => MathF.Max( Size.x, MathF.Sqrt(
-					SlicedConeTopRadius * SlicedConeTopRadius + 4f * SlicedHalfZ * SlicedHalfZ ) ),
 				_ => MathF.Max( Size.x, MathF.Max( Size.y, Size.z ) ), // ellipsoid: largest radius
 
 			};
@@ -1346,14 +1497,12 @@ public class SdfBrush
 	/// box instead of a giant cube.</summary>
 	public Vector3 AabbExtents( Rotation rotation, bool includeBlend = true )
 	{
-		// Local half-extents per shape. The sliceable shapes (cone, sphere) take their SLICED half-height —
-		// paired with LocalCentre, which sinks by the same amount, so the box tracks the cut plane. X/Y stay
-		// full, which is exact for a cone (the base it keeps IS its widest ring) and merely conservative for a
-		// sphere cut below its equator (the box still spans the equator's radius the piece no longer reaches).
+		// Local half-extents per shape. The sliced sphere takes its SLICED half-height — paired with LocalCentre,
+		// which sinks by the same amount, so the box tracks the cut plane. X/Y stay full: merely conservative for
+		// a sphere cut below its equator, and exact for a tapered cylinder (its base IS its widest ring).
 		Vector3 e = Shape switch
 		{
 			SdfShape.Cylinder => new Vector3( Size.x, Size.x, Size.z ),
-			SdfShape.Cone => new Vector3( Size.x, Size.x, SlicedHalfZ ),
 			// Star/hexagon profiles fit a radius-Size.x disc; the triangle keeps its Size.x/Size.y extents.
 			SdfShape.Extruded when CrossSection != SdfCrossSection.Triangle => new Vector3( Size.x, Size.x, Size.z ),
 			SdfShape.Text => TextInkExtents(), // the ink rectangle, not the letterboxed quad
@@ -1453,7 +1602,7 @@ public class SdfBrush
 			return;
 		}
 
-		var centre = Position + Rotation * LocalCentre; // base-pivot cone: the AABB wraps the shape, not Position
+		var centre = Position + Rotation * LocalCentre; // sliced sphere: the AABB wraps the shape, not Position
 		var ext = AabbExtents( Rotation, includeBlend );
 		mn = centre - ext;
 		mx = centre + ext;
@@ -1762,7 +1911,7 @@ public static class Sdf
 
 		foreach ( var b0 in brushes )
 		{
-			if ( b0 == exclude || !b0.Enabled || b0.Operation != SdfOperation.Add )
+			if ( b0 == exclude || !b0.Enabled || b0.Operation != SdfOperation.Add || b0.IsModifier ) // a modifier has no volume, whatever its op (older saves carry Add)
 				continue;
 
 			// A group bounds as its ADD members (each carrying the group's mirror flags), not as its box —

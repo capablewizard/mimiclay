@@ -24,15 +24,16 @@
         "BakedMesh": null,
         "Brushes": [
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
-            "Position": "0,0,0",
+            "Position": "0,-35,0",
             "Rotation": "0.70710678,0,0,0.70710678",
             "Size": "15,4,35",
             "Blend": 4,
             "Rounding": 2,
             "Color": "0.2,0.3,0.7,1",
-            "BoundingRadius": 42.0789
+            "Slice": 0,
+            "Taper": 1
           },
           {
             "Shape": "Box",

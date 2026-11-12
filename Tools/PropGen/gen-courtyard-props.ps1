@@ -243,7 +243,7 @@ $props += @{ file = 'apple'; name = 'Apple'; res = 56; brushes = @(
 # ---- 15. Cheese wheel ----
 $props += @{ file = 'cheese-wheel'; name = 'Cheese Wheel'; res = 56; brushes = @(
     (B @{ Shape='Cylinder'; Position='0,0,5'; Size='14,14,5'; Rounding=2; Blend=1; Color=$cheese })
-    (B @{ Shape='TriangularPrism'; Operation='Subtract'; Position='0,0,5'; Size='8,12,6'; Blend=0.5 })
+    (B @{ Shape='Extruded'; Operation='Subtract'; Position='0,0,5'; Size='8,12,6'; Blend=0.5 })
     (B @{ Shape='Sphere'; Operation='Subtract'; Position='-6,-7,7'; Size='1.5,1.5,1.5'; Blend=1 })
     (B @{ Shape='Sphere'; Operation='Subtract'; Position='-9,-2,6'; Size='1.2,1.2,1.2'; Blend=1 })
 ) }

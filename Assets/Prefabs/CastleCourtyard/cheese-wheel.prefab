@@ -45,7 +45,7 @@
             "BoundingRadius": 24.61
           },
           {
-            "Shape": "TriangularPrism",
+            "Shape": "Extruded",
             "Operation": "Subtract",
             "Enabled": true,
             "Position": "0,0,5",

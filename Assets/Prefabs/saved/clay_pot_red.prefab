@@ -24,22 +24,21 @@
         "BakedMesh": null,
         "Brushes": [
           {
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
             "Font": "Super Joyful",
             "Enabled": true,
-            "Position": "10.8794384,-8.2579565,24.139061",
+            "Position": "10.87944,-8.25795,0.1233",
             "Rotation": "0.389752507,-0.920919895,-1.70366228E-08,-4.02546831E-08",
-            "Size": "24,24,190.601181",
+            "Size": "24,24,24.01575",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.874,
+            "Slice": 0,
             "SlicePlaneN": -0.748,
-            "LocalCentre": "0,0,24.0157471",
             "Blend": 6,
             "Gap": 0,
             "Rounding": 0.75,
@@ -57,7 +56,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 53.911995
+            "Taper": 0.126
           },
           {
             "Shape": "Cylinder",

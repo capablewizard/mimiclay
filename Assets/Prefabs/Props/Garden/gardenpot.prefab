@@ -25,7 +25,7 @@
         "Brushes": [
           {
             "Id": "dda83dfa-1624-4adb-8c09-ba26e4c060cb",
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Add",
             "CrossSection": "Triangle",
             "Text": "clay",
@@ -34,16 +34,15 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.0832299143,-0.000114791095,25.3955936",
+            "Position": "-0.08323,-0.00011,-0.3892",
             "Rotation": "0.389752835,-0.920920193,-2.2322638E-08,-4.48198989E-08",
-            "Size": "28.8999805,24,112.214561",
+            "Size": "28.89998,24,25.78476",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.77021915,
+            "Slice": 0,
             "SlicePlaneN": -0.5404383,
-            "LocalCentre": "0,0,25.7847576",
             "Blend": 6,
             "Gap": 0,
             "Rounding": 3.45,
@@ -61,7 +60,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 57.668427
+            "Taper": 0.22978
           },
           {
             "Id": "e168d3ad-fb6a-49f0-bda2-35de904f80c2",
@@ -105,7 +104,7 @@
           },
           {
             "Id": "6f75654e-e254-4dd3-8596-8e074bfbf80d",
-            "Shape": "Cone",
+            "Shape": "Cylinder",
             "Operation": "Subtract",
             "CrossSection": "Triangle",
             "Text": "clay",
@@ -114,16 +113,15 @@
             "LinkColor": false,
             "LinkBlend": false,
             "Enabled": true,
-            "Position": "-0.0105462093,-3.34526412E-05,33.2566566",
+            "Position": "-0.01054,-0.00003,5.65635",
             "Rotation": "0.389752835,-0.920920193,-2.2322638E-08,-4.48198989E-08",
-            "Size": "25.247448,21.0141258,81.2867966",
+            "Size": "25.24745,21.01413,27.60027",
             "Points": null,
             "Curvature": 1,
             "SplineClosed": false,
             "SplinePerPointRadius": false,
-            "Slice": 0.66045815,
+            "Slice": 0,
             "SlicePlaneN": -0.3209163,
-            "LocalCentre": "0,0,27.6002693",
             "Blend": 0.8,
             "Gap": 0,
             "Rounding": 2.256837,
@@ -141,7 +139,7 @@
             "ShrinkDelay": 2,
             "ShrinkDuration": 1.5,
             "IsSplineLoop": false,
-            "BoundingRadius": 57.864124
+            "Taper": 0.33954
           }
         ],
         "BrushObjects": false,

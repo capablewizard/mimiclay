@@ -464,13 +464,14 @@
 			var isSpline = fb?.Shape == SdfShape.Spline;
 			var isExtruded = fb?.Shape == SdfShape.Extruded;
 			var isSphere = fb?.Shape == SdfShape.Sphere;
-			var isCone = fb?.Shape == SdfShape.Cone;
+			var isCylinder = fb?.Shape == SdfShape.Cylinder;
 			var isText = fb?.Shape == SdfShape.Text;
 			var isGroup = fb?.Shape == SdfShape.Group; // add-only, no roundness: just Blend (+ material elsewhere)
 			var isModifier = fb?.IsModifier == true; // Smooth: one amount slider, no op / round / material
 			var xsVal = fb?.CrossSection ?? SdfCrossSection.Triangle;
 			var curveVal = fb?.Curvature ?? 0f;
 			var sliceVal = fb?.Slice ?? 0f;
+			var taperVal = fb?.Taper ?? 0f;
 			var canLoop = (fb?.Points?.Count ?? 0) >= 3;
 			@* Every control is ALWAYS mounted, as a `pop` item that's `gone` when it doesn't apply: the shared PopFlex
 			   (UI/PopFlex.cs, stepped from OnUpdate) pops each one in / out while its neighbours slide to make or close the
@@ -494,8 +495,8 @@
 						Disabled=@blendLocked OnInput=@((float v) => SetBlend( v )) OnCommit=@CommitEdit />
 				</div>
 				@* Per-shape sliders: spline gets curvature (rounding doesn't apply to the tube); everything
-				   else keeps Round (on the sphere it rounds the sliced rim); the sliceable shapes (sphere,
-				   cone) add Slice as a third slider. *@
+				   else keeps Round (on the sphere it rounds the sliced rim); the sphere adds Slice and the
+				   cylinder Taper as a third slider. *@
 				@* Spline while PLACING: just smoothness. Each point's size is set as you place it (R + move),
 				   and the loop closes itself by snapping to the first point — so the uniform Size
 				   slider and the Loop chip would both fight the flow. *@
@@ -519,14 +520,20 @@
 					<ClaySlider Label="Round" Key="D" Fired=@StripFired( "d" ) Value=@roundVal Min=@GizmoSettingsRoundingMin Max=@roundMax
 						OnInput=@((float v) => SetRounding( v )) OnCommit=@CommitEdit />
 				</div>
-				<div class="pop grow capped @(stripOn && (isSphere || isCone) ? "" : "gone")">
+				<div class="pop grow capped @(stripOn && isSphere ? "" : "gone")">
 					<ClaySlider Label="Slice" Key="F" Fired=@StripFired( "f" ) Value=@sliceVal Min=@(0f) Max=@SdfBrush.MaxSlice
 						OnInput=@((float v) => SetSlice( v )) OnCommit=@CommitEdit />
 				</div>
+				@* Cylinder / extruded: Taper narrows the top — 0 = straight, 1 = a point (a cone / pyramid / star spike). *@
+				<div class="pop grow capped @(stripOn && (isCylinder || isExtruded) ? "" : "gone")">
+					<ClaySlider Label="Taper" Key="F" Fired=@StripFired( "f" ) Value=@taperVal Min=@(0f) Max=@(1f)
+						OnInput=@((float v) => SetTaper( v )) OnCommit=@CommitEdit />
+				</div>
 				@* Extruded "Shape" brush: pick the 2D profile it sweeps — a row of icon chips in the same
-				   paper style, riding along under the sliders (same fade/tracking, it's inside the stack). *@
+				   paper style, riding along after the Taper slider (same fade/tracking, it's inside the stack).
+				   Click-only: F is the taper scrub now. *@
 				<div class="pop grow @(stripOn && isExtruded ? "" : "gone")">
-					<div class="xsection-row @(StripFired( "f" ) ? "fired" : "")"><div class="slider-key">F</div>
+					<div class="xsection-row">
 						@foreach ( var xs in CrossSections )
 						{
 							var cs = xs;
@@ -600,11 +607,11 @@
 					   only for the head-only kinds; see SculptEditSession.GroupKinds / HotkeyGroup for the verb. *@
 					@if ( !EditHudGate.BasicShapesOnly )
 					{
-						var firstGroup = true; // only the first group kind has a key (8 — SculptEditSession's Slot8)
+						var firstGroup = true; // only the first group kind has a key (7 — SculptEditSession's Slot7)
 						foreach ( var kind in Session.GroupKinds )
 						{
 							var k = kind;
-							var groupKey = firstGroup ? InputGlyphs.KeyFor( "Slot8", "8" ) : null;
+							var groupKey = firstGroup ? InputGlyphs.KeyFor( "Slot7", "7" ) : null;
 							firstGroup = false;
 							var groupActive = tileBrush?.Shape == SdfShape.Group && string.Equals( tileBrush.GroupKind, k.Id, StringComparison.OrdinalIgnoreCase );
 							<div class="pop @(dockOn ? "" : "gone")">
@@ -895,21 +902,20 @@
 		_ => "Stamp",
 	};
 
-	// (The shape-tweak scrubs — A op · S blend · D round · F wildcard · G gap — and the 1–8 shape keys aren't bar cards
+	// (The shape-tweak scrubs — A op · S blend · D round · F wildcard · G gap — and the 1–7 shape keys aren't bar cards
 	// while their controls are up: each shows its key-cap
 	// on the slider-strip control it drives, which is up whenever they apply.)
 
-	// The number key that picks a shape (SculptEditSession's Slot1..7 hotkeys) — bound to the SHAPE, not its position
+	// The number key that picks a shape (SculptEditSession's Slot1..6 hotkeys) — bound to the SHAPE, not its position
 	// in the dock, so a dock showing fewer shapes still labels each right. Null = no key.
 	static string ShapeKey( SdfShape shape ) => shape switch
 	{
 		SdfShape.Sphere => InputGlyphs.KeyFor( "Slot1", "1" ),
 		SdfShape.Box => InputGlyphs.KeyFor( "Slot2", "2" ),
 		SdfShape.Cylinder => InputGlyphs.KeyFor( "Slot3", "3" ),
-		SdfShape.Cone => InputGlyphs.KeyFor( "Slot4", "4" ),
-		SdfShape.Extruded => InputGlyphs.KeyFor( "Slot5", "5" ),
-		SdfShape.Spline => InputGlyphs.KeyFor( "Slot6", "6" ),
-		SdfShape.Text => InputGlyphs.KeyFor( "Slot7", "7" ),
+		SdfShape.Extruded => InputGlyphs.KeyFor( "Slot4", "4" ),
+		SdfShape.Spline => InputGlyphs.KeyFor( "Slot5", "5" ),
+		SdfShape.Text => InputGlyphs.KeyFor( "Slot6", "6" ),
 		_ => null,
 	};
 
@@ -943,7 +949,7 @@
 		{
 			"a" or "d" => !group && !b.IsModifier,
 			"s" => true,
-			"f" => b.Shape is SdfShape.Sphere or SdfShape.Cone or SdfShape.Extruded,
+			"f" => b.Shape is SdfShape.Sphere or SdfShape.Cylinder or SdfShape.Extruded,
 			"g" => b.Operation == SdfOperation.Cutout,
 			_ => false,
 		};
@@ -1081,8 +1087,9 @@
 	string SecondSliderName => Brush?.Shape == SdfShape.Spline ? (PlacingSpline ? "smooth" : "curve") : "round";
 	string WildcardName => Brush?.Shape switch
 	{
-		SdfShape.Sphere or SdfShape.Cone => "slice",
-		SdfShape.Extruded => "profile",
+		SdfShape.Sphere => "slice",
+		SdfShape.Cylinder => "taper",
+		SdfShape.Extruded => "taper",
 		SdfShape.Spline => PlacingSpline ? null : "size", // placing: each point is sized as it's dropped
 		_ => null,
 	};
@@ -1205,7 +1212,6 @@
 		(SdfShape.Sphere, "Sphere"),
 		(SdfShape.Box, "Box"),
 		(SdfShape.Cylinder, "Cylinder"),
-		(SdfShape.Cone, "Cone"),
 		(SdfShape.Extruded, "Shape"),
 		(SdfShape.Spline, "Spline"),
 		(SdfShape.Text, "Text"),
@@ -2099,8 +2105,20 @@
 			return;
 		EditEach( b =>
 		{
-			if ( b.Shape is SdfShape.Sphere or SdfShape.Cone )
+			if ( b.Shape == SdfShape.Sphere )
 				b.Slice = Math.Clamp( v, 0f, SdfBrush.MaxSlice );
+		} );
+		Session?.PreviewChanged();
+	}
+
+	void SetTaper( float v )
+	{
+		if ( Brush is null )
+			return;
+		EditEach( b =>
+		{
+			if ( b.Shape is SdfShape.Cylinder or SdfShape.Extruded )
+				b.Taper = Math.Clamp( v, 0f, 1f );
 		} );
 		Session?.PreviewChanged();
 	}
@@ -2621,7 +2639,8 @@
 		hc.Add( (int)(b?.Operation ?? SdfOperation.Add) ); // gap slider + G hint show for cutouts only
 		hc.Add( b is not null && s?.Target?.Brushes is { } bl && Sdf.BlendInert( bl, b ) ); // blend-slider lock
 		hc.Add( b?.Rounding ?? 0f );   // drives the 2D roundness slider's fill
-		hc.Add( b?.Slice ?? 0f );      // drives the slice slider's fill (sphere/cone)
+		hc.Add( b?.Slice ?? 0f );      // drives the slice slider's fill (sphere)
+		hc.Add( b?.Taper ?? 0f );      // drives the taper slider's fill (cylinder)
 		hc.Add( b?.Curvature ?? 0f );  // drives the spline curvature slider's fill
 		hc.Add( b?.SplineClosed ?? false );         // highlights the Loop chip
 		hc.Add( b?.Points is { Count: > 0 } bp ? bp[0].w : 0f ); // drives the uniform Size slider's fill

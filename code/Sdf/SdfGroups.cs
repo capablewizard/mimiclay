@@ -26,7 +26,7 @@ public sealed class SdfGroupKind : GameResource
 	/// <summary>Shape-dock tile label.</summary>
 	[Property] public string Label { get; set; } = "Group";
 
-	/// <summary>Dock order among groups (lowest first; the first group is also the Slot8 hotkey).</summary>
+	/// <summary>Dock order among groups (lowest first; the first group is also the Slot7 hotkey).</summary>
 	[Property] public int Order { get; set; }
 
 	/// <summary>Only offered by HEAD sessions (the player's face editor), never for props.</summary>
