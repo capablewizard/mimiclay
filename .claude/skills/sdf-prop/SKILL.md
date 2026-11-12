@@ -34,15 +34,20 @@ NOT style references: `Assets/Prefabs/CastleCourtyard/*` and the other `gen-*.ps
   Accent parts (bands, lids, knobs) in a contrasting colour. Roughness 0.4–0.55, Metallic 0 unless
   it's real metal (gold trim: `0.8,0.686,0.349` metallic 1).
 - **Scale:** inches, and BIG — props are hideable-in, not life-size. Mug ~30, sand bucket ~48, garden pot ~52,
-  pitcher ~60. My first guesses have run ~1.5x too small; size against a reference prop in `prop_review.scene`.
+  pitcher ~60, spade ~92 long, dustpan ~104 long (pan 75 × 66). My first guesses have run 1.5–2x too small every
+  time; size against the user-tuned props in `prop_review.scene` and go bigger than feels right.
   Put the base near z=0.
+- **Thickness scales with size:** walls/floors ~0.2 of the half-width (dustpan walls 7–8), never thin sheet.
+- **Blunt edges:** lips and fronts end in thick flat faces (a near-vertical trim cut), not knife edges.
+- **Colours a notch muted** from the reference image.
 - **Secondary parts are crisp:** handles/rims/shafts that read as separate pieces get Blend 0 (≤1.4 at most);
   only the main body mass gets the big soft blends. Too much blend = "blobby", the user's most common fix.
 - **Carve, don't stack:** shape a form by cutting a big rounded primitive with flat (sometimes tilted) Subtract
   slabs, rather than assembling many small adds. Tilted cuts give cheap visual interest.
 - **My default is too simple.** The user has added detail to every prop. Before handing over, do a "one more
   level" pass: taper anything parallel-sided (wedge cuts), inset flat faces (shallow dish), add a functional
-  detail the real object has (gusset, lip, rib), and soften the carved group with a Smooth modifier.
+  detail the real object has (gusset, rib, hang slot), and only if hard cuts look harsh, soften that group
+  with a Smooth modifier.
 - **Accents stay small.** Accent-colour details (lugs, knobs) are understated; the silhouette carries the prop.
 
 ## Brush cheat sheet (sculpture-local, Z up)
@@ -101,6 +106,21 @@ When the user says they've changed a prop:
 
 ## Style log (user corrections, newest first)
 
+- **2026-11-12 sand_dustpan** (rebuilt at ~2x):
+  - **Scale again — bigger.** Pan 75 long × 66 wide (mine 34 × 40); ~104 long with the handle. Every prop so far
+    has been scaled up by the user (1.5x, then ~2x). Start bigger.
+  - **Pillowy block:** rounding ~0.48 × half-width (16 on 33). The thickness scales too: walls ~7–8, floor ~5.4.
+    Chunky walls read as toy plastic, not sheet.
+  - **Blunt front, not a knife edge:** my under-chamfer went; a near-vertical Subtract face (leaning ~3.6°, Blend 2)
+    trims the front instead, leaving a thick flat lip. Toys have blunt, safe edges.
+  - **No Smooth modifier here:** the big rounding on the block already gives softness; the cuts stay crisp
+    (0–2). Use Smooth only when hard cuts need softening (fork tines), not by default.
+  - **Functional detail = the "one more level":** a hang slot (rounded Box Subtract through the handle near its end)
+    and the gusset placed AFTER the hollow so it also shows as a rib on the inner back wall.
+  - **Handle thick and round:** half 6 × 6, Rounding 8; tilted ~13° (steeper than the spade's 8.85°); gusset steeper still (16.6°).
+  - **Mute sampled colours:** reference blue `0.42,0.60,0.82` → user `0.39,0.50,0.64`. Pull saturation down
+    off the image (the bucket kept its bright blue, so judge per prop, but err muted).
+
 - **2026-11-12 sand_fork** ("general shapes ok, but too simple" — 2nd time running, so push detail further):
   - **Tapered tines:** my parallel box slots became two long `Extruded` Triangle wedge Subtracts (MirrorY), rotated
     90° about Z so the apex points back toward the handle. Gaps widen toward the tips → tines taper to points
@@ -147,4 +167,4 @@ When the user says they've changed a prop:
 | Kids' sand bucket | `Tools/PropGen/props/sand_bucket.ps1` | `Assets/Prefabs/Props/Garden/sand_bucket.prefab` | v2 = user-tuned, recipe ported + verified |
 | Kids' sand spade | `Tools/PropGen/props/sand_spade.ps1` | `Assets/Prefabs/Props/Garden/sand_spade.prefab` | v2 = user-tuned, recipe ported + verified |
 | Kids' sand fork | `Tools/PropGen/props/sand_fork.ps1` | `Assets/Prefabs/Props/Garden/sand_fork.prefab` | v2 = user-tuned, recipe ported + verified |
-| Kids' dustpan | `Tools/PropGen/props/sand_dustpan.ps1` | `Assets/Prefabs/Props/Garden/sand_dustpan.prefab` | v1, awaiting user edits |
+| Kids' dustpan | `Tools/PropGen/props/sand_dustpan.ps1` | `Assets/Prefabs/Props/Garden/sand_dustpan.prefab` | v2 = user-tuned, recipe ported + verified |
