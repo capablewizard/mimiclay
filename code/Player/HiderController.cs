@@ -452,7 +452,11 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 			// pawn's spawn snapshot (already tagged by its owner) or been cloned fresh here, and prop-vs-prop
 			// contacts are only ignored when BOTH shapes carry the tag. Tags.Add is idempotent either way.
 			// From here on UpdateReleasedSolidity keeps the tag tracking the released/body state per-frame.
-			_body.GameObject.Tags.Add( PropBodyTag );
+			// Scenery converted in place (BornScenery — a shot or grab, the props touching it: PropContacts) starts SOLID: it
+			// was solid scene clay a frame ago, so there is no ghost to come out of. Tagged, it stayed ghosted for as long as
+			// its BOUNDS overlapped another prop's (UpdateReleasedSolidity's way-out guard) — forever, for the produce in a
+			// wheelbarrow, which fell straight through the barrow (measured 2026-11-12: every piece still tagged 1.8 s on).
+			_body.GameObject.Tags.Set( PropBodyTag, !BornScenery || _woken );
 
 			_collider = _body.GameObject.Components.GetOrCreate<SdfCollider>();
 			_collider.Rebuild();

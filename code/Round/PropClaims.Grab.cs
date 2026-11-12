@@ -281,6 +281,11 @@ public sealed partial class PropClaims
 		if ( pawn.WorldPosition.Distance( target.WorldPosition ) > PossessRange )
 			return;
 
+		// The still props touching what's picked up wake with it (PropContacts) — found before any conversion moves it.
+		// Scenery only: lifting someone's body doesn't shake the world loose.
+		List<SdfSculpture> cluster = null;
+		SdfSculpture decoy = null;
+
 		GameObject prop;
 		var hider = target.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 		if ( hider.IsValid() )
@@ -290,6 +295,8 @@ public sealed partial class PropClaims
 			if ( !IsGrabbable( hider.DisguiseSculpture ) )
 				return; // someone's body (where the mode says no), being sculpted, or already held
 			prop = hider.GameObject;
+			if ( IsReleased( hider ) )
+				cluster = StillCluster( hider.DisguiseSculpture );
 		}
 		else if ( !Sandbox )
 		{
@@ -298,12 +305,14 @@ public sealed partial class PropClaims
 			if ( !IsInspectableDecoy( sculpture ) )
 				return;
 			prop = sculpture.GameObject;
+			decoy = sculpture;
 		}
 		else
 		{
 			var sculpture = target.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndAncestors );
 			if ( !IsClaimable( sculpture ) || !_claimedScene.Add( sculpture.GameObject.Id ) )
 				return;
+			cluster = StillCluster( sculpture );
 
 			var converted = ConvertSceneProp( sculpture, null, scenery: true );
 			if ( !converted.IsValid() )
@@ -325,6 +334,11 @@ public sealed partial class PropClaims
 		_grabTargets[prop.Id] = prop.WorldTransform;
 		IgnoreHolder( c, prop );
 		PlaySwapPop( PopSpot( prop ) );
+
+		if ( cluster is not null )
+			WakeCluster( cluster );
+		if ( decoy is not null )
+			RoundManager.Current?.WakeTouchingDecoys( decoy );
 	}
 
 	/// <summary>Holder → host, every frame while holding: the root position + rotation the prop should chase,

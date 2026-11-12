@@ -39,6 +39,9 @@ public sealed partial class PropClaims
 		if ( !CreativeManager.Current.IsValid() || (Networking.IsActive && !Networking.IsHost) || !sculpt.IsValid() )
 			return;
 
+		// The still props touching it go too (PropContacts) — found now, while the hit one is still where it stood.
+		var cluster = StillCluster( sculpt );
+
 		HiderController hider;
 		if ( RoundManager.IsShotDecoy( sculpt ) )
 		{
@@ -68,6 +71,59 @@ public sealed partial class PropClaims
 		FrozenProps.Remove( id ); // shooting a frozen prop unfreezes it, like grabbing one does
 		LooseProps[id] = true;
 		_shotKicks[id] = new ShotKick { Point = hit, Impulse = dir.Normal * RoundManager.ShotKnockSpeed, Since = 0f };
+		WakeCluster( cluster );
+	}
+
+	// ── Touching props wake with it (see PropContacts) ─────────────────────────────────────────────────────────
+	// Creative's still props: scene clay nobody has converted yet, and FROZEN pawns. Both become loose released scenery,
+	// exactly as if each had been shot — minus the knock: a zero kick only wakes it (a frozen body would otherwise
+	// register in the sim asleep and hang where it was), and gravity and its contacts do the rest.
+
+	/// <summary>Host: the still props connected to <paramref name="sculpt"/> through contact (not including it).</summary>
+	internal List<SdfSculpture> StillCluster( SdfSculpture sculpt )
+		=> Sandbox ? PropContacts.Cluster( Scene, sculpt, IsStillProp ) : new();
+
+	bool IsStillProp( SdfSculpture s )
+	{
+		var hider = s.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		if ( hider.IsValid() )
+			return hider.DisguiseSculpture == s && FrozenProps.ContainsKey( hider.GameObject.Id ) && ShotFree( hider );
+		return IsClaimable( s ) && s.Components.Get<SdfCollider>() is { BuildAsTrigger: false } && !_claimedScene.Contains( s.GameObject.Id );
+	}
+
+	/// <summary>Host: make each of these loose (converting scene clay first), woken where it stands.</summary>
+	internal void WakeCluster( List<SdfSculpture> cluster )
+	{
+		foreach ( var s in cluster )
+		{
+			if ( !s.IsValid() )
+				continue;
+
+			var hider = s.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+			if ( !hider.IsValid() )
+			{
+				if ( !IsClaimable( s ) || !_claimedScene.Add( s.GameObject.Id ) )
+					continue;
+				var pawn = ConvertSceneProp( s, null, scenery: true );
+				if ( !pawn.IsValid() )
+				{
+					_claimedScene.Remove( s.GameObject.Id );
+					continue;
+				}
+				hider = pawn.Components.Get<HiderController>();
+				hider.ReleaseControl();
+				ReleasedProps[pawn.Id] = true;
+			}
+
+			if ( !ShotFree( hider ) )
+				continue;
+
+			var id = hider.GameObject.Id;
+			FrozenProps.Remove( id );
+			LooseProps[id] = true;
+			if ( !_shotKicks.ContainsKey( id ) )
+				_shotKicks[id] = new ShotKick { Point = hider.WorldPosition, Impulse = Vector3.Zero, Since = 0f };
+		}
 	}
 
 	// ── Kicks: applied once the prop is a free rigidbody (a fresh conversion takes a tick or two) ──────────────

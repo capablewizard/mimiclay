@@ -1492,7 +1492,7 @@
           "__version": 2,
           "Flags": 0,
           "Name": "HunterSpawn (3)",
-          "Position": "56.4333496,-735.225403,-182.535309",
+          "Position": "-1438.02405,512.935608,-182.535309",
           "Rotation": "0,0,1,-4.37113883E-08",
           "Scale": "1,1,1",
           "Tags": "",
@@ -2633,13 +2633,13 @@
             "Maxs": "-448.148682,908.25,307.74176"
           },
           "DistanceTexture": {
-            "Id": "becc60f6-1767-4d94-a08c-ff56c6225947",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_distance_fff47440-764c-4073-a40f-1b42b199b681_7b45ad1675284ba38d8fd4bfcf3860ab.vtex"
+            "Id": "39de924c-29cd-4676-8e80-effbf0b17915",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_distance_fff47440-764c-4073-a40f-1b42b199b681_86195d686bb341958780398cf572f0b0.vtex"
           },
           "InsideGeometry": "Relocate",
           "IrradianceTexture": {
-            "Id": "7245e903-5e93-4542-8669-34f47bfe90e6",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_irradiance_fff47440-764c-4073-a40f-1b42b199b681_7b45ad1675284ba38d8fd4bfcf3860ab.vtex"
+            "Id": "730fd441-a348-4509-a978-cde5dee7fca0",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_irradiance_fff47440-764c-4073-a40f-1b42b199b681_86195d686bb341958780398cf572f0b0.vtex"
           },
           "NormalBias": 5,
           "OnComponentDestroy": null,
@@ -2650,8 +2650,8 @@
           "OnComponentUpdate": null,
           "ProbeDensity": 16,
           "RelocationTexture": {
-            "Id": "5c590b17-21ce-4a62-ba4e-f1fe82bb3e93",
-            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_relocation_fff47440-764c-4073-a40f-1b42b199b681_7b45ad1675284ba38d8fd4bfcf3860ab.vtex"
+            "Id": "65fcadff-8dd2-4742-8dc2-090a9623f88a",
+            "Path": "scenes/maps/devprophunt_scene_data/ddgi/ddgi_garden_relocation_fff47440-764c-4073-a40f-1b42b199b681_86195d686bb341958780398cf572f0b0.vtex"
           },
           "RenderExcludeTags": "sdf_render",
           "RuntimeContrast": 1,
@@ -18969,7 +18969,7 @@
               "IdValue": "2a803963-5772-4c98-9f46-5d1679f6c76f"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -26210,7 +26210,7 @@
               "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -26472,7 +26472,7 @@
               "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -27423,7 +27423,7 @@
               "IdValue": "471ab9f7-25da-4790-b1c2-601837683686"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -27857,7 +27857,7 @@
               "IdValue": "023ac5c2-9981-417e-9ba8-9bcdfc6974cf"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -28651,7 +28651,7 @@
               "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -29707,7 +29707,7 @@
               "IdValue": "b1588502-5f1f-4738-bcb6-df938fa1cbfe"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -30737,7 +30737,7 @@
               "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -31258,7 +31258,7 @@
               "IdValue": "f34d6c2e-6f75-4fd8-bb53-424daa174e29"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -31773,6 +31773,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d309cb71-8acf-44fc-ba5b-2153b754d2cb"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d309cb71-8acf-44fc-ba5b-2153b754d2cb"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -33003,7 +33019,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -33401,7 +33417,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -33450,7 +33466,7 @@
               "IdValue": "a98a3e9f-e662-4874-94b6-98983a196ae7"
             },
             "Property": "Position",
-            "Value": "-1280.49268,197.924057,76.8746643"
+            "Value": "-1317.71985,199.100952,76.8746643"
           },
           {
             "Target": {
@@ -33709,7 +33725,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -34017,7 +34033,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -34370,7 +34386,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -34768,7 +34784,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -35121,7 +35137,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -35518,7 +35534,7 @@
               "IdValue": "70200bc4-5e35-4de8-b44a-7e9dfe7d0fd6"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -37272,7 +37288,7 @@
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -37587,7 +37603,7 @@
               "IdValue": "498f8846-040b-4f2b-8b6c-14d89d2370f1"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -39385,7 +39401,7 @@
               "IdValue": "127fafd5-603a-4e13-827e-754ab04593c4"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -40457,7 +40473,7 @@
               "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -41523,6 +41539,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ff777ad1-1889-4494-95fb-d66e93a02951"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -41949,7 +41981,7 @@
               "IdValue": "bd8a5941-5cb1-4f72-ab2a-880cb3e2048c"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -42698,7 +42730,7 @@
               "IdValue": "1545e7cc-95ea-48ba-9934-c8ce3783ce88"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -42763,7 +42795,7 @@
               "IdValue": "2ec162e9-f079-4eed-a3fa-d395a1f53f9c"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -43432,7 +43464,7 @@
               "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -44013,8 +44045,24 @@
               "Type": "Component",
               "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -44954,8 +45002,24 @@
               "Type": "Component",
               "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "8b98fefc-676c-49f7-8374-0c009c611274"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -45012,7 +45076,7 @@
               "IdValue": "01f79587-2f73-4056-90c5-1867987efd3d"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -45150,7 +45214,7 @@
               "IdValue": "79d894d0-9a88-4e55-b459-fe918f02b60c"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -45215,7 +45279,7 @@
               "IdValue": "b4a8108d-d7de-4a89-ad51-3718d5d57076"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -45280,7 +45344,7 @@
               "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -45402,7 +45466,7 @@
               "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -45452,6 +45516,22 @@
             },
             "Property": "Position",
             "Value": "-571.091187,385.292297,22.7265339"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -45500,7 +45580,7 @@
               "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -45558,6 +45638,22 @@
             },
             "Property": "Rotation",
             "Value": "0,0,0,1"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -45679,7 +45775,7 @@
               "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -45744,7 +45840,7 @@
               "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -45801,7 +45897,7 @@
               "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -45851,6 +45947,22 @@
             },
             "Property": "Position",
             "Value": "-612.867371,354.700043,2.79179692"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "eac60454-4127-46c1-b532-2771a30027e7"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -45907,7 +46019,7 @@
               "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -45972,7 +46084,7 @@
               "IdValue": "3e9af8b7-a4a4-4523-869d-922c41971ca7"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -46776,7 +46888,7 @@
               "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -47272,7 +47384,7 @@
               "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -47768,7 +47880,7 @@
               "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -48264,7 +48376,7 @@
               "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -48760,7 +48872,7 @@
               "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -49256,7 +49368,7 @@
               "IdValue": "7a6b71c6-0c79-409c-a424-08a2c254cb54"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 0
           },
           {
             "Target": {
@@ -49393,6 +49505,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "31fb5796-9f06-4775-b4bd-746d87c8ae28"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "31fb5796-9f06-4775-b4bd-746d87c8ae28"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -49457,7 +49585,7 @@
               "IdValue": "31fb5796-9f06-4775-b4bd-746d87c8ae28"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -49603,7 +49731,7 @@
               "IdValue": "31fb5796-9f06-4775-b4bd-746d87c8ae28"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -49668,7 +49796,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -49733,7 +49861,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -49798,7 +49926,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -49863,7 +49991,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -49928,7 +50056,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -49993,7 +50121,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -50058,7 +50186,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -50123,7 +50251,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -50188,7 +50316,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -50253,7 +50381,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -50326,7 +50454,7 @@
               "IdValue": "ac521a7d-d941-48aa-88a5-5e9755b9c52f"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -50399,7 +50527,7 @@
               "IdValue": "ac521a7d-d941-48aa-88a5-5e9755b9c52f"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -50472,7 +50600,7 @@
               "IdValue": "ac521a7d-d941-48aa-88a5-5e9755b9c52f"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -50494,6 +50622,79 @@
         "e80b7e5a-29bf-44c1-9d1b-e96cfee3fd71": "29d76eca-283a-4850-97cf-2787eff07aef",
         "c58bc6ce-9c77-473c-8ab3-b4e2dc8db2aa": "6099f811-2eb1-46ae-beca-166d54c5a7b1",
         "4f6f419a-f34f-4a84-b855-d8c89d19cf84": "af2f32ea-9587-433d-9d06-6fec48bf1bf1"
+      }
+    },
+    {
+      "__guid": "df066e0f-866e-45c7-960a-d619cdeca65e",
+      "__version": 2,
+      "__Prefab": {
+        "Id": "54e70e20-5eb7-41b5-ba07-c638e524fcd6",
+        "Path": "prefabs/props/garden/turnip.prefab"
+      },
+      "__PrefabInstancePatch": {
+        "AddedObjects": [],
+        "RemovedObjects": [],
+        "PropertyOverrides": [
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "68034739-6137-4786-9aa7-097523a4d508"
+            },
+            "Property": "Name",
+            "Value": "Turnip (5)"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "68034739-6137-4786-9aa7-097523a4d508"
+            },
+            "Property": "Position",
+            "Value": "-1201.70142,16.9999676,8.19029045"
+          },
+          {
+            "Target": {
+              "Type": "GameObject",
+              "IdValue": "68034739-6137-4786-9aa7-097523a4d508"
+            },
+            "Property": "Rotation",
+            "Value": "-0.000340554834,0.000350680988,0.379229248,-0.925302684"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac521a7d-d941-48aa-88a5-5e9755b9c52f"
+            },
+            "Property": "__enabled",
+            "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac521a7d-d941-48aa-88a5-5e9755b9c52f"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ac521a7d-d941-48aa-88a5-5e9755b9c52f"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          }
+        ],
+        "MovedObjects": []
+      },
+      "__PrefabIdToInstanceId": {
+        "68034739-6137-4786-9aa7-097523a4d508": "df066e0f-866e-45c7-960a-d619cdeca65e",
+        "e6ea3b91-c671-43b1-a3e1-c2ad2f25e02d": "df3a03eb-09d8-440b-9cf4-8e5d693bdd77",
+        "ac521a7d-d941-48aa-88a5-5e9755b9c52f": "c9e5ca0e-d8a9-4ad1-88cb-1c3b9390a75a",
+        "75495a3f-53fa-483e-8821-3bfdfb84628a": "f636a5f4-9a0b-4e4d-a23d-897d6b948199",
+        "040c2475-583d-4cfa-bc95-57e8563371ac": "83f03b63-184b-4a01-972b-1f55b4aee476",
+        "e80b7e5a-29bf-44c1-9d1b-e96cfee3fd71": "d318cc72-8f8f-4c3c-a4d1-ed46b6cf1bd1",
+        "c58bc6ce-9c77-473c-8ab3-b4e2dc8db2aa": "91b3d801-412d-4534-9de1-d00adf3a9872",
+        "4f6f419a-f34f-4a84-b855-d8c89d19cf84": "edc23275-82c1-4e78-8249-eea8b5e39da9"
       }
     },
     {
@@ -50545,7 +50746,7 @@
               "IdValue": "ac521a7d-d941-48aa-88a5-5e9755b9c52f"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -50610,7 +50811,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -50675,7 +50876,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -50740,7 +50941,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -50805,7 +51006,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -50870,7 +51071,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -51042,6 +51243,22 @@
             },
             "Property": "Position",
             "Value": "-809.804321,499.886841,184.092194"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "bf183d33-7083-4ab8-a0f4-2eb4cecb1fa6"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "bf183d33-7083-4ab8-a0f4-2eb4cecb1fa6"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -51090,7 +51307,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -51155,7 +51372,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -51220,7 +51437,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -51285,7 +51502,7 @@
               "IdValue": "f17d1640-96a5-44d1-af2c-47484362c9ec"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -51756,7 +51973,7 @@
               "IdValue": "f841cc62-3670-4d15-8665-fd95be7f2b78"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -52242,8 +52459,24 @@
               "Type": "Component",
               "IdValue": "f841cc62-3670-4d15-8665-fd95be7f2b78"
             },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f841cc62-3670-4d15-8665-fd95be7f2b78"
+            },
             "Property": "Model",
             "Value": "sbox_procedural_model.vmdl"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "f841cc62-3670-4d15-8665-fd95be7f2b78"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -52556,6 +52789,22 @@
                 "BoundingRadius": 49.63614
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -52884,6 +53133,22 @@
                 "BoundingRadius": 49.63614
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -53212,6 +53477,22 @@
                 "BoundingRadius": 49.63614
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -53540,6 +53821,22 @@
                 "BoundingRadius": 49.63614
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6141e6ab-c220-4083-9501-a62912c1c4ef"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -54525,7 +54822,7 @@
               "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -55347,7 +55644,7 @@
               "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -55621,7 +55918,7 @@
               "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -55895,7 +56192,7 @@
               "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -56169,7 +56466,7 @@
               "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -56443,7 +56740,7 @@
               "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -56717,7 +57014,7 @@
               "IdValue": "b2f2b5ce-dcae-4f74-8994-c01a39dea4cf"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -56808,22 +57105,6 @@
             },
             "Property": "Position",
             "Value": "-702.237976,-546.070923,16.7947922"
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "18d8bd23-2f8e-4746-b714-c6790833728e"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "18d8bd23-2f8e-4746-b714-c6790833728e"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -57331,6 +57612,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -57387,7 +57684,7 @@
               "IdValue": "2377d0e9-263a-4c35-8aa5-041a8b55a390"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -57453,6 +57750,22 @@
             },
             "Property": "__enabled",
             "Value": true
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5e7969a6-8f29-4ca0-bba1-66a7bc7e6bb8"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -57653,7 +57966,7 @@
               "IdValue": "bc2ad332-9684-43d0-8415-c7b1fbb7d7fa"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -57862,7 +58175,7 @@
               "IdValue": "bc2ad332-9684-43d0-8415-c7b1fbb7d7fa"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -58064,22 +58377,6 @@
                 "BoundingRadius": 72.6738
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "bc2ad332-9684-43d0-8415-c7b1fbb7d7fa"
-            },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "bc2ad332-9684-43d0-8415-c7b1fbb7d7fa"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -58280,7 +58577,7 @@
               "IdValue": "bc2ad332-9684-43d0-8415-c7b1fbb7d7fa"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -58577,7 +58874,7 @@
               "IdValue": "e5f73bf6-a436-a299-525e-6addf9088dff"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -58890,7 +59187,7 @@
               "IdValue": "e5f73bf6-a436-a299-525e-6addf9088dff"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -58939,7 +59236,7 @@
               "IdValue": "23edf976-781b-ced9-c1a6-f3c5d1d3d8f0"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -59296,7 +59593,7 @@
               "IdValue": "23edf976-781b-ced9-c1a6-f3c5d1d3d8f0"
             },
             "Property": "LodOverride",
-            "Value": 2
+            "Value": 1
           },
           {
             "Target": {
@@ -59603,7 +59900,7 @@
               "IdValue": "495911f8-8458-4e89-ba77-82d59ef60188"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 0
           },
           {
             "Target": {
@@ -61064,6 +61361,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "e16798d4-e9f9-22be-83f2-08fd5bd09aa5"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "e16798d4-e9f9-22be-83f2-08fd5bd09aa5"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "d3a278a5-5f64-50c6-6479-60bd60976c5c"
             },
             "Property": "Transmission",
@@ -61283,6 +61596,22 @@
             },
             "Property": "BrushObjects",
             "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ad332a28-8b94-1320-2b58-84d7bb7ea989"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "ad332a28-8b94-1320-2b58-84d7bb7ea989"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -61342,6 +61671,22 @@
             },
             "Property": "Position",
             "Value": "-1322.81738,146.216248,190.799103"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d45fbd00-bfdd-4dcc-8492-6d20ac26001a"
+            },
+            "Property": "LodOverride",
+            "Value": 1
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "d45fbd00-bfdd-4dcc-8492-6d20ac26001a"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -61443,7 +61788,7 @@
               "IdValue": "7915a9b1-73ac-b3cc-f680-d08559f0dfbd"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -61711,7 +62056,7 @@
               "IdValue": "7915a9b1-73ac-b3cc-f680-d08559f0dfbd"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -61979,7 +62324,7 @@
               "IdValue": "7915a9b1-73ac-b3cc-f680-d08559f0dfbd"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -62042,7 +62387,7 @@
               "IdValue": "856f8c81-66a0-96de-df15-3e2b54b91fc3"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -62168,7 +62513,7 @@
               "IdValue": "8e0686a1-32c7-03e8-80be-6c79932b8a06"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -62456,7 +62801,7 @@
               "IdValue": "8e0686a1-32c7-03e8-80be-6c79932b8a06"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -62879,7 +63224,7 @@
               "IdValue": "8e0686a1-32c7-03e8-80be-6c79932b8a06"
             },
             "Property": "LodOverride",
-            "Value": 1
+            "Value": 2
           },
           {
             "Target": {
@@ -62939,6 +63284,22 @@
             },
             "Property": "Rotation",
             "Value": "2.98023117E-08,5.96046448E-08,-8.94069387E-08,0.99999994"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "fd26a544-e352-7c23-5ae7-8563e5a5e07c"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "fd26a544-e352-7c23-5ae7-8563e5a5e07c"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -63017,6 +63378,22 @@
             },
             "Property": "BrushObjects",
             "Value": false
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6da7973a-6804-527d-e79c-270224379d9e"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "6da7973a-6804-527d-e79c-270224379d9e"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -63268,7 +63645,7 @@
               "IdValue": "26f041df-abb4-46f0-bbcf-59e3dfdce0ac"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {
@@ -63580,6 +63957,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
             },
             "Property": "Transmission",
@@ -63880,6 +64273,22 @@
           {
             "Target": {
               "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "2aa4cd7b-1e5a-42f8-98c0-0cc09c46f908"
+            },
+            "Property": "RenderType",
+            "Value": "On"
+          },
+          {
+            "Target": {
+              "Type": "Component",
               "IdValue": "8369c507-159f-4553-b20c-05d88e33293a"
             },
             "Property": "Transmission",
@@ -63918,6 +64327,22 @@
             },
             "Property": "Position",
             "Value": "-1266.40417,367.52948,54.2603302"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "19fd1836-297b-2e8a-5fb6-f1ffb7e3a139"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "19fd1836-297b-2e8a-5fb6-f1ffb7e3a139"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -63974,7 +64399,7 @@
               "IdValue": "8b850352-7180-43cd-b70c-ae246a391bfb"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -64356,6 +64781,22 @@
                 "BoundingRadius": 9.625548
               }
             ]
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "19fd1836-297b-2e8a-5fb6-f1ffb7e3a139"
+            },
+            "Property": "LodOverride",
+            "Value": 2
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "19fd1836-297b-2e8a-5fb6-f1ffb7e3a139"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -64404,7 +64845,7 @@
               "IdValue": "7c982d1d-5a45-5f67-4943-894221626cf8"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 1
           },
           {
             "Target": {
@@ -64446,6 +64887,22 @@
             },
             "Property": "Position",
             "Value": "-190.204788,464.074097,4.43125677"
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5a774ebd-061b-40e8-c03d-0d78e09d82ed"
+            },
+            "Property": "LodOverride",
+            "Value": 0
+          },
+          {
+            "Target": {
+              "Type": "Component",
+              "IdValue": "5a774ebd-061b-40e8-c03d-0d78e09d82ed"
+            },
+            "Property": "RenderType",
+            "Value": "On"
           },
           {
             "Target": {
@@ -64994,22 +65451,6 @@
             },
             "Property": "__enabled",
             "Value": true
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8506d8f2-9d1a-4059-bf25-5ee3d57a28fa"
-            },
-            "Property": "LodOverride",
-            "Value": 0
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "8506d8f2-9d1a-4059-bf25-5ee3d57a28fa"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           }
         ],
         "MovedObjects": []
@@ -65743,22 +66184,6 @@
                 "BoundingRadius": 1
               }
             ]
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "54c4c185-8606-04e7-c1bf-71aa05b9241d"
-            },
-            "Property": "LodOverride",
-            "Value": 1
-          },
-          {
-            "Target": {
-              "Type": "Component",
-              "IdValue": "54c4c185-8606-04e7-c1bf-71aa05b9241d"
-            },
-            "Property": "RenderType",
-            "Value": "On"
           },
           {
             "Target": {
@@ -66664,7 +67089,7 @@
               "IdValue": "5eb28197-0b1b-4825-a680-8409dd4b6cf7"
             },
             "Property": "LodOverride",
-            "Value": 0
+            "Value": 2
           },
           {
             "Target": {

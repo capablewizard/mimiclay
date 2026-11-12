@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Mimiclay.Sim;
 
 namespace Mimiclay;
 
@@ -41,6 +42,9 @@ public sealed partial class RoundManager
 			return;
 
 		var go = sculpt.GameObject;
+		// The still decoys touching it come loose too (PropContacts) — before the knock moves it.
+		WakeTouchingDecoys( sculpt );
+
 		// Removal + island cleanup, off the main thread — lands a frame or two later. "Repair props" off only: with it
 		// on the craters heal, so nothing is ever shot away for good (no removal, no crumbs, no splits).
 		if ( !Settings.RepairProps )
@@ -81,6 +85,56 @@ public sealed partial class RoundManager
 		var collider = sculpt.Components.Get<SdfCollider>();
 		if ( collider.IsValid() )
 			collider.CarveCollision = true;
+	}
+
+	/// <summary>Host: free the still decoys connected to <paramref name="source"/> through contact (see PropContacts) — the
+	/// wheel on a shot or lifted wheelbarrow. Each is woken where it stands, free to tumble like a shot one, minus the knock:
+	/// gravity and its contacts with the moving part move it. In the sim that's dropping the anchor (and the upright lock)
+	/// and waking it; outside it, the host's local shot body, streamed like any loose decoy.</summary>
+	internal void WakeTouchingDecoys( SdfSculpture source )
+	{
+		if ( !IsHostAuthority || !source.IsValid() )
+			return;
+
+		foreach ( var s in PropContacts.Cluster( Scene, source, IsStillDecoy ) )
+		{
+			var go = s.GameObject;
+			if ( DecoyInSim( go ) )
+			{
+				var sim = Sim;
+				var b = sim.Find( go.Id );
+				sim.SetFlags( go.Id, b.Spec.Flags & ~(SimBodyFlags.Upright | SimBodyFlags.NoTurn | SimBodyFlags.Anchored) );
+				sim.Kick( go.Id, go.WorldPosition, Vector3.Zero ); // wakes it
+				continue;
+			}
+
+			var body = ShotBody( go, simulate: true );
+			if ( !body.IsValid() )
+				continue;
+			_pushedDecoys.Remove( go );
+			body.Locking = default;
+			float mass = go.Components.Get<SdfCollider>()?.ClayMass ?? 0f;
+			if ( mass > 0f )
+				body.MassOverride = mass;
+			body.Sleeping = false;
+			_shotLoose.Add( go );
+			_shotResting.Remove( go );
+		}
+	}
+
+	// A decoy nothing is moving yet: not held, and still (anchored in the sim; outside it, not already a loose shot body —
+	// a pushed one is loose but upright-locked, and freeing it is right too).
+	bool IsStillDecoy( SdfSculpture s )
+	{
+		if ( !IsShotDecoy( s ) || PropClaims.IsHeldObject( s.GameObject ) )
+			return false;
+		var go = s.GameObject;
+		if ( DecoyInSim( go ) )
+		{
+			var b = Sim.Find( go.Id );
+			return b.Spec.Driver == 0 && (b.Spec.Flags & (SimBodyFlags.Anchored | SimBodyFlags.Upright)) != 0;
+		}
+		return !_shotLoose.Contains( go ) || _pushedDecoys.Contains( go );
 	}
 
 	// Scenery clay with a solid collider: not a pawn (players pop, hunter faces heal), not saved-out runtime clay.
