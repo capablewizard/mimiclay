@@ -223,6 +223,15 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 	/// exactly on the crosshair line.</summary>
 	[Property, Group( "Third Person" ), Range( -48f, 48f )] public float ThirdPersonShoulder { get; set; } = ShoulderBoom.DefaultShoulder;
 
+	/// <summary>Extra shoulder offset while holding a prop in third person (added to <see cref="ThirdPersonShoulder"/>, eased
+	/// in and out) — the held prop floats on the crosshair, so swinging the camera further out to the side keeps our own
+	/// body from covering it (user, 2026-11-12).</summary>
+	[Property, Group( "Third Person" ), Range( 0f, 64f )] public float ThirdPersonHoldShoulder { get; set; } = 24f;
+
+	/// <summary>How fast the camera eases out to <see cref="ThirdPersonHoldShoulder"/> and back (exponential, per second) —
+	/// independent of <see cref="ThirdPersonBlendSpeed"/>. Lower is slower.</summary>
+	[Property, Group( "Third Person" ), Range( 0.5f, 30f )] public float ThirdPersonHoldShoulderSpeed { get; set; } = ShoulderBoom.DefaultShoulderBoostSpeed;
+
 	/// <summary>Vertical offset of the boom above the eye.</summary>
 	[Property, Group( "Third Person" ), Range( -32f, 64f )] public float ThirdPersonRise { get; set; } = ShoulderBoom.DefaultRise;
 
@@ -1849,6 +1858,8 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 			eye.z -= EyeDip * (1f - _boom.Blend);
 
 		ApplyBoomTuning( _boom );
+		_boom.ShoulderBoost = _grabHolder?.Grabbed is { } heldProp && heldProp.IsValid() ? ThirdPersonHoldShoulder : 0f; // (see ThirdPersonHoldShoulder)
+		_boom.ShoulderBoostSpeed = ThirdPersonHoldShoulderSpeed;
 		var pose = _boom.Place( Scene, eye, _controller.EyeAngles, GameSettings.HunterThirdPerson, GameObject );
 
 		cam.WorldPosition = pose.Position;
@@ -3141,9 +3152,15 @@ public sealed partial class HunterController : Component, PlayerController.IEven
 		// Our own hierarchy ignored — in third person the pawn is directly in front of the lens and would
 		// otherwise swallow every crosshair ray. Other filters match TraceShot, so the crosshair converges on
 		// exactly the set of things a shot can hit.
-		var look = ShotTrace( rayStart, rayStart + camDir * Range )
-			.WithoutTags( "trigger", "water", CharadesStageFence.WallTag )
-			.Run();
+		var lookTrace = ShotTrace( rayStart, rayStart + camDir * Range )
+			.WithoutTags( "trigger", "water", CharadesStageFence.WallTag );
+		// …and THROUGH what we're holding: the grab places the prop along this very aim, so converging on its surface was a
+		// loop — the prop moved, the ray met it somewhere else, the aim swung, the prop moved again (measured in third person
+		// with a prop held still: the aim jumped ~7° a frame, up to 21°; the crosshair ray met the held prop 48 frames in 60).
+		var heldNow = _grabHolder?.Grabbed;
+		if ( heldNow.IsValid() )
+			lookTrace = lookTrace.IgnoreGameObjectHierarchy( heldNow );
+		var look = lookTrace.Run();
 
 		var to = ( look.Hit ? look.EndPosition : rayStart + camDir * Range ) - eye;
 

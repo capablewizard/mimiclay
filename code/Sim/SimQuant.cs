@@ -103,6 +103,14 @@ public static class SimQuant
 		return new Rotation( c[0], c[1], c[2], c[3] ).Normal;
 	}
 
+	/// <summary>A hold's grip (root-local, already on <see cref="SimInput.QuantGrip"/>'s steps): 6 bytes.</summary>
+	public static void WriteGrip( BinaryWriter w, Vector3 g )
+	{
+		w.Write( (short)MathF.Round( g.x * 16f ) ); w.Write( (short)MathF.Round( g.y * 16f ) ); w.Write( (short)MathF.Round( g.z * 16f ) );
+	}
+
+	public static Vector3 ReadGrip( BinaryReader r ) => new( r.ReadInt16() / 16f, r.ReadInt16() / 16f, r.ReadInt16() / 16f );
+
 	// A driven body's controller state: flags byte, still ticks, two tick counters, the commanded velocity (12 bytes).
 	// (+2 bytes: the grab buffer and let-go cooldown; a climbing body adds its climb block, ~30–60 bytes; a mantle 9.)
 	public static void WriteCtrl( BinaryWriter w, in SimCtrl c )
@@ -117,8 +125,11 @@ public static class SimQuant
 		w.Write( (short)Math.Clamp( c.Wish.y * 8f, short.MinValue, short.MaxValue ) );
 		w.Write( c.SpaceBuffer );
 		w.Write( c.LetGoCool );
-		w.Write( (byte)(c.Ducked ? 1 : 0) ); // the second flags byte (hunters)
+		bool grip = c.Holding && c.Grip != Vector3.Zero;
+		w.Write( (byte)((c.Ducked ? 1 : 0) | (grip ? 2 : 0)) ); // the second flags byte (hunters; a held body's grip)
 		w.Write( c.PadCool );
+		if ( grip )
+			WriteGrip( w, c.Grip );
 		if ( c.Climbing )
 		{
 			WriteUnit( w, c.ClimbN );
@@ -166,6 +177,8 @@ public static class SimQuant
 		byte f2 = r.ReadByte();
 		c.Ducked = (f2 & 1) != 0;
 		c.PadCool = r.ReadByte();
+		if ( (f2 & 2) != 0 )
+			c.Grip = ReadGrip( r );
 		if ( c.Climbing )
 		{
 			c.ClimbN = ReadUnit( r );

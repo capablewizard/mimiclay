@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Mimiclay;
@@ -22,14 +23,28 @@ public sealed partial class HunterController
 	internal bool GrabLookFrozen => _grabHolder?.LookFrozen ?? false;
 
 	/// <summary>Ask the host to put <paramref name="target"/> in our hands (the RMB Grab card).</summary>
-	internal void BeginGrab( GameObject target ) => Grab.Begin( target );
+	internal void BeginGrab( GameObject target, Vector3? grip = null ) => Grab.Begin( target, grip );
 
 	/// <summary>Owner, per frame, before the interaction hover: run the hold. True = the grab owns this frame's
 	/// input (no hover prompts, and the LMB press was a freeze, not a shot).</summary>
 	bool UpdateGrab( Vector3 eye )
 	{
+		// The hold rides the CROSSHAIR's ray — the camera's centre line, from our own depth along it (as a prop's grab does,
+		// HiderController.Grab) — not the eye's. In third person the eye sits a shoulder-width beside that ray, and since the
+		// aim converges THROUGH the held prop (ResolveAim), on whatever's behind it, a prop held close along the eye line
+		// hung that shoulder-width left of the dot — further with the hold's wider shoulder (user, 2026-11-12). In first
+		// person the camera IS the eye, so this is the same ray. Not during an alt-orbit: the camera is swung off the aim.
+		var holdFrom = eye;
+		var holdAim = _aimDir;
+		var cam = Scene.Camera;
+		if ( cam.IsValid() && _boom.OffEye && !_boom.AltOrbiting )
+		{
+			holdAim = cam.WorldRotation.Forward;
+			holdFrom = cam.WorldPosition + holdAim * MathF.Max( Vector3.Dot( eye - cam.WorldPosition, holdAim ), 0f );
+		}
+
 		var grab = Grab;
-		if ( !grab.Update( eye, _aimDir, _controller.EyeAngles.yaw, EditMode || LeaseEditing ) )
+		if ( !grab.Update( holdFrom, holdAim, _controller.EyeAngles.yaw, EditMode || LeaseEditing ) )
 			return false;
 
 		if ( grab.PressedSlot is { } pressed ) // E Rotate / R Scale / LMB Freeze: spring that card

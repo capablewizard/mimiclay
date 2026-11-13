@@ -787,13 +787,14 @@ public sealed class BrushStampTool
 
 		// Wear the current material — whatever the user last picked, on any brush (see LastMaterial). The
 		// template usually already matches; this covers colouring an EXISTING shape and then adding one.
+		// Glow is the exception: new shapes always start unlit, so one glowing part doesn't spread to everything.
 		if ( SculptEditSession.LastMaterial is { } mat )
 		{
 			b.Color = mat.Color;
 			b.Metallic = mat.Metallic;
 			b.Roughness = mat.Roughness;
-			b.Emission = mat.Emission;
 		}
+		b.Emission = 0f;
 
 		return b;
 	}

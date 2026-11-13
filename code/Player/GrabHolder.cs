@@ -46,8 +46,11 @@ public sealed class GrabHolder
 	float _distance;              // eye → hold point
 	Rotation _relative;           // the prop's rotation in our view-yaw frame — turning carries it round
 	Rotation _raw;                // the E rotate's unsnapped orientation (same frame); Shift applies it snapped
-	Vector3 _centre;              // root-local point that sits at the hold point: the clay's centre (the host
-	                              // scales the shape about this same point, so it never moves as the prop grows)
+	Vector3 _centre;              // root-local point that sits at the hold point: the GRIP (re-derived every frame
+	                              // from _gripClay — see Update)
+	Vector3 _gripClay;            // the grip in the CLAY's own space (the brushes' — survives origin rebases), at grab-time size
+	Vector3? _pendingGrip;        // world point the crosshair met the clay at, from Begin until Seed takes it
+	RealTimeSince _sincePendingGrip;
 	float _scale = 1f;            // shape scale relative to the size at grab time (applied to the brushes by the host)
 	List<SdfBrush> _base;         // the shape at grab time + the host's pivot for it — only to test a scale step
 	Vector3 _pivot;               // against the size limits here, so the factor stops AT the limit instead of
@@ -86,11 +89,15 @@ public sealed class GrabHolder
 	public Vector3 HintAt { get; private set; }
 	public bool HintTurnOnly { get; private set; }
 
-	/// <summary>Ask the host to put <paramref name="target"/> in our hands (the RMB Grab card).</summary>
-	public void Begin( GameObject target )
+	/// <summary>Ask the host to put <paramref name="target"/> in our hands (the RMB Grab card). <paramref name="grip"/>: where
+	/// the crosshair met it (world) — the point it's held by and turns about; none = its mass centre.</summary>
+	public void Begin( GameObject target, Vector3? grip = null )
 	{
 		if ( !PropClaims.Current.IsValid() || !target.IsValid() )
 			return;
+
+		_pendingGrip = grip;
+		_sincePendingGrip = 0f;
 
 		_letGo = default; // a new request: the next row naming any prop is this grant, not the old hold
 		PropClaims.MarkGrabPending( true );
@@ -254,13 +261,13 @@ public sealed class GrabHolder
 			}
 		}
 
-		// The clay's centre in root space, re-read every frame: a committed scale re-centres the pawn's origin on
-		// the new feet (HiderController.RecenterOriginOnShape — root moves, clay counter-shifts, nothing moves in
-		// the world), so a centre cached at grab time would yank the prop by that offset. The host scales about
-		// this same centre, so it never drifts while R is held.
-		_centre = held.WorldTransform.PointToLocal( PropClaims.GrabSpot( held ) );
+		// The grip in root space, re-derived every frame from the CLAY's space: a committed scale re-centres the pawn's origin
+		// on the new feet (HiderController.RecenterOriginOnShape — root moves, clay counter-shifts, nothing moves in the
+		// world), so a root-local grip cached at grab time would yank the prop by that offset. Scaled with the clay about the
+		// host's pivot (PropClaims.ApplyGrabScale), so the spot you hold stays the same spot on the clay as it grows.
+		_centre = held.WorldTransform.PointToLocal( ClayOf( held ).WorldTransform.PointToWorld( GripInClay() ) );
 
-		// Where we want it: the clay's centre on the aim at the hold distance, turned with our yaw — pulled in to
+		// Where we want it: the grip on the aim at the hold distance, turned with our yaw — pulled in to
 		// wherever the prop's own shape would first meet the world on the way out (see ClampedRoot), so the
 		// target is never somewhere the body can't be.
 		var rotation = yawFrame * _relative;
@@ -268,7 +275,7 @@ public sealed class GrabHolder
 		// A prop the SIM carries (HiderController.SimHoldApplies): this pose goes out as our sim input every tick, and our own
 		// prediction of the hold answers it at once (SimHoldDriver). The UpdateGrab stream below still carries the scale.
 		SetSimHold( held, new Transform( root, rotation ) );
-		PropClaims.Current.UpdateGrab( held, root, rotation, _scale ); // the fallback hold's target, and the scale (host)
+		PropClaims.Current.UpdateGrab( held, root, rotation, _scale, _centre ); // the fallback hold's target + grip, and the scale (host)
 
 		HintAt = root + rotation * _centre;
 		HintTurnOnly = body;
@@ -288,7 +295,27 @@ public sealed class GrabHolder
 	// wall, look down, or the prop is big; then the fallback sweeps from where the prop actually IS toward the
 	// target, sliding along whatever it meets rather than being asked through it — and if even that starts
 	// inside something, the target only steps a little way toward where it should be.
+	[ConVar( "mimi_dbg_grab", Help = "Debug: log the grab's hold every 0.1 s — the aim distance, where the clamp put the target, and why." )]
+	public static bool DebugLog { get; set; }
+	string _clampWhy = "";
+	RealTimeSince _sinceDebugLog;
+
 	Vector3 ClampedRoot( GameObject held, Vector3 eye, Rotation rotation )
+	{
+		var root = ClampedRootInner( held, eye, rotation );
+		if ( DebugLog && _sinceDebugLog > 0.1f )
+		{
+			_sinceDebugLog = 0f;
+			var grip = held.WorldTransform.PointToWorld( _centre );
+			var target = root + rotation * _centre;
+			var want = eye + _aim * _distance;
+			Log.Info( $"[grab] {held.Name}: grip now {eye.Distance( grip ):F0}u from eye, aim wants {_distance:F0}u → target {eye.Distance( target ):F0}u "
+				+ $"({want.Distance( target ):F0}u off the aim point) via {_clampWhy} | grip(root) {_centre} | pitch {Rotation.LookAt( _aim ).Pitch():F0}" );
+		}
+		return root;
+	}
+
+	Vector3 ClampedRootInner( GameObject held, Vector3 eye, Rotation rotation )
 	{
 		Transform RootAt( float distance ) => new( eye + _aim * distance - rotation * _centre, rotation );
 
@@ -301,8 +328,12 @@ public sealed class GrabHolder
 		var desired = RootAt( far ).Position;
 
 		var body = rigidbody?.PhysicsBody;
+		_clampWhy = near > _minDistance + 0.5f || far > _distance + 0.5f ? $"eye clearance (near {near:F0}, far {far:F0})" : "clear";
 		if ( body is null || !body.IsValid() )
+		{
+			_clampWhy = "no body";
 			return desired;
+		}
 
 		// No span to sweep along the aim (a big prop held close: the clearance pushes near out to the hold
 		// distance) → straight to the sweep from where the prop is. Never the unswept target: big props close up
@@ -317,6 +348,7 @@ public sealed class GrabHolder
 		{
 			if ( !aim.Hit )
 				return desired;
+			_clampWhy = $"aim sweep hit '{aim.GameObject?.Name}' at {aim.Fraction:F2}";
 
 			// Blocked along the aim: slide the rest along what it hit, like the fallback below — so both land on
 			// the same spot (the hold point's projection onto the surface: looking down, the prop sits on the
@@ -342,12 +374,20 @@ public sealed class GrabHolder
 		// either — that's the full-strength shove into the wall this whole clamp exists to stop. Once the
 		// step frees it, the sweeps above take over again. Checked before Hit: a sweep that starts solid
 		// needn't report a hit.
+		var aimWhy = !aimSpan ? "no aim span" : aim.StartedSolid ? $"aim sweep started inside '{aim.GameObject?.Name}'" : "aim sweep hit at its start";
 		if ( path.StartedSolid )
+		{
+			_clampWhy = $"{aimWhy}; STUCK inside '{path.GameObject?.Name}' (step {UnstickStep}u)";
 			return RootFor( travel.ClampLength( UnstickStep ) );
+		}
 
 		if ( !path.Hit )
+		{
+			_clampWhy = $"{aimWhy}; path from the prop clear";
 			return desired;
+		}
 
+		_clampWhy = $"{aimWhy}; path from the prop hit '{path.GameObject?.Name}' at {path.Fraction:F2}";
 		return RootFor( SlideAndPress( held, body, now, travel, path ) );
 	}
 
@@ -405,10 +445,32 @@ public sealed class GrabHolder
 
 	// What a held prop is swept against: the world as its body collides with it, minus the prop itself, us,
 	// and things nothing physical stops at.
-	SceneTrace Trace( GameObject held ) => Scene.Trace
-		.IgnoreGameObjectHierarchy( held )
-		.IgnoreGameObjectHierarchy( _owner.GameObject )
-		.WithoutTags( "trigger", "headcollider", "water" );
+	//
+	// LOOSE props are left out too: they're free bodies — the held prop's physics pushes them aside, or they ride on it —
+	// and the clamp only exists to keep the target out of things that WON'T move. Swept against, a cushion sitting on a
+	// stool (woken with it — PropContacts) made every sweep of the stool start inside it: the hold fell into its stuck
+	// creep and the stool couldn't be lifted or follow the aim (user, 2026-11-12: "when I pick it up it flies towards me").
+	SceneTrace Trace( GameObject held )
+	{
+		var trace = Scene.Trace
+			.IgnoreGameObjectHierarchy( held )
+			.IgnoreGameObjectHierarchy( _owner.GameObject )
+			.WithoutTags( "trigger", "headcollider", "water" );
+		if ( PropClaims.Current is { } claims )
+		{
+			foreach ( var (id, _) in claims.LooseProps )
+			{
+				if ( id == held.Id || Scene.Directory.FindByGuid( id ) is not { } loose || !loose.IsValid() )
+					continue;
+				if ( loose.WorldPosition.DistanceSquared( held.WorldPosition ) < LooseIgnoreRadius * LooseIgnoreRadius )
+					trace = trace.IgnoreGameObjectHierarchy( loose );
+			}
+		}
+		return trace;
+	}
+
+	// Loose props further than this from the held one can't be in its sweeps' way (the hold reaches MaxDistance from the eye).
+	const float LooseIgnoreRadius = 800f;
 
 	// Sweep the held prop from `from` to `to` (root transforms). A prop pawn sweeps its single convex move hull: the live
 	// body is the full compound collider — a leafy prop (lettuce) is 217 hulls at ~16 ms a sweep, and a frame here runs
@@ -424,12 +486,33 @@ public sealed class GrabHolder
 		return trace.Sweep( body, from, to ).Run();
 	}
 
+	// The object whose space the brushes live in: a pawn's disguise clay, else (a scene decoy held as it is) the object.
+	// A pawn converted this frame hasn't run OnStart yet, so DisguiseSculpture isn't bound — find the clay itself, or the grip
+	// was stored in ROOT space and read back in clay space a frame later: the prop jumped by the disguise's offset at every grab.
+	static GameObject ClayOf( GameObject held )
+	{
+		if ( held.Components.Get<HiderController>()?.DisguiseSculpture is { } bound && bound.IsValid() )
+			return bound.GameObject;
+		var clay = held.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndDescendants );
+		return clay.IsValid() ? clay.GameObject : held;
+	}
+
+	// The grip in clay space at the current scale (the host scales the brushes about _pivot — see PropClaims.ApplyGrabScale).
+	Vector3 GripInClay() => _base is null ? _gripClay : _pivot + (_gripClay - _pivot) * _scale;
+
 	void Seed( GameObject held, Vector3 eye, float viewYaw )
 	{
 		_grabbed = held;
 
-		var centre = PropClaims.GrabSpot( held ); // the middle of its clay (its mass centre)
-		_centre = held.WorldTransform.PointToLocal( centre );
+		// The GRIP: where the crosshair met the clay at the grab (Begin) — the point it hangs and turns about, so a broom held
+		// by its end swings from the end. Scene clay converted for the grab is replaced by a pawn wearing the same clay at the
+		// same spot, so the world point still lands on it. No hit (or a stale one): its mass centre, as before.
+		var clayGo = ClayOf( held );
+		var grip = _pendingGrip is { } hit && _sincePendingGrip < 3f ? hit : PropClaims.GrabSpot( held );
+		_pendingGrip = null;
+		_gripClay = clayGo.WorldTransform.PointToLocal( grip );
+		_centre = held.WorldTransform.PointToLocal( grip );
+		var centre = grip;
 		_scale = 1f;
 
 		// Mirror the host's scale snapshot (PropClaims.ApplyGrabScale): authored brushes + the symmetric pivot.
@@ -515,6 +598,7 @@ public sealed class GrabHolder
 			input.Buttons |= Mimiclay.Sim.SimInput.Hold;
 			input.HoldPos = _simTarget.Position;
 			input.HoldRot = _simTarget.Rotation;
+			input.HoldGrip = Mimiclay.Sim.SimInput.QuantGrip( _centre ); // the wire's steps here too, so we predict what the host gets
 		}
 		else if ( _simFreezeQueued )
 		{

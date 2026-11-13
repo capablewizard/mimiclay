@@ -117,6 +117,22 @@ When the user says they've changed a prop:
 
 ## Style log (user corrections, newest first)
 
+- **2026-11-12 flower pot leaves: the user deleted all but one leaf and reshaped it, then asked for copies.** Their leaf
+  is the opposite of my profile: FAT at the soil (r 5.8), tapering to a POINT (5.4 → 4.1 → 2.2) over 4 points, rising
+  ~50 deg and sweeping ~15 deg sideways. Lighter, fresher green `0.486,0.637,0.362` (leaves + stalks) and lighter soil
+  `0.479,0.332,0.238`. Generating more from one hand-made part: keep theirs exact, then copy it in cylindrical terms
+  (radius, azimuth relative to its base, height), at new azimuths with length x0.8-1 and the sideways sweep mirrored
+  on alternate copies (`Leaf` in flower_pot.ps1).
+- **2026-11-12 flower pot: petals cupped 12 deg, blend 0, pushed out to 10; petal count 4 or 5 per flower (seeded).**
+  The user retuned the daisy centre: a SMALLER, FLATTER dome (r 6.5 → 5.55, height 6 → 3.88) RAISED 2.1 along the head
+  normal so it sits proud of the petals as a button instead of sinking among them. Lesson: flower centres are small
+  raised buttons, and petals read best as separate cupped lobes (no blend).
+- **2026-11-12 planter tray: "very close, minor tweaks."** Darker, less brown grey (`0.335,0.322,0.308`; inside
+  `0.209,0.203,0.198`). Softer V gaps: triangle-wedge blend 2 → 5.3 on the dividers and long walls (end walls left at 2).
+  Lip overhang 4 → ~2.6 with rounding 2.2 (a thin crisp ledge, not a slab). The rim recess was dropped (fussy
+  detail). My stepped two-box hollow became ONE bigger box per cell (half-width 15, floor ~19): the user accepts
+  thinner walls in exchange for big, square openings. Body lifted 2.4. Lesson: on a first pass, read the reference's
+  OPENINGS as large as it shows them, and keep cut blends soft enough that they read as moulded plastic.
 - **2026-11-12 wheelbarrow: "the shape of the frame is totally different to the concept."** I'd made generic
   straight rails sloping up to the grips with separate legs. The concept's frame is ONE continuous tube per side:
   axle → back → drops into a U-shaped leg touching the ground mid-tray → up under the tray → rises steeply behind
@@ -129,7 +145,7 @@ When the user says they've changed a prop:
   - **"Handle rotated so it aligns with the object":** a hanging handle should REST on the wall, not float. Find the
     swing numerically: sample the arc, check radial distance against the tapered body radius minus the tube radius,
     and take the angle where the clearance is ~0.5 (it was 139°; my 130° left a 3-unit gap).
-    PowerShell trap: variable names are case-insensitive (`$D` and `$d` are ONE variable).
+    PowerShell trap: variable names are case-insensitive (`$D` and `$d` are ONE variable). Colour-helper function names must not shadow built-in aliases (`Ac` = Add-Content, `Gc`, `Gi`, `Sc`, `Ni`…): name them `Acc`, `Gn`, `Mt`. `[math]::Max(-1, x)` with int literals picks the INT overload and rounds x: write `-1.0`/`1.0`.
   - **Metal bolts where the handle pivots:** a flat round head (Cylinder along Y, MirrorY) on the rim band, plus a
     small domed nut, both in the handle metal, with the handle end sitting in the nut.
   - Editing a live instance: instances don't refresh from the prefab file, so load the new `Brushes` JSON from the
@@ -260,6 +276,9 @@ When the user says they've changed a prop:
 | Garden digging fork (full size) | `Tools/PropGen/props/garden_fork.ps1` | `Assets/Prefabs/Props/Garden/garden_fork.prefab` | v2 = user-tuned, recipe ported + verified |
 | Big bucket (now blue) | `Tools/PropGen/props/big_bucket.ps1` | `Assets/Prefabs/Props/Garden/big_bucket.prefab` | v3 = user-tuned (blue, bigger bolt heads, nut INSIDE the wall, handle span 49.4); recipe = prefab |
 | Wheelbarrow (empty) | `Tools/PropGen/props/wheelbarrow.ps1` | `Assets/Prefabs/Props/Garden/wheelbarrow.prefab` | v1 = mine (tray carved from tilted planes + union-of-slabs hollow; lawnmowerWheel ×1.6; lawnmower-handle tubes); v1.1 frame redrawn to the concept (one tube per side with U leg, flat handles) |
+| Seed-tray planter (3×2 + 2×2, stackable) | `Tools/PropGen/props/planter_tray.ps1` (`-Cols -Rows`) | `Assets/Prefabs/Props/Garden/planter_tray.prefab`, `planter_tray_2x2.prefab` | v2 = user-tuned 3×2, recipe ported (brush-for-brush); 2×2 generated from it |
+| Clay watering can | `Tools/PropGen/props/watering_can.ps1` | `Assets/Prefabs/Props/Garden/watering_can.prefab` | v2 = rebuilt to the user's concept sheet (teal, squat open top, "?" handle into the back wall, rose with 5 holes; 0.55 of the sheet's 150 x 220); field-checked, NOT yet seen (editor was in play mode). v1 (generic plastic can) replaced |
+| Flower pots (gardenpot + clay daisies) | `Tools/PropGen/props/flower_pot.ps1 -Variant default/sunny/daisies/blue` | `Assets/Prefabs/Props/Garden/flower_pot.prefab` (default = user-approved, KEEP; recipe reproduces it byte-for-byte), `flower_pot_sunny`, `flower_pot_daisies`, `flower_pot_blue` | default v2 = user-tuned; 3 variants matched to the user's reference shots (flower count/colours, leaf count, pot colour); all placed in DevPropHunt (unsaved) |
 
 ## Hollowing a flared tub (inner faces from Subtract boxes)
 
@@ -296,6 +315,35 @@ The user may import a blockout mesh (an `FbxImportedPiece` under `Blender_Garden
 
 ## Reusable parts from the hand-made props (reuse these before inventing)
 
+- **Clay daisy (flower_pot.ps1 `Flower`):** thick spline stalk (r 3.4) from the soil to just behind the head; 4 flat
+  Cylinder petals (per unit flower size: r 7.6, spread 9.6 so a ~2.4 GAP rings the centre (user), half-height 2.32,
+  Rounding 3, lifted 0.6 along n, Blend 0 = separate lobes with creases) -
+  from the centre, each CUPPED 12 deg (head q * Qaxis(-sin a, cos a, 0, -12): outer edge lifts toward n) IN THE HEAD
+  PLANE; centre = Sphere Slice 0.5 (r 5.55, h 3.88, flat face raised 2.1 along n) with its dome along n (`q * Qaxis 1 0 0 180`). Build the
+  head frame as `ZTo(n) * spin` and rotate petal offsets by it. Heads must FACE THE VIEWER (n mostly toward front,
+  ~35-45 deg up); sideways-facing heads read as sticks. Leaves = the user's leaf (fat base 5.8 tapering to a 2.2 point,
+  4 points, sideways sweep) copied round the pot. (My old version was carrot-top splines, thin at the soil (2.4), fat in the
+  middle (6), rounded tip (3.4), rising steeply between the stalks (flat splayed leaves look like sausages).)
+  **Leaves veer away from heads (user idea, `AvoidHeads`):** heads = discs (centre, n, radius PetalOff+PetalR); while a
+  leaf point is within its radius + 3 of a disc, push the leaf away from the head centre seen from above, plus 0.6 of
+  that downward (pure sideways = flat jut that looks like escaping; nearest-point push = droop, not a veer). ONLY THE TIP
+  is tested and moved (weights 0/0/.25/1): the user preferred the leaves' placement kept and just the tips curling off.
+  If the tip would need a bend > 6, the leaf gets SHORTER instead (5% steps, min 0.65 of its length) - a severe hook
+  read badly (user).
+  Hand-placed leaves (user redraws one) go in verbatim and skip the auto-veer. SOIL goes LAST with Blend ~2.9 (user) so
+  it smooths into every leaf/stalk base. Flowers carry a `size` (1.2 / 1.0 / 0.8) scaling petal radius + spread + dome,
+  not petal thickness: three same-size heads read as copies (user).
+  **Heads must never clip each other (user):** sample each head disc (centre + rings at R/2, R), test every sample's
+  gap to the other discs >= petal half-thickness + 3.5 (covers the cup); push clipping pairs apart along their centre
+  line, smaller head moving more, BEFORE building stalks/leaves (they follow). For a tight bunch (daisies) the user
+  preferred HEIGHT-ONLY separation (higher head up, lower down, floor z 50) to spreading them apart. Heads 33 across need ~33
+  between centres unless staggered in depth.
+- **Tapered cells / grid of tapered boxes (planter tray):** Box cannot taper, so carve ONE rounded block with
+  `Extruded` Triangle Subtracts, apex up at the block top and base just below the floor. Put one CENTRED on each
+  cell divider (a V gap that opens downward) and one centred on each outer wall plane (half of it in air = the wall
+  lean). Half-base = inset × (2·halfHeight)/H, so the cut is exactly `inset` wide at z=0. Rotation `$QAlongY` cuts
+  planes x = const; `0.5,0.5,0.5,0.5` (x→y, y→z, z→x) cuts planes y = const. Use MirrorX/Y for symmetric pairs.
+  Hollow = ONE rounded box per cell (user's choice over my stepped 2-box taper), floor raised (~19) so the walls hold.
 - **Bevelled corners on a curved spline (Curvature 1):** the curve is uniform Catmull-Rom (tangent = (next − prev)/2),
   so uneven point spacing overshoots. To keep a straight-segment look with slightly rounded corners, replace each
   corner P with FOUR points on its two legs: P + u_in·10, P + u_in·4, P + u_out·4, P + u_out·10 (u = unit vectors

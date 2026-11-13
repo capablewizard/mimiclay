@@ -62,7 +62,8 @@ public sealed partial class RoundManager : IPropClaimHost
 		if ( !_decoyHolds.TryGetValue( go, out var hold ) )
 			_decoyHolds[go] = hold = new HeldBodyDriver();
 		var contact = go.Components.Get<DecoyPushListener>();
-		hold.Drive( body, target, touching: contact.IsValid() && contact.SinceContact < HeldBodyDriver.ContactWindow );
+		hold.Drive( body, target, touching: contact.IsValid() && contact.SinceContact < HeldBodyDriver.ContactWindow,
+			grip: PropClaims.Current?.GrabGripOf( go ) );
 	}
 
 	// The hold on this decoy is over: joint gone, friction back.

@@ -237,6 +237,14 @@ public sealed partial class PropClaims
 		return hider.IsValid() && IsHeld( hider ) && _grabTargets.TryGetValue( hider.GameObject.Id, out target );
 	}
 
+	// Host-only: the holder's GRIP per held prop (root-local; see GrabHolder) — what the fallback hold turns it about.
+	readonly Dictionary<Guid, Vector3> _grabGrips = new();
+
+	/// <summary>Host: the point a held prop (or scene decoy) is held by, root-local — null before the holder's first stream
+	/// (the hold then pulls by the mass centre).</summary>
+	internal Vector3? GrabGripOf( GameObject go )
+		=> go.IsValid() && IsHeldObject( go ) && _grabGrips.TryGetValue( go.Id, out var grip ) ? grip : null;
+
 	/// <summary>Host: the pose a held scene decoy (inspect grab) should chase.</summary>
 	internal bool TryGetGrabTarget( GameObject go, out Transform target )
 	{
@@ -345,11 +353,13 @@ public sealed partial class PropClaims
 	/// and the shape scale relative to its size when this hold began. Unreliable — the next frame's pose replaces
 	/// a lost one. Ignored from anyone not holding it.</summary>
 	[Rpc.Host( NetFlags.UnreliableNoDelay )]
-	public void UpdateGrab( GameObject prop, Vector3 position, Rotation rotation, float scale )
+	public void UpdateGrab( GameObject prop, Vector3 position, Rotation rotation, float scale, Vector3 grip )
 	{
 		var c = Rpc.Caller ?? Connection.Local;
 		if ( c is null || !prop.IsValid() || !Held.TryGetValue( c.Id, out var id ) || id != prop.Id )
 			return;
+
+		_grabGrips[id] = grip.ClampLength( 2048f ); // the point it's held by (root-local) — HeldBodyDriver turns it about this
 
 		// Keep the target within reach of where the HOST sees the holder (sandbox's physgun does the same): the
 		// joint has no speed cap, so a stale or bogus pose far away would fling the prop across the map.
@@ -558,6 +568,7 @@ public sealed partial class PropClaims
 		Held.Remove( c.Id );
 		_heldSince.Remove( id );
 		_grabTargets.Remove( id );
+		_grabGrips.Remove( id );
 		EndGrabScale( id );
 		ClearHolderFilters( id );
 		var go = Scene.Directory.FindByGuid( id );
@@ -620,6 +631,7 @@ public sealed partial class PropClaims
 			// The holder left: drop it by hand.
 			Held.Remove( holder );
 			_grabTargets.Remove( pawnId );
+			_grabGrips.Remove( pawnId );
 			EndGrabScale( pawnId );
 			ClearHolderFilters( pawnId );
 			var go = Scene.Directory.FindByGuid( pawnId );

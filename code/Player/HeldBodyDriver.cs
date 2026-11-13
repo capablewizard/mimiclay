@@ -37,7 +37,63 @@ public sealed class HeldBodyDriver
 	/// (knob 41–47° off); joint with the rotation chase only → stuck at 26°, at any linear stiffness.</summary>
 	public const float ContactWindow = 0.1f;
 
-	const float HeldFriction = 0f;
+	const float HeldFriction = 0f; // (a climbing prop's — ApplyFriction; a HELD one keeps its own unless mimi_hold_friction 0)
+
+	// ── The chase (both holds: SimHoldDriver in the sim, Drive's velocity mode here) ─────────────────────────────
+	// Was: velocity SET to gap × Pull every tick, about the body's origin, with the spin about its mass centre. Three problems
+	// (user, 2026-11-12): a long prop didn't turn about where it was grabbed (the pivot was its middle, or somewhere between
+	// origin and mass centre); a target that jumped (an obstruction sweep snapping in) took the body from rest to 1800 u/s in
+	// one tick and threw a carried container's contents everywhere; and the held body had no friction, so nothing sat on it.
+	//  • GRIP: the point the holder took it by (root-local). The grip goes to its target; the mass centre moves however the
+	//    spin needs it to for that (v = grip's velocity − ω × (grip − mass centre)), so the body turns about the grip.
+	//  • ACCELERATION LIMIT: the velocity changes by at most HoldAccel per second (spin: TurnAccel), and the approach speed is
+	//    capped at √(2·a·gap) so it can always brake in time — a jump becomes a quick, smooth catch-up, no overshoot.
+	//  • FRICTION: kept (HeldFrictionKept) — the chase sets the velocities every tick, so a wall can't make it grip or roll.
+	// Replicated: the sim's hold must run the same numbers on the host and every predicting client.
+
+	[ConVar( "mimi_hold_accel", ConVarFlags.Replicated, Help = "Grab: the most a held prop's velocity changes per second (u/s²) — lower = gentler on what it carries." )]
+	public static float HoldAccel { get; set; } = 4000f;
+
+	[ConVar( "mimi_hold_turn_accel", ConVarFlags.Replicated, Help = "Grab: the most a held prop's spin changes per second (rad/s²)." )]
+	public static float TurnAccel { get; set; } = 120f;
+
+	[ConVar( "mimi_hold_friction", ConVarFlags.Replicated, Help = "Grab: a held prop keeps its own friction (1 — things rest on it) or has none (0 — the old slide)." )]
+	public static bool HeldFrictionKept { get; set; } = true;
+
+	/// <summary>One tick of the hold chase: the linear (mass centre) and angular velocity that move <paramref name="gripNow"/>
+	/// toward <paramref name="gripTarget"/> and the rotation toward <paramref name="rotTarget"/>, from the body's current
+	/// motion, within the acceleration limits (see above).</summary>
+	// The braking speed's safety factor: per-tick steps brake a little late, so the full √(2·a·gap) overshot ~4u on a 150u jump.
+	const float BrakeMargin = 0.85f;
+
+	public static (Vector3 Linear, Vector3 Angular) Chase( Vector3 massCentre, Vector3 gripNow, Vector3 gripTarget,
+		Rotation rotNow, Rotation rotTarget, Vector3 linearNow, Vector3 angularNow, float dt )
+	{
+		float accel = MathF.Max( HoldAccel, 1f ), turnAccel = MathF.Max( TurnAccel, 0.1f );
+
+		var turn = TurnToward( rotNow, rotTarget );
+		float angle = turn.Length;
+		var spinWant = angle > 1e-5f ? turn / angle * MathF.Min( angle * Turn, MathF.Sqrt( 2f * turnAccel * angle ) ) : Vector3.Zero;
+		var spin = angularNow + (spinWant - angularNow).ClampLength( turnAccel * dt );
+
+		// The limit is on the GRIP's velocity, not the mass centre's: limiting the centre let the grip drift 14u through a
+		// quick 90° turn of a broom held by its end (the centre couldn't swing round fast enough). The far end's sweep is
+		// bounded by the spin limit instead.
+		var arm = gripNow - massCentre;
+		var gripVelNow = linearNow + Vector3.Cross( angularNow, arm );
+		var gap = gripTarget - gripNow;
+		float d = gap.Length;
+		float speed = MathF.Min( MathF.Min( d * Pull, MathF.Sqrt( 2f * accel * d ) * BrakeMargin ), MaxSpeed );
+		var gripWant = d > 1e-4f ? gap / d * speed : Vector3.Zero;
+		var gripVel = gripVelNow + (gripWant - gripVelNow).ClampLength( accel * dt );
+		// The mass centre's velocity that lands the grip exactly where gripVel takes it after this tick's TURN (the arm swung
+		// by spin·dt about the mass centre) — the straight-line ω × arm left the grip off by the arc's sag every tick, ~8u
+		// through a quick 90° turn at arm's length.
+		float stepAngle = spin.Length * dt;
+		var swung = stepAngle > 1e-6f ? Rotation.FromAxis( spin / spin.Length, stepAngle.RadianToDegree() ) * arm : arm;
+		var linear = (gripVel + (arm - swung) / dt).ClampLength( MaxSpeed );
+		return (linear, spin);
+	}
 
 	Sandbox.Physics.ControlJoint _joint;
 	PhysicsBody _anchor;
@@ -48,38 +104,49 @@ public sealed class HeldBodyDriver
 	/// <summary>One tick of the hold: steer <paramref name="body"/> toward <paramref name="target"/> (its ROOT pose).
 	/// <paramref name="touching"/>: a contact within <see cref="ContactWindow"/>. Never teleports, so the solver still
 	/// stops it at walls and it leaves the hand with whatever motion it had.</summary>
-	public void Drive( Rigidbody body, Transform target, bool touching )
+	public void Drive( Rigidbody body, Transform target, bool touching, Vector3? grip = null )
 	{
 		if ( !body.IsValid() )
 			return;
 		if ( body.Sleeping )
 			body.Sleeping = false;
 
-		ApplyFriction( body.GameObject );
+		if ( !HeldFrictionKept )
+			ApplyFriction( body.GameObject );
+
+		var pb = body.PhysicsBody;
+		// The point it's held by (root-local): the holder's grip, else its mass centre as before.
+		var gripLocal = grip ?? (pb is not null && pb.IsValid() ? pb.LocalMassCenter : Vector3.Zero);
 
 		if ( HiderController.GrabJoint && !touching )
 		{
-			DriveJoint( body, target );
+			DriveJoint( body, target, gripLocal );
 			return;
 		}
 		ReleaseJoint();
+		if ( pb is null || !pb.IsValid() )
+			return;
 
 		var dt = MathF.Max( Time.Delta, 0.001f );
-		body.Velocity = ((target.Position - body.WorldPosition) * MathF.Min( Pull, 1f / dt )).ClampLength( MaxSpeed );
-		body.AngularVelocity = TurnToward( body.WorldRotation, target.Rotation ) * MathF.Min( Turn, 1f / dt );
+		var rootNow = body.WorldTransform.WithScale( 1f );
+		var (linear, angular) = Chase( pb.MassCenter, rootNow.PointToWorld( gripLocal ), target.WithScale( 1f ).PointToWorld( gripLocal ),
+			body.WorldRotation, target.Rotation, body.Velocity, body.AngularVelocity, dt );
+		body.Velocity = linear;
+		body.AngularVelocity = angular;
 	}
 
-	void DriveJoint( Rigidbody body, Transform target )
+	void DriveJoint( Rigidbody body, Transform target, Vector3 gripLocal )
 	{
 		var pb = body.PhysicsBody;
 		if ( pb is null || !pb.IsValid() )
 			return;
 
-		if ( _joint is null || _on != pb || !_massCentre.AlmostEqual( pb.LocalMassCenter, 0.01f ) )
+		// Tied at the GRIP (it used to be the mass centre): the body hangs and turns about where it was taken.
+		if ( _joint is null || _on != pb || !_massCentre.AlmostEqual( gripLocal, 0.01f ) )
 		{
 			ReleaseJoint();
 			_on = pb;
-			_massCentre = pb.LocalMassCenter;
+			_massCentre = gripLocal;
 			_anchor = new PhysicsBody( pb.World ) { BodyType = PhysicsBodyType.Keyframed, AutoSleep = false };
 			_anchor.Transform = new Transform( body.WorldTransform.WithScale( 1f ).PointToWorld( _massCentre ), body.WorldRotation );
 

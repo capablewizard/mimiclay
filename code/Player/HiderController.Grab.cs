@@ -48,10 +48,10 @@ public sealed partial class HiderController : ICrosshairOwner
 	static bool PropsGrabOpen => PropClaims.Current is { } claims && claims.PropGrabOpen;
 
 	/// <summary>Ask the host to put <paramref name="target"/> in our hands (the RMB Grab card, aimed by our crosshair).</summary>
-	internal void BeginGrab( GameObject target )
+	internal void BeginGrab( GameObject target, Vector3? grip = null )
 	{
 		_rmbForGrab = true;
-		PropGrab.Begin( target );
+		PropGrab.Begin( target, grip );
 	}
 
 	/// <summary>E or R held over a grabbed prop: the mouse is turning or scaling it, so the view must not move.</summary>

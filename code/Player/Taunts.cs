@@ -24,6 +24,7 @@ public static class Taunts
 		new( "😗", "sounds/game/tauntwhistyle.sound" ),        // 0.9 s
 		new( "🦆", "sounds/game/taunts/duckquack.sound" ),     // 1.0 s
 		new( "🤡", "sounds/game/taunts/clownhorn.sound" ),     // 1.1 s
+		new( "💩", "sounds/game/taunts/fart.sound" ),          // 3.2 s
 		new( "🙌", "sounds/game/taunts/applause.sound" ),      // 6.9 s
 		new( "👏", "sounds/game/taunts/handclaps.sound" ),     // 8.1 s
 		new( "🎺", "sounds/game/taunts/trumpet.sound" ),       // 8.6 s

@@ -51,6 +51,7 @@
         "Flags": 0,
         "BackgroundColor": "0.40744,0.59419,0.67907,1",
         "ClearFlags": "All",
+        "DisableAntiAliasing": false,
         "EnablePostProcessing": true,
         "FieldOfView": 90,
         "FovAxis": "Horizontal",

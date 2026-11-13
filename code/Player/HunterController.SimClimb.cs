@@ -65,10 +65,7 @@ public sealed partial class HunterController
 		var go = sim.SourceOf( body );
 		if ( ClimbRules.IsHunter( go ) )
 			return false;
-		for ( var g = go; g.IsValid(); g = g.Parent )
-			if ( g.Components.Get<HiderController>().IsValid() )
-				return false;
-		return true;
+		return !ClimbRules.IsUnclimbablePawn( go ); // (a frozen prop climbs like scenery)
 	}
 
 	// The hunter's whole sim body swept from `from` to `to` (translation only — it never rotates).

@@ -168,8 +168,8 @@ public sealed partial class PropClaims : Component, IInteractable
 			// Same root rule again — the hunter streams the hold pose once the host's row lands.
 			var grabHider = ctx.Sculpture.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
 			var grabRoot = grabHider.IsValid() ? grabHider.GameObject : ctx.Sculpture.GameObject;
-			ctx.Hunter?.BeginGrab( grabRoot );
-			ctx.Prop?.BeginGrab( grabRoot );
+			ctx.Hunter?.BeginGrab( grabRoot, ctx.HitPosition ); // (where the crosshair met the clay: the hold's grip)
+			ctx.Prop?.BeginGrab( grabRoot, ctx.HitPosition );
 			return;
 		}
 
@@ -974,8 +974,10 @@ public sealed partial class PropClaims : Component, IInteractable
 		if ( Rpc.Caller is not null && !Rpc.Caller.IsHost )
 			return; // only the host converts
 
-		if ( go.IsValid() )
-			go.Destroy();
+		if ( !go.IsValid() )
+			return;
+		Sim.SimWorld.Current?.ForgetStatic( go ); // its sim copy goes NOW — the pawn replacing it must not spawn inside it
+		go.Destroy();
 	}
 
 	/// <summary>Host-only: hand a prop off into the world as claimable scenery. Dormant on the host (which keeps

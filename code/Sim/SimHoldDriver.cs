@@ -5,8 +5,9 @@ namespace Mimiclay.Sim;
 /// the root pose they want it at (HunterController.Grab computes it exactly as before: the aim, the sweep, the slide and
 /// press), carried in every tick's <see cref="SimInput"/> under <see cref="SimInput.Hold"/>. The holder predicts the hold,
 /// the host simulates it with the same code, everyone else shows it from the host's poses (SimWorld.RemotePose): no
-/// lend, no ownership change, no hand-back. The chase is HeldBodyDriver's velocity chase (its contact mode) — a joint
-/// can't be rolled back. Held, a body has no gravity (its spec) and no friction (SimWorld.BuildShapes).
+/// lend, no ownership change, no hand-back. The chase is HeldBodyDriver's velocity chase (<see cref="HeldBodyDriver.Chase"/>:
+/// about the holder's GRIP, acceleration-limited) — a joint can't be rolled back. Held, a body has no gravity (its spec); it
+/// keeps its friction unless mimi_hold_friction is off (SimWorld.BuildShapes).
 ///
 /// Let go — the holder's inputs stop carrying a target — it flies on under gravity at once, here and on the host, until
 /// the host registers it as a loose body with that motion (HiderController.UpdateSimRegistration): a drop and a throw
@@ -37,8 +38,14 @@ public sealed class SimHoldDriver : ISimDriver
 			c.Holding = true;
 			c.Parked = false; // (held again: no longer frozen in place)
 			c.Commanded = input.HoldPos - pb.Position; // (the gap to the holder's REAL target - what another machine's copy aims at: Guess)
-			pb.Velocity = ((input.HoldPos - pb.Position) * Pull).ClampLength( MaxSpeed );
-			pb.AngularVelocity = HeldBodyDriver.TurnToward( pb.Rotation, input.HoldRot ) * Turn;
+			c.Grip = input.HoldGrip;
+			// The grip (where the holder took it, root-local) chases its place on the target, the body turning about it, within
+			// the acceleration limits — HeldBodyDriver.Chase, the same chase as the fallback hold.
+			var (linear, angular) = HeldBodyDriver.Chase( pb.MassCenter, pb.Transform.PointToWorld( input.HoldGrip ),
+				new Transform( input.HoldPos, input.HoldRot ).PointToWorld( input.HoldGrip ), pb.Rotation, input.HoldRot,
+				pb.Velocity, pb.AngularVelocity, SimWorld.Dt );
+			pb.Velocity = linear;
+			pb.AngularVelocity = angular;
 			body.Intent = pb.Velocity.WithZ( 0f ); // a carried prop shoved into an anchored decoy pushes it (DetectAnchoredPushes)
 			return;
 		}
@@ -93,5 +100,6 @@ public sealed class SimHoldDriver : ISimDriver
 		Buttons = SimInput.Hold,
 		HoldPos = latest.HasCtrl && latest.Ctrl.Holding && latest.V.Length < SlowHold ? latest.P + latest.Ctrl.Commanded : latest.P + latest.V / Pull,
 		HoldRot = latest.R,
+		HoldGrip = latest.HasCtrl ? latest.Ctrl.Grip : Vector3.Zero,
 	};
 }

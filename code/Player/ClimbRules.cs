@@ -70,6 +70,18 @@ public static class ClimbRules
 		return false;
 	}
 
+	/// <summary>Is this part of a prop pawn a hunter must not climb? Every pawn — a disguised player is never a wall — EXCEPT a
+	/// FROZEN one: released scenery with its physics off (PropClaims.FrozenProps) never moves and is nobody's body, so it
+	/// climbs like the scene clay it was (user, 2026-11-12). Loose scenery stays off-limits: it's a dynamic body the climb
+	/// would shove along. The frozen/released registries are synced, so every machine's climb agrees.</summary>
+	public static bool IsUnclimbablePawn( GameObject go )
+	{
+		for ( var g = go; g.IsValid(); g = g.Parent )
+			if ( g.Components.Get<HiderController>() is { } hider && hider.IsValid() )
+				return !(PropClaims.IsReleased( hider ) && PropClaims.IsFrozen( hider ) && !PropClaims.IsHeldObject( hider.GameObject ));
+		return false;
+	}
+
 	// Space / Ctrl: up or down the surface. Under a ceiling there's no "up the surface", so Space carries on `ceilingOut`
 	// (out from the wall we came up) and Ctrl comes back.
 	public static Vector3 Vertical( float vertical, Vector3 n, Vector3 ceilingOut, float speed )

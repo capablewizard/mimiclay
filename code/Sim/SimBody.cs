@@ -57,6 +57,8 @@ public struct SimCtrl
 	/// the holder letting go — before it, it's that input not having arrived yet (the host, half a round trip after the
 	/// grab), and the body waits where it is.</summary>
 	public bool Holding;
+	/// <summary>A held body's grip (the holder's last <see cref="SimInput.HoldGrip"/>) — what a remote copy guesses the hold with.</summary>
+	public Vector3 Grip;
 
 	// ── Climbing (HiderController.SimClimb) — a mode of the walk: every number the climb keeps between ticks ──
 	/// <summary>Stuck to a wall or ceiling (the climb runs in place of the walk).</summary>
@@ -158,6 +160,10 @@ public struct SimInput
 	/// <summary>With <see cref="Hold"/>: the ROOT pose this player wants the prop it's carrying at (<see cref="SimHoldDriver"/>).</summary>
 	public Vector3 HoldPos;
 	public Rotation HoldRot;
+	/// <summary>With <see cref="Hold"/>: the GRIP — the point the holder took it by, in its root's space. The hold steers this
+	/// point onto the target (HoldPos + HoldRot × grip) and turns the body about it (<see cref="SimHoldDriver"/>). On the
+	/// wire at <see cref="QuantGrip"/>'s steps.</summary>
+	public Vector3 HoldGrip;
 
 	/// <summary>The raw move keys (x forward, y left, -1..1, in steps of 1/127) — the climb maps them by the view.</summary>
 	public Vector2 Move;
@@ -176,6 +182,10 @@ public struct SimInput
 		return MathF.Round( yaw * 100f ) / 100f;
 	}
 	public bool Has( byte button ) => (Buttons & button) != 0;
+
+	/// <summary>The grip's wire precision (1/16 u, ±2047 u per axis), applied where the input is made.</summary>
+	public static Vector3 QuantGrip( Vector3 g ) => new( QuantGripAxis( g.x ), QuantGripAxis( g.y ), QuantGripAxis( g.z ) );
+	static float QuantGripAxis( float v ) => MathF.Round( Math.Clamp( v, -2047f, 2047f ) * 16f ) / 16f;
 
 	public static readonly SimInput None = default;
 }

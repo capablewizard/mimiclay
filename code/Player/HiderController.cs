@@ -1120,7 +1120,8 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 
 	// The simulating machine (the host for scenery, the wearer for a body — the fallback hold, see PropClaims.Grab): steer the
 	// body toward the holder's pose.
-	void DriveHeld( Transform target ) => _hold.Drive( Body, target, touching: _sinceHeldContact < HeldBodyDriver.ContactWindow );
+	void DriveHeld( Transform target ) => _hold.Drive( Body, target, touching: _sinceHeldContact < HeldBodyDriver.ContactWindow,
+		grip: PropClaims.Current?.GrabGripOf( GameObject ) ); // (the holder's grip where this machine has it — the host; a wearer pulls by the mass centre)
 
 	/// <summary>On the simulating machine — the host as a loose prop is possessed, or a wearer getting up after
 	/// being grabbed (see HiderController.Grabbed): stand the ROOT back up (yaw kept) and move the tumble

@@ -213,10 +213,7 @@ public sealed class HunterClimb : MoveMode
 			return false;
 		if ( ClimbRules.IsHunter( tr.GameObject ) )
 			return false;
-		for ( var g = tr.GameObject; g.IsValid(); g = g.Parent )
-			if ( g.Components.Get<HiderController>().IsValid() )
-				return false;
-		return true;
+		return !ClimbRules.IsUnclimbablePawn( tr.GameObject ); // (a frozen prop climbs like scenery)
 	}
 
 	// The hunter's real rigidbody (capsule + feet box) swept from `from` to `to`, translation only — it never rotates.

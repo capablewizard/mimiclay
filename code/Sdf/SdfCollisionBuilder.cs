@@ -1614,7 +1614,7 @@ public static class SdfCollisionBuilder
 
 			// Convex after the cut → one exact hull of the cut shape, however small the cut: a sphere with 3u
 			// shaved off its bottom rests on the shave, not 3u in the air on the pole it no longer has.
-			if ( CarvedHulls && TryCarvedHull( b, sign, pts, carvers, lo, cell, nx, ny, nz, empty, builder ) )
+			if ( CarvedHulls && TryCarvedHull( b, sign, pts, carvers, lo, cell, nx, ny, nz, empty, solid, kept, builder ) )
 			{
 				any = true;
 				continue;
@@ -1651,6 +1651,14 @@ public static class SdfCollisionBuilder
 	[SkipHotload] public static bool CarvedHulls = true;
 	const float HullPhantomFraction = 0.5f; // a hull may cover no cell more than this many cells outside the clay
 	const int CarvedHullBisect = 8;         // bisection steps locating the cut rim (1/256 of a point-cloud gap)
+	// The other direction: the hull must also KEEP the clay. A box's cloud is just its 8 corners, so cuts that eat
+	// most of them leave a hull of what's left — the planter tray's wall wedges removed all four bottom corners and
+	// the block's hull came out a 2u slab under the lip, floors and underside gone, yet it covered no empty cell.
+	// A solid cell whose centre sits more than HullMissSlack cells outside the hull is missed; more than
+	// HullMissFraction of the solid cells missed → voxels instead. The slack absorbs round primitives' coarse
+	// clouds, which sit a few percent inside the true surface.
+	const float HullMissSlack = 0.75f;
+	const float HullMissFraction = 0.05f;
 
 	/// <summary>Collide a carved copy as ONE convex hull when the carved result is convex. Deliberately a single
 	/// attempt with a fixed cost — no search, no splitting: Build runs synchronously on load and in the
@@ -1666,7 +1674,7 @@ public static class SdfCollisionBuilder
 	/// cavity — a hollowed bowl — always falls back to voxel boxes. No CarvedCopy record: the hull follows the
 	/// carved field, which the foot probes already march for carved brushes.</summary>
 	static bool TryCarvedHull( SdfBrush b, Vector3 sign, List<Vector3> pts, List<SdfBrush> carvers, Vector3 lo, Vector3 cell,
-		int nx, int ny, int nz, bool[] empty, ModelBuilder builder )
+		int nx, int ny, int nz, bool[] empty, bool[] solid, int solidCount, ModelBuilder builder )
 	{
 		float CarveDepth( Vector3 lp )
 		{
@@ -1718,24 +1726,27 @@ public static class SdfCollisionBuilder
 		if ( !ConvexHull.TryBuild( hullPts, planes, verts ) )
 			return false;
 
-		// Reject if the hull covers any clearly-empty cell — the carve left a concavity one hull would fill.
+		// Reject if the hull covers any clearly-empty cell — the carve left a concavity one hull would fill — or
+		// misses too much solid clay (see HullMissSlack).
+		float missAt = HullMissSlack * MathF.Min( cell.x, MathF.Min( cell.y, cell.z ) );
+		int missAllowed = (int)(solidCount * HullMissFraction);
+		int missed = 0;
 		for ( int iz = 0; iz < nz; iz++ )
 		for ( int iy = 0; iy < ny; iy++ )
 		for ( int ix = 0; ix < nx; ix++ )
 		{
-			if ( !empty[(iz * ny + iy) * nx + ix] )
+			int ci = (iz * ny + iy) * nx + ix;
+			bool isEmpty = empty[ci], isSolid = solid[ci];
+			if ( !isEmpty && !isSolid )
 				continue;
 			var lp = new Vector3( lo.x + (ix + 0.5f) * cell.x, lo.y + (iy + 0.5f) * cell.y, lo.z + (iz + 0.5f) * cell.z );
-			bool inside = true;
+			float outside = float.MinValue; // the plane-max signed distance (≥ the true distance's lower bound)
 			foreach ( var (n, d) in planes )
-			{
-				if ( Vector3.Dot( n, lp ) - d > 1e-3f )
-				{
-					inside = false;
-					break;
-				}
-			}
-			if ( inside )
+				outside = MathF.Max( outside, Vector3.Dot( n, lp ) - d );
+
+			if ( isEmpty && outside <= 1e-3f )
+				return false;
+			if ( isSolid && outside > missAt && ++missed > missAllowed )
 				return false;
 		}
 
@@ -2147,10 +2158,12 @@ public static class SdfCollisionBuilder
 	// Sub-cell refinement of one merged box against the carve surface. Cell-centre occupancy leaves each face
 	// up to half a cell PLUS the CarveBias skin inside a subtract (~0.85× a cell edge) — on a flat bottom cut
 	// that whole overlap is resting height, so the prop visibly hovers. Shrink each face inward by the depth
-	// the carve union is GUARANTEED to reach across the whole face — the min over its corner+centre samples,
-	// which is exact for a face-parallel flat cut and conservative (never eats true solid; SDF Lipschitz ≤ 1)
-	// for oblique or curved ones. Per-face shrink is capped at the overlap the kept boundary cell permits, and
+	// the carve union reaches across the whole face — the min over a grid of face samples, which is exact for a
+	// face-parallel flat cut and conservative for one convex carver; for several it can only miss a solid gap
+	// narrower than the sample spacing. Per-face shrink is capped at the overlap the kept boundary cell permits, and
 	// opposing faces can't cross — a thin wall still survives, same philosophy as CarveBias itself.
+	const int ClipFaceSamples = 5; // per face axis (odd, so the centre is a sample)
+
 	static void ClipBoxToCarvers( ref Vector3 blo, ref Vector3 bhi, Vector3 framePos, Rotation frameRot, Vector3 sign,
 		Vector3 cell, List<SdfBrush> carvers )
 	{
@@ -2158,7 +2171,6 @@ public static class SdfCollisionBuilder
 			return;
 
 		float cellMin = MathF.Min( cell.x, MathF.Min( cell.y, cell.z ) );
-		var mid = (blo + bhi) * 0.5f;
 		Span<float> shrink = stackalloc float[6]; // -x, +x, -y, +y, -z, +z
 
 		for ( int a = 0; a < 3; a++ )
@@ -2171,13 +2183,20 @@ public static class SdfCollisionBuilder
 					? (a == 0 ? blo.x : a == 1 ? blo.y : blo.z)
 					: (a == 0 ? bhi.x : a == 1 ? bhi.y : bhi.z);
 
-				// 4 face corners + face centre; the min depth over them bounds the depth over the whole face
-				// for any near-linear carve field (a plane cut exactly, a convex carver conservatively).
+				// The min carve-union depth over a ClipFaceSamples² grid on the face (corners included). For ONE
+				// convex carver the corners alone bound the whole face (its inside depth is concave), but the union
+				// of several isn't convex: subtracts can hold every corner and the centre between them with solid
+				// clay in the gaps. The planter tray's wall wedges took the corners, its divider wedge the centre,
+				// and with 5 samples its floor boxes rose 3.6u off the clay's base. The grid catches gaps wider
+				// than a quarter of the face, and still trims faces that overlapping subtracts cover together.
+				float u0 = a == 0 ? blo.y : blo.x, u1 = a == 0 ? bhi.y : bhi.x;
+				float v0 = a == 2 ? blo.y : blo.z, v1 = a == 2 ? bhi.y : bhi.z;
 				float depth = float.MaxValue;
-				for ( int k = 0; k < 5 && depth > 0f; k++ )
+				for ( int j = 0; j < ClipFaceSamples && depth > 0f; j++ )
+				for ( int i = 0; i < ClipFaceSamples && depth > 0f; i++ )
 				{
-					float u = k == 4 ? (a == 0 ? mid.y : mid.x) : ((k & 1) != 0 ? (a == 0 ? bhi.y : bhi.x) : (a == 0 ? blo.y : blo.x));
-					float v = k == 4 ? (a == 2 ? mid.y : mid.z) : ((k & 2) != 0 ? (a == 2 ? bhi.y : bhi.z) : (a == 2 ? blo.y : blo.z));
+					float u = u0 + (u1 - u0) * i / (ClipFaceSamples - 1);
+					float v = v0 + (v1 - v0) * j / (ClipFaceSamples - 1);
 					var lp = a == 0 ? new Vector3( fa, u, v ) : a == 1 ? new Vector3( u, fa, v ) : new Vector3( u, v, fa );
 					var p = (framePos + frameRot * lp) * sign;
 

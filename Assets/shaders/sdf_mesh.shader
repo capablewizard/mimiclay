@@ -153,6 +153,7 @@ PS
 	// Per-brush Glow brightness — mirror of sdf_raymarch.shader's g_flGlowBrightness (stops), keep the two in sync.
 	float  g_flGlowBrightness < Default( 3.0 ); Range( -4.0, 10.0 ); UiGroup( "Surface,10/65" ); >;
 	float2 g_vGlowFadeRange < Default2( 0.2, 0.7 ); Range2( 0.0, 0.0, 1.0, 1.0 ); UiGroup( "Surface,10/66" ); >; // mirror of sdf_raymarch
+	float  g_flGlowLumaBalance < Default( 0.5 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/67" ); >; // mirror of sdf_raymarch (hue balance)
 	float  g_flTriTile   < Default( 8.0 ); Range( 0.01, 64.0 ); UiGroup( "Surface,10/70" ); >;
 	// Tiling for the normal map, fully independent of Tri Tile (which covers base colour + roughness).
 	float  g_flTriTileNormal < Default( 8.0 ); Range( 0.01, 64.0 ); UiGroup( "Surface,10/72" ); >;
@@ -392,7 +393,8 @@ PS
 		float glow = ( g_bUseVertexData && a > 0.5 / 255.0 && g_flSdfDebugFlat <= 0.5 ) ? saturate( (1.0 - a) * (255.0 / 254.0) ) : 0.0;
 		if ( glow > 0.0 )
 		{
-			m.Emission += vVertexTint * glow * exp2( g_flGlowBrightness );
+			float glowLuma = max( dot( vVertexTint, float3( 0.2126, 0.7152, 0.0722 ) ), 0.02 );
+			m.Emission += vVertexTint * glow * exp2( g_flGlowBrightness ) * pow( 1.0 / glowLuma, g_flGlowLumaBalance );
 			float glowValue = sqrt( max( vVertexTint.r, max( vVertexTint.g, vVertexTint.b ) ) );
 			m.Albedo *= 1.0 - glow * smoothstep( g_vGlowFadeRange.x, g_vGlowFadeRange.y, glowValue );
 		}

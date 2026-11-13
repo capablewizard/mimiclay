@@ -295,6 +295,7 @@ public sealed partial class SimWorld : GameObjectSystem
 
 	void DestroyWorld()
 	{
+		ClearHoldFilters();
 		foreach ( var b in _bodies.ToList() )
 			Remove( b );
 		_staticCopies.Clear();
@@ -351,7 +352,7 @@ public sealed partial class SimWorld : GameObjectSystem
 
 		if ( body.ShapesReady && body.Spec.Mass > 0f )
 			p.Mass = body.Spec.Mass;
-		if ( body.ShapesReady && body.Spec.Driver == SimHoldDriver.Id )
+		if ( body.ShapesReady && body.Spec.Driver == SimHoldDriver.Id && !HeldBodyDriver.HeldFrictionKept )
 			foreach ( var s in p.Shapes )
 				s.Friction = 0f; // a held body slides rather than grips (HeldBodyDriver.HeldFriction)
 		// Nothing to collide with yet (a client still building the source's collider): hold it still until it has.
@@ -535,10 +536,22 @@ public sealed partial class SimWorld : GameObjectSystem
 		}
 	}
 
+	/// <summary>A static scene object is leaving (a converted prop's original, destroyed at the end of this frame): drop its
+	/// copy NOW. Left to RefreshStatics (once a second) the copy outlived the original by up to a second, and the pawn that
+	/// replaced it spawned inside it — a hollow garden pot's hulls interlocked with its own stale copy and the solver threw
+	/// the possessed pot ~190u into the air (2026-11-13).</summary>
+	public void ForgetStatic( GameObject go )
+	{
+		if ( go.IsValid() )
+			ExcludeFromStatics( go.Id );
+	}
+
 	void RefreshStatics()
 	{
 		if ( _world is null )
 			return;
+		// Exclusions for objects that no longer exist (ForgetStatic's originals, once destroyed).
+		_excludedStatics.RemoveWhere( id => !Scene.Directory.FindByGuid( id ).IsValid() );
 		foreach ( var dead in _sourceOf.Keys.Where( k => !k.IsValid() ).ToList() )
 			_sourceOf.Remove( dead );
 		var seen = new HashSet<PhysicsBody>();

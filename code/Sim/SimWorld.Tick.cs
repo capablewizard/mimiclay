@@ -129,6 +129,8 @@ public sealed partial class SimWorld
 						ApplyRedrive( b, d.driver, d.owner, d.flags, d.shape );
 			}
 
+		SyncHoldFilters(); // a held body never collides with its holder (SimWorld.HoldFilters) — from the drive at THIS tick
+
 		foreach ( var b in _bodies )
 		{
 			b.Driver = DriverFor( b.Spec.Driver ); // from the current code, every tick (a hotload may have replaced it)

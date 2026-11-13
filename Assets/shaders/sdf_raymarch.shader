@@ -250,6 +250,11 @@ PS
 	// sqrt of the brightest linear channel): at or below .x the normal material stays (a dark glow would otherwise
 	// read as a flat dark blob), at or above .y it fades fully (the solid self-lit look). Mirrored in sdf_mesh.shader.
 	float2 g_vGlowFadeRange < Default2( 0.2, 0.7 ); Range2( 0.0, 0.0, 1.0, 1.0 ); UiGroup( "Surface,10/66" ); >;
+	// Hue balance for glow. Glow colours are normalised to a max channel of 1, but luminance (what the eye and the
+	// bloom threshold see) differs hugely by hue: yellow ~0.93, green 0.72, red 0.21, blue 0.07 — so yellow/green
+	// bloomed and blue barely did. Emission is scaled by (1 / luma)^this: 0 = raw, 1 = every hue as bright as white
+	// (pure blue ~14x, which washes it out). Mirrored in sdf_mesh.shader.
+	float  g_flGlowLumaBalance < Default( 0.5 ); Range( 0.0, 1.0 ); UiGroup( "Surface,10/67" ); >;
 
 	// Triplanar projection controls.
 	float g_flTriTile  < Default( 8.0 ); Range( 0.5, 64.0 ); UiGroup( "Surface,10/70" ); >;
@@ -1556,7 +1561,8 @@ PS
 		float glowFade = 0.0;
 		if ( surf.emit > 0.0 )
 		{
-			m.Emission += surf.col * surf.emit * exp2( g_flGlowBrightness );
+			float glowLuma = max( dot( surf.col, float3( 0.2126, 0.7152, 0.0722 ) ), 0.02 );
+			m.Emission += surf.col * surf.emit * exp2( g_flGlowBrightness ) * pow( 1.0 / glowLuma, g_flGlowLumaBalance );
 			float glowValue = sqrt( max( surf.col.r, max( surf.col.g, surf.col.b ) ) );
 			glowFade = surf.emit * smoothstep( g_vGlowFadeRange.x, g_vGlowFadeRange.y, glowValue );
 			m.Albedo *= 1.0 - glowFade;

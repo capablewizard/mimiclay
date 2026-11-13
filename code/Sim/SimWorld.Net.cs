@@ -381,6 +381,7 @@ public sealed partial class SimWorld
 			{
 				SimQuant.WritePos( w, i.HoldPos ); // a carried prop's target (SimHoldDriver): 13 bytes, only while holding
 				SimQuant.WriteRot( w, i.HoldRot );
+				SimQuant.WriteGrip( w, i.HoldGrip ); // +6: the point it's held by
 			}
 		}
 		w.Flush();
@@ -414,6 +415,7 @@ public sealed partial class SimWorld
 			{
 				input.HoldPos = SimQuant.ReadPos( r );
 				input.HoldRot = SimQuant.ReadRot( r );
+				input.HoldGrip = SimQuant.ReadGrip( r );
 			}
 			int t = firstTick + i;
 			if ( t > Tick )

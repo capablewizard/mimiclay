@@ -38,6 +38,17 @@ public sealed class ShoulderBoom
 	/// <summary>How fast the view eases between first and third person (exponential, per second).</summary>
 	public float BlendSpeed { get; set; } = DefaultBlendSpeed;
 
+	/// <summary>Extra sideways offset the owner wants on top of <see cref="Shoulder"/> right now (the hunter: while it holds a
+	/// prop, so the held prop isn't hidden behind its own body). Eased at <see cref="ShoulderBoostSpeed"/>, so the camera glides out to
+	/// it and back rather than jumping.</summary>
+	public float ShoulderBoost { get; set; }
+	float _shoulderBoost;
+
+	/// <summary>How fast <see cref="ShoulderBoost"/> eases in and out (exponential, per second) — its own rate, separate
+	/// from the first ↔ third blend's <see cref="BlendSpeed"/>.</summary>
+	public float ShoulderBoostSpeed { get; set; } = DefaultShoulderBoostSpeed;
+	public const float DefaultShoulderBoostSpeed = 4f;
+
 	/// <summary>How far out the view is: 0 = first person (on the eye), 1 = fully on the boom.</summary>
 	public float Blend => _blend;
 
@@ -112,6 +123,10 @@ public sealed class ShoulderBoom
 		_blend = MathX.Lerp( _blend, want, 1f - MathF.Exp( -BlendSpeed * Time.Delta ) );
 		if ( MathF.Abs( _blend - want ) < 0.005f )
 			_blend = want;
+		_shoulderBoost = MathX.Lerp( _shoulderBoost, ShoulderBoost, 1f - MathF.Exp( -ShoulderBoostSpeed * Time.Delta ) );
+		if ( MathF.Abs( _shoulderBoost - ShoulderBoost ) < 0.01f )
+			_shoulderBoost = ShoulderBoost;
+		float shoulder = Shoulder + _shoulderBoost;
 
 		// The camera ROTATION rides the boom angles, so an alt-orbit looks back along the boom at the owner.
 		var rot = (_altOrbiting ? _altOrbitAngles : aim).ToRotation();
@@ -126,7 +141,7 @@ public sealed class ShoulderBoom
 		float dist = _altOrbiting ? _altDistance : Distance;
 		var anchor = _altOrbiting ? eye + _altPan : eye;
 		float offsetScale = _altOrbiting ? dist / MathF.Max( Distance, 1f ) : 1f;
-		var desired = anchor + rot * (new Vector3( -dist, -Shoulder * offsetScale, Rise * offsetScale ) * _blend);
+		var desired = anchor + rot * (new Vector3( -dist, -shoulder * offsetScale, Rise * offsetScale ) * _blend);
 
 		// Traced from the anchor with a small radius so the near plane can't peek through a wall the ray barely
 		// misses. Triggers aren't hit by default, so other hunters' head colliders can't yank the boom in.

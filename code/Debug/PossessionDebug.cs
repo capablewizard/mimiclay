@@ -47,6 +47,44 @@ internal static class PossessionDebug
 		claims.PossessFor( client, target.GameObject );
 	}
 
+	/// <summary>Possess the scene prop named <paramref name="name"/> as the LOCAL player (host), from wherever the hunter
+	/// stands (it's moved beside the prop for the range check), then log the new body's motion for 3 s.</summary>
+	[ConCmd( "mimi_dbg_possess" )]
+	static async void PossessNamed( string name, float sideYaw = 0f, float sideDist = 60f )
+	{
+		var claims = PropClaims.Current;
+		var me = Connection.Local;
+		var target = Game.ActiveScene.GetAllObjects( true ).FirstOrDefault( g => g.Name == name );
+		var hunter = Game.ActiveScene.GetAllComponents<HunterController>()
+			.FirstOrDefault( h => !h.Bot && RoundManager.RosterIdOf( h.GameObject ) == me?.Id );
+		if ( !claims.IsValid() || me is null || !target.IsValid() || !hunter.IsValid() )
+		{
+			Log.Warning( $"mimi_dbg_possess: claims={claims.IsValid()} local={me is not null} target={target.IsValid()} hunter={hunter.IsValid()}" );
+			return;
+		}
+
+		if ( sideDist > 0f )
+			hunter.WorldPosition = target.WorldPosition + Rotation.FromYaw( sideYaw ).Forward * sideDist;
+		Log.Info( $"mimi_dbg_possess: hunter at {hunter.WorldPosition} ({hunter.WorldPosition.Distance( target.WorldPosition ):0}u from target)" );
+		var before = Game.ActiveScene.GetAllComponents<HiderController>().Select( h => h.GameObject.Id ).ToHashSet();
+		claims.PossessFor( me, target );
+		var prop = Game.ActiveScene.GetAllComponents<HiderController>().FirstOrDefault( h => !before.Contains( h.GameObject.Id ) );
+		if ( !prop.IsValid() )
+		{
+			Log.Warning( "mimi_dbg_possess: no new prop pawn (claim refused?)" );
+			return;
+		}
+
+		var start = prop.WorldPosition;
+		Log.Info( $"mimi_dbg_possess: '{name}' → '{prop.GameObject.Name}' root={start} clay={prop.DisguiseSculpture?.WorldPosition}" );
+		for ( int i = 0; i < 60 && prop.IsValid(); i++ )
+		{
+			var rb = prop.Components.Get<Rigidbody>();
+			Log.Info( $"[possess t={i * 0.05f:0.00}] pos={prop.WorldPosition} dz={prop.WorldPosition.z - start.z:0.0} vel={(rb.IsValid() ? rb.Velocity : default)} inSim={prop.InSim}" );
+			await GameTask.DelaySeconds( 0.05f );
+		}
+	}
+
 	/// <summary>The first client swaps back to a hunter (releasing a possessed prop).</summary>
 	[ConCmd( "mimi_dbg_release" )]
 	static void Release()
