@@ -46,7 +46,7 @@ and 1200u in y; the centre of the floor is the spawn:
 | −600 | held | swing | throw | jump |
 | 600 | lying | wall | ledge | pushwall |
 | 1800 | twopush | throwplayer | climb | |
-| 2700 | corner | inner | hcorner | |
+| 2700 | corner | inner | hcorner | stack |
 
 **From Git Bash:**
 
@@ -56,7 +56,7 @@ Tools/SimLab/lab.sh loop        # every scenario over and over until out/STOP ex
 Tools/SimLab/lab.sh watch       # launch the observer client
 Tools/SimLab/lab.sh open        # editor: stop play, open scenes/tests/simlab.scene, play (this is the HOST)
 Tools/SimLab/lab.sh cast        # launch the 3 test clients on the current build; A and B become player props
-Tools/SimLab/lab.sh lag 90      # optional: fake lag on the clients (0 ≈ 115 ms sim round trip, 40 ≈ 210, 90 ≈ 310)
+Tools/SimLab/lab.sh lag 90      # optional: fake lag on the clients (measured 2026-11-13: 90 ≈ 195 ms sim round trip — roughly 2 x N + 15)
 Tools/SimLab/lab.sh run -n 3 push headon     # or: run -n 2 all
 Tools/SimLab/lab.sh sum         # summary of the latest log
 Tools/SimLab/lab.sh run -d ledge             # -d: frame dump around the pair's deepest moment, per screen
@@ -96,6 +96,8 @@ run skips a scenario that fails and stops after three failures in a row).
 | `hpushed` | A walks into H standing on B's marker (the push station) | A–H |
 | `hride` | H stands on B while B walks (the push station) | H–B (+ vertical gap) |
 | `hclimb` | H walks at the wall with Space held, jumps, grabs, climbs and mantles (the climb station) | H–Wall (+ climb, on H only) |
+| `hstack` | H grabs devprophunt's garden stool by the edge of its seat (a real crosshair hit — the grip) with its cushion resting on it, lifts it, swings it round 60° and holds (the stack station). The first run grabs scene clay (conversion, the cushion woken by the touching-props wake); later runs grab them frozen back in place | C–L (the cushion on the stool) + end poses |
+| `hclose` | H stands against the loose football and grabs it (the holder↔held no-collision rule) | H–L + end pose |
 
 The hunter scenarios (HUNTER-SIM-PLAN.md, H5) run at the props' stations (`SimLab.Base` maps them), with the actors they
 don't use in the park. H is recorded as a fourth body on every screen: from the sim with `mimi_sim_hunter` on, from its
@@ -110,6 +112,7 @@ Per scenario and screen (A, B, H), each against the host's line of the same run:
 - **vgap+** — landings only: how much lower the screen draws the lander on what it landed on.
 - **dv / blips** — the worst frame-to-frame velocity jump of any watched body (u/s), and frames over 1500 u/s.
 - **r-a / gap** — throws: the target's drawn reaction minus the projectile's drawn arrival (ms; negative = it reacts first), and the drawn box gap between them at that reaction (u; negative = still apart). The raw log also has the tick-stamped timeline per screen: release seen, copy hit, drawn reaction, drawn arrival.
+- **grabs** — `hstack`, `hclose`: per screen and run, where it ends up drawing the held prop L (and the cushion C), station-local. The host's line is the truth; the hold — grip, acceleration-limited chase, the holder↔held filter — runs on every machine, so they should agree. `hstack` also reports vgap+ (the cushion sinking into the seat).
 - **climb** — climbing scenarios: per screen and run, who climbs, the share of frames it was climbing, how many faces it climbed and which (by the way each faces: -y, +x, ...), and the highest point reached. The host's line is the truth; a client that shows fewer faces drew its climb differently.
 - **jump watch** — `SimLabJumpWatch` (code/Debug): on every screen, the whole time the lab is up (between scenarios too, sim on or off), every prop and hunter. A frame counts if it is drawn faster than 1500 u/s, turns more than 60°, or its centre (a hunter's feet) is more than 6u under the floor. Built to catch rubber-banding, "moving really quickly around and through the floor" (user, 2026-11-07). lab.sh marks each scenario's setup on every machine first, so the lab's own teleports are counted apart (`jumps N (setup M)` on each run line). Each run line reports what happened since the previous one. The `jump:` lines underneath, also printed by `lab.sh run`, give the body, phase, frame count, worst speed, turn and depth, and its state: sim-walk / sim-held / down / sim-loose / climbing / scene states, and whether that copy is a proxy. The summary lists every scenario with its per-screen counts, and the details wherever something was caught.
 

@@ -13,11 +13,12 @@ my $json = JSON::PP->new->relaxed->canonical->pretty;
 sub load { my $f = "$root/$_[0]"; local $/; open my $h, '<:raw', $f or die "$f: $!"; return $json->decode(<$h>); }
 my $default = load('Assets/scenes/Maps/DefaultMap.scene');
 my $flat = load('Assets/scenes/Maps/FlatGrass/FlatGrass.scene');
+my $dev = load('Assets/scenes/Maps/DevPropHunt.scene'); # (the garden stool + its cushion, as the user placed them with physics)
 
 my $seq = 0; srand(20261107);
 sub guid { sprintf '%08x-%04x-4%03x-a%03x-%012x', int(rand(2**32)), int(rand(2**16)), int(rand(2**12)), int(rand(2**12)), int(rand(2**48)) }
 sub find_named { my ($scene, $name) = @_; for my $o (@{$scene->{GameObjects}}) { return $o if ($o->{Name} // '') eq $name; } die "no '$name'"; }
-sub find_prefab { my ($scene, $path) = @_; for my $o (@{$scene->{GameObjects}}) { return $o if ref $o->{__Prefab} && $o->{__Prefab}{Path} eq $path; } die "no prefab $path"; }
+sub find_prefab { my ($scene, $path) = @_; my @todo = @{$scene->{GameObjects}}; while (my $o = shift @todo) { return $o if ref $o->{__Prefab} && $o->{__Prefab}{Path} eq $path; push @todo, @{$o->{Children} // []}; } die "no prefab $path"; }
 # deep copy with fresh guids for every __guid (objects and components)
 sub regen { my ($x) = @_; my $c = $json->decode($json->encode($x)); my $walk; $walk = sub { my $o = shift; if (ref $o eq 'HASH') { $o->{__guid} = guid() if exists $o->{__guid}; $walk->($_) for values %$o; } elsif (ref $o eq 'ARRAY') { $walk->($_) for @$o; } }; $walk->($c); return $c; }
 sub v3 { join ',', map { sprintf '%g', $_ } @_ }
@@ -33,10 +34,10 @@ sub box_go {
 	return $go;
 }
 
-# A prefab instance copied from FlatGrass (fresh instance ids), renamed and placed.
+# A prefab instance copied from FlatGrass (or the scene given; fresh instance ids), renamed and placed.
 sub prefab_go {
-	my ($path, $name, $pos) = @_;
-	my $src = find_prefab($flat, $path);
+	my ($path, $name, $pos, $from) = @_;
+	my $src = find_prefab($from // $flat, $path);
 	my $c = $json->decode($json->encode($src));
 	my ($rootId) = map { $_->{Target}{IdValue} } grep { $_->{Property} eq 'Position' } @{$c->{__PrefabInstancePatch}{PropertyOverrides}};
 	$c->{__PrefabIdToInstanceId}{$_} = guid() for keys %{$c->{__PrefabIdToInstanceId}};
@@ -75,6 +76,9 @@ my @stations = (
 	[ corner      => { A => [0, -220], 'A.to' => [0, 0] }, [ [ 'box', 'Pillar', [100, 100, 260], [0, 0, 130] ] ], [-1350, 2700] ],
 	[ inner       => { A => [0, -120], 'A.to' => [0, 150] }, [ [ 'box', 'WallA', [300, 30, 220], [0, 150, 110] ], [ 'box', 'WallB', [30, 330, 220], [165, 0, 110] ] ], [-450, 2700] ],
 	[ hcorner     => { H => [0, -100] }, [ [ 'box', 'Pillar', [120, 120, 300], [0, 0, 150] ] ], [450, 2700] ],
+	# grab (2026-11-13): H lifts devprophunt's garden stool with its cushion resting on it (scene clay, touching — the wake,
+	# the grip, held friction). The stool's pivot sits 42.13u above its feet; the cushion rests 41.155u above the stool.
+	[ stack       => { H => [0, 85], Stool => [0, 0], Hobs => [300, 200] }, [ [ 'stool', 'Stool', [0, 0] ] ], [1350, 2700] ],
 );
 
 my @gos;
@@ -103,8 +107,13 @@ for my $st (@stations) {
 	for my $s (@$statics) {
 		if ($s->[0] eq 'box') { push @{$sgo->{Children}}, box_go($s->[1], $s->[2], $s->[3]); }
 		elsif ($s->[0] eq 'cone') { push @gos, prefab_go('prefabs/props/misc/trafficcone.prefab', "SimLab.$name.$s->[1]", [ $ox + $s->[2][0], $oy + $s->[2][1], 0 ]); }
+		elsif ($s->[0] eq 'stool') {
+			my ($x, $y) = ($ox + $s->[2][0], $oy + $s->[2][1]);
+			push @gos, prefab_go('prefabs/props/garden/gardenstool.prefab', "SimLab.$name.Stool", [ $x, $y, 42.13 ], $dev);
+			push @gos, prefab_go('prefabs/props/garden/gardenstoolcushion.prefab', "SimLab.$name.Cushion", [ $x, $y, 42.13 + 41.155 ], $dev);
+		}
 	}
-	push @gos, prefab_go('prefabs/saved/football.prefab', "SimLab.$name.L", [ $ox + $markers->{L}[0], $oy + $markers->{L}[1], 30 ]) if $markers->{L};
+	push @gos, prefab_go('football.prefab', "SimLab.$name.L", [ $ox + $markers->{L}[0], $oy + $markers->{L}[1], 30 ]) if $markers->{L};
 	push @gos, $sgo;
 }
 # parking for actors a scenario does not use

@@ -508,7 +508,8 @@ public sealed class GrabHolder
 		// by its end swings from the end. Scene clay converted for the grab is replaced by a pawn wearing the same clay at the
 		// same spot, so the world point still lands on it. No hit (or a stale one): its mass centre, as before.
 		var clayGo = ClayOf( held );
-		var grip = _pendingGrip is { } hit && _sincePendingGrip < 3f ? hit : PropClaims.GrabSpot( held );
+		bool aimed = _pendingGrip is { } && _sincePendingGrip < 3f;
+		var grip = aimed ? _pendingGrip.Value : PropClaims.GrabSpot( held );
 		_pendingGrip = null;
 		_gripClay = clayGo.WorldTransform.PointToLocal( grip );
 		_centre = held.WorldTransform.PointToLocal( grip );
@@ -524,7 +525,7 @@ public sealed class GrabHolder
 			_pivot = SdfScaling.SymmetricPivot( _base, bounds.Center );
 		}
 		_distance = Math.Clamp( eye.Distance( centre ), _minDistance, MathF.Max( MaxDistance, _minDistance ) );
-		if ( HunterController.DebugGrabHold ) // the chase bot holds its catch out at arm's length rather than wherever it closed in to
+		if ( HunterController.DebugGrabHold && !aimed ) // the chase bot holds its catch out at arm's length rather than wherever it closed in to (an aimed grab — SimLab's — keeps its real distance)
 			_distance = Math.Clamp( HunterController.DebugChaseHoldDistance, MinDistance, MaxDistance );
 		_relative = Rotation.FromYaw( viewYaw ).Inverse * held.WorldRotation;
 		_raw = _relative;

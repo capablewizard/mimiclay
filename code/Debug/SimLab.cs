@@ -24,7 +24,15 @@ namespace Mimiclay;
 /// </summary>
 public static class SimLab
 {
-	public static readonly string[] Scenarios = { "loose", "static", "push", "headon", "held", "swing", "throw", "jump", "lying", "wall", "ledge", "pushwall", "twopush", "throwplayer", "climb", "corner", "inner", "hcorner", "hpush", "hloose", "hpushed", "hride", "hclimb" };
+	public static readonly string[] Scenarios = { "loose", "static", "push", "headon", "held", "swing", "throw", "jump", "lying", "wall", "ledge", "pushwall", "twopush", "throwplayer", "climb", "corner", "inner", "hcorner", "hpush", "hloose", "hpushed", "hride", "hclimb", "hstack", "hclose" };
+
+	// Grab scenarios (2026-11-13, the grab rework — grab-hold-grip-accel-friction memory):
+	//  • hstack — H grabs devprophunt's garden stool by the edge of its seat (a real crosshair hit: the GRIP) with its cushion
+	//    resting on it, lifts, swings it round, holds. The first run grabs scene clay (conversion + the touching-props WAKE of
+	//    the cushion + the stale static copy dropped); later runs grab them FROZEN back in place (the frozen wake). Pair: the
+	//    cushion on the stool (C–L) — it should ride along, on every screen as on the host. Recorded as a 5th body, C.
+	//  • hclose — H stands against the loose football and grabs it (the holder↔held no-collision rule): L should barely move.
+	static bool GrabScen( string scen ) => scen is "hstack" or "hclose";
 
 	// Climbing (2026-11-07): A climbs a wall and mantles onto it, climbs round a pillar (outer corners), along into an inner
 	// corner; H (a hunter) climbs round a pillar. Longer runs, and the report adds the faces climbed (ClimbReport).
@@ -33,7 +41,7 @@ public static class SimLab
 	// Hunter scenarios (HUNTER-SIM-PLAN.md H5) run at the props' stations — their markers, statics and loose prop — so the
 	// generated scene stays as it is: hpush (H walks into a standing B), hloose (H walks into the loose football), hpushed
 	// (A walks into a standing H), hride (H stands on B while B walks), hclimb (H jumps at the wall, Space held, climbs, mantles).
-	static string Base( string scen ) => scen switch { "hpush" or "hpushed" or "hride" => "push", "hloose" => "loose", "hclimb" => "climb", _ => scen };
+	static string Base( string scen ) => scen switch { "hpush" or "hpushed" or "hride" => "push", "hloose" or "hclose" => "loose", "hclimb" => "climb", "hstack" => "stack", _ => scen };
 	static bool HScen( string scen ) => scen is "hpush" or "hloose" or "hpushed" or "hride" or "hclimb";
 
 	// ── Scene access ────────────────────────────────────────────────────────────────────────────────────────
@@ -70,6 +78,71 @@ public static class SimLab
 				return held;
 		return S.GetAllComponents<HiderController>().Where( h => PropClaims.IsReleased( h ) && h.WorldPosition.Distance( l ) < 300f )
 			.OrderBy( h => h.WorldPosition.Distance( l ) ).FirstOrDefault();
+	}
+
+	// ── The stack station (hstack): devprophunt's garden stool with its cushion on top ──
+	// Scene clay until the first grab converts them (the stool by the grab, the cushion by the touching-props wake); released
+	// pawns after that, found by their clay (the stool is 4 brushes, the cushion 1) — on every machine, without host tags.
+	const float StoolPivotZ = 42.13f, CushionAboveStool = 41.155f; // (make_scene.pl: as the user placed them in devprophunt)
+
+	static GameObject StackScene( string part )
+		=> S.GetAllObjects( true ).FirstOrDefault( g => g.Name == $"SimLab.stack.{part}" && !g.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors ).IsValid()
+			&& g.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndDescendants ).IsValid() );
+
+	static HiderController StackPawn( bool stool )
+	{
+		var st = Station( "hstack" );
+		if ( st is null )
+			return null;
+		int brushes = stool ? 4 : 1;
+		return S.GetAllComponents<HiderController>()
+			.Where( h => PropClaims.IsReleased( h ) && h.WorldPosition.WithZ( 0 ).Distance( st.WorldPosition.WithZ( 0 ) ) < 600f && (h.DisguiseSculpture?.Brushes?.Count ?? 0) == brushes )
+			.OrderBy( h => h.WorldPosition.Distance( st.WorldPosition ) ).FirstOrDefault();
+	}
+
+	// Host: a pawn put back so its CLAY lands at `clay` (world) — through the disguise's offset from the root.
+	static void PutClay( HiderController h, Transform clay )
+	{
+		var d = h.DisguiseSculpture?.GameObject;
+		if ( d is null )
+			return;
+		var local = d.LocalTransform;
+		var rootRot = clay.Rotation * local.Rotation.Inverse;
+		Put( h.GameObject, clay.Position - rootRot * local.Position, rootRot );
+	}
+
+	// Host, before each hstack run: back as they were — FROZEN (still, like the scene clay they started as) on their marks,
+	// so the grab wakes the cushion the frozen way. The first run finds them still scene clay and leaves them be.
+	static async Task<string> SetupStack()
+	{
+		var pcs = PropClaims.Current;
+		var origin = Marker( "hstack", "Stool" ).Value;
+		var stoolClay = new Transform( origin + Vector3.Up * StoolPivotZ, Rotation.Identity );
+		var cushionClay = new Transform( origin + Vector3.Up * (StoolPivotZ + CushionAboveStool), Rotation.Identity );
+		string what = "";
+		foreach ( var (part, clay) in new[] { ("Stool", stoolClay), ("Cushion", cushionClay) } )
+		{
+			if ( StackScene( part ) is not null )
+			{
+				what += $" {part}:scene";
+				continue;
+			}
+			var pawn = StackPawn( part == "Stool" );
+			if ( pawn is null )
+			{
+				what += $" {part}:MISSING";
+				continue;
+			}
+			pcs.LooseProps.Remove( pawn.GameObject.Id );
+			pcs.FrozenProps[pawn.GameObject.Id] = true;
+			what += $" {part}:frozen";
+		}
+		await GameTask.Delay( 400 ); // (frozen: out of the sim, its scene body still — then it can be put)
+		foreach ( var (part, clay) in new[] { ("Stool", stoolClay), ("Cushion", cushionClay) } )
+			if ( StackScene( part ) is null && StackPawn( part == "Stool" ) is { } pawn )
+				PutClay( pawn, clay );
+		await GameTask.Delay( 300 );
+		return what;
 	}
 
 	static readonly Dictionary<string, Guid> _loose = new(); // host: station → its loose prop
@@ -111,7 +184,7 @@ public static class SimLab
 		a.LabDown = false;
 		b.LabDown = scen == "lying";
 		// (Hunter scenarios: an actor the scenario doesn't use waits in the park — hpushed is A walking into H at B's marker.)
-		bool parkA = scen is "hpush" or "hloose" or "hride" or "hclimb", parkB = scen is "hpushed" or "hloose" or "hclimb";
+		bool parkA = scen is "hpush" or "hloose" or "hride" or "hclimb" || GrabScen( scen ), parkB = scen is "hpushed" or "hloose" or "hclimb" || GrabScen( scen );
 		Put( a.GameObject, ((parkA ? null : Marker( scen, scen == "swing" ? "A.wait" : "A" )) ?? Marker( "park", "A" ).Value) + up, Rotation.FromYaw( 90f ) );
 		Put( b.GameObject, ((parkB ? null : Marker( scen, "B" )) ?? Marker( "park", "B" ).Value) + up, Rotation.FromYaw( -90f ) );
 		string loose = "";
@@ -144,7 +217,10 @@ public static class SimLab
 			Put( S.Directory.FindByGuid( id ), lm + Vector3.Up * 6f, Rotation.Identity );
 			loose = $" L {lm:0}";
 		}
-		// Strays (released props left in this station by earlier tests or by closed clients) go to the park row.
+		string stack = scen == "hstack" ? " stack" + await SetupStack() : "";
+		// Strays (released props left in this station by earlier tests or by closed clients) go to the park row. (Not at the stack
+		// station: its stool and cushion are released props too, and it has no others.)
+		if ( scen != "hstack" )
 		{
 			var centre = Station( scen ).WorldPosition;
 			_loose.TryGetValue( Base( scen ), out var mine );
@@ -160,7 +236,7 @@ public static class SimLab
 			Put( b.GameObject, Marker( scen, "B" ).Value + Vector3.Up * 20f, Rotation.From( 0f, 0f, 90f ) );
 		}
 		await GameTask.Delay( 300 );
-		return $"setup {scen}: A {a.WorldPosition:0} B {b.WorldPosition:0}{loose}";
+		return $"setup {scen}: A {a.WorldPosition:0} B {b.WorldPosition:0}{loose}{stack}";
 	}
 
 	// ── Hunter client: prepare ──────────────────────────────────────────────────────────────────────────────
@@ -201,6 +277,8 @@ public static class SimLab
 			a.yaw = 90f; a.pitch = 0f; ctl.EyeAngles = a;
 			return $"H at the pillar of {scen}";
 		}
+		if ( GrabScen( scen ) )
+			return await PrepareAimedGrab( scen, me, ctl, pc );
 		if ( HScen( scen ) )
 		{
 			HunterClimb.DebugVertical = 0f;
@@ -267,6 +345,59 @@ public static class SimLab
 		return $"H holding '{target.Name}' at yaw {ctl.EyeAngles.yaw:0}";
 	}
 
+	// H, for the grab scenarios: stand where the scenario says, aim the crosshair at a point on the target and grab it there —
+	// the real path (HunterController.BeginGrab with the crosshair's hit: the hold's GRIP), not a bare RequestGrab.
+	static async Task<string> PrepareAimedGrab( string scen, HunterController me, PlayerController ctl, PropClaims pc )
+	{
+		HunterClimb.DebugVertical = 0f;
+		HunterController.DebugChase = null;
+		Vector3 spot, aimAt;
+		if ( scen == "hstack" )
+		{
+			var stool = StackScene( "Stool" ) ?? StackPawn( true )?.GameObject;
+			if ( stool is null )
+				return "no stool at the stack station";
+			var origin = Marker( scen, "Stool" ).Value;
+			spot = Marker( scen, "H" ).Value + Vector3.Up * 2f;
+			aimAt = origin + new Vector3( 0f, 30f, 68f ); // (the near edge of the seat: radius ~38, top at 74)
+		}
+		else
+		{
+			var l = LooseOf( scen );
+			if ( l is null )
+				return "no football at the loose station";
+			var lb = l.GameObject.GetBounds();
+			spot = new Vector3( lb.Center.x, lb.Center.y + lb.Size.y * 0.5f + 18f, Marker( scen, "L" ).Value.z + 2f ); // (standing against it)
+			aimAt = lb.Center + new Vector3( 0f, lb.Size.y * 0.25f, 0f );
+		}
+		PlaceHunter( me, spot );
+		await GameTask.Delay( 600 );
+		var a = ctl.EyeAngles;
+		var look = Rotation.LookAt( aimAt - S.Camera.WorldPosition ).Angles();
+		a.yaw = look.yaw; a.pitch = look.pitch; ctl.EyeAngles = a;
+		await GameTask.Delay( 300 );
+		var cam = S.Camera;
+		var tr = S.Trace.Ray( cam.WorldPosition, cam.WorldPosition + cam.WorldRotation.Forward * 300f ).IgnoreGameObjectHierarchy( me.GameObject ).Run();
+		// (A pawn's collider rides its ROOT's body, so the hit is the root and its clay is a child — search both ways.)
+		var sculpt = !tr.Hit || tr.GameObject is null ? null
+			: tr.GameObject.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndAncestors ) ?? tr.GameObject.Components.Get<SdfSculpture>( FindMode.EverythingInSelfAndDescendants );
+		if ( sculpt is null )
+			return $"H's crosshair missed (hit '{tr.GameObject?.Name}')";
+		var hider = sculpt.Components.Get<HiderController>( FindMode.EverythingInSelfAndAncestors );
+		var target = hider.IsValid() ? hider.GameObject : sculpt.GameObject; // (the root rule the RMB card uses)
+		var gripLocal = sculpt.WorldTransform.PointToLocal( tr.HitPosition ); // (now: scene clay is destroyed by the conversion)
+		float gripDist = cam.WorldPosition.Distance( tr.HitPosition );
+		HunterController.DebugGrabHold = true;
+		me.BeginGrab( target, tr.HitPosition );
+		double t0 = Time.NowDouble;
+		while ( Time.NowDouble - t0 < 3 && !pc.Held.ContainsKey( Connection.Local.Id ) )
+			await GameTask.Delay( 20 );
+		if ( !pc.Held.TryGetValue( Connection.Local.Id, out var held ) )
+			return $"grab of '{target.Name}' failed";
+		await GameTask.Delay( 500 ); // (the grant, the conversion, the woken cushion settling)
+		return $"H holding '{S.Directory.FindByGuid( held )?.Name}' by {gripLocal:0} (clay-local), {gripDist:0}u from the camera";
+	}
+
 	// ── Every screen: act + record ──────────────────────────────────────────────────────────────────────────
 
 	// Walk windows: (from s, to s, marker). The actor walks at its marker while the window is open.
@@ -305,6 +436,8 @@ public static class SimLab
 		"hloose" => ("H", "L"),
 		"hpushed" => ("A", "H"),
 		"hclimb" => ("H", "Wall"),
+		"hstack" => ("C", "L"), // (the cushion on the stool: it should ride along)
+		"hclose" => ("H", "L"),
 		_ => ("A", "B"),
 	};
 
@@ -326,12 +459,12 @@ public static class SimLab
 		SimLabJumpWatch.SetPhase( $"run {scen}" );
 		if ( ClimbScen( scen ) )
 			seconds = role == "HOST" ? 13f : 10f; // (the host starts first and records longer — see lab.sh)
-		var hA = PropOf( nameA ); var hB = PropOf( nameB ); var hL = LooseOf( scen );
+		var hA = PropOf( nameA ); var hB = PropOf( nameB ); var hL = scen == "hstack" ? StackPawn( true ) : LooseOf( scen ); var hC = scen == "hstack" ? StackPawn( false ) : null; // (hstack: L = the stool, C = its cushion)
 		// H: the test client's hunter (the one no host owns) — a sim body with mimi_sim_hunter on, else drawn from its scene
 		// transform (the engine walk), so the hunter scenarios compare old and new alike.
 		var hH = S.GetAllComponents<HunterController>().FirstOrDefault( x => x.Network.Owner is { } o && !o.IsHost && !x.Bot );
-		var names = new[] { "A", "B", "L", "H" };
-		var keys = new[] { hA?.GameObject.Id ?? Guid.Empty, hB?.GameObject.Id ?? Guid.Empty, hL?.GameObject.Id ?? Guid.Empty, hH?.GameObject.Id ?? Guid.Empty };
+		var names = new[] { "A", "B", "L", "H", "C" };
+		var keys = new[] { hA?.GameObject.Id ?? Guid.Empty, hB?.GameObject.Id ?? Guid.Empty, hL?.GameObject.Id ?? Guid.Empty, hH?.GameObject.Id ?? Guid.Empty, hC?.GameObject.Id ?? Guid.Empty };
 		var (pairA, pairB) = PairOf( scen );
 		int ia = Array.IndexOf( names, pairA ), ib = Array.IndexOf( names, pairB ); // ib -1 = a static thing
 		var stat = ib < 0 ? StaticOf( scen, pairB ) : null;
@@ -340,6 +473,7 @@ public static class SimLab
 		var me = role == "H" ? S.GetAllComponents<HunterController>().FirstOrDefault( x => !x.IsProxy ) : null;
 		var ctl = me?.Components.Get<PlayerController>();
 		bool jumped = false, thrown = false, hGrabbed = false;
+		Angles? grabAim = null; // (hstack: the aim the grab was made at — the lift and swing are offsets from it)
 		double climbT = -1;
 		var hClimb = me?.Components.Get<HunterClimb>();
 		var walks = Walks( scen, role );
@@ -442,6 +576,14 @@ public static class SimLab
 			}
 			if ( role == "H" && HScen( scen ) && me is not null )
 				ActHunter( t );
+			if ( role == "H" && ctl is not null && scen == "hstack" )
+			{
+				// Hold 1 s; lift (look up 20° over 1 s); swing round 60° in 0.5 s — the cushion has to ride an accelerating seat; hold.
+				grabAim ??= ctl.EyeAngles;
+				var g = grabAim.Value;
+				float lift = (float)Math.Clamp( t - 1.0, 0.0, 1.0 ), swing = (float)Math.Clamp( (t - 2.5) / 0.5, 0.0, 1.0 );
+				ctl.EyeAngles = g with { pitch = g.pitch - 20f * lift, yaw = g.yaw + 60f * swing };
+			}
 			if ( role != "H" || ctl is null || !HunterHolds( scen ) )
 				return;
 			var a = ctl.EyeAngles;
@@ -471,10 +613,10 @@ public static class SimLab
 			SetStatus( $"SimLab · {scen}\n{RoleName( role )}: {Doing( t )}\n{t:0.0} / {seconds:0} s" );
 			var s = new Sample
 			{
-				T = t, Tick = sim.Tick, Ok = new bool[4], P = new Vector3[4], Box = new BBox[4], CopyP = new Vector3[4], CopyBox = new BBox[4], CopyV = new Vector3[4],
-				Auth = new bool[4], Off = new Vector3[4], Touched = new bool[4], Tracking = new bool[4], Drv = new int[4],
+				T = t, Tick = sim.Tick, Ok = new bool[5], P = new Vector3[5], Box = new BBox[5], CopyP = new Vector3[5], CopyBox = new BBox[5], CopyV = new Vector3[5],
+				Auth = new bool[5], Off = new Vector3[5], Touched = new bool[5], Tracking = new bool[5], Drv = new int[5],
 			};
-			for ( int i = 0; i < 4; i++ )
+			for ( int i = 0; i < 5; i++ )
 			{
 				var b = keys[i] == Guid.Empty ? null : sim.Bodies.FirstOrDefault( x => x.Key == keys[i] );
 				if ( i == 3 && b is null && hH.IsValid() )
@@ -515,10 +657,27 @@ public static class SimLab
 			HunterClimb.DebugVertical = 0f;
 			HunterController.DebugChaseSpeed = 250f; HunterController.DebugChaseStop = 90f; HunterController.DebugChasePitch = 12f; // (the chase bot's)
 		}
+		if ( role == "H" && GrabScen( scen ) && PropClaims.LocalHeld is { } stillHeld )
+		{
+			me?.LetGo( stillHeld, false ); // (put down: the next setup puts it back)
+			HunterController.DebugGrabHold = false;
+		}
 		SetStatus( $"SimLab · {scen} done\n{RoleName( role )}: waiting for the next scenario" );
 		SimLabJumpWatch.SetPhase( $"idle after {scen}" );
 		// The jump watch's count since the last run joins this line; its detail lines go last (see SimLabJumpWatch).
 		var result = Analyse( role, scen, fr, names, ia, ib, pairB, statBox, dump );
+		if ( GrabScen( scen ) )
+		{
+			// Where this screen ends up drawing the held prop (and the cushion): compare with the host's line — the grip, the
+			// chase and the hold filter run on every machine, so they should agree.
+			// At the same moment on every screen — 5.5 s into the clients' runs (the host starts 0.5 s earlier and records 3 s
+			// longer, past H letting go at the end of its run: a host line read at its own end saw the stool already dropped).
+			double at = role == "HOST" ? 6.0 : 5.5;
+			string End( int i ) => fr.Where( f => f.Ok[i] ).OrderBy( f => Math.Abs( f.T - at ) ).FirstOrDefault() is { Ok: not null } f ? $"{f.P[i] - (Station( scen )?.WorldPosition ?? Vector3.Zero):0}" : "-";
+			string tail = $" | end L {End( 2 )}" + (scen == "hstack" ? $" C {End( 4 )}" : "");
+			int nlr = result.IndexOf( '\n' );
+			result = nlr < 0 ? result + tail : result[..nlr] + tail + result[nlr..];
+		}
 		var jumps = SimLabJumpWatch.TakeReport();
 		int cut = jumps.IndexOf( '\n' );
 		string head = cut < 0 ? jumps : jumps[..cut], details = cut < 0 ? "" : jumps[cut..];
@@ -533,6 +692,8 @@ public static class SimLab
 				return !hGrabbed ? "facing the pillar" : t < 1.3 ? "grabbed - climbing up" : me?.Clinging == true ? "climbing sideways (D) round the pillar" : "fell off";
 			if ( role == "A" && ClimbScen( scen ) && climbT >= 0 )
 				return !hA.SimClimbing ? (scen == "climb" ? "mantled - walking onto the top" : "not climbing (fell off?)") : scen == "climb" ? "climbing up (Space)" : t - climbT < 0.8 ? "climbing up" : "climbing sideways (D)";
+			if ( role == "H" && GrabScen( scen ) )
+				return scen == "hclose" ? "holding the football we stood against" : t < 1 ? "holding the stool by its seat" : t < 2 ? "lifting" : t < 2.5 ? "holding it up" : t < 3 ? "swinging it round" : "holding";
 			if ( role == "H" && HScen( scen ) )
 				return scen switch
 				{

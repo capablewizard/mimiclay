@@ -15,7 +15,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"; HERE_W="$(cygpath -m "$HERE")"
 OUT="$HERE/out"; OUT_W="$HERE_W/out"; mkdir -p "$OUT"
 STATE="$OUT/state.txt"
 SBOX="${SBOX_DIR:-D:/SteamLibrary/steamapps/common/sbox}"; CLI="$SBOX/bin/managed/sbox-cli.exe"
-ALL="loose static push headon held swing throw jump lying wall ledge pushwall twopush throwplayer climb corner inner hcorner hpush hloose hpushed hride hclimb"
+ALL="loose static push headon held swing throw jump lying wall ledge pushwall twopush throwplayer climb corner inner hcorner hpush hloose hpushed hride hclimb hstack hclose"
 
 host_pid() { "$CLI" --list 2>&1 | tr -d '\r' | awk '/"pid"/{gsub(/[^0-9]/,"",$0); pid=$0} /"kind": "editor"/{print pid; exit}'; }
 # run C# in an instance: cs PID TIMEOUT 'code' → the script's return value (all lines)
@@ -40,7 +40,9 @@ open)
 cast)
 	[ -f "$STATE" ] && { source "$STATE"; for p in ${A:-} ${B:-} ${H:-}; do kill_client $p; done; sleep 3; }
 	before=" $(game_pids | tr '\n' ' ') "
-	for id in 97 98 99; do powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','$id','-sw','-720','-mcp' -WorkingDirectory '$SBOX'"; sleep 2; done
+	# Staggered: three clients reaching their loading screens together lost the GPU twice in a row (2026-11-13: VK_ERROR_DEVICE_LOST
+	# in the engine's loading-screen UI — ui_cssbox_batched / ui_backdropfilter — on a 4090 at 19% load), so each starts alone.
+	for id in 97 98 99; do powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','$id','-sw','-720','-mcp' -WorkingDirectory '$SBOX'"; sleep ${CAST_STAGGER:-15}; done
 	new=""; for i in $(seq 1 80); do sleep 3; new=""; for p in $(game_pids); do case "$before" in *" $p "*) ;; *) new="$new $p";; esac; done; [ $(echo $new | wc -w) -ge 3 ] && break; done
 	set -- $new; A=$1; B=$2; H=$3
 	for i in $(seq 1 80); do ok=0; for p in $A $B $H; do cs $p 15 'return $"hunters {Game.ActiveScene?.GetAllComponents<Mimiclay.HunterController>().Count()} net {Networking.IsActive}";' | grep -q "hunters [1-9] net True" && ok=$((ok+1)); done; [ $ok -eq 3 ] && break; sleep 5; done
@@ -60,10 +62,11 @@ lag)
 		cs $p 20 "return Mimiclay.SimLab.NoteFakeLag(\"$2\");" > /dev/null   # (shown on screen: game code can't read net_fakelag)
 	done
 	sleep 10; RTT=$(cs $A 20 'return $"{Game.ActiveScene.GetSystem<Mimiclay.Sim.SimWorld>().RoundTripMs:0}";' | tail -1)
-	echo "fakelag $2 set; measured sim round trip now $RTT ms (expect roughly $(( 2 * $2 + 100 )) ms: ~100 ms with no lag here)"
-	# net_fakelag adds about 2 x N to the round trip. In one editor session it silently stopped applying (client or host side):
-	# a round trip that doesn't move means the test is NOT running at the lag asked for.
-	[ "$2" -gt 0 ] && [ "${RTT:-0}" -lt $(( 2 * $2 + 50 )) ] && echo "!! the round trip didn't rise - net_fakelag is not taking effect in this session" ;;
+	echo "fakelag $2 set; measured sim round trip now $RTT ms (expect roughly $(( 2 * $2 + 15 )) ms)"
+	# net_fakelag adds about 2 x N to the round trip (measured 2026-11-13: lag 90 -> 193 ms; the fakelag-calibration memory has
+	# 40/65/90 -> 100/150/200). In one editor session it silently stopped applying (client or host side): a round trip that
+	# stays well under 2 x N means the test is NOT running at the lag asked for. (0 right after setting it = not measured yet.)
+	[ "$2" -gt 0 ] && [ "${RTT:-0}" -lt $(( 2 * $2 - 40 )) ] && echo "!! the round trip didn't rise - net_fakelag is not taking effect in this session" ;;
 run)
 	shift; load_state; N=1; DUMP=false
 	while [ $# -gt 0 ]; do case "$1" in -n) N=$2; shift 2;; -d) DUMP=true; shift;; *) break;; esac; done
@@ -74,9 +77,9 @@ run)
 		# Every machine's jump watch: the teleports coming up are the lab's own (SimLabJumpWatch counts them apart).
 		PH=""; for p in $HOST $A $B $H; do ( cs $p 20 "return Mimiclay.SimLab.NotePhase(\"setup $SCEN\");" > /dev/null ) & PH="$PH $!"; done; wait $PH
 		OB=$(obs_pid); [ -n "$OB" ] && ( cs $OB 20 "return await Mimiclay.SimLab.Observe(\"$SCEN\");" > /dev/null ) &   # (the observer flies over)
-		echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$( case $SCEN in held|swing|throw|throwplayer|hride) echo park;; *) echo $SCEN;; esac )\", \"$NB\");" | tail -1)" | tee -a "$LOG"
+		echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$( case $SCEN in held|swing|throw|throwplayer|hride|hstack|hclose) echo park;; *) echo $SCEN;; esac )\", \"$NB\");" | tail -1)" | tee -a "$LOG"
 		echo "  $(cs $HOST 30 "return await Mimiclay.SimLab.Setup(\"$SCEN\", \"$NA\", \"$NB\");" | tail -1)" | tee -a "$LOG"
-		case $SCEN in held|swing|throw|throwplayer|hride) echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$SCEN\", \"$NB\");" | tail -1)" | tee -a "$LOG"; cs $HOST 30 "return await Mimiclay.SimLab.Setup(\"$SCEN\", \"$NA\", \"$NB\", 2);" > /dev/null;; esac
+		case $SCEN in held|swing|throw|throwplayer|hride|hstack|hclose) echo "  $(cs $H 30 "return await Mimiclay.SimLab.HunterPrepare(\"$SCEN\", \"$NB\");" | tail -1)" | tee -a "$LOG"; cs $HOST 30 "return await Mimiclay.SimLab.Setup(\"$SCEN\", \"$NA\", \"$NB\", 2);" > /dev/null;; esac
 		sleep 1.5
 		( cs $HOST 90 "return await Mimiclay.SimLab.Run(\"$SCEN\", \"HOST\", \"$NA\", \"$NB\", 9f, $DUMP);" > "$OUT/_o_HOST.txt" ) & sleep 0.5
 		( cs $A 90 "return await Mimiclay.SimLab.Run(\"$SCEN\", \"A\", \"$NA\", \"$NB\", 6f, $DUMP);" > "$OUT/_o_A.txt" ) &
