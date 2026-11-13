@@ -103,7 +103,8 @@
 				{
 					var part = entry;
 					<div class="pop @(partsOn ? "" : "gone")" @key=@part.Label>
-						<div class="chip @(part.Active ? "on" : "")" @onclick=@(() => part.Select?.Invoke())>
+						<div class="chip @(part.Active ? "on" : "") @(PartFired( part.Label ) ? "fired" : "")"
+							@onclick=@(() => { FirePart( part.Label ); part.Select?.Invoke(); })>
 							<span>@part.Label</span>
 						</div>
 					</div>
@@ -990,6 +991,21 @@
 
 	bool StripFired( string key )
 		=> _stripFired is not null && _stripFired.TryGetValue( key, out var since ) && since < StripPunchSeconds;
+
+	// The Head / Weapon part chips' click punch — the same pop-spring as the strip's key presses (the click sound is
+	// the chip's own :active sound-in). Static: the click can swap which session the HUD shows, and the punch must
+	// survive that re-render. Only a label + timestamp that expires on its own, so nothing to tear down.
+	static string _partFiredLabel;
+	static RealTimeSince _partFiredSince;
+
+	static void FirePart( string label )
+	{
+		_partFiredLabel = label;
+		_partFiredSince = 0f;
+	}
+
+	static bool PartFired( string label )
+		=> _partFiredLabel is not null && _partFiredLabel == label && _partFiredSince < StripPunchSeconds;
 
 	IEnumerable<HotkeyHint> EditHotkeys
 	{
@@ -2607,6 +2623,7 @@
 		if ( SliderPos() is { } slp ) { hc.Add( (int)slp.x ); hc.Add( (int)slp.y ); }
 		hc.Add( (int)SliderStripWidth ); // the strip spans the panels' gap — a resize re-lays it
 		hc.Add( _stripFiredSignal );     // a strip control's press punch goes on / comes off
+		hc.Add( _partFiredLabel is not null && _partFiredSince < StripPunchSeconds ); // a part chip's click punch
 		hc.Add( (int)ToastBottom() );
 
 		// While a frozen-cursor gesture runs with a stamp up, the dot rides the shape — fold its projected

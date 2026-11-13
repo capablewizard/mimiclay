@@ -609,6 +609,12 @@
 
 			&:hover { sound-in: $sound-hover; }
 			&:active { sound-in: $sound-click; }
+
+			// Just clicked (EditHud.FirePart): the hotkey cards' press punch.
+			&.fired {
+				transform-origin: center;
+				animation: pop-spring 0.4s ease-out;
+			}
 		}
 	}
 

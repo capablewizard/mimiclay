@@ -1084,8 +1084,10 @@ public sealed class SdfRaymarchRenderer : Component, Component.ExecuteInEditor
 		// (before the DistanceSwitching early-out below) so clicking still works even with that feature off.
 		// …and never in OBJECT form: there the brush objects are the click targets, and a root box registered here
 		// (full distance, near face) out-scores their capped wire scores whenever the camera is close to the box.
-		bool brushObjects = GameObject.Components.Get<SdfSculpture>()?.BrushObjects == true;
-		if ( _curRadius > 0.01f && !brushObjects )
+		// …and not at all when a sibling SdfSculpture exists: it registers an exact field-marched surface hit, and a
+		// bounds box here would put the loose box straight back (empty corners clickable, big boxes stealing clicks).
+		bool hasSculpture = GameObject.Components.Get<SdfSculpture>() is not null;
+		if ( _curRadius > 0.01f && !hasSculpture )
 		{
 			// Not from INSIDE the box: the engine's box trace then reports a hit at distance zero, which out-scores
 			// every other click target in the view (brush wires, even the transform gizmo) while the camera is in here.

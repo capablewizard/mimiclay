@@ -233,11 +233,73 @@ public sealed partial class SdfSculpture : Component, Component.ExecuteInEditor,
 			return;
 		}
 
-		// List form: a loose bounds hitbox so the sculpture is clickable with its mesh renderer off. Never from
-		// INSIDE the bounds: the engine's box trace then reports a hit at distance zero, which out-scores every
-		// other click target in the view for as long as the camera sits inside this sculpture's box.
-		if ( !bounds.Contains( Gizmo.Transform.PointToLocal( Gizmo.CurrentRay.Position ) ) )
-			Gizmo.Hitbox.BBox( bounds );
+		// List form: the click target is the CLAY, not its bounds. A bounds box made every prop clickable through
+		// its empty corners and let a big loose box in front (a wheelbarrow, a shelf prop) steal clicks meant for
+		// the prop you could see behind it. March the cursor ray through the real field and register a hit at the
+		// visible surface; a near-miss within PickToleranceRad still counts, so tiny props stay easy to grab.
+		if ( EditorSurfaceHit( bounds, out float hitDistance ) )
+		{
+			float bias = Gizmo.Hitbox.DepthBias;
+			Gizmo.Hitbox.DepthBias = 1f;
+			Gizmo.Hitbox.TrySetHovered( hitDistance );
+			Gizmo.Hitbox.DepthBias = bias;
+		}
+	}
+
+	/// <summary>Angular slack (radians) for a list-form click: a ray passing this close to the clay still picks it.
+	/// ~0.003 ≈ 2 px at 1080p with a 90° view.</summary>
+	const float PickToleranceRad = 0.003f;
+
+	// Sphere-trace the editor cursor ray through this sculpture's field. Local space throughout (any object scale
+	// is fine — the march and its distances share one frame); the hit comes back as a WORLD distance along the ray.
+	// Starts at the bounds entry, never from inside the clay (a camera inside a prop must not pick it at distance 0).
+	bool EditorSurfaceHit( in BBox localBounds, out float worldDistance )
+	{
+		worldDistance = float.MaxValue;
+		var ray = Gizmo.CurrentRay;
+		if ( ray.Forward.LengthSquared < 0.5f )
+			return false;
+
+		var tx = WorldTransform;
+		var o = tx.PointToLocal( ray.Position );
+		var far = tx.PointToLocal( ray.Position + ray.Forward * 1000f );
+		var d = (far - o).Normal;
+		float localPerWorld = (far - o).Length / 1000f;
+
+		// Grow the box by the tolerance at its far side so near-misses at the silhouette still enter the march.
+		float tEnter = 0f;
+		if ( !localBounds.Contains( o ) && !localBounds.Grow( 1f ).Trace( new Ray( o, d ), 1e6f, out tEnter ) )
+			return false;
+
+		SdfModifiers.Apply( Brushes );
+		float t = MathF.Max( tEnter, 0f );
+		if ( t <= 0f && Sdf.SamplePrepared( Brushes, o ) < 0.1f )
+			return false; // cursor ray starts inside the clay
+
+		float tExit = tEnter + localBounds.Size.Length + 2f;
+		float bestMiss = float.MaxValue, bestMissT = 0f;
+		for ( int s = 0; s < 160 && t < tExit; s++ )
+		{
+			float dist = Sdf.SamplePrepared( Brushes, o + d * t );
+			if ( dist < 0.05f )
+			{
+				worldDistance = t / localPerWorld;
+				return true;
+			}
+
+			// Closest angular approach, for the near-miss tolerance.
+			float ang = dist / MathF.Max( t, 1f );
+			if ( ang < bestMiss ) { bestMiss = ang; bestMissT = t; }
+
+			t += MathF.Max( dist, 0.02f );
+		}
+
+		if ( bestMiss < PickToleranceRad ) // a ratio of two local lengths: scale-free
+		{
+			worldDistance = bestMissT / localPerWorld;
+			return true;
+		}
+		return false;
 	}
 
 	// GameObject.GetBounds() — which the editor's generic prefab-preview/asset-thumbnail camera framing
