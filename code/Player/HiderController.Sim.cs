@@ -130,6 +130,8 @@ public sealed partial class HiderController : ISimShapeSource
 		if ( sim is null )
 			return;
 
+		ApplyPendingSimShift(); // a client's origin rebase, once its commit has landed here
+
 		var existing = sim.Find( GameObject.Id );
 		var owner = Network.Owner?.Id ?? Connection.Local?.Id ?? Guid.Empty;
 		// Three kinds, in precedence: HELD (in a hunter's hands — the hold driver, owned by the holder; see SimHoldDriver),
@@ -428,6 +430,7 @@ public sealed partial class HiderController : ISimShapeSource
 	// Owner, every frame: point the sim's input at this pawn while it sim-walks.
 	void UpdateSimControl()
 	{
+		SendSimShift(); // our last origin rebase, to the host (see ShiftSimBody)
 		var sim = SimSystem;
 		if ( sim is null )
 			return;
@@ -1223,6 +1226,86 @@ public sealed partial class HiderController : ISimShapeSource
 		_simPushSent[id] = 0f;
 		sim.PredictPush( id, velocity ); // on a client: moves it now, not a round trip later (no-op on the host)
 		h.RequestSimPush( velocity );
+	}
+
+	// ── The origin rebase, in the sim ───────────────────────────────────────────────────────────────────────
+	// RecenterOriginOnShape moves the root to the shape's feet and counter-shifts the disguise; in the sim the root is
+	// only presentation, so the BODY has to move with it (SimWorld.ShiftBody) — on the owner at its commit, and on the
+	// host, which applies the owner's exact move (it includes the owner-only edit push, which the host can't derive from
+	// the brushes) once the commit it belongs to has landed there, so the host's hull and body change together too.
+
+	Vector3 _simShiftUnsent;   // owner (client): rebase moves applied to our predicted body, not yet sent to the host
+	Vector3 _simShiftPending;  // host: a client's rebase move, waiting for its commit to land here
+	int _simShiftSeq;          // host: the shape version that commit carries (SdfNetworkSync.Seq)
+	RealTimeSince _sinceSimShift;
+	const float SimShiftWait = 0.5f; // host: a commit that never lands (dropped, invalid) doesn't hold the move back longer
+
+	// Host: limits on a client's RequestSimShift. The largest shape is 96u across (SculptBounds.Extents = 48), and a rebase
+	// plus an edit push moves the origin by about that at most.
+	const float SimShiftMax = 128f;       // one request
+	const float SimShiftPerSecond = 256f; // all requests, drained at this rate
+	float _simShiftSpent;
+	RealTimeSince _sinceSimShiftSpend;
+
+	SdfNetworkSync ShapeSync => Components.Get<SdfNetworkSync>();
+
+	// Owner, at the rebase: move our copy of the body now; a client tells the host next frame (SendSimShift).
+	void ShiftSimBody( Vector3 worldDelta )
+	{
+		if ( SimSystem is not { Active: true } sim || sim.Find( GameObject.Id ) is null )
+			return;
+		sim.ShiftBody( GameObject.Id, worldDelta );
+		if ( !sim.IsAuthority )
+			_simShiftUnsent += worldDelta;
+	}
+
+	// Owner, per frame: send the rebase moves of the last frame, with the shape version of the commit they came from.
+	// A frame late on purpose: the sync's Committed handler (which bumps Seq) may run after ours.
+	void SendSimShift()
+	{
+		if ( _simShiftUnsent.IsNearZeroLength || IsProxy )
+			return;
+		var sync = ShapeSync;
+		RequestSimShift( _simShiftUnsent, sync.IsValid() ? sync.Seq : 0 );
+		_simShiftUnsent = Vector3.Zero;
+	}
+
+	/// <summary>Owner → host: our origin rebase moved the root (and our body) by this much (see the section notes).</summary>
+	[Rpc.Host]
+	void RequestSimShift( Vector3 delta, int seq )
+	{
+		if ( Rpc.Caller is { } caller && caller.Id != (Network.Owner?.Id ?? Guid.Empty) && !caller.IsHost )
+			return;
+
+		// The host takes the owner's word for the move (it can't derive the edit push), so bound what that word can do:
+		// one rebase can't exceed a shape's reach, and they can't be chained faster than real commits arrive. A refused
+		// move just leaves the sender's clay offset on everyone else's screen — an honest client never gets near either.
+		float len = delta.Length;
+		_simShiftSpent = MathF.Max( 0f, _simShiftSpent - _sinceSimShiftSpend * SimShiftPerSecond );
+		_sinceSimShiftSpend = 0f;
+		if ( !float.IsFinite( len ) || len > SimShiftMax || _simShiftSpent + len > SimShiftPerSecond )
+		{
+			Log.Warning( $"[sim] refused an origin shift of {len:0.#}u from {Rpc.Caller?.DisplayName}" );
+			return;
+		}
+		_simShiftSpent += len;
+
+		_simShiftPending += delta;
+		_simShiftSeq = Math.Max( _simShiftSeq, seq );
+		_sinceSimShift = 0f;
+		ApplyPendingSimShift();
+	}
+
+	// Host, per frame: apply a client's rebase move once the commit it belongs to has been applied here.
+	void ApplyPendingSimShift()
+	{
+		if ( _simShiftPending.IsNearZeroLength )
+			return;
+		var sync = ShapeSync;
+		if ( sync.IsValid() && sync.AppliedSeq < _simShiftSeq && _sinceSimShift < SimShiftWait )
+			return;
+		SimSystem?.ShiftBody( GameObject.Id, _simShiftPending );
+		_simShiftPending = Vector3.Zero;
 	}
 
 	/// <summary>Any machine → host: a hunter is pushing this pawn at this velocity (see <see cref="NoteSimPush"/>).</summary>

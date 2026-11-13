@@ -4,10 +4,17 @@ using System.Collections.Generic;
 namespace Mimiclay;
 
 /// <summary>
-/// Keeps the ACTIVE brush (the selection, or the stamp ghost) out of the map's solid geometry while it's
-/// being edited — the brush gets its own collision against the world, separate from the pawn's physics, so
-/// a wall stops the BRUSH without ever pushing the PROP (the pivot-pin hard rule: the shape never moves on
-/// its own).
+/// Keeps edited clay out of the map's solid geometry while it's being sculpted — the brushes get their own
+/// collision against the world, separate from the pawn's physics.
+///
+/// <b>Who gives way.</b> On the local player's OWN prop (see <see cref="HiderController.EditPushApplies"/>) the
+/// PROP gives way: the brush lands exactly where the tools put it in the shape's own space and the whole prop
+/// is pushed clear — like pressing clay against a table — so a shape can be added or grown against the floor,
+/// a wall, a ceiling, under yourself (see the Prop push section). This deliberately REVERSES the old rule that
+/// a wall stops the brush without ever pushing the prop (the user's call, 2026-11-13; the camera pivot pin
+/// still holds — nothing moves unless an edit asks it to). Everything else — scenery sculpted in place (pinned,
+/// host-simulated), a body in someone's hands, the charades leash, the stamp ghost riding the cursor, and any
+/// frame the prop can't be cleared (squeezed, too deep) — keeps the BRUSH clamp below: the brush stops.
 ///
 /// <b>Why.</b> Mid-drag the disguise's collider is stale by design (it only rebuilds on commit), so clay
 /// could be waved straight through a wall — and the COMMIT then embedded the pawn's dynamic rigidbody in
@@ -21,7 +28,9 @@ namespace Mimiclay;
 ///  1. SWEEP (anti-tunnel): a continuous translation is swept from its last clear state via
 ///     <c>Scene.Trace.Sweep</c> and collide-and-slides — advance to the hit, deflect the remainder along
 ///     the surface — so a drag pressed into the floor glides instead of sticking. This is what stops a
-///     fast flick (or a scroll-wheel depth step) crossing a thin wall in one frame.
+///     fast flick (or a scroll-wheel depth step) crossing a thin wall in one frame. (Pushing the prop, the
+///     same sweep finds the contact but the blocked remainder becomes PROP motion — see SweepPush; changes
+///     that aren't rigid travel are walked in by sub-steps instead — see PushBySubsteps.)
 ///  2. RESOLVE (the guarantee): the resulting state is actively DEPENETRATED with the native minimum-
 ///     translation query (<see cref="PhysicsBody.ComputePenetration"/>) against every nearby world body —
 ///     whatever residual overlap any path produced, the brush is pushed back out. Capped at
@@ -47,8 +56,13 @@ namespace Mimiclay;
 /// <see cref="MeshSampleContacts"/>. Convex bodies keep the native path untouched: each query runs where
 /// it's proven.
 ///
-/// Additive brushes only, by construction — BuildSweepShapes yields nothing for carves/cutouts, which can
-/// only remove your own clay and are harmless (and satisfying) to wave through walls.
+/// CARVE-AWARE (2026-11-13, <see cref="CarveAware"/>): every test builds a brush's shapes the way the real
+/// collider does (<see cref="SdfCollisionBuilder.BuildTestShapes"/> — exact, one carved hull, or voxel boxes
+/// where later subtracts bite), so clay a subtract has cut away never touches the world: it can't block a
+/// brush, push the prop or freeze a commit (a teapot with its base sliced flat used to read 8u deep in the
+/// floor and disable the whole clamp). Only additive brushes collide; but moving or growing a SUBTRACT changes
+/// what's carved — it can bring clay back inside a wall — so a subtract edit re-tests the whole shape (push,
+/// else revert the subtract). Cutouts and colours never change the collider and stay exempt.
 ///
 /// One instance per <see cref="SculptEditSession"/>, fed from the session's preview/commit funnel — the one
 /// choke every continuous edit path (gizmo drags, scrubs, stamp placement, HUD sliders, wheel push) runs
@@ -164,8 +178,10 @@ public sealed class BrushWorldClamp
 
 	/// <summary>Run the clamp for this frame's state of the active brush. Call AFTER the tools have mutated
 	/// it and BEFORE the surface rebuild, so the corrected state is what gets rendered, recorded and
-	/// streamed.</summary>
-	public void Apply( SdfSculpture target, SdfBrush brush )
+	/// streamed. <paramref name="allowPush"/>: the gesture may move the PROP instead of the brush (see the
+	/// Prop push section) — the stamp ghost passes false: it rides an absolute cursor every frame and keeps the
+	/// brush clamp.</summary>
+	public void Apply( SdfSculpture target, SdfBrush brush, bool allowPush = false )
 	{
 		if ( !target.IsValid() || brush is null )
 		{
@@ -191,7 +207,22 @@ public sealed class BrushWorldClamp
 			_lastHash = 0;
 		}
 
-		// A disabled or subtractive brush is exempt — and DROPS its snapshot, so a Subtract→Add conversion
+		// An operation change (Subtract ↔ Add) re-baselines: a snapshot of the other kind is no pose to fall back to.
+		if ( _lastClear is not null && _lastClear.Operation != brush.Operation )
+		{
+			_lastClear = null;
+			_lastHash = 0;
+		}
+
+		// A SUBTRACT changes what is carved, so moving or growing one can bring back clay that sits inside a wall —
+		// the whole shape is re-tested, with the same push-or-fallback rules (see ApplyCarve).
+		if ( CarveAware && brush.Enabled && brush.Operation == SdfOperation.Subtract && !brush.IsModifier )
+		{
+			ApplyCarve( target, brush, allowPush );
+			return;
+		}
+
+		// A disabled or non-solid brush (cutout, colour) is exempt — and DROPS its snapshot, so a Subtract→Add conversion
 		// (or an eye re-enable) re-baselines instead of teleporting the brush back to wherever it sat when
 		// the stale snapshot was taken.
 		if ( !brush.Enabled || brush.Operation != SdfOperation.Add )
@@ -214,12 +245,33 @@ public sealed class BrushWorldClamp
 
 		EnsureScratch( scene.PhysicsWorld ); // both phases bake shapes onto it
 
+		var prev = _lastClear;
+
+		// 0) Prop push: the brush stays exactly where the tools put it and the whole prop moves clear instead.
+		//    Falls through to the brush clamp below when it can't (squeezed, too deep for one frame) — possibly
+		//    after a capped partial push, in which case the brush clamp runs in the prop's new placement.
+		if ( allowPush && PushTarget( target ) is { } pusher )
+		{
+			_pushMoving.Clear();
+			_pushMoving.Add( brush );
+			_pushClear.Clear();
+			if ( prev is not null )
+				_pushClear.Add( prev );
+			var sweep = prev is not null ? SweepPush( scene, target, brush, prev ) : null;
+			if ( PushGesture( scene, target, pusher, _pushMoving, prev is not null ? _pushClear : null, sweep ) )
+			{
+				RelaxPush( scene, target, pusher );
+				_lastClear = brush.Copy();
+				_lastHash = GeometryHash( brush );
+				return;
+			}
+		}
+
 		// 1) Anti-tunnel: a continuous translation sweeps from the last clear state and deflects along
 		//    whatever it hits, so travel can never cross a wall and drags glide along surfaces. A
 		//    single-spline-point gesture comes back fully constrained against its own curve (pointGesture)
 		//    — for those the endpoint may only be VERIFIED, never shifted: no gesture on one point is ever
 		//    allowed to move the others.
-		var prev = _lastClear;
 		bool pointGesture = prev is not null && SweepPhase( scene, target, brush, prev );
 
 		// 2) The guarantee: actively depenetrate whatever state the tools (and the slide) produced. This is
@@ -242,6 +294,57 @@ public sealed class BrushWorldClamp
 		_lastHash = GeometryHash( brush );
 	}
 
+	// The carve form of Apply. A subtract has no collision of its own — what it changes is the CARVED shape of the
+	// additive brushes before it (the world test is carve-aware: TestShapes), so the test is always the whole
+	// shape. On a pushable prop the prop gives way (PushGesture, sub-stepped: a carve is never a rigid travel);
+	// otherwise, or when it can't, a frame that would leave clay in the world reverts the subtract to its last
+	// clear pose. Started blocked (nothing clear to fall back to) it is free until it first comes up clear.
+	void ApplyCarve( SdfSculpture target, SdfBrush brush, bool allowPush )
+	{
+		int hash = GeometryHash( brush );
+		if ( hash == _lastHash )
+			return;
+
+		var scene = target.Scene;
+		if ( !scene.IsValid() )
+		{
+			_lastHash = hash;
+			return;
+		}
+		EnsureScratch( scene.PhysicsWorld );
+
+		var prev = _lastClear;
+		bool ok;
+		if ( allowPush && PushTarget( target ) is { } pusher )
+		{
+			_pushMoving.Clear();
+			_pushMoving.Add( brush );
+			_pushClear.Clear();
+			if ( prev is not null )
+				_pushClear.Add( prev );
+			ok = PushGesture( scene, target, pusher, _pushMoving, prev is not null ? _pushClear : null, null );
+			if ( ok )
+				RelaxPush( scene, target, pusher );
+		}
+		else
+			ok = WholeClear( scene, target );
+
+		if ( ok || prev is null )
+		{
+			if ( ok )
+				_lastClear = brush.Copy();
+			_lastHash = GeometryHash( brush );
+			return;
+		}
+
+		RestorePose( brush, prev );
+		_lastHash = GeometryHash( brush );
+	}
+
+	// Is the whole sculpture clear of the world where it stands (resting contact within the deadband allowed)?
+	bool WholeClear( Scene scene, SdfSculpture target )
+		=> ResolveWhole( scene, target, target.WorldTransform, Vector3.Zero, out var offset ) && offset.IsNearZeroLength;
+
 	// ── Group clamp (multi-selection) ────────────────────────────────────────────────────────────────
 
 	/// <summary>The multi-selection form of <see cref="Apply"/>: clamp a whole GROUP of brushes as ONE
@@ -254,7 +357,7 @@ public sealed class BrushWorldClamp
 	/// refuses to swap in the embedded collider (see <see cref="EmbeddedInWorld"/>) — so the prop's physics
 	/// silently freezes on its last good shape while the visible clay keeps moving. Pass a null/empty list
 	/// to drop the watch (the group path's equivalent of <c>Apply(target, null)</c>).</summary>
-	public void ApplyGroup( SdfSculpture target, IReadOnlyList<SdfBrush> brushes )
+	public void ApplyGroup( SdfSculpture target, IReadOnlyList<SdfBrush> brushes, bool allowPush = false )
 	{
 		if ( !target.IsValid() || brushes is not { Count: > 0 } || !ClampsApply( target ) )
 		{
@@ -270,16 +373,18 @@ public sealed class BrushWorldClamp
 		_groupAll.Clear();
 		_groupAll.AddRange( brushes );
 		_groupSolid.Clear();
+		bool anyCarver = false;
 		foreach ( var b in brushes )
 		{
 			if ( b is { Enabled: true, Operation: SdfOperation.Add } )
 				_groupSolid.Add( b );
+			anyCarver |= CarveAware && b is { Enabled: true, Operation: SdfOperation.Subtract };
 		}
 
-		if ( _groupSolid.Count == 0 )
+		if ( _groupSolid.Count == 0 && !anyCarver )
 		{
 			ClearGroupWatch();
-			return; // nothing in the group can embed — carves are free to wave through walls, as ever
+			return; // nothing in the group can embed or uncover clay — cutouts and colours wave through walls freely
 		}
 
 		// Re-baseline whenever the MEMBERSHIP changes — identity-keyed, like the single-brush watch, so an
@@ -305,10 +410,23 @@ public sealed class BrushWorldClamp
 
 		EnsureScratch( scene.PhysicsWorld );
 
+		// Prop push first, exactly as Apply — the group keeps its formation AND its requested place, the prop
+		// moves. (No sweep: a deep group change is walked in sub-steps instead — see PushGesture.)
+		if ( allowPush && PushTarget( target ) is { } pusher
+			&& PushGesture( scene, target, pusher, _groupAll, _groupClear.Count == _groupAll.Count ? _groupClear : null, null ) )
+		{
+			RelaxPush( scene, target, pusher );
+			SnapshotGroup();
+			_groupHash = GroupHash( _groupAll );
+			return;
+		}
+
 		// No sweep phase here (unlike Apply): the members of a group gesture each travel the same short
 		// per-frame step, so the endpoint resolve below — which has no start-state sensitivity — is the
 		// whole guarantee. Tunnelling would need one frame's step to exceed the thinnest wall.
-		if ( ResolveGroup( scene, target ) )
+		// A group carrying SUBTRACTS also changes what is carved elsewhere: after its own resolve (which can
+		// shift it), the whole shape must stand clear too, or it's the revert.
+		if ( ResolveGroup( scene, target ) && (!anyCarver || WholeClear( scene, target )) )
 		{
 			SnapshotGroup();
 			_groupHash = GroupHash( _groupAll );
@@ -348,7 +466,7 @@ public sealed class BrushWorldClamp
 			var correction = Vector3.Zero;
 			foreach ( var b in _groupSolid )
 			{
-				if ( !SdfCollisionBuilder.BuildSweepShapes( b, _scratch, InsetFor( b ), _samples ) )
+				if ( !TestShapes( target, b, _scratch, InsetFor( b ), _samples ) )
 					continue; // no collision shapes — nothing that can embed
 
 				// Per-shape deadband, exactly as ResolveEndpoint splits it: solids run full-size shapes so
@@ -464,6 +582,459 @@ public sealed class BrushWorldClamp
 		ClearGroupWatch();
 		_groupAll.Clear();
 		_groupSolid.Clear();
+		_pushMoving.Clear();
+		_pushClear.Clear();
+		_pushRequested.Clear();
+		_wholeSolid.Clear();
+		_wholeBodies.Clear();
+	}
+
+	// ── Prop push ────────────────────────────────────────────────────────────────────────────────────
+	// On the local player's own prop, a gesture that runs into the world moves the PROP, not the brush: the
+	// brush (or group) lands exactly where the tools put it in the shape's own space, and the whole prop is
+	// pushed clear — clay pressed onto a table. Same contact maths as the brush clamp, but over EVERY solid
+	// brush of the sculpture, because moving the prop to clear one part can press another part into a different
+	// surface (a scale against the floor under a low shelf). The correction travels through
+	// HiderController.ApplyEditPush (the disguise moves; body + sim follow at the commit's rebase).
+	//
+	// Per frame the prop moves at most MaxResolve (+ the sweep's share, also capped), so a deep request — the
+	// gizmo's absolute screen-plane write far below the floor, a fast scale — PROGRESSES at that rate instead of
+	// failing: the step the shape wants is taken with the moving brushes back at their last clear pose (proved
+	// clear there), and the brush clamp handles the rest of this frame. Squeezed between opposing surfaces, no
+	// step proves clear and it is simply the brush clamp, as before. Every accepted state is proved clear for the
+	// whole shape; nothing here ever accepts an embed.
+
+	// (The session measures gesture input in a frame that EXCLUDES the uncommitted push — SculptEditSession.
+	// EditFrame. The gizmo writes absolute cursor-mapped positions, and measured in the moving frame a blocked
+	// drag would chase the prop upward forever.)
+
+	// Lists for the push path (no per-frame allocation on the success path).
+	readonly List<SdfBrush> _pushMoving = new();
+	readonly List<SdfBrush> _pushClear = new();
+	readonly List<SdfBrush> _pushRequested = new();
+	readonly List<SdfBrush> _wholeSolid = new();
+	readonly List<PhysicsBody> _wholeBodies = new();
+	double _wholeBodiesTime = -1; // the frame (Time.NowDouble) _wholeBodies was gathered in, for…
+	BBox _wholeBodiesBox;         // …this box around…
+	SdfSculpture _wholeBodiesTarget; // …this sculpture (see ResolveWhole)
+
+	// Who to push, or null for the brush clamp: only the local player's own walking prop (see
+	// HiderController.EditPushApplies) — scenery sculpted in place is pinned and host-simulated, a hunter face
+	// is a trigger (ClampsApply already said no), a menu head has no pawn.
+	static HiderController PushTarget( SdfSculpture target )
+	{
+		var hider = target.GameObject.Root.Components.Get<HiderController>();
+		return hider.IsValid() && hider.EditPushApplies( target ) ? hider : null;
+	}
+
+	// Sub-step length (world units of brush change) for walking a non-sweepable change in: each step's
+	// penetration stays shallow, where the minimum-translation direction is trustworthy — and no step can carry
+	// clay across a wall thicker than this.
+	const float PushSubstep = 4f;
+	const int MaxPushSubsteps = 24;
+
+	// True = the moving brushes are in a proved-clear state with the prop pushed clear (or needing nothing) — as
+	// requested, or, for a sub-stepped change, as far toward it as one frame's push allows (the next frame's
+	// request carries on from there). False = no progress possible this way; the prop may have taken a
+	// proved-clear partial step, and the caller runs the brush clamp from the (still valid) last clear pose in the
+	// prop's new placement. `clear` (index-parallel to `moving`) may be null — started blocked: only a direct
+	// resolve, no step without a pose to prove it with. `sweepPush` non-null = a rigid travel the sweep measured
+	// (see SweepPush); null = anything else (shape changes, mirrored brushes, groups), which is sub-stepped.
+	bool PushGesture( Scene scene, SdfSculpture target, HiderController pusher, List<SdfBrush> moving,
+		List<SdfBrush> clear, Vector3? sweepPush )
+	{
+		var tx = target.WorldTransform;
+		bool haveClear = clear is not null && clear.Count == moving.Count;
+
+		if ( sweepPush is null )
+		{
+			// Small changes (every ordinary drag frame) resolve directly; a big non-rigid change is walked in.
+			float change = haveClear ? ChangeSize( moving, clear, tx.Scale.x ) : 0f;
+			if ( !haveClear || change <= PushSubstep * 2f || change > SweepMaxTravel )
+			{
+				if ( ResolveWhole( scene, target, tx, Vector3.Zero, out var direct ) )
+				{
+					Push( pusher, direct );
+					return true;
+				}
+				if ( !haveClear )
+					return false;
+			}
+			return haveClear && change <= SweepMaxTravel && PushBySubsteps( scene, target, pusher, moving, clear, tx, change );
+		}
+
+		Vector3 want;
+		if ( sweepPush.Value.Length <= MaxResolve )
+		{
+			if ( ResolveWhole( scene, target, tx, sweepPush.Value, out var offset ) )
+			{
+				Push( pusher, offset );
+				return true;
+			}
+			want = offset; // where the shape was heading when it ran out of budget
+		}
+		else
+			want = sweepPush.Value; // the sweep's verdict is trustworthy at any depth; only the step is capped
+
+		if ( !haveClear )
+			return false;
+
+		var step = want.ClampLength( MaxResolve );
+		if ( step.Length < SlideSkin * 2f )
+			return false;
+
+		// Prove the step with the moving brushes at their last clear pose (where this frame's brush clamp starts
+		// from), then put the requested pose back for that clamp to work on.
+		_pushRequested.Clear();
+		foreach ( var b in moving )
+			_pushRequested.Add( b.Copy() );
+		for ( int i = 0; i < moving.Count; i++ )
+			RestorePose( moving[i], clear[i] );
+		bool ok = ResolveWhole( scene, target, tx, step, out var stepped );
+		for ( int i = 0; i < moving.Count; i++ )
+			RestorePose( moving[i], _pushRequested[i] );
+
+		if ( ok )
+			Push( pusher, stepped );
+		return false;
+	}
+
+	// Most push one frame may take while walking a change in (see PushBySubsteps) — enough for a brisk scale
+	// against the floor, small enough that the prop visibly rides rather than jumps.
+	const float MaxPushPerFrame = 2f * MaxResolve;
+
+	// Walk a non-rigid change (a scale, a rotation, a mirrored brush's move, a group) in from the last clear pose:
+	// the moving brushes are interpolated toward the request in steps of ~PushSubstep, and at each step the whole
+	// shape is resolved from the push so far — shallow every time, so every correction points the right way. Stops
+	// at the first step that can't be cleared (squeezed: the last proved step stands) or once the frame's push
+	// budget is spent; the brushes are left at the furthest proved step, the next frame's request continues from
+	// there. False = not even the first step cleared (the caller falls back to the brush clamp).
+	bool PushBySubsteps( Scene scene, SdfSculpture target, HiderController pusher, List<SdfBrush> moving,
+		List<SdfBrush> clear, in Transform tx, float change )
+	{
+		for ( int i = 0; i < moving.Count; i++ )
+		{
+			if ( !Lerpable( clear[i], moving[i] ) )
+				return false; // a discrete change (shape, mirror flag, point count) has no in-between
+		}
+
+		int n = Math.Clamp( (int)MathF.Ceiling( change / PushSubstep ), 1, MaxPushSubsteps );
+
+		_pushRequested.Clear();
+		foreach ( var b in moving )
+			_pushRequested.Add( b.Copy() );
+
+		var push = Vector3.Zero;
+		float reached = 0f;
+		for ( int k = 1; k <= n; k++ )
+		{
+			float t = k / (float)n;
+			for ( int i = 0; i < moving.Count; i++ )
+				LerpPose( moving[i], clear[i], _pushRequested[i], t );
+			if ( !ResolveWhole( scene, target, tx, push, out var at ) )
+				break;
+			push = at;
+			reached = t;
+			if ( push.Length > MaxPushPerFrame )
+				break;
+		}
+
+		// Land on the furthest proved step (the loop may have left the brushes on a failed one).
+		for ( int i = 0; i < moving.Count; i++ )
+		{
+			if ( reached >= 1f )
+				RestorePose( moving[i], _pushRequested[i] );
+			else if ( reached > 0f )
+				LerpPose( moving[i], clear[i], _pushRequested[i], reached );
+			else
+				RestorePose( moving[i], _pushRequested[i] ); // no progress: the request goes to the brush clamp
+		}
+
+		if ( reached <= 0f )
+			return false;
+		Push( pusher, push );
+		return true;
+	}
+
+	// How far (world units, roughly) a change from `a` to `b` moves clay: translation, growth, and the arc a
+	// rotation sweeps at the brush's extent; a spline by its most-moved point. Sizes the sub-steps.
+	static float ChangeSize( List<SdfBrush> now, List<SdfBrush> was, float scale )
+	{
+		float worst = 0f;
+		for ( int i = 0; i < now.Count; i++ )
+		{
+			var b = now[i];
+			var a = was[i];
+			float d;
+			if ( b.Shape == SdfShape.Spline && b.Points is { } bp && a.Points is { } ap && bp.Count == ap.Count )
+			{
+				d = 0f;
+				for ( int j = 0; j < bp.Count; j++ )
+					d = MathF.Max( d, (P( bp[j] ) - P( ap[j] )).Length + MathF.Abs( bp[j].w - ap[j].w ) );
+			}
+			else
+			{
+				float extent = MathF.Max( b.Size.x, MathF.Max( b.Size.y, b.Size.z ) );
+				var ds = b.Size - a.Size;
+				d = (b.Position - a.Position).Length
+					+ MathF.Max( MathF.Abs( ds.x ), MathF.Max( MathF.Abs( ds.y ), MathF.Abs( ds.z ) ) )
+					+ Rotation.Difference( a.Rotation, b.Rotation ).Angle().DegreeToRadian() * extent
+					+ (MathF.Abs( b.Slice - a.Slice ) + MathF.Abs( b.Taper - a.Taper )) * extent;
+			}
+			worst = MathF.Max( worst, d );
+		}
+		return worst * scale;
+	}
+
+	// Can a pose be interpolated between these two? Only continuous parameters may differ.
+	static bool Lerpable( SdfBrush a, SdfBrush b ) =>
+		a.Shape == b.Shape && a.CrossSection == b.CrossSection && a.Text == b.Text && a.Font == b.Font
+		&& a.MirrorX == b.MirrorX && a.MirrorY == b.MirrorY && a.MirrorZ == b.MirrorZ
+		&& a.SplineClosed == b.SplineClosed
+		&& (a.Points?.Count ?? -1) == (b.Points?.Count ?? -1);
+
+	// The geometric pose a fraction `t` of the way from `a` to `b`, written onto `dst` (points in place, as
+	// RestorePose does — the gizmo may hold the live list).
+	static void LerpPose( SdfBrush dst, SdfBrush a, SdfBrush b, float t )
+	{
+		dst.Position = Vector3.Lerp( a.Position, b.Position, t );
+		dst.Rotation = Rotation.Slerp( a.Rotation, b.Rotation, t );
+		dst.Size = Vector3.Lerp( a.Size, b.Size, t );
+		dst.Slice = MathX.Lerp( a.Slice, b.Slice, t );
+		dst.Taper = MathX.Lerp( a.Taper, b.Taper, t );
+		dst.Curvature = MathX.Lerp( a.Curvature, b.Curvature, t );
+		if ( a.Points is { } ap && b.Points is { } bp && dst.Points is { } dp && dp.Count == ap.Count && bp.Count == ap.Count )
+		{
+			for ( int i = 0; i < dp.Count; i++ )
+				dp[i] = ap[i] + (bp[i] - ap[i]) * t;
+		}
+	}
+
+	// The push gives way again: once a gesture's state stands clear, the prop comes BACK toward where it was before
+	// the push, as far as contact allows — draw the brush back out of the floor and the prop settles down with it,
+	// the brush staying on the surface, instead of hanging in the air until the release drops it. Stepped (each
+	// step shallow, resolved by the same whole-shape test, so every state it lands on is proved clear) and only
+	// ever shortening the held push — a contact that would send it somewhere else ends the walk.
+	const float RelaxStep = 4f;
+	const int RelaxSteps = 4;
+
+	void RelaxPush( Scene scene, SdfSculpture target, HiderController pusher )
+	{
+		for ( int i = 0; i < RelaxSteps; i++ )
+		{
+			var held = pusher.EditPushWorld;
+			if ( held.Length < 0.05f )
+				return;
+			var back = -held.ClampLength( RelaxStep );
+			if ( !ResolveWhole( scene, target, target.WorldTransform, back, out var offset ) )
+				return;
+			if ( (held + offset).Length > held.Length - 0.02f )
+				return; // the contact takes it all back (resting on what pushed it) — settled
+			pusher.ApplyEditPush( offset );
+		}
+	}
+
+	static void Push( HiderController pusher, Vector3 offset )
+	{
+		if ( !offset.IsNearZeroLength )
+			pusher.ApplyEditPush( offset );
+	}
+
+	// The anti-tunnel phase in push form: the active brush's travel since its last clear state is swept exactly
+	// as the slide does (SweepPhase), but nothing is written to the brush — the part of the travel the world
+	// blocked (requested end minus where the slide got to) comes back as PROP motion, world space. That keeps a
+	// fast flick from crossing a thin wall (the contact is found by the sweep, not guessed by an MTV from the
+	// far side), and turns "slide along the wall" into "push away from the wall". Shape changes and multi-point
+	// spline edits have no travel to sweep: zero, the resolve's own direction drives them.
+	// Null = not a rigid travel (shape changes, a mirrored brush — its copies travel in reflected directions, which
+	// one rigid sweep can't represent — teleports): PushGesture sub-steps those instead.
+	Vector3? SweepPush( Scene scene, SdfSculpture target, SdfBrush brush, SdfBrush prev )
+	{
+		var tx = target.WorldTransform;
+		if ( brush.EffectiveMirrorX || brush.EffectiveMirrorY || brush.EffectiveMirrorZ )
+			return null;
+
+		if ( brush.Shape != SdfShape.Spline )
+		{
+			if ( !SameShapeIgnoringPosition( brush, prev ) )
+				return null;
+			var delta = brush.Position - prev.Position;
+			if ( delta.IsNearZeroLength )
+				return Vector3.Zero;
+			if ( delta.Length > SweepMaxTravel )
+				return null;
+			if ( !TestShapes( target, brush, _scratch, 0f ) )
+				return Vector3.Zero;
+			var slid = SlideAnchor( scene, target, prev.Position, brush.Position );
+			if ( slid is null && TestShapes( target, brush, _scratch, SweepStartInset ) )
+				slid = SlideAnchor( scene, target, prev.Position, brush.Position );
+			return slid is { } s ? tx.PointToWorld( s ) - tx.PointToWorld( brush.Position ) : Vector3.Zero;
+		}
+
+		if ( prev.Points is not { Count: > 0 } pp || brush.Points is not { } cp || cp.Count != pp.Count
+			|| brush.Curvature != prev.Curvature || brush.SplineClosed != prev.SplineClosed
+			|| brush.MirrorX != prev.MirrorX || brush.MirrorY != prev.MirrorY || brush.MirrorZ != prev.MirrorZ )
+			return Vector3.Zero;
+
+		int moved = -1;
+		bool anyRadius = false, uniform = true;
+		var delta0 = P( cp[0] ) - P( pp[0] );
+		for ( int i = 0; i < cp.Count; i++ )
+		{
+			bool wDiff = MathF.Abs( cp[i].w - pp[i].w ) > 1e-4f;
+			anyRadius |= wDiff;
+			var di = P( cp[i] ) - P( pp[i] );
+			if ( (di - delta0).Length > 1e-3f )
+				uniform = false;
+			if ( wDiff || !di.IsNearZeroLength )
+				moved = moved == -1 ? i : -2;
+		}
+
+		if ( uniform && !anyRadius && !delta0.IsNearZeroLength && delta0.Length <= SweepMaxTravel )
+		{
+			Vector3? slid = null;
+			if ( TestShapes( target, brush, _scratch, 0f ) )
+				slid = SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) );
+			if ( slid is null && TestShapes( target, brush, _scratch, SplineTubeInset ) )
+				slid = SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) );
+			return slid is { } s ? tx.PointToWorld( s ) - tx.PointToWorld( P( cp[0] ) ) : Vector3.Zero;
+		}
+
+		if ( moved < 0 )
+			return Vector3.Zero;
+
+		// One point moved and/or resized: its own sphere slides (and lifts out of a grown overlap); whatever of
+		// that the world refused becomes the push. The curve between points is the whole-shape resolve's job.
+		var from3 = P( pp[moved] );
+		var to3 = P( cp[moved] );
+		if ( (to3 - from3).Length > SweepMaxTravel )
+			return Vector3.Zero;
+		var fixed3 = SlidePointSphere( scene, target, from3, to3, cp[moved].w );
+		return tx.PointToWorld( fixed3 ) - tx.PointToWorld( to3 );
+	}
+
+	// The WHOLE sculpture's depenetration, from a starting world offset: every enabled additive brush (groups
+	// as their members, splines with their tube grace), contacts pooled by deficit into ONE correction exactly
+	// as ResolveGroup does. True = clear at `offset` (possibly corrected); false = needed more than MaxResolve
+	// beyond `start`, or still touching after the passes — `offset` then says where it was heading.
+	bool ResolveWhole( Scene scene, SdfSculpture target, in Transform tx, Vector3 start, out Vector3 offset )
+	{
+		offset = start;
+		if ( target.Brushes is not { Count: > 0 } all )
+			return true;
+
+		_wholeSolid.Clear();
+		foreach ( var b in all )
+		{
+			if ( b is { Enabled: true, Operation: SdfOperation.Add } && !b.IsModifier )
+				_wholeSolid.Add( b );
+		}
+		// (Bounds from the FULL list: TryGetBounds applies the modifiers to what it's given, and a filtered list
+		// would rewrite the brushes' runtime smoothing floors without their Smooth layers.)
+		if ( _wholeSolid.Count == 0 || !Sdf.TryGetBounds( all, out var lb ) )
+			return true;
+
+		// The world bodies near the whole shape, gathered ONCE (padded by everything this call may move it), so
+		// per-brush work only starts for brushes that are actually near something — on a typical frame most
+		// of a sculpture is in open air or resting well inside the deadband.
+		float reach = (lb.Maxs - lb.Mins).Length * 0.5f * tx.Scale.x + start.Length + MaxResolve + 16f;
+		var centre = tx.PointToWorld( lb.Center );
+		var want = new BBox( centre - reach, centre + reach );
+		// Enumerating every body in the world is most of a call's fixed cost, and one frame can resolve several
+		// times (direct, sub-steps, the step proof) — so the gather is reused within the frame while it covers
+		// what's asked (gathered with a frame's worth of extra reach).
+		bool reuse = _wholeBodiesTime == Time.NowDouble && ReferenceEquals( _wholeBodiesTarget, target )
+			&& _wholeBodiesBox.Contains( want );
+		if ( !reuse )
+		{
+			_wholeBodiesTime = Time.NowDouble;
+			_wholeBodiesTarget = target;
+			_wholeBodiesBox = new BBox( centre - (reach + MaxPushPerFrame), centre + (reach + MaxPushPerFrame) );
+			_wholeBodies.Clear();
+			foreach ( var body in WorldBodies( scene, target, _wholeBodiesBox, _scratch ) )
+				_wholeBodies.Add( body );
+		}
+		if ( _wholeBodies.Count == 0 )
+			return true;
+
+		for ( int iter = 0; iter < ResolveIterations; iter++ )
+		{
+			var at = new Transform( tx.Position + offset, tx.Rotation, tx.Scale );
+			bool any = false;
+			var correction = Vector3.Zero;
+
+			foreach ( var b in _wholeSolid )
+			{
+				if ( !NearAnyBody( b, tx, offset ) )
+					continue;
+				if ( !TestShapes( target, b, _scratch, InsetFor( b ), _samples ) )
+					continue;
+
+				float deadband = b.Shape == SdfShape.Spline ? 0f : RestTolerance; // as ResolveGroup
+				// A contact past the deadband is pushed back to just INSIDE it, not all the way clear. Pushed clear,
+				// a brush pressed steadily into a surface sank through the whole deadband before each correction and
+				// then jumped back out: the prop rode in ~1u jolts every few frames. Held just inside, each frame's
+				// push is exactly that frame's travel. (Still resting contact, so commits don't build an embed.)
+				float settle = SlideSkin - deadband;
+				var query = QueryBounds( _scratch, tx, offset );
+
+				bool sawMesh = false;
+				foreach ( var body in _wholeBodies )
+				{
+					if ( !body.IsValid() || !query.Overlaps( body.GetBounds() ) )
+						continue;
+					ShapeKinds( body, out bool convex, out bool mesh );
+					sawMesh |= mesh;
+
+					if ( convex && body.ComputePenetration( _scratch, at, out var dir, out var dist ) && dist > deadband )
+					{
+						any = true;
+						Deficit( ref correction, -dir, dist + settle );
+					}
+
+					if ( mesh && MeshSampleContacts( scene, target, body, tx, offset, _samples, deadband, ref correction, settle ) )
+						any = true;
+				}
+
+				if ( sawMesh && StraddleContacts( scene, target, tx, offset, _samples, deadband, ref correction, settle ) )
+					any = true;
+			}
+
+			if ( !any )
+				return true;
+
+			offset += correction;
+			if ( (offset - start).Length > MaxResolve )
+				return false;
+		}
+
+		return false;
+	}
+
+	// Cheap pre-filter for ResolveWhole: could this brush's shapes (all mirror copies, at `offset`) reach any of
+	// the gathered bodies? From its local AABB — reflected per mirror axis, as Sdf.TryGetBounds does — as a
+	// bounding sphere, so no shapes are built for brushes nowhere near the world. Groups always test (their
+	// members carry the bounds).
+	bool NearAnyBody( SdfBrush b, in Transform tx, Vector3 offset )
+	{
+		if ( b.Shape == SdfShape.Group )
+			return true;
+
+		b.LocalBounds( out var lo, out var hi, includeBlend: false );
+		// Reflection across a mirror plane: the union of [lo, hi] and [-hi, -lo] on that axis.
+		if ( b.EffectiveMirrorX ) { float l = lo.x, h = hi.x; lo.x = MathF.Min( l, -h ); hi.x = MathF.Max( h, -l ); }
+		if ( b.EffectiveMirrorY ) { float l = lo.y, h = hi.y; lo.y = MathF.Min( l, -h ); hi.y = MathF.Max( h, -l ); }
+		if ( b.EffectiveMirrorZ ) { float l = lo.z, h = hi.z; lo.z = MathF.Min( l, -h ); hi.z = MathF.Max( h, -l ); }
+
+		var c = tx.PointToWorld( (lo + hi) * 0.5f ) + offset;
+		float r = (hi - lo).Length * 0.5f * tx.Scale.x + 16f;
+		var box = new BBox( c - r, c + r );
+		foreach ( var body in _wholeBodies )
+		{
+			if ( body.IsValid() && box.Overlaps( body.GetBounds() ) )
+				return true;
+		}
+		return false;
 	}
 
 	// ── Backstop ─────────────────────────────────────────────────────────────────────────────────────
@@ -493,7 +1064,7 @@ public sealed class BrushWorldClamp
 			var discard = Vector3.Zero;
 			foreach ( var b in brushes )
 			{
-				if ( !SdfCollisionBuilder.BuildSweepShapes( b, body, BackstopInset, samples ) )
+				if ( !TestShapes( sculpture, b, body, BackstopInset, samples ) )
 					continue;
 
 				var query = QueryBounds( body, tx, Vector3.Zero );
@@ -548,10 +1119,10 @@ public sealed class BrushWorldClamp
 			// retries at SweepStartInset rather than abandoning the slide: without the retry, the raw
 			// screen-plane write (which can sit far below the floor) goes to resolve-only and the frame
 			// REVERTS, eating the drag's lateral motion — the square-handle "stuck to the floor" bug.
-			if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, 0f ) )
+			if ( !TestShapes( target, brush, _scratch, 0f ) )
 				return false;
 			var slid = SlideAnchor( scene, target, prev.Position, brush.Position );
-			if ( slid is null && SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SweepStartInset ) )
+			if ( slid is null && TestShapes( target, brush, _scratch, SweepStartInset ) )
 				slid = SlideAnchor( scene, target, prev.Position, brush.Position );
 			if ( slid is { } pos )
 				brush.Position = pos;
@@ -589,9 +1160,9 @@ public sealed class BrushWorldClamp
 			// within the grace starts solid at full size, so retry with the graced shapes it was accepted
 			// under rather than losing the slide entirely.
 			Vector3? slid = null;
-			if ( SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, 0f ) )
+			if ( TestShapes( target, brush, _scratch, 0f ) )
 				slid = SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) );
-			if ( slid is null && SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset ) )
+			if ( slid is null && TestShapes( target, brush, _scratch, SplineTubeInset ) )
 				slid = SlideAnchor( scene, target, P( pp[0] ), P( cp[0] ) );
 			if ( slid is not { } anchor )
 				return false;
@@ -670,7 +1241,7 @@ public sealed class BrushWorldClamp
 		bool TestAt( Vector3 p, float w )
 		{
 			pts[idx] = new Vector4( p.x, p.y, p.z, w );
-			return !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, SplineTubeInset, _samples )
+			return !TestShapes( target, brush, _scratch, SplineTubeInset, _samples )
 				|| ShapesClear( scene, target ); // no collision shapes at all = nothing can clip
 		}
 
@@ -1048,7 +1619,7 @@ public sealed class BrushWorldClamp
 			var correction = Vector3.Zero;
 			foreach ( var b in solids )
 			{
-				if ( !SdfCollisionBuilder.BuildSweepShapes( b, _scratch, InsetFor( b ), _samples ) )
+				if ( !TestShapes( target, b, _scratch, InsetFor( b ), _samples ) )
 					continue;
 				any |= RegionContacts( target, tx, offset, _samples, 0f, ref correction );
 			}
@@ -1074,7 +1645,7 @@ public sealed class BrushWorldClamp
 	// shift would move points the player isn't touching.
 	bool ResolveEndpoint( Scene scene, SdfSculpture target, SdfBrush brush, bool allowShift )
 	{
-		if ( !SdfCollisionBuilder.BuildSweepShapes( brush, _scratch, InsetFor( brush ), _samples ) )
+		if ( !TestShapes( target, brush, _scratch, InsetFor( brush ), _samples ) )
 			return true; // no collision shapes — nothing can embed
 
 		if ( !allowShift )
@@ -1222,7 +1793,7 @@ public sealed class BrushWorldClamp
 	/// overlap/MTV pair, which returns nothing at all for triangle-mesh shapes (verified with
 	/// mimi_clamp_probe). Each sample of the scratch geometry resolves like this:
 	///
-	///  • sample centre BURIED in solid (<see cref="ProbeSolid"/> reads start-solid): push toward the body's
+	///  • sample centre BURIED in solid (<see cref="ProbeSolidIn"/> reads start-solid in THIS body): push toward the body's
 	///    nearest surface point and out the far side — depth is the surface distance plus the radius.
 	///  • centre outside but the surface nearer than the radius: push away from the surface point by the
 	///    shortfall.
@@ -1236,13 +1807,33 @@ public sealed class BrushWorldClamp
 	/// caller's accumulated offset over its cap, which reverts to the last clear state — same contract as
 	/// the native path.</summary>
 	static bool MeshSampleContacts( Scene scene, SdfSculpture target, PhysicsBody body, in Transform tx,
-		Vector3 offset, List<Vector4> samples, float deadband, ref Vector3 correction )
+		Vector3 offset, List<Vector4> samples, float deadband, ref Vector3 correction, float settle = SlideSkin )
 	{
 		if ( samples is not { Count: > 0 } )
 			return false;
 
 		var bounds = body.GetBounds();
 		bool any = false;
+
+		// Whole-set early out, for the room-sized bodies (a Walls mesh) whose bounds contain every sample, so the
+		// per-sample bound below rejects nothing: if the samples' bounding sphere lies entirely outside this body —
+		// its centre farther from the surface than the sphere's reach, and not inside — no sample can touch it. Two
+		// queries instead of two per sample (measured: most of a whole-shape test's cost near a room's walls).
+		{
+			var c = Vector3.Zero;
+			foreach ( var s in samples )
+				c += new Vector3( s.x, s.y, s.z );
+			c /= samples.Count;
+			float reach = 0f;
+			foreach ( var s in samples )
+				reach = MathF.Max( reach, (new Vector3( s.x, s.y, s.z ) - c).Length + MathF.Max( s.w, 0f ) );
+			reach = reach * tx.Scale.x + deadband + 1f;
+			var cw = tx.PointToWorld( c ) + offset;
+			// (The scene-wide solidity probe here, not the attributed one: inside ANY solid, don't skip — conservative.)
+			if ( (cw - body.FindClosestPoint( cw )).Length > reach
+				&& !Filtered( scene, target ).Sphere( 0.05f, cw, cw ).Run().StartedSolid )
+				return false;
+		}
 
 		foreach ( var s in samples )
 		{
@@ -1271,18 +1862,18 @@ public sealed class BrushWorldClamp
 				// deadband — flagging it dirty would revert-freeze a grounded brush over a measure-zero
 				// alignment. A sphere CENTRE on a surface is a half-buried sphere: dirty, directionless
 				// (another sample, or the caller's revert, resolves it).
-				any |= r > deadband && ProbeSolid( scene, target, w );
+				any |= r > deadband && ProbeSolidIn( scene, target, w, body );
 				continue;
 			}
 
-			if ( ProbeSolid( scene, target, w ) )
+			if ( ProbeSolidIn( scene, target, w, body ) )
 			{
 				// Centre inside solid: out through the nearest face, plus the radius.
 				float pen = d + r;
 				if ( pen > deadband )
 				{
 					any = true;
-					Deficit( ref correction, -delta / d, pen + SlideSkin );
+					Deficit( ref correction, -delta / d, pen + settle );
 				}
 				continue;
 			}
@@ -1291,7 +1882,7 @@ public sealed class BrushWorldClamp
 			if ( shortfall > deadband )
 			{
 				any = true;
-				Deficit( ref correction, delta / d, shortfall + SlideSkin );
+				Deficit( ref correction, delta / d, shortfall + settle );
 			}
 		}
 
@@ -1309,7 +1900,7 @@ public sealed class BrushWorldClamp
 	/// duplicate free. Sphere samples carry no corners and need none — FindClosestPoint sees a slab poking
 	/// into a sphere just fine.</summary>
 	static bool StraddleContacts( Scene scene, SdfSculpture target, in Transform tx, Vector3 offset,
-		List<Vector4> samples, float deadband, ref Vector3 correction )
+		List<Vector4> samples, float deadband, ref Vector3 correction, float settle = SlideSkin )
 	{
 		bool any = false;
 		Vector3 centroid = default;
@@ -1335,12 +1926,18 @@ public sealed class BrushWorldClamp
 			// How far past the crossed face the corner sits. Resting contact (solids embed up to the
 			// deadband by design) must not read as a straddle, or every later edit of a grounded brush
 			// would ratchet it upward.
-			float past = (1f - tr.Fraction) * Vector3.DistanceBetween( centroid, corner );
+			// Measured ALONG THE FACE'S NORMAL — the direction the correction is applied in — not along the ray. The
+			// ray to a corner out at a hull's rim meets the floor at a shallow angle, and its length past the face
+			// overstates the depth by 1/sin of that angle: a tilted cylinder's rim, a hair into the floor, asked
+			// for several units of lift, by an amount that swung with every degree of a rotation. As a brush
+			// correction that only ever over-lifted the brush once; as a prop push, re-solved every frame of a
+			// drag, it was the prop hopping while a hull turned near the ground.
+			float past = Vector3.Dot( (centroid - corner) * (1f - tr.Fraction), tr.Normal );
 			if ( past <= deadband )
 				continue;
 
 			any = true;
-			Deficit( ref correction, tr.Normal, past + SlideSkin );
+			Deficit( ref correction, tr.Normal, past + settle );
 		}
 
 		return any;
@@ -1350,9 +1947,15 @@ public sealed class BrushWorldClamp
 	// the engine's own CharacterController leans on exactly this, and mimi_clamp_probe confirmed it against
 	// mesh shapes — unlike zero-length BODY sweeps, which this file already caught lying once (see the
 	// class doc). Scene-wide through the clamp's own filter, so "solid" means what "solid" means everywhere
-	// else here.
-	static bool ProbeSolid( Scene scene, SdfSculpture target, Vector3 point ) =>
-		Filtered( scene, target ).Sphere( 0.05f, point, point ).Run().StartedSolid;
+	// else here. ATTRIBUTED to one body: solid there AND the probe started inside `body` (a start-solid trace
+	// reports the body it began in). The scene-wide verdict alone let a sample touching the FLOOR read as buried
+	// in a room-sized WALLS mesh whose bounds also contain it — and get pushed hundreds of units toward the
+	// walls' nearest face (found with carved hulls, whose flat cut faces rest exactly on the floor).
+	static bool ProbeSolidIn( Scene scene, SdfSculpture target, Vector3 point, PhysicsBody body )
+	{
+		var tr = Filtered( scene, target ).Sphere( 0.05f, point, point ).Run();
+		return tr.StartedSolid && (tr.Body is null || tr.Body == body);
+	}
 
 	// Extend `correction` only by what this contact still needs along its own direction — parallel
 	// duplicates add ~nothing, orthogonal contacts get their full push (see ResolveGroup's reasoning).
@@ -1382,6 +1985,31 @@ public sealed class BrushWorldClamp
 	}
 
 	// ── Shared plumbing ──────────────────────────────────────────────────────────────────────────────
+
+	/// <summary>Carve-aware world test (TestShapes + the subtract re-test in Apply/ApplyGroup). Off = the uncarved
+	/// primitives and carves exempt again, as before — kept switchable for A/B and as the way back.</summary>
+	[ConVar( "mimi_clamp_carve_aware", Help = "Sculpt world clamp: test the CARVED shape (what the real collider has), and re-test the whole shape when a subtract moves. 0 = uncarved primitives, subtracts exempt." )]
+	public static bool CarveAware { get; set; } = true;
+
+	// The shapes a brush is tested with, everywhere in this file: CARVE-AWARE when it's one of the sculpture's own
+	// brushes (SdfCollisionBuilder.BuildTestShapes — the real collider's own per-brush decision: exact, one carved
+	// hull or voxel boxes), so clay a later subtract has cut away never collides with the world, never pushes the
+	// prop and never freezes a commit; the uncarved primitives otherwise (a brush not in the list yet). Same
+	// body/inset/samples contract as BuildSweepShapes. Agreement chain: live test (inset 0 + RestTolerance) ⊂
+	// backstop (BackstopInset) ⊂ the real collider's shapes, all from the same per-brush build.
+	static bool TestShapes( SdfSculpture target, SdfBrush b, PhysicsBody body, float inset, List<Vector4> samples = null )
+	{
+		var all = CarveAware && target.IsValid() ? target.Brushes : null;
+		if ( all is not null )
+		{
+			for ( int i = 0; i < all.Count; i++ )
+			{
+				if ( ReferenceEquals( all[i], b ) )
+					return SdfCollisionBuilder.BuildTestShapes( all, i, body, inset, samples );
+			}
+		}
+		return SdfCollisionBuilder.BuildSweepShapes( b, body, inset, samples );
+	}
 
 	void EnsureScratch( PhysicsWorld world )
 	{

@@ -62,6 +62,14 @@ public sealed class PropMoveHull : IDisposable
 	/// <summary>Area-weighted centroid of the hull surface, pawn-root space — what turning spins about.</summary>
 	public Vector3 Centre { get; private set; }
 
+	/// <summary>Root-space offset of the disguise the hull must NOT follow: the prop push an edit gesture has put
+	/// into the disguise's placement but not yet committed (see <see cref="HiderController.ApplyEditPush"/>). The
+	/// collider stays the pre-gesture shape until commit, so a hull that rode the pushed disguise would float off
+	/// the ground — and the walk's ride spring would sink the body to match, cancelling the push and asking the
+	/// edit clamp for another every frame. Held out, the body stays put mid-drag and the commit's rebase moves it
+	/// once, together with the rebuilt collider.</summary>
+	public Vector3 HeldOffset { get; set; }
+
 	/// <summary>Re-derive from <paramref name="collider"/> if its build or its placement under the pawn root
 	/// changed. The disguise is a direct child of the root, so its local transform IS disguise→root.</summary>
 	public void Refresh( SdfCollider collider, PhysicsWorld world )
@@ -70,6 +78,7 @@ public sealed class PropMoveHull : IDisposable
 			return;
 
 		var local = collider.GameObject.LocalTransform;
+		local.Position -= HeldOffset;
 		if ( Ready && _world == world && _builtSerial == collider.BuildSerial && local.AlmostEqual( _builtLocal, 0.001f ) )
 			return;
 

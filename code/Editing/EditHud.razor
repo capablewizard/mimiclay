@@ -1107,7 +1107,11 @@
 	// The HUD goes click-through (its interactive cards drop pointer-events, via the "alt-nav" class) both during
 	// alt camera-nav AND while the pause menu is open — so its buttons don't hover/click behind the pause overlay
 	// (separate ScreenPanels don't block each other's hover, so a higher z-index alone isn't enough).
-	static bool Inert => AltNavActive || PauseMenu.IsOpen || Closing; // closing: nothing takes the mouse while it all leaves
+	// ...and while a gizmo handle is being dragged: the drag owns the mouse until the button comes up, so a cursor that
+	// crosses a card on the way neither lights its buttons nor stalls the drag (PointerOverUi reads false while inert).
+	static bool Inert => AltNavActive || PauseMenu.IsOpen || Closing // closing: nothing takes the mouse while it all leaves
+		|| (Session?.GizmoDragOwnsMouse ?? false)
+		|| ((Session?.IsScrubbing ?? false) && (Session?.IsEditing ?? false)); // a hold-key scrub (W/R/E) owns the mouse the same way
 	string RootClass => (Inert ? "edit-hud alt-nav" : "edit-hud") + (SidesOpening ? " sides-opening" : "");
 
 	// The "must have at least 1 shape" toast's lifetime — a quick flash; each blocked click re-arms it.
@@ -2649,6 +2653,8 @@
 		hc.Add( AltNav.Anchor );
 		hc.Add( AltNav.Held );
 		hc.Add( PauseMenu.IsOpen ); // re-render so the HUD goes inert (alt-nav class) while paused
+		hc.Add( Session?.GizmoDragOwnsMouse ?? false ); // ...and for the length of a gizmo drag
+		hc.Add( Session?.IsScrubbing ?? false );        // ...or a hold-key scrub
 		hc.Add( b?.Color );
 		hc.Add( b?.Metallic ?? 0f );
 		hc.Add( b?.Roughness ?? 0f );

@@ -69,6 +69,10 @@ public sealed class SdfNetworkSync : Component
 	int _sendSeq;     // owner: bumped per send (live + commit)
 	int _appliedSeq;  // proxy: highest seq applied so far
 
+	/// <summary>Proxy: the highest shape version applied here so far (see <see cref="Seq"/>) — what a host waits on to
+	/// pair a message with the commit it belongs to (HiderController.RequestSimShift).</summary>
+	internal int AppliedSeq => _appliedSeq;
+
 	// Owner: the per-brush JSON of the last streamed shape, diffed each stream tick. Mid-drag only the grabbed
 	// brush (plus a symmetry partner) actually changes, so the wire carries those brushes instead of the whole
 	// list — a full 40-brush disguise at 20 Hz was hundreds of KB/s upstream, fanned out through the host to

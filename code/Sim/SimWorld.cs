@@ -479,31 +479,36 @@ public sealed partial class SimWorld : GameObjectSystem
 				Unregister( gone.Key );
 
 		foreach ( var b in _bodies )
+			RefreshShape( b );
+	}
+
+	// One body's half of RefreshShapes: re-copy its shapes if its source changed (state kept). Also run at once by
+	// ShiftBody, whose move belongs with the reshape that caused it.
+	void RefreshShape( SimBody b )
+	{
+		int version;
+		if ( b.Spec.Shape == SimShapeKind.FromGameObject )
+			SourceBody( b.Spec.Source, out version );
+		else if ( b.Spec.Shape == SimShapeKind.FromSource )
+			version = ShapeSourceOf( b.Spec.Source )?.SimShapeVersion ?? -1;
+		else
+			return;
+		if ( b.ShapesReady && version == b.ShapeVersion )
+			return;
+		var state = b.Capture();
+		BuildShapes( b );
+		if ( b.ShapesReady )
 		{
-			int version;
-			if ( b.Spec.Shape == SimShapeKind.FromGameObject )
-				SourceBody( b.Spec.Source, out version );
-			else if ( b.Spec.Shape == SimShapeKind.FromSource )
-				version = ShapeSourceOf( b.Spec.Source )?.SimShapeVersion ?? -1;
-			else
-				continue;
-			if ( b.ShapesReady && version == b.ShapeVersion )
-				continue;
-			var state = b.Capture();
-			BuildShapes( b );
-			if ( b.ShapesReady )
+			b.Restore( state );
+			if ( b.PendingMotion is { } m && IsAuthority )
 			{
-				b.Restore( state );
-				if ( b.PendingMotion is { } m && IsAuthority )
-				{
-					b.Phys.Sleeping = false;
-					b.Phys.Velocity = m.v;
-					b.Phys.AngularVelocity = m.w;
-				}
-				b.PendingMotion = null;
+				b.Phys.Sleeping = false;
+				b.Phys.Velocity = m.v;
+				b.Phys.AngularVelocity = m.w;
 			}
-			SimStats.Reshapes++;
+			b.PendingMotion = null;
 		}
+		SimStats.Reshapes++;
 	}
 
 	// ── Statics ─────────────────────────────────────────────────────────────────────────────────────────────

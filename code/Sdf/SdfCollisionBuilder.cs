@@ -1061,6 +1061,157 @@ public static class SdfCollisionBuilder
 		return any;
 	}
 
+	// ── Carve-aware test shapes ─────────────────────────────────────────────────────────────────────────
+
+	/// <summary><see cref="BuildSweepShapes"/> for brush <paramref name="index"/> of <paramref name="brushes"/>, but
+	/// CARVE-AWARE: when later subtracts can bite it, the body gets the very shapes <see cref="Build"/> emits for it —
+	/// the same <see cref="BuildCarved"/> / <see cref="BuildCarvedSpline"/> decisions (exact copy, one carved hull, or
+	/// voxel boxes, per mirror copy) — so the world test counts clay only where the real collider will have it, and
+	/// agrees with it by construction. Untouched brushes, text, and lists holding groups (whose carve order lives in
+	/// the flattened list) fall back to the uncarved primitives, which only ever over-cover. Same body / inset /
+	/// sample contract as BuildSweepShapes (inset shrinks each shape toward its own centre).
+	///
+	/// Cost: a carved brush's build samples its voxel grid (≤ <see cref="VoxelMaxPerAxis"/>³ cells against its
+	/// carvers) — a fraction of a millisecond to ~1 ms. Cached on the brush's and its carvers' geometry, so a
+	/// whole-shape test re-reads an unchanged carved brush for free; only the brush being dragged (or the
+	/// brushes under a dragged subtract) pay per frame.</summary>
+	public static bool BuildTestShapes( List<SdfBrush> brushes, int index, PhysicsBody body, float inset, List<Vector4> samples = null )
+	{
+		var b = brushes is not null && index >= 0 && index < brushes.Count ? brushes[index] : null;
+		if ( b is null || b.Shape == SdfShape.Text || b.Shape == SdfShape.Group || !b.Enabled || b.Operation != SdfOperation.Add || b.IsModifier )
+			return BuildSweepShapes( b, body, inset, samples );
+
+		var shapes = CarvedTestShapes( brushes, index );
+		if ( shapes is null )
+			return BuildSweepShapes( b, body, inset, samples ); // nothing carves it — the exact primitives
+
+		body.ClearShapes();
+		samples?.Clear();
+		bool any = false;
+		var pts = new List<Vector3>( 16 );
+		foreach ( var p in shapes )
+		{
+			switch ( p.Kind )
+			{
+				case ShapeKind.Sphere:
+				{
+					float r = MathF.Max( p.R - inset, 0.5f );
+					body.AddSphereShape( p.A, r, rebuildMass: false );
+					samples?.Add( new Vector4( p.A.x, p.A.y, p.A.z, r ) );
+					any = true;
+					break;
+				}
+				case ShapeKind.Capsule:
+				{
+					var cap = new SplineCapsule( p.A, p.B, MathF.Max( p.R - inset, 0.5f ) );
+					body.AddCapsuleShape( cap.A, cap.B, cap.Radius, rebuildMass: false );
+					if ( samples is not null )
+						CapsuleSpheres( cap, samples );
+					any = true;
+					break;
+				}
+				default:
+				{
+					if ( p.Hull is not { Count: >= 4 } )
+						break;
+					pts.Clear();
+					pts.AddRange( p.Hull );
+					InsetLocalPoints( pts, inset );
+					if ( samples is not null )
+					{
+						var centroid = Vector3.Zero;
+						foreach ( var v in pts )
+							centroid += v;
+						centroid /= pts.Count;
+						samples.Add( new Vector4( centroid.x, centroid.y, centroid.z, -1f ) );
+						foreach ( var v in pts )
+							samples.Add( new Vector4( v.x, v.y, v.z, 0f ) );
+					}
+					body.AddHullShape( Vector3.Zero, Rotation.Identity, pts, rebuildMass: false );
+					any = true;
+					break;
+				}
+			}
+		}
+		return any;
+	}
+
+	// The carved shapes for one brush, or null when no subtract can bite it (the caller's primitives are exact
+	// then). Thinned and degenerate-filtered as PreparePending does for the real collider; NOT buried-culled —
+	// the cull only drops shapes another shape already covers, which can't change any contact.
+	static List<PendingShape> CarvedTestShapes( List<SdfBrush> brushes, int index )
+	{
+		foreach ( var x in brushes )
+		{
+			if ( x.Shape == SdfShape.Group )
+				return null; // carve order is the flattened list's — not worth flattening per frame (primitives instead)
+		}
+
+		var b = brushes[index];
+		_testCarvers.Clear();
+		CollectCarvers( brushes, index, _testCentres, _testSweep, _testCarvers, _testCarverBounds );
+		if ( _testCarvers.Count == 0 )
+			return null;
+
+		// Keyed on everything the carved build reads: this brush, each carver, and the builder settings.
+		int key = HashCode.Combine( SettingsHash(), (int)b.Shape );
+		b.HashInto( ref key );
+		foreach ( var c in _testCarvers )
+			c.HashInto( ref key );
+		if ( _testCache.TryGetValue( key, out var hit ) )
+			return hit;
+
+		var saved = _pending;
+		int savedIndex = _brushIndex;
+		_pending = new List<PendingShape>( 16 );
+		_brushIndex = index;
+		try
+		{
+			var pts = new List<Vector3>( 32 );
+			if ( TooSmall( b, MinBrushExtent, pts, _testSweep ) )
+				_pending.Clear(); // the solo detail gate, as BuildSweepShapes — no shapes
+			else if ( b.Shape == SdfShape.Spline )
+			{
+				var capsules = new List<SplineCapsule>( 16 );
+				FitSplineCapsules( b, _testSweep, capsules );
+				BuildCarvedSpline( b, index, _testCarvers, _testCarverBounds, capsules, _testSweep, null, null );
+			}
+			else
+				BuildCarved( b, index, _testCarvers, _testCarverBounds, pts, null, null );
+
+			foreach ( var p in _pending )
+			{
+				if ( p.Hull is { Count: > HullThinVertices } && ConvexHull.EdgeCount( p.Hull ) > HullEdgeLimit )
+					p.Hull = ConvexHull.Thin( p.Hull, HullThinVertices );
+			}
+			var result = new List<PendingShape>( _pending.Count );
+			foreach ( var p in _pending )
+			{
+				if ( p.Hull is null || !Degenerate( p.Hull ) )
+					result.Add( p );
+			}
+
+			if ( _testCache.Count >= TestCacheLimit )
+				_testCache.Clear();
+			_testCache[key] = result;
+			return result;
+		}
+		finally
+		{
+			_pending = saved;
+			_brushIndex = savedIndex;
+		}
+	}
+
+	// Main-thread scratch + cache for CarvedTestShapes (the edit clamp and the commit backstop only). [SkipHotload]:
+	// pure scratch, and hotload's list upgrader throws on static struct lists (the static struct-list trap).
+	const int TestCacheLimit = 256;
+	[SkipHotload] static readonly Dictionary<int, List<PendingShape>> _testCache = new();
+	[SkipHotload] static readonly List<SdfBrush> _testCarvers = new();
+	[SkipHotload] static readonly List<(Vector3 lo, Vector3 hi)> _testCarverBounds = new();
+	[SkipHotload] static readonly List<Vector4> _testSweep = new();
+	[SkipHotload] static readonly Vector3[] _testCentres = new Vector3[8];
+
 	// Shrink a brush-local point cloud by `inset` per axis, toward its own bounds centre (the cloud isn't
 	// always centred — the base-pivot cone runs 0..2h). Clamped so a thin axis never inverts: past the floor
 	// the shape just stops shrinking on that axis, which only makes the test stricter.

@@ -621,6 +621,35 @@ public sealed partial class SimWorld
 		b.Phys.AngularVelocity = angular;
 	}
 
+	/// <summary>Any machine: move a body by <paramref name="delta"/> (world) together with the reshape that goes with it —
+	/// a prop pawn's ORIGIN REBASE on commit (HiderController.RecenterOriginOnShape): the root moves to the shape's feet
+	/// and the disguise counter-shifts, so the move hull (root space) moved by the inverse on the body. Shifting the body
+	/// by the same amount, with its shapes re-copied at once (RefreshShapes only runs every few ticks), keeps the clay
+	/// and the hull exactly where they were in the world. Each machine calls this when ITS hull changes — the owner at
+	/// its commit, the host when the commit it belongs to has landed (HiderController.RequestSimShift) — so the two
+	/// always change together; everyone else takes it from snapshots. Interpolation endpoints move too (no glide), and a
+	/// parked walker re-checks its ground (the rebase may have lifted it clear of the floor — an edit push).</summary>
+	public void ShiftBody( Guid key, Vector3 delta )
+	{
+		if ( delta.IsNearZeroLength || !_byKey.TryGetValue( key, out var b ) || b.Phys is not { } p || !p.IsValid() )
+			return;
+		p.Position += delta;
+		p.Sleeping = false;
+		var prev = b.Prev;
+		prev.Position += delta;
+		b.Prev = prev;
+		var cur = b.Cur;
+		cur.Position += delta;
+		b.Cur = cur;
+		b.Ctrl.Parked = false;
+		b.Ctrl.StillTicks = 0;
+		// A client's remembered rest pose for it predates the move: a rollback restoring an omitted (asleep) body from it
+		// would undo the shift. The host's next rest broadcast brings a fresh one.
+		if ( !IsAuthority )
+			b.Rest = null;
+		RefreshShape( b );
+	}
+
 	/// <summary>Host: TELEPORT a driven body (a hunter's spawn, a respawn, a lab placement) — at rest, its controller state
 	/// reset, drawn there at once. Everyone else gets it from the next snapshot (their correction is past the snap distance).</summary>
 	public void Place( Guid key, Vector3 position, Rotation rotation )

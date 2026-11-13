@@ -1433,7 +1433,10 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		// feed in, so this is zero except right after an edit changed the bounds.
 		var feetLocal = _body.GameObject.LocalTransform.PointToWorld( new Vector3( b.Center.x, b.Center.y, b.Mins.z ) );
 		if ( feetLocal.Length < 0.01f )
+		{
+			ClearEditPush(); // the disguise already sits on the root's origin: any push is already where the brushes put it
 			return;
+		}
 
 		var worldDelta = WorldTransform.PointToWorld( feetLocal ) - WorldPosition;
 		_body.GameObject.LocalPosition -= feetLocal;
@@ -1441,8 +1444,80 @@ public sealed partial class HiderController : Component, IGameObjectNetworkEvent
 		if ( IsProxy )
 			return;
 
+		// The edit push (if any) is in the rebase from here on: the disguise placement is the brushes' own again,
+		// so the move hull follows it in full (see ApplyEditPush).
+		ClearEditPush();
+
 		WorldPosition += worldDelta;
 		Transform.ClearInterpolation(); // both writes land this exact frame — no one-frame shear on the pawn root
+
+		// The root move above only reaches the SCENE. A pawn living in the sim world is presented FROM its sim body
+		// (SimWorld.PresentBodies overwrites the root every time the body's pose changes, and the host stops the
+		// engine syncing the root), while its move hull — built in root space from the disguise placement that just
+		// changed — moved by -feetLocal on the body. Left there, the clay jumped back by the whole rebase the moment
+		// the body next moved. The body must move with the root, here and on the host (see ShiftSimBody).
+		ShiftSimBody( worldDelta );
+	}
+
+	// ── Edit push ─────────────────────────────────────────────────────────────────────────────────────────
+	// While sculpting, a brush pressed into the world moves the PROP out of the way rather than stopping at the
+	// surface (BrushWorldClamp, push mode): like pressing clay onto a table, the brush lands where the player put
+	// it in the shape's own space and the whole prop rides up/away. Mid-gesture the push is carried by the
+	// DISGUISE alone (its world position, so the clay and the camera that follows it move at once); the body,
+	// its move hull and the sim keep the pre-gesture placement — the collider is stale until commit anyway — so
+	// nothing physical fights the push. The commit's rebase (RecenterOriginOnShape) then hands the whole
+	// placement to the root in one move, scene and sim alike. Owner-local: proxies see the push arrive with the
+	// commit (the 20 Hz preview stream carries brushes only).
+
+	// Root-space offset the edit push has added to the disguise's local placement since the last rebase.
+	Vector3 _editPushLocal;
+
+	/// <summary>May the edit clamp push THIS sculpture's prop (the local player's own walking body) instead of
+	/// clamping the brush? Everything else — scenery pinned and host-simulated while someone sculpts it, a body
+	/// in someone's hands or lying down (its real clay collider rides the body: a pushed disguise would drag
+	/// the body after it), the charades leash (pushing out of the stage circle is
+	/// wrong) — keeps the brush clamp.</summary>
+	internal bool EditPushApplies( SdfSculpture target )
+	{
+		if ( !_body.IsValid() || target != _body || IsProxy )
+			return false;
+		if ( Networking.IsActive && GameObject.Network.Active && Network.Owner != Connection.Local )
+			return false;
+		if ( RoundManager.IsBotPawn( GameObject ) || PropClaims.IsReleased( this ) || PropClaims.HolderOf( this ) is not null )
+			return false;
+		if ( LeashCentre is not null )
+			return false;
+		if ( InSim && !SimWalking )
+			return false; // held, down or loose in the sim: its clay collider IS the body
+		return true; // (a climber included: pressing clay into the wall it clings to moves it off the wall like any other surface)
+	}
+
+	/// <summary>Edit push: move the disguise (the clay) by <paramref name="worldDelta"/>, leaving the body and its
+	/// move hull where they are until the commit's rebase (see the section notes).</summary>
+	internal void ApplyEditPush( Vector3 worldDelta )
+	{
+		if ( !_body.IsValid() || worldDelta.IsNearZeroLength )
+			return;
+		var disguise = _body.GameObject;
+		var before = disguise.LocalPosition;
+		disguise.WorldPosition += worldDelta;
+		disguise.Transform.ClearInterpolation(); // it's where the clay IS this frame — no eased slide behind the brush
+		_editPushLocal += disguise.LocalPosition - before;
+		_hull.HeldOffset = _editPushLocal;
+		_simHull.HeldOffset = _editPushLocal;
+	}
+
+	/// <summary>The uncommitted edit push, world space (zero once the rebase has taken it into the root) — what the
+	/// edit session leaves out of the frame it measures gestures in (SculptEditSession.EditFrame).</summary>
+	internal Vector3 EditPushWorld => _editPushLocal.IsNearZeroLength ? Vector3.Zero
+		: WorldTransform.PointToWorld( _editPushLocal ) - WorldPosition;
+
+	// The rebase took the push into the root (or there was none): the hulls follow the disguise in full again.
+	void ClearEditPush()
+	{
+		_editPushLocal = Vector3.Zero;
+		_hull.HeldOffset = Vector3.Zero;
+		_simHull.HeldOffset = Vector3.Zero;
 	}
 
 	/// <summary>World position of the sculpted shape's feet (bounds bottom-centre), computed live from the

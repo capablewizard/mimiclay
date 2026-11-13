@@ -80,6 +80,25 @@ public sealed class RuntimeBrushGizmo
 	/// affordance with its own cursor. Drives the open-hand grab cursor.</summary>
 	public bool IsHoveringGrabbable => _active is null && _hover is not null && _hover != "splineLine";
 
+	/// <summary>How far (world) the sculpture has been moved bodily by something other than the gizmo since it last
+	/// settled — the edit session's prop push (see SculptEditSession.EditFrame). Set before <see cref="Update"/>.</summary>
+	public Vector3 PushWorld;
+	Vector3 _grabPush; // PushWorld when the running drag began
+	Vector3 _grabCamPos; // the camera's position then
+	Vector3 _dragShift;  // how far the push has moved the sculpture during the running drag (zero with none running)
+
+	// A handle's centre for DRAG maths: where it would be without the push this drag has caused. The scale dots and
+	// the rotation rings measure the cursor against the brush's centre every frame; on the live (pushed) centre, a
+	// scale that lifted the prop moved its own reference and fed back into the size. Drawing still uses the live one.
+	Vector3 DragCentre( Vector3 c ) => c - _dragShift;
+
+	// A drag's world target → sculpture-local. The gizmo DRAWS on the live transform (its handles stay on the clay),
+	// but a move drag maps the cursor to an absolute world target, and the prop can ride away from that target while
+	// the drag runs (pressed into a floor, the prop rises). Measured against the moving transform the brush would read
+	// lower every frame and the prop would climb forever — so the target is carried along by whatever the push has
+	// moved the sculpture since the grab.
+	Vector3 ToLocal( Transform tx, Vector3 world ) => tx.PointToLocal( world + PushWorld - _grabPush );
+
 	public bool Update( Transform tx, SdfBrush brush, Scene scene, GizmoSettings style, bool allowInteract = true, float alpha = 1f )
 	{
 		_cam = scene?.Camera;
@@ -91,6 +110,34 @@ public sealed class RuntimeBrushGizmo
 		_masterAlpha = alpha;
 		_camPos = _cam.WorldPosition;
 		_ray = _cam.ScreenPixelToRay( EditPointer.Position );
+
+		// The camera FOLLOWS the prop, so a push moves the camera too — and with it the world point under a cursor
+		// that hasn't moved. Left in, that closes a loop one frame long: the push lifts the prop, the camera rises with
+		// it, the drag's target rises out of the floor, the push relaxes, the camera drops, the target is back in the
+		// floor... the brush and prop flickered between the two every frame. So for the length of a drag that has
+		// pushed the prop, the pick ray is cast from where the camera WOULD be without the push (its travel since the
+		// grab taken back out): the target is then a function of the cursor alone. On screen it still reads right —
+		// the prop holds still under the camera, the floor drops away by the push, and the brush on that floor stays
+		// under the cursor.
+		//
+		// The same loop runs WITHOUT a push: the camera frames the shape, so shrinking a brush lowers the camera, which
+		// lowers the cursor's world point, which shrinks the brush further — a scale that ran away on its own. So
+		// every cursor drag casts from the grab-time camera, pushed or not. (Not first person: there the camera is the
+		// player walking, and the carry is meant to ride it.)
+		if ( _active is null )
+		{
+			_grabPush = PushWorld; // (frozen for the length of a drag — see ToLocal)
+			_grabCamPos = _camPos;
+			_dragShift = Vector3.Zero;
+		}
+		else
+		{
+			_dragShift = PushWorld - _grabPush;
+			if ( AltNav.NavModifierHeld || AltNav.Dragging )
+				_grabCamPos = _camPos; // the player is moving the camera themselves mid-drag: that travel is theirs to keep
+			if ( !(EditPointer.Locked && !EditPointer.CursorFree) )
+				_ray = new Ray( _ray.Position - (_camPos - _grabCamPos), _ray.Forward );
+		}
 		_wpp = WorldPerPixel( _cam );
 		_screenScale = style.ReferenceHeight > 1f ? Screen.Height / style.ReferenceHeight : 1f;
 		ScreenBasis( out _, out _sRight, out _sUp );
@@ -666,7 +713,7 @@ public sealed class RuntimeBrushGizmo
 
 			if ( _down && new Plane( _grabWorldPos, n ).TryTrace( _ray, out var hit, true ) )
 			{
-				var local = tx.PointToLocal( _grabWorldPos + (hit - _grabPoint) );
+				var local = ToLocal( tx, _grabWorldPos + (hit - _grabPoint) );
 
 				// Shift snaps the point onto the shared grid — a free move, so absolute, like the stamp.
 				// Applied BEFORE the loop snap below, which overrides it: closing the ring always wins.
@@ -749,7 +796,7 @@ public sealed class RuntimeBrushGizmo
 			// would yank a rotated brush off its own constraint line.
 			if ( SculptEditSession.SnapHeld )
 				move = MathF.Round( move / SculptEditSession.GridStep ) * SculptEditSession.GridStep;
-			brush.Position = tx.PointToLocal( _grabWorldPos + axis * move );
+			brush.Position = ToLocal( tx, _grabWorldPos + axis * move );
 			return true;
 		}
 
@@ -770,13 +817,13 @@ public sealed class RuntimeBrushGizmo
 		if ( _pressed && _hover == name )
 		{
 			_active = name;
-			_grabT = ClosestAxisT( c, axis, _ray );
+			_grabT = ClosestAxisT( DragCentre( c ), axis, _ray );
 			_grabHalf = AxisHalf( brush, i );
 		}
 
 		if ( _active == name && _down )
 		{
-			float t = ClosestAxisT( c, axis, _ray );
+			float t = ClosestAxisT( DragCentre( c ), axis, _ray );
 			SetAxisSize( brush, i, MathF.Max( ScaleFloor( brush ), _grabHalf + (t - _grabT) ) );
 			return true;
 		}
@@ -864,7 +911,7 @@ public sealed class RuntimeBrushGizmo
 			PerpBasis( axis, out var u, out var v );
 			_active = name;
 			_grabWorldRotAxis = axis;
-			_grabAngle = RingAngle( c, axis, u, v, out _ );
+			_grabAngle = RingAngle( DragCentre( c ), axis, u, v, out _ );
 			_accumAngle = 0f;
 			_grabWorldRot = tx.Rotation * brush.Rotation;
 
@@ -881,7 +928,7 @@ public sealed class RuntimeBrushGizmo
 
 		var ax = _grabWorldRotAxis;
 		PerpBasis( ax, out var pu, out var pv );
-		float ang = RingAngle( c, ax, pu, pv, out bool ok );
+		float ang = RingAngle( DragCentre( c ), ax, pu, pv, out bool ok );
 		if ( !ok )
 			return false;
 
@@ -949,7 +996,7 @@ public sealed class RuntimeBrushGizmo
 
 			// Screen-move is a free move (camera-parallel plane, like stamp steering), so Shift snaps the
 			// ABSOLUTE sculpture-local position onto the shared grid — exactly what the stamp does.
-			var pos = tx.PointToLocal( world );
+			var pos = ToLocal( tx, world );
 			if ( SculptEditSession.SnapHeld )
 				pos = SculptEditSession.SnapPosition( pos );
 			brush.Position = pos;
@@ -1023,7 +1070,7 @@ public sealed class RuntimeBrushGizmo
 				float dv = MathF.Round( Vector3.Dot( d, v ) / SculptEditSession.GridStep ) * SculptEditSession.GridStep;
 				d = u * du + v * dv;
 			}
-			brush.Position = tx.PointToLocal( _grabWorldPos + d );
+			brush.Position = ToLocal( tx, _grabWorldPos + d );
 			return true;
 		}
 
