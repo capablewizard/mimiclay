@@ -42,7 +42,7 @@ cast)
 	before=" $(game_pids | tr '\n' ' ') "
 	# Staggered: three clients reaching their loading screens together lost the GPU twice in a row (2026-11-13: VK_ERROR_DEVICE_LOST
 	# in the engine's loading-screen UI — ui_cssbox_batched / ui_backdropfilter — on a 4090 at 19% load), so each starts alone.
-	for id in 97 98 99; do powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','$id','-sw','-720','-mcp' -WorkingDirectory '$SBOX'"; sleep ${CAST_STAGGER:-15}; done
+	for id in 97 98 99; do powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','$id','-sw','-720','-mcp','-gpu_diagnostics' -WorkingDirectory '$SBOX'"; sleep ${CAST_STAGGER:-15}; done
 	new=""; for i in $(seq 1 80); do sleep 3; new=""; for p in $(game_pids); do case "$before" in *" $p "*) ;; *) new="$new $p";; esac; done; [ $(echo $new | wc -w) -ge 3 ] && break; done
 	set -- $new; A=$1; B=$2; H=$3
 	for i in $(seq 1 80); do ok=0; for p in $A $B $H; do cs $p 15 'return $"hunters {Game.ActiveScene?.GetAllComponents<Mimiclay.HunterController>().Count()} net {Networking.IsActive}";' | grep -q "hunters [1-9] net True" && ok=$((ok+1)); done; [ $ok -eq 3 ] && break; sleep 5; done
@@ -99,7 +99,7 @@ watch)
 	# to each scenario's station as the run reaches it. Start it any time, even during a run; 'close' closes it too.
 	OB=$(obs_pid); [ -n "$OB" ] && { kill_client $OB; sleep 2; }
 	before=" $(game_pids | tr '\n' ' ') "
-	powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','96','-sw','-720','-mcp' -WorkingDirectory '$SBOX'"
+	powershell -NoProfile -Command "Start-Process -FilePath '$SBOX/sbox.exe' -ArgumentList '-joinlocal','+instanceid','96','-sw','-720','-mcp','-gpu_diagnostics' -WorkingDirectory '$SBOX'"
 	OB=""; for i in $(seq 1 80); do sleep 3; for p in $(game_pids); do case "$before" in *" $p "*) ;; *) OB=$p;; esac; done; [ -n "$OB" ] && break; done
 	[ -z "$OB" ] && { echo "observer never started"; exit 1; }
 	for i in $(seq 1 80); do cs $OB 15 'return $"hunters {Game.ActiveScene?.GetAllComponents<Mimiclay.HunterController>().Count()} net {Networking.IsActive}";' | grep -q "hunters [1-9] net True" && break; sleep 5; done

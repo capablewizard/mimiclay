@@ -315,17 +315,32 @@ public sealed partial class SimWorld
 				continue;
 
 			var pose = VisualPose( b );
+			var rb = go.Components.Get<Rigidbody>();
+			var pb = rb.IsValid() ? rb.PhysicsBody : null;
+			if ( pb is not null && !pb.IsValid() )
+				pb = null;
 			if ( b.Presented is { } last && last.Position.AlmostEqual( pose.Position, 0.001f ) && last.Rotation.Distance( pose.Rotation ) < 0.01f )
-				continue;
+			{
+				// Unchanged — unless the scene body has wandered off on its own. A KEYFRAMED body keeps moving at whatever
+				// velocity it last had, and a proxy's body can come into the sim's hands with one (the last the engine
+				// synced before the host stopped syncing its transform): on a hunter's screen another player's prop, standing
+				// still, rose at ~7u/s for as long as it stood (SimLab, 2026-11-13 — the sim had it on the floor throughout,
+				// and nothing redrew it because its pose never changed). Put back, and stopped, the moment it's seen.
+				bool drifted = pb is not null && (!pb.Velocity.IsNearZeroLength || !pb.AngularVelocity.IsNearZeroLength
+					|| !pb.Position.AlmostEqual( last.Position, 0.01f ));
+				if ( !drifted )
+					continue;
+			}
 			b.Presented = pose;
 
 			go.WorldPosition = pose.Position;
 			go.WorldRotation = pose.Rotation;
-			var rb = go.Components.Get<Rigidbody>();
-			if ( rb.IsValid() && rb.PhysicsBody is { } pb && pb.IsValid() )
+			if ( pb is not null )
 			{
 				if ( rb.MotionEnabled )
 					rb.MotionEnabled = false;
+				pb.Velocity = Vector3.Zero;
+				pb.AngularVelocity = Vector3.Zero;
 				pb.Transform = new Transform( pose.Position, pose.Rotation, pb.Transform.Scale );
 			}
 		}
